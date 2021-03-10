@@ -1,5 +1,6 @@
 # stdlib
 import inspect
+import sys
 from types import ModuleType
 from typing import Any
 from typing import Callable as CallableT
@@ -35,6 +36,7 @@ class Module(ast.attribute.Attribute):
     def __init__(
         self,
         client: Optional[Any],
+        parent: Optional[ast.attribute.Attribute] = None,
         path_and_name: Optional[str] = None,
         object_ref: Optional[Union[CallableT, ModuleType]] = None,
         return_type_name: Optional[str] = None,
@@ -51,7 +53,14 @@ class Module(ast.attribute.Attribute):
             object_ref=object_ref,
             return_type_name=return_type_name,
             client=client,
+            parent=parent,
         )
+
+        if object_ref is None and self.name:
+            try:
+                self.object_ref = sys.modules[path_and_name if path_and_name else ""]
+            except Exception:
+                self.object_ref = getattr(self.parent.object_ref, self.name)
 
     def add_attr(
         self,
@@ -91,6 +100,8 @@ class Module(ast.attribute.Attribute):
         index: int = 0,
         obj_type: Optional[type] = None,
     ) -> Optional[Union[Callable, CallableT]]:
+
+        self.apply_node_changes()
 
         if obj_type is not None:
             if obj_type in self.lookup_cache:
@@ -140,6 +151,7 @@ class Module(ast.attribute.Attribute):
                         object_ref=attr_ref,
                         return_type_name=return_type_name,
                         client=self.client,
+                        parent=self,
                     ),
                 )
             elif inspect.isclass(attr_ref):
@@ -148,6 +160,7 @@ class Module(ast.attribute.Attribute):
                     object_ref=attr_ref,
                     return_type_name=return_type_name,
                     client=self.client,
+                    parent=self,
                 )
                 self.add_attr(
                     attr_name=path[index],
@@ -164,6 +177,7 @@ class Module(ast.attribute.Attribute):
                         return_type_name=return_type_name,
                         client=self.client,
                         is_static=is_static,
+                        parent=self,
                     ),
                 )
             elif inspect.isdatadescriptor(attr_ref):
@@ -174,6 +188,7 @@ class Module(ast.attribute.Attribute):
                         object_ref=attr_ref,
                         return_type_name=return_type_name,
                         client=self.client,
+                        parent=self,
                     ),
                 )
             elif index == len(path) - 1:
@@ -209,3 +224,9 @@ class Module(ast.attribute.Attribute):
                     return target_object.set_remote_value(value)
 
         return super().__setattr__(key, value)
+
+    def fetch_live_object(self) -> object:
+        try:
+            return sys.modules[self.path_and_name if self.path_and_name else ""]
+        except Exception:
+            return getattr(self.parent.object_ref, self.name)

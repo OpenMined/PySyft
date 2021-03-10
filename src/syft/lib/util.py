@@ -62,7 +62,8 @@ def is_static_method(klass: type, attr: str) -> bool:
     else:
         return False
 
-    assert getattr(klass, attr) == value
+    if getattr(klass, attr) != value:
+        raise AttributeError("Method don't match")
 
     for cls in inspect.getmro(klass):
         if inspect.isroutine(value):

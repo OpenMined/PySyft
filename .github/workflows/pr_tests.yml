@@ -10,9 +10,9 @@ on:
   pull_request:
     branches:
       - dev
-      - "0.4"
     paths:
       - "**.py"
+      - "**.txt"
       - "setup.cfg"
       - ".github/workflows/**.yml"
 
@@ -32,6 +32,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
+
       - name: Get pip cache dir
         id: pip-cache
         run: |
@@ -50,45 +54,42 @@ jobs:
         with:
           version: "3.x"
 
-      - uses: pre-commit/action@v2.0.0
-
-      - name: Upgrade pip
-        run: |
-          pip install --upgrade --user pip
-
-      - name: Run lint checks
+      - name: Build Protos
         run: |
           set -e
-          pip install -r requirements.dev.txt --default-timeout=60
+
+          pip install black isort
           ./scripts/build_proto.sh
-          pre-commit run --all-files
-      - name: Run darglint via flake8 - Ignore Errors
-        continue-on-error: true
-        run: |
-          flake8 src tests
+
+      - uses: pre-commit/action@v2.0.0
+
+      # - name: Run darglint via flake8 - Ignore Errors
+      #   continue-on-error: true
+      #   run: |
+      #     pip install darglint flake8
+      #     flake8 src tests
 
   python-tests-fast:
     needs: [python-linting]
     strategy:
       max-parallel: 30
-      fail-fast: false
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
         python-version: [3.6, 3.7, 3.8]
-        torch-version: [1.5.0, 1.5.1, 1.6.0, 1.7.0]
-        include:
-          - os: ubuntu-latest
-            python-version: 3.7
-            torch-version: 1.4.0
-          # - os: windows-latest
-          #   python-version: 3.9
-          #   torch-version: 1.7.1
-          # - os: ubuntu-20.04
-          #   python-version: 3.9
-          #   torch-version: 1.7.1
-          # - os: macos-latest
-          #   python-version: 3.9
-          #   torch-version: 1.7.1
+        torch-version: [1.6.0, 1.7.0, 1.7.1]
+        # include:
+        # - os: ubuntu-latest
+        #   python-version: 3.7
+        #   torch-version: 1.4.0
+        # - os: windows-latest
+        #   python-version: 3.9
+        #   torch-version: 1.7.1
+        # - os: ubuntu-20.04
+        #   python-version: 3.9
+        #   torch-version: 1.7.1
+        # - os: macos-latest
+        #   python-version: 3.9
+        #   torch-version: 1.7.1
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -99,12 +100,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - run: pip install "pip>=20.1"
-
-      - name: Adjust PyTorch versions
+      - name: Upgrade pip
         run: |
-          python .github/adjust_torch_versions.py ./requirements.txt ${{ matrix.torch-version }}
-          cat ./requirements.txt
+          pip install --upgrade --user pip
 
       - name: Get pip cache dir
         id: pip-cache
@@ -119,17 +117,22 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
-      - name: Scan for security issues
+      - name: Install PyTorch
         run: |
-          pip install bandit --default-timeout=60
-          bandit -r src -ll
+          python .github/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
+          cat ./requirements.torch.txt
+          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html
 
       - name: Install packages
         run: |
-          pip install -r requirements.dev.txt -f https://pypi.python.org/simple/ -f https://download.pytorch.org/whl/torch_stable.html
+          pip install -r requirements.dev.txt
           pip install -e .
           pip list
         timeout-minutes: 20
+
+      - name: Scan for security issues
+        run: |
+          bandit -r src
 
       - name: Run normal tests
         run: |
@@ -150,8 +153,8 @@ jobs:
       - name: Run supported library tests
         run: |
           pip list
-          pytest -m libs -n auto -k "not tenseal"
-          pytest -m libs -n 1 -k "tenseal"
+          pytest -m libs -n auto -k "not tenseal" --suppress-no-test-exit-code
+          pytest -m libs -n 1 -k "tenseal" --suppress-no-test-exit-code
 
   python-nb-examples:
     needs: [python-linting]
@@ -160,8 +163,9 @@ jobs:
       max-parallel: 1
       matrix:
         python-version: [3.8]
-        os: [ubuntu-latest, macos-latest]
-
+        torch-version: [1.7.1]
+        # os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest]
     steps:
       - uses: actions/checkout@v2
 
@@ -170,7 +174,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - run: pip install "pip>=20.1"
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
 
       - name: Get pip cache dir
         id: pip-cache
@@ -185,11 +191,22 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
+      - name: Install PyTorch
+        run: |
+          python .github/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
+          cat ./requirements.torch.txt
+          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html
+
+      - name: Install packages
+        run: |
+          pip install -r requirements.dev.txt
+          pip install -e .
+          pip list
+        timeout-minutes: 20
+
       - name: Run notebook API examples
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
-          pip install -r requirements.dev.txt --default-timeout=60
-          pip install -e . --default-timeout=60
           ./scripts/nb_test.sh
           pytest examples/api -n auto
 
@@ -197,14 +214,11 @@ jobs:
         run: |
           pip install -r requirements/supported_libs.txt
         timeout-minutes: 10
-        continue-on-error: true
 
       - name: Run notebook Duet examples
         run: |
-          pip install -r requirements.dev.txt --default-timeout=60
-          pip install -e . --default-timeout=60
           python ./scripts/nb_duet_test.py
-          cd tests/syft/notebooks/ && pytest . -n 1
+          pytest tests/syft/notebooks -n 1 --suppress-no-test-exit-code
 
   pygrid-unit-tests:
     needs: [python-linting]
@@ -213,6 +227,7 @@ jobs:
       max-parallel: 3
       matrix:
         python-version: [3.6, 3.7, 3.8]
+        torch-version: [1.7.1]
 
     steps:
       - uses: actions/checkout@v2
@@ -222,7 +237,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - run: pip install "pip>=20.1"
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
 
       - name: Get pip cache dir
         id: pip-cache
@@ -242,6 +259,12 @@ jobs:
           repository: "OpenMined/PyGrid"
           ref: "pygrid_0.4.0"
           path: "pygrid"
+
+      - name: Install PyTorch
+        run: |
+          python .github/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
+          cat ./requirements.torch.txt
+          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html
 
       - name: Test PyGrid
         continue-on-error: true

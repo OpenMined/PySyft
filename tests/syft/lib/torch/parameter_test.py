@@ -17,7 +17,7 @@ def test_parameter_vm_remote_operation() -> None:
 
     x = th.nn.Parameter(th.randn(3, 3))
 
-    xp = x.send(alice_client)
+    xp = x.send(alice_client, pointable=False)
 
     y = xp + xp
 
@@ -41,7 +41,7 @@ def test_get_copy() -> None:
 
     x = th.nn.Parameter(th.randn(3, 3))
 
-    xp = x.send(alice_client)
+    xp = x.send(alice_client, pointable=False)
 
     y = xp + xp
 
