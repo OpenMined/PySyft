@@ -33,8 +33,11 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("sympc.tensor", sympc.tensor),
         ("sympc.protocol", sympc.protocol),
         ("sympc.store", sympc.store),
+        ("sympc.protocol.fss", sympc.protocol.fss),
+        ("sympc.protocol.fss.fss", sympc.protocol.fss.fss),
         ("sympc.protocol.spdz", sympc.protocol.spdz),
         ("sympc.protocol.spdz.spdz", sympc.protocol.spdz.spdz),
+        ("sympc.utils", sympc.utils)
     ]
 
     classes: TypeList[TypeTuple[str, str, TypeAny]] = [
@@ -49,7 +52,13 @@ def create_ast(client: TypeAny = None) -> Globals:
 
     methods: TypeList[TypeTuple[str, str]] = [
         ("sympc.store.CryptoStore.get_primitives_from_store", "syft.lib.python.List"),
+        (
+            "sympc.store.CryptoStore.populate_store",
+            "syft.lib.python._SyNone",
+        ),
         ("sympc.session.Session.crypto_store", "sympc.store.CryptoStore"),
+        ("sympc.protocol.fss.fss.mask_builder", "sympc.tensor.ShareTensor"),
+        ("sympc.protocol.fss.fss.evaluate", "sympc.tensor.ShareTensor"),
         ("sympc.protocol.spdz.spdz.mul_parties", "sympc.tensor.ShareTensor"),
         ("sympc.protocol.spdz.spdz.div_wraps", "sympc.tensor.ShareTensor"),
         (
@@ -57,11 +66,7 @@ def create_ast(client: TypeAny = None) -> Globals:
             "sympc.tensor.ShareTensor",
         ),
         (
-            "sympc.session.Session.populate_crypto_store",
-            "syft.lib.python._SyNone",
-        ),
-        (
-            "sympc.session.get_generator",
+            "sympc.utils.get_new_generator",
             "torch.Generator",
         ),
         (
@@ -91,6 +96,10 @@ def create_ast(client: TypeAny = None) -> Globals:
         (
             "sympc.tensor.ShareTensor.__rmatmul__",
             "sympc.tensor.ShareTensor",
+        ),
+        (
+            "sympc.tensor.ShareTensor.numel",
+            "syft.lib.python.Int",  # FIXME: Can't we just return an int??
         ),
     ]
 
