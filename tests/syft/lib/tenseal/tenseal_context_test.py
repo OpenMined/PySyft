@@ -45,8 +45,8 @@ def test_context_send(context: Any) -> None:
     assert len(alice.store) == 1
 
 
-@pytest.mark.vendor(lib="tenseal")
 @pytest.mark.parametrize("scheme", [ts.SCHEME_TYPE.CKKS, ts.SCHEME_TYPE.BFV])
+@pytest.mark.vendor(lib="tenseal")
 def test_scheme_send(scheme: Any) -> None:
     """Test sending a TenSEAL scheme
 
