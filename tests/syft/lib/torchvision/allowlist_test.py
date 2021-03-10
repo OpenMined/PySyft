@@ -67,7 +67,7 @@ def test_transforms(alice: sy.VirtualMachine) -> None:
     )
     torchvision.transforms.RandomApply([1, 2], p=0.5)
     torchvision.transforms.RandomAffine(2)
-    torchvision.transforms.Pad([1, 2], fill=0, padding_mode="constant")
+    # torchvision.transforms.Pad([1, 2], fill=0, padding_mode="constant")
     torchvision.transforms.Grayscale(num_output_channels=1)
     torchvision.transforms.CenterCrop(10)
     torchvision.transforms.ColorJitter(brightness=0, contrast=0, saturation=0, hue=0)
