@@ -1,11 +1,9 @@
 # stdlib
-import pydoc
-import sys
+from typing import Any
 from typing import List
 from typing import Optional
 
 # third party
-from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft absolute
@@ -15,13 +13,16 @@ import syft as sy
 from ...logger import traceback_and_raise
 from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
 from ...util import get_fully_qualified_name
+from ...util import index_syft_by_module_name
 from ...util import key_emoji
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
+from ..common.serde.serializable import bind_protobuf
 from ..common.storeable_object import AbstractStorableObject
 from ..common.uid import UID
 
 
+@bind_protobuf
 class StorableObject(AbstractStorableObject):
     """
     StorableObject is a wrapper over some Serializable objects, which we want to keep in an
@@ -48,7 +49,7 @@ class StorableObject(AbstractStorableObject):
 
     """
 
-    __slots__ = ["id", "data", "_description", "_tags"]
+    __slots__ = ["id", "_data", "_description", "_tags"]
 
     def __init__(
         self,
@@ -76,10 +77,31 @@ class StorableObject(AbstractStorableObject):
 
     @property
     def object_type(self) -> str:
-        object_type = str(type(self.data))
-        if type(self.data).__name__.endswith("ProtobufWrapper"):
-            object_type = str(type(self.data.data))  # type: ignore
-        return object_type
+        return str(type(self.data))
+
+    @property
+    def object_qualname(self) -> str:
+        return get_fully_qualified_name(self.data)
+
+    # Why define data as a property?
+    # For C type/class objects as data.
+    # We need to use it's wrapper type very often inside StorableObject, so we set _data
+    # attribute as it's wrapper object. But we still want to give a straight API to users,
+    # so we return the initial C type object when user call obj.data.
+    # For python class objects as data. data and _data are the same thing.
+    @property  # type: ignore
+    def data(self) -> Any:  # type: ignore
+        if type(self._data).__name__.endswith("Wrapper"):
+            return self._data.obj
+        else:
+            return self._data
+
+    @data.setter
+    def data(self, value: Any) -> Any:
+        if hasattr(value, "_sy_serializable_wrapper_type"):
+            self._data = value._sy_serializable_wrapper_type(value=value)
+        else:
+            self._data = value
 
     @property
     def tags(self) -> Optional[List[str]]:
@@ -101,14 +123,14 @@ class StorableObject(AbstractStorableObject):
         proto = StorableObject_PB()
 
         # Step 1: Serialize the id to protobuf and copy into protobuf
-        id = self.id.serialize()
+        id = sy.serialize(self.id)
         proto.id.CopyFrom(id)
 
         # Step 2: Save the type of wrapper to use to deserialize
-        proto.obj_type = get_fully_qualified_name(obj=self)
+        proto.data_type = get_fully_qualified_name(obj=self._data)
 
         # Step 3: Serialize data to protobuf and pack into proto
-        data = self._data_object2proto()
+        data = self._data._object2proto()
 
         proto.data.Pack(data)
 
@@ -128,14 +150,14 @@ class StorableObject(AbstractStorableObject):
             permission_data = sy.lib.python.Dict()
             for k, v in self.read_permissions.items():
                 permission_data[k] = v
-            proto.read_permissions = permission_data.serialize(to_bytes=True)
+            proto.read_permissions = sy.serialize(permission_data, to_bytes=True)
 
         # Step 7: save search permissions
         if len(self.search_permissions.keys()) > 0:
             permission_data = sy.lib.python.Dict()
             for k, v in self.search_permissions.items():
                 permission_data[k] = v
-            proto.search_permissions = permission_data.serialize(to_bytes=True)
+            proto.search_permissions = sy.serialize(permission_data, to_bytes=True)
 
         return proto
 
@@ -148,26 +170,12 @@ class StorableObject(AbstractStorableObject):
             traceback_and_raise(ValueError("TODO"))
 
         # TODO: FIX THIS SECURITY BUG!!! WE CANNOT USE
-        #  PYDOC.LOCATE!!!
+        # PYDOC.LOCATE!!!
         # Step 2: get the type of wrapper to use to deserialize
-        obj_type: StorableObject = pydoc.locate(proto.obj_type)  # type: ignore
-
-        # this happens if we have a special ProtobufWrapper type
-        # need a different way to get obj_type
-        if proto.obj_type.endswith("ProtobufWrapper"):
-            module_parts = proto.obj_type.split(".")
-            klass = module_parts.pop().replace("ProtobufWrapper", "")
-            proto_type = getattr(sys.modules[".".join(module_parts)], klass)
-            obj_type = proto_type.serializable_wrapper_type
-
-        if proto.obj_type.endswith("CTypeWrapper"):
-            module_parts = proto.obj_type.split(".")
-            klass = module_parts.pop().replace("CTypeWrapper", "")
-            ctype = getattr(sys.modules[".".join(module_parts)], klass)
-            obj_type = ctype.serializable_wrapper_type
+        data_type = index_syft_by_module_name(fully_qualified_name=proto.data_type)
 
         # Step 3: get the protobuf type we deserialize for .data
-        schematic_type = obj_type.get_data_protobuf_schema()
+        schematic_type = data_type.get_protobuf_schema()  # type: ignore
 
         # Step 4: Deserialize data from protobuf
         data = None
@@ -176,7 +184,7 @@ class StorableObject(AbstractStorableObject):
             descriptor = getattr(schematic_type, "DESCRIPTOR", None)
             if descriptor is not None and proto.data.Is(descriptor):
                 proto.data.Unpack(data)
-            data = obj_type._data_proto2object(proto=data)
+            data = data_type._proto2object(proto=data)  # type: ignore
 
         # Step 5: get the description from proto
         description = proto.description if proto.description else ""
@@ -184,36 +192,30 @@ class StorableObject(AbstractStorableObject):
         # Step 6: get the tags from proto of they exist
         tags = list(proto.tags) if proto.tags else []
 
-        result = obj_type.construct_new_object(
-            id=id, data=data, tags=tags, description=description
+        # Step 7: get the read permissions
+        read_permissions = None
+        if proto.read_permissions is not None and len(proto.read_permissions) > 0:
+            read_permissions = _deserialize(
+                blob=proto.read_permissions, from_bytes=True
+            )
+
+        # Step 8: get the search permissions
+        search_permissions = None
+        if proto.search_permissions is not None and len(proto.search_permissions) > 0:
+            search_permissions = _deserialize(
+                blob=proto.search_permissions, from_bytes=True
+            )
+
+        result = StorableObject(
+            id=id,
+            data=data,
+            description=description,
+            tags=tags,
+            read_permissions=read_permissions,
+            search_permissions=search_permissions,
         )
 
         return result
-
-    def _data_object2proto(self) -> Message:
-        _serialize = getattr(self.data, "serialize", None)
-
-        if _serialize is None or not callable(_serialize):
-            traceback_and_raise(ValueError("TODO"))
-
-        return _serialize()
-
-    @staticmethod
-    def _data_proto2object(proto: Message) -> Serializable:
-        return _deserialize(blob=proto)
-
-    @staticmethod
-    def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
-        return StorableObject_PB
-
-    @staticmethod
-    def construct_new_object(
-        id: UID,
-        data: "StorableObject",
-        description: Optional[str],
-        tags: Optional[List[str]],
-    ) -> "StorableObject":
-        return StorableObject(id=id, data=data, description=description, tags=tags)
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
@@ -249,7 +251,7 @@ class StorableObject(AbstractStorableObject):
     def pprint(self) -> str:
         output = f"{self.icon} ({self.class_name}) ("
         if hasattr(self.data, "pprint"):
-            output += self.data.pprint  # type: ignore
+            output += self.data.pprint
         elif self.data is not None:
             output += self.data.__repr__()
         else:
@@ -276,3 +278,12 @@ class StorableObject(AbstractStorableObject):
     @property
     def class_name(self) -> str:
         return str(self.__class__.__name__)
+
+    def clean_copy(self) -> "StorableObject":
+        """
+        This method return a copy of self, but clean up the search_permissions and
+        read_permissions attributes.
+        """
+        return StorableObject(
+            id=self.id, data=self.data, tags=self.tags, description=self.description
+        )

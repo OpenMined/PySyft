@@ -9,10 +9,13 @@ from ....proto.core.io.location_pb2 import SpecificLocation as SpecificLocation_
 from ....util import validate_type
 from ...common.object import ObjectWithID
 from ...common.serde.deserialize import _deserialize
+from ...common.serde.serializable import bind_protobuf
+from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
 from .location import Location
 
 
+@bind_protobuf
 class SpecificLocation(ObjectWithID, Location):
     """This represents the location of a single Node object
     represented by a single UID. It may not have any functionality
@@ -42,11 +45,11 @@ class SpecificLocation(ObjectWithID, Location):
         :rtype: SpecificLocation_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
-        return SpecificLocation_PB(id=self.id.serialize(), name=self.name)
+        return SpecificLocation_PB(id=serialize(self.id), name=self.name)
 
     @staticmethod
     def _proto2object(proto: SpecificLocation_PB) -> "SpecificLocation":

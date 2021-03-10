@@ -4,6 +4,7 @@ from typing import Dict
 
 # syft absolute
 import syft as sy
+from syft import serialize
 from syft.core.io.address import Address
 from syft.grid.messages.tensor_messages import CreateTensorMessage
 from syft.grid.messages.tensor_messages import CreateTensorResponse
@@ -25,7 +26,7 @@ def test_create_tensor_message_serde() -> None:
         "tensor": [1, 2, 3, 4, 5, 6],
         "description": "Tensor Description",
         "tags": ["#x", "#data-sample"],
-        "searchable": True,
+        "pointable": True,
     }
     msg = CreateTensorMessage(
         address=target,
@@ -33,7 +34,7 @@ def test_create_tensor_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg.serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -52,7 +53,7 @@ def test_create_tensor_response_serde() -> None:
         content=request_content,
     )
 
-    blob = msg.serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -72,7 +73,7 @@ def test_delete_tensor_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg.serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -91,7 +92,7 @@ def test_delete_tensor_response_serde() -> None:
         content=content,
     )
 
-    blob = msg.serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -109,7 +110,7 @@ def test_update_tensor_message_serde() -> None:
         "tensor": [1, 2, 3, 4, 5, 6],
         "description": "Tensor description",
         "tags": ["#x", "#data-sample"],
-        "searchable": True,
+        "pointable": True,
     }
     msg = UpdateTensorMessage(
         address=target,
@@ -117,7 +118,7 @@ def test_update_tensor_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg.serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -136,7 +137,7 @@ def test_update_tensor_response_serde() -> None:
         content=request_content,
     )
 
-    blob = msg.serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -156,7 +157,7 @@ def test_get_tensor_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg.serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -179,7 +180,7 @@ def test_get_tensor_response_serde() -> None:
         content=content,
     )
 
-    blob = msg.serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -199,7 +200,7 @@ def test_get_all_tensors_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg.serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -217,13 +218,13 @@ def test_get_all_tensors_response_serde() -> None:
                 "tensor": [1, 2, 3, 4, 5, 6],
                 "description": "Tensor description",
                 "tags": ["#x", "#data-sample"],
-                "searchable": True,
+                "pointable": True,
             },
             "a84ew64wq6e": {
                 "tensor": [9, 8, 2, 3, 5, 6],
                 "description": "Tensor sample description",
                 "tags": ["#y", "#label-sample"],
-                "searchable": True,
+                "pointable": True,
             },
         }
     }
@@ -234,7 +235,7 @@ def test_get_all_tensors_response_serde() -> None:
         content=request_content,
     )
 
-    blob = msg.serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id

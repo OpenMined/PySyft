@@ -1,24 +1,29 @@
 # stdlib
+import functools
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Tuple
-from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
+# syft absolute
+from syft.core.plan.plan import Plan
+
 # syft relative
 from ..... import lib
+from ..... import serialize
 from .....logger import critical
 from .....logger import traceback_and_raise
+from .....logger import warning
 from .....proto.core.node.common.action.run_class_method_pb2 import (
     RunClassMethodAction as RunClassMethodAction_PB,
 )
 from .....util import inherit_tags
 from ....common.serde.deserialize import _deserialize
+from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
@@ -26,6 +31,7 @@ from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
 
 
+@bind_protobuf
 class RunClassMethodAction(ImmediateActionWithoutReply):
     """
     When executing a RunClassMethodAction, a :class:`Node` will run a method defined
@@ -45,7 +51,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         self,
         path: str,
         _self: Any,
-        args: Union[Tuple[Any, ...], List[Any]],
+        args: List[Any],
         kwargs: Dict[Any, Any],
         id_at_location: UID,
         address: Address,
@@ -140,25 +146,35 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     ValueError(f"Method {method} called, but self is None.")
                 )
 
-            # in opacus the step method in torch gets monkey patched on .attach
-            # this means we can't use the original AST method reference and need to
-            # get it again from the actual object so for now lets allow the following
-            # two methods to be resolved at execution time
             method_name = self.path.split(".")[-1]
-            if method_name in ["step", "zero_grad"]:
-                # TODO: Remove this Opacus workaround
-                try:
-                    method = getattr(resolved_self.data, method_name, None)
-                    result = method(*upcasted_args, **upcasted_kwargs)
-                except Exception as e:
-                    critical(
-                        f"Unable to resolve method {self.path} on {resolved_self}. {e}"
-                    )
-                    result = method(
-                        resolved_self.data, *upcasted_args, **upcasted_kwargs
-                    )
+
+            if isinstance(resolved_self.data, Plan) and method_name == "__call__":
+                result = method(
+                    resolved_self.data,
+                    node,
+                    verify_key,
+                    *self.args,
+                    **upcasted_kwargs,
+                )
             else:
-                result = method(resolved_self.data, *upcasted_args, **upcasted_kwargs)
+                target_method = getattr(resolved_self.data, method_name, None)
+
+                if id(target_method) != id(method):
+                    warning(
+                        f"Method {method_name} overwritten on object {resolved_self.data}"
+                    )
+                    method = target_method
+                else:
+                    method = functools.partial(method, resolved_self.data)
+
+                result = method(*upcasted_args, **upcasted_kwargs)
+
+        # TODO: add numpy support https://github.com/OpenMined/PySyft/issues/5164
+        if "numpy." in str(type(result)):
+            if "float" in type(result).__name__:
+                result = float(result)
+            if "int" in type(result).__name__:
+                result = int(result)
 
         if lib.python.primitive_factory.isprimitive(value=result):
             # Wrap in a SyPrimitive
@@ -175,7 +191,8 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     else:
                         result.id = self.id_at_location
 
-                    assert result.id == self.id_at_location
+                    if result.id != self.id_at_location:
+                        raise AttributeError("IDs don't match")
                 except AttributeError as e:
                     err = f"Unable to set id on result {type(result)}. {e}"
                     traceback_and_raise(Exception(err))
@@ -211,19 +228,19 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         :rtype: RunClassMethodAction_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
 
         return RunClassMethodAction_PB(
             path=self.path,
-            _self=self._self.serialize(),
-            args=list(map(lambda x: x.serialize(), self.args)),
-            kwargs={k: v.serialize() for k, v in self.kwargs.items()},
-            id_at_location=self.id_at_location.serialize(),
-            address=self.address.serialize(),
-            msg_id=self.id.serialize(),
+            _self=serialize(self._self),
+            args=list(map(lambda x: serialize(x), self.args)),
+            kwargs={k: serialize(v) for k, v in self.kwargs.items()},
+            id_at_location=serialize(self.id_at_location),
+            address=serialize(self.address),
+            msg_id=serialize(self.id),
         )
 
     @staticmethod
@@ -244,7 +261,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         return RunClassMethodAction(
             path=proto.path,
             _self=_deserialize(blob=proto._self),
-            args=tuple(map(lambda x: _deserialize(blob=x), proto.args)),
+            args=list(map(lambda x: _deserialize(blob=x), proto.args)),
             kwargs={k: _deserialize(blob=v) for k, v in proto.kwargs.items()},
             id_at_location=_deserialize(blob=proto.id_at_location),
             address=_deserialize(blob=proto.address),
@@ -270,3 +287,12 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         """
 
         return RunClassMethodAction_PB
+
+    def remap_input(self, current_input: Any, new_input: Any) -> None:
+        """Redefines some of the arguments, and possibly the _self of the function"""
+        if self._self.id_at_location == current_input.id_at_location:
+            self._self = new_input
+        else:
+            for i, arg in enumerate(self.args):
+                if arg.id_at_location == current_input.id_at_location:
+                    self.args[i] = new_input

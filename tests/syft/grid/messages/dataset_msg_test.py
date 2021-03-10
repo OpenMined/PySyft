@@ -4,6 +4,7 @@ from typing import Dict
 
 # syft absolute
 import syft as sy
+from syft import serialize
 from syft.core.io.address import Address
 from syft.grid.messages.dataset_messages import CreateDatasetMessage
 from syft.grid.messages.dataset_messages import CreateDatasetResponse
@@ -25,7 +26,7 @@ def test_create_dataset_message_serde() -> None:
         "dataset": ["<tensor_id>", "<tensor_id>", "<tensor_id>", "<tensor_id>"],
         "description": "Dataset Description",
         "tags": ["#x", "#data-sample"],
-        "searchable": True,
+        "pointable": True,
         "read-permission": ["user-id1", "user-id2", "user-id3"],
         "write-permission": ["user-id1", "user-id5", "user-id9"],
     }
@@ -35,7 +36,7 @@ def test_create_dataset_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg.serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -54,7 +55,7 @@ def test_create_dataset_response_serde() -> None:
         content=request_content,
     )
 
-    blob = msg.serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -74,7 +75,7 @@ def test_delete_dataset_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg.serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -93,7 +94,7 @@ def test_delete_dataset_response_serde() -> None:
         content=content,
     )
 
-    blob = msg.serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -110,7 +111,7 @@ def test_update_dataset_message_serde() -> None:
         "dataset": ["<tensor_id>", "<tensor_id>", "<tensor_id>", "<tensor_id>"],
         "description": "Dataset Description",
         "tags": ["#x", "#data-sample"],
-        "searchable": True,
+        "pointable": True,
         "read-permission": ["user-id1", "user-id2", "user-id3"],
         "write-permission": ["user-id1", "user-id5", "user-id9"],
     }
@@ -120,7 +121,7 @@ def test_update_dataset_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg.serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -139,7 +140,7 @@ def test_update_dataset_response_serde() -> None:
         content=request_content,
     )
 
-    blob = msg.serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -159,7 +160,7 @@ def test_get_dataset_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg.serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -175,7 +176,7 @@ def test_get_dataset_response_serde() -> None:
         "dataset": ["<tensor_id>", "<tensor_id>", "<tensor_id>", "<tensor_id>"],
         "description": "Dataset Description",
         "tags": ["#x", "#data-sample"],
-        "searchable": True,
+        "pointable": True,
         "read-permission": ["user-id1", "user-id2", "user-id3"],
         "write-permission": ["user-id1", "user-id5", "user-id9"],
     }
@@ -186,7 +187,7 @@ def test_get_dataset_response_serde() -> None:
         content=content,
     )
 
-    blob = msg.serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -206,7 +207,7 @@ def test_get_all_datasets_message_serde() -> None:
         reply_to=bob_vm.address,
     )
 
-    blob = msg.serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -224,7 +225,7 @@ def test_get_all_datasets_response_serde() -> None:
                 "dataset": ["<tensor_id>", "<tensor_id>", "<tensor_id>", "<tensor_id>"],
                 "description": "Dataset Description",
                 "tags": ["#x", "#data-sample"],
-                "searchable": True,
+                "pointable": True,
                 "read-permission": ["user-id1", "user-id2", "user-id3"],
                 "write-permission": ["user-id1", "user-id5", "user-id9"],
             },
@@ -232,7 +233,7 @@ def test_get_all_datasets_response_serde() -> None:
                 "dataset": ["<tensor_id>", "<tensor_id>", "<tensor_id>", "<tensor_id>"],
                 "description": "Dataset Description",
                 "tags": ["#x", "#data-sample"],
-                "searchable": False,
+                "pointable": False,
                 "read-permission": ["user-id1", "user-id2", "user-id3"],
                 "write-permission": [],
             },
@@ -245,7 +246,7 @@ def test_get_all_datasets_response_serde() -> None:
         content=request_content,
     )
 
-    blob = msg.serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id

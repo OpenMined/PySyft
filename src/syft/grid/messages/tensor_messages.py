@@ -8,9 +8,11 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import final
 
 # syft absolute
+from syft import serialize
 from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.serde.deserialize import _deserialize
+from syft.core.common.serde.serializable import bind_protobuf
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
 from syft.proto.grid.messages.tensor_messages_pb2 import (
@@ -45,6 +47,7 @@ from syft.proto.grid.messages.tensor_messages_pb2 import (
 )
 
 
+@bind_protobuf
 @final
 class CreateTensorMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -65,15 +68,15 @@ class CreateTensorMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: CreateTensorMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return CreateTensorMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -115,6 +118,7 @@ class CreateTensorMessage(ImmediateSyftMessageWithReply):
         return CreateTensorMessage_PB
 
 
+@bind_protobuf
 @final
 class CreateTensorResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -136,13 +140,13 @@ class CreateTensorResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return CreateTensorResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
@@ -186,6 +190,7 @@ class CreateTensorResponse(ImmediateSyftMessageWithoutReply):
         return CreateTensorResponse_PB
 
 
+@bind_protobuf
 @final
 class GetTensorMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -206,15 +211,15 @@ class GetTensorMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: GetTensorMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetTensorMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -256,6 +261,7 @@ class GetTensorMessage(ImmediateSyftMessageWithReply):
         return GetTensorMessage_PB
 
 
+@bind_protobuf
 @final
 class GetTensorResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -277,13 +283,13 @@ class GetTensorResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetTensorResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
@@ -327,6 +333,7 @@ class GetTensorResponse(ImmediateSyftMessageWithoutReply):
         return GetTensorResponse_PB
 
 
+@bind_protobuf
 @final
 class GetTensorsMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -347,15 +354,15 @@ class GetTensorsMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: GetTensorsMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetTensorsMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -397,6 +404,7 @@ class GetTensorsMessage(ImmediateSyftMessageWithReply):
         return GetTensorsMessage_PB
 
 
+@bind_protobuf
 @final
 class GetTensorsResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -418,13 +426,13 @@ class GetTensorsResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetTensorsResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
@@ -468,6 +476,7 @@ class GetTensorsResponse(ImmediateSyftMessageWithoutReply):
         return GetTensorsResponse_PB
 
 
+@bind_protobuf
 @final
 class UpdateTensorMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -488,15 +497,15 @@ class UpdateTensorMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: UpdateTensorMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return UpdateTensorMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -538,6 +547,7 @@ class UpdateTensorMessage(ImmediateSyftMessageWithReply):
         return UpdateTensorMessage_PB
 
 
+@bind_protobuf
 @final
 class UpdateTensorResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -559,13 +569,13 @@ class UpdateTensorResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return UpdateTensorResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
@@ -609,6 +619,7 @@ class UpdateTensorResponse(ImmediateSyftMessageWithoutReply):
         return UpdateTensorResponse_PB
 
 
+@bind_protobuf
 @final
 class DeleteTensorMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -629,15 +640,15 @@ class DeleteTensorMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: DeleteTensorMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return DeleteTensorMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -679,6 +690,7 @@ class DeleteTensorMessage(ImmediateSyftMessageWithReply):
         return DeleteTensorMessage_PB
 
 
+@bind_protobuf
 @final
 class DeleteTensorResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -700,13 +712,13 @@ class DeleteTensorResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return DeleteTensorResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )

@@ -89,6 +89,7 @@ import time
 from typing import Any
 from typing import List
 from typing import Optional
+import warnings
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -100,9 +101,11 @@ import syft as sy
 # syft relative
 from ...logger import debug
 from ...logger import error
+from ...logger import warning
 from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
 from ..common.pointer import AbstractPointer
 from ..common.serde.deserialize import _deserialize
+from ..common.serde.serializable import bind_protobuf
 from ..common.uid import UID
 from ..io.address import Address
 from ..node.abstract.node import AbstractNode
@@ -117,6 +120,7 @@ from ..store.storeable_object import StorableObject
 
 
 # TODO: Fix the Client, Address, Location confusion
+@bind_protobuf
 class Pointer(AbstractPointer):
     """
     The pointer is the handler when interacting with remote data.
@@ -133,7 +137,7 @@ class Pointer(AbstractPointer):
     """
 
     path_and_name: str
-    _searchable: bool = False
+    _pointable: bool = False
 
     def __init__(
         self,
@@ -170,18 +174,7 @@ class Pointer(AbstractPointer):
             delete_obj=delete_obj,
         )
 
-        response = self.client.send_immediate_msg_with_reply(msg=obj_msg)
-
-        obj = response.obj
-
-        if type(obj).__name__.endswith("ProtobufWrapper"):
-            # for ProtobufWrapper's we want to actually vend the real Proto since
-            # that is what was originally sent in with .send
-            return obj.data
-
-        if type(obj).__name__.endswith("CTypeWrapper"):
-            return obj.data
-
+        obj = self.client.send_immediate_msg_with_reply(msg=obj_msg).data
         if self.is_enum:
             enum_class = self.client.lib_ast.query(self.path_and_name).object_ref
             return enum_class(obj)
@@ -254,15 +247,15 @@ class Pointer(AbstractPointer):
         :rtype: Pointer_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use sy.serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return Pointer_PB(
             points_to_object_with_path=self.path_and_name,
             pointer_name=type(self).__name__,
-            id_at_location=self.id_at_location.serialize(),
-            location=self.client.address.serialize(),
+            id_at_location=sy.serialize(self.id_at_location),
+            location=sy.serialize(self.client.address),
             tags=self.tags,
             description=self.description,
             object_type=self.object_type,
@@ -446,29 +439,62 @@ class Pointer(AbstractPointer):
 
     @property
     def searchable(self) -> bool:
-        return self._searchable
+        msg = "`searchable` is deprecated please use `pointable` in future"
+        warning(msg, print=True)
+        warnings.warn(
+            msg,
+            DeprecationWarning,
+        )
+        return self._pointable
 
     @searchable.setter
     def searchable(self, value: bool) -> None:
-        if value != self._searchable:
-            self.update_searchability(not self._searchable)
+        msg = "`searchable` is deprecated please use `pointable` in future"
+        warning(msg, print=True)
+        warnings.warn(
+            msg,
+            DeprecationWarning,
+        )
+        self.pointable = value
+
+    @property
+    def pointable(self) -> bool:
+        return self._pointable
+
+    @pointable.setter
+    def pointable(self, value: bool) -> None:
+        if value != self._pointable:
+            self.update_searchability(not self._pointable)
 
     def update_searchability(
-        self, searchable: bool = True, target_verify_key: Optional[VerifyKey] = None
+        self,
+        pointable: bool = True,
+        target_verify_key: Optional[VerifyKey] = None,
+        searchable: Optional[bool] = None,
     ) -> None:
-        """Make the object pointed at searchable or not for other people. If
+        """Make the object pointed at pointable or not for other people. If
         target_verify_key is not specified, the searchability for the VerifyAll group
         will be toggled.
 
-        :param searchable: If the target object should be made searchable or not.
+        :param pointable: If the target object should be made pointable or not.
         :type target_verify_key: bool
         :param target_verify_key: The verify_key of the client to which we want to give
                search permission.
         :type target_verify_key: Optional[VerifyKey]
         """
-        self._searchable = searchable
+
+        if searchable is not None:
+            warn_msg = "`searchable` is deprecated please use `pointable` in future"
+            warning(warn_msg, print=True)
+            warnings.warn(
+                warn_msg,
+                DeprecationWarning,
+            )
+            pointable = searchable
+
+        self._pointable = pointable
         msg = ObjectSearchPermissionUpdateMessage(
-            add_instead_of_remove=searchable,
+            add_instead_of_remove=pointable,
             target_verify_key=target_verify_key,
             target_object_id=self.id_at_location,
             address=self.client.address,

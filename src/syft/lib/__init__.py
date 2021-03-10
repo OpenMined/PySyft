@@ -11,6 +11,7 @@ from packaging import version
 
 # syft relative
 from ..ast.globals import Globals
+from ..lib.plan import create_plan_ast
 from ..lib.python import create_python_ast
 from ..lib.torch import create_torch_ast
 from ..lib.torchvision import create_torchvision_ast
@@ -56,28 +57,42 @@ def vendor_requirements_available(vendor_requirements: TypeDict[str, TypeAny]) -
                     )
                 )
 
+        max_version = torch_reqs.get("max_version", None)
+        if max_version is not None:
+            if TORCH_VERSION > version.parse(max_version):
+                traceback_and_raise(
+                    VendorLibraryImportException(
+                        f"Unable to load {vendor_requirements['lib']}."
+                        + f"Torch: {TORCH_VERSION} > {max_version}"
+                    )
+                )
+
     return True
+
+
+def _load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
+    _ = importlib.import_module(lib)
+    vendor_ast = importlib.import_module(f"syft.lib.{lib}")
+    PACKAGE_SUPPORT = getattr(vendor_ast, "PACKAGE_SUPPORT", None)
+    PACKAGE_SUPPORT.update(options)
+    if PACKAGE_SUPPORT is not None and vendor_requirements_available(
+        vendor_requirements=PACKAGE_SUPPORT
+    ):
+        update_ast = getattr(vendor_ast, "update_ast", None)
+        if update_ast is not None:
+            global lib_ast
+            update_ast(ast_or_client=lib_ast)
+
+            for _, client in lib_ast.registered_clients.items():
+                update_ast(ast_or_client=client)
+
+            # cache the constructor for future created clients
+            lib_ast.loaded_lib_constructors[lib] = update_ast
 
 
 def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
     try:
-        _ = importlib.import_module(lib)
-        vendor_ast = importlib.import_module(f"syft.lib.{lib}")
-        PACKAGE_SUPPORT = getattr(vendor_ast, "PACKAGE_SUPPORT", None)
-        PACKAGE_SUPPORT.update(options)
-        if PACKAGE_SUPPORT is not None and vendor_requirements_available(
-            vendor_requirements=PACKAGE_SUPPORT
-        ):
-            update_ast = getattr(vendor_ast, "update_ast", None)
-            if update_ast is not None:
-                global lib_ast
-                update_ast(ast_or_client=lib_ast)
-
-                for _, client in lib_ast.registered_clients.items():
-                    update_ast(ast_or_client=client)
-
-                # cache the constructor for future created clients
-                lib_ast.loaded_lib_constructors[lib] = update_ast
+        _load_lib(lib=lib, options=options)
     except VendorLibraryImportException as e:
         critical(e)
     except Exception as e:
@@ -90,11 +105,13 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
     torch_ast = create_torch_ast(client=client)
     torchvision_ast = create_torchvision_ast(client=client)
     # numpy_ast = create_numpy_ast()
+    plan_ast = create_plan_ast(client=client)
 
     lib_ast = Globals(client=client)
     lib_ast.add_attr(attr_name="syft", attr=python_ast.attrs["syft"])
     lib_ast.add_attr(attr_name="torch", attr=torch_ast.attrs["torch"])
     lib_ast.add_attr(attr_name="torchvision", attr=torchvision_ast.attrs["torchvision"])
+    lib_ast.syft.add_attr("core", attr=plan_ast.syft.core)
 
     # let the misc creation be always the last, as it needs the full ast solved
     # to properly generated unions

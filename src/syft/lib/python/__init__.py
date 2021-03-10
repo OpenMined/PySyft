@@ -12,18 +12,14 @@ from ..misc.union import UnionGenerator
 from .bool import Bool
 from .complex import Complex
 from .dict import Dict
-from .dict import DictWrapper
 from .float import Float
 from .int import Int
 from .iterator import Iterator
 from .list import List
-from .namedtuple import ValuesIndices
-from .namedtuple import ValuesIndicesWrapper
 from .none import SyNone
 from .none import _SyNone
 from .primitive_container import Any
 from .primitive_interface import PyPrimitive
-from .protobuf import GenerateProtobufWrapper  # noqa: 401
 from .set import Set
 from .string import String
 from .tuple import Tuple
@@ -32,7 +28,6 @@ for syft_type in [
     Bool,
     Complex,
     Dict,
-    DictWrapper,
     Float,
     Int,
     SyNone,
@@ -41,8 +36,6 @@ for syft_type in [
     PyPrimitive,
     String,
     Tuple,
-    ValuesIndices,
-    ValuesIndicesWrapper,
 ]:
     syft_type.__module__ = __name__
 
@@ -69,11 +62,6 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.lib.python.collections.OrderedDict",
             "syft.lib.python.collections.OrderedDict",
             collections.OrderedDict,
-        ),
-        (
-            "syft.lib.python.ValuesIndices",
-            "syft.lib.python.ValuesIndices",
-            ValuesIndices,
         ),
     ]
 
@@ -430,67 +418,6 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.lib.python.Set.symmetric_difference", "syft.lib.python.Set"),
         ("syft.lib.python.Set.union", "syft.lib.python.Set"),
         ("syft.lib.python.Set.update", "syft.lib.python._SyNone"),
-        # ValueIndicies
-        (
-            "syft.lib.python.ValuesIndices.values",
-            "torch.Tensor",
-        ),
-        (
-            "syft.lib.python.ValuesIndices.indices",
-            "torch.Tensor",
-        ),
-        (
-            "syft.lib.python.ValuesIndices.eigenvalues",
-            "torch.Tensor",
-        ),
-        (
-            "syft.lib.python.ValuesIndices.eigenvectors",
-            "torch.Tensor",
-        ),
-        (
-            "syft.lib.python.ValuesIndices.solution",
-            "torch.Tensor",
-        ),
-        (
-            "syft.lib.python.ValuesIndices.QR",
-            "torch.Tensor",
-        ),
-        (
-            "syft.lib.python.ValuesIndices.sign",
-            "torch.Tensor",
-        ),
-        (
-            "syft.lib.python.ValuesIndices.logabsdet",
-            "torch.Tensor",
-        ),
-        (
-            "syft.lib.python.ValuesIndices.Q",
-            "torch.Tensor",
-        ),
-        (
-            "syft.lib.python.ValuesIndices.R",
-            "torch.Tensor",
-        ),
-        (
-            "syft.lib.python.ValuesIndices.LU",
-            "torch.Tensor",
-        ),
-        (
-            "syft.lib.python.ValuesIndices.cloned_coefficient",
-            "torch.Tensor",
-        ),
-        (
-            "syft.lib.python.ValuesIndices.U",
-            "torch.Tensor",
-        ),
-        (
-            "syft.lib.python.ValuesIndices.S",
-            "torch.Tensor",
-        ),
-        (
-            "syft.lib.python.ValuesIndices.V",
-            "torch.Tensor",
-        ),
         (
             "syft.lib.python.collections.OrderedDict.__contains__",
             "syft.lib.python.Bool",
@@ -578,7 +505,6 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
     for klass in ast.classes:
         klass.create_pointer_class()
         klass.create_send_method()
-        klass.create_serialization_methods()
         klass.create_storable_object_attr_convenience_methods()
 
     return ast

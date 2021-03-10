@@ -70,6 +70,14 @@ def _deserialize(
 
     # lets try to lookup the type we are deserializing
     obj_type = getattr(type(blob), "schema2type", None)
+    # when a protobuf type is related to multiple classes, it's schema2type will be None.
+    # In that case, we use it's obj_type field.
+    if obj_type is None:
+        obj_type = getattr(blob, "obj_type", None)
+        if obj_type is None:
+            traceback_and_raise(deserialization_error)
+        obj_type = index_syft_by_module_name(fully_qualified_name=obj_type)  # type: ignore
+        obj_type = getattr(obj_type, "_sy_serializable_wrapper_type", obj_type)
 
     if not isinstance(obj_type, type):
         traceback_and_raise(deserialization_error)
@@ -78,4 +86,5 @@ def _deserialize(
     if not callable(_proto2object):
         traceback_and_raise(deserialization_error)
 
-    return _proto2object(proto=blob)
+    res = _proto2object(proto=blob)
+    return res

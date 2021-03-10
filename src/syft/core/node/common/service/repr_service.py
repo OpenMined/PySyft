@@ -15,12 +15,14 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # syft relative
+from ..... import serialize
 from .....logger import critical
 from .....proto.core.node.common.service.repr_service_pb2 import (
     ReprMessage as ReprMessage_PB,
 )
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
+from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
 from ...abstract.node import AbstractNode
@@ -28,6 +30,7 @@ from .auth import service_auth
 from .node_service import ImmediateNodeServiceWithoutReply
 
 
+@bind_protobuf
 @final
 class ReprMessage(ImmediateSyftMessageWithoutReply):
     def __init__(self, address: Address, msg_id: Optional[UID] = None):
@@ -44,14 +47,14 @@ class ReprMessage(ImmediateSyftMessageWithoutReply):
         :rtype: ReprMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
 
         return ReprMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
         )
 
     @staticmethod

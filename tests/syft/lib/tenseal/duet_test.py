@@ -27,7 +27,15 @@ PORT = 21000
 
 
 def chunks(lst: List[Any], n: int) -> Generator[Any, Any, Any]:
-    """Yield successive n-sized chunks from lst."""
+    """Yield successive n-sized chunks from lst.
+
+    Args:
+        lst: list of items to chunk
+        n: number of items to include in each chunk
+
+    Yields:
+        single chunk of n items
+    """
     for i in range(0, len(lst), n):
         yield lst[i : i + n]  # noqa: E203
 
@@ -57,9 +65,9 @@ def do(ct_size: int, batch_size: int) -> None:
         enc.append(ts.ckks_vector(context, data))
 
     start = time.time()
-    _ = context.send(duet, searchable=True)
+    _ = context.send(duet, pointable=True)
     for chunk in chunks(enc, batch_size):
-        _ = sy.lib.python.List(chunk).send(duet, searchable=True)
+        _ = sy.lib.python.List(chunk).send(duet, pointable=True)
     sys.stderr.write(
         f"[{ct_size}][{batch_size}] DO sending took {time.time() - start} sec\n"
     )

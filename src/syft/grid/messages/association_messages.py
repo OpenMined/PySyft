@@ -8,6 +8,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import final
 
 # syft absolute
+from syft import serialize
 from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.serde.deserialize import _deserialize
@@ -50,7 +51,11 @@ from syft.proto.grid.messages.association_messages_pb2 import (
     SendAssociationRequestResponse as SendAssociationRequestResponse_PB,
 )
 
+# syft relative
+from ...core.common.serde.serializable import bind_protobuf
 
+
+@bind_protobuf
 @final
 class SendAssociationRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -71,15 +76,15 @@ class SendAssociationRequestMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: SendAssociationRequestMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return SendAssociationRequestMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -121,6 +126,7 @@ class SendAssociationRequestMessage(ImmediateSyftMessageWithReply):
         return SendAssociationRequestMessage_PB
 
 
+@bind_protobuf
 @final
 class SendAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -142,13 +148,13 @@ class SendAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return SendAssociationRequestResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
@@ -192,6 +198,7 @@ class SendAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
         return SendAssociationRequestResponse_PB
 
 
+@bind_protobuf
 @final
 class ReceiveAssociationRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -212,15 +219,15 @@ class ReceiveAssociationRequestMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: ReceiveAssociationRequestMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return ReceiveAssociationRequestMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -262,6 +269,7 @@ class ReceiveAssociationRequestMessage(ImmediateSyftMessageWithReply):
         return ReceiveAssociationRequestMessage_PB
 
 
+@bind_protobuf
 @final
 class ReceiveAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -283,13 +291,13 @@ class ReceiveAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return ReceiveAssociationRequestResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
@@ -333,6 +341,7 @@ class ReceiveAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
         return ReceiveAssociationRequestResponse_PB
 
 
+@bind_protobuf
 @final
 class RespondAssociationRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -353,15 +362,15 @@ class RespondAssociationRequestMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: RespondAssociationRequestMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return RespondAssociationRequestMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -403,6 +412,7 @@ class RespondAssociationRequestMessage(ImmediateSyftMessageWithReply):
         return RespondAssociationRequestMessage_PB
 
 
+@bind_protobuf
 @final
 class RespondAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -424,13 +434,13 @@ class RespondAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return RespondAssociationRequestResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
@@ -474,6 +484,7 @@ class RespondAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
         return RespondAssociationRequestResponse_PB
 
 
+@bind_protobuf
 @final
 class GetAssociationRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -494,15 +505,15 @@ class GetAssociationRequestMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: GetAssociationRequestMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetAssociationRequestMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -544,6 +555,7 @@ class GetAssociationRequestMessage(ImmediateSyftMessageWithReply):
         return GetAssociationRequestMessage_PB
 
 
+@bind_protobuf
 @final
 class GetAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -565,13 +577,13 @@ class GetAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetAssociationRequestResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
@@ -615,6 +627,7 @@ class GetAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
         return GetAssociationRequestResponse_PB
 
 
+@bind_protobuf
 @final
 class GetAssociationRequestsMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -635,15 +648,15 @@ class GetAssociationRequestsMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: GetAssociationRequestsMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetAssociationRequestsMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -685,6 +698,7 @@ class GetAssociationRequestsMessage(ImmediateSyftMessageWithReply):
         return GetAssociationRequestsMessage_PB
 
 
+@bind_protobuf
 @final
 class GetAssociationRequestsResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -706,13 +720,13 @@ class GetAssociationRequestsResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetAssociationRequestsResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )
@@ -756,6 +770,7 @@ class GetAssociationRequestsResponse(ImmediateSyftMessageWithoutReply):
         return GetAssociationRequestsResponse_PB
 
 
+@bind_protobuf
 @final
 class DeleteAssociationRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -776,15 +791,15 @@ class DeleteAssociationRequestMessage(ImmediateSyftMessageWithReply):
         :return: returns a protobuf object
         :rtype: DeleteAssociationRequestMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return DeleteAssociationRequestMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             content=json.dumps(self.content),
-            reply_to=self.reply_to.serialize(),
+            reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
@@ -826,6 +841,7 @@ class DeleteAssociationRequestMessage(ImmediateSyftMessageWithReply):
         return DeleteAssociationRequestMessage_PB
 
 
+@bind_protobuf
 @final
 class DeleteAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -847,13 +863,13 @@ class DeleteAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
         :return: returns a protobuf object
         :rtype: SignalingOfferMessage_PB
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return DeleteAssociationRequestResponse_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
             status_code=self.status_code,
             content=json.dumps(self.content),
         )

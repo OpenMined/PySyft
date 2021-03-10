@@ -13,6 +13,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
 # syft relative
+from ..... import serialize
 from .....logger import debug
 from .....logger import traceback
 from .....proto.core.node.common.service.heritage_update_service_pb2 import (
@@ -20,6 +21,7 @@ from .....proto.core.node.common.service.heritage_update_service_pb2 import (
 )
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
+from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
 from ...abstract.node import AbstractNode
@@ -30,6 +32,7 @@ from .node_service import ImmediateNodeServiceWithoutReply
 # at the end of the name
 
 
+@bind_protobuf
 class HeritageUpdateMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
@@ -42,9 +45,9 @@ class HeritageUpdateMessage(ImmediateSyftMessageWithoutReply):
 
     def _object2proto(self) -> HeritageUpdateMessage_PB:
         return HeritageUpdateMessage_PB(
-            new_ancestry_address=self.new_ancestry_address.serialize(),
-            address=self.address.serialize(),
-            msg_id=self.id.serialize(),
+            new_ancestry_address=serialize(self.new_ancestry_address),
+            address=serialize(self.address),
+            msg_id=serialize(self.id),
         )
 
     @staticmethod

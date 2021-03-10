@@ -8,6 +8,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
 # syft relative
+from ..... import serialize
 from .....logger import debug
 from .....logger import error
 from .....proto.core.node.common.service.child_node_lifecycle_service_pb2 import (
@@ -15,6 +16,7 @@ from .....proto.core.node.common.service.child_node_lifecycle_service_pb2 import
 )
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
+from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
@@ -24,6 +26,7 @@ from .auth import service_auth
 from .heritage_update_service import HeritageUpdateMessage
 
 
+@bind_protobuf
 class RegisterChildNodeMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
@@ -39,10 +42,12 @@ class RegisterChildNodeMessage(ImmediateSyftMessageWithoutReply):
     def _object2proto(self) -> RegisterChildNodeMessage_PB:
         debug(f"> {self.icon} -> Proto 🔢")
         return RegisterChildNodeMessage_PB(
-            lookup_id=self.lookup_id.serialize(),  # TODO: not sure if this is needed anymore
-            child_node_client_address=self.child_node_client_address.serialize(),
-            address=self.address.serialize(),
-            msg_id=self.id.serialize(),
+            lookup_id=serialize(
+                self.lookup_id
+            ),  # TODO: not sure if this is needed anymore
+            child_node_client_address=serialize(self.child_node_client_address),
+            address=serialize(self.address),
+            msg_id=serialize(self.id),
         )
 
     @staticmethod

@@ -62,7 +62,8 @@ def is_static_method(klass: type, attr: str) -> bool:
     else:
         return False
 
-    assert getattr(klass, attr) == value
+    if getattr(klass, attr) != value:
+        raise AttributeError("Method don't match")
 
     for cls in inspect.getmro(klass):
         if inspect.isroutine(value):
@@ -156,3 +157,7 @@ def replace_classes_in_module(
 
 def full_name_with_qualname(klass: type) -> str:
     return f"{klass.__module__}.{klass.__qualname__}"
+
+
+def full_name_with_name(klass: type) -> str:
+    return f"{klass.__module__}.{klass.__name__}"

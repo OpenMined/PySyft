@@ -2,12 +2,14 @@
 import gc
 
 # third party
+import pytest
 import torch as th
 
 # syft absolute
 import syft as sy
 
 
+@pytest.mark.slow
 def test_parameter_vm_remote_operation() -> None:
 
     alice = sy.VirtualMachine(name="alice")
@@ -15,7 +17,7 @@ def test_parameter_vm_remote_operation() -> None:
 
     x = th.nn.Parameter(th.randn(3, 3))
 
-    xp = x.send(alice_client)
+    xp = x.send(alice_client, pointable=False)
 
     y = xp + xp
 
@@ -39,7 +41,7 @@ def test_get_copy() -> None:
 
     x = th.nn.Parameter(th.randn(3, 3))
 
-    xp = x.send(alice_client)
+    xp = x.send(alice_client, pointable=False)
 
     y = xp + xp
 
@@ -61,7 +63,7 @@ def test_parameter_serde() -> None:
     # Setting grad manually to check it is passed through serialization
     param.grad = th.randn_like(param)
 
-    blob = param.serialize()
+    blob = sy.serialize(param)
 
     param2 = sy.deserialize(blob=blob)
 
@@ -84,7 +86,7 @@ def test_linear_grad_serde() -> None:
     # out.backward()
     # assert param.grad is not None
 
-    blob = param.serialize()
+    blob = sy.serialize(param)
 
     param2 = sy.deserialize(blob=blob)
 
