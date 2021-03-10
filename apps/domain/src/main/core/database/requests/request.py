@@ -7,9 +7,10 @@ class Request(BaseModel):
     Columns:
         id (Integer, Primary Key): Cycle ID.
         date (TIME): Start time.
-        user_id (Integer, Foreign Key): User that created the request.
+        user_id (Integer, Foreign Key): ID of the User that created the request.
+        user_name (String): Email of the User that created the request.
         object_id (String): Target object to change in permisions.
-        reason String: Motivation of the request.
+        reason (String): Motivation of the request.
         status (String): The status of the request, wich can be 'pending', 'accepted' or 'denied'.
         request_type (String): Wheter the type of the request is 'permissions' or 'budget'.
     """
@@ -19,6 +20,7 @@ class Request(BaseModel):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     date = db.Column(db.DateTime())
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    user_name = db.Column(db.String(255))
     object_id = db.Column(db.String(255))
     reason = db.Column(db.String(255))
     status = db.Column(db.String(255), default="pending")

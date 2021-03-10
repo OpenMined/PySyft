@@ -49,9 +49,11 @@ def create_request_msg(
     users = node.users
 
     if not current_user_id:
-        current_user_id = users.first(
+        current_user = users.first(
             verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
-        ).id
+        )
+    else:
+        current_user = users.first(id=current_user_id)
 
     # Check if object_id/reason/request_type fields are empty
     missing_paramaters = not object_id or not reason or not request_type
@@ -69,7 +71,8 @@ def create_request_msg(
 
     requests = node.requests
     request_obj = requests.create_request(
-        user_id=current_user_id,
+        user_id=current_user.id,
+        user_name=current_user.email,
         object_id=object_id,
         reason=reason,
         request_type=request_type,

@@ -23,11 +23,12 @@ class RequestManager(DatabaseManager):
 
         return result
 
-    def create_request(self, user_id, object_id, reason, request_type):
+    def create_request(self, user_id, user_name, object_id, reason, request_type):
         date = datetime.now()
 
         return self.register(
             user_id=user_id,
+            user_name=user_name,
             object_id=object_id,
             date=date,
             reason=reason,
