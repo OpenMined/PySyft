@@ -222,7 +222,7 @@ def wrap_iterator(attrs: Dict[str, Union[str, CallableT, property]]) -> None:
                 data_len = self.__len__()
             except Exception:
                 traceback_and_raise(
-                    ValueError("Request to access data length not granted.")
+                    ValueError("Request to access data length rejected.")
                 )
 
             return Iterator(_ref=iter_func(self), max_len=data_len)
@@ -244,10 +244,14 @@ def wrap_len(attrs: Dict[str, Union[str, CallableT, property]]) -> None:
             data_len_ptr = len_func(self)
             try:
                 data_len = data_len_ptr.get(**self.get_request_config())
+
+                if data_len is None:
+                    raise Exception
+
                 return data_len
             except Exception:
                 traceback_and_raise(
-                    ValueError("Request to access data length not granted.")
+                    ValueError("Request to access data length rejected.")
                 )
 
         return __len__
