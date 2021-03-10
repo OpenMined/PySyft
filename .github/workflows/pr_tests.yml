@@ -10,9 +10,9 @@ on:
   pull_request:
     branches:
       - dev
-      - "0.4"
     paths:
       - "**.py"
+      - "**.txt"
       - "setup.cfg"
       - ".github/workflows/**.yml"
 
@@ -69,6 +69,29 @@ jobs:
       #     pip install darglint flake8
       #     flake8 src tests
 
+      # check docstring coverage. If head coverage < base, exitcode = 1
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Install docstr-coverage
+        run: pip install docstr-coverage
+
+      - name: Get base coverage
+        run: |
+          git checkout ${{ github.event.pull_request.base.sha }}
+          echo "BASE_COV=$(docstr-coverage -p src)" >> $GITHUB_ENV
+
+      - name: Get head coverage
+        run: |
+          git checkout ${{ github.event.pull_request.head.sha }}
+          docstr-coverage -p --fail-under=$BASE_COV src
+
+      - name: Check docstring modified files
+        if: ${{ failure() }}
+        run: |
+          git diff --name-only $(git merge-base ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }}) | xargs docstr-coverage --accept-empty
+
   python-tests-fast:
     needs: [python-linting]
     strategy:
@@ -76,7 +99,7 @@ jobs:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
         python-version: [3.6, 3.7, 3.8]
-        torch-version: [1.6.0, 1.7.0]
+        torch-version: [1.6.0, 1.7.0, 1.7.1]
         # include:
         # - os: ubuntu-latest
         #   python-version: 3.7
@@ -153,8 +176,8 @@ jobs:
       - name: Run supported library tests
         run: |
           pip list
-          pytest -m libs -n auto -k "not tenseal"
-          pytest -m libs -n 1 -k "tenseal"
+          pytest -m libs -n auto -k "not tenseal" --suppress-no-test-exit-code
+          pytest -m libs -n 1 -k "tenseal" --suppress-no-test-exit-code
 
   python-nb-examples:
     needs: [python-linting]
@@ -163,9 +186,9 @@ jobs:
       max-parallel: 1
       matrix:
         python-version: [3.8]
-        torch-version: [1.7.0]
-        os: [ubuntu-latest, macos-latest]
-
+        torch-version: [1.7.1]
+        # os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest]
     steps:
       - uses: actions/checkout@v2
 
@@ -218,7 +241,7 @@ jobs:
       - name: Run notebook Duet examples
         run: |
           python ./scripts/nb_duet_test.py
-          cd tests/syft/notebooks/ && pytest . -n 1
+          pytest tests/syft/notebooks -n 1 --suppress-no-test-exit-code
 
   pygrid-unit-tests:
     needs: [python-linting]
@@ -227,7 +250,7 @@ jobs:
       max-parallel: 3
       matrix:
         python-version: [3.6, 3.7, 3.8]
-        torch-version: [1.7.0]
+        torch-version: [1.7.1]
 
     steps:
       - uses: actions/checkout@v2
