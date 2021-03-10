@@ -17,7 +17,7 @@ Flask-Migrate = "^2.5.3"
 SQLAlchemy-Utils = "^0.36.8"
 PyJWT = "^1.7.1"
 sqlalchemy-mixins = "^1.2.1"
-syft = {git = "https://github.com/OpenMined/PySyft", rev = "pygrid_client"}
+syft = {git = "https://github.com/OpenMined/PySyft", rev = "dev"}
 
 
 [tool.poetry.dev-dependencies]
