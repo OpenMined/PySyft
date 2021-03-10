@@ -48,7 +48,6 @@ def test_transforms(alice: sy.VirtualMachine) -> None:
     torchvision.transforms.Normalize(0, 1, inplace=False)
     torchvision.transforms.RandomOrder([1, 2])
     torchvision.transforms.RandomChoice([1, 2])
-    torchvision.transforms.GaussianBlur(3, sigma=(0.1, 2.0))
     torchvision.transforms.TenCrop(10, vertical_flip=False)
     torchvision.transforms.Resize(10, interpolation=2)
     torchvision.transforms.RandomVerticalFlip(p=0.5)
