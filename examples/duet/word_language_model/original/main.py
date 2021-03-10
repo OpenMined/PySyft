@@ -6,11 +6,12 @@ import os
 import time
 
 # third party
-import data
-import model
 import torch
 import torch.nn as nn
 import torch.onnx
+
+import data  # isort:skip
+import model  # isort:skip
 
 parser = argparse.ArgumentParser(
     description="PyTorch Wikitext-2 RNN/LSTM/GRU/Transformer Language Model"

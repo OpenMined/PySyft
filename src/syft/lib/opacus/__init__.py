@@ -15,7 +15,11 @@ from ...ast.globals import Globals
 from ..util import generic_update_ast
 
 LIB_NAME = "opacus"
-PACKAGE_SUPPORT = {"lib": LIB_NAME}
+PACKAGE_SUPPORT = {
+    "lib": LIB_NAME,
+    "torch": {"min_version": "1.6.0"},
+    "python": {"min_version": (3, 6, 9)},
+}
 
 
 def create_ast(client: TypeAny = None) -> Globals:

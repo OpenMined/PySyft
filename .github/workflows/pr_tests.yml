@@ -176,8 +176,8 @@ jobs:
       - name: Run supported library tests
         run: |
           pip list
-          pytest -m libs -n auto -k "not tenseal"
-          pytest -m libs -n 1 -k "tenseal"
+          pytest -m libs -n auto -k "not tenseal" --suppress-no-test-exit-code
+          pytest -m libs -n 1 -k "tenseal" --suppress-no-test-exit-code
 
   python-nb-examples:
     needs: [python-linting]
@@ -241,7 +241,7 @@ jobs:
       - name: Run notebook Duet examples
         run: |
           python ./scripts/nb_duet_test.py
-          cd tests/syft/notebooks/ && pytest . -n 1
+          pytest tests/syft/notebooks -n 1 --suppress-no-test-exit-code
 
   pygrid-unit-tests:
     needs: [python-linting]
