@@ -2,8 +2,8 @@
 from typing import Dict
 from typing import Union
 
-transforms_ex = "transforms = torch.nn.Sequential(transforms.CenterCrop(10)"
-transforms_ex += ",transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),)"
+# transforms_ex = "transforms = torch.nn.Sequential(transforms.CenterCrop(10)"
+# transforms_ex += ",transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),)"
 allowlist: Dict[str, Union[str, Dict[str, str]]] = {}  # (path: str, return_type:type)
 
 allowlist["torchvision.__version__"] = "syft.lib.python.String"
@@ -178,7 +178,7 @@ allowlist["torchvision.transforms.RandomPerspective"] = {
 
 allowlist["torchvision.transforms.RandomResizedCrop"] = {
     "return_type": "torchvision.transforms.RandomResizedCrop",
-    "test_parameters": "(10, scale=(0.08, 1.0), ratio=(0.75, 1.3333333333333333))",
+    "test_parameters": "(10, scale=(0.08, 1.0), ratio=(0.75, 1.25))",
 }
 allowlist["torchvision.transforms.RandomRotation"] = {
     "return_type": "torchvision.transforms.RandomRotation",
@@ -212,11 +212,9 @@ allowlist["torchvision.transforms.GaussianBlur"] = {
 
 allowlist["torchvision.transforms.RandomChoice"] = {
     "return_type": "torchvision.transforms.RandomChoice",
-    "test_parameters": transforms_ex,
 }
 allowlist["torchvision.transforms.RandomOrder"] = {
     "return_type": "torchvision.transforms.RandomOrder",
-    "test_parameters": transforms_ex,
 }
 
 allowlist[

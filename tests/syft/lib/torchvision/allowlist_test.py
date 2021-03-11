@@ -66,9 +66,9 @@ def test_allowlist(alice: sy.VirtualMachine) -> None:
             # print(item)
             if version_supported(support_dict=allowlist[item]):
                 if "test_parameters" in allowlist[item].keys():
-                    print(item)
+                    print(item + allowlist[item]["test_parameters"])
                     exec(item + allowlist[item]["test_parameters"])
 
 
-# bob = sy.VirtualMachine(name="alice")
-# test_allowlist(bob)
+bob = sy.VirtualMachine(name="alice")
+test_allowlist(bob)
