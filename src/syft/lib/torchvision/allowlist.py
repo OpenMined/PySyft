@@ -321,7 +321,8 @@ allowlist["torchvision.transforms.functional.pad"] = {
 }
 allowlist["torchvision.transforms.functional.perspective"] = {
     "return_type": "torch.Tensor",
-    "test_parameters": "(tens, [[10,20],[20,30],[30, 40],[40,50]], [[20,30],[30,40],[40, 50],[50,60]])",
+    # "test_parameters": "(tens, [[10,20],[20,30],[30, 40],[40,50]], [[20,30],[30,40],[40, 50],[50,60]])",
+    # # Torch 1.6 expects input to be PIL image, so commenting this currently
 }
 
 # Converts PIL to tensor, currently not supported
