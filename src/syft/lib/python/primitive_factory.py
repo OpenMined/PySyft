@@ -93,7 +93,9 @@ class PrimitiveFactory(ABC):
             return python.Set(value)
 
         if isinstance(value, slice):
-            return python.Slice(value)
+            return python.Slice(
+                start=value.start, stop=value.stop, step=value.step, id=id
+            )
 
         if type(value) in [list, UserList]:
             if not recurse:

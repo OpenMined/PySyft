@@ -2,7 +2,6 @@
 import sys
 from typing import Any
 from typing import Optional
-from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -26,38 +25,28 @@ class Slice(slice, PyPrimitive):
         self,
         start: Any = None,
         stop: Any = None,
-        step: Any = None,
+        step: Optional[Any] = None,
         id: Optional[UID] = None,
     ):
-        if not start and not stop and not step:
-            self.start = None
-            self.stop = None
-            self.step = None
-        super().__init__()
+        slice.__init__(self, start, stop, step)
         self._id: UID = id if id else UID()
+
+    @property
+    def id(self) -> UID:
+        """We reveal PyPrimitive.id as a property to discourage users and
+        developers of Syft from modifying .id attributes after an object
+        has been initialized.
+
+        :return: returns the unique id of the object
+        :rtype: UID
+        """
+        return self._id
+
+    def upcast(self) -> slice:
+        return slice(self)
 
     def __eq__(self, other: Any) -> SyPrimitiveRet:
         res = super().__eq__(other)
-        return PrimitiveFactory.generate_primitive(value=res)
-
-    def __ge__(self, other: Any) -> SyPrimitiveRet:
-        res = super().__ge__(other)
-        return PrimitiveFactory.generate_primitive(value=res)
-
-    def __gt__(self, other: Any) -> SyPrimitiveRet:
-        res = super().__gt__(other)
-        return PrimitiveFactory.generate_primitive(value=res)
-
-    def __hash__(self) -> SyPrimitiveRet:
-        res = super().__hash__()
-        return PrimitiveFactory.generate_primitive(value=res)
-
-    def __le__(self, other: Any) -> SyPrimitiveRet:
-        res = super().__le__(other)
-        return PrimitiveFactory.generate_primitive(value=res)
-
-    def __lt__(self, other: Any) -> SyPrimitiveRet:
-        res = super().__lt__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
     def __ne__(self, other: Any) -> SyPrimitiveRet:
@@ -68,15 +57,12 @@ class Slice(slice, PyPrimitive):
         res = super().__sizeof__()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def __getitem__(self, key: Union[int, slice]) -> Any:
-        res = super().__getitem__(key)  # ignore = type
+    def __getitem__(self, key: Any) -> Any:
+        res = key
+        # we might be holding a primitive value, but generate_primitive
+        # doesn't handle non primitives so we should check
         if isprimitive(value=res):
             return PrimitiveFactory.generate_primitive(value=res)
-        return res
-
-    def copy(self) -> "Slice":
-        res = super().copy()
-        res._id = UID()
         return res
 
     def getindices(
@@ -85,29 +71,29 @@ class Slice(slice, PyPrimitive):
         start: Optional[int] = None,
         stop: Optional[int] = None,
         step: Optional[int] = None,
-    ) -> SyPrimitiveRet:
+    ) -> int:
         if self.step is None:
-            step = 1
+            self.step = 1
         if not isinstance(step, int):
             traceback_and_raise(TypeError("expected integer type arguments for step"))
         else:
-            step = step
+            self.step = step
         if self.start is None:
-            start = length - 1 if step < 0 else 0
+            self.start = length - 1 if step < 0 else 0
         if not isinstance(start, int):
             traceback_and_raise(TypeError("expected integer type arguments for start"))
         else:
-            start = start
+            self.start = start
             if start < 0:
-                start = start + length
+                self.start = start + length
         if self.stop is None:
-            stop = -1 if step < 0 else length
+            self.stop = -1 if step < 0 else length
         if not isinstance(stop, int):
             traceback_and_raise(TypeError("expected integer type arguments for stop"))
         else:
-            stop = stop
+            self.stop = stop
             if stop < 0:
-                stop = stop + length
+                self.stop = stop + length
         if stop > length:
             traceback_and_raise(
                 TypeError("no attributes should be more than maximum length")
@@ -120,47 +106,42 @@ class Slice(slice, PyPrimitive):
             traceback_and_raise(
                 TypeError("no attributes should be more than maximum length")
             )
-        res = super().getindices(length, start, stop, step)
-        return PrimitiveFactory.generate_primitive(value=res)
+        return 0
 
-    def unpack(self, start: Any, stop: Any, step: Any) -> SyPrimitiveRet:
+    def unpack(self, start: Any, stop: Any, step: Any) -> int:
         if self.step is None:
-            step = 1
+            self.step = 1
         if step == 0:
             traceback_and_raise(TypeError("slice step can't be zero"))
         if step < -sys.maxsize:
-            step = -sys.maxsize
+            self.step = -sys.maxsize
         if self.start is None:
-            start = sys.maxsize if step < 0 else 0
+            self.start = sys.maxsize if step < 0 else 0
 
         if self.stop is None:
-            stop = -sys.maxsize - 1 if step < 0 else sys.maxsize
+            self.stop = -sys.maxsize - 1 if step < 0 else sys.maxsize
+        return 0
 
-        res = super().unpack(start, stop, step)
-        return PrimitiveFactory.generate_primitive(value=res)
-
-    def adjustindices(
-        self, length: Any, start: Any, stop: Any, step: Any
-    ) -> SyPrimitiveRet:
-        assert step != 0
-        assert step >= -sys.maxsize
+    def adjustindices(self, length: Any, start: Any, stop: Any, step: Any) -> int:
+        assert self.step != 0
+        assert self.step >= -sys.maxsize
 
         if start < 0:
-            start = start + length
+            self.start = start + length
             if start < 0:
-                start = -1 if step < 0 else 0
+                self.start = -1 if step < 0 else 0
         else:
             if start >= length:
-                start = length - 1 if step < 0 else length
+                self.start = length - 1 if step < 0 else length
 
         if stop < 0:
-            stop = stop + length
+            self.stop = stop + length
             if stop < 0:
-                stop = -1 if step < 0 else 0
+                self.stop = -1 if step < 0 else 0
 
         else:
             if stop >= length:
-                stop = length - 1 if step < 0 else length
+                self.stop = length - 1 if step < 0 else length
 
         if step < 0:
             if stop < start:
@@ -169,9 +150,12 @@ class Slice(slice, PyPrimitive):
         else:
             if start < stop:
                 return (stop - start - 1) / step + 1
+        return 0
 
-        res = super().adjustindices(length, start, stop, step)
-        return PrimitiveFactory.generate_primitive(value=res)
+    def getindicesex(self, length: Any, start: Any, stop: Any, step: Any) -> int:
+        if self.unpack(start, stop, step) < 0:
+            traceback_and_raise(TypeError("invalid values"))
+        return 0
 
     def _object2proto(self) -> Slice_PB:
         return Slice_PB(
