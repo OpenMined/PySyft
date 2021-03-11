@@ -2,6 +2,8 @@
 from typing import Dict
 from typing import Union
 
+transforms_ex = "transforms = torch.nn.Sequential(transforms.CenterCrop(10)"
+transforms_ex += ",transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),)"
 allowlist: Dict[str, Union[str, Dict[str, str]]] = {}  # (path: str, return_type:type)
 
 allowlist["torchvision.__version__"] = "syft.lib.python.String"
@@ -122,46 +124,96 @@ allowlist[
     "torchvision.datasets.VOCDetection.__len__"
 ] = "torchvision.datasets.VOCDetection"
 
-allowlist["torchvision.transforms.CenterCrop"] = "torchvision.transforms.CenterCrop"
-allowlist["torchvision.transforms.ColorJitter"] = "torchvision.transforms.ColorJitter"
-allowlist["torchvision.transforms.FiveCrop"] = "torchvision.transforms.FiveCrop"
-allowlist["torchvision.transforms.Grayscale"] = "torchvision.transforms.Grayscale"
-allowlist["torchvision.transforms.Pad"] = "torchvision.transforms.Pad"
-allowlist["torchvision.transforms.RandomAffine"] = "torchvision.transforms.RandomAffine"
-allowlist["torchvision.transforms.RandomApply"] = "torchvision.transforms.RandomApply"
-allowlist["torchvision.transforms.RandomCrop"] = "torchvision.transforms.RandomCrop"
-allowlist[
-    "torchvision.transforms.RandomGrayscale"
-] = "torchvision.transforms.RandomGrayscale"
+allowlist["torchvision.transforms.CenterCrop"] = {
+    "return_type": "torchvision.transforms.CenterCrop",
+    "test_parameters": "(10)",
+}
+allowlist["torchvision.transforms.ColorJitter"] = {
+    "return_type": "torchvision.transforms.ColorJitter",
+    "test_parameters": "(brightness=0, contrast=0, saturation=0, hue=0)",
+}
+allowlist["torchvision.transforms.FiveCrop"] = {
+    "return_type": "torchvision.transforms.FiveCrop",
+    "test_parameters": "(size = 10)",
+}
+allowlist["torchvision.transforms.Grayscale"] = {
+    "return_type": "torchvision.transforms.Grayscale",
+    "test_parameters": "(num_output_channels=1)",
+}
+allowlist["torchvision.transforms.Pad"] = {
+    "return_type": "torchvision.transforms.Pad",
+    "test_parameters": "([1,2], fill=0, padding_mode='constant')",
+}
+allowlist["torchvision.transforms.RandomAffine"] = {
+    "return_type": "torchvision.transforms.RandomAffine",
+    "test_parameters": "(degrees = 2)",
+}
+allowlist["torchvision.transforms.RandomApply"] = {
+    "return_type": "torchvision.transforms.RandomApply",
+    "test_parameters": "(torchvision.transforms.FiveCrop(10), p=0.3)",
+}
 
-allowlist[
-    "torchvision.transforms.RandomHorizontalFlip"
-] = "torchvision.transforms.RandomHorizontalFlip"
-allowlist[
-    "torchvision.transforms.RandomPerspective"
-] = "torchvision.transforms.RandomPerspective"
-allowlist[
-    "torchvision.transforms.RandomResizedCrop"
-] = "torchvision.transforms.RandomResizedCrop"
-allowlist[
-    "torchvision.transforms.RandomRotation"
-] = "torchvision.transforms.RandomRotation"
-allowlist[
-    "torchvision.transforms.RandomSizedCrop"
-] = "torchvision.transforms.RandomSizedCrop"
-allowlist[
-    "torchvision.transforms.RandomVerticalFlip"
-] = "torchvision.transforms.RandomVerticalFlip"
-allowlist["torchvision.transforms.Resize"] = "torchvision.transforms.Resize"
-allowlist["torchvision.transforms.Scale"] = "torchvision.transforms.Scale"
-allowlist["torchvision.transforms.TenCrop"] = "torchvision.transforms.TenCrop"
+allowlist["torchvision.transforms.RandomCrop"] = {
+    "return_type": "torchvision.transforms.RandomCrop",
+    "test_parameters": "(size = 10)",
+}
+allowlist["torchvision.transforms.RandomGrayscale"] = {
+    "return_type": "torchvision.transforms.RandomGrayscale",
+    "test_parameters": "(p=0.1)",
+}
+
+allowlist["torchvision.transforms.RandomHorizontalFlip"] = {
+    "return_type": "torchvision.transforms.RandomHorizontalFlip",
+    "test_parameters": "(p=0.1)",
+}
+allowlist["torchvision.transforms.RandomPerspective"] = {
+    "return_type": "torchvision.transforms.RandomPerspective",
+    "test_parameters": "(distortion_scale=0.5, p=0.5)",
+}
+
+allowlist["torchvision.transforms.RandomResizedCrop"] = {
+    "return_type": "torchvision.transforms.RandomResizedCrop",
+    "test_parameters": "(10, scale=(0.08, 1.0), ratio=(0.75, 1.3333333333333333))",
+}
+allowlist["torchvision.transforms.RandomRotation"] = {
+    "return_type": "torchvision.transforms.RandomRotation",
+    "test_parameters": "(degrees = 2)",
+}
+allowlist["torchvision.transforms.RandomSizedCrop"] = {
+    "return_type": "torchvision.transforms.RandomSizedCrop",
+    "test_parameters": "(10)",
+}
+allowlist["torchvision.transforms.RandomVerticalFlip"] = {
+    "return_type": "torchvision.transforms.RandomVerticalFlip",
+    "test_parameters": "(p=0.5)",
+}
+allowlist["torchvision.transforms.Resize"] = {
+    "return_type": "torchvision.transforms.Resize",
+    "test_parameters": "(size = 15)",
+}
+allowlist["torchvision.transforms.Scale"] = {
+    "return_type": "torchvision.transforms.Scale",
+    "test_parameters": "(10)",
+}
+allowlist["torchvision.transforms.TenCrop"] = {
+    "return_type": "torchvision.transforms.TenCrop",
+    "test_parameters": "(10)",
+}
 allowlist["torchvision.transforms.GaussianBlur"] = {
     "return_type": "torchvision.transforms.GaussianBlur",
     "min_version": "0.8.0",
+    "test_parameters": "(kernel_size = 3)",
 }
 
-allowlist["torchvision.transforms.RandomChoice"] = "torchvision.transforms.RandomChoice"
-allowlist["torchvision.transforms.RandomOrder"] = "torchvision.transforms.RandomOrder"
+allowlist["torchvision.transforms.RandomChoice"] = {
+    "return_type": "torchvision.transforms.RandomChoice",
+    "test_parameters": transforms_ex,
+}
+allowlist["torchvision.transforms.RandomOrder"] = {
+    "return_type": "torchvision.transforms.RandomOrder",
+    "test_parameters": transforms_ex,
+}
+
 allowlist[
     "torchvision.transforms.LinearTransformation"
 ] = "torchvision.transforms.LinearTransformation"
