@@ -154,6 +154,7 @@ allowlist["torchvision.transforms.RandomAffine"] = {
     "test_parameters": "(degrees = 2)",
 }
 
+# transforms error
 # allowlist["torchvision.transforms.RandomApply"] = {
 #    "return_type": "torchvision.transforms.RandomApply",
 #    "test_parameters": "(torchvision.transforms.CenterCrop(10))",
@@ -232,64 +233,136 @@ allowlist["torchvision.transforms.ConvertImageDtype"] = {
 allowlist["torchvision.transforms.ToPILImage"] = "torchvision.transforms.ToPILImage"
 allowlist["torchvision.transforms.Lambda"] = "torchvision.transforms.Lambda"
 
-allowlist["torchvision.transforms.functional.adjust_brightness"] = "torch.Tensor"
+allowlist["torchvision.transforms.functional.adjust_brightness"] = {
+    "return_type": "torch.Tensor",
+    "test_parameters": "(tens, 0.5)",
+}
 allowlist["torchvision.transforms.functional.adjust_contrast"] = {
     "return_type": "torch.Tensor",
     "min_version": "0.8.0",
+    "test_parameters": "(tens, 0.5)",
 }
-allowlist["torchvision.transforms.functional.adjust_gamma"] = "torch.Tensor"
-allowlist["torchvision.transforms.functional.adjust_hue"] = "torch.Tensor"
-allowlist["torchvision.transforms.functional.adjust_saturation"] = "torch.Tensor"
+allowlist["torchvision.transforms.functional.adjust_gamma"] = {
+    "return_type": "torch.Tensor",
+    "test_parameters": "(tens, 1, 0.5)",
+}
+allowlist["torchvision.transforms.functional.adjust_hue"] = {
+    "return_type": "torch.Tensor",
+    "test_parameters": "(tens, 0)",
+}
+allowlist["torchvision.transforms.functional.adjust_saturation"] = {
+    "return_type": "torch.Tensor",
+    "test_parameters": "(tens, 0.5)",
+}
 allowlist["torchvision.transforms.functional.adjust_sharpness"] = {
     "return_type": "torch.Tensor",
     "min_version": "0.9.0",
+    "test_parameters": "(tens)",
 }
-allowlist["torchvision.transforms.functional.affine"] = "torch.Tensor"
+allowlist["torchvision.transforms.functional.affine"] = {
+    "return_type": "torch.Tensor",
+    "test_parameters": "(tens,0.2,[1,2],0.2,[1,2])",
+}
 allowlist["torchvision.transforms.functional.autocontrast"] = {
     "return_type": "torch.Tensor",
     "min_version": "0.9.0",
+    "test_parameters": "(tens)",
 }
-allowlist["torchvision.transforms.functional.center_crop"] = "torch.Tensor"
-allowlist["torchvision.transforms.functional.convert_image_dtype"] = "torch.Tensor"
-allowlist["torchvision.transforms.functional.crop"] = "torch.Tensor"
+allowlist["torchvision.transforms.functional.center_crop"] = {
+    "return_type": "torch.Tensor",
+    "test_parameters": "(tens, 10)",
+}
+allowlist["torchvision.transforms.functional.convert_image_dtype"] = {
+    "return_type": "torch.Tensor",
+}
+allowlist["torchvision.transforms.functional.crop"] = {
+    "return_type": "torch.Tensor",
+    "test_parameters": "(tens, 10 , 20, 30, 40)",
+}
 allowlist["torchvision.transforms.functional.equalize"] = {
     "return_type": "torch.Tensor",
     "min_version": "0.9.0",
+    "test_parameters": "(tens)",
 }
-allowlist["torchvision.transforms.functional.erase"] = "torch.Tensor"
-allowlist["torchvision.transforms.functional.five_crop"] = "torch.Tensor"
-allowlist["orchvision.transforms.functional.gaussian_blur"] = {
+allowlist["torchvision.transforms.functional.erase"] = {
+    "return_type": "torch.Tensor",
+    "test_parameters": "(tens, 10, 20, 30, 40, 250)",
+}
+allowlist["torchvision.transforms.functional.five_crop"] = {
+    "return_type": "torch.Tensor",
+    "test_parameters": "(tens, 10)",
+}
+allowlist["torchvision.transforms.functional.gaussian_blur"] = {
     "return_type": "torch.Tensor",
     "min_version": "0.8.0",
+    "test_parameters": "(tens, 3)",
 }
 allowlist["torchvision.transforms.functional.hflip"] = "torch.Tensor"
 allowlist["torchvision.transforms.functional.invert"] = {
     "return_type": "torch.Tensor",
     "min_version": "0.9.0",
+    "test_parameters": "(tens)",
 }
-allowlist["torchvision.transforms.functional.normalize"] = "torch.Tensor"
-allowlist["torchvision.transforms.functional.pad"] = "torch.Tensor"
-allowlist["torchvision.transforms.functional.perspective"] = "torch.Tensor"
-allowlist["torchvision.transforms.functional.pil_to_tensor"] = "torch.Tensor"
+allowlist["torchvision.transforms.functional.normalize"] = {
+    "return_type": "torch.Tensor",
+    "test_parameters": "(tens/ 255, [0.5, 0.5, 0.5], [1, 1, 1]).unsqueeze(0)",
+}
+allowlist["torchvision.transforms.functional.pad"] = {
+    "return_type": "torch.Tensor",
+    "test_parameters": "(tens, 10)",
+}
+allowlist["torchvision.transforms.functional.perspective"] = {
+    "return_type": "torch.Tensor",
+    "test_parameters": "(tens, [[10,20],[20,30],[30, 40],[40,50]], [[20,30],[30,40],[40, 50],[50,60]])",
+}
+
+# Converts PIL to tensor, currently not supported
+# allowlist["torchvision.transforms.functional.pil_to_tensor"] = "torch.Tensor"
 allowlist["torchvision.transforms.functional.posterize"] = {
     "return_type": "torch.Tensor",
     "min_version": "0.9.0",
+    "test_parameters": "(tens, 2)",
 }
-allowlist["torchvision.transforms.functional.resize"] = "torch.Tensor"
-allowlist["torchvision.transforms.functional.resized_crop"] = "torch.Tensor"
+allowlist["torchvision.transforms.functional.resize"] = {
+    "return_type": "torch.Tensor",
+    "test_parameters": "(tens, 10)",
+}
+allowlist["torchvision.transforms.functional.resized_crop"] = {
+    "return_type": "torch.Tensor",
+    "test_parameters": "(tens, 10, 15, 20, 25, 30)",
+}
 allowlist["torchvision.transforms.functional.rgb_to_grayscale"] = {
     "return_type": "torch.Tensor",
     "min_version": "0.8.0",
+    "test_parameters": "(tens)",
 }
-allowlist["torchvision.transforms.functional.rotate"] = "torch.Tensor"
+allowlist["torchvision.transforms.functional.rotate"] = {
+    "return_type": "torch.Tensor",
+    "test_parameters": "(tens, angle = 10)",
+}
 allowlist["torchvision.transforms.functional.solarize"] = {
     "return_type": "torch.Tensor",
     "min_version": "0.9.0",
+    "test_parameters": "(tens, threshold = 0.5)",
 }
-allowlist["torchvision.transforms.functional.ten_crop"] = "torch.Tensor"
-allowlist["torchvision.transforms.functional.to_grayscale"] = "torch.Tensor"
+allowlist["torchvision.transforms.functional.ten_crop"] = {
+    "return_type": "torch.Tensor",
+    "test_parameters": "(tens, size = 10)",
+}
 
+# Following takes  PIL image as input, currently not supported
+# allowlist["torchvision.transforms.functional.to_grayscale"] = {
+#    "return_type" : "torch.Tensor",
+#    "test_parameters" : "(npy_array)"
+# }
+
+# Following converts image to PIL image, currently not supported
 # allowlist["torchvision.transforms.functional.to_pil_image"] = "PIL.Image.Image"
 
-allowlist[" torchvision.transforms.functional.to_tensor"] = "torch.Tensor"
-allowlist["torchvision.transforms.functional.vflip"] = "torch.Tensor"
+allowlist["torchvision.transforms.functional.to_tensor"] = {
+    "return_type": "torch.Tensor",
+}
+allowlist["torchvision.transforms.functional.vflip"] = {
+    "return_type": "torch.Tensor",
+    "test_parameters": "(tens)",
+}

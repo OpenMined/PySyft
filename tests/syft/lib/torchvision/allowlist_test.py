@@ -18,8 +18,6 @@ import torchvision as tv
 import syft as sy
 from syft.lib.torchvision.allowlist import allowlist
 
-# PySyft/tests/syft/lib/torchvision
-# PySyft/src/syft/lib/torchvision
 fileName = "imageTensor.pt"
 
 TORCHVISION_VERSION = version.parse(tv.__version__)
@@ -49,7 +47,7 @@ def version_supported(support_dict: Union[str, Dict[str, str]]) -> bool:
         return TORCHVISION_VERSION >= version.parse(support_dict["min_version"])
 
 
-def test_allowlist(alice: sy.VirtualMachine) -> None:
+def test_allowlist(alice: sy.VirtualMachine, tens: torch.Tensor) -> None:
     alice_client = alice.get_root_client()
     torchvision = alice_client.torchvision
     torch = alice_client.torch
@@ -70,5 +68,6 @@ def test_allowlist(alice: sy.VirtualMachine) -> None:
                     exec(item + allowlist[item]["test_parameters"])
 
 
+# tens = torch.load("imageTensor.pt")
 # bob = sy.VirtualMachine(name="alice")
-# test_allowlist(bob)
+# test_allowlist(bob, tens)
