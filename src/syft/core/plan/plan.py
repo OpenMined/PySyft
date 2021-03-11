@@ -1,3 +1,8 @@
+"""
+This is the main Plan class which is responsible for containing a list of Actions
+which can be serialized, deserialized, and executed by substituting the run time
+pointers with the original traced pointers and replaying the actions against a node.
+"""
 # stdlib
 import re
 import sys
@@ -42,6 +47,9 @@ class Plan(Serializable):
         inputs: Union[Dict[str, Pointer], None] = None,
         outputs: Union[Pointer, List[Pointer], None] = None,
     ):
+        """
+        Initialize the Plan with actions, inputs and outputs
+        """
         self.actions: List[Action] = listify(actions)
         self.inputs: Dict[str, Pointer] = inputs if inputs is not None else dict()
         self.outputs: List[Pointer] = listify(outputs)
@@ -132,6 +140,7 @@ class Plan(Serializable):
         """
 
         def camel_to_snake(s: str) -> str:
+            """Convert CamelCase classes to snake case for matching protobuf names"""
             return CAMEL_TO_SNAKE_PAT.sub("_", s).lower()
 
         actions_pb = [
