@@ -310,7 +310,7 @@ allowlist["torchvision.transforms.functional.invert"] = {
 }
 allowlist["torchvision.transforms.functional.normalize"] = {
     "return_type": "torch.Tensor",
-    "test_parameters": "(tens/ 255, [0.5, 0.5, 0.5], [1, 1, 1]).unsqueeze(0)",
+    "test_parameters": "(tens// 255, [0.5, 0.5, 0.5], [1, 1, 1]).unsqueeze(0)",
 }
 allowlist["torchvision.transforms.functional.pad"] = {
     "return_type": "torch.Tensor",
