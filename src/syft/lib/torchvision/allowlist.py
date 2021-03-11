@@ -244,7 +244,7 @@ allowlist["torchvision.transforms.functional.adjust_contrast"] = {
 }
 allowlist["torchvision.transforms.functional.adjust_gamma"] = {
     "return_type": "torch.Tensor",
-    "test_parameters": "(tens, 1, 0.5)",
+    # "test_parameters": "(tens, 1, 0.5)", Torch 1.6 expects input to be PIL image, so commenting this currently
 }
 allowlist["torchvision.transforms.functional.adjust_hue"] = {
     "return_type": "torch.Tensor",
