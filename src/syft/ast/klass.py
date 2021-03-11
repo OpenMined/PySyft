@@ -137,6 +137,7 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
             args=args,
             kwargs=kwargs,
         )
+
         return result
 
     return run_class_method
@@ -409,6 +410,8 @@ class Class(Callable):
 
             if pointable:
                 ptr.gc_enabled = False
+            else:
+                ptr.gc_enabled = True
 
             # Step 2: create message which contains object to send
             storable = StorableObject(
@@ -556,7 +559,7 @@ def pointerize_args_and_kwargs(
     for arg in args:
         # check if its already a pointer
         if not isinstance(arg, Pointer):
-            arg_ptr = arg.send(client)
+            arg_ptr = arg.send(client, pointable=False)
             pointer_args.append(arg_ptr)
         else:
             pointer_args.append(arg)
@@ -564,9 +567,9 @@ def pointerize_args_and_kwargs(
     for k, arg in kwargs.items():
         # check if its already a pointer
         if not isinstance(arg, Pointer):
-            arg_ptr = arg.send(client)
+            arg_ptr = arg.send(client, pointable=False)
             pointer_kwargs[k] = arg_ptr
         else:
             pointer_kwargs[k] = arg
 
-    return (pointer_args, pointer_kwargs)
+    return pointer_args, pointer_kwargs
