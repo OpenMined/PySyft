@@ -18,7 +18,7 @@ LIB_NAME = "opacus"
 PACKAGE_SUPPORT = {
     "lib": LIB_NAME,
     "torch": {"min_version": "1.6.0"},
-    "python": {"min_version": (3, 6, 9)},
+    "python": {"min_version": (3, 6, 9), "max_version": (3, 9, 99)},
 }
 
 
