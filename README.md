@@ -128,8 +128,8 @@ We are very grateful for contributions to PySyft from the following organization
 
 | | | |
 |-|-|-|
-[<img src="https://github.com/udacity/private-ai/blob/master/udacity-logo-vert-white.png?raw=true" alt="Udacity" width="160"/>](https://udacity.com/) | [<img src="https://raw.githubusercontent.com/coMindOrg/federated-averaging-tutorials/master/images/comindorg_logo.png" alt="coMind" width="160" />](https://github.com/coMindOrg/federated-averaging-tutorials) | [<img src="https://i.ibb.co/vYwcG9N/arkhn-logo.png" alt="Arkhn" width="160" />](http://ark.hn) | [<img src="https://raw.githubusercontent.com/dropoutlabs/files/master/dropout-labs-logo-white-2500.png" alt="Dropout Labs" width="160"/>](https://dropoutlabs.com/)
-[<img src="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/organizations/genbu.png" alt="GENBU AI" width="160"/>](https://genbu.ai/) | [<img src="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/organizations/bitdefender.png" alt="Bitdefender" width="160"/>](https://www.bitdefender.com/)
+[<img src="https://github.com/udacity/private-ai/blob/master/udacity-logo-vert-white.png?raw=true" alt="Udacity" width="160"/>](https://udacity.com/) | [<img src="https://raw.githubusercontent.com/RaghavPrabhakar66/PySyft/fix_org_imgs/docs/img/organizations/comind.png" alt="coMind" width="160" />](https://github.com/coMindOrg/federated-averaging-tutorials) | [<img src="https://i.ibb.co/vYwcG9N/arkhn-logo.png" alt="Arkhn" width="160" />](http://ark.hn) | [<img src="https://raw.githubusercontent.com/dropoutlabs/files/master/dropout-labs-logo-white-2500.png" alt="Dropout Labs" width="160"/>](https://dropoutlabs.com/)
+[<img src="https://raw.githubusercontent.com/RaghavPrabhakar66/PySyft/fix_org_imgs/docs/img/organizations/genbu.png" alt="GENBU AI" width="160"/>](https://genbu.ai/) | [<img src="https://raw.githubusercontent.com/RaghavPrabhakar66/PySyft/fix_org_imgs/docs/img/organizations/bitdefender.png" alt="Bitdefender" width="160"/>](https://www.bitdefender.com/)
 
 
 ## Support
