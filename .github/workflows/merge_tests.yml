@@ -51,12 +51,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      # - name: Install aiortc native dependencies
-      #   if: startsWith(runner.os, 'Linux') == true
-      #   run: |
-      #     sudo apt-get update
-      #     sudo apt-get install libavdevice-dev libavfilter-dev libopus-dev libvpx-dev pkg-config
-
       - name: Upgrade pip
         run: |
           pip install --upgrade --user pip
