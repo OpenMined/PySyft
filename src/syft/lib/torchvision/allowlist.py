@@ -153,10 +153,11 @@ allowlist["torchvision.transforms.RandomAffine"] = {
     "return_type": "torchvision.transforms.RandomAffine",
     "test_parameters": "(degrees = 2)",
 }
-allowlist["torchvision.transforms.RandomApply"] = {
-    "return_type": "torchvision.transforms.RandomApply",
-    "test_parameters": "(torchvision.transforms.CenterCrop(10))",
-}
+
+# allowlist["torchvision.transforms.RandomApply"] = {
+#    "return_type": "torchvision.transforms.RandomApply",
+#    "test_parameters": "(torchvision.transforms.CenterCrop(10))",
+# }
 
 allowlist["torchvision.transforms.RandomCrop"] = {
     "return_type": "torchvision.transforms.RandomCrop",

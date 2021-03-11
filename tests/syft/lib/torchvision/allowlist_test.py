@@ -70,5 +70,5 @@ def test_allowlist(alice: sy.VirtualMachine) -> None:
                     exec(item + allowlist[item]["test_parameters"])
 
 
-bob = sy.VirtualMachine(name="alice")
-test_allowlist(bob)
+# bob = sy.VirtualMachine(name="alice")
+# test_allowlist(bob)
