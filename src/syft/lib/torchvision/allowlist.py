@@ -132,10 +132,15 @@ allowlist["torchvision.transforms.ColorJitter"] = {
     "return_type": "torchvision.transforms.ColorJitter",
     "test_parameters": "(brightness=0, contrast=0, saturation=0, hue=0)",
 }
-allowlist["torchvision.transforms.FiveCrop"] = {
-    "return_type": "torchvision.transforms.FiveCrop",
-    "test_parameters": "(size = 10)",
-}
+
+# This is an interesting case, for some versions p = 0.2 is needed, for others its not needed
+
+# allowlist["torchvision.transforms.FiveCrop"] = {
+#    "return_type": "torchvision.transforms.FiveCrop",
+#    "test_parameters": "(size = 10, p = 0.2)",
+# }
+
+
 allowlist["torchvision.transforms.Grayscale"] = {
     "return_type": "torchvision.transforms.Grayscale",
     "test_parameters": "(num_output_channels=1)",
@@ -150,7 +155,7 @@ allowlist["torchvision.transforms.RandomAffine"] = {
 }
 allowlist["torchvision.transforms.RandomApply"] = {
     "return_type": "torchvision.transforms.RandomApply",
-    "test_parameters": "(torchvision.transforms.FiveCrop(10))",
+    "test_parameters": "(torchvision.transforms.CenterCrop(10))",
 }
 
 allowlist["torchvision.transforms.RandomCrop"] = {
