@@ -359,7 +359,8 @@ allowlist["torchvision.transforms.functional.solarize"] = {
 }
 allowlist["torchvision.transforms.functional.ten_crop"] = {
     "return_type": "torch.Tensor",
-    "test_parameters": "(tens, size = 10)",
+    # "test_parameters": "(tens, size = 10)",
+    # Torch 1.6 expects input to be PIL image, so commenting this currently
 }
 
 # Following takes  PIL image as input, currently not supported
