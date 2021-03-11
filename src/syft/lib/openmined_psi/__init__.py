@@ -16,7 +16,10 @@ from ...generate_wrapper import GenerateProtobufWrapper
 from ..util import generic_update_ast
 
 LIB_NAME = "openmined_psi"
-PACKAGE_SUPPORT = {"lib": LIB_NAME}
+PACKAGE_SUPPORT = {
+    "lib": LIB_NAME,
+    "python": {"max_version": (3, 8, 99)},
+}
 
 
 def create_ast(client: TypeAny = None) -> Globals:

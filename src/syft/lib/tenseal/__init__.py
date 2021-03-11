@@ -20,7 +20,10 @@ from ...ast.globals import Globals
 from ..util import generic_update_ast
 
 LIB_NAME = "tenseal"
-PACKAGE_SUPPORT = {"lib": LIB_NAME}
+PACKAGE_SUPPORT = {
+    "lib": LIB_NAME,
+    "python": {"max_version": (3, 8, 99)},
+}
 
 
 def create_ast(client: TypeAny) -> Globals:
