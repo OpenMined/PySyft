@@ -102,6 +102,7 @@ def update_role_msg(
         "can_create_groups": msg.content.get("can_create_groups", None),
         "can_edit_roles": msg.content.get("can_edit_roles", None),
         "can_manage_infrastructure": msg.content.get("can_manage_infrastructure", None),
+        "can_upload_data": msg.content.get("can_upload_data", None),
     }
 
     filter_parameters = lambda key: (params[key] != None)
