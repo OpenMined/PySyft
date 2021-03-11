@@ -150,7 +150,7 @@ allowlist["torchvision.transforms.RandomAffine"] = {
 }
 allowlist["torchvision.transforms.RandomApply"] = {
     "return_type": "torchvision.transforms.RandomApply",
-    "test_parameters": "(torchvision.transforms.FiveCrop(10), p=0.3)",
+    "test_parameters": "(torchvision.transforms.FiveCrop(10))",
 }
 
 allowlist["torchvision.transforms.RandomCrop"] = {
