@@ -1,4 +1,5 @@
 # stdlib
+import functools
 from typing import Any
 from typing import Dict
 from typing import List
@@ -16,6 +17,7 @@ from ..... import lib
 from ..... import serialize
 from .....logger import critical
 from .....logger import traceback_and_raise
+from .....logger import warning
 from .....proto.core.node.common.action.run_class_method_pb2 import (
     RunClassMethodAction as RunClassMethodAction_PB,
 )
@@ -151,35 +153,34 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     ValueError(f"Method {method} called, but self is None.")
                 )
 
-            # in opacus the step method in torch gets monkey patched on .attach
-            # this means we can't use the original AST method reference and need to
-            # get it again from the actual object so for now lets allow the following
-            # two methods to be resolved at execution time
             method_name = self.path.split(".")[-1]
-            if method_name in ["step", "zero_grad"]:
-                # TODO: Remove this Opacus workaround
-                try:
-                    method = getattr(resolved_self.data, method_name, None)
-                    result = method(*upcasted_args, **upcasted_kwargs)
-                except Exception as e:
-                    critical(
-                        f"Unable to resolve method {self.path} on {resolved_self}. {e}"
+
+            if isinstance(resolved_self.data, Plan) and method_name == "__call__":
+                if len(self.args) > 0:
+                    raise ValueError(
+                        "You passed args to Plan.__call__, while it only accepts kwargs"
                     )
-                    result = method(
-                        resolved_self.data, *upcasted_args, **upcasted_kwargs
-                    )
+                assert not self.args
+                result = method(resolved_self.data, node, verify_key, **self.kwargs)
             else:
-                if isinstance(resolved_self.data, Plan) and method_name == "__call__":
-                    if len(self.args) > 0:
-                        raise ValueError(
-                            "You passed args to Plan.__call__, while it only accepts kwargs"
-                        )
-                    assert not self.args
-                    result = method(resolved_self.data, node, verify_key, **self.kwargs)
-                else:
-                    result = method(
-                        resolved_self.data, *upcasted_args, **upcasted_kwargs
+                target_method = getattr(resolved_self.data, method_name, None)
+
+                if id(target_method) != id(method):
+                    warning(
+                        f"Method {method_name} overwritten on object {resolved_self.data}"
                     )
+                    method = target_method
+                else:
+                    method = functools.partial(method, resolved_self.data)
+
+                result = method(*upcasted_args, **upcasted_kwargs)
+
+        # TODO: add numpy support https://github.com/OpenMined/PySyft/issues/5164
+        if "numpy." in str(type(result)):
+            if "float" in type(result).__name__:
+                result = float(result)
+            if "int" in type(result).__name__:
+                result = int(result)
 
         if lib.python.primitive_factory.isprimitive(value=result):
             # Wrap in a SyPrimitive
@@ -196,7 +197,8 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     else:
                         result.id = self.id_at_location
 
-                    assert result.id == self.id_at_location
+                    if result.id != self.id_at_location:
+                        raise AttributeError("IDs don't match")
                 except AttributeError as e:
                     err = f"Unable to set id on result {type(result)}. {e}"
                     traceback_and_raise(Exception(err))

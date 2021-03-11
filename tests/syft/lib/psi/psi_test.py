@@ -28,7 +28,7 @@ def test_psi(loadlib_before_client: bool, reveal_intersection: bool) -> None:
     s_sy_reveal_intersection = sy.lib.python.Bool(s_reveal_intersection)
     s_sy_reveal_intersection.send(
         server_vm,
-        searchable=True,
+        pointable=True,
         tags=["reveal_intersection"],
         description="reveal intersection value",
     )
@@ -45,7 +45,7 @@ def test_psi(loadlib_before_client: bool, reveal_intersection: bool) -> None:
     s_fpr = 1e-6
     s_sy_fpr = sy.lib.python.Float(s_fpr)
     s_sy_fpr.send(
-        server_vm, searchable=True, tags=["fpr"], description="false positive rate"
+        server_vm, pointable=True, tags=["fpr"], description="false positive rate"
     )
 
     # client get fpr
@@ -58,7 +58,7 @@ def test_psi(loadlib_before_client: bool, reveal_intersection: bool) -> None:
     c_sy_client_items_len = sy.lib.python.Int(len(c_items))
     c_sy_client_items_len.send(
         client_vm,
-        searchable=True,
+        pointable=True,
         tags=["client_items_len"],
         description="client items length",
     )
@@ -73,7 +73,7 @@ def test_psi(loadlib_before_client: bool, reveal_intersection: bool) -> None:
     s_setup = psi_server.CreateSetupMessage(s_fpr, s_sy_client_items_len, s_items)
     s_setup.send(
         server_vm,
-        searchable=True,
+        pointable=True,
         tags=["setup"],
         description="psi.server Setup Message",
     )
@@ -86,7 +86,7 @@ def test_psi(loadlib_before_client: bool, reveal_intersection: bool) -> None:
     # client send request
     c_request = psi_client.CreateRequest(c_items)
     c_request.send(
-        client_vm, tags=["request"], searchable=True, description="client request"
+        client_vm, tags=["request"], pointable=True, description="client request"
     )
 
     # server get request
@@ -96,7 +96,7 @@ def test_psi(loadlib_before_client: bool, reveal_intersection: bool) -> None:
     # server send response
     s_response = psi_server.ProcessRequest(s_request)
     s_response.send(
-        server_vm, searchable=True, tags=["response"], description="psi.server response"
+        server_vm, pointable=True, tags=["response"], description="psi.server response"
     )
 
     # client get response

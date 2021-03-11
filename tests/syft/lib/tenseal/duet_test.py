@@ -65,9 +65,9 @@ def do(ct_size: int, batch_size: int) -> None:
         enc.append(ts.ckks_vector(context, data))
 
     start = time.time()
-    _ = context.send(duet, searchable=True)
+    _ = context.send(duet, pointable=True)
     for chunk in chunks(enc, batch_size):
-        _ = sy.lib.python.List(chunk).send(duet, searchable=True)
+        _ = sy.lib.python.List(chunk).send(duet, pointable=True)
     sys.stderr.write(
         f"[{ct_size}][{batch_size}] DO sending took {time.time() - start} sec\n"
     )

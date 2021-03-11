@@ -10,19 +10,18 @@ from typing import Union
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
-# syft absolute
-from syft import serialize
-from syft.core.common.object import Serializable
-from syft.core.common.serde.serializable import bind_protobuf
-from syft.core.node.abstract.node import AbstractNode
-from syft.core.node.common.action.common import Action
-
-# from ...abstract.node import AbstractNode
-from syft.core.node.common.util import listify
-from syft.core.pointer.pointer import Pointer
-from syft.core.store.storeable_object import StorableObject
-from syft.proto.core.node.common.action.action_pb2 import Action as Action_PB
-from syft.proto.core.node.common.plan.plan_pb2 import Plan as Plan_PB
+# syft relative
+from ... import serialize
+from ...logger import traceback_and_raise
+from ...proto.core.node.common.action.action_pb2 import Action as Action_PB
+from ...proto.core.plan.plan_pb2 import Plan as Plan_PB
+from ..common.object import Serializable
+from ..common.serde.serializable import bind_protobuf
+from ..node.abstract.node import AbstractNode
+from ..node.common.action.common import Action
+from ..node.common.util import listify
+from ..pointer.pointer import Pointer
+from ..store.storeable_object import StorableObject
 
 CAMEL_TO_SNAKE_PAT = re.compile(r"(?<!^)(?=[A-Z])")
 
@@ -69,15 +68,19 @@ class Plan(Serializable):
         # if we need to redefine some of their attributes that are inputs in the
         # graph of actions
 
-        new_inputs = dict()
-        for (k, current_input) in self.inputs.items():
+        new_inputs: Dict[str, Pointer] = {}
+        for k, current_input in self.inputs.items():
             new_input = kwargs[k]
+            if not issubclass(type(new_input), Pointer):
+                traceback_and_raise(
+                    f"Calling Plan without a Pointer. {k} == {type(new_input)} "
+                )
             for a in self.actions:
                 if hasattr(a, "remap_input"):
-                    a.remap_input(current_input, new_input)
+                    a.remap_input(current_input, new_input)  # type: ignore
 
             # redefine the inputs of the plan
-            new_inputs[k] = new_input
+            new_inputs[k] = new_input  # type: ignore
         self.inputs = new_inputs
 
         for a in self.actions:
@@ -134,7 +137,7 @@ class Plan(Serializable):
         actions_pb = [
             Action_PB(
                 obj_type=".".join([action.__module__, action.__class__.__name__]),
-                **{camel_to_snake(action.__class__.__name__): serialize(action)}
+                **{camel_to_snake(action.__class__.__name__): serialize(action)},
             )
             for action in self.actions
         ]

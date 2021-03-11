@@ -190,7 +190,8 @@ class Client(AbstractNodeClient):
         if self.device is not None:
             client.device = self.device if self.device is not None else client.device
 
-            assert self.device == client.device
+            if self.device != client.device:
+                raise AttributeError("Devices don't match")
 
         if self.vm is not None:
             client.vm = self.vm

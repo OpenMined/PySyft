@@ -6,7 +6,7 @@ production (that's the *actual* grid's job)."""
 # stdlib
 import binascii
 import json
-import pickle
+import pickle  # nosec
 
 # third party
 from flask import Flask

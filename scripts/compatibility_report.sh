@@ -4,12 +4,12 @@
 pipenv --venv
 if test $? -eq 0
 then
-    versions=( "0.6" "0.6.1" "0.7" "0.8.1" )
+    versions=( "1.6.0" "1.7.0" "1.7.1" )
     for version in "${versions[@]}"
     do
-        pip uninstall -y torchvision
-        pip install torchvision=="$version"
-        pytest -k allowlist_test --tb=line -n auto
+        python .github/adjust_torch_versions.py ./requirements.torch.txt "$version"
+        pip install -r requirements.torch.txt
+        pytest -m torch --tb=line -n auto
     done
 
     python tests/syft/lib/allowlist_report.py

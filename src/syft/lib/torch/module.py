@@ -16,6 +16,8 @@ from typing import Union
 import torch
 
 # syft relative
+from ...core.node.common.service.auth import AuthorizationException
+from ...core.pointer.pointer import Pointer
 from ...lib.util import full_name_with_qualname
 from ...logger import critical
 from ...logger import info
@@ -97,6 +99,15 @@ class Module:
         self.torch_ref = torch_ref
         self.training = False
         self._modules: OrderedDict[str, Module] = OrderedDict()
+        real_module = torch_ref.nn.Module()
+        self.__dict__["real_module"] = real_module  # bypass getattr/setattr
+        if issubclass(type(real_module), Pointer):
+            try:
+                # TODO: this needs fixing but should be on by default for now
+                # https://github.com/OpenMined/PySyft/issues/5242
+                real_module.pointable = True
+            except AuthorizationException as e:
+                print(f"Cant make real_module pointable. {e}")
 
     def __setattr__(self, name: str, value: Union[Any, "Module"]) -> None:
         # this is how we catch the modules being set during subclass init
@@ -106,6 +117,12 @@ class Module:
             modules = self.__dict__.get("_modules")
             if modules is not None:
                 modules[name] = value
+
+            # attach all the sub modules to a real module so that we can have a
+            # remote module pointer that acts like a real model
+            real_module: Optional[OrderedDict] = self.__dict__.get("real_module")
+            if real_module is not None:
+                real_module.add_module(name, value)  # type: ignore
         else:
             object.__setattr__(self, name, value)
 
