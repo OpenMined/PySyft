@@ -142,7 +142,7 @@ allowlist["torchvision.transforms.Grayscale"] = {
 }
 allowlist["torchvision.transforms.Pad"] = {
     "return_type": "torchvision.transforms.Pad",
-    "test_parameters": "([1,2], fill=0, padding_mode='constant')",
+    "test_parameters": "(2, fill=0, padding_mode='constant')",
 }
 allowlist["torchvision.transforms.RandomAffine"] = {
     "return_type": "torchvision.transforms.RandomAffine",
