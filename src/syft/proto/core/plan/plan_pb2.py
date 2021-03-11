@@ -13,9 +13,6 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-# third party
-from google.protobuf import struct_pb2 as google_dot_protobuf_dot_struct__pb2
-
 # syft absolute
 from syft.proto.core.node.common.action import (
     action_pb2 as proto_dot_core_dot_node_dot_common_dot_action_dot_action__pb2,
@@ -26,13 +23,12 @@ from syft.proto.core.pointer import (
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/core/plan/plan.proto",
-    package="syft.core.node.common.plan",
+    package="syft.core.plan",
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x1aproto/core/plan/plan.proto\x12\x1asyft.core.node.common.plan\x1a\x1cgoogle/protobuf/struct.proto\x1a*proto/core/node/common/action/action.proto\x1a proto/core/pointer/pointer.proto"\xf3\x01\n\x04Plan\x12\x35\n\x07\x61\x63tions\x18\x01 \x03(\x0b\x32$.syft.core.node.common.action.Action\x12<\n\x06inputs\x18\x02 \x03(\x0b\x32,.syft.core.node.common.plan.Plan.InputsEntry\x12+\n\x07outputs\x18\x03 \x03(\x0b\x32\x1a.syft.core.pointer.Pointer\x1aI\n\x0bInputsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12)\n\x05value\x18\x02 \x01(\x0b\x32\x1a.syft.core.pointer.Pointer:\x02\x38\x01\x62\x06proto3',
+    serialized_pb=b'\n\x1aproto/core/plan/plan.proto\x12\x0esyft.core.plan\x1a*proto/core/node/common/action/action.proto\x1a proto/core/pointer/pointer.proto"\xe7\x01\n\x04Plan\x12\x35\n\x07\x61\x63tions\x18\x01 \x03(\x0b\x32$.syft.core.node.common.action.Action\x12\x30\n\x06inputs\x18\x02 \x03(\x0b\x32 .syft.core.plan.Plan.InputsEntry\x12+\n\x07outputs\x18\x03 \x03(\x0b\x32\x1a.syft.core.pointer.Pointer\x1aI\n\x0bInputsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12)\n\x05value\x18\x02 \x01(\x0b\x32\x1a.syft.core.pointer.Pointer:\x02\x38\x01\x62\x06proto3',
     dependencies=[
-        google_dot_protobuf_dot_struct__pb2.DESCRIPTOR,
         proto_dot_core_dot_node_dot_common_dot_action_dot_action__pb2.DESCRIPTOR,
         proto_dot_core_dot_pointer_dot_pointer__pb2.DESCRIPTOR,
     ],
@@ -41,7 +37,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
 
 _PLAN_INPUTSENTRY = _descriptor.Descriptor(
     name="InputsEntry",
-    full_name="syft.core.node.common.plan.Plan.InputsEntry",
+    full_name="syft.core.plan.Plan.InputsEntry",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -49,7 +45,7 @@ _PLAN_INPUTSENTRY = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="key",
-            full_name="syft.core.node.common.plan.Plan.InputsEntry.key",
+            full_name="syft.core.plan.Plan.InputsEntry.key",
             index=0,
             number=1,
             type=9,
@@ -68,7 +64,7 @@ _PLAN_INPUTSENTRY = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="value",
-            full_name="syft.core.node.common.plan.Plan.InputsEntry.value",
+            full_name="syft.core.plan.Plan.InputsEntry.value",
             index=1,
             number=2,
             type=11,
@@ -94,13 +90,13 @@ _PLAN_INPUTSENTRY = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=337,
-    serialized_end=410,
+    serialized_start=283,
+    serialized_end=356,
 )
 
 _PLAN = _descriptor.Descriptor(
     name="Plan",
-    full_name="syft.core.node.common.plan.Plan",
+    full_name="syft.core.plan.Plan",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -108,7 +104,7 @@ _PLAN = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="actions",
-            full_name="syft.core.node.common.plan.Plan.actions",
+            full_name="syft.core.plan.Plan.actions",
             index=0,
             number=1,
             type=11,
@@ -127,7 +123,7 @@ _PLAN = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="inputs",
-            full_name="syft.core.node.common.plan.Plan.inputs",
+            full_name="syft.core.plan.Plan.inputs",
             index=1,
             number=2,
             type=11,
@@ -146,7 +142,7 @@ _PLAN = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="outputs",
-            full_name="syft.core.node.common.plan.Plan.outputs",
+            full_name="syft.core.plan.Plan.outputs",
             index=2,
             number=3,
             type=11,
@@ -174,8 +170,8 @@ _PLAN = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=167,
-    serialized_end=410,
+    serialized_start=125,
+    serialized_end=356,
 )
 
 _PLAN_INPUTSENTRY.fields_by_name[
@@ -202,12 +198,12 @@ Plan = _reflection.GeneratedProtocolMessageType(
             {
                 "DESCRIPTOR": _PLAN_INPUTSENTRY,
                 "__module__": "proto.core.plan.plan_pb2"
-                # @@protoc_insertion_point(class_scope:syft.core.node.common.plan.Plan.InputsEntry)
+                # @@protoc_insertion_point(class_scope:syft.core.plan.Plan.InputsEntry)
             },
         ),
         "DESCRIPTOR": _PLAN,
         "__module__": "proto.core.plan.plan_pb2"
-        # @@protoc_insertion_point(class_scope:syft.core.node.common.plan.Plan)
+        # @@protoc_insertion_point(class_scope:syft.core.plan.Plan)
     },
 )
 _sym_db.RegisterMessage(Plan)

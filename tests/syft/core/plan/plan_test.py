@@ -229,6 +229,29 @@ def test_make_plan() -> None:
     assert th.equal(res.get()[0], th.tensor([2, 4, 6]))
 
 
+@pytest.mark.xfail
+def test_plan_deterministic_bytes() -> None:
+    # TODO: https://github.com/OpenMined/PySyft/issues/5292
+    alice = sy.VirtualMachine(name="alice")
+    alice_client = alice.get_root_client()
+
+    @make_plan
+    def add_plan(inp=th.zeros((3))) -> th.Tensor:  # type: ignore
+        return inp + inp
+
+    @make_plan
+    def add_plan2(inp=th.zeros((3))) -> th.Tensor:  # type: ignore
+        return inp + inp
+
+    plan_pointer = add_plan.send(alice_client)
+    plan2_pointer = add_plan2.send(alice_client)
+
+    plan1 = serialize(plan_pointer, to_bytes=True)
+    plan2 = serialize(plan2_pointer, to_bytes=True)
+
+    assert plan1 == plan2
+
+
 def test_make_plan2() -> None:
     alice = sy.VirtualMachine(name="alice")
     alice_client = alice.get_root_client()

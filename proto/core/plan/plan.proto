@@ -1,15 +1,12 @@
 syntax = "proto3";
 
-package syft.core.node.common.plan;
+package syft.core.plan;
 
-
-import "google/protobuf/struct.proto";
 import "proto/core/node/common/action/action.proto";
 import "proto/core/pointer/pointer.proto";
 
-
 message Plan {
-    repeated syft.core.node.common.action.Action actions = 1;
-    map<string, syft.core.pointer.Pointer> inputs = 2;
-    repeated syft.core.pointer.Pointer outputs = 3;
+  repeated syft.core.node.common.action.Action actions = 1;
+  map<string, syft.core.pointer.Pointer> inputs = 2;
+  repeated syft.core.pointer.Pointer outputs = 3;
 }
