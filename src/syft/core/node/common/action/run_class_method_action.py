@@ -157,10 +157,11 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
             if isinstance(resolved_self.data, Plan) and method_name == "__call__":
                 if len(self.args) > 0:
-                    raise ValueError(
-                        "You passed args to Plan.__call__, while it only accepts kwargs"
+                    traceback_and_raise(
+                        ValueError(
+                            "You passed args to Plan.__call__, while it only accepts kwargs"
+                        )
                     )
-                assert not self.args
                 result = method(resolved_self.data, node, verify_key, **self.kwargs)
             else:
                 target_method = getattr(resolved_self.data, method_name, None)

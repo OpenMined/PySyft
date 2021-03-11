@@ -56,6 +56,8 @@ def traceback_and_raise(e: Any, verbose: bool = False) -> NoReturn:
             logger.opt(lazy=True).critical(e)
     except BaseException as ex:
         logger.debug("failed to print exception", ex)
+    if not issubclass(type(e), Exception):
+        e = Exception(e)
     raise e
 
 
