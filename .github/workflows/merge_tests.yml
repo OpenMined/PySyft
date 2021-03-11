@@ -27,14 +27,18 @@ on:
 jobs:
   python-tests-all:
     strategy:
-      max-parallel: 18
+      max-parallel: 30
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        python-version: [3.6, 3.7, 3.8]
-        torch-version: [1.6.0, 1.7.0, 1.7.1]
+        python-version: [3.6, 3.7, 3.8, 3.9]
+        torch-version: [1.6.0, 1.7.1, 1.8.0]
         isMaster:
           - ${{ contains(github.ref, 'master') }}
         exclude:
+          - python-version: 3.9
+            torch-version: 1.6.0
+          - python-version: 3.9
+            torch-version: 1.7.1
           - isMaster: false
             os: macos-latest
 
@@ -72,7 +76,8 @@ jobs:
 
       - name: Install PyTorch
         run: |
-          python .github/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
+          pip install packaging
+          python scripts/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
           cat ./requirements.torch.txt
           pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html
 

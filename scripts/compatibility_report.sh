@@ -7,7 +7,7 @@ then
     versions=( "1.6.0" "1.7.0" "1.7.1" )
     for version in "${versions[@]}"
     do
-        python .github/adjust_torch_versions.py ./requirements.torch.txt "$version"
+        python scripts/adjust_torch_versions.py ./requirements.torch.txt "$version"
         pip install -r requirements.torch.txt
         pytest -m torch --tb=line -n auto
     done
