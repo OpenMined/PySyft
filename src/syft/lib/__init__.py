@@ -82,7 +82,7 @@ def vendor_requirements_available(vendor_requirements: TypeDict[str, TypeAny]) -
     return True
 
 
-def _load(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
+def _load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
     """
     Load and Update Node with given library module
 
@@ -118,7 +118,7 @@ def load(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
         options: external requirements for loading library successfully
     """
     try:
-        _load(lib=lib, options=options)
+        _load_lib(lib=lib, options=options)
     except VendorLibraryImportException as e:
         critical(e)
     except Exception as e:
