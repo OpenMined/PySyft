@@ -286,7 +286,8 @@ allowlist["torchvision.transforms.functional.equalize"] = {
 }
 allowlist["torchvision.transforms.functional.erase"] = {
     "return_type": "torch.Tensor",
-    "test_parameters": "(tens, 10, 20, 30, 40, 250)",
+    # "test_parameters": "(tens, 10, 20, 30, 40, 250)"
+    # Torch 1.6 expects input to be PIL image, so commenting this currently
 }
 allowlist["torchvision.transforms.functional.five_crop"] = {
     "return_type": "torch.Tensor",
