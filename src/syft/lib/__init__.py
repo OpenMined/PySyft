@@ -39,6 +39,15 @@ def vendor_requirements_available(vendor_requirements: TypeDict[str, TypeAny]) -
                         + f"Python: {PYTHON_VERSION} < {min_version}"
                     )
                 )
+        max_version = python_reqs.get("max_version", None)
+        if max_version is not None:
+            if PYTHON_VERSION > max_version:
+                traceback_and_raise(
+                    VendorLibraryImportException(
+                        f"Unable to load {vendor_requirements['lib']}."
+                        + f"Python: {PYTHON_VERSION} > {max_version}"
+                    )
+                )
 
     # see if torch version is supported
     if "torch" in vendor_requirements:
@@ -57,28 +66,42 @@ def vendor_requirements_available(vendor_requirements: TypeDict[str, TypeAny]) -
                     )
                 )
 
+        max_version = torch_reqs.get("max_version", None)
+        if max_version is not None:
+            if TORCH_VERSION > version.parse(max_version):
+                traceback_and_raise(
+                    VendorLibraryImportException(
+                        f"Unable to load {vendor_requirements['lib']}."
+                        + f"Torch: {TORCH_VERSION} > {max_version}"
+                    )
+                )
+
     return True
+
+
+def _load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
+    _ = importlib.import_module(lib)
+    vendor_ast = importlib.import_module(f"syft.lib.{lib}")
+    PACKAGE_SUPPORT = getattr(vendor_ast, "PACKAGE_SUPPORT", None)
+    PACKAGE_SUPPORT.update(options)
+    if PACKAGE_SUPPORT is not None and vendor_requirements_available(
+        vendor_requirements=PACKAGE_SUPPORT
+    ):
+        update_ast = getattr(vendor_ast, "update_ast", None)
+        if update_ast is not None:
+            global lib_ast
+            update_ast(ast_or_client=lib_ast)
+
+            for _, client in lib_ast.registered_clients.items():
+                update_ast(ast_or_client=client)
+
+            # cache the constructor for future created clients
+            lib_ast.loaded_lib_constructors[lib] = update_ast
 
 
 def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
     try:
-        _ = importlib.import_module(lib)
-        vendor_ast = importlib.import_module(f"syft.lib.{lib}")
-        PACKAGE_SUPPORT = getattr(vendor_ast, "PACKAGE_SUPPORT", None)
-        PACKAGE_SUPPORT.update(options)
-        if PACKAGE_SUPPORT is not None and vendor_requirements_available(
-            vendor_requirements=PACKAGE_SUPPORT
-        ):
-            update_ast = getattr(vendor_ast, "update_ast", None)
-            if update_ast is not None:
-                global lib_ast
-                update_ast(ast_or_client=lib_ast)
-
-                for _, client in lib_ast.registered_clients.items():
-                    update_ast(ast_or_client=client)
-
-                # cache the constructor for future created clients
-                lib_ast.loaded_lib_constructors[lib] = update_ast
+        _load_lib(lib=lib, options=options)
     except VendorLibraryImportException as e:
         critical(e)
     except Exception as e:

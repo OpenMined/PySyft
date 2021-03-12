@@ -30,6 +30,8 @@ tests = defaultdict(list)
 output_dir = Path("tests/syft/notebooks")
 checkpoint_dir = Path("tests/syft/notebooks/checkpoints")
 
+SLEEP_TIME = 360
+
 try:
     os.mkdir(output_dir)
 except BaseException as e:
@@ -45,11 +47,16 @@ try:
 except BaseException as e:
     print("os.mkdir failed ", e)
 
+testcase_lib = {}
 
 for path in (
     list(Path("examples/homomorphic-encryption").rglob("*.ipynb"))
     + list(Path("examples/duet/dcgan").rglob("*.ipynb"))
     + list(Path("examples/duet/super_resolution").rglob("*.ipynb"))
+    + list(Path("examples/private-ai-series/duet_basics").rglob("*.ipynb"))
+    + list(Path("examples/private-ai-series/duet_iris_classifier").rglob("*.ipynb"))
+    + list(Path("examples/differential-privacy/opacus").rglob("*.ipynb"))
+    + list(Path("examples/duet/mnist").rglob("*.ipynb"))
 ):
     if ".ipynb_checkpoints" in str(path):
         continue
@@ -71,6 +78,14 @@ for path in (
         is_do = True
     else:
         continue
+
+    load_lib_search = r"load_lib\(\W+([a-z_-]+)\W+\)"
+
+    with open(path, "r") as f:
+        load_lib_results = re.search(load_lib_search, str(f.read()), re.IGNORECASE)
+        if load_lib_results:
+            lib_name = load_lib_results.group(1)
+            testcase_lib[testcase] = lib_name
 
     notebook_nodes = nbformat.read(path, as_version=4)
 
@@ -112,7 +127,7 @@ loop = asyncio.get_event_loop()
                 checkpoint_cell = nbformat.v4.new_code_cell(
                     source=f"""
 Path(\"{ck_file}\").touch()
-for retry in range(360):
+for retry in range({SLEEP_TIME}):
     if Path(\"{wait_file}\").exists():
         break
     task = loop.create_task(asyncio.sleep(1))
@@ -131,7 +146,7 @@ for retry in range(360):
                 checkpoint_cell = nbformat.v4.new_code_cell(
                     source=f"""
 Path(\"{ck_file}\").touch()
-for retry in range(360):
+for retry in range({SLEEP_TIME}):
     if Path(\"{wait_file}\").exists():
         break
     task = loop.create_task(asyncio.sleep(1))
@@ -146,6 +161,15 @@ assert Path(\"{wait_file}\").exists()
 
         (body, resources) = exporter.from_notebook_node(notebook_nodes)
         write_file = FilesWriter()
+
+        # replace empty cells with print statements for easy debugging
+        empty_cell = "# In[ ]:"
+        counter = 1
+        cell_type = "DO" if is_do else "DS"
+        while empty_cell in body:
+            body = body.replace(empty_cell, f"print('{cell_type} Cell: {counter}')", 1)
+            counter += 1
+
         write_file.write(output=body, resources=resources, notebook_name=str(output))
     except Exception as e:
         print(f"There was a problem exporting the file(s): {e}")
@@ -165,6 +189,12 @@ for case in tests:
             output_py = output_py.replace("{{DO_SCRIPT}}", script)
         elif "Data_Scientist" in script:
             output_py = output_py.replace("{{DS_SCRIPT}}", script)
+
+    decorator = ""
+    if case in testcase_lib:
+        lib_name = testcase_lib[case]
+        decorator = f"@pytest.mark.vendor(lib='{lib_name}')"
+    output_py = output_py.replace("{{LIB_DECORATOR}}", decorator)
 
     with open(output_dir / f"duet_{case}_test.py", "w") as out_py:
         out_py.write(output_py)
