@@ -20,7 +20,7 @@ from .types import SyPrimitiveRet
 
 
 @bind_protobuf
-class Slice(slice, PyPrimitive):
+class Slice(PyPrimitive):
     def __init__(
         self,
         start: Any = None,
@@ -28,7 +28,10 @@ class Slice(slice, PyPrimitive):
         step: Optional[Any] = None,
         id: Optional[UID] = None,
     ):
-        slice.__init__(self, start, stop, step)
+        self._slice = slice(start, stop, step)
+        self.start = self._slice.start
+        self.stop = self._slice.stop
+        self.step = self._slice.step
         self._id: UID = id if id else UID()
 
     @property
@@ -123,8 +126,8 @@ class Slice(slice, PyPrimitive):
         return 0
 
     def adjustindices(self, length: Any, start: Any, stop: Any, step: Any) -> int:
-        assert self.step != 0
-        assert self.step >= -sys.maxsize
+        assert step != 0
+        assert step >= -sys.maxsize
 
         if start < 0:
             self.start = start + length
