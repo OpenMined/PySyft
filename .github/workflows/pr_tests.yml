@@ -228,10 +228,10 @@ jobs:
           ./scripts/nb_test.sh
           pytest examples/api -n auto
 
-      - name: Install supported library packages
+      - name: Install supported library packages Linux and MacOS - Ignore Errors
+        if: startsWith(runner.os, 'Windows') != true
         run: |
-          pip install -r requirements.libs.txt
-        timeout-minutes: 10
+          cat requirements.libs.txt | xargs -I {} -n 1 pip install {} --no-deps --default-timeout=60 || true
 
       - name: Run notebook Duet examples
         run: |
