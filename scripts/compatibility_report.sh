@@ -4,7 +4,7 @@
 pipenv --venv
 if test $? -eq 0
 then
-    versions=( "1.6.0" "1.7.0" "1.7.1" )
+    versions=( "1.6.0" "1.7.1" "1.8.0" )
     for version in "${versions[@]}"
     do
         python scripts/adjust_torch_versions.py ./requirements.torch.txt "$version"

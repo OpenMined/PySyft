@@ -65,7 +65,7 @@ dtypes = [
 ]
 
 # 1.4.0 has been temporarily disabled and will be re-investigated
-torch_versions = ["1.6.0", "1.7.0", "1.7.1"]
+torch_versions = ["1.6.0", "1.7.1", "1.8.0"]
 
 
 # this handles instances where the allow list provides more meta information
