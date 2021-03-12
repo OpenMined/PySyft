@@ -263,7 +263,7 @@ allowlist["torchvision.transforms.functional.adjust_saturation"] = {
 allowlist["torchvision.transforms.functional.adjust_sharpness"] = {
     "return_type": "torch.Tensor",
     "min_version": "0.9.0",
-    "test_parameters": "(tens)",
+    "test_parameters": "(tens, 0.5)",
 }
 allowlist["torchvision.transforms.functional.affine"] = {
     "return_type": "torch.Tensor",
