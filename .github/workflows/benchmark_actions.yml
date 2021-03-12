@@ -42,7 +42,8 @@ jobs:
 
       - name: Install PyTorch
         run: |
-          python .github/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
+          pip install packaging
+          python scripts/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
           cat ./requirements.torch.txt
           pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html
 

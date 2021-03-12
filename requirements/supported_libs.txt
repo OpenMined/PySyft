@@ -1,5 +1,0 @@
-opacus==0.12.0
-openmined.psi
-python-dp
-sympc @ git+https://github.com/OpenMined/SyMPC@main
-tenseal
