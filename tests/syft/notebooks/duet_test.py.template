@@ -18,9 +18,6 @@ import syft as sy
 from ..grid.duet.process_test import SyftTestProcess
 from ..grid.duet.signaling_server_test import run
 
-ts = pytest.importorskip("tenseal")
-sy.load_lib("tenseal")
-
 set_start_method("spawn", force=True)
 PORT = 21000
 
