@@ -8,6 +8,13 @@ from pytorch_lightning import LightningDataModule  # noqa: 401
 from pytorch_lightning import LightningModule  # noqa: 401
 from pytorch_lightning import Trainer  # noqa: 401
 
+LIB_NAME = "pytorch_lightning"
+PACKAGE_SUPPORT = {
+    "lib": LIB_NAME,
+    "torch": {"max_version": "1.7.1"},
+    "python": {"max_version": (3, 8, 99)},
+}
+
 # from ...ast.globals import Globals
 # from ...ast.klass import Class
 # from ...ast.module import Module
