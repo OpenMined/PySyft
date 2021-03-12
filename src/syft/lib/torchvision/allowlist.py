@@ -235,6 +235,7 @@ allowlist["torchvision.transforms.Lambda"] = "torchvision.transforms.Lambda"
 
 allowlist["torchvision.transforms.functional.adjust_brightness"] = {
     "return_type": "torch.Tensor",
+    "min_version": "0.7.0",
     "test_parameters": "(tens, 0.5)",
 }
 allowlist["torchvision.transforms.functional.adjust_contrast"] = {
@@ -244,14 +245,19 @@ allowlist["torchvision.transforms.functional.adjust_contrast"] = {
 }
 allowlist["torchvision.transforms.functional.adjust_gamma"] = {
     "return_type": "torch.Tensor",
-    # "test_parameters": "(tens, 1, 0.5)", Torch 1.6 expects input to be PIL image, so commenting this currently
+    "min_version": "0.7.0",
+    "test_parameters": "(tens, 1, 0.5)",
+    # Torch 1.6 expects input to be PIL image, so minimum version as 0.7 (Torch 1.7.0)
 }
 allowlist["torchvision.transforms.functional.adjust_hue"] = {
     "return_type": "torch.Tensor",
-    # "test_parameters": "(tens, 0)" Torch 1.6 expects input to be PIL image, so commenting this currently
+    "min_version": "0.7.0",
+    "test_parameters": "(tens, 0)"
+    # Torch 1.6 expects input to be PIL image, so minimum version as 0.7 (Torch 1.7.0)
 }
 allowlist["torchvision.transforms.functional.adjust_saturation"] = {
     "return_type": "torch.Tensor",
+    "min_version": "0.7.0",
     "test_parameters": "(tens, 0.5)",
 }
 allowlist["torchvision.transforms.functional.adjust_sharpness"] = {
@@ -261,8 +267,9 @@ allowlist["torchvision.transforms.functional.adjust_sharpness"] = {
 }
 allowlist["torchvision.transforms.functional.affine"] = {
     "return_type": "torch.Tensor",
-    # "test_parameters": "(tens,0.2,[1,2],0.2,[1,2])",
-    # Torch 1.6 expects input to be PIL image, so commenting this currently
+    "min_version": "0.7.0",
+    "test_parameters": "(tens,0.2,[1,2],0.2,[1,2])",
+    # Torch 1.6 expects input to be PIL image, so minimum version as 0.7 (Torch 1.7.0)
 }
 allowlist["torchvision.transforms.functional.autocontrast"] = {
     "return_type": "torch.Tensor",
@@ -271,16 +278,18 @@ allowlist["torchvision.transforms.functional.autocontrast"] = {
 }
 allowlist["torchvision.transforms.functional.center_crop"] = {
     "return_type": "torch.Tensor",
-    # "test_parameters": "(tens, 10)", "(tens,0.2,[1,2],0.2,[1,2])",
-    # Torch 1.6 expects input to be PIL image, so commenting this currently
+    "min_version": "0.7.0",
+    "test_parameters": "(tens, 10)",
+    # Torch 1.6 expects input to be PIL image, so minimum version as 0.7 (Torch 1.7.0)
 }
 allowlist["torchvision.transforms.functional.convert_image_dtype"] = {
     "return_type": "torch.Tensor",
 }
 allowlist["torchvision.transforms.functional.crop"] = {
     "return_type": "torch.Tensor",
-    # "test_parameters": "(tens, 10 , 20, 30, 40)", "(tens,0.2,[1,2],0.2,[1,2])",
-    # Torch 1.6 expects input to be PIL image, so commenting this currently
+    "min_version": "0.7.0",
+    "test_parameters": "(tens, 10 , 20, 30, 40)",
+    # Torch 1.6 expects input to be PIL image, so minimum version as 0.7 (Torch 1.7.0)
 }
 allowlist["torchvision.transforms.functional.equalize"] = {
     "return_type": "torch.Tensor",
@@ -289,13 +298,15 @@ allowlist["torchvision.transforms.functional.equalize"] = {
 }
 allowlist["torchvision.transforms.functional.erase"] = {
     "return_type": "torch.Tensor",
-    # "test_parameters": "(tens, 10, 20, 30, 40, 250)"
-    # Torch 1.6 expects input to be PIL image, so commenting this currently
+    "test_parameters": "(tens, 10, 20, 30, 40, 250)",
+    "min_version": "0.7.0"
+    # Torch 1.6 expects input to be PIL image, so minimum version as 0.7 (Torch 1.7.0)
 }
 allowlist["torchvision.transforms.functional.five_crop"] = {
     "return_type": "torch.Tensor",
-    # "test_parameters": "(tens, 10)",
-    # Torch 1.6 expects input to be PIL image, so commenting this currently
+    "test_parameters": "(tens, 10)",
+    "min_version": "0.7.0"
+    # Torch 1.6 expects input to be PIL image, so minimum version as 0.7 (Torch 1.7.0)
 }
 allowlist["torchvision.transforms.functional.gaussian_blur"] = {
     "return_type": "torch.Tensor",
@@ -316,12 +327,14 @@ allowlist["torchvision.transforms.functional.normalize"] = {
 }
 allowlist["torchvision.transforms.functional.pad"] = {
     "return_type": "torch.Tensor",
-    # "test_parameters": "(tens, 10)",
+    "test_parameters": "(tens, 10)",
+    "min_version": "0.7.0"
     # # Torch 1.6 expects input to be PIL image, so commenting this currently
 }
 allowlist["torchvision.transforms.functional.perspective"] = {
     "return_type": "torch.Tensor",
-    # "test_parameters": "(tens, [[10,20],[20,30],[30, 40],[40,50]], [[20,30],[30,40],[40, 50],[50,60]])",
+    "test_parameters": "(tens, [[10,20],[20,30],[30, 40],[40,50]], [[20,30],[30,40],[40, 50],[50,60]])",
+    "min_version": "0.7.0"
     # # Torch 1.6 expects input to be PIL image, so commenting this currently
 }
 
@@ -334,13 +347,15 @@ allowlist["torchvision.transforms.functional.posterize"] = {
 }
 allowlist["torchvision.transforms.functional.resize"] = {
     "return_type": "torch.Tensor",
-    # "test_parameters": "(tens, 10)",
-    # Torch 1.6 expects input to be PIL image, so commenting this currently
+    "test_parameters": "(tens, 10)",
+    "min_version": "0.7.0"
+    # Torch 1.6 expects input to be PIL image, so minimum version as 0.7 (Torch 1.7.0)
 }
 allowlist["torchvision.transforms.functional.resized_crop"] = {
     "return_type": "torch.Tensor",
-    # "test_parameters": "(tens, 10, 15, 20, 25, 30)",
-    # Torch 1.6 expects input to be PIL image, so commenting this currently
+    "test_parameters": "(tens, 10, 15, 20, 25, 30)",
+    "min_version": "0.7.0"
+    # Torch 1.6 expects input to be PIL image, so minimum version as 0.7 (Torch 1.7.0)
 }
 allowlist["torchvision.transforms.functional.rgb_to_grayscale"] = {
     "return_type": "torch.Tensor",
@@ -349,8 +364,9 @@ allowlist["torchvision.transforms.functional.rgb_to_grayscale"] = {
 }
 allowlist["torchvision.transforms.functional.rotate"] = {
     "return_type": "torch.Tensor",
-    # "test_parameters": "(tens, angle = 10)",
-    # Torch 1.6 expects input to be PIL image, so commenting this currently
+    "test_parameters": "(tens, angle = 10)",
+    "min_version": "0.7.0"
+    # Torch 1.6 expects input to be PIL image, so minimum version as 0.7 (Torch 1.7.0)
 }
 allowlist["torchvision.transforms.functional.solarize"] = {
     "return_type": "torch.Tensor",
@@ -359,8 +375,9 @@ allowlist["torchvision.transforms.functional.solarize"] = {
 }
 allowlist["torchvision.transforms.functional.ten_crop"] = {
     "return_type": "torch.Tensor",
-    # "test_parameters": "(tens, size = 10)",
-    # Torch 1.6 expects input to be PIL image, so commenting this currently
+    "test_parameters": "(tens, size = 10)",
+    "min_version": "0.7.0"
+    # Torch 1.6 expects input to be PIL image, so minimum version as 0.7 (Torch 1.7.0)
 }
 
 # Following takes  PIL image as input, currently not supported
