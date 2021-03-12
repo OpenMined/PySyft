@@ -105,9 +105,9 @@ class Module:
             try:
                 # TODO: this needs fixing but should be on by default for now
                 # https://github.com/OpenMined/PySyft/issues/5242
-                real_module.searchable = True
+                real_module.pointable = True
             except AuthorizationException as e:
-                print(f"Cant make real_module searchable. {e}")
+                print(f"Cant make real_module pointable. {e}")
 
     def __setattr__(self, name: str, value: Union[Any, "Module"]) -> None:
         # this is how we catch the modules being set during subclass init

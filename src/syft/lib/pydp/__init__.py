@@ -25,7 +25,10 @@ from ..misc.union import UnionGenerator
 from ..util import generic_update_ast
 
 LIB_NAME = "pydp"
-PACKAGE_SUPPORT = {"lib": LIB_NAME}
+PACKAGE_SUPPORT = {
+    "lib": LIB_NAME,
+    "python": {"max_version": (3, 8, 99)},
+}
 
 
 def create_ast(client: TypeAny = None) -> Globals:
