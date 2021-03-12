@@ -50,6 +50,7 @@ try:
 except BaseException as e:
     print("os.mkdir failed ", e)
 
+testcase_lib = {}
 
 for path in (
     list(Path("examples/homomorphic-encryption").rglob("*.ipynb"))
@@ -88,6 +89,13 @@ for path in (
         if PORT not in PORTS.values():
             # unique port so set
             PORTS[testcase] = PORT
+    load_lib_search = r"load_lib\(\W+([a-z_-]+)\W+\)"
+
+    with open(path, "r") as f:
+        load_lib_results = re.search(load_lib_search, str(f.read()), re.IGNORECASE)
+        if load_lib_results:
+            lib_name = load_lib_results.group(1)
+            testcase_lib[testcase] = lib_name
 
     notebook_nodes = nbformat.read(path, as_version=4)
 
@@ -197,6 +205,12 @@ for case in tests:
             output_py = output_py.replace("{{DO_SCRIPT}}", script)
         elif "Data_Scientist" in script:
             output_py = output_py.replace("{{DS_SCRIPT}}", script)
+
+    decorator = ""
+    if case in testcase_lib:
+        lib_name = testcase_lib[case]
+        decorator = f"@pytest.mark.vendor(lib='{lib_name}')"
+    output_py = output_py.replace("{{LIB_DECORATOR}}", decorator)
 
     with open(output_dir / f"duet_{case}_test.py", "w") as out_py:
         out_py.write(output_py)
