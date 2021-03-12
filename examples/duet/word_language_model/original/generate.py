@@ -9,8 +9,9 @@
 import argparse
 
 # third party
-import data
 import torch
+
+import data  # isort:skip
 
 parser = argparse.ArgumentParser(description="PyTorch Wikitext-2 Language Model")
 

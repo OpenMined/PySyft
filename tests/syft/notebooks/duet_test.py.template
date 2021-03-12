@@ -18,9 +18,6 @@ import syft as sy
 from ..grid.duet.process_test import SyftTestProcess
 from ..grid.duet.signaling_server_test import run
 
-ts = pytest.importorskip("tenseal")
-sy.load_lib("tenseal")
-
 set_start_method("spawn", force=True)
 PORT = 21000
 
@@ -93,7 +90,7 @@ def ds() -> None:
     sys.stderr.write(f"DS get took {time.time() - start} sec\n")
 
 
-
+{{LIB_DECORATOR}}
 def test_{{TESTCASE}}() -> None:
     time.sleep(3)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
