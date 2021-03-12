@@ -3164,3 +3164,253 @@ allowlist["torch.nn.ZeroPad2d.cpu"] = "torch.nn.ZeroPad2d"
 allowlist["torch.nn.ZeroPad2d.state_dict"] = "syft.lib.python.collections.OrderedDict"
 allowlist["torch.nn.ZeroPad2d.load_state_dict"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.ZeroPad2d.extra_repr"] = "syft.lib.python.String"
+
+
+allowlist["torch.Tensor.xpu"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.tile"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.fmax"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.ldexp_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.sinc"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.kron"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.nan_to_num"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.msort"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.row_stack"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.new_empty_strided"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.ravel"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.swapdims_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.moveaxis"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.swapaxes"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.tensor_split"] = {
+    "return_type": "syft.lib.python.List",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.tensor_split"] = {
+    "return_type": "syft.lib.python.List",
+    "min_version": "1.8.0",
+}
+allowlist["torch.tile"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.float_power_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.broadcast_to"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.fmin"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.ldexp"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+# allowlist["torch.broadcast_shapes"] = {
+#     "return_type": "torch.Size",
+#     "min_version": "1.8.0",
+# }
+allowlist["torch.Tensor.swapdims"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.igamma"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.nan_to_num_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.copysign"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.swapaxes_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.cumprod_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.ldexp"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.igamma_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.float_power"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.igammac_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.xlogy"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.copysign"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.nanmedian"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.igammac"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.cumsum_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.diff"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.igamma"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.sinc"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.igammac"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.kron"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.column_stack"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.msort"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.pixel_unshuffle"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.fmin"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.xlogy"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.moveaxis"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.swapaxes"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.nan_to_num"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.inner"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.fmax"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.float_power"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.nanmedian"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.sinc_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.copysign_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.ravel"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.broadcast_to"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.diff"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.xlogy_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.swapdims"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.inner"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
