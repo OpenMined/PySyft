@@ -16,7 +16,7 @@ from ..util import generic_update_ast
 LIB_NAME = "sympc"
 PACKAGE_SUPPORT = {
     "lib": LIB_NAME,
-    "torch": {"min_version": "1.6.0", "max_version": "1.7.1"},
+    "torch": {"min_version": "1.6.0", "max_version": "1.8.0"},
     "python": {"min_version": (3, 7), "max_version": (3, 9, 99)},
 }
 
