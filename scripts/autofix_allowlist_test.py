@@ -264,3 +264,68 @@ while continue_loop:
     # update allowlist_test.json
     with open(f"{root_dir}/tests/syft/lib/allowlist_test.json", "w") as f:
         json.dump(allowlist_test, f, indent=2)
+
+
+# optimize json file
+for op, config in allowlist_test["tests"]["torch.Tensor"].items():
+    lte_key = "lte_version"
+    gte_key = "gte_version"
+
+    # look at not available rules
+    if "not_available" in config:
+        na_rules = config["not_available"]
+        new_rule = None
+        for rule in na_rules:
+            if lte_key in rule and gte_key in rule:
+                rule_lte_version = rule[lte_key]
+                rule_gte_version = rule[gte_key]
+                if (
+                    rule_lte_version == torch_version
+                    and rule_gte_version == torch_version
+                ):
+                    new_rule = rule
+
+        old_rule = None
+        match_found = False
+        # found a new rule to optimize
+        if new_rule is not None:
+            for rule in na_rules:
+                if new_rule != rule:
+                    old_rule_copy = rule.copy()
+                    old_rule_copy.pop(lte_key, None)
+                    old_rule_copy.pop(gte_key, None)
+                    new_rule_copy = new_rule.copy()
+                    new_rule_copy.pop(lte_key, None)
+                    new_rule_copy.pop(gte_key, None)
+                    if old_rule_copy.keys() == new_rule_copy.keys():
+                        for k in old_rule_copy.keys():
+                            if isinstance(old_rule_copy[k], list) and isinstance(
+                                new_rule_copy[k], list
+                            ):
+                                old_rule_copy[k] = sorted(
+                                    old_rule_copy[k], key=lambda x: str(x)
+                                )
+                                new_rule_copy[k] = sorted(
+                                    new_rule_copy[k], key=lambda x: str(x)
+                                )
+
+                        # two rules with no version limits and sorted lists match
+                        if old_rule_copy == new_rule_copy:
+                            match_found = True
+                            old_rule = rule.copy()
+
+        # remove the new rule and update the old rule to use current torch_version
+        if match_found:
+            new_na_rules = []
+            for rule in config["not_available"]:
+                if rule == new_rule:
+                    continue
+                if rule == old_rule:
+                    rule[lte_key] = torch_version
+
+                new_na_rules.append(rule)
+            config["not_available"] = new_na_rules
+
+# update allowlist_test.json
+with open(f"{root_dir}/tests/syft/lib/allowlist_test.json", "w") as f:
+    json.dump(allowlist_test, f, indent=2)

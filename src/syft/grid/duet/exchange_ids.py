@@ -104,6 +104,7 @@ def get_loopback_path() -> str:
 
 
 class OpenGridTokenFileExchanger(DuetCredentialExchanger):
+    retry_seconds = 180
     file_path = get_loopback_path()
 
     def __init__(
@@ -145,7 +146,7 @@ class OpenGridTokenFileExchanger(DuetCredentialExchanger):
 
         # get Client ID
         client_id = ""
-        for retry in range(120):
+        for retry in range(OpenGridTokenFileExchanger.retry_seconds):
             try:
                 with open(self.file_path, "r") as f:
                     loopback_config = json.loads(f.read())
@@ -170,7 +171,7 @@ class OpenGridTokenFileExchanger(DuetCredentialExchanger):
     def _client_exchange(self, credential: str) -> str:
         loopback_config = {}
         server_id = ""
-        for retry in range(120):
+        for retry in range(OpenGridTokenFileExchanger.retry_seconds):
             try:
                 with open(self.file_path, "r") as f:
                     loopback_config = json.loads(f.read())
