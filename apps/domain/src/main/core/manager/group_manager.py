@@ -50,6 +50,12 @@ class GroupManager(DatabaseManager):
         )
         return [assoc.user for assoc in _associations]
 
+    def get_groups(self, user_id: str):
+        _associations = self.db.session.query(self._association_schema).filter_by(
+            user=user_id
+        )
+        return [assoc.group for assoc in _associations]
+
     def contain_association(self, **kwargs):
         result = (
             self.db.session.query(self._association_schema).filter_by(**kwargs).first()

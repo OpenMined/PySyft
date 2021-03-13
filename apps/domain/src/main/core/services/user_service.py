@@ -257,6 +257,10 @@ def get_user_msg(
     if _allowed:
         user = users.first(id=_user_id)
         _msg = model_to_json(user)
+        _msg["groups"] = [
+            node.groups.first(id=group).name
+            for group in node.groups.get_groups(user_id=_user_id)
+        ]
     else:
         raise AuthorizationError("You're not allowed to get User information!")
 
@@ -289,7 +293,14 @@ def get_all_users_msg(
 
     if _allowed:
         users = users.all()
-        _msg = [model_to_json(user) for user in users]
+        _msg = []
+        for user in users:
+            _user_json = model_to_json(user)
+            _user_json["groups"] = [
+                node.groups.first(id=group).name
+                for group in node.groups.get_groups(user_id=user.id)
+            ]
+            _msg.append(_user_json)
     else:
         raise AuthorizationError("You're not allowed to get User information!")
 
@@ -305,7 +316,6 @@ def del_user_msg(
     node: AbstractNode,
     verify_key: VerifyKey,
 ) -> DeleteUserResponse:
-
     # Get Payload Content
     _user_id = msg.content.get("user_id", None)
     _current_user_id = msg.content.get("current_user", None)
