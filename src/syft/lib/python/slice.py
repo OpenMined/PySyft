@@ -126,9 +126,6 @@ class Slice(PyPrimitive):
         return 0
 
     def adjustindices(self, length: Any, start: Any, stop: Any, step: Any) -> int:
-        assert step != 0
-        assert step >= -sys.maxsize
-
         if start < 0:
             self.start = start + length
             if start < 0:
