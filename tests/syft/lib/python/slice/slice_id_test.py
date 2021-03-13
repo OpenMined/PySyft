@@ -14,4 +14,3 @@ def test_id_eq():
     py_res = sy_slice == other_slice
     assert py_res == sy_res
     assert sy_res.id != sy_slice.id
-    
