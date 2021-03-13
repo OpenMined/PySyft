@@ -39,6 +39,15 @@ def vendor_requirements_available(vendor_requirements: TypeDict[str, TypeAny]) -
                         + f"Python: {PYTHON_VERSION} < {min_version}"
                     )
                 )
+        max_version = python_reqs.get("max_version", None)
+        if max_version is not None:
+            if PYTHON_VERSION > max_version:
+                traceback_and_raise(
+                    VendorLibraryImportException(
+                        f"Unable to load {vendor_requirements['lib']}."
+                        + f"Python: {PYTHON_VERSION} > {max_version}"
+                    )
+                )
 
     # see if torch version is supported
     if "torch" in vendor_requirements:
