@@ -34,7 +34,7 @@ def validate_type(_object: object, _type: type, optional: bool = False) -> Any:
 def validate_field(_object: object, _field: str) -> Any:
     object = getattr(_object, _field, None)
 
-    if object:
+    if object is not None:
         return object
 
     traceback_and_raise(f"Object {_object} has no {_field} field set.")

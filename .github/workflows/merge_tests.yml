@@ -13,10 +13,10 @@ on:
     branches:
       - master
       - dev
-      - "0.4"
     paths:
       - "**.py"
       - "setup.cfg"
+      - "**.txt"
       - ".github/workflows/**.yml"
   workflow_dispatch:
     inputs:
