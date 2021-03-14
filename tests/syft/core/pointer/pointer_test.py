@@ -78,7 +78,6 @@ def test_pointable_property() -> None:
 @pytest.mark.xfail
 def test_tags() -> None:
     bob = sy.VirtualMachine(name="Bob")
-    client = bob.get_client()
     root_client = bob.get_root_client()
 
     ten = th.tensor([1, 2])
@@ -125,14 +124,23 @@ def test_tags() -> None:
 
     # __len__ auto gets if you have permission
     f_root = root_client.store["f"]
-
     assert len(f_root) == 3
 
-    # TODO: Fix this test
+
+def test_issue_5170() -> None:
+    bob = sy.VirtualMachine(name="Bob")
+    client = bob.get_client()
+    sy.lib.python.List([1, 2, 3]).send(client, pointable=True, tags=["f"])
+
     f_guest = client.store["f"]
-    result_ptr = f_guest.__len__()
-    assert result_ptr is not None  # should be a pointer?
+    result_ptr = f_guest.len()
+    assert result_ptr is not None
     assert result_ptr.tags == ["f", "__len__"]
+
+    with pytest.raises(ValueError) as e:
+        f_guest.__len__()
+
+    assert str(e.value) == "Request to access data length rejected."
 
 
 def test_description() -> None:

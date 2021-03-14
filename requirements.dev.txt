@@ -15,4 +15,5 @@ pytest
 pytest-asyncio
 pytest-benchmark
 pytest-cov
+pytest-custom_exit_code
 pytest-xdist[psutil]

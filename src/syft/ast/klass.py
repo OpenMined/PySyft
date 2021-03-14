@@ -21,6 +21,9 @@ from ..core.node.common.action.get_or_set_property_action import GetOrSetPropert
 from ..core.node.common.action.get_or_set_property_action import PropertyActions
 from ..core.node.common.action.run_class_method_action import RunClassMethodAction
 from ..core.node.common.action.save_object_action import SaveObjectAction
+from ..core.node.common.service.resolve_pointer_type_service import (
+    ResolvePointerTypeMessage,
+)
 from ..core.pointer.pointer import Pointer
 from ..core.store.storeable_object import StorableObject
 from ..logger import critical
@@ -28,6 +31,48 @@ from ..logger import traceback_and_raise
 from ..logger import warning
 from ..util import aggressive_set_attr
 from ..util import inherit_tags
+
+
+def _resolve_pointer_type(self: Pointer) -> Pointer:
+    """
+    Creates a request on a pointer to validate and regenerate the current pointer type. This method
+    is useful when deadling with AnyPointer or Union<types>Pointers, to retrieve the real pointer.
+
+    The existing pointer will be deleted and a new one will be generated. The remote data won't
+    be touched.
+
+    Args:
+        self: The pointer which will be validated.
+
+    Returns:
+        The new pointer, validated from the remote object.
+    """
+
+    # id_at_location has to be preserved
+    id_at_location = getattr(self, "id_at_location", None)
+
+    if None:
+        traceback_and_raise(
+            ValueError("Can't resolve a pointer that has no underlying object.")
+        )
+
+    cmd = ResolvePointerTypeMessage(
+        id_at_location=id_at_location,
+        address=self.client.address,
+        reply_to=self.client.address,
+    )
+
+    # the path to the underlying type. It has to live in the AST
+    real_type_path = self.client.send_immediate_msg_with_reply(msg=cmd).type_path
+    new_pointer = self.client.lib_ast.query(real_type_path).pointer_type(
+        client=self.client, id_at_location=id_at_location
+    )
+
+    # we disable the garbage collection message and then we delete the existing message.
+    self.gc_enabled = False
+    del self
+
+    return new_pointer
 
 
 def get_run_class_method(attr_path_and_name: str) -> CallableT:
@@ -92,6 +137,7 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
             args=args,
             kwargs=kwargs,
         )
+
         return result
 
     return run_class_method
@@ -177,7 +223,7 @@ def wrap_iterator(attrs: Dict[str, Union[str, CallableT, property]]) -> None:
                 data_len = self.__len__()
             except Exception:
                 traceback_and_raise(
-                    ValueError("Request to access data length not granted.")
+                    ValueError("Request to access data length rejected.")
                 )
 
             return Iterator(_ref=iter_func(self), max_len=data_len)
@@ -199,10 +245,14 @@ def wrap_len(attrs: Dict[str, Union[str, CallableT, property]]) -> None:
             data_len_ptr = len_func(self)
             try:
                 data_len = data_len_ptr.get(**self.get_request_config())
+
+                if data_len is None:
+                    raise Exception
+
                 return data_len
             except Exception:
                 traceback_and_raise(
-                    ValueError("Request to access data length not granted.")
+                    ValueError("Request to access data length rejected.")
                 )
 
         return __len__
@@ -293,6 +343,7 @@ class Class(Callable):
 
         attrs["get_request_config"] = _get_request_config
         attrs["set_request_config"] = _set_request_config
+        attrs["resolve_pointer_type"] = _resolve_pointer_type
 
         fqn = "Pointer"
 
@@ -359,6 +410,8 @@ class Class(Callable):
 
             if pointable:
                 ptr.gc_enabled = False
+            else:
+                ptr.gc_enabled = True
 
             # Step 2: create message which contains object to send
             storable = StorableObject(
@@ -506,7 +559,7 @@ def pointerize_args_and_kwargs(
     for arg in args:
         # check if its already a pointer
         if not isinstance(arg, Pointer):
-            arg_ptr = arg.send(client)
+            arg_ptr = arg.send(client, pointable=False)
             pointer_args.append(arg_ptr)
         else:
             pointer_args.append(arg)
@@ -514,9 +567,9 @@ def pointerize_args_and_kwargs(
     for k, arg in kwargs.items():
         # check if its already a pointer
         if not isinstance(arg, Pointer):
-            arg_ptr = arg.send(client)
+            arg_ptr = arg.send(client, pointable=False)
             pointer_kwargs[k] = arg_ptr
         else:
             pointer_kwargs[k] = arg
 
-    return (pointer_args, pointer_kwargs)
+    return pointer_args, pointer_kwargs
