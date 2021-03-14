@@ -1,23 +1,40 @@
-from ...tf import var
+import textwrap
+
 from .aws import *
 
 
 class AWS_Serverfull(AWS):
-    def __init__(self, config) -> None:
+    def __init__(self, config: SimpleNamespace) -> None:
         """
         credentials (dict) : Contains AWS credentials
         """
 
         super().__init__(config)
 
-        # Order matters
-        self.build_security_group()
+        self.worker = config.app.name == "worker"
 
-        self.build_database()
+        if self.worker:
+            self.vpc = Config(id=os.environ["VPC_ID"])
+            public_subnet_ids = str(os.environ["PUBLIC_SUBNET_ID"]).split(",")
+            private_subnet_ids = str(os.environ["PRIVATE_SUBNET_ID"]).split(",")
+            self.subnets = [
+                (Config(id=private), Config(id=public))
+                for private, public in zip(private_subnet_ids, public_subnet_ids)
+            ]
+            self.build_security_group()
+            self.build_instances()
+        else:  # Deploy a VPC and domain/network
+            # Order matters
+            self.build_vpc()
+            self.build_igw()
+            self.build_public_rt()
+            self.build_subnets()
 
-        # self.writing_exec_script()
-        self.build_instance()
-        self.build_load_balancer()
+            self.build_security_group()
+            self.build_database()
+
+            self.build_instances()
+            self.build_load_balancer()
 
         self.output()
 
@@ -29,19 +46,22 @@ class AWS_Serverfull(AWS):
                 description=f"The public IP address of #{count} instance.",
             )
 
-        self.tfscript += terrascript.Output(
-            "load_balancer_dns",
-            value=var_module(self.load_balancer, "this_elb_dns_name"),
-            description="The DNS name of the ELB.",
-        )
+        if hasattr(self, "load_balancer"):
+            self.tfscript += terrascript.Output(
+                "load_balancer_dns",
+                value=var_module(self.load_balancer, "this_elb_dns_name"),
+                description="The DNS name of the ELB.",
+            )
 
     def build_security_group(self):
         # ----- Security Group ------#
-
+        sg_name = f"pygrid-{self.config.app.name}-" + (
+            f"{str(self.config.app.id)}-sg" if self.worker else "sg"
+        )
         self.security_group = resource.aws_security_group(
             "security_group",
-            name=f"pygrid-{self.config.app.name}-security-group",
-            vpc_id=var(self.vpc.id),
+            name=sg_name,
+            vpc_id=self.vpc.id if self.worker else var(self.vpc.id),
             ingress=[
                 {
                     "description": "HTTPS",
@@ -112,11 +132,11 @@ class AWS_Serverfull(AWS):
                     "self": False,
                 }
             ],
-            tags={"Name": "pygrid-security-group"},
+            tags={"Name": sg_name},
         )
         self.tfscript += self.security_group
 
-    def build_instance(self):
+    def build_instances(self):
         self.ami = terrascript.data.aws_ami(
             "ubuntu",
             most_recent=True,
@@ -134,23 +154,44 @@ class AWS_Serverfull(AWS):
         self.tfscript += self.ami
 
         self.instances = []
+        kwargs = {}
         for count in range(self.config.app.count):
             app = self.config.apps[count]
+            if self.worker:
+                instance_name = (
+                    f"pygrid-{self.config.app.name}-{str(self.config.app.id)}"
+                )
+                kwargs = {
+                    "name": instance_name,
+                    "subnet_ids": [
+                        public_subnet.id for _, public_subnet in self.subnets
+                    ],
+                    "tags": {"Name": instance_name},
+                }
+            else:
+                instance_name = f"pygrid-{self.config.app.name}-instance-{count}"
+                self.write_exec_script(app, index=count)
+                kwargs = {
+                    "name": instance_name,
+                    "subnet_ids": [
+                        var(public_subnet.id) for _, public_subnet in self.subnets
+                    ],
+                    "user_data": self.write_exec_script(app, index=count),
+                    "tags": {"Name": instance_name},
+                }
+
             instance = Module(
                 f"pygrid-instance-{count}",
                 instance_count=1,
                 source="terraform-aws-modules/ec2-instance/aws",
-                name=f"pygrid-{self.config.app.name}-instance-{count}",
                 ami=var(self.ami.id),
-                instance_type=self.config.vpc.instance_type.split(" ")[1],
+                instance_type=self.config.vpc.instance_type.InstanceType,
                 associate_public_ip_address=True,
                 monitoring=True,
                 vpc_security_group_ids=[var(self.security_group.id)],
-                subnet_ids=[var(public_subnet.id) for _, public_subnet in self.subnets],
-                # user_data=var(f'file("{self.root_dir}/deploy.sh")'),
-                user_data=self.exec_script(app),
-                tags={"Name": f"pygrid-{self.config.app.name}-instances-{count}"},
+                **kwargs,
             )
+
             self.tfscript += instance
             self.instances.append(instance)
 
@@ -162,10 +203,7 @@ class AWS_Serverfull(AWS):
             subnets=[var(public_subnet.id) for _, public_subnet in self.subnets],
             security_groups=[var(self.security_group.id)],
             number_of_instances=self.config.app.count,
-            instances=[
-                var_module(self.instances[i], f"id[{i}]")
-                for i in range(self.config.app.count)
-            ],
+            instances=[var_module(instance, f"id[0]") for instance in self.instances],
             listener=[
                 {
                     "instance_port": "80",
@@ -190,6 +228,63 @@ class AWS_Serverfull(AWS):
             tags={"Name": f"pygrid-{self.config.app.name}-load-balancer"},
         )
         self.tfscript += self.load_balancer
+
+    def write_exec_script(self, app, index=0):
+        ##TODO(amr): remove `git checkout pygrid_0.3.0` after merge
+
+        # exec_script = "#cloud-boothook\n#!/bin/bash\n"
+        exec_script = "#!/bin/bash\n"
+        exec_script += textwrap.dedent(
+            f"""
+            ## For debugging
+            # redirect stdout/stderr to a file
+            exec &> server_log.out
+            echo 'Simple Web Server for testing the deployment'
+            sudo apt update -y
+            sudo apt install apache2 -y
+            sudo systemctl start apache2
+            echo '<h1>OpenMined {self.config.app.name} Server ({index}) Deployed via Terraform</h1>' | sudo tee /var/www/html/index.html
+
+            exec &> conda_log.out
+            echo 'Setup Miniconda environment'
+            sudo wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+            sudo bash miniconda.sh -b -p miniconda
+            sudo rm miniconda.sh
+            export PATH=/miniconda/bin:$PATH > ~/.bashrc
+            conda init bash
+            source ~/.bashrc
+            conda create -y -n pygrid python=3.7
+            conda activate pygrid
+
+            exec &> poetry_log.out
+            echo 'Install poetry...'
+            pip install poetry
+
+            exec &> gcc_log.out
+            echo 'Install GCC'
+            sudo apt-get install python3-dev -y
+            sudo apt-get install libevent-dev -y
+            sudo apt-get install gcc -y
+
+            exec &> grid_log.out
+            echo 'Cloning PyGrid'
+            git clone https://github.com/OpenMined/PyGrid && cd /PyGrid/
+            git checkout infra_workers_0.3
+
+            cd /PyGrid/apps/{self.config.app.name}
+
+            exec &> dependencies_log.out
+            echo 'Installing {self.config.app.name} Dependencies'
+            poetry install
+
+            ## TODO(amr): remove this after poetry updates
+            pip install pymysql
+
+            exec &> start_app.out
+            nohup ./run.sh --port {app.port}  --host {app.host}
+        """
+        )
+        return exec_script
 
     def build_database(self):
         """Builds a MySQL central database."""
@@ -256,60 +351,3 @@ class AWS_Serverfull(AWS):
             tags={"Name": f"pygrid-{self.config.app.name}-mysql-database"},
         )
         self.tfscript += self.database
-
-    def exec_script(self, app):
-        exec_script = f'''
-        #cloud-boothook
-        #!/bin/bash
-
-        ## For debugging
-        # redirect stdout/stderr to a file
-        exec &> log.out
-
-
-        echo "Simple Web Server for testing the deployment"
-        sudo apt update -y
-        sudo apt install apache2 -y
-        sudo systemctl start apache2
-        echo """
-        <h1 style='color:#f09764; text-align:center'>
-            OpenMined First Server Deployed via Terraform
-        </h1>
-        """ | sudo tee /var/www/html/index.html
-
-        echo "Setup Miniconda environment"
-
-        sudo wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-        sudo bash miniconda.sh -b -p miniconda
-        sudo rm miniconda.sh
-        export PATH=/miniconda/bin:$PATH > ~/.bashrc
-        conda init bash
-        source ~/.bashrc
-        conda create -y -n pygrid python=3.7
-        conda activate pygrid
-
-        echo "Install poetry..."
-        pip install poetry
-
-        echo "Install GCC"
-        sudo apt-get install python3-dev -y
-        sudo apt-get install libevent-dev -y
-        sudo apt-get install gcc -y
-
-        echo "Cloning PyGrid"
-        git clone https://github.com/OpenMined/PyGrid
-
-        cd /PyGrid/apps/{self.config.app.name}
-
-        echo "Installing {self.config.app.name} Dependencies"
-        poetry install
-
-        echo "Setting Database URL"
-        export DATABASE_URL={self.database.engine}:pymysql://{self.database.username}:{self.database.password}@{var(self.database.endpoint)}://{self.database.name}
-
-        nohup ./run.sh --port {app.port}  --host {app.host} {f"--id {app.id} --network {app.network}" if self.config.app.name == "domain" else ""}
-        '''
-
-        # with open(f"{self.root_dir}/deploy.sh", "w") as deploy_file:
-        # deploy_file.write(exec_script)
-        return exec_script

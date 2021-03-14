@@ -2,7 +2,7 @@ import boto3
 import click
 from PyInquirer import prompt
 
-from ..utils import Config, styles
+from apps.infrastructure.utils import Config, styles
 
 
 def get_vpc_config() -> Config:
@@ -51,32 +51,96 @@ def get_vpc_config() -> Config:
     return Config(region=region, av_zones=av_zones)
 
 
-def get_instance_type():
-    instance_info = (
-        lambda i: f"Instance: {i['InstanceType']} # Memory: {round(i['MemoryInfo']['SizeInMiB'] / 1024, 3)}GB # CPUs: {i['VCpuInfo']['DefaultVCpus']}"
+def get_instance_type(region):
+
+    instance_type_filters = {
+        "Accelerated Computing Instances(GPU)": [
+            {"Name": "instance-type", "Values": ["p*"]}
+        ],
+        "Compute Optimized Instances": [{"Name": "instance-type", "Values": ["c5*"]}],
+        "General Purpose Instances": [{"Name": "instance-type", "Values": ["t2*"]}],
+        "Free Tier Instances": [{"Name": "free-tier-eligible", "Values": ["true"]}],
+    }
+
+    # Choose instance category
+    client = boto3.client("ec2", region_name=region)
+    instance_category = prompt(
+        [
+            {
+                "type": "list",
+                "name": "instanceCategory",
+                "message": "Please select an AWS instance category.",
+                "default": "us-east-1",
+                "choices": instance_type_filters.keys(),
+            }
+        ],
+        style=styles.second,
+    )["instanceCategory"]
+
+    # Get all instances in specific category
+    response = client.describe_instance_types(
+        Filters=instance_type_filters[instance_category]
     )
-    instances = sorted(
-        boto3.client("ec2").describe_instance_types()["InstanceTypes"],
-        key=lambda i: i["InstanceType"],
+    instances = response["InstanceTypes"]
+
+    while "NextToken" in response.keys():
+        response = client.describe_instance_types(
+            Filters=instance_type_filters[instance_category],
+            NextToken=response["NextToken"],
+        )
+        instances += response["InstanceTypes"]
+
+    # Sort instances
+    sorted_instances = (
+        sorted(instances, key=lambda i: i["GpuInfo"]["TotalGpuMemoryInMiB"])
+        if instance_category == "Accelerated Computing Instances(GPU)"
+        else sorted(instances, key=lambda i: i["VCpuInfo"]["DefaultVCpus"])
     )
-    return prompt(
+
+    to_GB = lambda x: f"{round(x / 1024, 3)} GB"
+    log = lambda name, value: f"{name}: {value}"
+
+    def parse_instance(i):
+        s = [" " for i in range(500)]
+        s[:30] = log("Instance", i["InstanceType"])
+        s[30:60] = log("Memory", to_GB(i["MemoryInfo"]["SizeInMiB"]))
+        s[60:80] = log("CPUs", i["VCpuInfo"]["DefaultVCpus"])
+        gpu_info = i.get("GpuInfo", None)
+        if gpu_info:
+            for i, gpu in enumerate(gpu_info["Gpus"]):
+                offset = 80 + i * 60
+                s[offset : offset + 10] = "GPU :-"
+                s[offset + 10 : offset + 25] = gpu["Manufacturer"] + " " + gpu["Name"]
+                s[offset + 25 : offset + 45] = "| " + log(
+                    "Memory", to_GB(gpu["MemoryInfo"]["SizeInMiB"])
+                )
+                s[offset + 45 : offset + 60] = "| " + log("Count", gpu["Count"])
+            s[80 + (i + 1) * 60 : 80 + (i + 1) * 60 + 90] = log(
+                "Total GPU Memory", to_GB(gpu_info["TotalGpuMemoryInMiB"])
+            )
+        return "".join(s).rstrip()
+
+    # dictionary of parsed instances
+    parsed_instances = {parse_instance(i): i for i in sorted_instances}
+
+    # Selct an instance
+    instance = prompt(
         [
             {
                 "type": "list",
                 "name": "instance",
-                "message": "Please select your desired AWS instance",
-                "default": "t2.micro",
-                "choices": [instance_info(instance) for instance in instances],
+                "message": "Please select your desired AWS instance.",
+                "choices": parsed_instances.keys(),
             }
         ],
         style=styles.second,
     )["instance"]
 
+    return Config(**parsed_instances[instance])
+
 
 def get_vpc_ip_config() -> Config:
     """Assists the user in entering configuration related to IP address of VPC.
-
-    :return:
     """
 
     cidr_blocks = prompt(

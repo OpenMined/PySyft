@@ -1,3 +1,5 @@
 {
-  "python.pythonPath": "/Users/cereallarceny/.pyenv/versions/3.7.5/bin/python"
+  "python.pythonPath": "/Users/amrmkayid/anaconda3/envs/pygrid/bin/python",
+  "python.formatting.provider": "black",
+  "editor.tabSize": 4
 }

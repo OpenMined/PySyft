@@ -140,7 +140,7 @@ def test_delete_autoscaling_condition(client):
     result = client.delete("/dcfl/nodes/autoscaling/6413568")
     assert result.status_code == 200
     assert result.get_json() == {"msg": "Autoscaling condition deleted succesfully!"}
-"""
+
 
 
 def test_create_worker(client, database, cleanup):
@@ -359,3 +359,4 @@ def test_delete_worker(client, database, cleanup):
     )
     # assert result.status_code == 200
     # assert result.get_json() == {"msg": "Worker was deleted succesfully!"}
+"""

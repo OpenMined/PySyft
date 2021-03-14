@@ -38,15 +38,15 @@ def test_register_new_environment(database, cleanup):
 
     new_env = environment.register(
         address="http://localhost:5000/",
-        memory="32",
-        instance="EC2",
-        gpu="RTX3070",
+        provider="AWS",
+        instance_type="EC2",
+        state=2,
     )
 
     assert new_env.address == "http://localhost:5000/"
-    assert new_env.memory == "32"
-    assert new_env.instance == "EC2"
-    assert new_env.gpu == "RTX3070"
+    assert new_env.provider == "AWS"
+    assert new_env.instance_type == "EC2"
+    assert new_env.state == 2
 
 
 def test_query_new_environment(database, cleanup):
@@ -54,15 +54,15 @@ def test_query_new_environment(database, cleanup):
 
     environment.register(
         address="http://localhost:5000/",
-        memory="32",
-        instance="EC2",
-        gpu="RTX3070",
+        provider="AWS",
+        instance_type="EC2",
+        state=2,
     )
 
     result = environment.query(address="http://localhost:5000/")[0]
-    assert result.memory == "32"
-    assert result.instance == "EC2"
-    assert result.gpu == "RTX3070"
+    assert result.provider == "AWS"
+    assert result.instance_type == "EC2"
+    assert result.state == 2
 
 
 def test_first_new_environment(database, cleanup):
@@ -70,12 +70,12 @@ def test_first_new_environment(database, cleanup):
 
     environment.register(
         address="http://localhost:5000/",
-        memory="32",
-        instance="EC2",
-        gpu="RTX3070",
+        provider="AWS",
+        instance_type="EC2",
+        state=2,
     )
 
     result = environment.first(address="http://localhost:5000/")
-    assert result.memory == "32"
-    assert result.instance == "EC2"
-    assert result.gpu == "RTX3070"
+    assert result.provider == "AWS"
+    assert result.instance_type == "EC2"
+    assert result.state == 2

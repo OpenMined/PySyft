@@ -16,7 +16,6 @@ aws_lambda_vpc_execution_role_policy = """{
             ]
         }"""
 
-
 cloud_watch_logs_full_access_policy = """{
             "Version": "2012-10-17",
             "Statement": [
@@ -30,7 +29,6 @@ cloud_watch_logs_full_access_policy = """{
             ]
         }
         """
-
 
 amazon_rds_data_full_access_policy = """{
         "Version": "2012-10-17",

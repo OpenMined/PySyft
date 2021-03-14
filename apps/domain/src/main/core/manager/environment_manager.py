@@ -1,11 +1,10 @@
-from typing import List
-from typing import Union
-from .database_manager import DatabaseManager
-from ..database.environment.environment import Environment
+from datetime import datetime
+from typing import List, Union
+
+from ..database.environment.environment import Environment, states
 from ..database.environment.user_environment import UserEnvironment
-from ..exceptions import (
-    EnvironmentNotFoundError,
-)
+from ..exceptions import EnvironmentNotFoundError
+from .database_manager import DatabaseManager
 
 
 class EnvironmentManager(DatabaseManager):
@@ -52,3 +51,6 @@ class EnvironmentManager(DatabaseManager):
         if len(results) == 0:
             raise EnvironmentNotFoundError
         return results
+
+    def set(self, id, **kwargs):
+        self.modify({"id": id}, {**kwargs})

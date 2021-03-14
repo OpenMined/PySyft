@@ -1,15 +1,17 @@
-from .blueprint import root_blueprint as root_route
+import json
+from nacl.encoding import HexEncoder
+from flask import Response, request
+
 from ...core.node import node
 from ...core.task_handler import executor
+from .blueprint import root_blueprint as root_route
 
 # syft absolute
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft import deserialize, serialize
 from syft.core.common.serde.serialize import _serialize
-from flask import request, Response
-import json
-from nacl.encoding import HexEncoder
+
 
 executor_running = False
 
@@ -19,7 +21,7 @@ def metadata_route():
     response_body = {
         "metadata": serialize(node.get_metadata_for_client())
         .SerializeToString()
-        .decode("ISO-8859-1"),
+        .decode("ISO-8859-1")
     }
     return Response(json.dumps(response_body), status=200, mimetype="application/json")
 

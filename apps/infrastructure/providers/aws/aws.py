@@ -1,3 +1,4 @@
+# from ..terraform import generate_cidr_block, var, var_module
 from ...tf import generate_cidr_block, var, var_module
 from ..provider import *
 
@@ -5,34 +6,27 @@ from ..provider import *
 class AWS(Provider):
     """Amazon Web Services (AWS) Cloud Provider."""
 
-    def __init__(self, config: Config) -> None:
+    def __init__(self, config: SimpleNamespace) -> None:
         """
-        config (Config) : Object storing the required configuration for deployment
+        config (SimpleNamespace) : Object storing the required configuration for deployment
         """
-        super().__init__(app=config.app.name)
+        super().__init__(config)
         self.config = config
 
         credentials_dir = os.path.join(str(Path.home()), ".aws/api/")
         os.makedirs(credentials_dir, exist_ok=True)
-        self.cred_file = os.path.join(credentials_dir, "credentialss.json")
+        self.cred_file = os.path.join(credentials_dir, "credentials.json")
 
-        with open(self.cred_file, "w") as f:
-            json.dump(vars(config.credentials.cloud), f, indent=2, sort_keys=False)
-
-        self.region = config.vpc.region
-        self.av_zones = config.vpc.av_zones
+        if not os.path.exists(self.cred_file):
+            with open(self.cred_file, "w") as f:
+                json.dump(vars(config.credentials.cloud), f, indent=2, sort_keys=False)
 
         self.tfscript += terrascript.provider.aws(
-            region=self.region, shared_credentials_file=self.cred_file
+            region=self.config.vpc.region, shared_credentials_file=self.cred_file
         )
 
-        # Build the Infrastructure
         self.vpc = None
         self.subnets = []
-        self.build_vpc()
-        self.build_igw()
-        self.build_public_rt()
-        self.build_subnets()
 
     def build_vpc(self):
         """Adds a VPC."""
@@ -90,7 +84,7 @@ class AWS(Provider):
         - one Route table : Routes the traffic from the NAT gateway to the private subnet
         """
 
-        for i, av_zone in enumerate(self.av_zones):
+        for i, av_zone in enumerate(self.config.vpc.av_zones):
             private_subnet = resource.aws_subnet(
                 f"private-subnet-{i}",
                 vpc_id=var(self.vpc.id),
@@ -98,6 +92,7 @@ class AWS(Provider):
                     base_cidr_block=self.vpc.cidr_block, netnum=(2 * i)
                 ),
                 availability_zone=av_zone,
+                map_public_ip_on_launch=True,
                 tags={"Name": f"private-{i}"},
             )
             self.tfscript += private_subnet
@@ -109,6 +104,7 @@ class AWS(Provider):
                     base_cidr_block=self.vpc.cidr_block, netnum=(2 * i + 1)
                 ),
                 availability_zone=av_zone,
+                map_public_ip_on_launch=True,
                 tags={"Name": f"public-{i}"},
             )
             self.tfscript += public_subnet

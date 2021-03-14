@@ -9,7 +9,7 @@ def model_to_json(model):
     json = {}
     for col in model.__mapper__.attrs.keys():
         if col != "hashed_password" and col != "salt":
-            if col == "date":
+            if col == "date" or col == "created_at" or col == "destroyed_at":
                 # Cast datetime object to string
                 json[col] = str(getattr(model, col))
             else:
