@@ -6,9 +6,9 @@ from pytest import approx
 import syft as sy
 
 
-@pytest.mark.vendor(lib="openmined_psi")
 @pytest.mark.parametrize("loadlib_before_client", [True, False])
 @pytest.mark.parametrize("reveal_intersection", [True, False])
+@pytest.mark.vendor(lib="openmined_psi")
 def test_psi(loadlib_before_client: bool, reveal_intersection: bool) -> None:
     # third party
     import openmined_psi as psi
