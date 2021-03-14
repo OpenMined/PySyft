@@ -105,6 +105,10 @@ def create_ast(client: TypeAny = None) -> Globals:
             "sympc.tensor.ShareTensor.numel",
             "syft.lib.python.Int",  # FIXME: Can't we just return an int??
         ),
+        (
+            "sympc.tensor.ShareTensor.T",
+            "sympc.tensor.ShareTensor",
+        ),
     ]
 
     add_modules(ast, modules)
