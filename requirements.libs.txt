@@ -2,5 +2,5 @@ opacus
 openmined.psi
 python-dp
 pytorch-lightning @ git+https://github.com/madhavajay/pytorch-lightning@tudor-om-v0
-sympc @ git+https://github.com/madhavajay/SyMPC@madhava/torch_1_8
+sympc @ git+https://github.com/OpenMined/SyMPC@main
 tenseal
