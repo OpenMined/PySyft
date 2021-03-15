@@ -11,8 +11,8 @@ from pytorch_lightning import Trainer  # noqa: 401
 LIB_NAME = "pytorch_lightning"
 PACKAGE_SUPPORT = {
     "lib": LIB_NAME,
-    "torch": {"max_version": "1.7.1"},
-    "python": {"max_version": (3, 8, 99)},
+    "torch": {"max_version": "1.8.0"},
+    "python": {"max_version": (3, 9, 99)},
 }
 
 # from ...ast.globals import Globals
