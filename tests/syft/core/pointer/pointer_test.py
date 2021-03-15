@@ -1,9 +1,22 @@
+from io import StringIO
+import sys
+
 # third party
 import pytest
 import torch as th
 
 # syft absolute
 import syft as sy
+
+
+def validate_output(data, data_ptr):
+    old_stdout = sys.stdout
+    sys.stdout = newstdout = StringIO()
+
+    data_ptr.print()
+
+    sys.stdout = old_stdout
+    assert newstdout.getvalue().strip("\n") == str(repr(data))
 
 
 @pytest.mark.slow
@@ -160,3 +173,49 @@ def test_description() -> None:
     ptr = ten.send(root_client, description="description 2")
     assert ten.description == "description 2"
     assert ptr.description == "description 2"
+
+
+def test_printing() -> None:
+    bob = sy.VirtualMachine(name="Bob")
+    data_types = [
+        sy.lib.python.Int(1),
+        sy.lib.python.Float(1.5),
+        sy.lib.python.Bool(True),
+        sy.lib.python.List([1, 2, 3]),
+        sy.lib.python.Tuple((1, 2, 3)),
+        th.tensor([1, 2, 3]),
+    ]
+
+    root_client = bob.get_root_client()
+    for data in data_types:
+        validate_output(data, data.send(root_client))
+
+    basic_client = bob.get_client()
+    for data in data_types:
+        validate_output(data, data.send(basic_client))
+
+
+def test_printing_remote_creation() -> None:
+    def create_data_types(client):
+        return [
+            client.syft.lib.python.Int(1),
+            client.syft.lib.python.Float(1.5),
+            client.syft.lib.python.Bool(True),
+            client.syft.lib.python.List([1, 2, 3]),
+            client.syft.lib.python.Tuple((1, 2, 3)),
+            client.torch.Tensor([1, 2, 3]),
+        ]
+
+    bob = sy.VirtualMachine()
+    results = []
+
+    root_client = bob.get_root_client()
+    for elem in create_data_types(root_client):
+        out = elem.get(delete_obj=False)
+        results.append(out)
+        validate_output(out, elem)
+
+    basic_client = bob.get_client()
+    for idx, elem in enumerate(create_data_types(basic_client)):
+        # shouldn't this fail?
+        validate_output(results[idx], elem)
