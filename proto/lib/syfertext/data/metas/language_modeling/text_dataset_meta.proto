@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package syft.lib.syfertext;
+
+message TextDatasetMeta {
+    bytes uuid = 1;
+    string train_path = 2;
+    string valid_path = 3;
+    string test_path = 4;   
+}

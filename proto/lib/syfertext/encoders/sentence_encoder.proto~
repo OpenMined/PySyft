@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package syft.lib.syfertext;
+
+import "proto/lib/syfertext/tokenizers/spacy_tokenizer.proto";
+
+message SentenceEncoder {
+    bytes uuid = 1;
+    SpacyTokenizer spacy_tokenizer = 2;
+}

@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package syft.lib.syfertext;
+
+import "proto/lib/syfertext/encoders/sentence_encoder.proto";
+
+message TextReader {
+    bytes uuid = 1;
+    string mode = 2;
+    SentenceEncoder encoder = 3;
+}

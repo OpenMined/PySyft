@@ -1,0 +1,154 @@
+# stdlib
+from typing import List
+from typing import Optional
+from uuid import UUID
+
+# third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
+from syfertext.data.iterators.language_modeling import BPTTIterator
+from syfertext.data.readers.language_modeling import TextReader
+from syfertext.encoders.sentence_encoder import SentenceEncoder
+
+# syft relative
+from ......core.common import UID
+from ......core.store.storeable_object import StorableObject
+from ......proto.lib.syfertext.data.iterators.language_modeling.bptt_iterator_pb2 import BPTTIterator as BPTTIterator_PB
+from ......proto.lib.syfertext.data.readers.language_modeling.text_reader_pb2 import TextReader as TextReader_PB
+from ......proto.lib.syfertext.encoders.sentence_encoder_pb2 import SentenceEncoder as SentenceEncoder_PB
+from ....tokenizers.spacy_tokenizer import SpacyTokenizerWrapper
+from ......util import aggressive_set_attr
+
+
+class BPTTIteratorWrapper(StorableObject):
+
+    def __init__(self, value: object):
+
+        super().__init__(
+            data = value,
+            id = getattr(value, 'id', UID()),
+            tags = getattr(value, 'tags', []),
+            description = getattr(value, 'description', '')
+        )
+
+        self.bptt_iterator = value
+
+    def _data_object2proto(self) -> BPTTIterator_PB:
+
+        bptt_iterator_pb = BPTTIterator_PB()
+
+        bptt_iterator_pb.uuid = self.id.value.bytes
+        bptt_iterator_pb.batch_size = self.bptt_iterator.batch_size
+        bptt_iterator_pb.bptt_len = self.bptt_iterator.bptt_len
+        bptt_iterator_pb.shuffle = self.bptt_iterator.shuffle                
+        bptt_iterator_pb.mode = self.bptt_iterator.mode
+
+        # -------------------------------------
+        # Create the TextReader protobuf object
+        # -------------------------------------
+        
+        # Get the Dataset reader object
+        text_reader = self.bptt_iterator.dataset_reader
+
+        # Create/get its uuid
+        bptt_iterator_pb.dataset_reader.uuid = getattr(text_reader, 'id', UID()).value.bytes
+
+        bptt_iterator_pb.dataset_reader.mode = text_reader.mode
+
+        # Get the sentence encoder object
+        sentence_encoder = self.bptt_iterator.dataset_reader.encoder
+        
+        bptt_iterator_pb.dataset_reader.encoder.uuid = getattr(sentence_encoder, 'id', UID()).value.bytes
+
+        # Populate the tokenizer protobuf part in the iterator protobuf
+        SpacyTokenizerWrapper.object2proto(id = getattr(sentence_encoder.tokenizer, 'id', UID()),
+                                           tokenizer = sentence_encoder.tokenizer,
+                                           tokenizer_pb = bptt_iterator_pb.dataset_reader.encoder.tokenizer
+                                           )
+
+        return bptt_iterator_pb
+
+    @staticmethod
+    def _data_proto2object(proto: BPTTIterator_PB) -> BPTTIterator:
+
+        # For convenience, rename the `proto` argument
+        bptt_iterator_pb = proto
+
+        # Extract the property values
+        batch_size = bptt_iterator_pb.batch_size
+        bptt_len = bptt_iterator_pb.bptt_len
+        shuffle = bptt_iterator_pb.shuffle
+        mode = bptt_iterator_pb.mode
+
+        # ------------------------------------
+        # Create the TextReader object
+        # ------------------------------------
+
+        # get the tokenizer object from the protobuf object
+        tokenizer_pb =  bptt_iterator_pb.dataset_reader.encoder.tokenizer
+        tokenizer = SpacyTokenizerWrapper._data_proto2object(proto = tokenizer_pb)
+
+        uuid = UUID(bytes = tokenizer_pb.uuid)
+        tokenizer.id = UID(value = uuid)
+
+        # Create the sentence encoder object from its protobuf
+        sentence_encoder_pb = bptt_iterator_pb.dataset_reader.encoder
+
+        sentence_encoder = SentenceEncoder(tokenizer = tokenizer)
+        
+        uuid = UUID(bytes = sentence_encoder_pb.uuid)
+        sentence_encoder.id = UID(value = uuid)
+
+
+        # Now deal with the text reader
+        text_reader_pb = bptt_iterator_pb.dataset_reader
+        
+        text_reader = TextReader(mode = text_reader_pb.mode,
+                                 encoder = sentence_encoder)
+
+
+        uuid = UUID(bytes = text_reader_pb.uuid)
+        text_reader.id = UID(value = uuid)
+
+        
+        # Finaly, create the BPTTIterator object
+        bptt_iterator = BPTTIterator(batch_size = batch_size,
+                                     bptt_len = bptt_len,
+                                     shuffle = shuffle,
+                                     mode = mode,
+                                     dataset_reader = text_reader
+                                     )
+        
+
+        uuid = UUID(bytes = bptt_iterator_pb.uuid)
+        bptt_iterator.id = UID(value = uuid)
+        
+        return bptt_iterator
+
+    
+    @staticmethod
+    def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
+        return BPTTIterator_PB
+    
+    @staticmethod
+    def get_wrapped_type() -> type:
+        return BPTTIterator
+
+    @staticmethod
+    def construct_new_object(
+            id: UID,
+            data: StorableObject,
+            description: Optional[str],
+            tags: Optional[List[str]],
+    ) -> StorableObject:
+        
+        data.id = id
+        data.tags = tags
+        data.description = description
+        
+        return data
+    
+aggressive_set_attr(
+    obj = BPTTIterator,
+    name = 'serializable_wrapper_type',
+    attr = BPTTIteratorWrapper
+)

@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package syft.lib.syfertext;
+
+import "proto/lib/syfertext/data/units/attribute_values.proto";
+import "proto/lib/syfertext/data/units/token_meta.proto";
+
+message TokenMeta{
+    repeated text = 1;
+    bool space_after = 2;
+    map<string, AttributeValues> attributes = 3;
+}

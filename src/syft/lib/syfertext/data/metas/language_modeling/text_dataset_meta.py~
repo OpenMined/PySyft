@@ -1,0 +1,126 @@
+# stdlib
+from typing import List
+from typing import Optional
+from uuid import UUID
+
+# third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
+from syfertext.tokenizers import TextDatasetMeta
+
+# syft relative
+from ......core.common import UID
+from ......core.store.storeable_object import StorableObject
+from ......proto.lib.syfertext.tokenizers.text_dataset_meta_pb2 import TextDatasetMeta as TextDatasetMeta_PB
+from ......proto.lib.syfertext.tokenizers.text_dataset_meta_pb2 import TokenSplits as TokenSplits_PB
+from ......util import aggressive_set_attr
+
+
+class TextDatasetMetaWrapper(StorableObject):
+
+    def __init__(self, value: object):
+
+        super().__init__(
+            data = value,
+            id = getattr(value, 'id', UID()),
+            tags = getattr(value, 'tags', []),
+            description = getattr(value, 'description', '')
+        )
+
+        self.value = value
+
+    
+    def _data_object2proto(self) -> TextDatasetMeta_PB:
+
+        # Initialize the protobuf object for the tokenizer
+        text_dataset_meta_pb = TextDatasetMeta_PB()
+        
+        # Convert the tokenizer object to the corresponding protobuf object
+        text_dataset_meta_pb = self.object2proto(id = self.id,
+                                               tokenizer = self,
+                                               tokenizer_pb = text_dataset_meta_pb
+                                               )
+            
+        return text_dataset_meta_pb
+
+    @staticmethod
+    def object2proto(id, tokenizer, tokenizer_pb):
+        """utility method to convert a TextDatasetMeta object into
+        a protobuf boject.
+
+        This is not required by syft. It is meant to be used by
+        any external function that needs to convert a spacy tokenizer
+        into a protobu object.
+        """
+        
+        tokenizer_pb.uuid = id.value.bytes
+        tokenizer_pb.prefixes.extend(tokenizer.prefixes)
+        tokenizer_pb.suffixes.extend(tokenizer.suffixes)
+        tokenizer_pb.infixes.extend(tokenizer.infixes)
+
+
+        # Add the dictionary of exceptions to the ProtoBuf object
+        for token, splits in tokenizer.exceptions.items():
+            tokenizer_pb.exceptions[token].splits.extend(splits)        
+
+
+        return tokenizer_pb
+    
+    @staticmethod
+    def _data_proto2object(proto: TextDatasetMeta_PB) -> TextDatasetMeta:
+
+        prefixes = proto.prefixes
+        suffixes = proto.suffixes
+        infixes = proto.infixes
+
+        # Create a dict from the protobuf's map object representing the token
+        # exceptions
+        token_exceptions = dict()
+        
+        for token in proto.exceptions:
+            token_splits = proto.exceptions[token].splits
+            token_exceptions[token] = token_splits
+
+        # Create the TextDatasetMeta object
+        text_dataset_meta = TextDatasetMeta(prefixes = prefixes,
+                                         suffixes = suffixes,
+                                         infixes = infixes,
+                                         exceptions = token_exceptions
+                                         )
+        
+        # Create a uuid.UUID object and assign it as an attribute to the tokenizer
+        # The reason I do not set the id directly in the constructor is because I
+        # do not want the API to expose the ID which is not something the end user
+        # should worry about.
+        uuid = UUID(bytes = proto.uuid)
+        text_dataset_meta.id = UID(value = uuid)
+
+        return text_dataset_meta
+
+    
+    @staticmethod
+    def get_data_protobuf_schema() -> GeneratedProtocolMessageType:
+        return TextDatasetMeta_PB
+    
+    @staticmethod
+    def get_wrapped_type() -> type:
+        return TextDatasetMeta
+
+    @staticmethod
+    def construct_new_object(
+            id: UID,
+            data: StorableObject,
+            description: Optional[str],
+            tags: Optional[List[str]],
+    ) -> StorableObject:
+        
+        data.id = id
+        data.tags = tags
+        data.description = description
+        
+        return data
+    
+aggressive_set_attr(
+    obj = TextDatasetMeta,
+    name = 'serializable_wrapper_type',
+    attr = TextDatasetMetaWrapper
+)

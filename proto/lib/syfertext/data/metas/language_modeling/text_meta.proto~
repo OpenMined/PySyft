@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package syft.lib.syfertext;
+
+message TextDoc {
+    bytes uuid = 1;
+    repeated TokenMeta token_metas = 2;
+    map<string, AttributeValues> attributes = 3;
+}
