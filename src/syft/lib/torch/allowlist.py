@@ -218,8 +218,14 @@ allowlist["torch.Tensor.cpu"] = "torch.Tensor"
 allowlist["torch.Tensor.cross"] = "torch.Tensor"
 allowlist["torch.Tensor.cuda"] = "torch.Tensor"
 allowlist["torch.return_types"] = "torch.return_types"
-allowlist["torch.return_types.cummax"] = "torch.return_types.cummax"
-allowlist["torch.return_types.cummin"] = "torch.return_types.cummin"
+allowlist["torch.return_types.cummax"] = {
+    "return_type": "torch.return_types.cummax",
+    "min_version": "1.5.0",
+}
+allowlist["torch.return_types.cummin"] = {
+    "return_type": "torch.return_types.cummin",
+    "min_version": "1.5.0",
+}
 allowlist["torch.return_types.eig"] = "torch.return_types.eig"
 allowlist["torch.return_types.kthvalue"] = "torch.return_types.kthvalue"
 allowlist["torch.return_types.lstsq"] = "torch.return_types.lstsq"
