@@ -1,5 +1,8 @@
+# stdlib
 from io import StringIO
 import sys
+from typing import Any
+from typing import List
 
 # third party
 import pytest
@@ -7,9 +10,11 @@ import torch as th
 
 # syft absolute
 import syft as sy
+from syft.core.node.common.client import AbstractNodeClient
+from syft.core.pointer.pointer import Pointer
 
 
-def validate_output(data, data_ptr):
+def validate_output(data: Any, data_ptr: Pointer) -> None:
     old_stdout = sys.stdout
     sys.stdout = newstdout = StringIO()
 
@@ -196,7 +201,7 @@ def test_printing() -> None:
 
 
 def test_printing_remote_creation() -> None:
-    def create_data_types(client):
+    def create_data_types(client: AbstractNodeClient) -> List[Pointer]:
         return [
             client.syft.lib.python.Int(1),
             client.syft.lib.python.Float(1.5),
