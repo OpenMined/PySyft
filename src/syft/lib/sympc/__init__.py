@@ -109,14 +109,8 @@ def create_ast(client: TypeAny = None) -> Globals:
             "sympc.tensor.ShareTensor.T",
             "sympc.tensor.ShareTensor",
         ),
-        (
-            "sympc.tensor.ShareTensor.unsqueeze",
-            "sympc.tensor.ShareTensor"
-        ),
-        (
-            "sympc.tensor.ShareTensor.view",
-            "sympc.tensor.ShareTensor"
-        )
+        ("sympc.tensor.ShareTensor.unsqueeze", "sympc.tensor.ShareTensor"),
+        ("sympc.tensor.ShareTensor.view", "sympc.tensor.ShareTensor"),
     ]
 
     add_modules(ast, modules)
