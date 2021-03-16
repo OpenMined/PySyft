@@ -8,6 +8,7 @@ def test_path_cache() -> None:
 
     list_ref1 = sy.lib_ast.query(short_fqn_list, obj_type=sy.lib.python.List)
     list_ref2 = sy.lib_ast.query(long_fqn_list, obj_type=sy.lib.python.List)
+    list_ref2 = sy.lib_ast.query(long_fqn_list)
 
     assert list_ref1.object_ref == sy.lib.python.List
     assert list_ref1.name == "List"
