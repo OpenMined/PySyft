@@ -24,6 +24,17 @@ def validate_output(data: Any, data_ptr: Pointer) -> None:
     assert newstdout.getvalue().strip("\n") == str(repr(data))
 
 
+def validate_permission_error(data_ptr: Pointer) -> None:
+    old_stdout = sys.stdout
+    sys.stdout = newstdout = StringIO()
+
+    data_ptr.print()
+
+    sys.stdout = old_stdout
+
+    assert newstdout.getvalue().startswith("No permission to print")
+
+
 @pytest.mark.slow
 @pytest.mark.parametrize("with_verify_key", [True, False])
 def test_make_pointable(with_verify_key: bool) -> None:
@@ -212,15 +223,12 @@ def test_printing_remote_creation() -> None:
         ]
 
     bob = sy.VirtualMachine()
-    results = []
 
     root_client = bob.get_root_client()
     for elem in create_data_types(root_client):
         out = elem.get(delete_obj=False)
-        results.append(out)
         validate_output(out, elem)
 
     basic_client = bob.get_client()
     for idx, elem in enumerate(create_data_types(basic_client)):
-        # shouldn't this fail?
-        validate_output(results[idx], elem)
+        validate_permission_error(elem)

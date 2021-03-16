@@ -9,6 +9,7 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # syft relative
+from .auth import service_auth
 from ..... import serialize
 from .....core.common.serde.serializable import bind_protobuf
 from .....proto.core.node.common.service.get_repr_service_pb2 import (
@@ -96,6 +97,7 @@ class GetReprReplyMessage(ImmediateSyftMessageWithoutReply):
 
 class GetReprService(ImmediateNodeServiceWithReply):
     @staticmethod
+    @service_auth(root_only=True)
     def process(
         node: AbstractNode,
         msg: GetReprMessage,
