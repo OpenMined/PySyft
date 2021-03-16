@@ -7,7 +7,7 @@ import syft as sy
 
 @pytest.mark.vendor(lib="opacus")
 def test_remote_engine_simple() -> None:
-    sy.load_lib("opacus")
+    sy.load("opacus")
 
     data_owner = sy.VirtualMachine().get_root_client()
     remote_opacus = data_owner.opacus
