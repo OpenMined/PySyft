@@ -208,7 +208,7 @@ def test_printing() -> None:
 
     basic_client = bob.get_client()
     for data in data_types:
-        validate_output(data, data.send(basic_client))
+        validate_permission_error(data.send(basic_client))
 
 
 def test_printing_remote_creation() -> None:
