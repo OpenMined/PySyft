@@ -62,7 +62,7 @@ Technically speaking, it isn't required to run a Network when performing data-ce
 
 **Network-based data-centric FL**
 
-Many times you will wat to use a Network to allow multiple Nodes to be connected together. As a data owner, it's not strictly necessary to own and operate mulitple Nodes. PyGrid doesn't prescribe one way to organize Nodes and Networks, but we expose these applications to allow you and various related stakeholders to make the correct decision about your infrastructure needs.
+Many times you would want to use a Network to allow multiple Nodes to be connected together. As a data owner, it's not strictly necessary to own and operate mulitple Nodes. PyGrid doesn't prescribe one way to organize Nodes and Networks, but we expose these applications to allow you and various related stakeholders to make the correct decision about your infrastructure needs.
 
 ![Network-based DCFL](https://github.com/OpenMined/PyGrid/blob/dev/assets/DCFL-network.png?raw=true)
 
@@ -76,7 +76,7 @@ To install Docker, just follow the [docker documentation](https://docs.docker.co
 
 #### 1. Setting the your hostfile
 
-Before start the grid platform locally using Docker, we need to set up the domain names used by the bridge network. In order to use these nodes from outside of the containers context, you should add the following domain names on your `/etc/hosts`
+Before starting the grid platform locally using Docker, we need to set up the domain names used by the bridge network. In order to use these nodes from outside of the containers context, you should add the following domain names on your `/etc/hosts`
 
 ```
 127.0.0.1 network
@@ -95,7 +95,7 @@ The latest PyGrid Network and Node images are also available on the Docker Hub.
 - [PyGrid Network - `openmined/grid-network`](https://hub.docker.com/repository/docker/openmined/grid-network)
 - [PyGrid Node - `openmined/grid-node`](https://hub.docker.com/repository/docker/openmined/grid-node)
 
-To setup and start the PyGrid platform you just need start the docker-compose process.
+To setup and start the PyGrid platform you just need to start the docker-compose process.
 
 ```
 $ docker-compose up
