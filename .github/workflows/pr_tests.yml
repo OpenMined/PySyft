@@ -15,6 +15,7 @@ on:
       - "**.txt"
       - "setup.cfg"
       - ".github/workflows/**.yml"
+      - "examples/private-ai-series/**.ipynb"
 
 jobs:
   python-linting:
