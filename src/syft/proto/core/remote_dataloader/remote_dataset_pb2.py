@@ -24,7 +24,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b"\n1proto/core/remote_dataloader/remote_dataset.proto\x12'syft.core.node.common.remote_dataloader\x1a%proto/core/common/common_object.proto\"\x1d\n\rRemoteDataset\x12\x0c\n\x04meta\x18\x01 \x01(\tb\x06proto3",
+    serialized_pb=b'\n1proto/core/remote_dataloader/remote_dataset.proto\x12\'syft.core.node.common.remote_dataloader\x1a%proto/core/common/common_object.proto"\x1d\n\rRemoteDataset\x12\x0c\n\x04meta\x18\x01 \x01(\t"v\n\x10RemoteDataLoader\x12N\n\x0eremote_dataset\x18\x01 \x01(\x0b\x32\x36.syft.core.node.common.remote_dataloader.RemoteDataset\x12\x12\n\nbatch_size\x18\x02 \x01(\x03\x62\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
     ],
@@ -71,7 +71,69 @@ _REMOTEDATASET = _descriptor.Descriptor(
     serialized_end=162,
 )
 
+
+_REMOTEDATALOADER = _descriptor.Descriptor(
+    name="RemoteDataLoader",
+    full_name="syft.core.node.common.remote_dataloader.RemoteDataLoader",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="remote_dataset",
+            full_name="syft.core.node.common.remote_dataloader.RemoteDataLoader.remote_dataset",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="batch_size",
+            full_name="syft.core.node.common.remote_dataloader.RemoteDataLoader.batch_size",
+            index=1,
+            number=2,
+            type=3,
+            cpp_type=2,
+            label=1,
+            has_default_value=False,
+            default_value=0,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=164,
+    serialized_end=282,
+)
+
+_REMOTEDATALOADER.fields_by_name["remote_dataset"].message_type = _REMOTEDATASET
 DESCRIPTOR.message_types_by_name["RemoteDataset"] = _REMOTEDATASET
+DESCRIPTOR.message_types_by_name["RemoteDataLoader"] = _REMOTEDATALOADER
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 RemoteDataset = _reflection.GeneratedProtocolMessageType(
@@ -84,6 +146,17 @@ RemoteDataset = _reflection.GeneratedProtocolMessageType(
     },
 )
 _sym_db.RegisterMessage(RemoteDataset)
+
+RemoteDataLoader = _reflection.GeneratedProtocolMessageType(
+    "RemoteDataLoader",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _REMOTEDATALOADER,
+        "__module__": "proto.core.remote_dataloader.remote_dataset_pb2"
+        # @@protoc_insertion_point(class_scope:syft.core.node.common.remote_dataloader.RemoteDataLoader)
+    },
+)
+_sym_db.RegisterMessage(RemoteDataLoader)
 
 
 # @@protoc_insertion_point(module_scope)

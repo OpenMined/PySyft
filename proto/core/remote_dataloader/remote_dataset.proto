@@ -6,3 +6,8 @@ import "proto/core/common/common_object.proto";
 message RemoteDataset {
   string meta = 1;
 }
+
+message RemoteDataLoader {
+  RemoteDataset remote_dataset = 1;
+  int64 batch_size = 2;
+}

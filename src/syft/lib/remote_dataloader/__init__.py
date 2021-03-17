@@ -8,6 +8,7 @@ from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
+from ...core.remote_dataloader import RemoteDataLoader
 from ...core.remote_dataloader import RemoteDataset
 
 
@@ -26,6 +27,11 @@ def create_remote_dataloader_ast(client: TypeAny = None) -> Globals:
             "syft.core.remote_dataloader.RemoteDataset",
             RemoteDataset,
         ),
+        (
+            "syft.core.remote_dataloader.RemoteDataLoader",
+            "syft.core.remote_dataloader.RemoteDataLoader",
+            RemoteDataLoader,
+        ),
     ]
 
     methods: TypeList[TypeTuple[str, str]] = [
@@ -35,6 +41,20 @@ def create_remote_dataloader_ast(client: TypeAny = None) -> Globals:
         ),
         ("syft.core.remote_dataloader.RemoteDataset.__len__", "syft.lib.python.Int"),
         ("syft.core.remote_dataloader.RemoteDataset.__getitem__", "torch.Tensor"),
+        ("syft.core.remote_dataloader.RemoteDataLoader.__len__", "syft.lib.python.Int"),
+        (
+            "syft.core.remote_dataloader.RemoteDataLoader.create_dataset",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "syft.core.remote_dataloader.RemoteDataLoader.create_dataloader",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "syft.core.remote_dataloader.RemoteDataLoader.__iter__",
+            "syft.core.remote_dataloader.RemoteDataLoader",
+        ),
+        ("syft.core.remote_dataloader.RemoteDataLoader.__next__", "torch.Tensor"),
     ]
 
     add_modules(ast, modules)
