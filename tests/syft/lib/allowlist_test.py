@@ -40,7 +40,7 @@ TORCH_VERSION = version.parse(th.__version__.split("+")[0])
 py_ver = sys.version_info
 PYTHON_VERSION = version.parse(f"{py_ver.major}.{py_ver.minor}")
 OS_NAME = platform.system().lower()
-
+has_cuda = th.cuda.is_available()
 
 # Allow List Test Generation
 #
@@ -252,7 +252,7 @@ TEST_DATA = []
 # we iterate over the allowlist and only override where explicitly defined
 for op in BASIC_OPS:
     skip = []
-    not_available = []
+    not_available: ListType[Any] = []
     deterministic = True
     if op not in TEST_JSON["tests"]["torch.Tensor"]:
         # there is no custom configuration so we will test all supported combinations
@@ -281,9 +281,10 @@ for op in BASIC_OPS:
         if "skip" in meta:
             skip += meta["skip"]
 
+        # ignore all rules
         # grab not_available rules
-        if "not_available" in meta:
-            not_available += meta["not_available"]
+        # if "not_available" in meta:
+        #    not_available += meta["not_available"]
 
         if "deterministic" in meta:
             deterministic = meta["deterministic"]
@@ -335,6 +336,7 @@ for op in BASIC_OPS:
             [is_property],
             [return_type],
             [deterministic],
+            [False, True],
         )
     )
 
@@ -350,6 +352,10 @@ for op in BASIC_OPS:
             ):
                 # we use str(combination) so that we can hash the entire combination
                 skipped_combinations.add(str(combination))
+
+        # no cuda available, skip
+        if not has_cuda and combination[7]:
+            skipped_combinations.add(str(combination))
 
         # not available are features we cant or wont test because they arent supported
         for na_rule in not_available:
@@ -367,6 +373,7 @@ for op in BASIC_OPS:
         support_data = {}
         support_data["tensor_type"] = combination[0]
         support_data["op_name"] = combination[1]
+        support_data["cuda"] = combination[7]
 
         # we use str so that we can hash the entire combination with nested lists
         if (
@@ -378,7 +385,9 @@ for op in BASIC_OPS:
             support_data["status"] = "not_available"
             write_support_result(support_data)
         elif str(combination) in skipped_combinations:
-            support_data["status"] = "skip"
+            support_data["status"] = (
+                "skip" if has_cuda and combination[7] else "skip_no_cuda"
+            )
             write_support_result(support_data)
 
 
@@ -400,7 +409,7 @@ alice_client = alice.get_client()
 
 @pytest.mark.torch
 @pytest.mark.parametrize(
-    "tensor_type, op_name, self_tensor, _args, is_property, return_type, deterministic",
+    "tensor_type, op_name, self_tensor, _args, is_property, return_type, deterministic, cuda",
     TEST_DATA,
 )
 def test_all_allowlisted_tensor_methods(
@@ -411,11 +420,13 @@ def test_all_allowlisted_tensor_methods(
     is_property: bool,
     return_type: str,
     deterministic: bool,
+    cuda: bool,
 ) -> None:
 
-    support_data = {}
+    support_data: Dict[str, Any] = {}
     support_data["tensor_type"] = tensor_type
     support_data["op_name"] = op_name
+    support_data["cuda"] = cuda
 
     # this is used in bulk error reporting
     debug_data: Dict[str, Any] = {}
@@ -427,6 +438,7 @@ def test_all_allowlisted_tensor_methods(
         "is_property": is_property,
         "return_type": return_type,
         "deterministic": deterministic,
+        "cuda": cuda,
     }
 
     try:
@@ -563,6 +575,8 @@ def test_all_allowlisted_tensor_methods(
         # Step 6: Send our target tensor to alice.
         # NOTE: send the copy we haven't mutated
         xp = self_tensor_copy.send(alice_client)
+        if cuda and hasattr(xp, "cuda"):
+            xp.cuda()
 
         # if op_name=="grad", we need to do more operations first
         if op_name == "grad":
@@ -580,6 +594,11 @@ def test_all_allowlisted_tensor_methods(
                     arg.send(alice_client) if hasattr(arg, "send") else arg
                     for arg in args
                 ]
+
+        if cuda:
+            for arg in argsp:
+                if hasattr(arg, "cuda"):
+                    arg.cuda()
 
         # Step 7: get the method on the pointer to alice we want to test
         op_method = getattr(xp, op_name, None)
@@ -762,7 +781,7 @@ def test_all_allowlisted_tensor_methods(
 def compare_tensors(left: th.Tensor, right: th.Tensor) -> bool:
     try:
         # if they don't match we can try to remove NaN's
-        if not (left == right).all():
+        if not (left.cuda() == right.cuda()).all():
             # Set all NaN to 0
             # If we have two tensors like
             # local = [Nan, 0, 1] and remote = [0, Nan, 1]
