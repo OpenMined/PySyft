@@ -10,6 +10,7 @@ dist/
 .python-version
 *__pycache__*
 *.pyc
+*.py~
 syft.egg-info/
 *.swp
 *.swo
