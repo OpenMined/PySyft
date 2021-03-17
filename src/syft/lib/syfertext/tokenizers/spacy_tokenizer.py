@@ -10,12 +10,13 @@ from syfertext.tokenizers import SpacyTokenizer
 # syft relative
 from ....core.common import UID
 from ....core.store.storeable_object import StorableObject
+from ....generate_wrapper import GenerateWrapper
 from ....proto.lib.syfertext.tokenizers.spacy_tokenizer_pb2 import SpacyTokenizer as SpacyTokenizer_PB
 from ....proto.lib.syfertext.tokenizers.spacy_tokenizer_pb2 import TokenSplits as TokenSplits_PB
 from ....util import aggressive_set_attr
 
 
-def object2proto(obj: SpacyTokenizer) -> SpacyTokenizer_PB:
+def object2proto(obj: SpacyTokenizer, obj_pb: SpacyTokenizer_PB = None) -> SpacyTokenizer_PB:
     """utility method to convert a SpacyTokenizer object into
     a protobuf boject.
 
@@ -27,10 +28,16 @@ def object2proto(obj: SpacyTokenizer) -> SpacyTokenizer_PB:
     # For convenience, rename the object.
     tokenizer = obj
 
-    # Initialize the protobuf object for the tokenizer
-    spacy_tokenizer_pb = SpacyTokenizer_PB()
+    if obj_pb is None:
+        
+        # Initialize the protobuf object for the tokenizer
+        tokenizer_pb = SpacyTokenizer_PB()
+    else:
 
-    tokenizer_pb.uuid = tokenizer.uuid.bytes,
+        # Use the passed protobuf object
+        tokenizer_pb = obj_pb        
+
+    tokenizer_pb.uuid = tokenizer.id.value.bytes
     tokenizer_pb.prefixes.extend(tokenizer.prefixes)
     tokenizer_pb.suffixes.extend(tokenizer.suffixes)
     tokenizer_pb.infixes.extend(tokenizer.infixes)
