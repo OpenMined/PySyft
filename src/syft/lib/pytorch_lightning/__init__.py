@@ -1,12 +1,18 @@
 # stdlib
-# from typing import Any as TypeAny
-# from typing import List as TypeList
-# from typing import Tuple as TypeTuple
+import functools
+from typing import Any as TypeAny
+from typing import List as TypeList
+from typing import Tuple as TypeTuple
 
 # third party
-from pytorch_lightning import LightningDataModule  # noqa: 401
-from pytorch_lightning import LightningModule  # noqa: 401
-from pytorch_lightning import Trainer  # noqa: 401
+import pytorch_lightning as pl
+
+# syft relative
+from ...ast import add_classes
+from ...ast import add_methods
+from ...ast import add_modules
+from ...ast.globals import Globals
+from ..util import generic_update_ast
 
 LIB_NAME = "pytorch_lightning"
 PACKAGE_SUPPORT = {
@@ -15,94 +21,31 @@ PACKAGE_SUPPORT = {
     "python": {"max_version": (3, 9, 99)},
 }
 
-# from ...ast.globals import Globals
-# from ...ast.klass import Class
-# from ...ast.module import Module
 
-# def get_parent(path: str, root: TypeAny) -> Module:
-#     parent = root
-#     for step in path.split(".")[:-1]:
-#         parent = parent.attrs[step]
-#     return parent
+def create_ast(client: TypeAny) -> Globals:
+    ast = Globals(client=client)
 
+    modules: TypeList[TypeTuple[str, TypeAny]] = [("pytorch_lightning", pl)]
 
-# def add_modules(ast: Globals, modules: TypeList[str]) -> None:
-#     for module in modules:
-#         parent = get_parent(module, ast)
-#         attr_name = module.rsplit(".", 1)[-1]
+    classes: TypeList[TypeTuple[str, str, TypeAny]] = [
+        ("pytorch_lightning.Trainer", "pytorch_lightning.Trainer", pl.Trainer),
+    ]
 
-#         parent.add_attr(
-#             attr_name=attr_name,
-#             attr=Module(
-#                 attr_name,
-#                 module,
-#                 None,
-#                 return_type_name="",
-#             ),
-#         )
+    methods: TypeList[TypeTuple[str, str]] = [
+        ("pytorch_lightning.Trainer.fit", "syft.lib.python._SyNone"),
+        ("pytorch_lightning.Trainer.test", "syft.lib.python._SyNone"),
+    ]
 
+    add_modules(ast, modules)
+    add_classes(ast, classes)
+    add_methods(ast, methods)
 
-# def add_classes(ast: Globals, paths: TypeList[TypeTuple[str, str, TypeAny]]) -> None:
-#     for path, return_type, ref in paths:
-#         parent = get_parent(path, ast)
-#         attr_name = path.rsplit(".", 1)[-1]
+    for klass in ast.classes:
+        klass.create_pointer_class()
+        klass.create_send_method()
+        klass.create_storable_object_attr_convenience_methods()
 
-#         klass = Class(attr_name, path, ref, return_type_name=return_type, client=None)
-#         parent.add_attr(
-#             attr_name=attr_name,
-#             attr=klass,
-#         )
+    return ast
 
 
-# def add_methods(ast: Globals, paths: TypeList[TypeTuple[str, str, TypeAny]]) -> None:
-#     for path, return_type, _ in paths:
-#         parent = get_parent(path, ast)
-#         path_list = path.split(".")
-#         parent.add_path(
-#             path=path_list, index=len(path_list) - 1, return_type_name=return_type
-#         )
-
-
-# def create_pytorch_lightning_ast() -> Globals:
-#     ast = Globals(client=None)
-
-#     modules = [
-#         "pytorch_lightning",
-#         "pytorch_lightning.trainer",
-#         "pytorch_lightning.trainer.trainer",
-#         "pytorch_lightning.core",
-#         "pytorch_lightning.core.lightning",
-#     ]
-
-#     classes = [
-#         (
-#             "pytorch_lightning.trainer.trainer.Trainer",
-#             "pytorch_lightning.trainer.trainer.Trainer",
-#             Trainer,
-#         ),
-#         (
-#             "pytorch_lightning.core.lightning.LightningModule",
-#             "pytorch_lightning.core.lightning.LightningModule",
-#             LightningModule,
-#         ),
-#     ]
-
-#     methods = [
-#         (
-#             "pytorch_lightning.trainer.trainer.Trainer.fit",
-#             "pytorch_lightning.trainer.trainer.Trainer.fit",
-#             Trainer.fit,
-#         ),
-#     ]
-
-#     add_modules(ast, modules)
-#     add_classes(ast, classes)
-#     add_methods(ast, methods)
-
-#     for klass in ast.classes:
-#         klass.create_pointer_class()
-#         klass.create_send_method()
-#         klass.create_serialization_methods()
-#         klass.create_storable_object_attr_convenience_methods()
-
-#     return ast
+update_ast = functools.partial(generic_update_ast, LIB_NAME, create_ast)
