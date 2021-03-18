@@ -589,7 +589,8 @@ def inherit_tags(
 
 def get_root_data_path() -> Path:
     # get the PySyft / data directory to share datasets between notebooks
-    # directory is created as "/home/<username>/.syft/data" or "~/.syft/data"
+    # on Linux and MacOS the directory is: ~/.syft/data"
+    # on Windows the directory is: C:/Users/$USER/.syft/data
 
     data_dir = Path.home() / ".syft" / "data"
 
