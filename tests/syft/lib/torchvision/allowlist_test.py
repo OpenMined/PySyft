@@ -78,7 +78,9 @@ def test_allowlist(alice: sy.VirtualMachine, tens: torch.Tensor) -> None:
                     or "does not exist" in str(e)
                 )
             except FileNotFoundError as e:
-                assert "No such file or directory" in str(e)
+                assert "No such file or directory" in str(
+                    e
+                ) or "cannot find the path" in str(e)
             except ModuleNotFoundError as e:
                 assert "No module named" in str(e)
             except KeyError:
