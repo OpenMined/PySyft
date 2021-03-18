@@ -15,6 +15,7 @@ from ....proto.lib.python.collections.ordered_dict_pb2 import (
     OrderedDict as OrderedDict_PB,
 )
 from ..primitive_factory import PrimitiveFactory
+from ..primitive_factory import isprimitive
 from ..primitive_interface import PyPrimitive
 from ..types import SyPrimitiveRet
 from ..util import downcast
@@ -52,7 +53,11 @@ class OrderedDict(PyOrderedDict, PyPrimitive):
 
     def __getitem__(self, other: Any) -> SyPrimitiveRet:
         res = super().__getitem__(other)
-        return PrimitiveFactory.generate_primitive(value=res)
+        if isprimitive(value=res):
+            return PrimitiveFactory.generate_primitive(value=res)
+        else:
+            # we can have torch.Tensor and other types
+            return res
 
     def __len__(self) -> SyPrimitiveRet:
         res = super().__len__()
