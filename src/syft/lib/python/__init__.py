@@ -493,7 +493,7 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ),
         ("syft.lib.python.collections.OrderedDict.items", "syft.lib.python.List"),
         (
-            "syft.lib.python.collections.OrderedDict.dict_get",
+            "syft.lib.python.collections.OrderedDict.get",
             "syft.lib.python.Any",
         ),
     ]

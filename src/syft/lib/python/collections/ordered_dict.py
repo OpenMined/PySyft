@@ -94,9 +94,13 @@ class OrderedDict(PyOrderedDict, PyPrimitive):
         res = super().fromkeys(iterable, value)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def dict_get(self, other: Any) -> SyPrimitiveRet:
+    def get(self, other: Any) -> SyPrimitiveRet:
         res = super().get(other)
-        return PrimitiveFactory.generate_primitive(value=res)
+        if isprimitive(value=res):
+            return PrimitiveFactory.generate_primitive(value=res)
+        else:
+            # we can have torch.Tensor and other types
+            return res
 
     def items(self) -> SyPrimitiveRet:
         res = list(super().items())

@@ -153,7 +153,11 @@ class Dict(UserDict, PyPrimitive):
 
     def get(self, key: Any, default: Any = None) -> SyPrimitiveRet:
         res = super().get(key, default)
-        return PrimitiveFactory.generate_primitive(value=res)
+        if isprimitive(value=res):
+            return PrimitiveFactory.generate_primitive(value=res)
+        else:
+            # we can have torch.Tensor and other types
+            return res
 
     def items(self, max_len: Optional[int] = None) -> Iterator:  # type: ignore
         return Iterator(ItemsView(self), max_len=max_len)
