@@ -33,13 +33,13 @@ tests = defaultdict(list)
 output_dir = Path("tests/syft/notebooks")
 checkpoint_dir = Path("tests/syft/notebooks/checkpoints")
 
-SLEEP_TIME = 360
+SLEEP_TIME = 600
 PORTS: Dict[str, int] = {}
 
 try:
-    os.mkdir(output_dir)
+    os.makedirs(output_dir, exist_ok=True)
 except BaseException as e:
-    print("os.mkdir failed ", e)
+    print("os.makedirs failed ", e)
 
 try:
     shutil.rmtree(checkpoint_dir)
@@ -47,9 +47,9 @@ except BaseException as e:
     print("rmtree failed ", e)
 
 try:
-    os.mkdir(checkpoint_dir)
+    os.makedirs(checkpoint_dir, exist_ok=True)
 except BaseException as e:
-    print("os.mkdir failed ", e)
+    print("os.makedirs failed ", e)
 
 testcase_lib = {}
 
