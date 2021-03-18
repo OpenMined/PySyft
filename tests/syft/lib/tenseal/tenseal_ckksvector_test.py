@@ -40,8 +40,8 @@ def test_tenseal_ckksvector_sanity(context: Any, duet: sy.VirtualMachine) -> Non
     v1 = [0, 1, 2, 3, 4]
     enc_v1 = ts.ckks_vector(context, v1)
 
-    ctx_ptr = context.send(duet, searchable=True)
-    enc_v1_ptr = enc_v1.send(duet, searchable=True)
+    ctx_ptr = context.send(duet, pointable=True)
+    enc_v1_ptr = enc_v1.send(duet, pointable=True)
     enc_v1_ptr.link_context(ctx_ptr)
 
     result = decrypt(context, enc_v1_ptr)
@@ -57,9 +57,9 @@ def test_tenseal_ckksvector_add(context: Any, duet: sy.VirtualMachine) -> None:
     enc_v1 = ts.ckks_vector(context, v1)
     enc_v2 = ts.ckks_vector(context, v2)
 
-    ctx_ptr = context.send(duet, searchable=True)
-    enc_v1_ptr = enc_v1.send(duet, searchable=True)
-    enc_v2_ptr = enc_v2.send(duet, searchable=True)
+    ctx_ptr = context.send(duet, pointable=True)
+    enc_v1_ptr = enc_v1.send(duet, pointable=True)
+    enc_v2_ptr = enc_v2.send(duet, pointable=True)
 
     enc_v1_ptr.link_context(ctx_ptr)
     enc_v2_ptr.link_context(ctx_ptr)
@@ -86,9 +86,9 @@ def test_tenseal_ckksvector_sub(context: Any, duet: sy.VirtualMachine) -> None:
     enc_v1 = ts.ckks_vector(context, v1)
     enc_v2 = ts.ckks_vector(context, v2)
 
-    ctx_ptr = context.send(duet, searchable=True)
-    enc_v1_ptr = enc_v1.send(duet, searchable=True)
-    enc_v2_ptr = enc_v2.send(duet, searchable=True)
+    ctx_ptr = context.send(duet, pointable=True)
+    enc_v1_ptr = enc_v1.send(duet, pointable=True)
+    enc_v2_ptr = enc_v2.send(duet, pointable=True)
 
     enc_v1_ptr.link_context(ctx_ptr)
     enc_v2_ptr.link_context(ctx_ptr)
@@ -115,9 +115,9 @@ def test_tenseal_ckksvector_mul(context: Any, duet: sy.VirtualMachine) -> None:
     enc_v1 = ts.ckks_vector(context, v1)
     enc_v2 = ts.ckks_vector(context, v2)
 
-    ctx_ptr = context.send(duet, searchable=True)
-    enc_v1_ptr = enc_v1.send(duet, searchable=True)
-    enc_v2_ptr = enc_v2.send(duet, searchable=True)
+    ctx_ptr = context.send(duet, pointable=True)
+    enc_v1_ptr = enc_v1.send(duet, pointable=True)
+    enc_v2_ptr = enc_v2.send(duet, pointable=True)
 
     enc_v1_ptr.link_context(ctx_ptr)
     enc_v2_ptr.link_context(ctx_ptr)
@@ -143,8 +143,8 @@ def test_tenseal_ckksvector_iadd(context: Any, duet: sy.VirtualMachine) -> None:
 
     enc_v1 = ts.ckks_vector(context, v1)
 
-    ctx_ptr = context.send(duet, searchable=True)
-    enc_v1_ptr = enc_v1.send(duet, searchable=True)
+    ctx_ptr = context.send(duet, pointable=True)
+    enc_v1_ptr = enc_v1.send(duet, pointable=True)
 
     enc_v1_ptr.link_context(ctx_ptr)
 
@@ -175,8 +175,8 @@ def test_tenseal_ckksvector_isub(context: Any, duet: sy.VirtualMachine) -> None:
 
     enc_v1 = ts.ckks_vector(context, v1)
 
-    ctx_ptr = context.send(duet, searchable=True)
-    enc_v1_ptr = enc_v1.send(duet, searchable=True)
+    ctx_ptr = context.send(duet, pointable=True)
+    enc_v1_ptr = enc_v1.send(duet, pointable=True)
 
     enc_v1_ptr.link_context(ctx_ptr)
 
@@ -201,8 +201,8 @@ def ptest_tenseal_ckksvector_imul(context: Any, duet: sy.VirtualMachine) -> None
 
     enc_v1 = ts.ckks_vector(context, v1)
 
-    ctx_ptr = context.send(duet, searchable=True)
-    enc_v1_ptr = enc_v1.send(duet, searchable=True)
+    ctx_ptr = context.send(duet, pointable=True)
+    enc_v1_ptr = enc_v1.send(duet, pointable=True)
 
     enc_v1_ptr.link_context(ctx_ptr)
 
@@ -223,8 +223,8 @@ def ptest_tenseal_ckksvector_imul(context: Any, duet: sy.VirtualMachine) -> None
 def test_tenseal_ckksvector_power(context: Any, duet: sy.VirtualMachine) -> None:
     enc_v1 = ts.ckks_vector(context, [0, 1, 2, 3, 4])
 
-    ctx_ptr = context.send(duet, searchable=True)
-    enc_v1_ptr = enc_v1.send(duet, searchable=True)
+    ctx_ptr = context.send(duet, pointable=True)
+    enc_v1_ptr = enc_v1.send(duet, pointable=True)
 
     enc_v1_ptr.link_context(ctx_ptr)
 
@@ -239,8 +239,8 @@ def test_tenseal_ckksvector_power(context: Any, duet: sy.VirtualMachine) -> None
 def test_tenseal_ckksvector_negation(context: Any, duet: sy.VirtualMachine) -> None:
     enc_v1 = ts.ckks_vector(context, [1, 2, 3, 4, 5])
 
-    ctx_ptr = context.send(duet, searchable=True)
-    enc_v1_ptr = enc_v1.send(duet, searchable=True)
+    ctx_ptr = context.send(duet, pointable=True)
+    enc_v1_ptr = enc_v1.send(duet, pointable=True)
 
     enc_v1_ptr.link_context(ctx_ptr)
 
@@ -255,8 +255,8 @@ def test_tenseal_ckksvector_negation(context: Any, duet: sy.VirtualMachine) -> N
 def test_tenseal_ckksvector_square(context: Any, duet: sy.VirtualMachine) -> None:
     enc_v1 = ts.ckks_vector(context, [0, 1, 2, 3, 4])
 
-    ctx_ptr = context.send(duet, searchable=True)
-    enc_v1_ptr = enc_v1.send(duet, searchable=True)
+    ctx_ptr = context.send(duet, pointable=True)
+    enc_v1_ptr = enc_v1.send(duet, pointable=True)
 
     enc_v1_ptr.link_context(ctx_ptr)
 
@@ -270,8 +270,8 @@ def test_tenseal_ckksvector_square(context: Any, duet: sy.VirtualMachine) -> Non
 def test_tenseal_ckksvector_sum(context: Any, duet: sy.VirtualMachine) -> None:
     enc_v1 = ts.ckks_vector(context, [0, 1, 2, 3, 4])
 
-    ctx_ptr = context.send(duet, searchable=True)
-    enc_v1_ptr = enc_v1.send(duet, searchable=True)
+    ctx_ptr = context.send(duet, pointable=True)
+    enc_v1_ptr = enc_v1.send(duet, pointable=True)
 
     enc_v1_ptr.link_context(ctx_ptr)
 
@@ -286,8 +286,8 @@ def test_tenseal_ckksvector_polyval(context: Any, duet: sy.VirtualMachine) -> No
     polynom = [1, 2, 3, 4]
     enc_v1 = ts.ckks_vector(context, [-2, 2])
 
-    ctx_ptr = context.send(duet, searchable=True)
-    enc_v1_ptr = enc_v1.send(duet, searchable=True)
+    ctx_ptr = context.send(duet, pointable=True)
+    enc_v1_ptr = enc_v1.send(duet, pointable=True)
 
     enc_v1_ptr.link_context(ctx_ptr)
 
@@ -305,9 +305,9 @@ def test_tenseal_ckksvector_dot(context: Any, duet: sy.VirtualMachine) -> None:
     enc_v1 = ts.ckks_vector(context, v1)
     enc_v2 = ts.ckks_vector(context, v2)
 
-    ctx_ptr = context.send(duet, searchable=True)
-    enc_v1_ptr = enc_v1.send(duet, searchable=True)
-    enc_v2_ptr = enc_v2.send(duet, searchable=True)
+    ctx_ptr = context.send(duet, pointable=True)
+    enc_v1_ptr = enc_v1.send(duet, pointable=True)
+    enc_v2_ptr = enc_v2.send(duet, pointable=True)
 
     enc_v1_ptr.link_context(ctx_ptr)
     enc_v2_ptr.link_context(ctx_ptr)
@@ -329,8 +329,8 @@ def test_tenseal_ckksvector_matmul(context: Any, duet: sy.VirtualMachine) -> Non
     v1 = [0, 1, 2, 3, 4]
     enc_v1 = ts.ckks_vector(context, v1)
 
-    ctx_ptr = context.send(duet, searchable=True)
-    enc_v1_ptr = enc_v1.send(duet, searchable=True)
+    ctx_ptr = context.send(duet, pointable=True)
+    enc_v1_ptr = enc_v1.send(duet, pointable=True)
 
     enc_v1_ptr.link_context(ctx_ptr)
 

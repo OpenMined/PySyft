@@ -89,6 +89,7 @@ import time
 from typing import Any
 from typing import List
 from typing import Optional
+import warnings
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -100,6 +101,7 @@ import syft as sy
 # syft relative
 from ...logger import debug
 from ...logger import error
+from ...logger import warning
 from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
 from ..common.pointer import AbstractPointer
 from ..common.serde.deserialize import _deserialize
@@ -135,7 +137,7 @@ class Pointer(AbstractPointer):
     """
 
     path_and_name: str
-    _searchable: bool = False
+    _pointable: bool = False
 
     def __init__(
         self,
@@ -437,29 +439,62 @@ class Pointer(AbstractPointer):
 
     @property
     def searchable(self) -> bool:
-        return self._searchable
+        msg = "`searchable` is deprecated please use `pointable` in future"
+        warning(msg, print=True)
+        warnings.warn(
+            msg,
+            DeprecationWarning,
+        )
+        return self._pointable
 
     @searchable.setter
     def searchable(self, value: bool) -> None:
-        if value != self._searchable:
-            self.update_searchability(not self._searchable)
+        msg = "`searchable` is deprecated please use `pointable` in future"
+        warning(msg, print=True)
+        warnings.warn(
+            msg,
+            DeprecationWarning,
+        )
+        self.pointable = value
+
+    @property
+    def pointable(self) -> bool:
+        return self._pointable
+
+    @pointable.setter
+    def pointable(self, value: bool) -> None:
+        if value != self._pointable:
+            self.update_searchability(not self._pointable)
 
     def update_searchability(
-        self, searchable: bool = True, target_verify_key: Optional[VerifyKey] = None
+        self,
+        pointable: bool = True,
+        target_verify_key: Optional[VerifyKey] = None,
+        searchable: Optional[bool] = None,
     ) -> None:
-        """Make the object pointed at searchable or not for other people. If
+        """Make the object pointed at pointable or not for other people. If
         target_verify_key is not specified, the searchability for the VerifyAll group
         will be toggled.
 
-        :param searchable: If the target object should be made searchable or not.
+        :param pointable: If the target object should be made pointable or not.
         :type target_verify_key: bool
         :param target_verify_key: The verify_key of the client to which we want to give
                search permission.
         :type target_verify_key: Optional[VerifyKey]
         """
-        self._searchable = searchable
+
+        if searchable is not None:
+            warn_msg = "`searchable` is deprecated please use `pointable` in future"
+            warning(warn_msg, print=True)
+            warnings.warn(
+                warn_msg,
+                DeprecationWarning,
+            )
+            pointable = searchable
+
+        self._pointable = pointable
         msg = ObjectSearchPermissionUpdateMessage(
-            add_instead_of_remove=searchable,
+            add_instead_of_remove=pointable,
             target_verify_key=target_verify_key,
             target_object_id=self.id_at_location,
             address=self.client.address,
