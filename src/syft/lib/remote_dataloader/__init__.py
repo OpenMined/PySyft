@@ -52,9 +52,9 @@ def create_remote_dataloader_ast(client: TypeAny = None) -> Globals:
         ),
         (
             "syft.core.remote_dataloader.RemoteDataLoader.__iter__",
-            "syft.core.remote_dataloader.RemoteDataLoader",
+            "syft.lib.python.Iterator",
         ),
-        ("syft.core.remote_dataloader.RemoteDataLoader.__next__", "torch.Tensor"),
+        # ("syft.core.remote_dataloader.RemoteDataLoader.__next__", "torch.Tensor"),
     ]
 
     add_modules(ast, modules)

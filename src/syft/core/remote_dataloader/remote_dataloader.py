@@ -1,5 +1,6 @@
 # stdlib
 from typing import Any
+from typing import Iterator
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -99,9 +100,5 @@ class RemoteDataLoader(Serializable):
     def __len__(self) -> int:
         return len(self.dataloader)
 
-    def __iter__(self) -> "RemoteDataLoader":
-        self.dataloader_iterator = iter(self.dataloader)
-        return self
-
-    def __next__(self) -> th.Tensor:
-        return next(self.dataloader_iterator)
+    def __iter__(self) -> "Iterator":
+        return iter(self.dataloader)

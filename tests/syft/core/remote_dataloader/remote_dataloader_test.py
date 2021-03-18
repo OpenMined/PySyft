@@ -27,7 +27,6 @@ ds = ExampleDataset(ten)
 
 alice = sy.VirtualMachine()
 alice_client = alice.get_root_client()
-tensor_pointer_type = type(th.rand(1).send(alice_client))
 
 
 def test_remote_dataset() -> None:
@@ -40,7 +39,7 @@ def test_remote_dataset() -> None:
 
     assert rds_ptr.len().get() == 1000
     for tp in rds_ptr:
-        assert isinstance(tp, tensor_pointer_type)
+        assert isinstance(tp.get(), th.Tensor)
 
     os.system("rm ds.pt")
 
@@ -58,5 +57,5 @@ def test_remote_dataloader() -> None:
 
     assert rdl_ptr.len().get() == 250
     for tp in rdl_ptr:
-        assert isinstance(tp, tensor_pointer_type)
+        assert isinstance(tp.get(), th.Tensor)
     os.system("rm ds.pt")
