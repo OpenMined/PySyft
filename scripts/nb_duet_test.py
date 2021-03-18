@@ -16,6 +16,7 @@
 
 # stdlib
 from collections import defaultdict
+import json
 import os
 from pathlib import Path
 import re
@@ -182,6 +183,20 @@ assert Path(\"{wait_file}\").exists()
         while empty_cell in body:
             body = body.replace(empty_cell, f"print('{cell_type} Cell: {counter}')", 1)
             counter += 1
+
+        # replace any test variables / lines to make things faster in test mode
+        json_file = f"{path}.json"
+        if os.path.exists(json_file):
+            with open(json_file, "r") as f:
+                json_rules = json.loads(f.read())
+
+                for rules in json_rules["replace_lines"]:
+                    try:
+                        body = re.sub(
+                            rules["match"], rules["replace"], body, flags=re.MULTILINE
+                        )
+                    except Exception as e:
+                        print(f"Failed to replace rule {rules} for test: {path}. {e}")
 
         write_file.write(output=body, resources=resources, notebook_name=str(output))
     except Exception as e:
