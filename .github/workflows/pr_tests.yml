@@ -233,6 +233,7 @@ jobs:
         if: startsWith(runner.os, 'Windows') != true
         run: |
           cat requirements.libs.txt | xargs -I {} -n 1 pip install {} --no-deps --default-timeout=60 || true
+          pip install -r requirements.libs.deps.txt
 
       - name: Run notebook Duet examples
         run: |

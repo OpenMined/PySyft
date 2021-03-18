@@ -33,7 +33,7 @@ tests = defaultdict(list)
 output_dir = Path("tests/syft/notebooks")
 checkpoint_dir = Path("tests/syft/notebooks/checkpoints")
 
-SLEEP_TIME = 600
+SLEEP_TIME = 360
 PORTS: Dict[str, int] = {}
 
 try:
