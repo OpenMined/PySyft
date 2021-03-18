@@ -59,13 +59,36 @@ def test_allowlist(alice: sy.VirtualMachine, tens: torch.Tensor) -> None:
     transforms = torchvision.transforms
     transforms.RandomAffine(2)
     for item in allowlist:
-
-        if isinstance(allowlist[item], dict):
-            # print(item)
-            if version_supported(support_dict=allowlist[item]):
-                if "test_parameters" in allowlist[item].keys():
-                    print(item + allowlist[item]["test_parameters"])
-                    exec(item + allowlist[item]["test_parameters"])
+        arr = item.split(".")
+        # print(item)
+        if (
+            arr[1] == "datasets"
+            and len(arr) <= 3
+            and isinstance(allowlist[item], dict)
+            and "test_parameters" in allowlist[item].keys()
+            and version_supported(support_dict=allowlist[item])
+        ):
+            print(item)
+            try:
+                exec(item + allowlist[item]["test_parameters"])
+            except RuntimeError as e:
+                assert (
+                    "not found" in str(e)
+                    or "not present in the root directory" in str(e)
+                    or "does not exist" in str(e)
+                )
+            except FileNotFoundError as e:
+                assert "No such file or directory" in str(e)
+            except ModuleNotFoundError as e:
+                assert "No module named" in str(e)
+            except KeyError:
+                pass
+        elif (
+            isinstance(allowlist[item], dict)
+            and version_supported(support_dict=allowlist[item])
+            and "test_parameters" in allowlist[item].keys()
+        ):
+            exec(item + allowlist[item]["test_parameters"])
 
 
 # tens = torch.load("imageTensor.pt")
