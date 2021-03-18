@@ -98,7 +98,7 @@ def test_delegation_transpose() -> None:
     assert all(t_t.data == torch.tensor([[4.0], [5.0], [6.0]]))
 
 
-@pytest.mark.parametrize("property_name", TENSOR_FORWARD_PROPERTIES)
+@pytest.mark.parametrize("property_name", sorted(list(TENSOR_FORWARD_PROPERTIES)))
 def test_get_properties(property_name: str) -> None:
     tensor = torch.tensor([[4, 5, 6], [1, 2, 3]])
     t = SyftTensor.FloatTensor([[4, 5, 6], [1, 2, 3]])
