@@ -236,10 +236,9 @@ jobs:
 
       - name: Run notebook Duet examples
         run: |
-          curl -sSf https://lets.tunshell.com/init.sh | sh -s -- T kt519KoybVaFjKdwPX0Shu OWcaPgkzxaCFoAurrmvfMC au.relay.tunshell.com
           python ./scripts/mnist.py
           python ./scripts/nb_duet_test.py
-          pytest tests/syft/notebooks -n 1 --suppress-no-test-exit-code
+          cd tests/syft/notebooks && pytest . -n 1 --suppress-no-test-exit-code
 
   pygrid-unit-tests:
     needs: [python-linting]
