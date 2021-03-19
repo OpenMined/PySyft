@@ -275,7 +275,7 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.lib.python.Dict.__str__", "syft.lib.python.String"),
         ("syft.lib.python.Dict.copy", "syft.lib.python.Dict"),
         ("syft.lib.python.Dict.fromkeys", "syft.lib.python.Dict"),
-        # Renam get to dict_get because of conflict
+        # Rename get to dict_get because of conflict
         ("syft.lib.python.Dict.dict_get", "syft.lib.python.Any"),
         ("syft.lib.python.Dict.items", "syft.lib.python.List"),
         ("syft.lib.python.Dict.keys", "syft.lib.python.List"),
