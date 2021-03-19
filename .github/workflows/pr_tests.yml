@@ -233,12 +233,13 @@ jobs:
         if: startsWith(runner.os, 'Windows') != true
         run: |
           cat requirements.libs.txt | xargs -I {} -n 1 pip install {} --no-deps --default-timeout=60 || true
+          pip install -r requirements.libs.deps.txt
 
       - name: Run notebook Duet examples
         run: |
           python ./scripts/mnist.py
           python ./scripts/nb_duet_test.py
-          pytest tests/syft/notebooks -n 1 --suppress-no-test-exit-code
+          cd tests/syft/notebooks && pytest . -n 1 --suppress-no-test-exit-code
 
   pygrid-unit-tests:
     needs: [python-linting]
