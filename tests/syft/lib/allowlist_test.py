@@ -454,8 +454,16 @@ def test_all_allowlisted_tensor_methods(
         if op_name in ["backward", "retain_grad", "grad"]:
             requires_grad = True
         self_tensor, self_tensor_copy = (
-            th.tensor(self_tensor, dtype=t_type, requires_grad=requires_grad),
-            th.tensor(self_tensor, dtype=t_type, requires_grad=requires_grad),
+            th.tensor(self_tensor, dtype=t_type, requires_grad=requires_grad)
+            if not cuda
+            else th.tensor(
+                self_tensor, dtype=t_type, requires_grad=requires_grad
+            ).cuda(),
+            th.tensor(self_tensor, dtype=t_type, requires_grad=requires_grad)
+            if not cuda
+            else th.tensor(
+                self_tensor, dtype=t_type, requires_grad=requires_grad
+            ).cuda(),
         )
 
         # we dont have .id's by default anymore
@@ -468,8 +476,12 @@ def test_all_allowlisted_tensor_methods(
             args = []
         elif _args == "self":
             args = [th.tensor(self_tensor, dtype=t_type, requires_grad=requires_grad)]
+            if cuda:
+                args[0] = args[0].cuda()
         elif isinstance(_args, list):
             args = [th.tensor(_args, dtype=t_type)]
+            if cuda:
+                args[0] = args[0].cuda()
         elif isinstance(_args, dict):
             args = {}
             tuple_args = False
@@ -492,21 +504,34 @@ def test_all_allowlisted_tensor_methods(
                         real_k = real_k.replace("LIST_", "")
                         if real_k.startswith("TENSOR_"):
                             real_k = real_k.replace("TENSOR_", "")
-                            args[real_k] = [th.tensor(t, dtype=arg_type) for t in v]
+                            args[real_k] = [
+                                th.tensor(t, dtype=arg_type)
+                                if not cuda
+                                else th.tensor(t, dtype=arg_type).cuda()
+                                for t in v
+                            ]
                         else:
                             args[real_k] = v
                     elif real_k.startswith("0d_"):
                         # make a 0d tensor
                         real_k = real_k.replace("0d_", "")
                         args[real_k] = th.tensor(v[0], dtype=arg_type)
+                        if cuda:
+                            args[real_k] = args[real_k].cuda()
                     else:
                         args[real_k] = th.tensor(v, dtype=arg_type)
+                        if cuda:
+                            args[real_k] = args[real_k].cuda()
+
                 elif v == "self":
                     args[real_k] = [
                         th.tensor(
                             self_tensor, dtype=arg_type, requires_grad=requires_grad
                         )
                     ]
+                    if cuda:
+                        args[real_k] = args[real_k].cuda()
+
                 else:
                     args[real_k] = v
             if tuple_args:
@@ -576,7 +601,7 @@ def test_all_allowlisted_tensor_methods(
         # NOTE: send the copy we haven't mutated
         xp = self_tensor_copy.send(alice_client)
         if cuda and hasattr(xp, "cuda"):
-            xp.cuda()
+            xp = xp.cuda()
 
         # if op_name=="grad", we need to do more operations first
         if op_name == "grad":
@@ -598,7 +623,7 @@ def test_all_allowlisted_tensor_methods(
         if cuda:
             for arg in argsp:
                 if hasattr(arg, "cuda"):
-                    arg.cuda()
+                    arg = arg.cuda()
 
         # Step 7: get the method on the pointer to alice we want to test
         op_method = getattr(xp, op_name, None)
@@ -781,7 +806,7 @@ def test_all_allowlisted_tensor_methods(
 def compare_tensors(left: th.Tensor, right: th.Tensor) -> bool:
     try:
         # if they don't match we can try to remove NaN's
-        if not (left.cuda() == right.cuda()).all():
+        if not (left.cpu() == right.cpu()).all():
             # Set all NaN to 0
             # If we have two tensors like
             # local = [Nan, 0, 1] and remote = [0, Nan, 1]
