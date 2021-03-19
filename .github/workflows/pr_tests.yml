@@ -169,6 +169,7 @@ jobs:
 
       - name: Run supported library tests
         run: |
+          pip install -r requirements.libs.deps.txt
           pip list
           pytest -m libs --co
           pytest -m libs -n auto -k "not tenseal" --suppress-no-test-exit-code
