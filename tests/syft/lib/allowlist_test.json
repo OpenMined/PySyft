@@ -976,6 +976,11 @@
           }
         ]
       },
+      "__len__": {
+        "profile": "tensor_method_input",
+        "inputs": [],
+        "return_type": "syft.lib.python.Int"
+      },
       "__rsub__": {
         "profile": "default",
         "data_types": ["common"],
@@ -10226,6 +10231,24 @@
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.8.0",
             "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "size": {
+        "profile": "tensor_method_noinput",
+        "skip": [
+          {
+            "lte_version": "1.8.0",
+            "reason": "untested"
+          }
+        ]
+      },
+      "shape": {
+        "profile": "tensor_method_noinput",
+        "skip": [
+          {
+            "lte_version": "1.8.0",
+            "reason": "untested"
           }
         ]
       }
