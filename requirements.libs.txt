@@ -5,5 +5,5 @@ openmined.psi
 pandas
 python-dp
 pytorch-lightning @ git+https://github.com/tudorcebere/pytorch-lightning@tudor-om-v0
-sympc @ git+https://github.com/OpenMined/SyMPC@fe9ce65d640bda58d9f5bd151287f331ec1fceda
+sympc @ git+https://github.com/OpenMined/SyMPC@main
 tenseal
