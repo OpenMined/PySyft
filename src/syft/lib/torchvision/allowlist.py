@@ -470,13 +470,15 @@ allowlist["torchvision.transforms.functional.ten_crop"] = {
 # TODO: Fix when we have PIL support
 # Issue: https://github.com/OpenMined/PySyft/issues/5324
 # Following takes  PIL image as input, currently not supported
-# allowlist["torchvision.transforms.functional.to_grayscale"] = {
-#    "return_type" : "torch.Tensor",
-#    "test_parameters" : "(npy_array)"
-# }
+allowlist["torchvision.transforms.functional.to_grayscale"] = {
+    "return_type": "torch.Tensor",
+    "test_parameters": "(tens, [[10,20],[20,30],[30, 40],[40,50]], [[20,30],[30,40],[40, 50],[50,60]])"
+}
 
 # Following converts image to PIL image, currently not supported
-# allowlist["torchvision.transforms.functional.to_pil_image"] = "PIL.Image.Image"
+allowlist["torchvision.transforms.functional.to_pil_image"] = {
+    "return_type": "PIL.Image.Image",
+}
 
 allowlist["torchvision.transforms.functional.to_tensor"] = {
     "return_type": "torch.Tensor",
