@@ -393,9 +393,12 @@ class Class(Callable):
             obj_description = getattr(self, "description", "")
             description = description if description else obj_description
 
-            # TODO: Make only for DataFrames etc
-            # attach_tags(self, tags)
-            # attach_description(self, description)
+            # TODO: Allow Classes to opt out in the AST like Pandas where the properties
+            # would break their dict attr usage
+            # Issue: https://github.com/OpenMined/PySyft/issues/5322
+            if outer_self.pointer_name not in ["DataFramePointer", "SeriesPointer"]:
+                attach_tags(self, tags)
+                attach_description(self, description)
 
             id_at_location = UID()
 
@@ -441,9 +444,8 @@ class Class(Callable):
             attach_description(self, description)
             return self
 
-        # TODO: Make only for DataFrames etc
-        # aggressive_set_attr(obj=outer_self.object_ref, name="tag", attr=tag)
-        # aggressive_set_attr(obj=outer_self.object_ref, name="describe", attr=describe)
+        aggressive_set_attr(obj=outer_self.object_ref, name="tag", attr=tag)
+        aggressive_set_attr(obj=outer_self.object_ref, name="describe", attr=describe)
 
     def add_path(
         self,
@@ -527,6 +529,9 @@ class Class(Callable):
     def __getattr__(self, item: str) -> Any:
         attrs = super().__getattribute__("attrs")
         if item not in attrs:
+            if item == "__name__":
+                # return the pointer name if __name__ is missing
+                return self.pointer_name
             traceback_and_raise(
                 KeyError(
                     f"__getattr__ failed, {item} is not present on the "

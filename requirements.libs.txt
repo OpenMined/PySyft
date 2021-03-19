@@ -1,5 +1,6 @@
 opacus
 openmined.psi
+pandas
 python-dp
 sycret
 sympc @ git+https://github.com/OpenMined/SyMPC@main
