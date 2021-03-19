@@ -22,7 +22,7 @@ from .storeable_object import StorableObject
 
 # NOTE: This should not be used yet, this API will be done after the pygrid integration.
 class DiskObjectStore(ObjectStore):
-    def __init__(self, db_path: Optional[str] = None):
+    def __init__(self, *, db_path: Optional[str] = None):
         super().__init__()
 
         if db_path is None:
@@ -31,7 +31,7 @@ class DiskObjectStore(ObjectStore):
         self.db: Final = SqliteDict(db_path)
         self.search_engine = None
 
-    def get_objects_of_type(self, obj_type: type) -> Iterable[StorableObject]:
+    def get_objects_of_type(self, *, obj_type: type) -> Iterable[StorableObject]:
         # TODO: this wont fly long term
         obj_types = []
         for value in self.values():
@@ -39,7 +39,7 @@ class DiskObjectStore(ObjectStore):
                 obj_types.append(value)
         return obj_types
 
-    def __getitem__(self, key: UID) -> StorableObject:
+    def __getitem__(self, *, key: UID) -> StorableObject:
         try:
             blob = self.db[str(key.value)]
             value = validate_type(
@@ -50,12 +50,12 @@ class DiskObjectStore(ObjectStore):
             trace(f"{type(self)} get item error {key} {e}")
             traceback_and_raise(e)
 
-    def get_object(self, key: UID) -> Optional[StorableObject]:
+    def get_object(self, *, key: UID) -> Optional[StorableObject]:
         if str(key.value) in self.db:
             return self.__getitem__(key)
         return None
 
-    def __setitem__(self, key: UID, value: StorableObject) -> None:
+    def __setitem__(self, *, key: UID, value: StorableObject) -> None:
         try:
             blob = serialize(value, to_bytes=True)
             self.db[str(key.value)] = blob
@@ -85,10 +85,10 @@ class DiskObjectStore(ObjectStore):
 
         return values
 
-    def __contains__(self, item: UID) -> bool:
+    def __contains__(self, *, item: UID) -> bool:
         return str(item.value) in self.db
 
-    def delete(self, key: UID) -> None:
+    def delete(self, *, key: UID) -> None:
         try:
             obj = self.get_object(key=key)
             if obj is not None:
@@ -98,7 +98,7 @@ class DiskObjectStore(ObjectStore):
         except Exception as e:
             critical(f"{type(self)} Exception in delete {key}. {e}")
 
-    def __delitem__(self, key: UID) -> None:
+    def __delitem__(self, *, key: UID) -> None:
         self.delete(key=key)
 
     def clear(self) -> None:

@@ -24,11 +24,11 @@ class Dataset(Serializable):
     """
     Dataset is a wrapper over a collection of Serializable objects.
 
-    Arguments:
+    Args:
         id (UID): the id at which to store the data.
         data (List[Serializable]): A list of serializable objects.
         description (Optional[str]): An optional string that describes what you are storing. Useful
-        when searching.
+            when searching.
         tags (Optional[List[str]]): An optional list of strings that are tags used at search.
         TODO: add docs about read_permission and search_permission
 
@@ -36,13 +36,14 @@ class Dataset(Serializable):
         id (UID): the id at which to store the data.
         data (List[Serializable]): A list of serializable objects.
         description (Optional[str]): An optional string that describes what you are storing. Useful
-        when searching.
+            when searching.
         tags (Optional[List[str]]): An optional list of strings that are tags used at search.
 
     """
 
     def __init__(
         self,
+        *,
         id: UID,
         data: List[StorableObject],
         description: Optional[str] = None,
@@ -70,7 +71,7 @@ class Dataset(Serializable):
         return self._tags
 
     @tags.setter
-    def tags(self, value: Optional[List[str]]) -> None:
+    def tags(self, *, value: Optional[List[str]]) -> None:
         self._tags = value if value else []
 
     @property
@@ -78,23 +79,23 @@ class Dataset(Serializable):
         return self._description
 
     @description.setter
-    def description(self, description: Optional[str]) -> None:
+    def description(self, *, description: Optional[str]) -> None:
         self._description = description if description else ""
 
     @property
     def class_name(self) -> str:
         return str(self.__class__.__name__)
 
-    def __contains__(self, _id: UID) -> bool:
+    def __contains__(self, *, _id: UID) -> bool:
         return _id in [el.id for el in self.data]
 
     def keys(self) -> List[UID]:
         return [el.id for el in self.data]
 
-    def __getitem__(self, _id: UID) -> List[StorableObject]:
+    def __getitem__(self, *, _id: UID) -> List[StorableObject]:
         return [el for el in self.data if el.id == _id]
 
-    def __delitem__(self, _id: UID) -> None:
+    def __delitem__(self, *, _id: UID) -> None:
         self.data = [el for el in self.data if el.id != _id]
 
     def _object2proto(self) -> Dataset_PB:
@@ -142,7 +143,7 @@ class Dataset(Serializable):
         return proto
 
     @staticmethod
-    def _proto2object(proto: Dataset_PB) -> Serializable:
+    def _proto2object(*, proto: Dataset_PB) -> Serializable:
 
         # Step 1: deserialize the ID
         id = _deserialize(blob=proto.id)
@@ -176,8 +177,7 @@ class Dataset(Serializable):
         it takes whatever type is returned from this method and adds an attribute to it
         with the type of this class attached to it. See the MetaSerializable class for details.
 
-        :return: the type of protobuf object which corresponds to this class.
-        :rtype: GeneratedProtocolMessageType
-
+        Returns:
+            GeneratedProtocolMessageType: returns the type of protobuf object which corresponds to this class.
         """
         return Dataset_PB

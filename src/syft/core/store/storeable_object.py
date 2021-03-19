@@ -32,11 +32,11 @@ class StorableObject(AbstractStorableObject):
 
     This object is frozen, you cannot change one in place.
 
-    Arguments:
+    Args:
         id (UID): the id at which to store the data.
         data (Serializable): A serializable object.
         description (Optional[str]): An optional string that describes what you are storing. Useful
-        when searching.
+            when searching.
         tags (Optional[List[str]]): An optional list of strings that are tags used at search.
         TODO: add docs about read_permission and search_permission
 
@@ -44,7 +44,7 @@ class StorableObject(AbstractStorableObject):
         id (UID): the id at which to store the data.
         data (Serializable): A serializable object.
         description (Optional[str]): An optional string that describes what you are storing. Useful
-        when searching.
+            when searching.
         tags (Optional[List[str]]): An optional list of strings that are tags used at search.
 
     """
@@ -53,6 +53,7 @@ class StorableObject(AbstractStorableObject):
 
     def __init__(
         self,
+        *,
         id: UID,
         data: object,
         description: Optional[str] = None,
@@ -97,7 +98,7 @@ class StorableObject(AbstractStorableObject):
             return self._data
 
     @data.setter
-    def data(self, value: Any) -> Any:
+    def data(self, *, value: Any) -> Any:
         if hasattr(value, "_sy_serializable_wrapper_type"):
             self._data = value._sy_serializable_wrapper_type(value=value)
         else:
@@ -108,7 +109,7 @@ class StorableObject(AbstractStorableObject):
         return self._tags
 
     @tags.setter
-    def tags(self, value: Optional[List[str]]) -> None:
+    def tags(self, *, value: Optional[List[str]]) -> None:
         self._tags = value if value else []
 
     @property
@@ -116,7 +117,7 @@ class StorableObject(AbstractStorableObject):
         return self._description
 
     @description.setter
-    def description(self, description: Optional[str]) -> None:
+    def description(self, *, description: Optional[str]) -> None:
         self._description = description if description else ""
 
     def _object2proto(self) -> StorableObject_PB:
@@ -162,7 +163,7 @@ class StorableObject(AbstractStorableObject):
         return proto
 
     @staticmethod
-    def _proto2object(proto: StorableObject_PB) -> Serializable:
+    def _proto2object(*, proto: StorableObject_PB) -> Serializable:
         # Step 1: deserialize the ID
         id = _deserialize(blob=proto.id)
 
@@ -230,9 +231,8 @@ class StorableObject(AbstractStorableObject):
         it takes whatever type is returned from this method and adds an attribute to it
         with the type of this class attached to it. See the MetaSerializable class for details.
 
-        :return: the type of protobuf object which corresponds to this class.
-        :rtype: GeneratedProtocolMessageType
-
+        Returns:
+            GeneratedProtocolMessageType: returns the type of protobuf object which corresponds to this class.
         """
         return StorableObject_PB
 
@@ -281,8 +281,9 @@ class StorableObject(AbstractStorableObject):
 
     def clean_copy(self) -> "StorableObject":
         """
-        This method return a copy of self, but clean up the search_permissions and
-        read_permissions attributes.
+        Returns:
+            returns a copy of self, but clean up the search_permissions and
+            read_permissions attributes.
         """
         return StorableObject(
             id=self.id, data=self.data, tags=self.tags, description=self.description

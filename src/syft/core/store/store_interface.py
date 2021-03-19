@@ -24,7 +24,7 @@ class ObjectStore(ABC):
         Method to return the memory size of the object if possible, if not, it will return __len__.
 
         Returns:
-            int: memory size of the store.
+            int: memory size of the store. # noqa: DAR202
         """
         traceback_and_raise(NotImplementedError)
 
@@ -33,7 +33,7 @@ class ObjectStore(ABC):
         Method to print to first 5 entries of the ObjectStore in a database-like format.
 
         Returns:
-            str: header and first 5 entries of the store in a formatted manner.
+            str: header and first 5 entries of the store in a formatted manner. # noqa: DAR202
         """
         traceback_and_raise(NotImplementedError)
 
@@ -42,7 +42,7 @@ class ObjectStore(ABC):
         Method to return the number of elements in the store.
 
         Returns:
-            int: the number of objects in the store.
+            int: the number of objects in the store. # noqa: DAR202
         """
         traceback_and_raise(NotImplementedError)
 
@@ -51,7 +51,7 @@ class ObjectStore(ABC):
         Method to return all indexes from the store.
 
         Returns:
-            Iterable[UID]: an iterable containing the keys of the store.
+            Iterable[UID]: an iterable containing the keys of the store. # noqa: DAR202
         """
         traceback_and_raise(NotImplementedError)
 
@@ -60,11 +60,11 @@ class ObjectStore(ABC):
         Method to return all values from the store.
 
         Returns:
-            Iterable[StorableObject]: an iterable containing the keys of the store.
+            Iterable[StorableObject]: an iterable containing the keys of the store. # noqa: DAR202
         """
         traceback_and_raise(NotImplementedError)
 
-    def __contains__(self, key: UID) -> bool:
+    def __contains__(self, *, key: UID) -> bool:
         """
         Method to check if an UID is present in the store.
 
@@ -72,11 +72,11 @@ class ObjectStore(ABC):
             key (UID): the UID to be searched.
 
         Returns:
-            bool: if the object is present or not.
+            bool: if the object is present or not. # noqa: DAR202
         """
         traceback_and_raise(NotImplementedError)
 
-    def __getitem__(self, key: UID) -> StorableObject:
+    def __getitem__(self, *, key: UID) -> StorableObject:
         """
         Method to retrieve an object from the store.
 
@@ -84,14 +84,14 @@ class ObjectStore(ABC):
             key (UID): The key to be searched for in the store.
 
         Returns:
-            StorableObject: The object associated with the input key.
+            StorableObject: The object associated with the input key. # noqa: DAR202
 
         Raises:
-            ValueError: If the key is not present in the store.
+            ValueError: If the key is not present in the store. # noqa: DAR402
         """
         traceback_and_raise(NotImplementedError)
 
-    def __setitem__(self, key: UID, value: StorableObject) -> None:
+    def __setitem__(self, *, key: UID, value: StorableObject) -> None:
         """
         Method to store an object in the store. The difference between this and store is that you
         can you use self.store to store objects at a different key than the one specified in
@@ -105,10 +105,10 @@ class ObjectStore(ABC):
         """
         traceback_and_raise(NotImplementedError)
 
-    def __delitem__(self, key: UID) -> None:
+    def __delitem__(self, *, key: UID) -> None:
         self.delete(key=key)
 
-    def delete(self, key: UID) -> None:
+    def delete(self, *, key: UID) -> None:
         """
         We should write custom deletion code so we can check if the item exists
         and then ensure deletion is called at a single place and that full __delitem__
@@ -122,7 +122,7 @@ class ObjectStore(ABC):
             key (UID): the key at which to delete the object.
 
         Raises:
-            ValueError: if the key is not present in the store.
+            ValueError: if the key is not present in the store. # noqa: DAR402
         """
         traceback_and_raise(NotImplementedError)
 
@@ -132,7 +132,7 @@ class ObjectStore(ABC):
         """
         traceback_and_raise(NotImplementedError)
 
-    def get_object(self, key: UID) -> Optional[StorableObject]:
+    def get_object(self, *, key: UID) -> Optional[StorableObject]:
         traceback_and_raise(NotImplementedError)
 
     def has_object(self) -> None:
@@ -144,7 +144,7 @@ class ObjectStore(ABC):
     def delete_object(self) -> None:
         traceback_and_raise(NotImplementedError)
 
-    def get_objects_of_type(self, obj_type: Type) -> Iterable[AbstractStorableObject]:
+    def get_objects_of_type(self, *, obj_type: Type) -> Iterable[AbstractStorableObject]:
         traceback_and_raise(NotImplementedError)
 
     @property
