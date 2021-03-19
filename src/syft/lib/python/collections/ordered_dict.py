@@ -94,7 +94,7 @@ class OrderedDict(PyOrderedDict, PyPrimitive):
         res = super().fromkeys(iterable, value)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def get(self, other: Any) -> SyPrimitiveRet:
+    def dict_get(self, other: Any) -> SyPrimitiveRet:
         res = super().get(other)
         if isprimitive(value=res):
             return PrimitiveFactory.generate_primitive(value=res)
