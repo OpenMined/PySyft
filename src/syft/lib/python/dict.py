@@ -151,7 +151,7 @@ class Dict(UserDict, PyPrimitive):
         res = super().fromkeys(iterable, value)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def get(self, key: Any, default: Any = None) -> SyPrimitiveRet:
+    def dict_get(self, key: Any, default: Any = None) -> SyPrimitiveRet:
         res = super().get(key, default)
         if isprimitive(value=res):
             return PrimitiveFactory.generate_primitive(value=res)
