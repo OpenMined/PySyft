@@ -21,7 +21,7 @@ private data from model training, using
 [Differential Privacy](https://en.wikipedia.org/wiki/Differential_privacy),
 and Encrypted Computation (like
 [Multi-Party Computation (MPC)](https://en.wikipedia.org/wiki/Secure_multi-party_computation)
-and [Homomorphic Encryption (HE)](https://en.wikipedia.org/wiki/Homomorphic_encryption)
+and [Homomorphic Encryption (HE)](https://en.wikipedia.org/wiki/Homomorphic_encryption))
 within the main Deep Learning frameworks like PyTorch and TensorFlow. Join the movement on
 [Slack](http://slack.openmined.org/).
 
