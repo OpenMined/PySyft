@@ -1899,7 +1899,7 @@ def test_replace():
     checkraises(TypeError, python.String("hello"), "replace", 42)
 
 
-@pytest.mark.xfail(strict=True)
+@pytest.mark.xfail
 def test_multiple_arguments():
     checkraises(TypeError, python.String("hello"), "replace", 42, python.String("h"))
     checkraises(TypeError, python.String("hello"), "replace", python.String("h"), 42)
