@@ -1,5 +1,3 @@
-# allowlist_temp
-
 # stdlib
 from os import path
 import os.path
@@ -8,8 +6,6 @@ from typing import Union
 
 # third party
 from packaging import version
-
-# third party libraries
 import pytest
 import torch
 import torchvision as tv
@@ -91,8 +87,3 @@ def test_allowlist(alice: sy.VirtualMachine, tens: torch.Tensor) -> None:
             and "test_parameters" in allowlist[item].keys()
         ):
             exec(item + allowlist[item]["test_parameters"])
-
-
-# tens = torch.load("imageTensor.pt")
-# bob = sy.VirtualMachine(name="alice")
-# test_allowlist(bob, tens)

@@ -2,8 +2,9 @@
 from typing import Dict
 from typing import Union
 
-# transforms_ex = "transforms = torch.nn.Sequential(transforms.CenterCrop(10)"
-# transforms_ex += ",transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),)"
+# TODO: Refactor out all the test data.
+# Issue: https://github.com/OpenMined/PySyft/issues/5325
+
 allowlist: Dict[str, Union[str, Dict[str, str]]] = {}  # (path: str, return_type:type)
 
 allowlist["torchvision.__version__"] = "syft.lib.python.String"
@@ -308,7 +309,6 @@ allowlist["torchvision.transforms.RandomOrder"] = {
 allowlist[
     "torchvision.transforms.LinearTransformation"
 ] = "torchvision.transforms.LinearTransformation"
-allowlist["torchvision.transforms.Normalize"] = "torchvision.transforms.Normalize"
 allowlist[
     "torchvision.transforms.RandomErasing"
 ] = "torchvision.transforms.RandomErasing"
@@ -467,6 +467,8 @@ allowlist["torchvision.transforms.functional.ten_crop"] = {
     # Torch 1.6 expects input to be PIL image, so minimum version as 0.7 (Torch 1.7.0)
 }
 
+# TODO: Fix when we have PIL support
+# Issue: https://github.com/OpenMined/PySyft/issues/5324
 # Following takes  PIL image as input, currently not supported
 # allowlist["torchvision.transforms.functional.to_grayscale"] = {
 #    "return_type" : "torch.Tensor",
