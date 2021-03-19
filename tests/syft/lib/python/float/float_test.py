@@ -163,7 +163,7 @@ def test_float() -> None:
         Float("\u3053\u3093\u306b\u3061\u306f")
 
 
-@pytest.mark.xfail
+@pytest.mark.xfail(strict=True)
 def test_underscores() -> None:
     for lit in VALID_UNDERSCORE_LITERALS:
         if not any(ch in lit for ch in "jJxXoObB"):

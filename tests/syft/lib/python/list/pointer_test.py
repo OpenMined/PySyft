@@ -68,7 +68,7 @@ mapping = {0: generate_0, 1: generate_1}
 objects = [0, 1]
 
 
-@pytest.mark.xfail
+@pytest.mark.xfail(strict=True)
 @pytest.mark.slow
 @pytest.mark.parametrize("test_objects", objects)
 @pytest.mark.parametrize("func", inputs.keys())

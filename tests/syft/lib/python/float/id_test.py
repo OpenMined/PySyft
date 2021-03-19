@@ -305,7 +305,7 @@ def test_id_as_integer_ratio():
     assert test_float.id != u1.id
 
 
-@pytest.mark.xfail
+@pytest.mark.xfail(strict=True)
 def test_id_binary():
     # TODO finish this when we have bytes support
     assert True is False

@@ -314,7 +314,7 @@ def test_basic() -> None:
     assert Int("1z141z5", 36) == 4294967297
 
 
-@pytest.mark.xfail
+@pytest.mark.xfail(strict=True)
 def test_underscores() -> None:
     for lit in VALID_UNDERSCORE_LITERALS:
         if any(ch in lit for ch in ".eEjJ"):
@@ -354,7 +354,7 @@ def test_no_args() -> None:
     assert Int() == 0
 
 
-@pytest.mark.xfail
+@pytest.mark.xfail(strict=True)
 def test_keyword_args() -> None:
     # Test invoking Int() using keyword arguments.
     assert Int("100", base=2) == 4
@@ -427,7 +427,7 @@ def test_string_float() -> None:
         Int("1.2")
 
 
-@pytest.mark.xfail
+@pytest.mark.xfail(strict=True)
 def test_Intconversion() -> None:
     # Test __Int__()
     class ClassicMissingMethods:
@@ -547,7 +547,7 @@ def test_Int_subclass_with_index() -> None:
     assert Int(BadIndex()) == 0
 
 
-@pytest.mark.xfail
+@pytest.mark.xfail(strict=True)
 def test_Int_subclass_with_Int() -> None:
     class MyInt(Int):
         def __Int__(self):
@@ -569,7 +569,7 @@ def test_Int_subclass_with_Int() -> None:
         Int(my_Int)
 
 
-@pytest.mark.xfail
+@pytest.mark.xfail(strict=True)
 def test_Int_returns_Int_subclass() -> None:
     class BadIndex:
         def __index__(self):

@@ -104,7 +104,7 @@ def test_pointable_property() -> None:
 
 
 @pytest.mark.slow
-@pytest.mark.xfail
+@pytest.mark.xfail(strict=True)
 def test_tags() -> None:
     bob = sy.VirtualMachine(name="Bob")
     root_client = bob.get_root_client()
