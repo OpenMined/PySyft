@@ -341,11 +341,16 @@
             "data_types": ["bool"],
             "inputs": [0, 1],
             "gte_version": "1.5.0",
-            "lte_version": "1.8.0"
+            "lte_version": "1.7.1"
           },
           {
             "data_types": ["float16", "float32", "float64", "bfloat16"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.7.1"
+          },
+          {
+            "data_types": ["bool", "float16", "float32", "float64", "bfloat16"],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
           }
         ]
       },
@@ -356,11 +361,16 @@
             "data_types": ["bool"],
             "inputs": [0, 1],
             "gte_version": "1.5.0",
-            "lte_version": "1.8.0"
+            "lte_version": "1.7.1"
           },
           {
             "data_types": ["float16", "float32", "float64", "bfloat16"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.7.1"
+          },
+          {
+            "data_types": ["bool", "float16", "float32", "float64", "bfloat16"],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
           }
         ]
       },
@@ -874,11 +884,16 @@
           {
             "data_types": ["bool"],
             "inputs": [1, 0],
-            "lte_version": "1.8.0"
+            "lte_version": "1.7.1"
           },
           {
             "data_types": ["float16", "float32", "float64", "bfloat16"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.7.1"
+          },
+          {
+            "data_types": ["bool", "float16", "float32", "float64", "bfloat16"],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
           }
         ]
       },
@@ -888,11 +903,16 @@
           {
             "data_types": ["bool"],
             "inputs": [1, 0],
-            "lte_version": "1.8.0"
+            "lte_version": "1.7.1"
           },
           {
             "data_types": ["float16", "float32", "float64", "bfloat16"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.7.1"
+          },
+          {
+            "data_types": ["bool", "float16", "float32", "float64", "bfloat16"],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
           }
         ]
       },
@@ -900,8 +920,18 @@
         "profile": "tensor_method_input",
         "not_available": [
           {
-            "data_types": ["float16", "bfloat16", "bool"],
-            "lte_version": "1.8.0"
+            "data_types": ["bool"],
+            "inputs": ["self", [0], [1]],
+            "lte_version": "1.7.1"
+          },
+          {
+            "data_types": ["float16", "bfloat16"],
+            "lte_version": "1.7.1"
+          },
+          {
+            "data_types": ["bool", "float16", "bfloat16"],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
           }
         ]
       },
@@ -911,15 +941,20 @@
           {
             "data_types": ["bool"],
             "inputs": ["self", [0], [1], true, false],
-            "lte_version": "1.8.0"
+            "lte_version": "1.7.1"
           },
           {
             "data_types": ["float16", "bfloat16"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.7.1"
           },
           {
             "data_types": ["bool"],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": ["bool", "float16", "bfloat16"],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
           }
         ]
       },
@@ -960,15 +995,15 @@
           {
             "data_types": [
               "bool",
-              "int16",
-              "int32",
               "uint8",
               "int8",
-              "float32",
-              "float64",
+              "int16",
               "int64",
+              "int32",
+              "float32",
               "float16",
-              "bfloat16"
+              "bfloat16",
+              "float64"
             ],
             "lte_version": "1.8.0",
             "gte_version": "1.8.0"
@@ -1016,11 +1051,16 @@
           {
             "data_types": ["bool"],
             "inputs": [0, 1],
-            "lte_version": "1.8.0"
+            "lte_version": "1.7.1"
           },
           {
             "data_types": ["float16", "float32", "float64", "bfloat16"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.7.1"
+          },
+          {
+            "data_types": ["bool", "float16", "float32", "float64", "bfloat16"],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
           }
         ]
       },
@@ -1031,11 +1071,16 @@
           {
             "data_types": ["bool"],
             "inputs": [0, 1],
-            "lte_version": "1.8.0"
+            "lte_version": "1.7.1"
           },
           {
             "data_types": ["float16", "float32", "float64", "bfloat16"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.7.1"
+          },
+          {
+            "data_types": ["bool", "float16", "float32", "float64", "bfloat16"],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
           }
         ]
       },
@@ -1046,11 +1091,16 @@
           {
             "data_types": ["bool"],
             "inputs": [0, 1],
-            "lte_version": "1.8.0"
+            "lte_version": "1.7.1"
           },
           {
             "data_types": ["float16"],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
           }
         ]
       },
@@ -1082,11 +1132,16 @@
           {
             "data_types": ["bool"],
             "inputs": [1, 0],
-            "lte_version": "1.8.0"
+            "lte_version": "1.7.1"
           },
           {
             "data_types": ["float16"],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
           }
         ]
       },
@@ -1198,11 +1253,16 @@
           {
             "data_types": ["bool"],
             "inputs": [1, 0],
-            "lte_version": "1.8.0"
+            "lte_version": "1.7.1"
           },
           {
             "data_types": ["float16"],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": ["bool"],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
           }
         ]
       },
@@ -1345,7 +1405,7 @@
         "not_available": [
           {
             "inputs": [false, true, 0, 1],
-            "lte_version": "1.7.1"
+            "lte_version": "1.8.0"
           },
           {
             "data_types": [
@@ -1373,11 +1433,6 @@
               "float64",
               "bfloat16"
             ],
-            "lte_version": "1.8.0",
-            "gte_version": "1.8.0"
-          },
-          {
-            "inputs": [0, 1],
             "lte_version": "1.8.0",
             "gte_version": "1.8.0"
           }
@@ -1388,7 +1443,7 @@
         "not_available": [
           {
             "inputs": [false, true, 0, 1],
-            "lte_version": "1.7.1"
+            "lte_version": "1.8.0"
           },
           {
             "data_types": [
@@ -1416,11 +1471,6 @@
               "float64",
               "bfloat16"
             ],
-            "lte_version": "1.8.0",
-            "gte_version": "1.8.0"
-          },
-          {
-            "inputs": [0, 1],
             "lte_version": "1.8.0",
             "gte_version": "1.8.0"
           }
@@ -1451,11 +1501,16 @@
           {
             "data_types": ["bool"],
             "inputs": [0, 1],
-            "lte_version": "1.8.0"
+            "lte_version": "1.7.1"
           },
           {
             "data_types": ["float16", "float32", "float64", "bfloat16"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.7.1"
+          },
+          {
+            "data_types": ["bool", "float16", "float32", "float64", "bfloat16"],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
           }
         ]
       },
@@ -1466,11 +1521,16 @@
           {
             "data_types": ["bool"],
             "inputs": [0, 1],
-            "lte_version": "1.8.0"
+            "lte_version": "1.7.1"
           },
           {
             "data_types": ["float16", "float32", "float64", "bfloat16"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.7.1"
+          },
+          {
+            "data_types": ["bool", "float16", "float32", "float64", "bfloat16"],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
           }
         ]
       },
@@ -1638,7 +1698,7 @@
             "lte_version": "1.7.1"
           },
           {
-            "inputs": ["self", [0], [1], true, false],
+            "inputs": [[1], true, false, "self", [0]],
             "lte_version": "1.8.0",
             "gte_version": "1.8.0"
           },
@@ -1689,7 +1749,7 @@
             "gte_version": "1.8.0"
           },
           {
-            "inputs": [0, 1],
+            "inputs": [0, 1, true, false],
             "lte_version": "1.8.0",
             "gte_version": "1.8.0"
           }
@@ -2507,11 +2567,16 @@
               "int64",
               "bfloat16"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.7.1"
           },
           {
             "data_types": ["float16"],
             "lte_version": "1.5.1"
+          },
+          {
+            "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
           }
         ]
       },
@@ -2760,7 +2825,7 @@
             "lte_version": "1.7.1"
           },
           {
-            "data_types": ["bfloat16", "float16"],
+            "data_types": ["float16", "bfloat16"],
             "lte_version": "1.8.0",
             "gte_version": "1.8.0"
           }
@@ -3291,12 +3356,12 @@
             "data_types": [
               "bool",
               "uint8",
-              "bfloat16",
               "int8",
               "int16",
               "int32",
               "int64",
-              "float16"
+              "float16",
+              "bfloat16"
             ],
             "lte_version": "1.8.0",
             "gte_version": "1.8.0"
@@ -3480,7 +3545,7 @@
             "reason": "no_cpu"
           },
           {
-            "data_types": ["bfloat16", "float16"],
+            "data_types": ["float16", "bfloat16"],
             "lte_version": "1.8.0",
             "gte_version": "1.8.0"
           }
@@ -3499,7 +3564,7 @@
             "reason": "no_cpu"
           },
           {
-            "data_types": ["bool", "float16", "float32", "float64", "bfloat16"],
+            "data_types": ["float32", "float16", "bfloat16", "bool", "float64"],
             "lte_version": "1.8.0",
             "gte_version": "1.8.0"
           }
@@ -3677,14 +3742,14 @@
           },
           {
             "data_types": [
-              "bfloat16",
               "bool",
               "uint8",
               "int8",
               "int16",
               "int32",
               "int64",
-              "float16"
+              "float16",
+              "bfloat16"
             ],
             "lte_version": "1.8.0",
             "gte_version": "1.8.0"
@@ -3975,14 +4040,14 @@
           },
           {
             "data_types": [
+              "bool",
               "uint8",
               "int8",
               "int16",
               "int32",
               "int64",
               "float16",
-              "bfloat16",
-              "bool"
+              "bfloat16"
             ],
             "lte_version": "1.8.0",
             "gte_version": "1.8.0"
@@ -4040,7 +4105,7 @@
             "reason": "not_available"
           },
           {
-            "data_types": ["int64", "bool", "uint8", "int8", "int16", "int32"],
+            "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.8.0",
             "gte_version": "1.8.0"
           }
@@ -4478,14 +4543,14 @@
           },
           {
             "data_types": [
-              "int32",
-              "int64",
-              "float16",
-              "bfloat16",
               "bool",
               "uint8",
               "int8",
-              "int16"
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
             ],
             "lte_version": "1.8.0",
             "gte_version": "1.8.0"
@@ -4667,7 +4732,7 @@
             "reason": "no_cpu"
           },
           {
-            "data_types": ["bfloat16", "bool"],
+            "data_types": ["bool", "bfloat16"],
             "lte_version": "1.8.0",
             "gte_version": "1.8.0"
           }
@@ -4828,8 +4893,31 @@
               "float32",
               "float64"
             ],
-            "lte_version": "1.8.0",
+            "lte_version": "1.7.1",
             "reason": "input_quant"
+          }
+        ],
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          },
+          {
+            "inputs": [null],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
           }
         ]
       },
@@ -4848,8 +4936,24 @@
               "bfloat16",
               "float16"
             ],
-            "lte_version": "1.8.0",
+            "lte_version": "1.7.1",
             "reason": "input_quant"
+          }
+        ],
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
           }
         ]
       },
@@ -5450,8 +5554,31 @@
               "float32",
               "float64"
             ],
-            "lte_version": "1.8.0",
+            "lte_version": "1.7.1",
             "reason": "input_quant"
+          }
+        ],
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          },
+          {
+            "inputs": [null],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
           }
         ]
       },
@@ -5471,8 +5598,31 @@
               "float32",
               "float64"
             ],
-            "lte_version": "1.8.0",
+            "lte_version": "1.7.1",
             "reason": "input_quant"
+          }
+        ],
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          },
+          {
+            "inputs": [null],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
           }
         ]
       },
@@ -5492,8 +5642,31 @@
               "float32",
               "float64"
             ],
-            "lte_version": "1.8.0",
+            "lte_version": "1.7.1",
             "reason": "input_quant"
+          }
+        ],
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          },
+          {
+            "inputs": [null],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
           }
         ]
       },
@@ -5514,8 +5687,31 @@
               "float32",
               "float64"
             ],
-            "lte_version": "1.8.0",
+            "lte_version": "1.7.1",
             "reason": "input_quant"
+          }
+        ],
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          },
+          {
+            "inputs": [null],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
           }
         ]
       },
@@ -5536,8 +5732,31 @@
               "float32",
               "float64"
             ],
-            "lte_version": "1.8.0",
+            "lte_version": "1.7.1",
             "reason": "input_quant"
+          }
+        ],
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          },
+          {
+            "inputs": [null],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
           }
         ]
       },
@@ -6067,13 +6286,13 @@
           },
           {
             "data_types": [
+              "bool",
               "uint8",
               "int8",
               "int16",
               "int32",
               "int64",
-              "float16",
-              "bool"
+              "float16"
             ],
             "lte_version": "1.8.0",
             "gte_version": "1.8.0"
@@ -6217,7 +6436,7 @@
             "reason": "no_conversion"
           },
           {
-            "data_types": ["bool", "int16", "uint8", "int32", "int8", "int64"],
+            "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.8.0",
             "gte_version": "1.8.0"
           }
@@ -6307,8 +6526,8 @@
           },
           {
             "data_types": [
-              "uint8",
               "bool",
+              "uint8",
               "int8",
               "int16",
               "int32",
@@ -6369,7 +6588,7 @@
             "reason": "no_cpu"
           },
           {
-            "data_types": ["float16", "float32", "float64", "bfloat16", "bool"],
+            "data_types": ["bool", "float16", "float32", "float64", "bfloat16"],
             "lte_version": "1.8.0",
             "gte_version": "1.8.0"
           }
@@ -6478,13 +6697,13 @@
           },
           {
             "data_types": [
+              "bool",
+              "uint8",
+              "int8",
               "int16",
               "int32",
-              "bool",
               "int64",
-              "uint8",
-              "float16",
-              "int8"
+              "float16"
             ],
             "lte_version": "1.8.0",
             "gte_version": "1.8.0"
@@ -6549,13 +6768,13 @@
           },
           {
             "data_types": [
+              "bool",
               "uint8",
               "int8",
               "int16",
               "int32",
               "int64",
-              "float16",
-              "bool"
+              "float16"
             ],
             "lte_version": "1.8.0",
             "gte_version": "1.8.0"
@@ -6892,14 +7111,14 @@
           },
           {
             "data_types": [
-              "uint8",
               "bool",
-              "int64",
+              "uint8",
               "int8",
-              "bfloat16",
-              "float16",
               "int16",
-              "int32"
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
             ],
             "lte_version": "1.8.0",
             "gte_version": "1.8.0"
@@ -6993,8 +7212,8 @@
               "int8",
               "int16",
               "int32",
-              "float16",
               "int64",
+              "float16",
               "bfloat16"
             ],
             "lte_version": "1.8.0",
@@ -7026,14 +7245,14 @@
           },
           {
             "data_types": [
+              "bool",
+              "uint8",
               "int8",
               "int16",
               "int32",
-              "bfloat16",
               "int64",
               "float16",
-              "bool",
-              "uint8"
+              "bfloat16"
             ],
             "lte_version": "1.8.0",
             "gte_version": "1.8.0"
@@ -7075,14 +7294,14 @@
           },
           {
             "data_types": [
-              "int8",
               "bool",
-              "int16",
               "uint8",
+              "int8",
+              "int16",
               "int32",
               "int64",
-              "bfloat16",
-              "float16"
+              "float16",
+              "bfloat16"
             ],
             "lte_version": "1.8.0",
             "gte_version": "1.8.0"
@@ -7504,14 +7723,14 @@
           },
           {
             "data_types": [
-              "bfloat16",
               "bool",
               "uint8",
               "int8",
               "int16",
               "int32",
               "int64",
-              "float16"
+              "float16",
+              "bfloat16"
             ],
             "lte_version": "1.8.0",
             "gte_version": "1.8.0"
@@ -7839,14 +8058,14 @@
           },
           {
             "data_types": [
-              "bool",
               "uint8",
-              "int8",
-              "int16",
-              "int32",
               "int64",
-              "float16",
-              "bfloat16"
+              "bfloat16",
+              "bool",
+              "int32",
+              "int16",
+              "int8",
+              "float16"
             ],
             "lte_version": "1.8.0",
             "gte_version": "1.8.0"
@@ -7879,13 +8098,13 @@
           },
           {
             "data_types": [
-              "bool",
-              "uint8",
-              "int8",
               "int16",
-              "int32",
-              "int64",
+              "int8",
+              "uint8",
               "float16",
+              "int64",
+              "bool",
+              "int32",
               "bfloat16"
             ],
             "lte_version": "1.8.0",
@@ -7909,7 +8128,7 @@
             "reason": "no_cpu"
           },
           {
-            "data_types": ["bool", "float16", "bfloat16"],
+            "data_types": ["bfloat16", "bool", "float16"],
             "lte_version": "1.8.0",
             "gte_version": "1.8.0"
           }
@@ -7931,7 +8150,7 @@
             "reason": "no_cpu"
           },
           {
-            "data_types": ["bool", "float16", "bfloat16"],
+            "data_types": ["float16", "bool", "bfloat16"],
             "lte_version": "1.8.0",
             "gte_version": "1.8.0"
           }
@@ -8029,7 +8248,7 @@
             "reason": "no_cpu"
           },
           {
-            "data_types": ["bool", "float16"],
+            "data_types": ["float16", "bool"],
             "lte_version": "1.8.0",
             "gte_version": "1.8.0"
           }
@@ -9084,8 +9303,26 @@
         "return_type": "torch.device",
         "skip": [
           {
-            "lte_version": "1.8.0",
+            "lte_version": "1.7.1",
             "reason": "untested"
+          }
+        ],
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
           }
         ]
       },
@@ -9095,13 +9332,29 @@
         "not_available": [
           {
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
-            "lte_version": "1.8.0",
+            "lte_version": "1.7.1",
             "reason": "no_cpu"
+          },
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
           }
         ],
         "skip": [
           {
-            "lte_version": "1.8.0",
+            "lte_version": "1.7.1",
             "reason": "DistributedDataParallel error"
           }
         ]
@@ -9137,7 +9390,7 @@
         ],
         "not_available": [
           {
-            "data_types": ["bool", "int16", "uint8", "int32", "int8", "int64"],
+            "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.8.0",
             "gte_version": "1.8.0"
           }
@@ -9270,6 +9523,707 @@
           },
           {
             "data_types": ["float16", "bfloat16"],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "xpu": {
+        "profile": "default",
+        "min_version": "1.8.0",
+        "not_available": [
+          {
+            "inputs": [[1], true, false, "self", [0]],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          },
+          {
+            "data_types": [
+              "bfloat16",
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "float64"
+            ],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "tile": {
+        "profile": "default",
+        "min_version": "1.8.0",
+        "not_available": [
+          {
+            "inputs": ["self", true, false, [0], [1]],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "fmax": {
+        "profile": "default",
+        "min_version": "1.8.0",
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          },
+          {
+            "inputs": [0, 1, true, false],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "ldexp_": {
+        "profile": "default",
+        "min_version": "1.8.0",
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          },
+          {
+            "inputs": [0, 1, true, false],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "sinc": {
+        "profile": "tensor_method_noinput",
+        "min_version": "1.8.0",
+        "not_available": [
+          {
+            "data_types": ["float16"],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "kron": {
+        "profile": "default",
+        "min_version": "1.8.0",
+        "not_available": [
+          {
+            "data_types": [
+              "uint8",
+              "float64",
+              "int8",
+              "bfloat16",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "bool"
+            ],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          },
+          {
+            "inputs": [0, 1, true, false],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "nan_to_num": {
+        "profile": "default",
+        "min_version": "1.8.0",
+        "not_available": [
+          {
+            "inputs": ["self", [0], [1]],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "msort": {
+        "profile": "default",
+        "min_version": "1.8.0",
+        "not_available": [
+          {
+            "inputs": ["self", [0], [1], 0, 1, true, false],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "row_stack": {
+        "profile": "default",
+        "min_version": "1.8.0"
+      },
+      "new_empty_strided": {
+        "profile": "default",
+        "min_version": "1.8.0",
+        "not_available": [
+          {
+            "inputs": ["self", [0], [1], 0, 1, true, false],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "ravel": {
+        "profile": "default",
+        "min_version": "1.8.0",
+        "not_available": [
+          {
+            "inputs": ["self", [0], [1], 0, 1, true, false],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "swapdims_": {
+        "profile": "default",
+        "min_version": "1.8.0",
+        "not_available": [
+          {
+            "inputs": ["self", [0], [1], 0, 1, true, false],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "moveaxis": {
+        "profile": "default",
+        "min_version": "1.8.0",
+        "not_available": [
+          {
+            "data_types": [
+              "uint8",
+              "float16",
+              "int8",
+              "float32",
+              "int16",
+              "float64",
+              "bool",
+              "int32",
+              "bfloat16",
+              "int64"
+            ],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          },
+          {
+            "inputs": [[0], [1], 0, 1, true, false, "self"],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "swapaxes": {
+        "profile": "default",
+        "min_version": "1.8.0",
+        "not_available": [
+          {
+            "inputs": [1, true, false, "self", [0], [1], 0],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "tensor_split": {
+        "profile": "default",
+        "min_version": "1.8.0",
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          },
+          {
+            "inputs": [true, false],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "float_power_": {
+        "profile": "default",
+        "min_version": "1.8.0",
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "bfloat16"
+            ],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "broadcast_to": {
+        "profile": "default",
+        "tensors": ["tensor1_1element"],
+        "inputs": [
+          {
+            "LIST_size": [0, 1]
+          }
+        ],
+        "min_version": "1.8.0",
+        "not_available": [
+          {
+            "inputs": [true, false, "self", [0], [1]],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "fmin": {
+        "profile": "default",
+        "min_version": "1.8.0",
+        "not_available": [
+          {
+            "data_types": [
+              "float16",
+              "bool",
+              "uint8",
+              "float32",
+              "int8",
+              "float64",
+              "int16",
+              "bfloat16",
+              "int32",
+              "int64"
+            ],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          },
+          {
+            "inputs": [false, 0, 1, true],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "ldexp": {
+        "profile": "default",
+        "min_version": "1.8.0",
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float64",
+              "float16",
+              "bfloat16",
+              "float32"
+            ],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          },
+          {
+            "inputs": [0, 1, true, false],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "broadcast_shapes": {
+        "profile": "default",
+        "min_version": "1.8.0"
+      },
+      "swapdims": {
+        "profile": "default",
+        "min_version": "1.8.0",
+        "not_available": [
+          {
+            "inputs": ["self", [0], [1], 0, 1, true, false],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "igamma": {
+        "profile": "default",
+        "min_version": "1.8.0",
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          },
+          {
+            "inputs": [0, 1, true, false],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "nan_to_num_": {
+        "profile": "default",
+        "min_version": "1.8.0",
+        "not_available": [
+          {
+            "inputs": ["self", [0], [1]],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          },
+          {
+            "data_types": ["bfloat16"],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "copysign": {
+        "profile": "default",
+        "min_version": "1.8.0"
+      },
+      "swapaxes_": {
+        "profile": "default",
+        "min_version": "1.8.0",
+        "not_available": [
+          {
+            "inputs": [[0], [1], 0, 1, true, false, "self"],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "cumprod_": {
+        "profile": "default",
+        "min_version": "1.8.0",
+        "not_available": [
+          {
+            "data_types": [
+              "float32",
+              "float64",
+              "bool",
+              "bfloat16",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          },
+          {
+            "inputs": [true, false, "self", [0], [1]],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "igamma_": {
+        "profile": "default",
+        "min_version": "1.8.0",
+        "not_available": [
+          {
+            "data_types": [
+              "float64",
+              "bfloat16",
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32"
+            ],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          },
+          {
+            "inputs": [0, 1, true, false],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "float_power": {
+        "profile": "default",
+        "min_version": "1.8.0"
+      },
+      "igammac_": {
+        "profile": "default",
+        "min_version": "1.8.0",
+        "not_available": [
+          {
+            "data_types": [
+              "float64",
+              "bool",
+              "bfloat16",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32"
+            ],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          },
+          {
+            "inputs": [0, 1, true, false],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "xlogy": {
+        "profile": "default",
+        "min_version": "1.8.0"
+      },
+      "nanmedian": {
+        "profile": "default",
+        "min_version": "1.8.0",
+        "not_available": [
+          {
+            "data_types": [
+              "int32",
+              "uint8",
+              "int64",
+              "int8",
+              "bool",
+              "float16",
+              "int16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          },
+          {
+            "inputs": [true, false, [1], "self", [0]],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          },
+          {
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "igammac": {
+        "profile": "default",
+        "min_version": "1.8.0",
+        "not_available": [
+          {
+            "data_types": [
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bool",
+              "float32",
+              "float64",
+              "uint8",
+              "bfloat16",
+              "int8"
+            ],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          },
+          {
+            "inputs": [0, 1, true, false],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "cumsum_": {
+        "profile": "default",
+        "min_version": "1.8.0",
+        "not_available": [
+          {
+            "data_types": [
+              "float32",
+              "float64",
+              "bool",
+              "bfloat16",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16"
+            ],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          },
+          {
+            "inputs": [[1], true, false, "self", [0]],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "diff": {
+        "profile": "default",
+        "min_version": "1.8.0",
+        "not_available": [
+          {
+            "inputs": [[0], "self", [1], true, false],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          },
+          {
+            "data_types": [
+              "bool",
+              "int8",
+              "uint8",
+              "int16",
+              "float16",
+              "int32",
+              "float32",
+              "bfloat16",
+              "int64",
+              "float64"
+            ],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "column_stack": {
+        "profile": "default",
+        "min_version": "1.8.0"
+      },
+      "pixel_unshuffle": {
+        "profile": "default",
+        "min_version": "1.8.0"
+      },
+      "inner": {
+        "profile": "default",
+        "min_version": "1.8.0",
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          },
+          {
+            "inputs": [1, true, false, 0],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "sinc_": {
+        "profile": "tensor_method_noinput",
+        "min_version": "1.8.0",
+        "not_available": [
+          {
+            "data_types": [
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bool"
+            ],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "copysign_": {
+        "profile": "default",
+        "min_version": "1.8.0",
+        "not_available": [
+          {
+            "data_types": ["uint8", "int8", "int16", "int32", "bool", "int64"],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
+        ]
+      },
+      "xlogy_": {
+        "profile": "default",
+        "min_version": "1.8.0",
+        "not_available": [
+          {
+            "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.8.0",
             "gte_version": "1.8.0"
           }
