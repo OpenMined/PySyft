@@ -53,6 +53,7 @@ for path in (
     list(Path("examples/homomorphic-encryption").rglob("*.ipynb"))
     + list(Path("examples/duet/dcgan").rglob("*.ipynb"))
     + list(Path("examples/duet/super_resolution").rglob("*.ipynb"))
+    + list(Path("examples/duet/vae").rglob("*.ipynb"))
     + list(Path("examples/private-ai-series/duet_basics").rglob("*.ipynb"))
     + list(Path("examples/private-ai-series/duet_iris_classifier").rglob("*.ipynb"))
     + list(Path("examples/differential-privacy/opacus").rglob("*.ipynb"))
