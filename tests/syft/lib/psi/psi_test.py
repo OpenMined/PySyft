@@ -13,15 +13,15 @@ def test_psi(loadlib_before_client: bool, reveal_intersection: bool) -> None:
     # third party
     import openmined_psi as psi
 
-    # it should work when call load_lib before or after create clients
+    # it should work when call load before or after create clients
     if loadlib_before_client:
-        sy.load_lib("openmined_psi")
+        sy.load("openmined_psi")
         server_vm = sy.VirtualMachine().get_root_client()
         client_vm = sy.VirtualMachine().get_root_client()
     else:
         server_vm = sy.VirtualMachine().get_root_client()
         client_vm = sy.VirtualMachine().get_root_client()
-        sy.load_lib("openmined_psi")
+        sy.load("openmined_psi")
 
     # server send reveal_intersection
     s_reveal_intersection = reveal_intersection
