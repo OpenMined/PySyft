@@ -266,6 +266,10 @@ while continue_loop:
         json.dump(allowlist_test, f, indent=2)
 
 
+# read allowlist_test.json
+with open(f"{root_dir}/tests/syft/lib/allowlist_test.json", "r") as f:
+    allowlist_test = json.load(f)
+
 # optimize json file
 for op, config in allowlist_test["tests"]["torch.Tensor"].items():
     lte_key = "lte_version"
