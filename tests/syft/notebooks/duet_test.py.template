@@ -29,7 +29,7 @@ def cleanup() -> None:
     except BaseException:
         pass
     try:
-        os.mkdir(checkpoint_dir)
+        os.makedirs(checkpoint_dir, exist_ok=True)
     except BaseException:
         pass
 
