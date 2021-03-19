@@ -15,7 +15,11 @@ from ...ast.globals import Globals
 from ..util import generic_update_ast
 
 LIB_NAME = "opacus"
-PACKAGE_SUPPORT = {"lib": LIB_NAME}
+PACKAGE_SUPPORT = {
+    "lib": LIB_NAME,
+    "torch": {"min_version": "1.6.0"},
+    "python": {"min_version": (3, 6, 9), "max_version": (3, 9, 99)},
+}
 
 
 def create_ast(client: TypeAny = None) -> Globals:
@@ -40,10 +44,11 @@ def create_ast(client: TypeAny = None) -> Globals:
         ),
         ("opacus.privacy_engine.PrivacyEngine.step", "syft.lib.python._SyNone"),
         ("opacus.privacy_engine.PrivacyEngine.zero_grad", "syft.lib.python._SyNone"),
+        ("opacus.privacy_engine.PrivacyEngine.zero_grad", "syft.lib.python._SyNone"),
         (
             "opacus.privacy_engine.PrivacyEngine.get_privacy_spent",
-            "syft.lib.python.List",
-        ),  # TODO: This is a Tuple
+            "syft.lib.python.Tuple",
+        ),
         ("opacus.privacy_engine.PrivacyEngine.attach", "syft.lib.python._SyNone"),
     ]
 

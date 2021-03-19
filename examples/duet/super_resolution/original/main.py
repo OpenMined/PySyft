@@ -6,13 +6,14 @@ import argparse
 from math import log10
 
 # third party
-from data import get_test_set
-from data import get_training_set
 from model import Net
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
+
+from data import get_test_set  # isort:skip
+from data import get_training_set  # isort:skip
 
 # Training settings
 parser = argparse.ArgumentParser(description="PyTorch Super Res Example")

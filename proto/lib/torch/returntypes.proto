@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package syft.lib.torch;
+import "proto/core/common/common_object.proto";
+import "proto/lib/torch/tensor.proto";
+
+message ReturnTypes {
+  string obj_type = 1;
+  repeated syft.lib.torch.TensorData values = 2;
+}

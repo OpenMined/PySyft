@@ -28,11 +28,11 @@ import syft as sy
 from syft.core.pointer.pointer import Pointer
 from syft.lib.python import List
 from syft.lib.python import String
-from syft.lib.python.namedtuple import get_keys
 from syft.lib.python.primitive_factory import PrimitiveFactory
 from syft.lib.python.primitive_factory import isprimitive
 from syft.lib.python.primitive_interface import PyPrimitive
 from syft.lib.torch import allowlist
+from syft.lib.torch.return_types import types_fields
 from syft.lib.torch.tensor_util import TORCH_STR_DTYPE
 from syft.lib.util import full_name_with_qualname
 
@@ -439,7 +439,7 @@ def test_all_allowlisted_tensor_methods(
         # Step 3: Create the object we're going to call a method on
         # NOTE: we need a second copy because some methods mutate tensor before we send
         requires_grad = False
-        if op_name in ["backward", "retain_grad"]:
+        if op_name in ["backward", "retain_grad", "grad"]:
             requires_grad = True
         self_tensor, self_tensor_copy = (
             th.tensor(self_tensor, dtype=t_type, requires_grad=requires_grad),
@@ -511,6 +511,9 @@ def test_all_allowlisted_tensor_methods(
             raise Exception(err)
 
         # Step 4: Get the method we're going to call
+        # if op_name=="grad", we need to do more operations first
+        if op_name == "grad":
+            self_tensor.sum().backward()  # type: ignore
         target_op_method = getattr(self_tensor, op_name)
 
         # Step 5: Test to see whether this method and arguments combination is valid
@@ -560,6 +563,11 @@ def test_all_allowlisted_tensor_methods(
         # Step 6: Send our target tensor to alice.
         # NOTE: send the copy we haven't mutated
         xp = self_tensor_copy.send(alice_client)
+
+        # if op_name=="grad", we need to do more operations first
+        if op_name == "grad":
+            xp.sum().backward()
+
         argsp: ListType[Any] = []
         if len(args) > 0 and not is_property:
             if isinstance(args, dict):
@@ -600,19 +608,13 @@ def test_all_allowlisted_tensor_methods(
         try:
             target_fqn = full_name_with_qualname(klass=type(target_result))
             if target_fqn.startswith("torch.return_types."):
-                local_fqn = full_name_with_qualname(klass=type(local_result))
-                keys = get_keys(klass_name=local_fqn)
-                # temporary work around while ValuesIndicesWrapper has storable attrs
-                for key in keys:
+                fields = types_fields[type(local_result)]
+                for field in fields:
                     assert compare_tensors(
-                        left=getattr(local_result, key, None),
-                        right=getattr(target_result, key, None),
+                        left=getattr(local_result, field, None),
+                        right=getattr(target_result, field, None),
                     )
-                # finish the check for now
-                return
-
-            # only do single value comparisons, do lists, tuples etc below in the else
-            if (
+            elif (
                 issubclass(type(local_result), (str, String))
                 or not hasattr(target_result, "__len__")
                 and (
@@ -620,6 +622,7 @@ def test_all_allowlisted_tensor_methods(
                     or issubclass(type(local_result), PyPrimitive)
                 )
             ):
+                # only do single value comparisons, do lists, tuples etc below in the else
                 # check that it matches functionally
                 if deterministic:
                     if issubclass(type(target_result), float):
@@ -678,8 +681,10 @@ def test_all_allowlisted_tensor_methods(
             # TODO: Fix this workaround for types that sometimes return Tensor tuples
             # we are getting back more than 1 return type so we need to fake it until
             # we add Union to the return types
-            if hasattr(local_result, "__len__") and not issubclass(
-                type(local_result), (th.Tensor, str, String)
+            if (
+                hasattr(local_result, "__len__")
+                and not issubclass(type(local_result), (th.Tensor, str, String))
+                and not target_fqn.startswith("torch.return_types.")
             ):
                 if issubclass(type(local_result), (list, List)) and issubclass(
                     type(target_result), (list, List)
@@ -707,9 +712,14 @@ def test_all_allowlisted_tensor_methods(
 
             # make sure the return type matches the specified allowlist return type
             if not issubclass(type(local_result), th.Tensor):
-                local_type = full_name_with_qualname(
-                    klass=type(PrimitiveFactory.generate_primitive(value=local_result))
-                )
+                if target_fqn.startswith("torch.return_types."):
+                    local_type = full_name_with_qualname(klass=type(local_result))
+                else:
+                    local_type = full_name_with_qualname(
+                        klass=type(
+                            PrimitiveFactory.generate_primitive(value=local_result)
+                        )
+                    )
                 full_result_pointer_type = full_name_with_qualname(
                     klass=result_pointer_type
                 )

@@ -8,13 +8,13 @@ import syft as sy
 
 @pytest.mark.slow
 @pytest.mark.parametrize("with_verify_key", [True, False])
-def test_make_searchable(with_verify_key: bool) -> None:
+def test_make_pointable(with_verify_key: bool) -> None:
     bob = sy.VirtualMachine(name="Bob")
     root_client = bob.get_root_client()
     client = bob.get_client()
 
     ten = th.tensor([1, 2])
-    ptr = ten.send(root_client)
+    ptr = ten.send(root_client, pointable=False)
 
     assert len(client.store) == 0
 
@@ -28,13 +28,13 @@ def test_make_searchable(with_verify_key: bool) -> None:
 
 @pytest.mark.slow
 @pytest.mark.parametrize("with_verify_key", [True, False])
-def test_make_unsearchable(with_verify_key: bool) -> None:
+def test_make_unpointable(with_verify_key: bool) -> None:
     bob = sy.VirtualMachine(name="Bob")
     root_client = bob.get_root_client()
     client = bob.get_client()
 
     ten = th.tensor([1, 2])
-    ptr = ten.send(root_client)
+    ptr = ten.send(root_client, pointable=False)
 
     if with_verify_key:
         ptr.update_searchability(target_verify_key=client.verify_key)
@@ -44,33 +44,33 @@ def test_make_unsearchable(with_verify_key: bool) -> None:
     assert len(client.store) == 1
 
     if with_verify_key:
-        ptr.update_searchability(searchable=False, target_verify_key=client.verify_key)
+        ptr.update_searchability(pointable=False, target_verify_key=client.verify_key)
     else:
-        ptr.update_searchability(searchable=False)
+        ptr.update_searchability(pointable=False)
 
     assert len(client.store) == 0
 
 
 @pytest.mark.slow
-def test_searchable_property() -> None:
+def test_pointable_property() -> None:
     bob = sy.VirtualMachine(name="Bob")
     root_client = bob.get_root_client()
     client = bob.get_client()
 
     ten = th.tensor([1, 2])
-    ptr = ten.send(root_client)
+    ptr = ten.send(root_client, pointable=False)
     assert len(client.store) == 0
 
-    ptr.searchable = False
+    ptr.pointable = False
     assert len(client.store) == 0
 
-    ptr.searchable = True
+    ptr.pointable = True
     assert len(client.store) == 1
 
-    ptr.searchable = True
+    ptr.pointable = True
     assert len(client.store) == 1
 
-    ptr.searchable = False
+    ptr.pointable = False
     assert len(client.store) == 0
 
 
@@ -78,7 +78,6 @@ def test_searchable_property() -> None:
 @pytest.mark.xfail
 def test_tags() -> None:
     bob = sy.VirtualMachine(name="Bob")
-    client = bob.get_client()
     root_client = bob.get_root_client()
 
     ten = th.tensor([1, 2])
@@ -95,12 +94,12 @@ def test_tags() -> None:
     assert ten.tags == ["tag2", "other"]
     assert ptr.tags == ["tag2", "other"]
 
-    th.Tensor([1, 2, 3]).send(root_client, searchable=True, tags=["a"])
-    th.Tensor([1, 2, 3]).send(root_client, searchable=True, tags=["b"])
-    th.Tensor([1, 2, 3]).send(root_client, searchable=True, tags=["c"])
-    th.Tensor([1, 2, 3]).send(root_client, searchable=True, tags=["d"])
-    sy.lib.python.Int(2).send(root_client, searchable=True, tags=["e"])
-    sy.lib.python.List([1, 2, 3]).send(root_client, searchable=True, tags=["f"])
+    th.Tensor([1, 2, 3]).send(root_client, pointable=True, tags=["a"])
+    th.Tensor([1, 2, 3]).send(root_client, pointable=True, tags=["b"])
+    th.Tensor([1, 2, 3]).send(root_client, pointable=True, tags=["c"])
+    th.Tensor([1, 2, 3]).send(root_client, pointable=True, tags=["d"])
+    sy.lib.python.Int(2).send(root_client, pointable=True, tags=["e"])
+    sy.lib.python.List([1, 2, 3]).send(root_client, pointable=True, tags=["f"])
 
     a = root_client.store["a"]
     b = root_client.store["b"]
@@ -125,14 +124,23 @@ def test_tags() -> None:
 
     # __len__ auto gets if you have permission
     f_root = root_client.store["f"]
-
     assert len(f_root) == 3
 
-    # TODO: Fix this test
+
+def test_issue_5170() -> None:
+    bob = sy.VirtualMachine(name="Bob")
+    client = bob.get_client()
+    sy.lib.python.List([1, 2, 3]).send(client, pointable=True, tags=["f"])
+
     f_guest = client.store["f"]
-    result_ptr = f_guest.__len__()
-    assert result_ptr is not None  # should be a pointer?
+    result_ptr = f_guest.len()
+    assert result_ptr is not None
     assert result_ptr.tags == ["f", "__len__"]
+
+    with pytest.raises(ValueError) as e:
+        f_guest.__len__()
+
+    assert str(e.value) == "Request to access data length rejected."
 
 
 # TODO: Make only for DataFrames etc
