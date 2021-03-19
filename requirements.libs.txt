@@ -1,6 +1,8 @@
+-r ./requirements.libs.deps.txt
+
 opacus
 openmined.psi
 python-dp
-sycret
+pytorch-lightning @ git+https://github.com/tudorcebere/pytorch-lightning@tudor-om-v0
 sympc @ git+https://github.com/OpenMined/SyMPC@main
 tenseal
