@@ -43,14 +43,14 @@ def object2proto(obj: BPTTIterator) -> BPTTIterator_PB:
     text_reader = bptt_iterator.dataset_reader
 
     # Create/get its uuid
-    bptt_iterator_pb.dataset_reader.uuid = text_reader.id.value.bytes
+    bptt_iterator_pb.dataset_reader.uuid = getattr(text_reader, 'id', UID()).value.bytes
 
     bptt_iterator_pb.dataset_reader.mode = text_reader.mode
 
     # Get the sentence encoder object
     sentence_encoder = bptt_iterator.dataset_reader.encoder
 
-    bptt_iterator_pb.dataset_reader.encoder.uuid = sentence_encoder.id.value.bytes
+    bptt_iterator_pb.dataset_reader.encoder.uuid = getattr(sentence_encoder, 'id', UID()).value.bytes
 
     # Populate the tokenizer protobuf part in the iterator protobuf
     spacy_tokenizer2proto(obj = sentence_encoder.tokenizer,

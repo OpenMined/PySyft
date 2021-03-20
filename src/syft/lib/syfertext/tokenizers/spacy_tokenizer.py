@@ -37,7 +37,7 @@ def object2proto(obj: SpacyTokenizer, obj_pb: SpacyTokenizer_PB = None) -> Spacy
         # Use the passed protobuf object
         tokenizer_pb = obj_pb        
 
-    tokenizer_pb.uuid = tokenizer.id.value.bytes
+    tokenizer_pb.uuid = getattr(tokenizer, 'id', UID()).value.bytes
     tokenizer_pb.prefixes.extend(tokenizer.prefixes)
     tokenizer_pb.suffixes.extend(tokenizer.suffixes)
     tokenizer_pb.infixes.extend(tokenizer.infixes)
