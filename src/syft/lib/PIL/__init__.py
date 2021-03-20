@@ -8,7 +8,6 @@ from typing import Tuple as TypeTuple
 import PIL
 
 # syft relative
-from . import image
 from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
@@ -24,15 +23,14 @@ def create_ast(client: TypeAny = None) -> Globals:
 
     modules: TypeList[TypeTuple[str, TypeAny]] = [
         ("PIL", PIL),
-        ("PIL.Image", PIL.Image)
+        ("PIL.Image", PIL.Image),
     ]
 
     classes: TypeList[TypeTuple[str, str, TypeAny]] = [
         ("PIL.Image.Image", "PIL.Image,Image", PIL.Image.Image)
     ]
 
-    methods: TypeList[TypeTuple[str, str]] = [
-    ]
+    methods: TypeList[TypeTuple[str, str]] = []
 
     add_modules(ast, modules)
     add_classes(ast, classes)

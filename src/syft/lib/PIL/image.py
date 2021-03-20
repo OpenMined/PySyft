@@ -5,10 +5,11 @@ import torch
 import torchvision
 
 # syft relative
+from . import image  # noqa: 401
 from ...generate_wrapper import GenerateWrapper
-from ...proto.lib.torch.tensor_pb2 import TensorData
-from ...lib.torch.tensor_util import protobuf_tensor_serializer
 from ...lib.torch.tensor_util import protobuf_tensor_deserializer
+from ...lib.torch.tensor_util import protobuf_tensor_serializer
+from ...proto.lib.torch.tensor_pb2 import TensorData
 
 
 def object2proto(obj: PIL.Image.Image) -> TensorData:
