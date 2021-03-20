@@ -12,8 +12,32 @@ from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft import deserialize, serialize
 from syft.core.common.serde.serialize import _serialize
 
+from ..auth import error_handler, token_required
+from ...core.exceptions import UserNotFoundError, AuthorizationError
 
-executor_running = False
+
+@root_route.route("/dashboard", methods=["GET"])
+@token_required
+def dashboard_route(current_user):
+    # Check if current session is the owner user
+    _allowed = current_user.role == node.roles.owner_role.id
+    if not _allowed:
+        Response(
+            {"error": str(AuthorizationError)}, status=403, mimetype="application/json"
+        )
+    else:
+        response_body = {
+            "datasets": len(node.disk_store),
+            "requests": len(node.requests),
+            "tensors": len(node.store),
+            "common_users": len(node.users.common_users),
+            "org_users": len(node.users.org_users),
+            "groups": len(node.groups),
+            "roles": len(node.roles),
+        }
+        return Response(
+            json.dumps(response_body), status=200, mimetype="application/json"
+        )
 
 
 @root_route.route("/metadata", methods=["GET"])

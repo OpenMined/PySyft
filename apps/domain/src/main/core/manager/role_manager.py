@@ -15,6 +15,38 @@ class RoleManager(DatabaseManager):
         self._schema = RoleManager.schema
         self.db = database
 
+    @property
+    def user_role(self):
+        return self.first(name="User")
+
+    @property
+    def owner_role(self):
+        return self.first(name="Owner")
+
+    @property
+    def compliance_officer_role(self):
+        return self.first(name="Compliance Officer")
+
+    @property
+    def admin_role(self):
+        return self.first(name="Administrator")
+
+    @property
+    def common_roles(self):
+        return self.db.session.query(self._schema).filter_by(
+            can_triage_requests=False,
+            can_edit_settings=False,
+            can_create_users=False,
+            can_create_groups=False,
+            can_upload_data=False,
+            can_edit_roles=False,
+            can_manage_infrastructure=False,
+        )
+
+    @property
+    def org_roles(self):
+        return self.db.session.query(self._schema).except_(self.common_roles)
+
     def first(self, **kwargs) -> Union[None, List]:
         result = super().first(**kwargs)
         if not result:

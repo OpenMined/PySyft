@@ -3,7 +3,6 @@ import os
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy_mixins import AllFeaturesMixin
-from sqlalchemy_utils.functions import database_exists
 
 db = SQLAlchemy()
 

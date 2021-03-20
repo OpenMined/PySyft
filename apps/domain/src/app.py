@@ -19,7 +19,6 @@ from flask import Flask
 from flask_sockets import Sockets
 
 from geventwebsocket.websocket import Header
-from sqlalchemy_utils.functions import database_exists
 from nacl.signing import SigningKey
 from nacl.encoding import HexEncoder
 from syft.core.node.domain.domain import Domain
