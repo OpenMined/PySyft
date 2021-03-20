@@ -15,6 +15,18 @@ from ..auth import error_handler, token_required, optional_token
 from ...core.task_handler import route_logic, task_handler
 from ...core.node import node
 from ...core.exceptions import MissingRequestKeyError
+from ...core.database.utils import model_to_json
+
+
+@user_route.route("me", methods=["GET"])
+@token_required
+def me(current_user):
+    user = model_to_json(current_user)
+    return Response(
+        json.dumps(user),
+        status=200,
+        mimetype="application/json",
+    )
 
 
 @user_route.route("", methods=["POST"])
