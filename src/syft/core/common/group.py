@@ -1,6 +1,5 @@
 # stdlib
 from typing import Any
-from typing import Type
 
 # third party
 from google.protobuf.empty_pb2 import Empty as Empty_PB
@@ -38,8 +37,8 @@ class VerifyAll(Serializable):
         return VerifyAllWrapper_PB(all=Empty_PB())
 
     @staticmethod
-    def _proto2object(proto: VerifyAllWrapper_PB) -> Type:  # type: ignore
-        return VerifyAll
+    def _proto2object(proto: VerifyAllWrapper_PB) -> "VerifyAll":
+        return VerifyAll()
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:

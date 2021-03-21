@@ -139,7 +139,7 @@ class ImmediateObjectSearchPermissionUpdateService(ImmediateNodeServiceWithoutRe
                 + "Please submit a request."
             )
             raise AuthorizationException(log)
-        target_verify_key = msg.target_verify_key or VerifyAll
+        target_verify_key = msg.target_verify_key or VerifyAll()
         if msg.add_instead_of_remove:
             storable_object.search_permissions[target_verify_key] = msg.id
         else:
