@@ -38,8 +38,11 @@ class VerifyAll(Serializable):
 
     @staticmethod
     def _proto2object(proto: VerifyAllWrapper_PB) -> "VerifyAll":
-        return VerifyAll()
+        return VERIFYALL
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return VerifyAllWrapper_PB
+
+
+VERIFYALL = VerifyAll()

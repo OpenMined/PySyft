@@ -26,7 +26,7 @@ from .....proto.core.node.common.service.object_search_message_pb2 import (
 )
 from .....util import obj2pointer_type
 from .....util import traceback_and_raise
-from ....common.group import VerifyAll
+from ....common.group import VERIFYALL
 from ....common.message import ImmediateSyftMessageWithReply
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
@@ -209,7 +209,7 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
                 # if this tensor allows anyone to search for it, then one of its keys
                 # has a VerifyAll in it.
                 contains_all_in_permissions = any(
-                    isinstance(key, VerifyAll) for key in obj.search_permissions.keys()
+                    key is VERIFYALL for key in obj.search_permissions.keys()
                 )
                 if (
                     verify_key in obj.search_permissions.keys()

@@ -19,7 +19,7 @@ from ..... import serialize
 from .....proto.core.node.common.service.object_search_permission_update_message_pb2 import (
     ObjectSearchPermissionUpdateMessage as ObjectSearchPermissionUpdateMessage_PB,
 )
-from ....common.group import VerifyAll
+from ....common.group import VERIFYALL
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import bind_protobuf
@@ -139,7 +139,7 @@ class ImmediateObjectSearchPermissionUpdateService(ImmediateNodeServiceWithoutRe
                 + "Please submit a request."
             )
             raise AuthorizationException(log)
-        target_verify_key = msg.target_verify_key or VerifyAll()
+        target_verify_key = msg.target_verify_key or VERIFYALL
         if msg.add_instead_of_remove:
             storable_object.search_permissions[target_verify_key] = msg.id
         else:
