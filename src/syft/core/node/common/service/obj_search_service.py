@@ -209,7 +209,7 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
                 # if this tensor allows anyone to search for it, then one of its keys
                 # has a VerifyAll in it.
                 contains_all_in_permissions = any(
-                    key is VerifyAll for key in obj.search_permissions.keys()
+                    isinstance(key, VerifyAll) for key in obj.search_permissions.keys()
                 )
                 if (
                     verify_key in obj.search_permissions.keys()
