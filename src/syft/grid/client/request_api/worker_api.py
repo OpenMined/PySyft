@@ -58,7 +58,7 @@ class WorkerRequestAPI(GridRequestAPI):
         for key, value in result.items():
             try:
                 setattr(_worker_obj, key, value)
-            except Exception:
+            except AttributeError:
                 continue
 
         def _save(obj_ptr: Type[Pointer]) -> None:
