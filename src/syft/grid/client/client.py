@@ -1,6 +1,7 @@
 # stdlib
 from typing import Any
 from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Type
 from typing import Union
@@ -27,6 +28,7 @@ from ...core.node.domain.client import DomainClient
 from ...core.node.network.client import NetworkClient
 from ...core.node.vm.client import VirtualMachineClient
 from ...core.pointer.pointer import Pointer
+from ..messages.network_search_message import NetworkSearchMessage
 from ..messages.setup_messages import CreateInitialSetUpMessage
 from ..messages.setup_messages import GetSetUpMessage
 from ..messages.transfer_messages import LoadObjectMessage
@@ -40,11 +42,10 @@ from .request_api.worker_api import WorkerRequestAPI
 def connect(
     url: str,
     conn_type: ClientConnection,
-    client_type: Client,
     credentials: Dict = {},
     user_key: Optional[SigningKey] = None,
 ) -> Any:
-    class GridClient(client_type):  # type: ignore
+    class GridClient(DomainClient):  # type: ignore
         def __init__(
             self,
             credentials: Dict,
@@ -124,6 +125,11 @@ def connect(
         def get_setup(self, **kwargs: Any) -> Any:
             return self.__perform_grid_request(grid_msg=GetSetUpMessage, content=kwargs)
 
+        def search(self, query: List) -> Any:
+            return self.__perform_grid_request(
+                grid_msg=NetworkSearchMessage, content={"query": query}
+            )
+
         def send_immediate_msg_with_reply(
             self,
             msg: Union[
@@ -189,5 +195,5 @@ def connect(
                 raise Exception(response.content["error"])  # type: ignore
 
     return GridClient(
-        credentials=credentials, url=url, conn_type=conn_type, client_type=client_type
+        credentials=credentials, url=url, conn_type=conn_type, client_type=DomainClient
     )
