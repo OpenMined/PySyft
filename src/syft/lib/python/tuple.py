@@ -16,6 +16,7 @@ from .iterator import Iterator
 from .primitive_factory import PrimitiveFactory
 from .primitive_factory import isprimitive
 from .primitive_interface import PyPrimitive
+from .slice import Slice
 from .types import SyPrimitiveRet
 from .util import downcast
 from .util import upcast
@@ -80,8 +81,10 @@ class Tuple(tuple, PyPrimitive):
     def __len__(self) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=super().__len__())
 
-    def __getitem__(self, item: Any) -> Union[SyPrimitiveRet, Any]:
-        value = super().__getitem__(item)
+    def __getitem__(self, key: Union[int, slice, Slice]) -> Any:
+        if isinstance(key, Slice):
+            key = key.upcast()
+        value = super().__getitem__(key)
         if isprimitive(value=value):
             return PrimitiveFactory.generate_primitive(value=value)
         else:
