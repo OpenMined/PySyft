@@ -42,17 +42,17 @@ from .request_api.worker_api import WorkerRequestAPI
 
 def connect(
     url: str,
-    conn_type: ClientConnection,
+    conn_type: Type[ClientConnection],
     credentials: Dict = {},
     user_key: Optional[SigningKey] = None,
 ) -> Any:
-    class GridClient(DomainClient):  # type: ignore
+    class GridClient(DomainClient):
         def __init__(
             self,
             credentials: Dict,
             url: str,
-            conn_type: ClientConnection,
-            client_type: Client,
+            conn_type: Type[ClientConnection],
+            client_type: Type[Client],
         ) -> None:
 
             # Use Server metadata
