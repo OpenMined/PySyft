@@ -1,7 +1,7 @@
 # flake8: noqa
 """
 File copied from cpython test suite:
-https://github.com/python/cpython/blob/3.8/Lib/test/test_ordered_dict.py
+https://github.com/python/cpython/blob/3.9/Lib/test/test_ordered_dict.py
 
 Sanity tests for OrderedDict
 """

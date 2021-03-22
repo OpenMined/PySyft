@@ -1,7 +1,7 @@
 # flake8: noqa
 """
 Tests copied from cpython test suite:
-https://github.com/python/cpython/blob/3.8/Lib/test/test_dict.py
+https://github.com/python/cpython/blob/3.9/Lib/test/test_dict.py
 """
 
 # stdlib
@@ -40,8 +40,8 @@ class DictTest(unittest.TestCase):
 
     def test_constructor(self):
         # calling built-in types without argument must return empty
-        self.assertEqual(Dict(), {})
-        self.assertIsNot(Dict(), {})
+        self.assertEqual(dict(), {})
+        self.assertIsNot(dict(), {})
 
     @pytest.mark.slow
     def test_literal_constructor(self):
@@ -54,7 +54,39 @@ class DictTest(unittest.TestCase):
             random.shuffle(items)
             formatted_items = (f"{k!r}: {v:d}" for k, v in items)
             dictliteral = "{" + ", ".join(formatted_items) + "}"
-            self.assertEqual(eval(dictliteral), Dict(items))
+            self.assertEqual(eval(dictliteral), dict(items))
+
+    def test_merge_operator(self):
+
+        a = Dict({0: 0, 1: 1, 2: 1})
+        b = Dict({1: 1, 2: 2, 3: 3})
+
+        c = a.copy()
+        c |= b
+
+        self.assertEqual(a | b, Dict({0: 0, 1: 1, 2: 2, 3: 3}))
+        self.assertEqual(c, Dict({0: 0, 1: 1, 2: 2, 3: 3}))
+
+        c = b.copy()
+        c |= a
+
+        self.assertEqual(b | a, Dict({1: 1, 2: 1, 3: 3, 0: 0}))
+        self.assertEqual(c, Dict({1: 1, 2: 1, 3: 3, 0: 0}))
+
+        c = a.copy()
+        c |= [(1, 1), (2, 2), (3, 3)]
+
+        self.assertEqual(c, Dict({0: 0, 1: 1, 2: 2, 3: 3}))
+
+        self.assertIs(a.__or__(None), NotImplemented)
+        self.assertIs(a.__or__(()), NotImplemented)
+        self.assertIs(a.__or__("BAD"), NotImplemented)
+        self.assertIs(a.__or__(""), NotImplemented)
+
+        self.assertRaises(TypeError, a.__ior__, None)
+        self.assertEqual(a.__ior__(()), {0: 0, 1: 1, 2: 1})
+        self.assertRaises(ValueError, a.__ior__, "BAD")
+        self.assertEqual(a.__ior__(""), {0: 0, 1: 1, 2: 1})
 
     def test_bool(self):
         self.assertIs(not {}, True)
@@ -78,7 +110,7 @@ class DictTest(unittest.TestCase):
     def test_values(self):
         d = Dict()
         self.assertEqual(set(d.values()), set())
-        d = Dict({1: 2})
+        d = {1: 2}
         self.assertEqual(set(d.values()), {2})
         self.assertRaises(TypeError, d.values, None)
         self.assertEqual(repr(dict(a=1).values()), "dict_values([1])")
@@ -281,7 +313,7 @@ class DictTest(unittest.TestCase):
 
         ud = mydict.fromkeys("ab")
         self.assertEqual(ud, {"a": None, "b": None})
-        self.assertIsInstance(ud, Dict)
+        self.assertIsInstance(ud, collections.UserDict)
         self.assertRaises(TypeError, dict.fromkeys)
 
         class Exc(Exception):
@@ -380,7 +412,7 @@ class DictTest(unittest.TestCase):
         self.assertIs(d.dict_get("c"), SyNone)
         self.assertEqual(d.dict_get("c", 3), 3)
         d = Dict({"a": 1, "b": 2})
-        self.assertEqual(d.dict_get("c"), SyNone)
+        self.assertIs(d.dict_get("c"), SyNone)
         self.assertEqual(d.dict_get("c", 3), 3)
         self.assertEqual(d.dict_get("a"), 1)
         self.assertEqual(d.dict_get("a", 3), 1)
@@ -459,7 +491,6 @@ class DictTest(unittest.TestCase):
         hashed2 = Hashed()
         # 6th item forces a resize
         y[hashed2] = []
-
         # this is different for UserDict which is 3
         # we are subclassing UserDict so if we match UserDict that should be correct
         # self.assertEqual(hashed1.hash_count, 1)
@@ -473,7 +504,7 @@ class DictTest(unittest.TestCase):
         for copymode in -1, +1:
             # -1: b has same structure as a
             # +1: b is a.copy()
-            for log2size in range(10):
+            for log2size in range(12):
                 size = 2 ** log2size
                 a = Dict()
                 b = Dict()
@@ -542,23 +573,19 @@ class DictTest(unittest.TestCase):
         # change dict content during iteration
         d = Dict()
         d[0] = 0
-        # python 3.8+ raise RuntimeError but older versions do not
-        if sys.version_info >= (3, 8):
-            with self.assertRaises(RuntimeError):
-                for i in d:
-                    del d[0]
-                    d[0] = 0
+        with self.assertRaises(RuntimeError):
+            for i in d:
+                del d[0]
+                d[0] = 0
 
     def test_mutating_iteration_delete_over_values(self):
         # change dict content during iteration
         d = Dict()
         d[0] = 0
-        # python 3.8+ raise RuntimeError but older versions do not
-        if sys.version_info >= (3, 8):
-            with self.assertRaises(RuntimeError):
-                for i in d.values():
-                    del d[0]
-                    d[0] = 0
+        with self.assertRaises(RuntimeError):
+            for i in d.values():
+                del d[0]
+                d[0] = 0
 
     @pytest.mark.xfail
     def test_mutating_iteration_delete_over_items(self):
@@ -566,12 +593,10 @@ class DictTest(unittest.TestCase):
         # change dict content during iteration
         d = Dict()
         d[0] = 0
-        # python 3.8+ raise RuntimeError but older versions do not
-        if sys.version_info >= (3, 8):
-            with self.assertRaises(RuntimeError):
-                for i in d.items():
-                    del d[0]
-                    d[0] = 0
+        with self.assertRaises(RuntimeError):
+            for i in d.items():
+                del d[0]
+                d[0] = 0
 
     @pytest.mark.xfail
     def test_mutating_lookup(self):
@@ -626,12 +651,10 @@ class DictTest(unittest.TestCase):
             d = Dict({1: d})
         self.assertRaises(RecursionError, repr, d)
 
-    @pytest.mark.xfail
     def test_eq(self):
         self.assertEqual(Dict(), {})
         self.assertEqual(Dict({1: 2}), {1: 2})
 
-        # TODO, when we have full set and iter support, make this pass as well
         class Exc(Exception):
             pass
 
@@ -701,7 +724,6 @@ class DictTest(unittest.TestCase):
 
     @pytest.mark.xfail
     def test_errors_in_view_containment_check(self):
-        # TODO: add support for custom objects
         class C:
             def __eq__(self, other):
                 raise RuntimeError
@@ -854,7 +876,7 @@ class DictTest(unittest.TestCase):
             "d[x2] = 2",
             "z = d[x2]",
             "x2 in d",
-            "d.dict_get(x2)",
+            "d.get(x2)",
             "d.setdefault(x2, 42)",
             "d.pop(x2)",
             "d.update({x2: 2})",
@@ -924,8 +946,8 @@ class DictTest(unittest.TestCase):
     @pytest.mark.slow
     def test_container_iterator(self):
         # TODO: make this pass
-        # # Bug #3680: tp_traverse was not implemented for dictiter and
-        # # dictview objects.
+        # Bug #3680: tp_traverse was not implemented for dictiter and
+        # dictview objects.
         class C(object):
             pass
 
@@ -959,7 +981,7 @@ class DictTest(unittest.TestCase):
     @support.cpython_only
     def test_track_literals(self):
         # Test GC-optimization of dict literals
-        x, y, z = 1.5, "a", (1, None)
+        x, y, z, w = 1.5, "a", (1, None), []
 
         self._not_tracked(Dict())
         self._not_tracked(Dict({x: (), y: x, z: 1}))
@@ -974,7 +996,6 @@ class DictTest(unittest.TestCase):
         self._tracked(Dict({1: {}}))
         self._tracked(Dict({1: set()}))
 
-    @pytest.mark.slow
     @support.cpython_only
     def test_track_dynamic(self):
         # Test GC-optimization of dynamically-created dicts
@@ -1043,7 +1064,7 @@ class DictTest(unittest.TestCase):
     @support.cpython_only
     def test_track_subtypes(self):
         # Dict subtypes are always tracked
-        class MyDict(Dict):
+        class MyDict(dict):
             pass
 
         self._tracked(MyDict())
@@ -1365,8 +1386,8 @@ class DictTest(unittest.TestCase):
                 other.clear()
                 return False
 
-        test_list = [(i, 0) for i in range(1, 1337)]
-        other = Dict(test_list)
+        l = [(i, 0) for i in range(1, 1337)]
+        other = Dict(l)
         other[X()] = 0
         d = Dict({X(): 0, 1: 1})
         self.assertRaises(RuntimeError, d.update, other)
@@ -1379,6 +1400,33 @@ class DictTest(unittest.TestCase):
         support.check_free_after_iterating(self, lambda d: iter(d.keys()), Dict)
         support.check_free_after_iterating(self, lambda d: iter(d.values()), Dict)
         support.check_free_after_iterating(self, lambda d: iter(d.items()), Dict)
+
+    def test_equal_operator_modifying_operand(self):
+        # test fix for seg fault reported in bpo-27945 part 3.
+        class X:
+            def __del__(self):
+                dict_b.clear()
+
+            def __eq__(self, other):
+                dict_a.clear()
+                return True
+
+            def __hash__(self):
+                return 13
+
+        dict_a = Dict({X(): 0})
+        dict_b = Dict({X(): X()})
+        self.assertTrue(dict_a == dict_b)
+
+        # test fix for seg fault reported in bpo-38588 part 1.
+        class Y:
+            def __eq__(self, other):
+                dict_d.clear()
+                return True
+
+        dict_c = Dict({0: Y()})
+        dict_d = Dict({0: set()})
+        self.assertTrue(dict_c == dict_d)
 
     def test_fromkeys_operator_modifying_dict_operand(self):
         # test fix for seg fault reported in issue 27945 part 4a.
@@ -1418,15 +1466,26 @@ class DictTest(unittest.TestCase):
 
     @pytest.mark.xfail
     def test_dictitems_contains_use_after_free(self):
-        # this seems like a bit of a puzzle
-        # see iterator.py for more details
         class X:
             def __eq__(self, other):
                 d.clear()
                 return NotImplemented
 
-        d = Dict({0: String("test")})  # TODO: we should be able to support set
+        d = Dict({0: set()})  # TODO: we should be able to support set
         (0, X()) in d.items()
+
+    def test_dict_contain_use_after_free(self):
+        # bpo-40489
+        class S(str):
+            def __eq__(self, other):
+                d.clear()
+                return NotImplemented
+
+            def __hash__(self):
+                return hash("test")
+
+        d = Dict({S(): "value"})
+        self.assertFalse("test" in d)
 
     def test_init_use_after_free(self):
         class X:
@@ -1525,3 +1584,24 @@ class DictTest(unittest.TestCase):
 
         d = CustomReversedDict(pairs)
         self.assertEqual(pairs[::-1], list(dict(d).items()))
+
+    @support.cpython_only
+    def test_dict_items_result_gc(self):
+        # bpo-42536: dict.items's tuple-reuse speed trick breaks the GC's
+        # assumptions about what can be untracked. Make sure we re-track result
+        # tuples whenever we reuse them.
+        it = iter(Dict({None: []}).items())
+        gc.collect()
+        # That GC collection probably untracked the recycled internal result
+        # tuple, which is initialized to (None, None). Make sure it's re-tracked
+        # when it's mutated and returned from __next__:
+        self.assertTrue(gc.is_tracked(next(it)))
+
+    @pytest.mark.xfail
+    @support.cpython_only
+    def test_dict_items_result_gc_reversed(self):
+        # UserDict doesnt support reversed and this causes infinite recursion
+        # Same as test_dict_items_result_gc above, but reversed.
+        it = reversed(Dict({None: []}).items())
+        gc.collect()
+        self.assertTrue(gc.is_tracked(next(it)))
