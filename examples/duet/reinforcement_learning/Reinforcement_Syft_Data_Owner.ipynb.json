@@ -1,0 +1,12 @@
+{
+  "replace_lines": [
+    {
+      "match": "^episodes =.*",
+      "replace": "episodes = 1"
+    },
+    {
+      "match": "^steps =.*",
+      "replace": "steps = 2"
+    }
+  ]
+}
