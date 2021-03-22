@@ -61,10 +61,10 @@ def connect(
             self.client_type = client_type
 
             if credentials:
-                metadata, _user_key = self.conn.login(credentials=credentials)
+                metadata, _user_key = self.conn.login(credentials=credentials)  # type: ignore
                 _user_key = SigningKey(_user_key.encode("utf-8"), encoder=HexEncoder)
             else:
-                metadata = self.conn._get_metadata()
+                metadata = self.conn._get_metadata()  # type: ignore
                 if not user_key:
                     _user_key = SigningKey.generate()
                 else:
