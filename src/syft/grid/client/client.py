@@ -126,7 +126,7 @@ def connect(
         def get_setup(self, **kwargs: Any) -> Any:
             return self.__perform_grid_request(grid_msg=GetSetUpMessage, content=kwargs)
 
-        def search(self, query: List, pandas=False) -> Any:
+        def search(self, query: List, pandas: bool = False) -> Any:
             response = self.__perform_grid_request(
                 grid_msg=NetworkSearchMessage, content={"query": query}
             )
