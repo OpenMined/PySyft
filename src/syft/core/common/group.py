@@ -32,15 +32,21 @@ GenerateWrapper(
 )
 
 
-@bind_protobuf
-class VerifyAll(Serializable):
-    def _object2proto(self) -> VerifyAllWrapper_PB:
-        return VerifyAllWrapper_PB(all=Empty_PB())
+def _create_VERIFYALL() -> Any:
+    @bind_protobuf
+    class VerifyAll(Serializable):
+        def _object2proto(self) -> VerifyAllWrapper_PB:
+            return VerifyAllWrapper_PB(all=Empty_PB())
 
-    @staticmethod
-    def _proto2object(proto: VerifyAllWrapper_PB) -> Type:  # type: ignore
-        return VerifyAll
+        @staticmethod
+        def _proto2object(proto: VerifyAllWrapper_PB) -> Type:  # type: ignore
+            return VERIFYALL
 
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return VerifyAllWrapper_PB
+        @staticmethod
+        def get_protobuf_schema() -> GeneratedProtocolMessageType:
+            return VerifyAllWrapper_PB
+
+    return VerifyAll()
+
+
+VERIFYALL = _create_VERIFYALL()

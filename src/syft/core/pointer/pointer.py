@@ -513,7 +513,7 @@ class Pointer(AbstractPointer):
         searchable: Optional[bool] = None,
     ) -> None:
         """Make the object pointed at pointable or not for other people. If
-        target_verify_key is not specified, the searchability for the VerifyAll group
+        target_verify_key is not specified, the searchability for the VERIFYALL group
         will be toggled.
 
         :param pointable: If the target object should be made pointable or not.
