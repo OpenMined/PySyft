@@ -1,5 +1,8 @@
+-r ./requirements.libs.deps.txt
+
 opacus
 openmined.psi
+pandas
 python-dp
-sympc @ git+https://github.com/madhavajay/SyMPC@madhava/torch_1_8
+pytorch-lightning @ git+https://github.com/tudorcebere/pytorch-lightning@tudor-om-v0
 tenseal

@@ -16,15 +16,22 @@ torch_version = torch.__version__
 # --------------------------------------
 # add exception and it's handler
 # --------------------------------------
-exception_pattern_1 = re.compile("no attribute|no NVIDIA driver")
+exception_pattern_1 = re.compile(
+    "no attribute" + "|no NVIDIA driver" + "|Torch not compiled with CUDA enabled"
+)
 
 
 def fix_exception_pattern_1(not_available: list, **kwargs: Any) -> None:
-    ele = {"lte_version": torch_version, "gte_version": torch_version}
+    ele = {
+        "lte_version": torch_version,
+        "gte_version": torch_version,
+        "reason": "no_cpu",
+    }
     if ele not in not_available:
         not_available.append(ele)
 
 
+# errors caused by "self"
 exception_pattern_2 = re.compile(
     "convert"
     + "|implement"
@@ -34,8 +41,12 @@ exception_pattern_2 = re.compile(
     + "|'CPU' backend"
     + "|xpected"
     + "|can't be cast to the desired output type"
-    + "|Can only calculate the mean of floating types"
+    + "|Can only calculate the mean of"
     + "|input tensor"
+    + "|Invalid device, must be xpu device"
+    + "|Can only calculate the norm of"
+    + "|the base given to float_power_ has dtype"
+    + "|sinc_cpu"
 )
 
 
@@ -66,6 +77,7 @@ def fix_exception_pattern_2(
         not_available[i]["data_types"].append(tensor_type)
 
 
+# errors caused by improper armuments
 exception_pattern_3 = re.compile("argument")
 
 
@@ -89,8 +101,16 @@ def fix_exception_pattern_3(not_available: list, inputs: Any, **kwargs: None) ->
         )
         return i + 1
 
+    def exactly_eq(a: Any, b: Any) -> bool:
+        """
+        `True==1` and `False==0` will return True;
+        But we want them be False, so we also check if they are of the same type.
+        """
+        return type(a) == type(b) and a == b
+
     i = get_ele_index()
-    if inputs not in not_available[i]["inputs"]:
+    already_exists = sum([exactly_eq(inputs, _) for _ in not_available[i]["inputs"]])
+    if not already_exists:
         not_available[i]["inputs"].append(inputs)
 
 
@@ -138,7 +158,7 @@ while continue_loop:
 
     # run slow test
     print("Running slow test ...This may take a while.")
-    os.system("pytest -m torch -n auto -p no:benchmark")
+    os.system("pytest -m torch -n auto -p no:benchmark --tb=no")
     print("Slow test done.")
     print()
 
@@ -245,6 +265,10 @@ while continue_loop:
     with open(f"{root_dir}/tests/syft/lib/allowlist_test.json", "w") as f:
         json.dump(allowlist_test, f, indent=2)
 
+
+# read allowlist_test.json
+with open(f"{root_dir}/tests/syft/lib/allowlist_test.json", "r") as f:
+    allowlist_test = json.load(f)
 
 # optimize json file
 for op, config in allowlist_test["tests"]["torch.Tensor"].items():
