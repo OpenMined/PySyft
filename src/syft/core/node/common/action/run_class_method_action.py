@@ -175,6 +175,8 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                 result = float(result)
             if "int" in type(result).__name__:
                 result = int(result)
+            if "bool" in type(result).__name__:
+                result = bool(result)
 
         if lib.python.primitive_factory.isprimitive(value=result):
             # Wrap in a SyPrimitive
