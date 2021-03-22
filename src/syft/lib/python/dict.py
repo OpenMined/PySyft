@@ -4,6 +4,7 @@ from collections.abc import ItemsView
 from collections.abc import KeysView
 from collections.abc import ValuesView
 from typing import Any
+from typing import Dict as TypeDict
 from typing import Iterable
 from typing import Optional
 from typing import Union
@@ -81,12 +82,9 @@ class Dict(UserDict, PyPrimitive):
         """
         return self._id
 
-    def upcast(self) -> dict:
+    def upcast(self) -> TypeDict:
         # recursively upcast
-        new_dict = dict()
-        for k, v in self.items():
-            new_dict[k] = upcast(v)
-        return new_dict
+        return {k: upcast(v) for k, v in self.items()}
 
     def __contains__(self, other: Any) -> SyPrimitiveRet:
         res = super().__contains__(other)

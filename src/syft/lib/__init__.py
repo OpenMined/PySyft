@@ -1,16 +1,19 @@
 # stdlib
 import importlib
 import sys
+from types import ModuleType
 from typing import Any
 from typing import Any as TypeAny
 from typing import Dict as TypeDict
 from typing import Optional
+from typing import Union as TypeUnion
 
 # third party
 from packaging import version
 
 # syft relative
 from ..ast.globals import Globals
+from ..core.node.abstract.node import AbstractNodeClient
 from ..lib.plan import create_plan_ast
 from ..lib.python import create_python_ast
 from ..lib.torch import create_torch_ast
@@ -79,7 +82,28 @@ def vendor_requirements_available(vendor_requirements: TypeDict[str, TypeAny]) -
     return True
 
 
-def _load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
+def _add_lib(
+    *, vendor_ast: ModuleType, ast_or_client: TypeUnion[Globals, AbstractNodeClient]
+) -> None:
+    update_ast = getattr(vendor_ast, "update_ast", None)
+    post_update_ast = getattr(vendor_ast, "post_update_ast", None)
+    if update_ast is not None:
+        update_ast(ast_or_client=ast_or_client)
+        if post_update_ast is not None:
+            post_update_ast(ast_or_client=ast_or_client)
+
+
+def _regenerate_unions(*, lib_ast: Globals, client: TypeAny = None) -> None:
+    union_misc_ast = getattr(
+        getattr(create_union_ast(lib_ast=lib_ast, client=client), "syft"), "lib"
+    )
+    if client is not None:
+        client.syft.lib.add_attr(attr_name="misc", attr=union_misc_ast.attrs["misc"])
+    else:
+        lib_ast.syft.lib.add_attr(attr_name="misc", attr=union_misc_ast.attrs["misc"])
+
+
+def _load_lib(*, lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
     _ = importlib.import_module(lib)
     vendor_ast = importlib.import_module(f"syft.lib.{lib}")
     PACKAGE_SUPPORT = getattr(vendor_ast, "PACKAGE_SUPPORT", None)
@@ -87,37 +111,15 @@ def _load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
     if PACKAGE_SUPPORT is not None and vendor_requirements_available(
         vendor_requirements=PACKAGE_SUPPORT
     ):
-        update_ast = getattr(vendor_ast, "update_ast", None)
-        post_update_ast = getattr(vendor_ast, "post_update_ast", None)
-        if update_ast is not None:
-            global lib_ast
-            update_ast(ast_or_client=lib_ast)
-            if post_update_ast is not None:
-                post_update_ast(ast_or_client=lib_ast)
+        global lib_ast
+        _add_lib(vendor_ast=vendor_ast, ast_or_client=lib_ast)
+        # cache the constructor for future created clients
+        lib_ast.loaded_lib_constructors[lib] = getattr(vendor_ast, "update_ast", None)
+        _regenerate_unions(lib_ast=lib_ast)
 
-            # regenerate unions
-            union_misc_ast = getattr(
-                getattr(create_union_ast(lib_ast, None), "syft"), "lib"
-            )
-            lib_ast.syft.lib.add_attr(
-                attr_name="misc", attr=union_misc_ast.attrs["misc"]
-            )
-
-            for _, client in lib_ast.registered_clients.items():
-                update_ast(ast_or_client=client)
-                if post_update_ast is not None:
-                    post_update_ast(ast_or_client=client)
-
-                # regenerate unions
-                union_misc_ast = getattr(
-                    getattr(create_union_ast(lib_ast, client), "syft"), "lib"
-                )
-                client.syft.lib.add_attr(
-                    attr_name="misc", attr=union_misc_ast.attrs["misc"]
-                )
-
-            # cache the constructor for future created clients
-            lib_ast.loaded_lib_constructors[lib] = update_ast
+        for _, client in lib_ast.registered_clients.items():
+            _add_lib(vendor_ast=vendor_ast, ast_or_client=client)
+            _regenerate_unions(lib_ast=lib_ast, client=client)
 
 
 def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:

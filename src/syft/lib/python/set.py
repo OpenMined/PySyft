@@ -2,6 +2,7 @@
 from typing import Any
 from typing import Iterable
 from typing import Optional
+from typing import Set as TypeSet
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -37,12 +38,9 @@ class Set(set, PyPrimitive):
         """
         return self._id
 
-    def upcast(self) -> set:
+    def upcast(self) -> TypeSet:
         # recursively upcast
-        new_set = set()
-        for v in self:
-            new_set.add(upcast(v))
-        return new_set
+        return {upcast(v) for v in self}
 
     def __and__(self, other: Any) -> SyPrimitiveRet:
         res = super().__and__(other)

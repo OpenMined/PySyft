@@ -1,6 +1,7 @@
 # stdlib
 from collections import UserList
 from typing import Any
+from typing import List as ListType
 from typing import Optional
 from typing import Union
 
@@ -50,7 +51,7 @@ class List(UserList, PyPrimitive):
         """
         return self._id
 
-    def upcast(self) -> list:
+    def upcast(self) -> ListType:
         # recursively upcast
         new_list = []
         # list comprehension doesn't work since it results in a

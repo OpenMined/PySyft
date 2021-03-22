@@ -396,7 +396,7 @@ class Class(Callable):
             # TODO: Allow Classes to opt out in the AST like Pandas where the properties
             # would break their dict attr usage
             # Issue: https://github.com/OpenMined/PySyft/issues/5322
-            if outer_self.pointer_name not in ["DataFramePointer", "SeriesPointer"]:
+            if outer_self.pointer_name not in {"DataFramePointer", "SeriesPointer"}:
                 attach_tags(self, tags)
                 attach_description(self, description)
 

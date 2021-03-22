@@ -5,6 +5,7 @@ from typing import List as TypeList
 from typing import Tuple as TypeTuple
 
 # third party
+from packaging import version
 import pandas as pd
 
 # syft relative
@@ -19,6 +20,8 @@ from ..util import generic_update_ast
 
 LIB_NAME = "pandas"
 PACKAGE_SUPPORT = {"lib": LIB_NAME}
+
+LIB_VERSION = version.parse(pd.__version__.split("+")[0])
 
 
 def create_ast(client: TypeAny = None) -> Globals:
@@ -39,7 +42,6 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("pandas.DataFrame.__abs__", "pandas.DataFrame"),
         ("pandas.DataFrame.__add__", "pandas.DataFrame"),
         ("pandas.DataFrame.__and__", "pandas.DataFrame"),
-        ("pandas.DataFrame.__divmod__", "pandas.DataFrame"),
         ("pandas.DataFrame.__eq__", "pandas.DataFrame"),
         ("pandas.DataFrame.__floordiv__", "pandas.DataFrame"),
         ("pandas.DataFrame.__ge__", "pandas.DataFrame"),
@@ -59,7 +61,6 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("pandas.DataFrame.__neg__", "pandas.DataFrame"),
         ("pandas.DataFrame.__pos__", "pandas.DataFrame"),
         ("pandas.DataFrame.__pow__", "pandas.DataFrame"),
-        ("pandas.DataFrame.__rdivmod__", "pandas.DataFrame"),
         ("pandas.DataFrame.__rfloordiv__", "pandas.DataFrame"),
         ("pandas.DataFrame.__rmod__", "pandas.DataFrame"),
         ("pandas.DataFrame.__rmul__", "pandas.DataFrame"),
@@ -164,6 +165,12 @@ def create_ast(client: TypeAny = None) -> Globals:
             ],
         ),
     ]
+
+    if LIB_VERSION > version.parse("1.2.0"):
+        methods += [
+            ("pandas.DataFrame.__divmod__", "pandas.DataFrame"),
+            ("pandas.DataFrame.__rdivmod__", "pandas.DataFrame"),
+        ]
 
     add_modules(ast, modules)
     add_classes(ast, classes)
