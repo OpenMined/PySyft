@@ -9,6 +9,7 @@ from typing import Union
 # third party
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
+from pandas import DataFrame
 
 # syft relative
 from ...core.common.message import EventualSyftMessageWithoutReply
@@ -125,10 +126,14 @@ def connect(
         def get_setup(self, **kwargs: Any) -> Any:
             return self.__perform_grid_request(grid_msg=GetSetUpMessage, content=kwargs)
 
-        def search(self, query: List) -> Any:
-            return self.__perform_grid_request(
+        def search(self, query: List, pandas=False) -> Any:
+            response = self.__perform_grid_request(
                 grid_msg=NetworkSearchMessage, content={"query": query}
             )
+            if pandas:
+                response = DataFrame(response)
+
+            return response
 
         def send_immediate_msg_with_reply(
             self,
