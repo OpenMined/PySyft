@@ -374,14 +374,16 @@ class DictTest(unittest.TestCase):
         self.assertEqual(d2, d)
 
     def test_get(self):
+        # We call dict_get because of the conflict with our "get" method
+        # from pointers
         d = Dict()
-        self.assertIs(d.get("c"), SyNone)
-        self.assertEqual(d.get("c", 3), 3)
+        self.assertIs(d.dict_get("c"), SyNone)
+        self.assertEqual(d.dict_get("c", 3), 3)
         d = Dict({"a": 1, "b": 2})
-        self.assertEqual(d.get("c"), SyNone)
-        self.assertEqual(d.get("c", 3), 3)
-        self.assertEqual(d.get("a"), 1)
-        self.assertEqual(d.get("a", 3), 1)
+        self.assertEqual(d.dict_get("c"), SyNone)
+        self.assertEqual(d.dict_get("c", 3), 3)
+        self.assertEqual(d.dict_get("a"), 1)
+        self.assertEqual(d.dict_get("a", 3), 1)
         self.assertRaises(TypeError, d.get)
         self.assertRaises(TypeError, d.get, None, None, None)
 
@@ -852,7 +854,7 @@ class DictTest(unittest.TestCase):
             "d[x2] = 2",
             "z = d[x2]",
             "x2 in d",
-            "d.get(x2)",
+            "d.dict_get(x2)",
             "d.setdefault(x2, 42)",
             "d.pop(x2)",
             "d.update({x2: 2})",

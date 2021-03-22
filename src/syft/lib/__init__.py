@@ -7,6 +7,7 @@ from typing import Any as TypeAny
 from typing import Dict as TypeDict
 from typing import Optional
 from typing import Union as TypeUnion
+import warnings
 
 # third party
 from packaging import version
@@ -20,6 +21,7 @@ from ..lib.torch import create_torch_ast
 from ..lib.torchvision import create_torchvision_ast
 from ..logger import critical
 from ..logger import traceback_and_raise
+from ..logger import warning
 from .misc import create_union_ast
 
 
@@ -28,6 +30,16 @@ class VendorLibraryImportException(Exception):
 
 
 def vendor_requirements_available(vendor_requirements: TypeDict[str, TypeAny]) -> bool:
+    """
+    Check whether torch or python version is supported
+
+    Args:
+        vendor_requirements: dictionary containing version of python or torch to be supported
+
+    Returns:
+        True if system supports all vendor requirements
+
+    """
     # see if python version is supported
     if "python" in vendor_requirements:
         python_reqs = vendor_requirements["python"]
@@ -104,6 +116,13 @@ def _regenerate_unions(*, lib_ast: Globals, client: TypeAny = None) -> None:
 
 
 def _load_lib(*, lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
+    """
+    Load and Update Node with given library module
+
+    Args:
+        lib: name of library to load and update Node with
+        options: external requirements for loading library successfully
+    """
     _ = importlib.import_module(lib)
     vendor_ast = importlib.import_module(f"syft.lib.{lib}")
     PACKAGE_SUPPORT = getattr(vendor_ast, "PACKAGE_SUPPORT", None)
@@ -122,7 +141,14 @@ def _load_lib(*, lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
             _regenerate_unions(lib_ast=lib_ast, client=client)
 
 
-def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
+def load(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
+    """
+    Load and Update Node with given library module
+
+    Args:
+        lib: name of library to load and update Node with
+        options: external requirements for loading library successfully
+    """
     try:
         _load_lib(lib=lib, options=options)
     except VendorLibraryImportException as e:
@@ -131,8 +157,34 @@ def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
         critical(f"Unable to load package support for: {lib}. {e}")
 
 
+def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
+    """
+    Load and Update Node with given library module
+    load_lib() is deprecated please use load() in the future
+
+    Args:
+        lib: name of library to load and update Node with
+        options: external requirements for loading library successfully
+
+    """
+    msg = "load_lib() is deprecated please use load() in the future"
+    warning(msg, print=True)
+    warnings.warn(msg, DeprecationWarning)
+    load(lib=lib, options=options)
+
+
 # now we need to load the relevant frameworks onto the node
 def create_lib_ast(client: Optional[Any] = None) -> Globals:
+    """
+    Create AST and load the relevant frameworks onto the node
+
+    Args:
+        client: VM client onto whom the frameworks need to be loaded
+
+    Returns:
+        AST for client of type Globals
+
+    """
     python_ast = create_python_ast(client=client)
     torch_ast = create_torch_ast(client=client)
     torchvision_ast = create_torchvision_ast(client=client)

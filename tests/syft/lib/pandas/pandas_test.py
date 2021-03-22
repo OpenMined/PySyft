@@ -7,7 +7,7 @@ import syft as sy
 
 @pytest.mark.vendor(lib="pandas")
 def test_pandas() -> None:
-    sy.load_lib("pandas")
+    sy.load("pandas")
     # third party
     import pandas as pd
 
