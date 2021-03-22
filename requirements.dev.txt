@@ -7,6 +7,7 @@ darglint
 doc8
 flake8
 flake8-kwarger @ git+https://github.com/madhavajay/flake8-kwarger
+gym
 isort
 nbconvert
 nbformat
