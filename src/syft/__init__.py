@@ -36,6 +36,8 @@ To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` 
 # stdlib
 from pathlib import Path
 import sys
+from typing import Any
+from typing import Dict
 
 # third party
 from pkg_resources import DistributionNotFound  # noqa: F401
@@ -70,6 +72,7 @@ from syft.grid.duet import launch_duet  # noqa: F401
 
 # Convenience Objects
 from syft.lib import lib_ast  # noqa: F401
+from syft.lib import load  # noqa: F401
 from syft.lib import load_lib  # noqa: F401
 from syft.lib.torch.module import Module  # noqa: F401
 
@@ -91,3 +94,6 @@ finally:
 sys.path.append(str(Path(__file__)))
 
 logger.add(sink=sys.stderr, level="CRITICAL")
+
+# TODO: remove this requirement in pytorch lightning
+client_cache: Dict[str, Any] = {}

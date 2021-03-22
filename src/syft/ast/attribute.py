@@ -147,6 +147,10 @@ class Attribute:
         Returns:
             The attribute in the AST at the given initial path.
         """
+        # TODO: fix hacky work around
+        if path == "syft.lib.python.list.List":
+            path = "syft.lib.python.List"
+
         if obj_type is not None:
             # If the searched given type has already been seen, resolve it with the path from `lookup_cache`.
             if obj_type in self.lookup_cache:

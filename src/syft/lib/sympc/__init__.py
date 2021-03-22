@@ -60,6 +60,7 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("sympc.protocol.fss.fss.mask_builder", "sympc.tensor.ShareTensor"),
         ("sympc.protocol.fss.fss.evaluate", "sympc.tensor.ShareTensor"),
         ("sympc.protocol.spdz.spdz.mul_parties", "sympc.tensor.ShareTensor"),
+        ("sympc.protocol.spdz.spdz.spdz_mask", "syft.lib.python.Tuple"),
         ("sympc.protocol.spdz.spdz.div_wraps", "sympc.tensor.ShareTensor"),
         (
             "sympc.session.Session.przs_generate_random_share",
@@ -105,6 +106,12 @@ def create_ast(client: TypeAny = None) -> Globals:
             "sympc.tensor.ShareTensor.numel",
             "syft.lib.python.Int",  # FIXME: Can't we just return an int??
         ),
+        (
+            "sympc.tensor.ShareTensor.T",
+            "sympc.tensor.ShareTensor",
+        ),
+        ("sympc.tensor.ShareTensor.unsqueeze", "sympc.tensor.ShareTensor"),
+        ("sympc.tensor.ShareTensor.view", "sympc.tensor.ShareTensor"),
     ]
 
     add_modules(ast, modules)

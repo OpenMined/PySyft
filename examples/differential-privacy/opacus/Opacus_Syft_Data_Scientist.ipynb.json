@@ -1,0 +1,12 @@
+{
+  "replace_lines": [
+    {
+      "match": "^batch_size =.*",
+      "replace": "batch_size = 1"
+    },
+    {
+      "match": "^test_batch_size =.*",
+      "replace": "test_batch_size = 1"
+    }
+  ]
+}
