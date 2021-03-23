@@ -12,10 +12,12 @@ from packaging import version
 
 # syft relative
 from ..ast.globals import Globals
+from ..lib.petlib import create_petlib_ast
 from ..lib.plan import create_plan_ast
 from ..lib.python import create_python_ast
 from ..lib.torch import create_torch_ast
 from ..lib.torchvision import create_torchvision_ast
+from ..lib.zksk import create_zksk_ast
 from ..logger import critical
 from ..logger import traceback_and_raise
 from ..logger import warning
@@ -165,6 +167,8 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
     python_ast = create_python_ast(client=client)
     torch_ast = create_torch_ast(client=client)
     torchvision_ast = create_torchvision_ast(client=client)
+    zksk_ast = create_zksk_ast(client=client)
+    petlib_ast = create_petlib_ast(client=client)
     # numpy_ast = create_numpy_ast()
     plan_ast = create_plan_ast(client=client)
 
@@ -172,10 +176,12 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
     lib_ast.add_attr(attr_name="syft", attr=python_ast.attrs["syft"])
     lib_ast.add_attr(attr_name="torch", attr=torch_ast.attrs["torch"])
     lib_ast.add_attr(attr_name="torchvision", attr=torchvision_ast.attrs["torchvision"])
+    lib_ast.add_attr(attr_name="zksk", attr=zksk_ast.attrs["zksk"])
+    lib_ast.add_attr(attr_name="petlib", attr=petlib_ast.attrs["petlib"])
     lib_ast.syft.add_attr("core", attr=plan_ast.syft.core)
 
     # let the misc creation be always the last, as it needs the full ast solved
-    # to properly generated unions
+    # to etproperly generated unions
     union_misc_ast = getattr(getattr(create_union_ast(lib_ast, client), "syft"), "lib")
     misc_root = getattr(getattr(lib_ast, "syft"), "lib")
     misc_root.add_attr(attr_name="misc", attr=union_misc_ast.attrs["misc"])

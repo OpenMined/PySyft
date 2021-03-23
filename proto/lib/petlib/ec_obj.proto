@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package syft.lib.petlib;
+
+message EC2_obj {
+  uint64 group_nid = 1;
+  string obj_type = 2;
+  bytes vector = 3;
+}
+
