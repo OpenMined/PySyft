@@ -302,12 +302,12 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.lib.python.Dict.fromkeys", "syft.lib.python.Dict"),
         # Rename get to dict_get because of conflict
         ("syft.lib.python.Dict.dict_get", "syft.lib.python.Any"),
-        ("syft.lib.python.Dict.items", "syft.lib.python.List"),
-        ("syft.lib.python.Dict.keys", "syft.lib.python.List"),
+        ("syft.lib.python.Dict.items", "syft.lib.python.Iterator"),
+        ("syft.lib.python.Dict.keys", "syft.lib.python.Iterator"),
         ("syft.lib.python.Dict.pop", "syft.lib.python.Any"),
         ("syft.lib.python.Dict.popitem", "syft.lib.python.Tuple"),
         ("syft.lib.python.Dict.setdefault", "syft.lib.python.Any"),
-        ("syft.lib.python.Dict.values", "syft.lib.python.List"),
+        ("syft.lib.python.Dict.values", "syft.lib.python.Iterator"),
         # Int methods - subject to further change
         ("syft.lib.python.Int.__add__", "syft.lib.python.Int"),
         ("syft.lib.python.Int.__truediv__", "syft.lib.python.Float"),
@@ -471,6 +471,7 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.lib.python.collections.OrderedDict.__le__",
             "syft.lib.python.Bool",
         ),
+        ("syft.lib.python.collections.OrderedDict.__iter__", "syft.lib.python.Any"),
         ("syft.lib.python.collections.OrderedDict.__len__", "syft.lib.python.Int"),
         (
             "syft.lib.python.collections.OrderedDict.__lt__",
@@ -496,8 +497,8 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.lib.python.collections.OrderedDict.fromkeys",
             "syft.lib.python.collections.OrderedDict",
         ),
-        ("syft.lib.python.collections.OrderedDict.items", "syft.lib.python.List"),
-        ("syft.lib.python.collections.OrderedDict.keys", "syft.lib.python.List"),
+        ("syft.lib.python.collections.OrderedDict.items", "syft.lib.python.Iterator"),
+        ("syft.lib.python.collections.OrderedDict.keys", "syft.lib.python.Iterator"),
         (
             "syft.lib.python.collections.OrderedDict.move_to_end",
             "syft.lib.python._SyNone",
@@ -514,7 +515,7 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ),
         (
             "syft.lib.python.collections.OrderedDict.values",
-            "syft.lib.python.List",
+            "syft.lib.python.Iterator",
         ),
         ("syft.lib.python.collections.OrderedDict.items", "syft.lib.python.List"),
         (
