@@ -10,7 +10,7 @@ from ...proto.lib.torch.tensor_pb2 import TensorData
 
 
 def object2proto(obj: np.ndarray) -> TensorData:
-    tensor = torch.Tensor(obj)
+    tensor = torch.from_numpy(obj).clone()
     tensor_proto = protobuf_tensor_serializer(tensor)
 
     return tensor_proto
