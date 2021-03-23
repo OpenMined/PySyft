@@ -5,6 +5,8 @@ import torch as th
 # syft absolute
 import syft as sy
 from syft import Plan
+from syft import PlanBuilder
+from syft import make_plan
 from syft import serialize
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
@@ -30,7 +32,6 @@ from syft.core.node.common.action.get_or_set_static_attribute_action import (
 from syft.core.node.common.action.run_class_method_action import RunClassMethodAction
 from syft.core.node.common.action.save_object_action import SaveObjectAction
 from syft.core.plan.plan_builder import ROOT_CLIENT
-from syft.core.plan.plan_builder import make_plan
 from syft.core.store.storeable_object import StorableObject
 from syft.lib.python.list import List
 
@@ -347,3 +348,19 @@ def test_mlp_plan() -> None:
     (new_params,) = res_ptr.get()
 
     assert not (old_params[0] == new_params[0]).all()
+
+
+def test_planbuilder() -> None:
+    class TestModel(PlanBuilder):
+        def __init__(self) -> None:
+            self.model_pointer = th.tensor([1, 2, 3])
+            super().__init__()
+
+        def forward(self, x: th.Tensor = th.tensor([0, 0, 0])) -> th.Tensor:
+            res = x * self.model_pointer
+            return res
+
+    model = TestModel()
+
+    res = model(x=th.tensor([4, 5, 6]))
+    assert th.equal(*res.get(), th.tensor([4, 10, 18]))
