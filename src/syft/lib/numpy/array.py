@@ -8,24 +8,24 @@ from ...lib.torch.tensor_util import protobuf_tensor_deserializer
 from ...lib.torch.tensor_util import protobuf_tensor_serializer
 from ...proto.lib.torch.tensor_pb2 import TensorData
 
+ExceptionDtype = [np.object_, np.str_, np.unicode_,
+                  np.uint16, np.uint32, np.uint64,
+                  np.complex64, np.complex128]
+
 
 def object2proto(obj: np.ndarray) -> TensorData:
+    if obj.dtype in ExceptionDtype:
+        raise NotImplementedError(f"{obj.dtype} is not supported")
+
     tensor = torch.from_numpy(obj).clone()
     tensor_proto = protobuf_tensor_serializer(tensor)
-    # TODO:
-    # support numpy.object_, numpy.str_, numpy.unicode_,
-    #         numpy.uint16, numpy.uint32, numpy.uint64,
-    #         numpy.complex64, numpy.complex128
+
     return tensor_proto
 
 
 def proto2object(proto: TensorData) -> np.ndarray:
     tensor = protobuf_tensor_deserializer(proto)
     obj = tensor.to("cpu").detach().numpy().copy()
-    # TODO:
-    # support numpy.object_, numpy.str_, numpy.unicode_,
-    #         numpy.uint16, numpy.uint32, numpy.uint64,
-    #         numpy.complex64, numpy.complex128
 
     return obj
 
