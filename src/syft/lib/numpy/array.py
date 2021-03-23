@@ -18,7 +18,7 @@ def object2proto(obj: np.ndarray) -> TensorData:
 
 def proto2object(proto: TensorData) -> np.ndarray:
     tensor = protobuf_tensor_deserializer(proto)
-    obj = np.array(tensor)
+    obj = tensor.to('cpu').detach().numpy().copy()
     return obj
 
 
