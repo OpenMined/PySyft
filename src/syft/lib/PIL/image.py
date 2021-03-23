@@ -20,6 +20,8 @@ def object2proto(obj: PIL.Image.Image) -> TensorData:
 
 def proto2object(proto: TensorData) -> PIL.Image.Image:
     image_tensor = protobuf_tensor_deserializer(proto)
+    if image_tensor.dim() == 3:
+        image_tensor = image_tensor.permute(2, 0, 1)
     image_obj = torchvision.transforms.functional.to_pil_image(image_tensor)
     return image_obj
 
