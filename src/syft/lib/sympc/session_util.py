@@ -38,7 +38,7 @@ def protobuf_session_deserializer(proto: MPCSession_PB) -> Session:
     id_session = UUID(bytes=proto.uuid)
     rank = proto.rank
     conf_dict = Dict._proto2object(proto=proto.config)
-    _conf_dict = {key.data: value for key, value in conf_dict.items()}
+    _conf_dict = {key: value for key, value in conf_dict.items()}
     conf = Config(**_conf_dict)
     ring_size = int.from_bytes(proto.ring_size, "big")
     nr_parties = int.from_bytes(proto.nr_parties, "big")
