@@ -144,6 +144,18 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
 
         node.store[self.id_at_location] = result
 
+    def __repr__(self) -> str:
+        attr_name = self.path.split(".")[-1]
+        self_name = self._self.class_name
+
+        if self.action == PropertyActions.SET:
+            val = self.args[0]
+            return f"GetOrSetPropertyAction {self_name}.{attr_name} = {val}"
+        elif self.action == PropertyActions.GET:
+            return f"GetOrSetPropertyAction GET {self_name}.{attr_name}"
+        else:
+            return f"GetOrSetPropertyAction DEL {self_name}.{attr_name}"
+
     def _object2proto(self) -> GetOrSetPropertyAction_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,

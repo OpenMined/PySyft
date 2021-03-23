@@ -1,9 +1,12 @@
 # third party
+import pytest
 import torch as th
 
 # syft absolute
 import syft as sy
 from syft import Plan
+from syft import PlanBuilder
+from syft import make_plan
 from syft import serialize
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
@@ -28,7 +31,9 @@ from syft.core.node.common.action.get_or_set_static_attribute_action import (
 )
 from syft.core.node.common.action.run_class_method_action import RunClassMethodAction
 from syft.core.node.common.action.save_object_action import SaveObjectAction
+from syft.core.plan.plan_builder import ROOT_CLIENT
 from syft.core.store.storeable_object import StorableObject
+from syft.lib.python.list import List
 
 
 def test_plan_serialization() -> None:
@@ -189,7 +194,9 @@ def test_plan_batched_execution() -> None:
         msg_id=UID(),
     )
 
-    plan = Plan([a1, a2, a3], inputs=[input_tensor_pointer1, input_tensor_pointer2])
+    plan = Plan(
+        [a1, a2, a3], inputs={"x": input_tensor_pointer1, "y": input_tensor_pointer2}
+    )
     plan_pointer = plan.send(alice_client)
 
     # Test
@@ -203,7 +210,157 @@ def test_plan_batched_execution() -> None:
     ]
 
     for x, y in zip(x_batches, y_batches):
-        plan_pointer(x, y)
+        plan_pointer(x=x, y=y)
 
         # checks if (model(x) == y) == [True, True]
         assert all(result_tensor_pointer3.get())
+
+
+def test_make_plan() -> None:
+    alice = sy.VirtualMachine(name="alice")
+    alice_client = alice.get_root_client()
+
+    @make_plan
+    def add_plan(inp=th.zeros((3))) -> th.Tensor:  # type: ignore
+        return inp + inp
+
+    input_tensor = th.tensor([1, 2, 3])
+    plan_pointer = add_plan.send(alice_client)
+    res = plan_pointer(inp=input_tensor)
+    assert th.equal(res.get()[0], th.tensor([2, 4, 6]))
+
+
+@pytest.mark.xfail
+def test_plan_deterministic_bytes() -> None:
+    # TODO: https://github.com/OpenMined/PySyft/issues/5292
+    alice = sy.VirtualMachine(name="alice")
+    alice_client = alice.get_root_client()
+
+    @make_plan
+    def add_plan(inp=th.zeros((3))) -> th.Tensor:  # type: ignore
+        return inp + inp
+
+    @make_plan
+    def add_plan2(inp=th.zeros((3))) -> th.Tensor:  # type: ignore
+        return inp + inp
+
+    plan_pointer = add_plan.send(alice_client)
+    plan2_pointer = add_plan2.send(alice_client)
+
+    plan1 = serialize(plan_pointer, to_bytes=True)
+    plan2 = serialize(plan2_pointer, to_bytes=True)
+
+    assert plan1 == plan2
+
+
+def test_make_plan2() -> None:
+    alice = sy.VirtualMachine(name="alice")
+    alice_client = alice.get_root_client()
+
+    @make_plan
+    def mul_plan(inp=th.zeros((3)), inp2=th.zeros((3))) -> th.Tensor:  # type: ignore
+        return inp * inp2
+
+    t1, t2 = th.tensor([1, 2, 3]), th.tensor([1, 2, 3])
+    plan_pointer = mul_plan.send(alice_client)
+    res = plan_pointer(inp=t1, inp2=t2)
+    assert th.equal(res.get()[0], th.tensor([1, 4, 9]))
+
+
+def test_make_plan_error_no_kwargs() -> None:
+    def assertRaises(exc, obj, methodname, *args) -> None:  # type: ignore
+        with pytest.raises(exc) as e_info:
+            getattr(obj, methodname)(*args)
+        assert str(e_info) != ""
+
+    def test_define_plan():  # type: ignore
+        @make_plan
+        def add_plan(inp):  # type: ignore
+            return inp + inp
+
+    # we can only define a plan with *kwargs* when using the @make_plan decorator, not with args
+    assertRaises(ValueError, test_define_plan, "__call__")
+
+
+def test_mlp_plan() -> None:
+    class MLP(sy.Module):
+        def __init__(self, torch_ref):  # type: ignore
+            super().__init__(torch_ref=torch_ref)
+            self.l1 = self.torch_ref.nn.Linear(784, 100)
+            self.a1 = self.torch_ref.nn.ReLU()
+            self.l2 = self.torch_ref.nn.Linear(100, 10)
+
+        def forward(self, x):  # type: ignore
+            x_reshaped = x.view(-1, 28 * 28)
+            l1_out = self.a1(self.l1(x_reshaped))
+            l2_out = self.l2(l1_out)
+            return l2_out
+
+    def set_params(model, params):  # type: ignore
+        """happens outside of plan"""
+        for p, p_new in zip(model.parameters(), params):
+            p.data = p_new.data
+
+    def cross_entropy_loss(logits, targets, batch_size):  # type: ignore
+        norm_logits = logits - logits.max()
+        log_probs = norm_logits - norm_logits.exp().sum(dim=1, keepdim=True).log()
+        return -(targets * log_probs).sum() / batch_size
+
+    def sgd_step(model, lr=0.1):  # type: ignore
+        with ROOT_CLIENT.torch.no_grad():
+            for p in model.parameters():
+                p.data = p.data - lr * p.grad
+                # Todo: fix this
+                p.grad = th.zeros_like(p.grad.get())
+
+    local_model = MLP(th)  # type: ignore
+
+    @make_plan
+    def train(  # type: ignore
+        xs=th.rand([64 * 3, 1, 28, 28]),
+        ys=th.randint(0, 10, [64 * 3, 10]),
+        params=List(local_model.parameters()),
+    ):
+
+        model = local_model.send(ROOT_CLIENT)
+        set_params(model, params)
+        for i in range(2):
+            indices = th.tensor(range(64 * i, 64 * (i + 1)))
+            x, y = xs.index_select(0, indices), ys.index_select(0, indices)
+            out = model(x)
+            loss = cross_entropy_loss(out, y, 64)
+            loss.backward()
+            sgd_step(model)
+
+        return model.parameters()
+
+    alice_client = sy.VirtualMachine(name="alice").get_client()
+    train_ptr = train.send(alice_client)
+
+    old_params = local_model.parameters().copy()
+
+    res_ptr = train_ptr(
+        xs=th.rand([64 * 3, 1, 28, 28]),
+        ys=th.randint(0, 10, [64 * 3, 10]),
+        params=local_model.parameters(),
+    )
+
+    (new_params,) = res_ptr.get()
+
+    assert not (old_params[0] == new_params[0]).all()
+
+
+def test_planbuilder() -> None:
+    class TestModel(PlanBuilder):
+        def __init__(self) -> None:
+            self.model_pointer = th.tensor([1, 2, 3])
+            super().__init__()
+
+        def forward(self, x: th.Tensor = th.tensor([0, 0, 0])) -> th.Tensor:
+            res = x * self.model_pointer
+            return res
+
+    model = TestModel()
+
+    res = model(x=th.tensor([4, 5, 6]))
+    assert th.equal(*res.get(), th.tensor([4, 10, 18]))

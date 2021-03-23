@@ -51,6 +51,7 @@ from .client import Client
 from .metadata import Metadata
 from .service.auth import AuthorizationException
 from .service.child_node_lifecycle_service import ChildNodeLifecycleService
+from .service.get_repr_service import GetReprService
 from .service.heritage_update_service import HeritageUpdateService
 from .service.msg_forwarding_service import SignedMessageWithReplyForwardingService
 from .service.msg_forwarding_service import SignedMessageWithoutReplyForwardingService
@@ -205,6 +206,7 @@ class Node(AbstractNode):
         self.immediate_services_with_reply: List[Any] = []
         self.immediate_services_with_reply.append(ImmediateObjectActionServiceWithReply)
         self.immediate_services_with_reply.append(ImmediateObjectSearchService)
+        self.immediate_services_with_reply.append(GetReprService)
         self.immediate_services_with_reply.append(ResolvePointerTypeService)
 
         # for services which can run at a later time and do not return a reply

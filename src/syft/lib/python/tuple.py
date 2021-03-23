@@ -42,6 +42,10 @@ class Tuple(tuple, PyPrimitive):
         """
         return self._id
 
+    def upcast(self) -> tuple:
+        # recursively upcast
+        return tuple(upcast(v) for v in self)
+
     def __new__(cls, *args: Any) -> "Tuple":
         return super(Tuple, cls).__new__(Tuple, *args)
 
@@ -102,22 +106,21 @@ class Tuple(tuple, PyPrimitive):
     def __iter__(self, max_len: Optional[int] = None) -> TupleIterator:
         return TupleIterator(self, max_len=max_len)
 
-    @staticmethod
-    def _proto2object(proto: Tuple_PB) -> "Tuple":
-        id_: UID = deserialize(blob=proto.id)
-        value = [
-            upcast((deserialize(blob=element, from_bytes=True)))
-            for element in proto.data
-        ]
-        new_list = Tuple(value)
-        new_list._id = id_
-        return new_list
-
     def _object2proto(self) -> Tuple_PB:
         id_ = serialize(obj=self.id)
         downcasted = [downcast(value=element) for element in self]
         data = [serialize(obj=element, to_bytes=True) for element in downcasted]
         return Tuple_PB(id=id_, data=data)
+
+    @staticmethod
+    def _proto2object(proto: Tuple_PB) -> "Tuple":
+        id_: UID = deserialize(blob=proto.id)
+        value = [
+            upcast(deserialize(blob=element, from_bytes=True)) for element in proto.data
+        ]
+        new_list = Tuple(value)
+        new_list._id = id_
+        return new_list
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:

@@ -1,22 +1,27 @@
 # stdlib
 import importlib
 import sys
+from types import ModuleType
 from typing import Any
 from typing import Any as TypeAny
 from typing import Dict as TypeDict
 from typing import Optional
+from typing import Union as TypeUnion
+import warnings
 
 # third party
 from packaging import version
 
 # syft relative
 from ..ast.globals import Globals
+from ..core.node.abstract.node import AbstractNodeClient
 from ..lib.plan import create_plan_ast
 from ..lib.python import create_python_ast
 from ..lib.torch import create_torch_ast
 from ..lib.torchvision import create_torchvision_ast
 from ..logger import critical
 from ..logger import traceback_and_raise
+from ..logger import warning
 from .misc import create_union_ast
 
 
@@ -25,6 +30,16 @@ class VendorLibraryImportException(Exception):
 
 
 def vendor_requirements_available(vendor_requirements: TypeDict[str, TypeAny]) -> bool:
+    """
+    Check whether torch or python version is supported
+
+    Args:
+        vendor_requirements: dictionary containing version of python or torch to be supported
+
+    Returns:
+        True if system supports all vendor requirements
+
+    """
     # see if python version is supported
     if "python" in vendor_requirements:
         python_reqs = vendor_requirements["python"]
@@ -79,7 +94,35 @@ def vendor_requirements_available(vendor_requirements: TypeDict[str, TypeAny]) -
     return True
 
 
-def _load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
+def _add_lib(
+    *, vendor_ast: ModuleType, ast_or_client: TypeUnion[Globals, AbstractNodeClient]
+) -> None:
+    update_ast = getattr(vendor_ast, "update_ast", None)
+    post_update_ast = getattr(vendor_ast, "post_update_ast", None)
+    if update_ast is not None:
+        update_ast(ast_or_client=ast_or_client)
+        if post_update_ast is not None:
+            post_update_ast(ast_or_client=ast_or_client)
+
+
+def _regenerate_unions(*, lib_ast: Globals, client: TypeAny = None) -> None:
+    union_misc_ast = getattr(
+        getattr(create_union_ast(lib_ast=lib_ast, client=client), "syft"), "lib"
+    )
+    if client is not None:
+        client.syft.lib.add_attr(attr_name="misc", attr=union_misc_ast.attrs["misc"])
+    else:
+        lib_ast.syft.lib.add_attr(attr_name="misc", attr=union_misc_ast.attrs["misc"])
+
+
+def _load_lib(*, lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
+    """
+    Load and Update Node with given library module
+
+    Args:
+        lib: name of library to load and update Node with
+        options: external requirements for loading library successfully
+    """
     _ = importlib.import_module(lib)
     vendor_ast = importlib.import_module(f"syft.lib.{lib}")
     PACKAGE_SUPPORT = getattr(vendor_ast, "PACKAGE_SUPPORT", None)
@@ -87,19 +130,25 @@ def _load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
     if PACKAGE_SUPPORT is not None and vendor_requirements_available(
         vendor_requirements=PACKAGE_SUPPORT
     ):
-        update_ast = getattr(vendor_ast, "update_ast", None)
-        if update_ast is not None:
-            global lib_ast
-            update_ast(ast_or_client=lib_ast)
+        global lib_ast
+        _add_lib(vendor_ast=vendor_ast, ast_or_client=lib_ast)
+        # cache the constructor for future created clients
+        lib_ast.loaded_lib_constructors[lib] = getattr(vendor_ast, "update_ast", None)
+        _regenerate_unions(lib_ast=lib_ast)
 
-            for _, client in lib_ast.registered_clients.items():
-                update_ast(ast_or_client=client)
-
-            # cache the constructor for future created clients
-            lib_ast.loaded_lib_constructors[lib] = update_ast
+        for _, client in lib_ast.registered_clients.items():
+            _add_lib(vendor_ast=vendor_ast, ast_or_client=client)
+            _regenerate_unions(lib_ast=lib_ast, client=client)
 
 
-def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
+def load(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
+    """
+    Load and Update Node with given library module
+
+    Args:
+        lib: name of library to load and update Node with
+        options: external requirements for loading library successfully
+    """
     try:
         _load_lib(lib=lib, options=options)
     except VendorLibraryImportException as e:
@@ -108,8 +157,34 @@ def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
         critical(f"Unable to load package support for: {lib}. {e}")
 
 
+def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
+    """
+    Load and Update Node with given library module
+    load_lib() is deprecated please use load() in the future
+
+    Args:
+        lib: name of library to load and update Node with
+        options: external requirements for loading library successfully
+
+    """
+    msg = "load_lib() is deprecated please use load() in the future"
+    warning(msg, print=True)
+    warnings.warn(msg, DeprecationWarning)
+    load(lib=lib, options=options)
+
+
 # now we need to load the relevant frameworks onto the node
 def create_lib_ast(client: Optional[Any] = None) -> Globals:
+    """
+    Create AST and load the relevant frameworks onto the node
+
+    Args:
+        client: VM client onto whom the frameworks need to be loaded
+
+    Returns:
+        AST for client of type Globals
+
+    """
     python_ast = create_python_ast(client=client)
     torch_ast = create_torch_ast(client=client)
     torchvision_ast = create_torchvision_ast(client=client)
@@ -125,8 +200,7 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
     # let the misc creation be always the last, as it needs the full ast solved
     # to properly generated unions
     union_misc_ast = getattr(getattr(create_union_ast(lib_ast, client), "syft"), "lib")
-    misc_root = getattr(getattr(lib_ast, "syft"), "lib")
-    misc_root.add_attr(attr_name="misc", attr=union_misc_ast.attrs["misc"])
+    lib_ast.syft.lib.add_attr(attr_name="misc", attr=union_misc_ast.attrs["misc"])
 
     return lib_ast
 

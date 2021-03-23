@@ -17,6 +17,7 @@ from .....proto.core.node.common.action.get_object_pb2 import (
 from .....proto.core.node.common.action.get_object_pb2 import (
     GetObjectResponseMessage as GetObjectResponseMessage_PB,
 )
+from .....util import get_fully_qualified_name
 from .....util import validate_type
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
@@ -92,8 +93,15 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
     def data(self) -> object:
         data = self.obj.data
         try:
-            data.tags = self.obj.tags
-            data.description = self.obj.description
+            # TODO: Make only for DataFrames etc
+            # Issue: https://github.com/OpenMined/PySyft/issues/5322
+            if get_fully_qualified_name(obj=self.obj.data) not in [
+                "pandas.core.frame.DataFrame",
+                "pandas.core.series.Series",
+            ]:
+                data.tags = self.obj.tags
+                data.description = self.obj.description
+
         except AttributeError:
             warning(
                 f"'tags' and 'description' can't be attached to {type(data)} object."
