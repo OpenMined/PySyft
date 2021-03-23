@@ -7,12 +7,13 @@
   <br>
 
 </h1>
-
 <div align="center">
+<br>
 
-<a href=""><img src="https://github.com/OpenMined/PySyft/workflows/Tests/badge.svg?branch=master" /></a> <a href=""><img src="https://github.com/OpenMined/PySyft/workflows/Tutorials/badge.svg" /></a> <a href="https://openmined.slack.com/messages/lib_pysyft"><img src="https://img.shields.io/badge/chat-on%20slack-7A5979.svg" /></a> <a href="https://mybinder.org/v2/gh/OpenMined/PySyft/master"><img src="https://mybinder.org/badge.svg" /></a> <a href="http://colab.research.google.com/github/OpenMined/PySyft/blob/master"><img src="https://colab.research.google.com/assets/colab-badge.svg" /></a>
-<br /><br />
-
+<a href="https://stars.medv.io/OpenMined/PySyft"><img src="https://stars.medv.io/OpenMined/PySyft.svg" alt="sparkline" ></a>
+<br>
+<a href=https://github.com/OpenMined/PySyft/actions/workflows/tests.yml><img src="https://github.com/OpenMined/PySyft/actions/workflows/tests.yml/badge.svg"></a> <a href="https://github.com/OpenMined/PySyft/actions/workflows/tutorials.yml"><img src="https://github.com/OpenMined/PySyft/workflows/Tutorials/badge.svg" /></a> <a href="https://openmined.slack.com/messages/lib_pysyft"><img src="https://img.shields.io/badge/chat-on%20slack-7A5979.svg"></a> <a href="https://mybinder.org/v2/gh/OpenMined/PySyft/master"><img src="https://mybinder.org/badge.svg" /></a> <a href="http://colab.research.google.com/github/OpenMined/PySyft/blob/master"><img src="https://colab.research.google.com/assets/colab-badge.svg" />  <a href="https://badge.fury.io/py/syft"><img src="https://badge.fury.io/py/syft.svg" alt="PyPI version" height="18"></a> </a>
+<br><img alt="PyPI - Downloads" src="https://img.shields.io/pypi/dm/syft?color=%09%09%2332CD32"></br>
 </div>
 
 PySyft is a Python library for secure and private Deep Learning. PySyft decouples
@@ -148,6 +149,7 @@ This software is in early beta. Use at your own risk.
 ## License
 
 [Apache License 2.0](https://github.com/OpenMined/PySyft/blob/master/LICENSE)
+
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fmatthew-mcateer%2FPySyft.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fmatthew-mcateer%2FPySyft?ref=badge_large)
 
 ## Description
