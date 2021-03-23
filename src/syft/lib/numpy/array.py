@@ -8,9 +8,16 @@ from ...lib.torch.tensor_util import protobuf_tensor_deserializer
 from ...lib.torch.tensor_util import protobuf_tensor_serializer
 from ...proto.lib.torch.tensor_pb2 import TensorData
 
-ExceptionDtype = [np.object_, np.str_, np.unicode_,
-                  np.uint16, np.uint32, np.uint64,
-                  np.complex64, np.complex128]
+ExceptionDtype = [
+    np.object_,
+    np.str_,
+    np.unicode_,
+    np.uint16,
+    np.uint32,
+    np.uint64,
+    np.complex64,
+    np.complex128,
+]
 
 
 def object2proto(obj: np.ndarray) -> TensorData:
