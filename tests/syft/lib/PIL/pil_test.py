@@ -14,7 +14,7 @@ def test_remote_engine_simple() -> None:
 
     data_owner = sy.VirtualMachine().get_root_client()
 
-    im = PIL.Image.open('logo.png')
+    im = PIL.Image.open("logo.png")
     im = im.resize((64, 32))
     remote_im = im.send(data_owner)
     received_im = remote_im.get()
