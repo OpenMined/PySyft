@@ -21,6 +21,11 @@ from ...lib.util import full_name_with_qualname
 from ...logger import critical
 from ...logger import info
 from ...logger import traceback_and_raise
+from ...core.plan.plan_builder import make_plan
+from ...proto.lib.torch.module_pb2 import Module as Module_PB
+from ...generate_wrapper import GenerateWrapper
+
+import syft as sy
 
 # from ...core.node.common.service.auth import AuthorizationException
 
@@ -396,3 +401,43 @@ class Module:
                     if hasattr(v, "sum"):
                         s = v.sum().item()
                         info(f"  Layer {n} sum({k}): {s}")
+
+def object2proto(obj: torch.nn.Module) -> Module_PB:
+    proto = Module_PB()
+    
+    if "torch.nn." in type(obj).__module__:
+        proto.module_type = type(obj).__name__
+    else:
+        proto.module_type = "_CUSTOMIZE_MODULE"
+        proto.forward.CopyFrom(sy.serialize(obj.forward_Plan))
+
+    proto.module_repr = obj.extra_repr()
+    for n, m in obj.named_children():
+        child_proto = sy.serialize(m)
+        child_proto.module_name = n
+        proto.children.append(child_proto)
+
+    return proto
+
+def proto2object(proto: Module_PB) -> torch.nn.Module:
+    is_customize = proto.module_type=="_CUSTOMIZE_MODULE"
+    if is_customize:
+        obj_type = torch.nn.Module
+    else:
+        obj_type = getattr(torch.nn, proto.module_type)
+    args, kwargs = repr_to_kwargs(repr_str=proto.module_repr)
+    obj = obj_type(*args, **kwargs)
+    for child_proto in proto.children:
+        obj.add_module(child_proto.module_name, sy.deserialize(child_proto))
+    if is_customize:
+        obj.forward = sy.deserialize(proto.forward)
+
+    return obj
+
+GenerateWrapper(
+    wrapped_type=torch.nn.Module,
+    import_path="torch.nn.Module",
+    protobuf_scheme=Module_PB,
+    type_object2proto=object2proto,
+    type_proto2object=proto2object,
+)

@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package syft.lib.torch;
+
+import "proto/core/plan/plan.proto";
+
+message Module {
+    string module_type = 1;
+    string module_name = 2;
+    string module_repr = 3;
+    repeated Module children = 4;
+    syft.core.plan.Plan forward = 5;
+}

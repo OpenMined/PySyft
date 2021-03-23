@@ -163,6 +163,23 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                         )
                     )
                 result = method(resolved_self.data, node, verify_key, **self.kwargs)
+            # Added by XuTongye, WIP >>>
+            elif isinstance(getattr(resolved_self.data,"forward",None), Plan) and method_name=="__call__":
+                if len(self.args) > 0:
+                    traceback_and_raise(
+                        ValueError(
+                            "You passed args to Plan.__call__, while it only accepts kwargs"
+                        )
+                    )
+                result = method(
+                    resolved_self.data, 
+                    node, 
+                    verify_key, 
+                    fc1 = resolved_self.data.fc1, 
+                    fc2 = resolved_self.data.fc1,
+                    **self.kwargs
+                )
+            # <<< Added by XuTongye, WIP 
             else:
                 target_method = getattr(resolved_self.data, method_name, None)
 
