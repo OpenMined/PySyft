@@ -21,6 +21,7 @@ import pytest
 
 # syft absolute
 from syft.core.common.uid import UID
+from syft.lib.python import SyNone
 from syft.lib.python.collections import OrderedDict as SyOrderedDict
 
 
@@ -209,9 +210,9 @@ def test_iterators():
     assertEqual(list(od.values()), [t[1] for t in pairs])
     assertEqual(list(od.items()), pairs)
     assertEqual(list(reversed(od)), [t[0] for t in reversed(pairs)])
-    assertEqual(list(reversed(od.keys())), [t[0] for t in reversed(pairs)])
-    assertEqual(list(reversed(od.values())), [t[1] for t in reversed(pairs)])
-    assertEqual(list(reversed(od.items())), list(reversed(pairs)))
+    assertEqual(list(reversed(list(od.keys()))), [t[0] for t in reversed(pairs)])
+    assertEqual(list(reversed(list(od.values()))), [t[1] for t in reversed(pairs)])
+    assertEqual(list(reversed(list(od.items()))), list(reversed(pairs)))
 
 
 def test_detect_deletion_during_iteration():
@@ -248,9 +249,9 @@ def test_iterators_empty():
     assertEqual(list(od.values()), empty)
     assertEqual(list(od.items()), empty)
     assertEqual(list(reversed(od)), empty)
-    assertEqual(list(reversed(od.keys())), empty)
-    assertEqual(list(reversed(od.values())), empty)
-    assertEqual(list(reversed(od.items())), empty)
+    assertEqual(list(reversed(list(od.keys()))), empty)
+    assertEqual(list(reversed(list(od.values()))), empty)
+    assertEqual(list(reversed(list(od.items()))), empty)
 
 
 def test_popitem():
@@ -406,7 +407,8 @@ def test_repr_recursive():
     od = OrderedDict.FromKeys("abc")
     od["x"] = od
     assertEqual(
-        repr(od), "OrderedDict([('a', None), ('b', None), ('c', None), ('x', ...)])"
+        repr(od),
+        f"OrderedDict([('a', {repr(SyNone)}), ('b', {repr(SyNone)}), ('c', {repr(SyNone)}), ('x', ...)])",
     )
 
 
@@ -508,8 +510,8 @@ def test_views():
     # See http://bugs.python.org/issue24286
     s = "the quick brown fox jumped over a lazy dog yesterday before dawn".split()
     od = OrderedDict.FromKeys(s)
-    assertEqual(od.keys(), list(dict(od).keys()))
-    assertEqual(od.items(), list(dict(od).items()))
+    assertEqual(list(od.keys()), list(dict(od).keys()))
+    assertEqual(list(od.items()), list(dict(od).items()))
 
 
 def test_override_update():
@@ -612,11 +614,11 @@ def test_issue24347():
         od[key] = i
 
     # These should not crash.
-    with pytest.raises(KeyError):
+    with pytest.raises(RuntimeError):
         list(od.values())
-    with pytest.raises(KeyError):
+    with pytest.raises(RuntimeError):
         list(od.items())
-    with pytest.raises(KeyError):
+    with pytest.raises(RuntimeError):
         repr(od)
     with pytest.raises(KeyError):
         od.copy()
@@ -675,7 +677,7 @@ def test_dict_delitem():
     od["spam"] = 1
     od["ham"] = 2
     dict.__delitem__(od, "spam")
-    with pytest.raises(KeyError):
+    with pytest.raises(RuntimeError):
         repr(od)
 
 
@@ -694,7 +696,7 @@ def test_dict_pop():
     od["spam"] = 1
     od["ham"] = 2
     dict.pop(od, "spam")
-    with pytest.raises(KeyError):
+    with pytest.raises(RuntimeError):
         repr(od)
 
 
@@ -704,7 +706,7 @@ def test_dict_popitem():
     od["spam"] = 1
     od["ham"] = 2
     dict.popitem(od)
-    with pytest.raises(KeyError):
+    with pytest.raises(RuntimeError):
         repr(od)
 
 
