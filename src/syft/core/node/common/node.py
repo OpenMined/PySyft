@@ -263,8 +263,6 @@ class Node(AbstractNode):
         return "📍"
 
     def get_client(self, routes: List[Route] = None) -> ClientT:
-        if routes is None:
-            routes = []
         if not routes:
             conn_client = create_virtual_connection(node=self)
             solo = SoloRoute(destination=self.target_id, connection=conn_client)
@@ -284,8 +282,6 @@ class Node(AbstractNode):
         )
 
     def get_root_client(self, routes: List[Route] = None) -> ClientT:
-        if routes is None:
-            routes = []
         client: ClientT = self.get_client(routes=routes)
         self.root_verify_key = client.verify_key
         return client

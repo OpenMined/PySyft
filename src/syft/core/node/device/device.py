@@ -40,12 +40,10 @@ class Device(Node):
         device: SpecificLocation = SpecificLocation(),
         vm: Optional[Location] = None,
         device_type: DeviceType = unknown_device,
-        vms: Dict[UID, VirtualMachine] = None,
+        vms: Dict[UID, VirtualMachine] = {},
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
     ):
-        if vms is None:
-            vms = {}
         super().__init__(
             name=name,
             network=network,
