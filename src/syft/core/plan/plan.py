@@ -55,7 +55,7 @@ class Plan(Serializable):
         self.outputs: List[Pointer] = listify(outputs)
 
     def __call__(
-        self, node: AbstractNode, verify_key: VerifyKey, **kwargs: Dict[str, Any]
+        self, node: AbstractNode = None, verify_key: VerifyKey = None, **kwargs: Dict[str, Any]
     ) -> List[StorableObject]:
         """
         1) For all pointers that were passed into the init as `inputs`, this method
@@ -75,6 +75,8 @@ class Plan(Serializable):
         # this is pretty cumbersome, we are searching through all actions to check
         # if we need to redefine some of their attributes that are inputs in the
         # graph of actions
+        if node is None: 
+            return self.execute_locally(**kwargs)
 
         new_inputs: Dict[str, Pointer] = {}
         for k, current_input in self.inputs.items():
@@ -102,6 +104,18 @@ class Plan(Serializable):
             return resolved_outputs
         else:
             return []
+
+    def execute_locally(self, **kwargs):
+        """Execute a plan by sending it to a virtual machine and calling execute on the pointer. This is
+        a workaround untill we have a way to execute plans locally.
+        """
+        # prevent circular dependency
+        from ...core.node.vm.vm import VirtualMachine  # noqa: F401
+        alice = VirtualMachine(name="plan_executor")
+        alice_client = alice.get_client()
+        self_ptr = self.send(alice_client)
+        out = self_ptr(**kwargs)
+        return out.get()
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
