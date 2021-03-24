@@ -21,14 +21,28 @@ from .....logger import warning
 from .....proto.core.node.common.action.run_class_method_pb2 import (
     RunClassMethodAction as RunClassMethodAction_PB,
 )
+from .....util import get_fully_qualified_name
 from .....util import inherit_tags
 from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
+from ....pointer.pointer import Pointer
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
+
+
+def resolve_object(node: AbstractNode, ptr: Pointer) -> StorableObject:
+    obj = node.store.get_object(key=ptr.id_at_location)
+    if getattr(ptr, "further_down_path", None):
+        obj = StorableObject(
+            id=UID(),
+            data=getattr(obj.data, ptr.further_down_path),  # type: ignore
+            read_permissions=obj.read_permissions,  # type: ignore
+            search_permissions=obj.search_permissions,  # type: ignore
+        )
+    return obj  # type: ignore
 
 
 @bind_protobuf
@@ -108,10 +122,9 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
         resolved_self = None
         if not self.is_static:
-            resolved_self = node.store.get_object(key=self._self.id_at_location)
-
+            resolved_self = resolve_object(node, self._self)
             if resolved_self is None:
-                critical(
+                critical(  # type: ignore
                     f"execute_action on {self.path} failed due to missing object"
                     + f" at: {self._self.id_at_location}"
                 )
@@ -123,7 +136,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         resolved_args = list()
         tag_args = []
         for arg in self.args:
-            r_arg = node.store[arg.id_at_location]
+            r_arg = resolve_object(node, arg)
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
@@ -133,7 +146,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         resolved_kwargs = {}
         tag_kwargs = {}
         for arg_name, arg in self.kwargs.items():
-            r_arg = node.store[arg.id_at_location]
+            r_arg = resolve_object(node, arg)
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
@@ -164,22 +177,32 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     )
                 result = method(resolved_self.data, node, verify_key, **self.kwargs)
             # Added by XuTongye, WIP >>>
-            elif isinstance(getattr(resolved_self.data,"forward",None), Plan) and method_name=="__call__":
+            elif (
+                isinstance(getattr(resolved_self.data, "forward", None), Plan)
+                and method_name == "__call__"
+            ):
                 if len(self.args) > 0:
                     traceback_and_raise(
                         ValueError(
                             "You passed args to Plan.__call__, while it only accepts kwargs"
                         )
                     )
+                children_ptrs = {
+                    k: Pointer(
+                        client=self._self.client,
+                        id_at_location=self._self.id_at_location,
+                        object_type=get_fully_qualified_name(
+                            obj=getattr(resolved_self.data, k)
+                        ),
+                    )
+                    for k, _ in resolved_self.data.named_children()
+                }
+                for k in children_ptrs.keys():
+                    children_ptrs[k].further_down_path = k  # type: ignore
                 result = method(
-                    resolved_self.data, 
-                    node, 
-                    verify_key, 
-                    fc1 = resolved_self.data.fc1, 
-                    fc2 = resolved_self.data.fc1,
-                    **self.kwargs
+                    resolved_self.data, node, verify_key, **children_ptrs, **self.kwargs
                 )
-            # <<< Added by XuTongye, WIP 
+            # <<< Added by XuTongye, WIP
             else:
                 target_method = getattr(resolved_self.data, method_name, None)
 
