@@ -15,17 +15,19 @@ from typing import Union
 # third party
 import torch
 
+# syft absolute
+import syft as sy
+
 # syft relative
+from ...generate_wrapper import GenerateWrapper
+
 # from ...core.pointer.pointer import Pointer
 from ...lib.util import full_name_with_qualname
 from ...logger import critical
 from ...logger import info
 from ...logger import traceback_and_raise
-from ...core.plan.plan_builder import make_plan
 from ...proto.lib.torch.module_pb2 import Module as Module_PB
-from ...generate_wrapper import GenerateWrapper
-
-import syft as sy
+from ..python.collections import OrderedDict as SyOrderedDict
 
 # from ...core.node.common.service.auth import AuthorizationException
 
@@ -402,9 +404,10 @@ class Module:
                         s = v.sum().item()
                         info(f"  Layer {n} sum({k}): {s}")
 
-def object2proto(obj: torch.nn.Module) -> Module_PB:
+
+def object2proto(obj: torch.nn.Module, is_child: bool = False) -> Module_PB:
     proto = Module_PB()
-    
+
     if "torch.nn." in type(obj).__module__:
         proto.module_type = type(obj).__name__
     else:
@@ -412,27 +415,40 @@ def object2proto(obj: torch.nn.Module) -> Module_PB:
         proto.forward.CopyFrom(sy.serialize(obj.forward_Plan))
 
     proto.module_repr = obj.extra_repr()
+
+    if not is_child:
+        proto.state_dict.CopyFrom(sy.serialize(SyOrderedDict(obj.state_dict())))
+
     for n, m in obj.named_children():
-        child_proto = sy.serialize(m)
+        child_proto = object2proto(m, is_child=True)
         child_proto.module_name = n
         proto.children.append(child_proto)
 
     return proto
 
+
 def proto2object(proto: Module_PB) -> torch.nn.Module:
-    is_customize = proto.module_type=="_CUSTOMIZE_MODULE"
+    is_customize = proto.module_type == "_CUSTOMIZE_MODULE"
+
     if is_customize:
         obj_type = torch.nn.Module
     else:
         obj_type = getattr(torch.nn, proto.module_type)
+
     args, kwargs = repr_to_kwargs(repr_str=proto.module_repr)
     obj = obj_type(*args, **kwargs)
+
     for child_proto in proto.children:
         obj.add_module(child_proto.module_name, sy.deserialize(child_proto))
+
     if is_customize:
         obj.forward = sy.deserialize(proto.forward)
 
+    if proto.state_dict.ByteSize() > 0:
+        obj.load_state_dict(sy.deserialize(proto.state_dict))
+
     return obj
+
 
 GenerateWrapper(
     wrapped_type=torch.nn.Module,

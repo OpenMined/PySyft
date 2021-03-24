@@ -15,6 +15,9 @@ _sym_db = _symbol_database.Default()
 
 # syft absolute
 from syft.proto.core.plan import plan_pb2 as proto_dot_core_dot_plan_dot_plan__pb2
+from syft.proto.lib.python.collections import (
+    ordered_dict_pb2 as proto_dot_lib_dot_python_dot_collections_dot_ordered__dict__pb2,
+)
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/lib/torch/module.proto",
@@ -22,9 +25,10 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x1cproto/lib/torch/module.proto\x12\x0esyft.lib.torch\x1a\x1aproto/core/plan/plan.proto"\x98\x01\n\x06Module\x12\x13\n\x0bmodule_type\x18\x01 \x01(\t\x12\x13\n\x0bmodule_name\x18\x02 \x01(\t\x12\x13\n\x0bmodule_repr\x18\x03 \x01(\t\x12(\n\x08\x63hildren\x18\x04 \x03(\x0b\x32\x16.syft.lib.torch.Module\x12%\n\x07\x66orward\x18\x05 \x01(\x0b\x32\x14.syft.core.plan.Planb\x06proto3',
+    serialized_pb=b'\n\x1cproto/lib/torch/module.proto\x12\x0esyft.lib.torch\x1a\x1aproto/core/plan/plan.proto\x1a/proto/lib/python/collections/ordered_dict.proto"\xd6\x01\n\x06Module\x12\x13\n\x0bmodule_type\x18\x01 \x01(\t\x12\x13\n\x0bmodule_name\x18\x02 \x01(\t\x12\x13\n\x0bmodule_repr\x18\x03 \x01(\t\x12(\n\x08\x63hildren\x18\x04 \x03(\x0b\x32\x16.syft.lib.torch.Module\x12<\n\nstate_dict\x18\x05 \x01(\x0b\x32(.syft.lib.python.collections.OrderedDict\x12%\n\x07\x66orward\x18\x06 \x01(\x0b\x32\x14.syft.core.plan.Planb\x06proto3',
     dependencies=[
         proto_dot_core_dot_plan_dot_plan__pb2.DESCRIPTOR,
+        proto_dot_lib_dot_python_dot_collections_dot_ordered__dict__pb2.DESCRIPTOR,
     ],
 )
 
@@ -114,10 +118,29 @@ _MODULE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="forward",
-            full_name="syft.lib.torch.Module.forward",
+            name="state_dict",
+            full_name="syft.lib.torch.Module.state_dict",
             index=4,
             number=5,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="forward",
+            full_name="syft.lib.torch.Module.forward",
+            index=5,
+            number=6,
             type=11,
             cpp_type=10,
             label=1,
@@ -141,11 +164,16 @@ _MODULE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=77,
-    serialized_end=229,
+    serialized_start=126,
+    serialized_end=340,
 )
 
 _MODULE.fields_by_name["children"].message_type = _MODULE
+_MODULE.fields_by_name[
+    "state_dict"
+].message_type = (
+    proto_dot_lib_dot_python_dot_collections_dot_ordered__dict__pb2._ORDEREDDICT
+)
 _MODULE.fields_by_name[
     "forward"
 ].message_type = proto_dot_core_dot_plan_dot_plan__pb2._PLAN
