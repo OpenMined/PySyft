@@ -28,7 +28,7 @@ def create_ast(client: TypeAny = None) -> Globals:
     ]
 
     classes: TypeList[TypeTuple[str, str, TypeAny]] = [
-        ("PIL.Image.Image", "PIL.Image,Image", PIL.Image.Image)
+        ("PIL.Image.Image", "PIL.Image.Image", PIL.Image.Image)
     ]
 
     methods: TypeList[TypeTuple[str, str]] = []
