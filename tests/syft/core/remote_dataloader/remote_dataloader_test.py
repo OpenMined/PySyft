@@ -33,9 +33,9 @@ def test_remote_dataset() -> None:
     alice.store.clear()
     th.save(ds, "ds.pt")
 
-    rds = RemoteDataset("ds.pt")
+    rds = RemoteDataset(path="ds.pt", data_type="torch_tensor")
     rds_ptr = rds.send(alice_client)
-    rds_ptr.create_dataset()
+    rds_ptr.load_dataset()
 
     assert rds_ptr.len().get() == 1000
     for tp in rds_ptr:
@@ -48,11 +48,11 @@ def test_remote_dataloader() -> None:
     alice.store.clear()
     th.save(ds, "ds.pt")
 
-    rds = RemoteDataset("ds.pt")
-    rdl = RemoteDataLoader(remote_dataset=rds)
+    rds = RemoteDataset(path="ds.pt", data_type="torch_tensor")
+    rdl = RemoteDataLoader(remote_dataset=rds, batch_size=4)
     rdl_ptr = rdl.send(alice_client)
 
-    rdl_ptr.create_dataset()
+    rdl_ptr.load_dataset()
     rdl_ptr.create_dataloader()
 
     assert rdl_ptr.len().get() == 250

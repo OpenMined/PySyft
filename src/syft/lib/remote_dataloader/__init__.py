@@ -36,14 +36,14 @@ def create_remote_dataloader_ast(client: TypeAny = None) -> Globals:
 
     methods: TypeList[TypeTuple[str, str]] = [
         (
-            "syft.core.remote_dataloader.RemoteDataset.create_dataset",
+            "syft.core.remote_dataloader.RemoteDataset.load_dataset",
             "syft.lib.python._SyNone",
         ),
         ("syft.core.remote_dataloader.RemoteDataset.__len__", "syft.lib.python.Int"),
         ("syft.core.remote_dataloader.RemoteDataset.__getitem__", "torch.Tensor"),
         ("syft.core.remote_dataloader.RemoteDataLoader.__len__", "syft.lib.python.Int"),
         (
-            "syft.core.remote_dataloader.RemoteDataLoader.create_dataset",
+            "syft.core.remote_dataloader.RemoteDataLoader.load_dataset",
             "syft.lib.python._SyNone",
         ),
         (
@@ -54,7 +54,6 @@ def create_remote_dataloader_ast(client: TypeAny = None) -> Globals:
             "syft.core.remote_dataloader.RemoteDataLoader.__iter__",
             "syft.lib.python.Iterator",
         ),
-        # ("syft.core.remote_dataloader.RemoteDataLoader.__next__", "torch.Tensor"),
     ]
 
     add_modules(ast, modules)

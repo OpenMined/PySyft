@@ -1,10 +1,10 @@
 syntax = "proto3";
 
 package syft.core.node.common.remote_dataloader;
-import "proto/core/common/common_object.proto";
 
 message RemoteDataset {
-  string meta = 1;
+  string data_type = 1;
+  string path = 2;
 }
 
 message RemoteDataLoader {

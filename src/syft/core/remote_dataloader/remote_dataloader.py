@@ -1,9 +1,11 @@
 # stdlib
 from typing import Any
 from typing import Iterator
+from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+import pandas as pd
 import torch as th
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
@@ -11,7 +13,7 @@ from torch.utils.data import Dataset
 # syft relative
 from ... import deserialize
 from ... import serialize
-from ...core.plan import Plan
+from ...logger import traceback_and_raise
 from ...proto.core.remote_dataloader.remote_dataset_pb2 import (
     RemoteDataLoader as RemoteDataLoader_PB,
 )
@@ -21,42 +23,53 @@ from ...proto.core.remote_dataloader.remote_dataset_pb2 import (
 from ..common.serde.serializable import Serializable
 from ..common.serde.serializable import bind_protobuf
 
+DATA_TYPE_TORCH_TENSOR = "torch_tensor"
+DATA_TYPE_PANDAS_CSV = "pandas_csv"
+
 
 @bind_protobuf
 class RemoteDataset(Dataset, Serializable):
-    def __init__(self, dataset_meta: str, creator: Plan = None):  # type: ignore
+    def __init__(self, path: str, data_type: str = DATA_TYPE_TORCH_TENSOR):
         """
         Arguments:
-            dataset_meta: information about where to get the raw data, for example, a file path, or a directory path
-        For now, it's should simply be a .pt file, which stores a Dataset object.
-            creator: a Plan object, it should take meta info as input, and return a Dataset object.
-        For now, we are not realy using it.
+            path: information about where to get the raw data, for example, a file path,
+            or a directory path data_type: the type of data for example torch_tensor
+            or pandas_csv
+        For now, it's should simply be a .pt / .csv file, which stores a Dataset object.
         """
-        self.datasetmeta = dataset_meta
-        self.creator = creator
+        self.path = path
+        self.data_type = data_type
 
-    def create_dataset(self) -> None:
+    def load_dataset(self) -> None:
         """
-        Create the real Dataset object on DO's machine.
-        Inside, it will call self.creator(self.datasetmeta).
+        Load the real Dataset object on DO's machine.
         But for now, it's just simply calling torch.load on a .pt file.
         """
-        self.dataset = th.load(self.datasetmeta)
+        if self.data_type == DATA_TYPE_TORCH_TENSOR:
+            self.dataset = th.load(self.path)
+        elif self.data_type == DATA_TYPE_PANDAS_CSV:
+            self.dataset = pd.read_csv(self.path)
 
     def __len__(self) -> int:
         return len(self.dataset)
 
-    def __getitem__(self, i: int) -> th.Tensor:
-        return self.dataset[i]
+    def __getitem__(
+        self, key: Union[str, int, slice, pd.DataFrame, pd.Series]
+    ) -> Union[th.Tensor, pd.DataFrame, pd.Series]:
+        return self.dataset[key]
+
+    def __repr__(self) -> str:
+        return f"{type(self)}: {self.data_type}"
 
     def _object2proto(self) -> RemoteDataset_PB:
         proto = RemoteDataset_PB()
-        proto.meta = self.datasetmeta
+        proto.path = self.path
+        proto.data_type = self.data_type
         return proto
 
     @staticmethod
     def _proto2object(proto: Any) -> "RemoteDataset":
-        return RemoteDataset(proto.meta)
+        return RemoteDataset(path=proto.path, data_type=proto.data_type)
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
@@ -65,11 +78,11 @@ class RemoteDataset(Dataset, Serializable):
 
 @bind_protobuf
 class RemoteDataLoader(Serializable):
-    def __init__(self, remote_dataset: RemoteDataset, batch_size: int = 4):
+    def __init__(self, remote_dataset: RemoteDataset, batch_size: int = 1):
         """
-        TODO: now, only batch_size can be passed in by users, and it's used when create DataLoader object in
-        self.create_dataloader. In future steps, more auguments should be supported, like shuffle, sampler,
-        collate_fn, ...
+        TODO: now, only batch_size can be passed in by users, and it's used when create
+        DataLoader object in self.create_dataloader. In future steps, more augmentations
+        should be supported, like shuffle, sampler, collate_fn, etc.
         """
         self.remote_dataset = remote_dataset
         self.batch_size = batch_size
@@ -90,12 +103,19 @@ class RemoteDataLoader(Serializable):
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return RemoteDataLoader_PB
 
-    def create_dataset(self) -> None:
-        self.remote_dataset.create_dataset()
+    def load_dataset(self) -> None:
+        self.remote_dataset.load_dataset()
 
     def create_dataloader(self) -> None:
-        dataset = getattr(self.remote_dataset, "dataset", None)
-        self.dataloader = DataLoader(dataset=dataset, batch_size=self.batch_size)
+        if self.remote_dataset.data_type == DATA_TYPE_TORCH_TENSOR:
+            dataset = getattr(self.remote_dataset, "dataset", None)
+            self.dataloader = DataLoader(dataset=dataset, batch_size=self.batch_size)
+        else:
+            traceback_and_raise(
+                ValueError(
+                    "Cannot create a DataLoader for type: {self.remote_dataset.data_type}"
+                )
+            )
 
     def __len__(self) -> int:
         return len(self.dataloader)

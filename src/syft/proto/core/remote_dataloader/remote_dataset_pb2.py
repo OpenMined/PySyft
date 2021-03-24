@@ -13,21 +13,13 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-# syft absolute
-from syft.proto.core.common import (
-    common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
-)
-
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/core/remote_dataloader/remote_dataset.proto",
     package="syft.core.node.common.remote_dataloader",
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n1proto/core/remote_dataloader/remote_dataset.proto\x12\'syft.core.node.common.remote_dataloader\x1a%proto/core/common/common_object.proto"\x1d\n\rRemoteDataset\x12\x0c\n\x04meta\x18\x01 \x01(\t"v\n\x10RemoteDataLoader\x12N\n\x0eremote_dataset\x18\x01 \x01(\x0b\x32\x36.syft.core.node.common.remote_dataloader.RemoteDataset\x12\x12\n\nbatch_size\x18\x02 \x01(\x03\x62\x06proto3',
-    dependencies=[
-        proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
-    ],
+    serialized_pb=b'\n1proto/core/remote_dataloader/remote_dataset.proto\x12\'syft.core.node.common.remote_dataloader"0\n\rRemoteDataset\x12\x11\n\tdata_type\x18\x01 \x01(\t\x12\x0c\n\x04path\x18\x02 \x01(\t"v\n\x10RemoteDataLoader\x12N\n\x0eremote_dataset\x18\x01 \x01(\x0b\x32\x36.syft.core.node.common.remote_dataloader.RemoteDataset\x12\x12\n\nbatch_size\x18\x02 \x01(\x03\x62\x06proto3',
 )
 
 
@@ -40,10 +32,29 @@ _REMOTEDATASET = _descriptor.Descriptor(
     create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
-            name="meta",
-            full_name="syft.core.node.common.remote_dataloader.RemoteDataset.meta",
+            name="data_type",
+            full_name="syft.core.node.common.remote_dataloader.RemoteDataset.data_type",
             index=0,
             number=1,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="path",
+            full_name="syft.core.node.common.remote_dataloader.RemoteDataset.path",
+            index=1,
+            number=2,
             type=9,
             cpp_type=9,
             label=1,
@@ -67,8 +78,8 @@ _REMOTEDATASET = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=133,
-    serialized_end=162,
+    serialized_start=94,
+    serialized_end=142,
 )
 
 
@@ -127,8 +138,8 @@ _REMOTEDATALOADER = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=164,
-    serialized_end=282,
+    serialized_start=144,
+    serialized_end=262,
 )
 
 _REMOTEDATALOADER.fields_by_name["remote_dataset"].message_type = _REMOTEDATASET
