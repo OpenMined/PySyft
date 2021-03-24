@@ -10,6 +10,7 @@ from math import isnan
 from math import ldexp
 import operator
 import random
+import sys
 import time
 
 # third party
@@ -111,7 +112,7 @@ class OtherFloatSubclass(Float):
 
 
 class F:
-    def __Float__(self):
+    def __float__(self):
         return OtherFloatSubclass(42.0)
 
 
@@ -173,6 +174,7 @@ def test_underscores():
     for lit in VALID_UNDERSCORE_LITERALS:
         if not any(ch in lit for ch in "jJxXoObB"):
             assert Float(lit) == eval(lit)
+            # TODO this should work!!!
             assert Float(lit) == Float(lit.replace("_", ""))
     for lit in INVALID_UNDERSCORE_LITERALS:
         if lit in ("0_7", "09_99"):  # octals are not recognized here
@@ -264,7 +266,9 @@ def test_error_message():
 
 
 def test_Float_with_comma():
-    assert Float("  3.14  ") == 3.14
+    # set locale to something that doesn't use '.' for the decimal point    assert Float("  3.14  ") == 3.14
+    # Float must not accept the locale specific decimal point but
+    # it still has to accept the normal python syntax
     assert Float("+3.14  ") == 3.14
     assert Float("-3.14  ") == -3.14
     assert Float(".14  ") == 0.14
@@ -329,16 +333,21 @@ def test_Floatconversion():
     with pytest.raises(TypeError):
         time.sleep(Foo5())
 
-    class MyIndex:
-        def __init__(self, value):
-            self.value = value
+    # using __index__ in init was added in python 3.8
+    # https://github.com/python/cpython/commit/bdbad71b9def0b86433de12cecca022eee91bd9f
 
-        def __index__(self):
-            return self.value
+    if sys.version_info >= (3, 8):
 
-    assert Float(MyIndex(42)) == 42.0
-    with pytest.raises(OverflowError):
-        Float(MyIndex(2 ** 2000))
+        class MyIndex:
+            def __init__(self, value):
+                self.value = value
+
+            def __index__(self):
+                return self.value
+
+        assert Float(MyIndex(42)) == 42.0
+        with pytest.raises(OverflowError):
+            Float(MyIndex(2 ** 2000))
 
     class MyInt:
         def __int__(self):

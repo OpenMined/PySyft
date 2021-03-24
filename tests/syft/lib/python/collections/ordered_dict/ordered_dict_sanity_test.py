@@ -119,8 +119,11 @@ def test_update():
     pytest.raises(TypeError, OrderedDict().update, 42)
     pytest.raises(TypeError, OrderedDict().update, (), ())
 
-    pytest.raises(TypeError, OrderedDict().update, 42)
-    pytest.raises(TypeError, OrderedDict().update, (), ())
+    d = OrderedDict(
+        [("a", 1), ("b", 2), ("c", 3), ("d", 44), ("e", 55)],
+        _id=UID.from_string(value="{12345678-1234-5678-1234-567812345678}"),
+    )
+    assert d.id.__eq__(UID.from_string(value="{12345678-1234-5678-1234-567812345678}"))
 
 
 def test_init_calls():
@@ -280,7 +283,7 @@ def test_pop():
 
     # make sure pop still works when __missing__ is defined
     class Missing(OrderedDict):
-        def __missing__(key):
+        def __missing__(self, key):
             return 0
 
     m = Missing(a=1)
@@ -721,7 +724,6 @@ def test_reference_loop():
     assert r() is None
 
 
-# @support.cpython_only
 def test_ordered_dict_items_result_gc():
     # bpo-42536: OrderedDict.items's tuple-reuse speed trick breaks the GC's
     # assumptions about what can be untracked. Make sure we re-track result
@@ -752,7 +754,6 @@ def test_key_change_during_iteration():
     assertEqual(list(od), list("bdeaf"))
 
 
-# @support.cpython_only
 def test_weakref_list_is_not_traversed():
     # Check that the weakref list is not traversed when collecting
     # OrderedDict objects. See bpo-39778 for more information.

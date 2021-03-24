@@ -40,8 +40,8 @@ class DictTest(unittest.TestCase):
 
     def test_constructor(self):
         # calling built-in types without argument must return empty
-        self.assertEqual(dict(), {})
-        self.assertIsNot(dict(), {})
+        self.assertEqual(Dict(), {})
+        self.assertIsNot(Dict(), {})
 
     @pytest.mark.slow
     def test_literal_constructor(self):
@@ -110,7 +110,7 @@ class DictTest(unittest.TestCase):
     def test_values(self):
         d = Dict()
         self.assertEqual(set(d.values()), set())
-        d = {1: 2}
+        d = Dict({1: 2})
         self.assertEqual(set(d.values()), {2})
         self.assertRaises(TypeError, d.values, None)
         self.assertEqual(repr(dict(a=1).values()), "dict_values([1])")
@@ -313,7 +313,7 @@ class DictTest(unittest.TestCase):
 
         ud = mydict.fromkeys("ab")
         self.assertEqual(ud, {"a": None, "b": None})
-        self.assertIsInstance(ud, collections.UserDict)
+        self.assertIsInstance(ud, Dict)
         self.assertRaises(TypeError, dict.fromkeys)
 
         class Exc(Exception):
@@ -573,19 +573,23 @@ class DictTest(unittest.TestCase):
         # change dict content during iteration
         d = Dict()
         d[0] = 0
-        with self.assertRaises(RuntimeError):
-            for i in d:
-                del d[0]
-                d[0] = 0
+        # python 3.8+ raise RuntimeError but older versions do not
+        if sys.version_info >= (3, 8):
+            with self.assertRaises(RuntimeError):
+                for i in d:
+                    del d[0]
+                    d[0] = 0
 
     def test_mutating_iteration_delete_over_values(self):
         # change dict content during iteration
         d = Dict()
         d[0] = 0
-        with self.assertRaises(RuntimeError):
-            for i in d.values():
-                del d[0]
-                d[0] = 0
+        # python 3.8+ raise RuntimeError but older versions do not
+        if sys.version_info >= (3, 8):
+            with self.assertRaises(RuntimeError):
+                for i in d.values():
+                    del d[0]
+                    d[0] = 0
 
     @pytest.mark.xfail
     def test_mutating_iteration_delete_over_items(self):
@@ -593,10 +597,11 @@ class DictTest(unittest.TestCase):
         # change dict content during iteration
         d = Dict()
         d[0] = 0
-        with self.assertRaises(RuntimeError):
-            for i in d.items():
-                del d[0]
-                d[0] = 0
+        if sys.version_info >= (3, 8):
+            with self.assertRaises(RuntimeError):
+                for i in d.items():
+                    del d[0]
+                    d[0] = 0
 
     @pytest.mark.xfail
     def test_mutating_lookup(self):
@@ -724,6 +729,7 @@ class DictTest(unittest.TestCase):
 
     @pytest.mark.xfail
     def test_errors_in_view_containment_check(self):
+        # TODO: add support for custom objects
         class C:
             def __eq__(self, other):
                 raise RuntimeError
@@ -996,6 +1002,7 @@ class DictTest(unittest.TestCase):
         self._tracked(Dict({1: {}}))
         self._tracked(Dict({1: set()}))
 
+    @pytest.mark.slow
     @support.cpython_only
     def test_track_dynamic(self):
         # Test GC-optimization of dynamically-created dicts
@@ -1064,7 +1071,7 @@ class DictTest(unittest.TestCase):
     @support.cpython_only
     def test_track_subtypes(self):
         # Dict subtypes are always tracked
-        class MyDict(dict):
+        class MyDict(Dict):
             pass
 
         self._tracked(MyDict())
@@ -1466,6 +1473,8 @@ class DictTest(unittest.TestCase):
 
     @pytest.mark.xfail
     def test_dictitems_contains_use_after_free(self):
+        # this seems like a bit of a puzzle
+        # see iterator.py for more details
         class X:
             def __eq__(self, other):
                 d.clear()
