@@ -2,6 +2,7 @@
 from typing import Any
 from typing import Iterable
 from typing import Optional
+from typing import Set as TypeSet
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -16,6 +17,7 @@ from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
 from .util import downcast
+from .util import upcast
 
 
 @bind_protobuf
@@ -35,6 +37,10 @@ class Set(set, PyPrimitive):
         :rtype: UID
         """
         return self._id
+
+    def upcast(self) -> TypeSet:
+        # recursively upcast
+        return {upcast(v) for v in self}
 
     def __and__(self, other: Any) -> SyPrimitiveRet:
         res = super().__and__(other)
@@ -173,7 +179,9 @@ class Set(set, PyPrimitive):
     @staticmethod
     def _proto2object(proto: Set_PB) -> "Set":
         id_: UID = deserialize(blob=proto.id)
-        value = [deserialize(blob=element, from_bytes=True) for element in proto.data]
+        value = [
+            upcast(deserialize(blob=element, from_bytes=True)) for element in proto.data
+        ]
         new_list = Set(value)
         new_list._id = id_
         return new_list
