@@ -101,9 +101,7 @@ class SignedMessageWithReplyForwardingService(SignedNodeServiceWithReply):
                     debug(f"> Lookup: {scope_id.emoji()}")
                     if scope_id in node.in_memory_client_registry:
                         in_memory_client = node.in_memory_client_registry[scope_id]
-                        return in_memory_client.send_immediate_msg_without_reply(
-                            msg=msg
-                        )
+                        return in_memory_client.send_immediate_msg_with_reply(msg=msg)
         except Exception as e:
             # TODO: Need to not catch blanket exceptions
             error(f"{addr} not on nodes in_memory_client. {e}")
