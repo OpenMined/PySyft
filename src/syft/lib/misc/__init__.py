@@ -102,30 +102,25 @@ def create_union_ast(
 
                 return func
 
-            def generate_prop(target_property: str) -> TypeAny:
-                def prop(self: TypeAny) -> TypeAny:
-                    prop = getattr(self, target_property, None)
-                    if prop is not None:
-                        return prop
-                    else:
-                        ValueError("TODO")
-
-                return property(prop)
-
             def generate_attribute(target_attribute: str) -> TypeAny:
                 def prop_get(self: TypeAny) -> TypeAny:
                     prop = getattr(self, target_attribute, None)
                     if prop is not None:
                         return prop
                     else:
-                        ValueError("TODO")
+                        ValueError(
+                            f"Can't call {target_attribute} on {klass} with the instance type of {type(self)}"
+                        )
 
                 def prop_set(self: TypeAny, value: TypeAny) -> TypeAny:
                     setattr(self, target_attribute, value)
 
                 return property(prop_get, prop_set)
 
-            if target_method == "grad":
+            # TODO: Support dynamic properties for types in AST
+            # torch.Tensor.grad and torch.Tensor.data are not in the class
+            # Issue: https://github.com/OpenMined/PySyft/issues/5338
+            if target_method == "grad" and "Tensor" in klass.__name__:
                 setattr(klass, target_method, generate_attribute(target_method))
                 methods.append(
                     (
@@ -134,7 +129,7 @@ def create_union_ast(
                     )
                 )
                 continue
-            elif target_method == "data":
+            elif target_method == "data" and "Tensor" in klass.__name__:
                 setattr(klass, target_method, generate_attribute(target_method))
             else:
                 setattr(klass, target_method, generate_func(target_method))
