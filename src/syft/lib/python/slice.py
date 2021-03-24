@@ -21,7 +21,7 @@ class Slice(PyPrimitive):
     def __init__(
         self,
         start: Any = None,
-        stop: Any = None,
+        stop: Optional[Any] = None,
         step: Optional[Any] = None,
         id: Optional[UID] = None,
     ):
@@ -95,21 +95,42 @@ class Slice(PyPrimitive):
         return self.value
 
     def _object2proto(self) -> Slice_PB:
-        return Slice_PB(
-            start=self.start,
-            stop=self.stop,
-            step=self.step,
-            id=serialize(obj=self._id),
-        )
+        slice_pb = Slice_PB()
+        if self.start:
+            slice_pb.start = self.start
+            slice_pb.has_start = True
+
+        if self.stop:
+            slice_pb.stop = self.stop
+            slice_pb.has_stop = True
+
+        if self.step:
+            slice_pb.step = self.step
+            slice_pb.has_step = True
+
+        slice_pb.id.CopyFrom(serialize(obj=self._id))
+
+        return slice_pb
 
     @staticmethod
     def _proto2object(proto: Slice_PB) -> "Slice":
         id_: UID = deserialize(blob=proto.id)
+        start = None
+        stop = None
+        step = None
+        if proto.has_start:
+            start = proto.start
+
+        if proto.has_stop:
+            stop = proto.stop
+
+        if proto.has_step:
+            step = proto.step
 
         return Slice(
-            start=proto.start,
-            stop=proto.stop,
-            step=proto.step,
+            start=start,
+            stop=stop,
+            step=step,
             id=id_,
         )
 
