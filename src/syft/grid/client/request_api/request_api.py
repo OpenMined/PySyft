@@ -44,9 +44,9 @@ class GridRequestAPI:
     def all(self, pandas: bool = False) -> Dict[str, Any]:
         result = self.__send(grid_msg=self.__get_all_message)
         if pandas:
-            return DataFrame(result)
-        else:
-            return result
+            result = DataFrame(result)
+
+        return result
 
     def update(self, **kwargs: Any) -> Dict[str, Any]:
         return self.__send(grid_msg=self.__update_message, content=kwargs)
