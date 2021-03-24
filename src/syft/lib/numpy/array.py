@@ -6,33 +6,45 @@ import torch
 from ...generate_wrapper import GenerateWrapper
 from ...lib.torch.tensor_util import protobuf_tensor_deserializer
 from ...lib.torch.tensor_util import protobuf_tensor_serializer
-from ...proto.lib.torch.tensor_pb2 import TensorData
+from ...proto.lib.numpy.array_pb2 import NumpyProto
 
 ExceptionDtype = [
     np.object_,
     np.str_,
     np.unicode_,
-    np.uint16,
-    np.uint32,
-    np.uint64,
     np.complex64,
     np.complex128,
 ]
 
+DtypeRefactor = {
+    np.dtype("uint16"): np.int16,
+    np.dtype("uint32"): np.int32,
+    np.dtype("uint64"): np.int64,
+}
 
-def object2proto(obj: np.ndarray) -> TensorData:
+
+def object2proto(obj: np.ndarray) -> NumpyProto:
     if obj.dtype in ExceptionDtype:
         raise NotImplementedError(f"{obj.dtype} is not supported")
 
+    if obj.dtype in DtypeRefactor:
+        obj = obj.astype(DtypeRefactor[obj.dtype])
+
     tensor = torch.from_numpy(obj).clone()
     tensor_proto = protobuf_tensor_serializer(tensor)
+    dtype = obj.dtype.name
 
-    return tensor_proto
+    return NumpyProto(tensor=tensor_proto, dtype=dtype)
 
 
-def proto2object(proto: TensorData) -> np.ndarray:
-    tensor = protobuf_tensor_deserializer(proto)
-    obj = tensor.to("cpu").detach().numpy().copy()
+def proto2object(proto: NumpyProto) -> np.ndarray:
+    tensor = protobuf_tensor_deserializer(proto.tensor)
+    array = tensor.to("cpu").detach().numpy().copy()
+
+    str_dtype = proto.dtype
+    npdtype = np.dtype(str_dtype)
+
+    obj = array.astype(npdtype)
 
     return obj
 
@@ -40,7 +52,7 @@ def proto2object(proto: TensorData) -> np.ndarray:
 GenerateWrapper(
     wrapped_type=np.ndarray,
     import_path="numpy.ndarray",
-    protobuf_scheme=TensorData,
+    protobuf_scheme=NumpyProto,
     type_object2proto=object2proto,
     type_proto2object=proto2object,
 )
