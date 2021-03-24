@@ -39,6 +39,7 @@ def pytest_configure(config: _pytest.config.Config) -> None:
     config.addinivalue_line("markers", "libs: runs valid vendor tests")
     config.addinivalue_line("markers", "benchmark: runs benchmark tests")
     config.addinivalue_line("markers", "torch: runs torch tests")
+    config.addinivalue_line("markers", "duet: runs duet notebook integration tests")
 
 
 def pytest_collection_modifyitems(
@@ -50,6 +51,7 @@ def pytest_collection_modifyitems(
     # $ pytest -m libs for the vendor tests
     slow_tests = pytest.mark.slow
     fast_tests = pytest.mark.fast
+    duet_tests = pytest.mark.duet
     all_tests = pytest.mark.all
 
     # dynamically filtered vendor lib tests
@@ -85,8 +87,12 @@ def pytest_collection_modifyitems(
                 if vendor_requirements_available(
                     vendor_requirements=vendor_requirements
                 ):
-                    item.add_marker(vendor_tests)
+                    if item.location[0].startswith("tests/syft/notebooks"):
+                        item.add_marker(duet_tests)
+                    else:
+                        item.add_marker(vendor_tests)
                     item.add_marker(all_tests)
+
             except VendorLibraryImportException as e:
                 print(e)
             except Exception as e:
@@ -104,4 +110,8 @@ def pytest_collection_modifyitems(
         if "slow" in item.keywords:
             item.add_marker(slow_tests)
         else:
+            if item.location[0].startswith("tests/syft/notebooks"):
+                item.add_marker(duet_tests)
+                continue
+            # fast is the default catch all
             item.add_marker(fast_tests)
