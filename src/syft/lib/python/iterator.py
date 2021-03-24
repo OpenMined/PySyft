@@ -21,6 +21,9 @@ class Iterator(PyPrimitive):
     def __iter__(self) -> "Iterator":
         return self
 
+    def __len__(self) -> int:
+        return len(self._obj_ref)
+
     def __reduce__(self) -> Any:
         # see these tests: test_valuesiterator_pickling and test_iterator_pickling
         raise TypeError(f"Pickling {type(self)} is not supported.")
