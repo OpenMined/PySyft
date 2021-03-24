@@ -18,6 +18,7 @@ from .iterator import Iterator
 from .primitive_factory import PrimitiveFactory
 from .primitive_factory import isprimitive
 from .primitive_interface import PyPrimitive
+from .slice import Slice
 from .types import SyPrimitiveRet
 from .util import downcast
 from .util import upcast
@@ -120,7 +121,9 @@ class List(UserList, PyPrimitive):
         res = super().__len__()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def __getitem__(self, key: Union[int, str, slice]) -> Any:
+    def __getitem__(self, key: Union[int, str, slice, Slice]) -> Any:
+        if isinstance(key, Slice):
+            key = key.upcast()
         res = super().__getitem__(key)  # type: ignore
         # we might be holding a primitive value, but generate_primitive
         # doesn't handle non primitives so we should check
