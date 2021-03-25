@@ -323,7 +323,7 @@ jobs:
           pytest -m duet -n 1 --suppress-no-test-exit-code
 
   pygrid-unit-tests:
-    needs: [python-tests-fast-latest]
+    needs: [python-linting]
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 3
