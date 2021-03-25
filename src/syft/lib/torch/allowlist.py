@@ -1771,7 +1771,6 @@ allowlist[
     "torch.nn.Module.load_state_dict"
 ] = "syft.lib.python._SyNone"  # torch.nn.modules.module._IncompatibleKeys
 allowlist["torch.nn.Module.extra_repr"] = "syft.lib.python.String"
-allowlist["torch.nn.Module.named_children"] = "syft.lib.python.List" # Added by XuTongye, WIP
 
 allowlist["torch.nn.Conv2d"] = "torch.nn.Conv2d"
 allowlist["torch.nn.Conv2d.__call__"] = "torch.Tensor"

@@ -407,12 +407,10 @@ class Module:
 
 def object2proto(obj: torch.nn.Module, is_child: bool = False) -> Module_PB:
     proto = Module_PB()
-
     if "torch.nn." in type(obj).__module__:
         proto.module_type = type(obj).__name__
     else:
-        proto.module_type = "_CUSTOMIZE_MODULE"
-        proto.forward.CopyFrom(sy.serialize(obj.forward_Plan))
+        proto.module_type = f"_USER_DEFINED_MODULE_{type(obj).__name__}"
 
     proto.module_repr = obj.extra_repr()
 
@@ -428,10 +426,14 @@ def object2proto(obj: torch.nn.Module, is_child: bool = False) -> Module_PB:
 
 
 def proto2object(proto: Module_PB) -> torch.nn.Module:
-    is_customize = proto.module_type == "_CUSTOMIZE_MODULE"
+    is_userdefined = proto.module_type.startswith("_USER_DEFINED_MODULE_")
 
-    if is_customize:
-        obj_type = torch.nn.Module
+    if is_userdefined:
+        obj_type = type(
+            proto.module_type.replace("_USER_DEFINED_MODULE_", ""),
+            (torch.nn.Module,),
+            {},
+        )
     else:
         obj_type = getattr(torch.nn, proto.module_type)
 
@@ -440,9 +442,6 @@ def proto2object(proto: Module_PB) -> torch.nn.Module:
 
     for child_proto in proto.children:
         obj.add_module(child_proto.module_name, sy.deserialize(child_proto))
-
-    if is_customize:
-        obj.forward = sy.deserialize(proto.forward)
 
     if proto.state_dict.ByteSize() > 0:
         obj.load_state_dict(sy.deserialize(proto.state_dict))

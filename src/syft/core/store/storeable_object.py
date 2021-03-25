@@ -153,7 +153,7 @@ class StorableObject(AbstractStorableObject):
             proto.read_permissions = sy.serialize(permission_data, to_bytes=True)
 
         # Step 7: save search permissions
-        if len(self.search_permissions) > 0:
+        if len(self.search_permissions.keys()) > 0:
             permission_data = sy.lib.python.Dict()
             for k, v in self.search_permissions.items():
                 permission_data[k] = v

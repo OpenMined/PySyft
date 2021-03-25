@@ -11,5 +11,4 @@ message Module {
     string module_repr = 3;
     repeated Module children = 4;
     syft.lib.python.collections.OrderedDict state_dict = 5;
-    syft.core.plan.Plan forward = 6;
 }
