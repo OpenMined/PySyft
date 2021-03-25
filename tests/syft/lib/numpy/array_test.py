@@ -37,3 +37,4 @@ def test_remote_numpy_array() -> None:
         received_array = remote_array.get()
 
         assert all(test_array == received_array)
+        assert test_array.dtype == received_array.dtype
