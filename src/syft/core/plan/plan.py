@@ -9,6 +9,7 @@ import sys
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Optional
 from typing import Union
 
 # third party
@@ -46,6 +47,8 @@ class Plan(Serializable):
         actions: Union[List[Action], None] = None,
         inputs: Union[Dict[str, Pointer], None] = None,
         outputs: Union[Pointer, List[Pointer], None] = None,
+        code: Optional[str] = None,
+        max_calls: Optional[int] = None,
     ):
         """
         Initialize the Plan with actions, inputs and outputs
@@ -53,6 +56,9 @@ class Plan(Serializable):
         self.actions: List[Action] = listify(actions)
         self.inputs: Dict[str, Pointer] = inputs if inputs is not None else dict()
         self.outputs: List[Pointer] = listify(outputs)
+        self.code = code
+        self.max_calls = max_calls
+        self.n_calls = 0
 
     def __call__(
         self, node: AbstractNode, verify_key: VerifyKey, **kwargs: Dict[str, Any]
@@ -71,6 +77,8 @@ class Plan(Serializable):
         Args:
             *args: the new inputs for the plan, passed as pointers
         """
+
+        self.n_calls += 1
 
         # this is pretty cumbersome, we are searching through all actions to check
         # if we need to redefine some of their attributes that are inputs in the
@@ -102,6 +110,32 @@ class Plan(Serializable):
             return resolved_outputs
         else:
             return []
+
+    def __repr__(self) -> str:
+        obj_str = "Plan"
+
+        allowed, remaining = (
+            (self.max_calls, self.max_calls - self.n_calls)
+            if self.max_calls is not None
+            else ("not defined", "not defined")
+        )
+
+        ex_str = f"Allowed executions:\t{allowed}\nRemaining executions:\t{remaining}"
+
+        inp_str = "Inputs:\n"
+        inp_str += "\n".join(
+            [f"\t\t{k}:\t{v.__class__.__name__}" for k, v in self.inputs.items()]
+        )
+
+        act_str = f"Actions:\n\t\t{len(self.actions)} Actions"
+
+        out_str = "Outputs:\n"
+        out_str += "\n".join([f"\t\t{o.__class__.__name__}" for o in self.outputs])
+
+        plan_str = "Plan code:\n"
+        plan_str += f'"""\n{self.code}\n"""' if self.code is not None else ""
+
+        return f"{obj_str}\n{ex_str}\n{inp_str}\n{act_str}\n{out_str}\n\n{plan_str}"
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
