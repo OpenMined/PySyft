@@ -56,6 +56,8 @@ def traceback_and_raise(e: Any, verbose: bool = False) -> NoReturn:
             logger.opt(lazy=True).critical(e)
     except BaseException as ex:
         logger.debug("failed to print exception", ex)
+    if not issubclass(type(e), Exception):
+        e = Exception(e)
     raise e
 
 
@@ -69,6 +71,7 @@ def create_log_and_print_function(level: str) -> Callable:
                 if "end" in kwargs:
                     # clean up extra end for printing
                     del kwargs["end"]
+
             if method is not None:
                 method(*args, **kwargs)
             else:

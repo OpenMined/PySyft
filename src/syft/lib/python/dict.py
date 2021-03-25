@@ -4,6 +4,7 @@ from collections.abc import ItemsView
 from collections.abc import KeysView
 from collections.abc import ValuesView
 from typing import Any
+from typing import Dict as TypeDict
 from typing import Iterable
 from typing import Optional
 from typing import Union
@@ -36,7 +37,7 @@ class Dict(UserDict, PyPrimitive):
     # python 3.8 signature includes a new PEP 570 (args, /, kwargs) syntax:
     # https://www.python.org/dev/peps/pep-0570/
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(*args: Any, **kwargs: Any) -> None:
         if not args:
             traceback_and_raise(
                 TypeError("descriptor '__init__' of 'Dict' object " "needs an argument")
@@ -81,8 +82,9 @@ class Dict(UserDict, PyPrimitive):
         """
         return self._id
 
-    def upcast(self) -> dict:
-        return dict(self)
+    def upcast(self) -> TypeDict:
+        # recursively upcast
+        return {k: upcast(v) for k, v in self.items()}
 
     def __contains__(self, other: Any) -> SyPrimitiveRet:
         res = super().__contains__(other)
@@ -151,9 +153,13 @@ class Dict(UserDict, PyPrimitive):
         res = super().fromkeys(iterable, value)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def get(self, key: Any, default: Any = None) -> SyPrimitiveRet:
+    def dict_get(self, key: Any, default: Any = None) -> Any:
         res = super().get(key, default)
-        return PrimitiveFactory.generate_primitive(value=res)
+        if isprimitive(value=res):
+            return PrimitiveFactory.generate_primitive(value=res)
+        else:
+            # we can have torch.Tensor and other types
+            return res
 
     def items(self, max_len: Optional[int] = None) -> Iterator:  # type: ignore
         return Iterator(ItemsView(self), max_len=max_len)
@@ -191,37 +197,30 @@ class Dict(UserDict, PyPrimitive):
 
     def _object2proto(self) -> Dict_PB:
         id_ = serialize(obj=self.id)
-        # serialize to bytes so that we can avoid using StorableObject
-        # otherwise we get recursion where the permissions of StorableObject themselves
-        # utilise Dict
+
         keys = [
             serialize(obj=downcast(value=element), to_bytes=True)
             for element in self.data.keys()
         ]
-        # serialize to bytes so that we can avoid using StorableObject
-        # otherwise we get recursion where the permissions of StorableObject themselves
-        # utilise Dict
+
         values = [
             serialize(obj=downcast(value=element), to_bytes=True)
             for element in self.data.values()
         ]
+
         return Dict_PB(id=id_, keys=keys, values=values)
 
     @staticmethod
     def _proto2object(proto: Dict_PB) -> "Dict":
         id_: UID = deserialize(blob=proto.id)
-        # deserialize from bytes so that we can avoid using StorableObject
-        # otherwise we get recursion where the permissions of StorableObject themselves
-        # utilise Dict
+
         values = [
-            deserialize(blob=upcast(value=element), from_bytes=True)
+            upcast(value=deserialize(blob=element, from_bytes=True))
             for element in proto.values
         ]
-        # deserialize from bytes so that we can avoid using StorableObject
-        # otherwise we get recursion where the permissions of StorableObject themselves
-        # utilise Dict
+
         keys = [
-            deserialize(blob=upcast(value=element), from_bytes=True)
+            upcast(value=deserialize(blob=element, from_bytes=True))
             for element in proto.keys
         ]
         new_dict = Dict(dict(zip(keys, values)))

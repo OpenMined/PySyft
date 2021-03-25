@@ -79,6 +79,10 @@ class StorableObject(AbstractStorableObject):
     def object_type(self) -> str:
         return str(type(self.data))
 
+    @property
+    def object_qualname(self) -> str:
+        return get_fully_qualified_name(self.data)
+
     # Why define data as a property?
     # For C type/class objects as data.
     # We need to use it's wrapper type very often inside StorableObject, so we set _data

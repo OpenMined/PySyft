@@ -5,13 +5,9 @@ import pytest
 import syft as sy
 
 
-@pytest.mark.vendor(
-    lib="opacus",
-    python={"min_version": (3, 6, 9)},
-    torch={"min_version": "1.6.0"},
-)
+@pytest.mark.vendor(lib="opacus")
 def test_remote_engine_simple() -> None:
-    sy.load_lib("opacus")
+    sy.load("opacus")
 
     data_owner = sy.VirtualMachine().get_root_client()
     remote_opacus = data_owner.opacus

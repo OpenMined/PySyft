@@ -4,6 +4,7 @@ import torch as th
 
 # syft absolute
 import syft as sy
+from syft.lib import load_lib
 
 
 def test_searchable_pointable() -> None:
@@ -21,3 +22,8 @@ def test_searchable_pointable() -> None:
     with pytest.deprecated_call():
         x_ptr.searchable = False
         assert x_ptr.searchable is False
+
+
+def test_load_lib_deprecated() -> None:
+    with pytest.deprecated_call():
+        assert load_lib("tenseal") is None
