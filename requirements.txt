@@ -15,6 +15,7 @@ PyNaCl
 requests
 scikit-learn
 sqlitedict
+syft_proto
 typeguard
 typing-extensions # backport to older python 3
 websockets

@@ -257,7 +257,7 @@ class Module:
 
         self.load_state_dict(input=path)
 
-    def send(self, client: Any) -> Any:
+    def send(self, client: Any, send_parameters: bool = True) -> Any:
         if not self.is_local:
             info("> This model is remote so try calling .get()")
             return
@@ -277,8 +277,10 @@ class Module:
             remote_model.__setattr__(name, remote_module_ptr)
 
             # if the remote module has state_dict lets get it
-            if hasattr(module, "state_dict") and hasattr(
-                remote_module_ptr, "load_state_dict"
+            if (
+                send_parameters
+                and hasattr(module, "state_dict")
+                and hasattr(remote_module_ptr, "load_state_dict")
             ):
                 local_state_ord_dict = module.state_dict()
                 # cast to dict because OrderedDict is not supported
