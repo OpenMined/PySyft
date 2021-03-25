@@ -7,7 +7,7 @@ from ...core.common.uid import UID
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
-
+from ...logger import traceback_and_raise
 
 class Iterator(PyPrimitive):
     def __init__(self, _ref: Any, max_len: Optional[int] = None):
@@ -22,7 +22,10 @@ class Iterator(PyPrimitive):
         return self
 
     def __len__(self) -> int:
-        return len(self._obj_ref)
+        try:
+            return len(self._obj_ref)
+        except Exception as e:
+            traceback_and_raise(e)
 
     def __reduce__(self) -> Any:
         # see these tests: test_valuesiterator_pickling and test_iterator_pickling
