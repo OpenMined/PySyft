@@ -35,10 +35,12 @@ class Globals(Module):
         Args:
             client: The client who will use all frameworks for executing all the computations.
             object_ref: The python object for which computation is being performed.
-            parent: The parent node is optional as importing frameworks don't need any parent node.
+            parent: The parent node is optional as importing frameworks don't need any parent
+                node.
             path_and_name: The path for current frameworks in global namespace,
-                e.g. `syft.lib.python.List`
-            return_type_name: The return type name of given action as a string with it's full path.
+                e.g. `syft.lib.python.List`.
+            return_type_name: The return type name of given action as a string with it's full
+                path.
         """
         super().__init__(
             client=client,
@@ -61,7 +63,7 @@ class Globals(Module):
             path: The path for the node in the module to execute,
                 e.g. `syft.lib.python.List` or ["syft", "lib", "python", "List"]
             index : The associated position in the path for the current node.
-            obj_type: The type of the object to be called, whose path is resolved from `lookup-cache`.
+            obj_type: The type of the object to be called, whose path is resolved from `lookup_cache`.
 
         Returns:
             The results of running the computation on the object reference.
@@ -96,8 +98,10 @@ class Globals(Module):
             path: The path for the node in the AST to be added,
                 e.g. `syft.lib.python.List` or ["syft", "lib", "python", "List"]
             index: The associated position in the path for the current node.
-            framework_reference: The python framework in which we can resolve the same path to obtain the Python object.
-            return_type_name: The return type name of given action as a string with it's full path.
+            framework_reference: The python framework in which we can resolve the same path
+                to obtain the Python object.
+            return_type_name: The return type name of given action as a string with it's full
+                path.
             is_static: If the queried object is static, it has to found on the ast
                 itself, not on an existing pointer.
         """

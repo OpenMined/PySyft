@@ -16,6 +16,7 @@ class EnumAttribute(ast.attribute.Attribute):
     An EnumAttribute represents the attributes of a Python Enum. Due to it's
     constraints, they are only gettable, not settable.
     """
+
     def __init__(
         self,
         parent: ast.attribute.Attribute,
@@ -27,10 +28,12 @@ class EnumAttribute(ast.attribute.Attribute):
         Base constructor for Enum Attribute.
 
         Args:
-            parent: The parent node is needed when solving `EnumAttributes`, as we have no getter functions on
-                them or a reliable way to get them without traversing the full AST each time.
+            parent: The parent node is needed when solving `EnumAttributes`, as we have no getter
+                functions on them or a reliable way to get them without traversing the full AST
+                each time.
             path_and_name: The path for the current node, e.g. `syft.lib.python.List`.
-            return_type_name: The return type name of the given action as a string with its full path.
+            return_type_name: The return type name of the given action as a string with its full
+                path.
             client: The client for which all computation is being executed.
         """
         super().__init__(

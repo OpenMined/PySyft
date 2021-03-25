@@ -294,16 +294,6 @@ class Class(Callable):
         return_type_name: Optional[str],
         client: Optional[Any],
     ):
-        """
-        >>> class Animal:
-                pass
-        >>> class Dog(Animal):
-                pass
-        >>> class Rat(Animal):
-                speak = 'squeak'
-                eats = 'cheese'
-        """
-
         super().__init__(
             path_and_name=path_and_name,
             object_ref=object_ref,
