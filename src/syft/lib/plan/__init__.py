@@ -39,7 +39,7 @@ def create_plan_ast(client: TypeAny = None) -> Globals:
     ]
 
     methods: TypeList[TypeTuple[str, str]] = [
-        ("syft.core.plan.Plan.__call__", "syft.lib.python._SyNone"),
+        ("syft.core.plan.Plan.__call__", "syft.lib.python.List"),
     ]
 
     add_modules(ast, modules)
