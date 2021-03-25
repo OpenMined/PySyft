@@ -4,10 +4,11 @@ from typing import Optional
 
 # syft relative
 from ...core.common.uid import UID
+from ...logger import traceback_and_raise
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
-from ...logger import traceback_and_raise
+
 
 class Iterator(PyPrimitive):
     def __init__(self, _ref: Any, max_len: Optional[int] = None):
