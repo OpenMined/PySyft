@@ -41,7 +41,7 @@ class PlanTorchscript(Serializable):
         """
         return Plan_PB
 
-    def __call__(self, *args: Any):
+    def __call__(self, *args: Any) -> Any:
         if self.torchscript:
             return self.torchscript(*args)
         else:

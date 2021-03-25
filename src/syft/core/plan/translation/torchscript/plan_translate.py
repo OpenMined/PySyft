@@ -35,7 +35,7 @@ def translate(plan: Plan) -> PlanTorchscript:
             super(PlanWrapper, self).__init__()
             self._kwarg_names = kwarg_names
 
-        def forward(self, *args: Any):
+        def forward(self, *args: Any) -> Any:
             kwarg_ptrs: Dict[str, Pointer] = {}
 
             # Since Syft Plan needs pointers as args,
