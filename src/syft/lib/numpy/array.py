@@ -27,12 +27,12 @@ def object2proto(obj: np.ndarray) -> NumpyProto:
     if obj.dtype in ExceptionDtype:
         raise NotImplementedError(f"{obj.dtype} is not supported")
 
+    dtype = obj.dtype.name
     if obj.dtype in DtypeRefactor:
         obj = obj.astype(DtypeRefactor[obj.dtype])
 
     tensor = torch.from_numpy(obj).clone()
     tensor_proto = protobuf_tensor_serializer(tensor)
-    dtype = obj.dtype.name
 
     return NumpyProto(tensor=tensor_proto, dtype=dtype)
 
