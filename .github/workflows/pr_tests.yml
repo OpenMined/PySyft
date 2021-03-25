@@ -351,8 +351,8 @@ jobs:
         continue-on-error: true
         run: |
           pip install -e . --default-timeout=60
-          pip install pytest PyJWT==1.7.1 flask_sockets flask_sqlalchemy bcrypt \
+          pip install pytest pytest-xprocess PyJWT==1.7.1 flask_sockets flask_sqlalchemy bcrypt \
                       sqlalchemy_utils flask_migrate sqlalchemy_mixins flask_executor \
                       terrascript PyInquirer requests_toolbelt tenseal \
                       "sqlalchemy>=1.3,<1.4" --default-timeout=60
-          pytest -m grid -n 1
+          pytest -m grid
