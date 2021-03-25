@@ -10,14 +10,19 @@
 
 # Std Python imports
 from typing import Optional
+from typing import Dict
 import logging
 import os
 
 # Extended Python imports
 from flask import Flask
 from flask_sockets import Sockets
+
 from geventwebsocket.websocket import Header
-from sqlalchemy_utils.functions import database_exists
+from nacl.signing import SigningKey
+from nacl.encoding import HexEncoder
+from syft.core.node.domain.domain import Domain
+
 
 # Internal imports
 from main.utils.monkey_patch import mask_payload_fast
@@ -25,12 +30,13 @@ from main.routes import (
     roles_blueprint,
     users_blueprint,
     setup_blueprint,
+    groups_blueprint,
+    dcfl_blueprint,
     association_requests_blueprint,
-    infrastructure_blueprint,
     root_blueprint,
 )
-from main.routes.roles.routes import *
 import config
+from main.core.node import create_network_app
 
 DEFAULT_SECRET_KEY = "justasecretkeythatishouldputhere"
 
@@ -54,9 +60,7 @@ logging.basicConfig(
 logger = logging.getLogger()
 
 
-def create_app(
-    test_config=None, debug=False, secret_key=DEFAULT_SECRET_KEY, db_config=None
-) -> Flask:
+def create_app(args, secret_key=DEFAULT_SECRET_KEY, debug=False) -> Flask:
     """This method creates a new Flask App instance and attach it with some
     HTTP/Websocket bluetprints.
 
@@ -72,39 +76,13 @@ def create_app(
     app.config.from_object("config")
 
     # Bind websocket in Flask app instance
-    sockets = Sockets(app)
+    # sockets = Sockets(app)
 
-    # Register HTTP blueprints
-    # Here you should add all the blueprints related to HTTP routes.
-    app.register_blueprint(roles_blueprint, url_prefix=r"/roles")
-    app.register_blueprint(users_blueprint, url_prefix=r"/users/")
-    app.register_blueprint(setup_blueprint, url_prefix=r"/setup/")
-    app.register_blueprint(infrastructure_blueprint, url_prefix=r"/networks/")
-    app.register_blueprint(root_blueprint, url_prefix=r"/")
-    app.register_blueprint(
-        association_requests_blueprint, url_prefix=r"/association-requests/"
-    )
-
-    # Register WebSocket blueprints
-    # Here you should add all the blueprints related to WebSocket routes.
-    # sockets.register_blueprint()
+    # Create Domain APP
+    app = create_network_app(app=app, args=args)
 
     app.debug = debug
     app.config["SECRET_KEY"] = secret_key
-
-    from main.core.database import db, set_database_config, seed_db
-
-    # Set SQLAlchemy configs
-    set_database_config(app, test_config=test_config)
-    s = app.app_context().push()
-
-    if database_exists(db.engine.url):
-        db.create_all()
-    else:
-        db.create_all()
-        seed_db()
-
-    db.session.commit()
 
     # Send app instance
     return app

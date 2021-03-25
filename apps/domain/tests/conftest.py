@@ -6,13 +6,15 @@ myPath = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(myPath + "/../src/")
 from app import create_app
 from main.core.database import db
+import main.core.node
 from main.core.node import GridDomain
 
 
 @pytest.fixture(scope="function", autouse=True)
 def app():
-    db_path = "sqlite:///:memory:"
-    return create_app(debug=True, test_config={"SQLALCHEMY_DATABASE_URI": db_path})
+    args = {"start_local_db": True, "name": "OM Domain App"}
+    args_obj = type("args", (object,), args)()
+    return create_app(args_obj)
 
 
 @pytest.fixture

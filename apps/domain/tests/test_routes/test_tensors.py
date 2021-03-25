@@ -52,6 +52,8 @@ def cleanup(database):
         database.session.query(Role).delete()
         database.session.query(Group).delete()
         database.session.query(UserGroup).delete()
+        database.session.query(BinObject).delete()
+        database.session.query(ObjectMetadata).delete()
         database.session.commit()
     except:
         database.session.rollback()

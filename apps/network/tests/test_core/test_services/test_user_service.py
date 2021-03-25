@@ -1,11 +1,13 @@
 from src import main
 from src.main.core.database import *
+from src.main.core.manager import UserManager
+from src.main.core.manager import GroupManager
 from src.main.core.exceptions import (
     InvalidCredentialsError,
     UserNotFoundError,
     MissingRequestKeyError,
 )
-from src.main.core.node import GridDomain
+from src.main.core.nodes.domain import GridDomain
 from src.main.core.database import expand_user_object
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
@@ -35,6 +37,8 @@ def cleanup(database):
     try:
         database.session.query(User).delete()
         database.session.query(Role).delete()
+        database.session.query(Group).delete()
+        database.session.query(UserGroup).delete()
         database.session.commit()
     except:
         database.session.rollback()
@@ -337,7 +341,7 @@ def test_get_user_with_permissions(database, domain, cleanup):
     msg_content = {"user_id": owner_user_id, "current_user": owner_user_id}
     response = build_syft_msg(domain, GetUserMessage, msg_content, generic_key)
     assert response.status_code == 200
-    retrieved_user = response.content["user"]
+    retrieved_user = response.content
     assert retrieved_user["email"] == "owner@gmail.com"
     assert retrieved_user["id"] == 1
     assert retrieved_user["role"] == 1
@@ -346,7 +350,7 @@ def test_get_user_with_permissions(database, domain, cleanup):
     msg_content = {"user_id": std_user_id, "current_user": owner_user_id}
     response = build_syft_msg(domain, GetUserMessage, msg_content, generic_key)
     assert response.status_code == 200
-    retrieved_user = response.content["user"]
+    retrieved_user = response.content
     assert retrieved_user["email"] == "stduser@gmail.com"
     assert retrieved_user["id"] == 2
     assert retrieved_user["role"] == 2
@@ -355,7 +359,7 @@ def test_get_user_with_permissions(database, domain, cleanup):
     msg_content = {"user_id": admin_user_id, "current_user": owner_user_id}
     response = build_syft_msg(domain, GetUserMessage, msg_content, generic_key)
     assert response.status_code == 200
-    retrieved_user = response.content["user"]
+    retrieved_user = response.content
     assert retrieved_user["email"] == "admin_user@gmail.com"
     assert retrieved_user["id"] == 3
     assert retrieved_user["role"] == 3
@@ -401,19 +405,19 @@ def test_get_all_users_with_permission(database, domain, cleanup):
     msg_content = {"current_user": owner_user_id}
     response = build_syft_msg(domain, GetUsersMessage, msg_content, generic_key)
     assert response.status_code == 200
-    assert len(response.content["users"]) == 3
+    assert len(response.content) == 3
 
-    retrieved_user = response.content["users"]["1"]
+    retrieved_user = response.content[0]
     assert retrieved_user["email"] == "owner@gmail.com"
     assert retrieved_user["id"] == 1
     assert retrieved_user["role"] == 1
 
-    retrieved_user = response.content["users"]["2"]
+    retrieved_user = response.content[1]
     assert retrieved_user["email"] == "stduser@gmail.com"
     assert retrieved_user["id"] == 2
     assert retrieved_user["role"] == 2
 
-    retrieved_user = response.content["users"]["3"]
+    retrieved_user = response.content[2]
     assert retrieved_user["email"] == "admin_user@gmail.com"
     assert retrieved_user["id"] == 3
     assert retrieved_user["role"] == 3
@@ -518,19 +522,20 @@ def test_search_unique_query(database, domain, cleanup):
     response = build_syft_msg(domain, SearchUsersMessage, msg_content, generic_key)
     assert response.status_code == 200
 
-    search_result = response.content["users"]
+    search_result = response.content
+    print("Result: ", search_result)
     assert len(search_result) == 1
-    assert search_result["2"]["email"] == "stduser@gmail.com"
-    assert search_result["2"]["role"] == 2
+    assert search_result[0]["email"] == "stduser@gmail.com"
+    assert search_result[0]["role"] == 2
 
     msg_content = {"role": 2, "current_user": owner_user_id}
     response = build_syft_msg(domain, SearchUsersMessage, msg_content, generic_key)
     assert response.status_code == 200
 
-    search_result = response.content["users"]
+    search_result = response.content
     assert len(search_result) == 1
-    assert search_result["2"]["email"] == "stduser@gmail.com"
-    assert search_result["2"]["role"] == 2
+    assert search_result[0]["email"] == "stduser@gmail.com"
+    assert search_result[0]["role"] == 2
 
 
 def test_search_multiple_query_parameters(database, domain, cleanup):
@@ -549,10 +554,10 @@ def test_search_multiple_query_parameters(database, domain, cleanup):
     response = build_syft_msg(domain, SearchUsersMessage, msg_content, generic_key)
     assert response.status_code == 200
 
-    search_result = response.content["users"]
+    search_result = response.content
     assert len(search_result) == 1
-    assert search_result["2"]["email"] == "stduser@gmail.com"
-    assert search_result["2"]["role"] == 2
+    assert search_result[0]["email"] == "stduser@gmail.com"
+    assert search_result[0]["role"] == 2
 
     # Wrong
     msg_content = {
@@ -562,7 +567,7 @@ def test_search_multiple_query_parameters(database, domain, cleanup):
     }
     response = build_syft_msg(domain, SearchUsersMessage, msg_content, generic_key)
     assert response.status_code == 200
-    assert response.content == {"users": {}}
+    assert response.content == {}
 
 
 def test_search_query_mutual_parameter_values(database, domain, cleanup):
@@ -584,13 +589,13 @@ def test_search_query_mutual_parameter_values(database, domain, cleanup):
     response = build_syft_msg(domain, SearchUsersMessage, msg_content, generic_key)
     assert response.status_code == 200
 
-    search_result = response.content["users"]
+    search_result = response.content
     assert len(search_result) == 2
-    assert search_result["2"]["email"] == "stduser@gmail.com"
-    assert search_result["2"]["role"] == 2
+    assert search_result[0]["email"] == "stduser@gmail.com"
+    assert search_result[0]["role"] == 2
 
-    assert search_result["4"]["email"] == "newstduser@gmail.com"
-    assert search_result["4"]["role"] == 2
+    assert search_result[1]["email"] == "newstduser@gmail.com"
+    assert search_result[1]["role"] == 2
 
 
 def test_update_invalid_user(database, domain, cleanup):
@@ -772,3 +777,117 @@ def test_update_to_owner_role(database, domain, cleanup):
         pytest.fail("We shouldn't execute this line!")
     except Exception as e:
         assert str(e) == "You can't change it to Owner role!"
+
+
+def test_update_user_group_without_permission(database, domain, cleanup):
+    __create_roles(database)
+    users = UserManager(database)
+    groups = GroupManager(database)
+    __create_user_samples(domain, users)
+
+    # Create Group Samples
+    group1 = groups.register(name="Group A")
+
+    # Correct
+    std_user_id = users.query(email="stduser@gmail.com")[0].id
+    msg_content = {
+        "user_id": std_user_id,
+        "groups": [group1.id],
+        "current_user": std_user_id,
+    }
+    try:
+        build_syft_msg(domain, UpdateUserMessage, msg_content, generic_key)
+        pytest.fail("We shouldn't execute this line!")
+    except Exception as e:
+        assert str(e) == "You're not allowed to change User groups!"
+
+
+def test_update_user_group(database, domain, cleanup):
+    __create_roles(database)
+    users = UserManager(database)
+    groups = GroupManager(database)
+    __create_user_samples(domain, users)
+
+    # Create Group Samples
+    group1 = groups.register(name="Group A")
+    group2 = groups.register(name="Group B")
+    group3 = groups.register(name="Group C")
+
+    # Correct
+    std_user_id = users.query(email="stduser@gmail.com")[0].id
+    admin_user = users.query(email="admin_user@gmail.com")[0].id
+    msg_content = {
+        "user_id": std_user_id,
+        "groups": [group1.id],
+        "current_user": admin_user,
+    }
+    assert (
+        len(
+            database.session.query(UserGroup)
+            .filter_by(user=std_user_id, group=group1.id)
+            .all()
+        )
+        == 0
+    )
+    response = build_syft_msg(domain, UpdateUserMessage, msg_content, generic_key)
+    assert response.status_code == 200
+    assert response.content == {"message": "User updated successfully!"}
+    assert (
+        len(
+            database.session.query(UserGroup)
+            .filter_by(user=std_user_id, group=group1.id)
+            .all()
+        )
+        == 1
+    )
+    assert (
+        database.session.query(UserGroup)
+        .filter_by(user=std_user_id, group=group1.id)
+        .first()
+        .id
+        == group1.id
+    )
+
+    msg_content = {
+        "user_id": std_user_id,
+        "groups": [group2.id, group3.id],
+        "current_user": admin_user,
+    }
+    response = build_syft_msg(domain, UpdateUserMessage, msg_content, generic_key)
+    assert response.status_code == 200
+    assert response.content == {"message": "User updated successfully!"}
+    assert (
+        len(
+            database.session.query(UserGroup)
+            .filter_by(user=std_user_id, group=group1.id)
+            .all()
+        )
+        == 0
+    )
+    assert len(database.session.query(UserGroup).filter_by(user=std_user_id).all()) == 2
+    assert (
+        len(
+            database.session.query(UserGroup)
+            .filter_by(user=std_user_id, group=group2.id)
+            .all()
+        )
+        == 1
+    )
+    assert (
+        len(
+            database.session.query(UserGroup)
+            .filter_by(user=std_user_id, group=group3.id)
+            .all()
+        )
+        == 1
+    )
+
+    msg_content = {
+        "user_id": admin_user,
+        "groups": [group2.id],
+        "current_user": admin_user,
+    }
+    response = build_syft_msg(domain, UpdateUserMessage, msg_content, generic_key)
+    assert response.status_code == 200
+    assert response.content == {"message": "User updated successfully!"}
+    assert len(database.session.query(UserGroup).filter_by(group=group2.id).all()) == 2

@@ -1,163 +1,150 @@
-from typing import Optional
-from typing import Dict
-
-from syft.core.common.message import SignedImmediateSyftMessageWithReply
-from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
-
-from syft.core.node.common.action.exception_action import ExceptionMessage
-from syft.core.node.common.action.exception_action import UnknownPrivateException
-from syft.core.node.common.service.auth import AuthorizationException
-from syft.core.node.network.network import Network
-from syft.grid.connections.http_connection import HTTPConnection
-from syft.core.io.location import SpecificLocation
-from syft.core.io.location import Location
-
-# Services
-from .services.association_request import AssociationRequestService
-from .services.setup_service import SetUpService
-from .services.role_service import RoleManagerService
-from .services.user_service import UserManagerService
-
-# Database Management
-from .database import db
-from .manager.user_manager import UserManager
-from .manager.role_manager import RoleManager
-from .manager.setup_manager import SetupManager
-
+from .nodes.domain import GridDomain
+from .nodes.network import GridNetwork
+from .nodes.worker import GridWorker
+from ..utils.monkey_patch import mask_payload_fast
 from nacl.signing import SigningKey
-from nacl.signing import VerifyKey
-from time import sleep
+from nacl.encoding import HexEncoder
 
-import jwt
-from flask import current_app as app
-from threading import Thread
+# Threads
+from ..utils.executor import executor
 
-import syft as sy
+from ..routes import (
+    roles_blueprint,
+    users_blueprint,
+    setup_blueprint,
+    groups_blueprint,
+    dcfl_blueprint,
+    association_requests_blueprint,
+    root_blueprint,
+    search_blueprint,
+)
+
+node = None
 
 
-class GridNetwork(Network):
-    def __init__(
-        self,
-        name: Optional[str],
-        network: Optional[Location] = SpecificLocation(),
-        domain: SpecificLocation = None,
-        device: Optional[Location] = None,
-        vm: Optional[Location] = None,
-        signing_key: Optional[SigningKey] = None,
-        verify_key: Optional[VerifyKey] = None,
-        root_key: Optional[VerifyKey] = None,
-    ):
-        super().__init__(
-            name=name,
-            network=network,
-            domain=domain,
-            device=device,
-            vm=vm,
-            signing_key=signing_key,
-            verify_key=verify_key,
-        )
+def get_node():
+    global node
+    return node
 
-        # Database Management Instances
-        self.users = UserManager(db)
-        self.roles = RoleManager(db)
-        self.setup = SetupManager(db)
 
-        # Grid Domain Services
-        self.immediate_services_with_reply.append(AssociationRequestService)
-        self.immediate_services_with_reply.append(SetUpService)
-        self.immediate_services_with_reply.append(RoleManagerService)
-        self.immediate_services_with_reply.append(UserManagerService)
-        self._register_services()
+def create_worker_app(app, args):
+    # Register HTTP blueprints
+    # Here you should add all the blueprints related to HTTP routes.
+    app.register_blueprint(root_blueprint, url_prefix=r"/")
 
-        thread = Thread(target=self.thread_run_handlers)
-        thread.start()
+    # Register WebSocket blueprints
+    # Here you should add all the blueprints related to WebSocket routes.
+    # sockets.register_blueprint()
 
-    def login(self, email: str, password: str) -> Dict:
-        user = self.users.login(email=email, password=password)
-        token = jwt.encode({"id": user.id}, app.config["SECRET_KEY"])
-        token = token.decode("UTF-8")
-        return {
-            "token": token,
-            "key": user.private_key,
-            "metadata": self.get_metadata_for_client()
-            .serialize()
-            .SerializeToString()
-            .decode("ISO-8859-1"),
-        }
+    global node
+    node = GridWorker(name=args.name, domain_url=args.domain_address)
 
-    def recv_immediate_msg_with_reply(
-        self, msg: SignedImmediateSyftMessageWithReply, raise_exception=False
-    ) -> SignedImmediateSyftMessageWithoutReply:
-        if raise_exception:
-            response = self.process_message(
-                msg=msg, router=self.immediate_msg_with_reply_router
+    app.config["EXECUTOR_PROPAGATE_EXCEPTIONS"] = True
+    app.config["EXECUTOR_TYPE"] = "thread"
+    executor.init_app(app)
+
+    return app
+
+
+def create_network_app(app, args):
+    test_config = None
+    if args.start_local_db:
+        test_config = {"SQLALCHEMY_DATABASE_URI": "sqlite:///nodedatabase.db"}
+
+    app.register_blueprint(roles_blueprint, url_prefix=r"/roles")
+    app.register_blueprint(users_blueprint, url_prefix=r"/users")
+    app.register_blueprint(setup_blueprint, url_prefix=r"/setup")
+    app.register_blueprint(root_blueprint, url_prefix=r"/")
+    app.register_blueprint(search_blueprint, url_prefix=r"/search")
+    app.register_blueprint(
+        association_requests_blueprint, url_prefix=r"/association-requests/"
+    )
+
+    # Register WebSocket blueprints
+    # Here you should add all the blueprints related to WebSocket routes.
+    # sockets.register_blueprint()
+
+    from .database import db, set_database_config, seed_db, User, Role
+
+    global node
+    node = GridNetwork(name=args.name)
+
+    # Set SQLAlchemy configs
+    set_database_config(app, test_config=test_config)
+    s = app.app_context().push()
+
+    db.create_all()
+
+    if True:  # not app.config["TESTING"]:
+        if len(db.session.query(Role).all()) == 0:
+            seed_db()
+
+        role = db.session.query(Role.id).filter_by(name="Owner").first()
+        user = User.query.filter_by(role=role.id).first()
+        if user:
+            signing_key = SigningKey(
+                user.private_key.encode("utf-8"), encoder=HexEncoder
             )
-            # maybe I shouldn't have created process_message because it screws up
-            # all the type inference.
-            res_msg = response.sign(signing_key=self.signing_key)  # type: ignore
-        else:
-            # exceptions can be easily triggered which break any WebRTC loops
-            # so we need to catch them here and respond with a special exception
-            # message reply
-            try:
-                # try to process message
-                response = self.process_message(
-                    msg=msg, router=self.immediate_msg_with_reply_router
-                )
+            node.signing_key = signing_key
+            node.verify_key = node.signing_key.verify_key
+            node.root_verify_key = node.verify_key
+    db.session.commit()
 
-            except Exception as e:
-                public_exception: Exception
-                if isinstance(e, AuthorizationException):
-                    private_log_msg = "An AuthorizationException has been triggered"
-                    public_exception = e
-                else:
-                    private_log_msg = f"An {type(e)} has been triggered"  # dont send
-                    public_exception = UnknownPrivateException(
-                        "UnknownPrivateException has been triggered."
-                    )
-                try:
-                    # try printing a useful message
-                    private_log_msg += f" by {type(msg.message)} "
-                    private_log_msg += f"from {msg.message.reply_to}"  # type: ignore
-                except Exception:
-                    pass
+    app.config["EXECUTOR_PROPAGATE_EXCEPTIONS"] = True
+    app.config["EXECUTOR_TYPE"] = "thread"
+    executor.init_app(app)
 
-                # send the public exception back
-                response = ExceptionMessage(
-                    address=msg.message.reply_to,  # type: ignore
-                    msg_id_causing_exception=msg.message.id,
-                    exception_type=type(public_exception),
-                    exception_msg=str(public_exception),
-                )
+    return app
 
-            # maybe I shouldn't have created process_message because it screws up
-            # all the type inference.
-            res_msg = response.sign(signing_key=self.signing_key)  # type: ignore
-            output = (
-                f"> {self.pprint} Signing {res_msg.pprint} with "
-                + f"{self.key_emoji(key=self.signing_key.verify_key)}"  # type: ignore
+
+def create_domain_app(app, args):
+    test_config = None
+    if args.start_local_db:
+        test_config = {"SQLALCHEMY_DATABASE_URI": "sqlite:///nodedatabase.db"}
+
+    # Register HTTP blueprints
+    # Here you should add all the blueprints related to HTTP routes.
+    app.register_blueprint(roles_blueprint, url_prefix=r"/roles")
+    app.register_blueprint(users_blueprint, url_prefix=r"/users")
+    app.register_blueprint(setup_blueprint, url_prefix=r"/setup/")
+    app.register_blueprint(groups_blueprint, url_prefix=r"/groups")
+    app.register_blueprint(dcfl_blueprint, url_prefix=r"/dcfl/")
+    app.register_blueprint(root_blueprint, url_prefix=r"/")
+    app.register_blueprint(
+        association_requests_blueprint, url_prefix=r"/association-requests/"
+    )
+
+    # Register WebSocket blueprints
+    # Here you should add all the blueprints related to WebSocket routes.
+    # sockets.register_blueprint()
+
+    from .database import db, set_database_config, seed_db, User, Role
+
+    global node
+    node = GridDomain(name=args.name)
+
+    # Set SQLAlchemy configs
+    set_database_config(app, test_config=test_config)
+    s = app.app_context().push()
+
+    db.create_all()
+
+    if not app.config["TESTING"]:
+        if len(db.session.query(Role).all()) == 0:
+            seed_db()
+
+        role = db.session.query(Role.id).filter_by(name="Owner").first()
+        user = User.query.filter_by(role=role.id).first()
+        if user:
+            signing_key = SigningKey(
+                user.private_key.encode("utf-8"), encoder=HexEncoder
             )
-        return res_msg
+            node.signing_key = signing_key
+            node.verify_key = node.signing_key.verify_key
+            node.root_verify_key = node.verify_key
+    db.session.commit()
 
-    def thread_run_handlers(self) -> None:
-        while True:
-            sleep(0.1)
-            try:
-                self.clean_up_handlers()
-                self.clean_up_requests()
-                if len(self.request_handlers) > 0:
-                    for request in self.requests:
-                        # check if we have previously already handled this in an earlier iter
-                        if request.id not in self.handled_requests:
-                            for handler in self.request_handlers:
-                                handled = self.check_handler(
-                                    handler=handler, request=request
-                                )
-                                if handled:
-                                    # we handled the request so we can exit the loop
-                                    break
-            except Exception as excp2:
-                print(str(excp2))
-
-
-node = GridNetwork(name="om-net")
+    app.config["EXECUTOR_PROPAGATE_EXCEPTIONS"] = True
+    app.config["EXECUTOR_TYPE"] = "thread"
+    executor.init_app(app)
+    return app

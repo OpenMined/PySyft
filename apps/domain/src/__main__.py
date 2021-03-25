@@ -34,6 +34,21 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--domain_address",
+    type=str,
+    help="Grid Domain Address, e.g. --host=0.0.0.0:5000. Default is os.environ.get('GRID_DOMAIN_ADDRESS','0.0.0.0:5000').",
+    default=os.environ.get("GRID_DOMAIN_ADDRESS", "0.0.0.0:5000"),
+)
+
+
+parser.add_argument(
+    "--name",
+    type=str,
+    help="Grid node name, e.g. --name=OpenMined. Default is os.environ.get('GRID_NODE_NAME','OpenMined').",
+    default=os.environ.get("GRID_NODE_NAME", "OpenMined"),
+)
+
+parser.add_argument(
     "--start_local_db",
     dest="start_local_db",
     action="store_true",
@@ -46,14 +61,7 @@ parser.set_defaults(use_test_config=False)
 if __name__ == "__main__":
     args = parser.parse_args()
 
-    if args.start_local_db:
-        db_path = "sqlite:///datadomain.db"
-        app = create_app(
-            test_config={"SQLALCHEMY_DATABASE_URI": db_path},
-        )
-    else:
-        app = create_app()
-
+    app = create_app(args)
     _address = "http://{}:{}".format(args.host, args.port)
 
     server = pywsgi.WSGIServer(
@@ -61,4 +69,12 @@ if __name__ == "__main__":
     )
     server.serve_forever()
 else:
-    app = create_app()
+    args = {
+        "port": os.environ.get("GRID_NODE_PORT", 5000),
+        "host": os.environ.get("GRID_NODE_HOST", "0.0.0.0"),
+        "domain_address": os.environ.get("GRID_DOMAIN_ADDRESS", "0.0.0.0:5000"),
+        "name": os.environ.get("GRID_NODE_NAME", "OpenMined"),
+        "start_local_db": os.environ.get("LOCAL_DATABASE", False),
+    }
+    args_obj = type("args", (object,), args)()
+    app = create_app(args=args_obj)

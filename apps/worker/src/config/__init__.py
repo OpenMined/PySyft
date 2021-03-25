@@ -1,6 +1,3 @@
-"""The purpose of this module is to provide an easy way to exchange between
-development, tests and production environments dynamically."""
-
 # Std python imports
 import os
 import sys

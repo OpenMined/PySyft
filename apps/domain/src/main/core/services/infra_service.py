@@ -13,12 +13,24 @@ from syft.core.common.message import ImmediateSyftMessageWithReply
 # syft relative
 from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.service.auth import service_auth
+
 from syft.core.node.common.service.node_service import (
     ImmediateNodeServiceWithoutReply,
     ImmediateNodeServiceWithReply,
 )
+from syft.core.common.message import ImmediateSyftMessageWithReply
+from syft.proto.core.io.address_pb2 import Address as Address_PB
+
+# from syft.grid.client import connect
+from syft.grid.client.client import connect
+from syft.grid.client.grid_connection import GridHTTPConnection
+from syft.core.node.domain.client import DomainClient
+from ..database.utils import model_to_json
+from syft import serialize, deserialize
+
 from syft.core.node.domain.client import DomainClient
 from syft.grid.connections.http_connection import HTTPConnection
+
 from syft.grid.messages.infra_messages import (
     CreateWorkerMessage,
     CreateWorkerResponse,
@@ -108,31 +120,6 @@ def create_worker_msg(
         )
 
 
-# def check_worker_deployment_msg(
-#     msg: CheckWorkerDeploymentMessage,
-#     node: AbstractNode,
-#     verify_key: VerifyKey,
-# ) -> CheckWorkerDeploymentResponse:
-#     try:
-#         # TODO:
-#         # Check Cloud Deployment progress
-#         # PS: msg.content is optional, but can be used to map different cloud deployment processes
-#         final_msg = {}  # All data about deployment progress.
-#         final_status = True
-#
-#         return CheckWorkerDeploymentMessage(
-#             address=msg.reply_to,
-#             status_code=final_status,
-#             content={"deployment_status": final_msg},
-#         )
-#     except Exception as e:
-#         return CheckWorkerDeploymentMessage(
-#             address=msg.reply_to,
-#             status_code=500,
-#             content={"error": str(e)},
-#         )
-
-
 def get_worker_msg(
     msg: GetWorkerMessage, node: AbstractNode, verify_key: VerifyKey
 ) -> GetWorkerResponse:
@@ -147,13 +134,14 @@ def get_worker_msg(
             _current_user_id = users.first(
                 verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
             ).id
+
         env_ids = [
             env.id for env in node.environments.get_environments(user=_current_user_id)
         ]
-
         is_admin = users.can_manage_infrastructure(user_id=_current_user_id)
 
         if (int(worker_id) in env_ids) or is_admin:
+
             _msg = model_to_json(node.environments.first(id=int(worker_id)))
         else:
             _msg = {}

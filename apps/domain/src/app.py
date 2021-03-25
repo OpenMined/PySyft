@@ -36,6 +36,7 @@ from main.routes import (
     root_blueprint,
 )
 import config
+from main.core.node import create_domain_app
 
 DEFAULT_SECRET_KEY = "justasecretkeythatishouldputhere"
 
@@ -59,9 +60,7 @@ logging.basicConfig(
 logger = logging.getLogger()
 
 
-def create_app(
-    test_config: Optional[Dict] = None, secret_key=DEFAULT_SECRET_KEY, debug=False
-) -> Flask:
+def create_app(args, secret_key=DEFAULT_SECRET_KEY, debug=False) -> Flask:
     """This method creates a new Flask App instance and attach it with some
     HTTP/Websocket bluetprints.
 
@@ -77,57 +76,13 @@ def create_app(
     app.config.from_object("config")
 
     # Bind websocket in Flask app instance
-    sockets = Sockets(app)
+    # sockets = Sockets(app)
 
-    # Register HTTP blueprints
-    # Here you should add all the blueprints related to HTTP routes.
-    app.register_blueprint(roles_blueprint, url_prefix=r"/roles")
-    app.register_blueprint(users_blueprint, url_prefix=r"/users")
-    app.register_blueprint(setup_blueprint, url_prefix=r"/setup/")
-    app.register_blueprint(groups_blueprint, url_prefix=r"/groups")
-    app.register_blueprint(dcfl_blueprint, url_prefix=r"/dcfl/")
-    app.register_blueprint(root_blueprint, url_prefix=r"/")
-    app.register_blueprint(
-        association_requests_blueprint, url_prefix=r"/association-requests/"
-    )
-
-    # Register WebSocket blueprints
-    # Here you should add all the blueprints related to WebSocket routes.
-    # sockets.register_blueprint()
+    # Create Domain APP
+    app = create_domain_app(app=app, args=args)
 
     app.debug = debug
     app.config["SECRET_KEY"] = secret_key
-
-    from main.core.database import db, set_database_config, seed_db, User, Role
-    from main.core.node import node
-    from main.core.task_handler import executor
-
-    # Set SQLAlchemy configs
-    set_database_config(app, test_config=test_config)
-    s = app.app_context().push()
-
-    db.create_all()
-
-    if not app.config["TESTING"]:
-        if len(db.session.query(Role).all()) == 0:
-            seed_db()
-
-        role = db.session.query(Role.id).filter_by(name="Owner").first()
-        user = User.query.filter_by(role=role.id).first()
-        if user:
-            global node
-            signing_key = SigningKey(
-                user.private_key.encode("utf-8"), encoder=HexEncoder
-            )
-            node.signing_key = signing_key
-            node.verify_key = node.signing_key.verify_key
-            node.root_verify_key = node.verify_key
-    db.session.commit()
-
-    # Threads
-    executor.init_app(app)
-    app.config["EXECUTOR_PROPAGATE_EXCEPTIONS"] = True
-    app.config["EXECUTOR_TYPE"] = "thread"
 
     # Send app instance
     return app

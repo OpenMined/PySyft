@@ -1,6 +1,6 @@
 from .codes import RESPONSE_MSG
 from json.decoder import JSONDecodeError
-from flask_executor import Executor
+
 from flask import request
 
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
@@ -10,7 +10,8 @@ from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 
-from .node import node
+
+from .node import get_node
 from .exceptions import (
     PyGridError,
     UserNotFoundError,
@@ -21,8 +22,6 @@ from .exceptions import (
     InvalidCredentialsError,
 )
 
-executor = Executor()
-
 
 def process_as_syft_message(message_class, message_content, sign_key):
     message = message_class(**message_content)
@@ -30,14 +29,14 @@ def process_as_syft_message(message_class, message_content, sign_key):
 
     response = {}
     if isinstance(signed_message, SignedImmediateSyftMessageWithReply):
-        response = node.recv_immediate_msg_with_reply(
+        response = get_node().recv_immediate_msg_with_reply(
             msg=signed_message, raise_exception=True
         )
         response = response.message
     elif isinstance(signed_message, SignedImmediateSyftMessageWithoutReply):
-        node.recv_immediate_msg_without_reply(msg=signed_message)
+        get_node().recv_immediate_msg_without_reply(msg=signed_message)
     else:
-        node.recv_eventual_msg_without_reply(msg=signed_message)
+        get_node().recv_eventual_msg_without_reply(msg=signed_message)
 
     return response
 
@@ -83,9 +82,9 @@ def route_logic(message_class, current_user, msg_content):
         user_key = SigningKey.generate()
 
     content = {
-        "address": node.address,
+        "address": get_node().address,
         "content": msg_content,
-        "reply_to": node.address,
+        "reply_to": get_node().address,
     }
 
     syft_message = {}

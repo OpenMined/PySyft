@@ -1,12 +1,39 @@
 from .. import BaseModel, db
+from syft import serialize, deserialize
+
+from syft.proto.lib.torch.tensor_pb2 import TensorProto as TensorProto_PB
 
 
-class BinaryObject(BaseModel):
-    __bind_key__ = "bin_store"
-    __tablename__ = "binary_object"
+bin_to_proto = {TensorProto_PB.__name__: TensorProto_PB}
+
+
+class BinObject(BaseModel):
+    __tablename__ = "bin_object"
 
     id = db.Column(db.String(), primary_key=True)
     binary = db.Column(db.LargeBinary())
+    protobuf_name = db.Column(db.String())
 
-    def __str__(self):
-        return f"<BinaryObject id: {self.id}>"
+    @property
+    def object(self):
+        _proto_struct = bin_to_proto[self.protobuf_name]()
+        _proto_struct.ParseFromString(self.binary)
+        _obj = deserialize(blob=_proto_struct)
+        return _obj
+
+    @object.setter
+    def object(self, value):
+        serialized_value = serialize(value)
+        self.binary = serialized_value.SerializeToString()
+        self.protobuf_name = serialized_value.__class__.__name__
+
+
+class ObjectMetadata(BaseModel):
+    __tablename__ = "obj_metadata"
+
+    id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
+    obj = db.Column(db.Integer, db.ForeignKey("bin_object.id"))
+    tags = db.Column(db.JSON())
+    description = db.Column(db.String())
+    read_permissions = db.Column(db.JSON())
+    search_permissions = db.Column(db.JSON())

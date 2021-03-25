@@ -10,20 +10,35 @@
 
 # Std Python imports
 from typing import Optional
+from typing import Dict
 import logging
 import os
 
 # Extended Python imports
 from flask import Flask
 from flask_sockets import Sockets
+
 from geventwebsocket.websocket import Header
+from nacl.signing import SigningKey
+from nacl.encoding import HexEncoder
+from syft.core.node.domain.domain import Domain
+
 
 # Internal imports
 from main.utils.monkey_patch import mask_payload_fast
 from main.routes import (
+    roles_blueprint,
+    users_blueprint,
+    setup_blueprint,
+    groups_blueprint,
+    dcfl_blueprint,
+    association_requests_blueprint,
     root_blueprint,
 )
 import config
+from main.core.node import create_worker_app
+
+DEFAULT_SECRET_KEY = "justasecretkeythatishouldputhere"
 
 # Masking/Unmasking is a process used to guarantee some level of security
 # during the transportation of the messages across proxies (as described in WebSocket RFC).
@@ -45,7 +60,7 @@ logging.basicConfig(
 logger = logging.getLogger()
 
 
-def create_app() -> Flask:
+def create_app(args, secret_key=DEFAULT_SECRET_KEY, debug=False) -> Flask:
     """This method creates a new Flask App instance and attach it with some
     HTTP/Websocket bluetprints.
 
@@ -61,15 +76,13 @@ def create_app() -> Flask:
     app.config.from_object("config")
 
     # Bind websocket in Flask app instance
-    sockets = Sockets(app)
+    # sockets = Sockets(app)
 
-    # Register HTTP blueprints
-    # Here you should add all the blueprints related to HTTP routes.
-    app.register_blueprint(root_blueprint, url_prefix=r"/")
+    # Create Worker APP
+    app = create_worker_app(app=app, args=args)
 
-    # Register WebSocket blueprints
-    # Here you should add all the blueprints related to WebSocket routes.
-    # sockets.register_blueprint()
+    app.debug = debug
+    app.config["SECRET_KEY"] = secret_key
 
     # Send app instance
     return app
