@@ -1,5 +1,3 @@
-# stdlib
-
 # third party
 import tenseal as ts
 

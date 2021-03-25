@@ -6,13 +6,11 @@ from typing import Optional
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
-# syft absolute
-from syft.core.node.common.action.common import Action
-
 # syft relative
 from ...common.message import SignedImmediateSyftMessageWithoutReply
 from ...io.location import Location
 from ...io.location import SpecificLocation
+from ..common.action.common import Action
 from .vm import VirtualMachine
 
 

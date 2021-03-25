@@ -136,9 +136,7 @@ class RequestQueueClient:
         handler_opts["tags"] = []
         if tags is not None:
             for tag in tags:
-                clean_tag = str(tag.strip().lower())
-                if clean_tag:
-                    handler_opts["tags"].append(clean_tag)
+                handler_opts["tags"].append(tag)
         handler_opts["timeout_secs"] = max(-1, int(timeout_secs))
         if element_quota is not None:
             handler_opts["element_quota"] = max(0, int(element_quota))
