@@ -113,7 +113,7 @@ def test_module() -> None:
     sy_model = SyNet(torch_ref=th)
     models: List[Union[Net, SyNet]] = [sy_model, vanilla_model]
     for model in models:
-        assert callable(model)
+        assert hasattr(model, "__call__")
         assert hasattr(model, "__init__")
         assert hasattr(model, "cpu")
         assert hasattr(model, "cuda")
