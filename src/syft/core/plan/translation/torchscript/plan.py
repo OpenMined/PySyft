@@ -1,5 +1,7 @@
 # stdlib
 import io
+from typing import Any
+from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -16,7 +18,7 @@ class PlanTorchscript(Serializable):
     Represents Syft Plan translated to TorchScript
     """
 
-    def __init__(self, torchscript=None):
+    def __init__(self, torchscript: Optional[th.jit.ScriptModule] = None):
         super().__init__()
         self.torchscript = torchscript
 
@@ -39,7 +41,7 @@ class PlanTorchscript(Serializable):
         """
         return Plan_PB
 
-    def __call__(self, *args):
+    def __call__(self, *args: Any):
         if self.torchscript:
             return self.torchscript(*args)
         else:

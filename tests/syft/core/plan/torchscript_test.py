@@ -65,7 +65,7 @@ def test_mnist_demo_plan_translation() -> None:
         targets=target,
         lr=lr,
         batch_size=batch_size,
-        model_state=model_state_zeros
+        model_state=model_state_zeros,
     ):
         # send the model to plan builder (but not its default params)
         model_ptr = model.send(ROOT_CLIENT, send_parameters=False)

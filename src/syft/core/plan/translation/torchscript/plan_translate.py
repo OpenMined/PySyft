@@ -1,5 +1,6 @@
 # stdlib
 from collections import OrderedDict
+from typing import Any
 from typing import List
 
 # third party
@@ -12,10 +13,10 @@ from syft.core.plan.plan_builder import ROOT_CLIENT
 from syft.lib.python.collections import OrderedDict as SyOrderedDict
 from syft.lib.python.dict import Dict
 from syft.lib.python.list import List as SyList
-from ....pointer.pointer import Pointer
 from syft.logger import traceback_and_raise
 
 # syft relative
+from ....pointer.pointer import Pointer
 from .plan import PlanTorchscript
 
 
@@ -34,7 +35,7 @@ def translate(plan: Plan) -> PlanTorchscript:
             super(PlanWrapper, self).__init__()
             self._kwarg_names = kwarg_names
 
-        def forward(self, *args):
+        def forward(self, *args: Any):
             kwarg_ptrs: Dict[str, Pointer] = {}
 
             # Since Syft Plan needs pointers as args,
