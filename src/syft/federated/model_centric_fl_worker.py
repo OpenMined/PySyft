@@ -1,23 +1,24 @@
-import json
-import binascii
+# stdlib
 import base64
-import websocket
-import requests
-import random
-import syft as sy
-
-from timeit import timeit
-from ..lib.python.collections.ordered_dict import OrderedDict
-from ..proto.lib.python.collections.ordered_dict_pb2 import OrderedDict as OrderedDictPB
-from ..lib.python.list import List
-from ..proto.lib.python.list_pb2 import List as ListPB
-from .. import serialize
-from .model_centric_fl_client import GridError
-
+import binascii
 from collections import OrderedDict as PyOrderedDict
-from ..proto.core.plan.plan_pb2 import Plan as PlanPB
-from .. import deserialize
+import json
+import random
+from timeit import timeit
 
+# third party
+import requests
+import websocket
+
+# syft relative
+from .. import deserialize
+from .. import serialize
+from ..lib.python.collections.ordered_dict import OrderedDict
+from ..lib.python.list import List
+from ..proto.core.plan.plan_pb2 import Plan as PlanPB
+from ..proto.lib.python.collections.ordered_dict_pb2 import OrderedDict as OrderedDictPB
+from ..proto.lib.python.list_pb2 import List as ListPB
+from .model_centric_fl_client import GridError
 
 TIMEOUT_INTERVAL = 60
 CHUNK_SIZE = 655360  # 640KB
@@ -71,7 +72,9 @@ class ModelCentricFLWorker:
 
         return json_response
 
-    def _send_http_req(self, method, path: str, params: dict = None, body: bytes = None):
+    def _send_http_req(
+        self, method, path: str, params: dict = None, body: bytes = None
+    ):
         if method == "GET":
             res = requests.get(self.http_url + path, params)
         elif method == "POST":
@@ -115,7 +118,9 @@ class ModelCentricFLWorker:
             params = {"worker_id": worker_id, "random": random_id}
             body = {"upload_data": data_sample}
             time_taken = timeit(
-                lambda: self._send_http_req("POST", "/model-centric/speed-test", params, body),
+                lambda: self._send_http_req(
+                    "POST", "/model-centric/speed-test", params, body
+                ),
                 number=1,
             )
             if time_taken < 0.5:
@@ -134,13 +139,17 @@ class ModelCentricFLWorker:
     def _get_download_speed(self, worker_id, random_id):
         params = {"worker_id": worker_id, "random": random_id}
         speed_history = []
-        with requests.get(self.http_url + "/model-centric/speed-test", params, stream=True) as r:
+        with requests.get(
+            self.http_url + "/model-centric/speed-test", params, stream=True
+        ) as r:
             r.raise_for_status()
             buffer_size = CHUNK_SIZE
             chunk_generator = self._yield_chunk_from_request(r, CHUNK_SIZE)
             for _ in range(MAX_SPEED_TESTS):
                 time_taken = timeit(
-                    lambda: self._read_n_request_chunks(chunk_generator, buffer_size // CHUNK_SIZE),
+                    lambda: self._read_n_request_chunks(
+                        chunk_generator, buffer_size // CHUNK_SIZE
+                    ),
                     number=1,
                 )
                 if time_taken < 0.5:
@@ -205,7 +214,9 @@ class ModelCentricFLWorker:
             "request_key": request_key,
             "model_id": model_id,
         }
-        serialized_model = self._send_http_req("GET", "/model-centric/get-model", params)
+        serialized_model = self._send_http_req(
+            "GET", "/model-centric/get-model", params
+        )
         return self._unserialize(serialized_model, ListPB)
 
     def get_plan(self, worker_id, request_key, plan_id, receive_operations_as):
@@ -218,23 +229,18 @@ class ModelCentricFLWorker:
         serialized_plan = self._send_http_req("GET", "/model-centric/get-plan", params)
         return self._unserialize(serialized_plan, PlanPB)
 
-    def get_protocol(self, worker_id, request_key, protocol_id):
-        params = {
-            "worker_id": worker_id,
-            "request_key": request_key,
-            "plan_id": protocol_id,
-        }
-        serialized_protocol = self._send_http_req("GET", "/model-centric/get-protocol", params)
-        return self._unserialize(serialized_protocol, ProtocolPB)
-
     def report(self, worker_id: str, request_key: str, diff: List):
         diff_serialized = self._serialize(List(diff))
         diff_base64 = base64.b64encode(diff_serialized).decode("ascii")
         params = {
             "type": "model-centric/report",
-            "data": {"worker_id": worker_id, "request_key": request_key, "diff": diff_base64},
+            "data": {
+                "worker_id": worker_id,
+                "request_key": request_key,
+                "diff": diff_base64,
+            },
         }
-        res =  self._send_msg(params)
+        res = self._send_msg(params)
         return res
 
     def get_connection_speed(self, worker_id):

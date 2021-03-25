@@ -1,6 +1,9 @@
+# stdlib
 from urllib.parse import urlparse
-from .model_centric_fl_worker import ModelCentricFLWorker
+
+# syft relative
 from .fl_job import FLJob
+from .model_centric_fl_worker import ModelCentricFLWorker
 
 
 class FLClient:

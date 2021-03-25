@@ -1,17 +1,22 @@
-import json
+# stdlib
 import binascii
-import websocket
+import json
+
+# third party
 import requests
-
-import syft as sy
 from syft_proto.execution.v1.state_pb2 import State as StatePB
-from syft.lib.python.collections import OrderedDict
-from syft.lib.python import List
-from syft.proto.lib.python.list_pb2 import List as ListPB
-from syft import serialize, deserialize
+import websocket
 
+# syft absolute
+import syft as sy
+from syft import deserialize
+from syft import serialize
+from syft.lib.python import List
+from syft.lib.python.collections import OrderedDict
+from syft.proto.lib.python.list_pb2 import List as ListPB
 
 TIMEOUT_INTERVAL = 60
+
 
 class GridError(BaseException):
     def __init__(self, error, status):
@@ -64,7 +69,9 @@ class ModelCentricFLClient:
 
         return json_response
 
-    def _send_http_req(self, method, path: str, params: dict = None, body: bytes = None):
+    def _send_http_req(
+        self, method, path: str, params: dict = None, body: bytes = None
+    ):
         if method == "GET":
             res = requests.get(self.http_url + path, params)
         elif method == "POST":
@@ -99,14 +106,20 @@ class ModelCentricFLClient:
 
     def close(self):
         self.ws.shutdown()
-        
+
     def hex_serialize(self, x):
         return binascii.hexlify(self._serialize(x)).decode()
-        
 
-    def host_federated_training(self, model, client_plans, client_protocols, client_config,
-                                server_averaging_plan, server_config):
-        
+    def host_federated_training(
+        self,
+        model,
+        client_plans,
+        client_protocols,
+        client_config,
+        server_averaging_plan,
+        server_config,
+    ):
+
         serialized_model = self.hex_serialize(List(model.parameters()))
         serialized_plans = self._serialize_object(client_plans)
         serialized_protocols = self._serialize_object(client_protocols)
@@ -133,5 +146,7 @@ class ModelCentricFLClient:
             "version": version,
             "checkpoint": checkpoint,
         }
-        serialized_model = self._send_http_req("GET", "/model-centric/retrieve-model", params)
+        serialized_model = self._send_http_req(
+            "GET", "/model-centric/retrieve-model", params
+        )
         return self._unserialize(serialized_model, ListPB)
