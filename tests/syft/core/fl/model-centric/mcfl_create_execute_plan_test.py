@@ -48,7 +48,7 @@ def pygrid_domain(xprocess):
         pattern = "Starting app"
 
         # command to start process
-        pygrid_path = f"{here}/../../../../../PyGrid"
+        pygrid_path = f"{here}/../../../../../pygrid"
         domain_path = os.path.abspath(f"{pygrid_path}/apps/domain")
         database_file = f"{domain_path}/src/datadomain.db"
         if os.path.exists(database_file):
