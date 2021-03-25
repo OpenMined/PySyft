@@ -1,102 +1,73 @@
 import subprocess
+import textwrap
 
 import click
 from PyInquirer import prompt
 
-from ..deploy import base_setup
-from ..tf import *
-from ..utils import Config, styles
-from .provider import *
-
-
-class GCloud:
-    def projects_list(self):
-        proc = subprocess.Popen(
-            'gcloud projects list --format="value(projectId)"',
-            shell=True,
-            stdout=subprocess.PIPE,
-            universal_newlines=True,
-        )
-        projects = proc.stdout.read()
-        return projects.split()
-
-    def regions_list(self):
-        proc = subprocess.Popen(
-            'gcloud compute regions list --format="value(NAME)"',
-            shell=True,
-            stdout=subprocess.PIPE,
-            universal_newlines=True,
-        )
-        regions = proc.stdout.read()
-        return regions.split()
-
-    def zones_list(self, region):
-        proc = subprocess.Popen(
-            f'gcloud compute zones list --filter="REGION:( {region} )" --format="value(NAME)"',
-            shell=True,
-            stdout=subprocess.PIPE,
-            universal_newlines=True,
-        )
-        zones = proc.stdout.read()
-        return zones.split()
-
-    def machines_type(self, zone):
-        proc = subprocess.Popen(
-            f'gcloud compute machine-types list --filter="ZONE:( {zone} )" --format="value(NAME)"',
-            shell=True,
-            stdout=subprocess.PIPE,
-            universal_newlines=True,
-        )
-        machines = proc.stdout.read()
-        return machines.split()
-
-    def images_type(self):
-        proc = subprocess.Popen(
-            f'gcloud compute images list --format="value(NAME,PROJECT,FAMILY)"',
-            shell=True,
-            stdout=subprocess.PIPE,
-            universal_newlines=True,
-        )
-        images = proc.stdout.read().split()
-        images = {
-            images[i]: (images[i + 1], images[i + 2]) for i in range(0, len(images), 3)
-        }
-        return images
+from ...tf import generate_cidr_block, var, var_module
+from ..provider import *
 
 
 class GCP(Provider):
     """Google Cloud Provider."""
 
-    def __init__(self, config):
-        super().__init__(config)
+    def __init__(self, config: SimpleNamespace) -> None:
+        super().__init__(config.root_dir, "gcp")
 
-        self.config.gcp = self.get_gcp_config()
+        self.config = config
 
         self.tfscript += terrascript.provider.google(
             project=self.config.gcp.project_id,
             region=self.config.gcp.region,
             zone=self.config.gcp.zone,
         )
-
-        self.update_script()
-
         click.echo("Initializing GCP Provider")
-        TF.init()
 
-        build = self.build()
-
-        if build == 0:
-            click.echo("Main Infrastructure has built Successfully!\n\n")
+        self.build()
+        self.build_instances()
 
     def build(self) -> bool:
         app = self.config.app.name
+        self.vpc = Module(
+            "pygrid-vpc",
+            source="terraform-google-modules/network/google",
+            project_id=self.config.gcp.project_id,
+            network_name=f"pygrid-{app}-vpc",
+            routing_mode="GLOBAL",
+            auto_create_subnetworks=True,
+            subnets=[
+                {
+                    "subnet_name": "pygrid-subnet",
+                    "subnet_ip": "10.10.10.0/24",
+                    "subnet_region": self.config.gcp.region,
+                }
+            ],
+            routes=[
+                {
+                    "name": "egress-internet",
+                    "description": "route through IGW to access internet",
+                    "destination_range": "0.0.0.0/0",
+                    "tags": "egress-inet",
+                    "next_hop_internet": "true",
+                },
+            ],
+        )
+        self.tfscript += self.vpc
+
         self.firewall = terrascript.resource.google_compute_firewall(
             f"firewall-{app}",
             name=f"firewall-{app}",
             network="default",
             allow={
                 "protocol": "tcp",
-                "ports": ["80", "443", "5000-5999", "6000-6999", "7000-7999"],
+                "ports": [
+                    "80",
+                    "8080",
+                    "443",
+                    "5000-5999",
+                    "6000-6999",
+                    "7000-7999",
+                ],
             },
         )
         self.tfscript += self.firewall
@@ -107,150 +78,90 @@ class GCP(Provider):
         self.tfscript += self.pygrid_ip
 
         self.tfscript += terrascript.output(
-            f"pygrid-{app}_ip", value="${" + self.pygrid_ip.address + "}"
+            f"pygrid-{app}-ip", value=var(self.pygrid_ip.address)
         )
 
-        self.update_script()
-        return TF.validate()
-
-    def deploy_network(self, name: str = "pygridnetwork", apply: bool = True):
-        images = self.config.gcp.images
+    def build_instances(self):
+        name = self.config.app.name
+        images = vars(self.config.gcp.images)
         image_type = self.config.gcp.image_type
+        # print(images)
+        # print(image_type)
         image = terrascript.data.google_compute_image(
-            name + image_type,
+            f"{name}-{image_type}",
             project=images[image_type][0],
             family=images[image_type][1],
         )
         self.tfscript += image
 
-        network = terrascript.resource.google_compute_instance(
-            name,
-            name=name,
-            machine_type=self.config.gcp.machine_type,
-            zone=self.config.gcp.zone,
-            boot_disk={"initialize_params": {"image": "${" + image.self_link + "}"}},
-            network_interface={
-                "network": "default",
-                "access_config": {"nat_ip": "${" + self.pygrid_ip.address + "}"},
-            },
-            metadata_startup_script=f"""
-                {base_setup}
-                \ncd /PyGrid/apps/network
-                \npoetry install
-                \nnohup ./run.sh --port {self.config.app.port}  --host {self.config.app.host} {'--start_local_db' if self.config.app.start_local_db else ''}
-            """,
-        )
-        self.tfscript += network
+        self.instances = []
+        for count in range(self.config.app.count):
+            app = self.config.apps[count]
 
-        self.update_script()
+            instance = terrascript.resource.google_compute_instance(
+                name,
+                name=name,
+                machine_type=self.config.gcp.machine_type,
+                zone=self.config.gcp.zone,
+                boot_disk={"initialize_params": {"image": var(image.self_link)}},
+                network_interface={
+                    "network": "default",
+                    "access_config": {"nat_ip": var(self.pygrid_ip.address)},
+                },
+                metadata_startup_script=self.write_exec_script(app, index=count),
+            )
 
-        return TF.apply()
+            self.tfscript += instance
+            self.instances.append(instance)
 
-    def deploy_domain(self, name: str = "pygriddomain", apply: bool = True):
-        images = self.config.gcp.images
-        image_type = self.config.gcp.image_type
-        image = terrascript.data.google_compute_image(
-            name + image_type,
-            project=images[image_type][0],
-            family=images[image_type][1],
-        )
-        self.tfscript += image
+    def write_exec_script(self, app, index=0):
+        ##TODO(amr): remove `git checkout pygrid_0.3.0` after merge
 
-        network = terrascript.resource.google_compute_instance(
-            name,
-            name=name,
-            machine_type=self.config.gcp.machine_type,
-            zone=self.config.gcp.zone,
-            boot_disk={"initialize_params": {"image": "${" + image.self_link + "}"}},
-            network_interface={"network": "default", "access_config": {}},
-            metadata_startup_script=f"""
-                {base_setup}
-                \ncd /PyGrid/apps/domain
-                \npoetry install
-                \nnohup ./run.sh --id {self.config.app.id} --port {self.config.app.port}  --host {self.config.app.host} --network {self.config.app.network} --num_replicas {self.config.app.num_replicas} {'--start_local_db' if self.config.app.start_local_db else ''}
-            """,
-        )
-        self.tfscript += network
+        # exec_script = "#cloud-boothook\n#!/bin/bash\n"
+        exec_script = "#!/bin/bash\n"
+        exec_script += textwrap.dedent(
+            f"""
+            ## For debugging
+            # redirect stdout/stderr to a file
+            exec &> logs.out
 
-        self.update_script()
+            echo 'Simple Web Server for testing the deployment'
+            sudo apt update -y
+            sudo apt install apache2 -y
+            sudo systemctl start apache2
+            echo '<h1>OpenMined {self.config.app.name} Server ({index}) Deployed via Terraform</h1>' | sudo tee /var/www/html/index.html
 
-        return TF.apply()
+            echo 'Setup Miniconda environment'
+            sudo wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+            sudo bash miniconda.sh -b -p miniconda
+            sudo rm miniconda.sh
+            export PATH=/miniconda/bin:$PATH > ~/.bashrc
+            conda init bash
+            source ~/.bashrc
+            conda create -y -n pygrid python=3.7
+            conda activate pygrid
 
-    def get_gcp_config(self) -> Config:
-        """Getting the configration required for deployment on GCP.
+            echo 'Install poetry...'
+            pip install poetry
 
-        Returns:
-            Config: Simple Config with the user inputs
+            echo 'Install GCC'
+            sudo apt-get install python3-dev -y
+            sudo apt-get install libevent-dev -y
+            sudo apt-get install gcc -y
+
+            echo 'Cloning PyGrid'
+            git clone https://github.com/OpenMined/PyGrid && cd /PyGrid/
+            git checkout pygrid_0.4.0
+
+            cd /PyGrid/apps/{self.config.app.name}
+
+            echo 'Installing {self.config.app.name} Dependencies'
+            poetry install
+
+            ## TODO(amr): remove this after poetry updates
+            pip install pymysql
+
+            nohup ./run.sh --port {app.port}  --start_local_db
         """
-        gcp = GCloud()
-
-        project_id = prompt(
-            [
-                {
-                    "type": "list",
-                    "name": "project_id",
-                    "message": "Please select your project_id",
-                    "choices": gcp.projects_list(),
-                }
-            ],
-            style=styles.second,
-        )["project_id"]
-
-        region = prompt(
-            [
-                {
-                    "type": "list",
-                    "name": "region",
-                    "message": "Please select your desired GCP region",
-                    "default": "us-central1",
-                    "choices": gcp.regions_list(),
-                }
-            ],
-            style=styles.second,
-        )["region"]
-
-        zone = prompt(
-            [
-                {
-                    "type": "list",
-                    "name": "zone",
-                    "message": "Please select your desired GCP zone",
-                    "choices": gcp.zones_list(region),
-                }
-            ],
-            style=styles.second,
-        )["zone"]
-
-        machine_type = prompt(
-            [
-                {
-                    "type": "list",
-                    "name": "machine_type",
-                    "message": "Please select your desired Machine type",
-                    "choices": gcp.machines_type(zone),
-                }
-            ],
-            style=styles.second,
-        )["machine_type"]
-
-        images = gcp.images_type()
-        image_type = prompt(
-            [
-                {
-                    "type": "list",
-                    "name": "image_type",
-                    "message": "Please select your desired Machine type",
-                    "choices": images.keys(),
-                }
-            ],
-            style=styles.second,
-        )["image_type"]
-
-        return Config(
-            project_id=project_id,
-            region=region,
-            zone=zone,
-            machine_type=machine_type,
-            images=images,
-            image_type=image_type,
         )
+        return exec_script

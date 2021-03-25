@@ -9,11 +9,14 @@ class AWS_Serverfull(AWS):
         credentials (dict) : Contains AWS credentials
         """
 
-        super().__init__(config)
-
         self.worker = config.app.name == "worker"
 
         if self.worker:
+            config.root_dir = os.path.join(
+                "/home/ubuntu/.pygrid/apps/aws/workers/", str(config.app.id)
+            )
+            super().__init__(config)
+
             self.vpc = Config(id=os.environ["VPC_ID"])
             public_subnet_ids = str(os.environ["PUBLIC_SUBNET_ID"]).split(",")
             private_subnet_ids = str(os.environ["PRIVATE_SUBNET_ID"]).split(",")
@@ -23,7 +26,13 @@ class AWS_Serverfull(AWS):
             ]
             self.build_security_group()
             self.build_instances()
+
         else:  # Deploy a VPC and domain/network
+            config.root_dir = os.path.join(
+                str(Path.home()), ".pygrid", "apps", str(config.app.name)
+            )
+            super().__init__(config)
+
             # Order matters
             self.build_vpc()
             self.build_igw()
@@ -158,9 +167,7 @@ class AWS_Serverfull(AWS):
         for count in range(self.config.app.count):
             app = self.config.apps[count]
             if self.worker:
-                instance_name = (
-                    f"pygrid-{self.config.app.name}-{str(self.config.app.id)}"
-                )
+                instance_name = f"pygrid-worker-{str(self.config.app.id)}"
                 kwargs = {
                     "name": instance_name,
                     "subnet_ids": [
@@ -262,14 +269,34 @@ class AWS_Serverfull(AWS):
 
             exec &> gcc_log.out
             echo 'Install GCC'
+            sudo apt-get install zip unzip -y
             sudo apt-get install python3-dev -y
             sudo apt-get install libevent-dev -y
             sudo apt-get install gcc -y
 
+            exec &> terraform_install.out
+            curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+            sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" -y
+            sudo apt-get update -y && sudo apt-get install terraform -y
+
+            exec &> env_vars.out
+            echo "Setting environment variables"
+            # export DATABASE_URL={self.database.engine}:pymysql://{self.database.username}:{self.database.password}@{var(self.database.endpoint)}://{self.database.name}
+            export DATABASE_URL="sqlite:///pygrid.db"
+            export CLOUD_PROVIDER={self.config.provider}
+            export REGION={self.config.vpc.region}
+            export VPC_ID={var(self.vpc.id)}
+            export PUBLIC_SUBNET_ID={','.join([var(public_subnet.id) for _, public_subnet in self.subnets])}
+            export PRIVATE_SUBNET_ID={','.join([var(private_subnet.id) for private_subnet, _ in self.subnets])}
+
+            echo "Writing cloud credentials file"
+            export AWS_ACCESS_KEY_ID={self.config.credentials.cloud.aws_access_key_id}
+            export AWS_SECRET_ACCESS_KEY={self.config.credentials.cloud.aws_secret_access_key}
+
             exec &> grid_log.out
             echo 'Cloning PyGrid'
             git clone https://github.com/OpenMined/PyGrid && cd /PyGrid/
-            git checkout infra_workers_0.3
+            git checkout cli_integrated
 
             cd /PyGrid/apps/{self.config.app.name}
 
@@ -281,8 +308,8 @@ class AWS_Serverfull(AWS):
             pip install pymysql
 
             exec &> start_app.out
-            nohup ./run.sh --port {app.port}  --host {app.host}
-        """
+            nohup ./run.sh --port {app.port}  --host 0.0.0.0
+            """
         )
         return exec_script
 

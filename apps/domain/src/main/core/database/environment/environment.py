@@ -9,7 +9,6 @@ class Environment(BaseModel):
     __tablename__ = "environment"
 
     id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
-    app_name = db.Column(db.String(255), default="Domain")
     state = db.Column(db.Integer)
     provider = db.Column(db.String(255))
     region = db.Column(db.String(255))
@@ -20,4 +19,4 @@ class Environment(BaseModel):
     destroyed_at = db.Column(db.DateTime, default=datetime.now())
 
     def __str__(self):
-        return f"<Group id: {self.id}, name: {self.name}, state: {self.state}, address: {self.address}, syft_address: {self.syft_address}, provider: {self.provider}, region: {self.region}, instance_type: {self.instance_type}, created_at: {self.created_at}, destroyed_at: {self.destroyed_at}>"
+        return f"<Group id: {self.id}, state: {self.state}, address: {self.address}, syft_address: {self.syft_address}, provider: {self.provider}, region: {self.region}, instance_type: {self.instance_type}, created_at: {self.created_at}, destroyed_at: {self.destroyed_at}>"

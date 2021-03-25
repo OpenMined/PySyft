@@ -10,7 +10,7 @@ class AWS(Provider):
         """
         config (SimpleNamespace) : Object storing the required configuration for deployment
         """
-        super().__init__(config)
+        super().__init__(config.root_dir, "aws")
         self.config = config
 
         # Credentials read from env variables

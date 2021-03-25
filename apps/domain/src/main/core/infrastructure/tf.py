@@ -8,14 +8,13 @@ var_module = lambda x, y: var(f"module.{x._name}.{y}")
 generate_cidr_block = lambda base_cidr_block, netnum: var(
     f'cidrsubnet("{base_cidr_block}", 8, {netnum})'
 )
-ROOT_DIR = os.path.join(str(Path.home()), ".pygrid", "api")
-# ROOT_DIR = os.path.join("/home/ubuntu/", ".pygrid", "api")
 
 
 class Terraform:
-    def __init__(self, dir: str) -> None:
+    def __init__(self, dir: str, provider: str) -> None:
         super().__init__()
         self.dir = dir
+        self.provider = provider
 
     def write(self, tfscript):
         # save the terraform configuration files
@@ -23,13 +22,16 @@ class Terraform:
             json.dump(tfscript, tfjson, indent=2, sort_keys=False)
 
     def init(self):
-        return subprocess.run(
-            # f"terraform init -input=false -plugin-dir={ROOT_DIR}",
-            f"terraform init",
-            shell=True,
-            cwd=self.dir,
-            check=True,
-        )
+        plugin_dir = os.path.dirname(self.dir)
+        if self.install_plugins(plugin_dir):
+            return subprocess.run(
+                f"terraform init -plugin-dir={plugin_dir}",
+                shell=True,
+                cwd=self.dir,
+                check=True,
+            )
+        else:
+            return False
 
     def validate(self):
         return subprocess.run(
@@ -58,3 +60,21 @@ class Terraform:
         return subprocess.run(
             "terraform destroy --auto-approve", shell=True, cwd=self.dir, check=True
         )
+
+    def install_plugins(self, dir):
+        if not os.path.exists(os.path.join(dir, "registry.terraform.io")):
+            return subprocess.run(
+                """
+                echo "Install terraform plugins"
+                mkdir -p "registry.terraform.io/hashicorp/aws/3.30.0/linux_amd64/"
+                wget https://releases.hashicorp.com/terraform-provider-aws/3.30.0/terraform-provider-aws_3.30.0_linux_amd64.zip
+                unzip terraform-provider-aws_3.30.0_linux_amd64.zip -d "registry.terraform.io/hashicorp/aws/3.30.0/linux_amd64/"
+                """
+                if self.provider == "aws"
+                else "",
+                shell=True,
+                cwd=dir,
+                check=True,
+            )
+        else:
+            return True

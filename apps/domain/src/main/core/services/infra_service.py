@@ -230,19 +230,25 @@ def del_worker_msg(
         env = node.environments.first(id=worker_id)
         _config = Config(provider=env.provider, app=Config(name="worker", id=worker_id))
 
-        success = Provider(_config).destroy()
-        if success:
-            node.environments.set(
-                id=worker_id, state=states["destroyed"], destroyed_at=datetime.now()
+        if env.state == states["success"]:
+            worker_dir = os.path.join(
+                "/home/ubuntu/.pygrid/apps/aws/workers/", str(worker_id)
+            )
+            success = Provider(worker_dir).destroy()
+            if success:
+                node.environments.set(
+                    id=worker_id, state=states["destroyed"], destroyed_at=datetime.now()
+                )
+
+        if env.state == states["destroyed"]:
+            return DeleteWorkerResponse(
+                address=msg.reply_to,
+                status_code=200,
+                content={"msg": "Worker was deleted successfully!"},
             )
         else:
             raise Exception("Worker deletion failed")
 
-        return DeleteWorkerResponse(
-            address=msg.reply_to,
-            status_code=200,
-            content={"msg": "Worker was deleted successfully!"},
-        )
     except Exception as e:
         return DeleteWorkerResponse(
             address=msg.reply_to, status_code=False, content={"error": str(e)}

@@ -11,17 +11,14 @@ import terrascript.provider as provider
 import terrascript.resource as resource
 from terrascript import Module
 
-from ..tf import ROOT_DIR, Terraform
+from ..tf import Terraform
 from ..utils import Config
 
 
 class Provider:
-    def __init__(self, config):
-        folder_name = f"{config.provider}-{config.app.name}-{config.app.id}"
-        _dir = os.path.join(ROOT_DIR, folder_name)
-        os.makedirs(_dir, exist_ok=True)
-
-        self.TF = Terraform(dir=_dir)
+    def __init__(self, root_dir, provider=None):
+        os.makedirs(root_dir, exist_ok=True)
+        self.TF = Terraform(dir=root_dir, provider=provider)
         self.tfscript = terrascript.Terrascript()
         self.validated = False
 
