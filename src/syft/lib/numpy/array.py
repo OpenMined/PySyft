@@ -8,15 +8,27 @@ from ...lib.torch.tensor_util import protobuf_tensor_deserializer
 from ...lib.torch.tensor_util import protobuf_tensor_serializer
 from ...proto.lib.numpy.array_pb2 import NumpyProto
 
-ExceptionDtype = [
-    np.object_,
-    np.str_,
-    np.unicode_,
-    np.complex64,
-    np.complex128,
+SUPPORTED_BOOL_TYPES = [np.bool_]
+SUPPORTED_INT_TYPES = [
+    np.int8,
+    np.int16,
+    np.int32,
+    np.int64,
+    np.uint8,
+    np.uint16,
+    np.uint32,
+    np.uint64,
 ]
 
-DtypeRefactor = {
+SUPPORTED_FLOAT_TYPES = [
+    np.float16,
+    np.float32,
+    np.float64,
+]
+
+SUPPORTED_DTYPES = SUPPORTED_BOOL_TYPES + SUPPORTED_INT_TYPES + SUPPORTED_FLOAT_TYPES
+
+DTYPE_REFACTOR = {
     np.dtype("uint16"): np.int16,
     np.dtype("uint32"): np.int32,
     np.dtype("uint64"): np.int64,
@@ -24,15 +36,18 @@ DtypeRefactor = {
 
 
 def object2proto(obj: np.ndarray) -> NumpyProto:
-    if obj.dtype in ExceptionDtype:
-        raise NotImplementedError(f"{obj.dtype} is not supported")
+    original_dtype = obj.dtype
+    if original_dtype not in SUPPORTED_DTYPES:
+        raise NotImplementedError(f"{original_dtype} is not supported")
 
-    dtype = obj.dtype.name
-    if obj.dtype in DtypeRefactor:
-        obj = obj.astype(DtypeRefactor[obj.dtype])
+    if original_dtype in DTYPE_REFACTOR:
+        # store as a signed int, the negative wrap around values convert back to the
+        # same original unsigned values on the other side
+        obj = obj.astype(DTYPE_REFACTOR[original_dtype])
 
     tensor = torch.from_numpy(obj).clone()
     tensor_proto = protobuf_tensor_serializer(tensor)
+    dtype = original_dtype.name
 
     return NumpyProto(tensor=tensor_proto, dtype=dtype)
 
@@ -42,10 +57,9 @@ def proto2object(proto: NumpyProto) -> np.ndarray:
     array = tensor.to("cpu").detach().numpy().copy()
 
     str_dtype = proto.dtype
-    npdtype = np.dtype(str_dtype)
+    original_dtype = np.dtype(str_dtype)
 
-    obj = array.astype(npdtype)
-
+    obj = array.astype(original_dtype)
     return obj
 
 

@@ -1,3 +1,6 @@
+# stdlib
+from typing import List
+
 # third party
 import pytest
 
@@ -10,29 +13,41 @@ def test_remote_numpy_array() -> None:
     # third party
     import numpy as np
 
-    ExampleArray = [
-        np.array([1, 2, -3], dtype=np.int8),
-        np.array([1, 2, -3], dtype=np.int16),
-        np.array([1, 2, -3], dtype=np.int32),
-        np.array([1, 2, -3], dtype=np.int64),
-        np.array([1, 2, 3], dtype=np.uint8),
-        np.array([1, 2, 3], dtype=np.uint16),
-        np.array([1, 2, 3], dtype=np.uint32),
-        np.array([1, 2, 3], dtype=np.uint64),
-        np.array([1.2, 2.2, 3.0], dtype=np.float16),
-        np.array([1.2, 2.2, 3.0], dtype=np.float32),
-        np.array([1.2, 2.2, 3.0], dtype=np.float64),
-        # np.array([1 + 2j, 3 + 4j, 5 + 0j], dtype=np.complex64),
-        # np.array([1 + 2j, 3 + 4j, 5 + 0j], dtype=np.complex128),
-        np.array([True, False, True], dtype=np.bool_),
-    ]
+    # syft absolute
+    from syft.lib.numpy.array import SUPPORTED_BOOL_TYPES
+    from syft.lib.numpy.array import SUPPORTED_DTYPES
+    from syft.lib.numpy.array import SUPPORTED_FLOAT_TYPES
+    from syft.lib.numpy.array import SUPPORTED_INT_TYPES
 
     sy.load("numpy")
+
+    test_arrays: List[np.ndarray] = []
+    for dtype in SUPPORTED_DTYPES:
+
+        # test their bounds
+        if dtype in SUPPORTED_BOOL_TYPES:
+            lower = False
+            upper = True
+            mid = False
+        elif dtype in SUPPORTED_INT_TYPES:
+            bounds = np.iinfo(dtype)
+            lower = bounds.min
+            upper = bounds.max
+            mid = upper + lower  # type: ignore
+            if lower == 0:
+                mid = round(mid / 2)  # type: ignore
+        elif dtype in SUPPORTED_FLOAT_TYPES:
+            bounds = np.finfo(dtype)
+            lower = bounds.min
+            upper = bounds.max
+            mid = upper + lower  # type: ignore
+
+        test_arrays.append(np.array([lower, mid, upper], dtype=dtype))
 
     vm = sy.VirtualMachine()
     client = vm.get_root_client()
 
-    for test_array in ExampleArray:
+    for test_array in test_arrays:
         remote_array = test_array.send(client)
         received_array = remote_array.get()
 
