@@ -256,7 +256,7 @@ jobs:
           pytest -m libs -n 1 -k "tenseal" --suppress-no-test-exit-code
 
   python-nb-examples:
-    needs: [python-linting]
+    needs: [python-tests-fast-latest]
     runs-on: ${{ matrix.os }}
     strategy:
       max-parallel: 2
@@ -323,7 +323,7 @@ jobs:
           pytest -m duet -n 1 --suppress-no-test-exit-code
 
   pygrid-unit-tests:
-    needs: [python-linting]
+    needs: [python-tests-fast-latest]
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 3
