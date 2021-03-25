@@ -44,6 +44,13 @@
         [0.2, 0.3]
       ]
     ],
+    "tensor_sparse": [[
+	    "torch_method",
+	    "sparse_coo_tensor",
+	    [
+		    [[0, 1, 1], [2, 0, 2]],  [3, 4, 5], [2, 3]
+	    ]
+    ]],
     "tensor2_nonzero_rounded": [
       [
         [-1.1, 1.1],
@@ -4296,6 +4303,7 @@
       },
       "dense_dim": {
         "profile": "tensor_method_noinput",
+        "tensors": ["tensor_sparse"],
         "not_available": [
           {
             "data_types": [

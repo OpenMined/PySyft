@@ -80,6 +80,7 @@ has_cuda = th.cuda.is_available()
 # is_property:  this helps understand if the attribute can be called or not
 # return_type:  this helps verify that the return type matches the expected return type
 
+
 # this handles instances where the allow list provides more meta information
 def get_return_type(support_dict: Union[str, Dict[str, str]]) -> str:
     if isinstance(support_dict, str):
@@ -453,18 +454,32 @@ def test_all_allowlisted_tensor_methods(
         requires_grad = False
         if op_name in ["backward", "retain_grad", "grad"]:
             requires_grad = True
-        self_tensor, self_tensor_copy = (
-            th.tensor(self_tensor, dtype=t_type, requires_grad=requires_grad)
-            if not cuda
-            else th.tensor(
-                self_tensor, dtype=t_type, requires_grad=requires_grad
-            ).cuda(),
-            th.tensor(self_tensor, dtype=t_type, requires_grad=requires_grad)
-            if not cuda
-            else th.tensor(
-                self_tensor, dtype=t_type, requires_grad=requires_grad
-            ).cuda(),
-        )
+        if len(self_tensor) == 3 and self_tensor[0] == "torch_method":
+            # third party
+            import torch
+
+            method = getattr(torch, self_tensor[1])
+            self_tensor, self_tensor_copy = method(*self_tensor[2]), method(
+                *self_tensor[2]
+            )
+            if cuda:
+                self_tensor, self_tensor_copy = (
+                    self_tensor.cuda(),
+                    self_tensor_copy.cuda(),
+                )
+        else:
+            self_tensor, self_tensor_copy = (
+                th.tensor(self_tensor, dtype=t_type, requires_grad=requires_grad)
+                if not cuda
+                else th.tensor(
+                    self_tensor, dtype=t_type, requires_grad=requires_grad
+                ).cuda(),
+                th.tensor(self_tensor, dtype=t_type, requires_grad=requires_grad)
+                if not cuda
+                else th.tensor(
+                    self_tensor, dtype=t_type, requires_grad=requires_grad
+                ).cuda(),
+            )
 
         # we dont have .id's by default anymore
         # self_tensor_copy.id = self_tensor.id  # type: ignore
@@ -594,14 +609,11 @@ def test_all_allowlisted_tensor_methods(
                 "Exception in allowlist suite. If this is an expected exception, update"
             )
             error += " the .json file to prevent this test combination."
-            print(error)
-            raise e
+            raise Exception(str(e) + "[torch]")
 
         # Step 6: Send our target tensor to alice.
         # NOTE: send the copy we haven't mutated
         xp = self_tensor_copy.send(alice_client)
-        if cuda and hasattr(xp, "cuda"):
-            xp = xp.cuda()
 
         # if op_name=="grad", we need to do more operations first
         if op_name == "grad":
@@ -619,11 +631,6 @@ def test_all_allowlisted_tensor_methods(
                     arg.send(alice_client) if hasattr(arg, "send") else arg
                     for arg in args
                 ]
-
-        if cuda:
-            for arg in argsp:
-                if hasattr(arg, "cuda"):
-                    arg = arg.cuda()
 
         # Step 7: get the method on the pointer to alice we want to test
         op_method = getattr(xp, op_name, None)
