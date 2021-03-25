@@ -11,13 +11,13 @@ from ...proto.lib.petlib.ec_obj_pb2 import EC2_obj
 def object2proto(obj: object) -> EC2_obj:
     proto = EC2_obj()
     proto.group_nid = obj.group.nid()  # type: ignore
-    proto.vector = obj.export()  # type: ignore
+    proto.data = obj.export()  # type: ignore
     return proto
 
 
 def proto2object(proto: EC2_obj) -> petlib.ec.EcPt:
 
-    vec = petlib.ec.EcPt(proto.vector, petlib.ec.EcGroup(proto.group_nid))
+    vec = petlib.ec.EcPt(proto.data, petlib.ec.EcGroup(proto.group_nid))
     return vec
 
 

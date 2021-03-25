@@ -10,7 +10,6 @@ matplotlib
 nest_asyncio
 packaging
 pandas
-petlib
 protobuf
 PyNaCl
 requests
@@ -19,4 +18,3 @@ sqlitedict
 typeguard
 typing-extensions # backport to older python 3
 websockets
-zksk

@@ -1,4 +1,5 @@
 # stdlib
+import functools
 from typing import Any
 from typing import Dict
 from typing import Union
@@ -9,7 +10,11 @@ import petlib
 # syft relative
 from . import ec  # noqa: 401
 from ...ast.globals import Globals
+from ..util import generic_update_ast
 from .allowlist import allowlist
+
+LIB_NAME = "petlib"
+PACKAGE_SUPPORT = {"lib": LIB_NAME}
 
 
 def get_return_type(support_dict: Union[str, Dict[str, str]]) -> str:
@@ -38,3 +43,6 @@ def create_petlib_ast(client: Any = None) -> Globals:
         klass.create_send_method()
         klass.create_storable_object_attr_convenience_methods()
     return ast
+
+
+update_ast = functools.partial(generic_update_ast, LIB_NAME, create_petlib_ast)

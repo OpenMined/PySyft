@@ -1,4 +1,5 @@
 # stdlib
+import functools
 from typing import Any
 from typing import Dict
 from typing import Union
@@ -9,7 +10,11 @@ import zksk as zk
 # syft relative
 from . import secret  # noqa: 401
 from ...ast.globals import Globals
+from ..util import generic_update_ast
 from .allowlist import allowlist
+
+LIB_NAME = "zksk"
+PACKAGE_SUPPORT = {"lib": LIB_NAME}
 
 
 def get_return_type(support_dict: Union[str, Dict[str, str]]) -> str:
@@ -38,3 +43,6 @@ def create_zksk_ast(client: Any = None) -> Globals:
         klass.create_send_method()
         klass.create_storable_object_attr_convenience_methods()
     return ast
+
+
+update_ast = functools.partial(generic_update_ast, LIB_NAME, create_zksk_ast)
