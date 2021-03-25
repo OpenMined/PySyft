@@ -20,7 +20,7 @@ from ...grid.duet.process_test import SyftTestProcess
 from ...grid.duet.signaling_server_test import run
 
 ts = pytest.importorskip("tenseal")
-sy.load_lib("tenseal")
+sy.load("tenseal")
 
 set_start_method("spawn", force=True)
 PORT = 21000
@@ -48,7 +48,7 @@ def do(ct_size: int, batch_size: int) -> None:
     # syft absolute
     import syft as sy
 
-    sy.load_lib("tenseal")
+    sy.load("tenseal")
     sy.logger.add(sys.stderr, "ERROR")
 
     duet = sy.launch_duet(loopback=True, network_url=f"http://127.0.0.1:{PORT}/")
@@ -79,7 +79,7 @@ def ds(ct_size: int, batch_size: int) -> None:
     # syft absolute
     import syft as sy
 
-    sy.load_lib("tenseal")
+    sy.load("tenseal")
     sy.logger.add(sys.stderr, "ERROR")
 
     duet = sy.join_duet(loopback=True, network_url=f"http://127.0.0.1:{PORT}/")
