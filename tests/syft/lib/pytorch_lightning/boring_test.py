@@ -1,5 +1,4 @@
 # stdlib
-from types import ModuleType
 from typing import Any
 from typing import List
 from typing import Optional
@@ -10,7 +9,6 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.ast.module import Module
 
 
 @pytest.mark.vendor(lib="pytorch_lightning")
@@ -25,7 +23,6 @@ def test_lightning() -> None:
     DataLoaderPointerType = Any  # sy.lib_ast.torch.utils.data.DataLoader.pointer_type
     SyTensorProxyType = Union[torch.Tensor, TorchTensorPointerType]  # type: ignore
     SyDataloaderProxyType = Union[torch.utils.data.DataLoader, DataLoaderPointerType]  # type: ignore
-    SyModuleProxyType = Union[ModuleType, Module]
 
     tmpdir = "./"
 
@@ -35,7 +32,7 @@ def test_lightning() -> None:
     sy.client_cache["duet"] = duet
 
     class BoringSyNet(sy.Module):
-        def __init__(self, torch_ref: SyModuleProxyType) -> None:
+        def __init__(self, torch_ref: Any) -> None:
             super(BoringSyNet, self).__init__(torch_ref=torch_ref)
             self.fc2 = self.torch_ref.nn.Linear(32, 2)
 

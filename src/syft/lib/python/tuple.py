@@ -16,6 +16,7 @@ from .iterator import Iterator
 from .primitive_factory import PrimitiveFactory
 from .primitive_factory import isprimitive
 from .primitive_interface import PyPrimitive
+from .slice import Slice
 from .types import SyPrimitiveRet
 from .util import downcast
 from .util import upcast
@@ -40,6 +41,10 @@ class Tuple(tuple, PyPrimitive):
         :rtype: UID
         """
         return self._id
+
+    def upcast(self) -> tuple:
+        # recursively upcast
+        return tuple(upcast(v) for v in self)
 
     def __new__(cls, *args: Any) -> "Tuple":
         return super(Tuple, cls).__new__(Tuple, *args)
@@ -80,8 +85,10 @@ class Tuple(tuple, PyPrimitive):
     def __len__(self) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=super().__len__())
 
-    def __getitem__(self, item: Any) -> Union[SyPrimitiveRet, Any]:
-        value = super().__getitem__(item)
+    def __getitem__(self, key: Union[int, slice, Slice]) -> Any:
+        if isinstance(key, Slice):
+            key = key.upcast()
+        value = super().__getitem__(key)
         if isprimitive(value=value):
             return PrimitiveFactory.generate_primitive(value=value)
         else:
@@ -99,22 +106,21 @@ class Tuple(tuple, PyPrimitive):
     def __iter__(self, max_len: Optional[int] = None) -> TupleIterator:
         return TupleIterator(self, max_len=max_len)
 
-    @staticmethod
-    def _proto2object(proto: Tuple_PB) -> "Tuple":
-        id_: UID = deserialize(blob=proto.id)
-        value = [
-            upcast((deserialize(blob=element, from_bytes=True)))
-            for element in proto.data
-        ]
-        new_list = Tuple(value)
-        new_list._id = id_
-        return new_list
-
     def _object2proto(self) -> Tuple_PB:
         id_ = serialize(obj=self.id)
         downcasted = [downcast(value=element) for element in self]
         data = [serialize(obj=element, to_bytes=True) for element in downcasted]
         return Tuple_PB(id=id_, data=data)
+
+    @staticmethod
+    def _proto2object(proto: Tuple_PB) -> "Tuple":
+        id_: UID = deserialize(blob=proto.id)
+        value = [
+            upcast(deserialize(blob=element, from_bytes=True)) for element in proto.data
+        ]
+        new_list = Tuple(value)
+        new_list._id = id_
+        return new_list
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:

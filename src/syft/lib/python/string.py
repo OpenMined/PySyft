@@ -17,6 +17,7 @@ from ...proto.lib.python.string_pb2 import String as String_PB
 from .int import Int
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
+from .slice import Slice
 from .types import SyPrimitiveRet
 
 
@@ -49,8 +50,10 @@ class String(UserString, PyPrimitive):
         res = super().__ge__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def __getitem__(self, other: Any) -> SyPrimitiveRet:
-        res = super().__getitem__(other)
+    def __getitem__(self, key: Union[int, slice, Slice]) -> Any:
+        if isinstance(key, Slice):
+            key = key.upcast()
+        res = super().__getitem__(key)
         return PrimitiveFactory.generate_primitive(value=res)
 
     def __gt__(self, other: Any) -> SyPrimitiveRet:
