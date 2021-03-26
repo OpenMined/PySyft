@@ -14,7 +14,6 @@ _sym_db = _symbol_database.Default()
 
 
 # syft absolute
-from syft.proto.core.plan import plan_pb2 as proto_dot_core_dot_plan_dot_plan__pb2
 from syft.proto.lib.python.collections import (
     ordered_dict_pb2 as proto_dot_lib_dot_python_dot_collections_dot_ordered__dict__pb2,
 )
@@ -25,9 +24,8 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x1cproto/lib/torch/module.proto\x12\x0esyft.lib.torch\x1a\x1aproto/core/plan/plan.proto\x1a/proto/lib/python/collections/ordered_dict.proto"\xaf\x01\n\x06Module\x12\x13\n\x0bmodule_type\x18\x01 \x01(\t\x12\x13\n\x0bmodule_name\x18\x02 \x01(\t\x12\x13\n\x0bmodule_repr\x18\x03 \x01(\t\x12(\n\x08\x63hildren\x18\x04 \x03(\x0b\x32\x16.syft.lib.torch.Module\x12<\n\nstate_dict\x18\x05 \x01(\x0b\x32(.syft.lib.python.collections.OrderedDictb\x06proto3',
+    serialized_pb=b'\n\x1cproto/lib/torch/module.proto\x12\x0esyft.lib.torch\x1a/proto/lib/python/collections/ordered_dict.proto"\xaf\x01\n\x06Module\x12\x13\n\x0bmodule_type\x18\x01 \x01(\t\x12\x13\n\x0bmodule_name\x18\x02 \x01(\t\x12\x13\n\x0bmodule_repr\x18\x03 \x01(\t\x12(\n\x08\x63hildren\x18\x04 \x03(\x0b\x32\x16.syft.lib.torch.Module\x12<\n\nstate_dict\x18\x05 \x01(\x0b\x32(.syft.lib.python.collections.OrderedDictb\x06proto3',
     dependencies=[
-        proto_dot_core_dot_plan_dot_plan__pb2.DESCRIPTOR,
         proto_dot_lib_dot_python_dot_collections_dot_ordered__dict__pb2.DESCRIPTOR,
     ],
 )
@@ -145,8 +143,8 @@ _MODULE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=126,
-    serialized_end=301,
+    serialized_start=98,
+    serialized_end=273,
 )
 
 _MODULE.fields_by_name["children"].message_type = _MODULE

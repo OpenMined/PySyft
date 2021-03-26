@@ -26,9 +26,22 @@ from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
+from ....pointer.pointer import Pointer
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
+
+
+def resolve_object(node: AbstractNode, ptr: Pointer) -> StorableObject:
+    obj = node.store.get_object(key=ptr.id_at_location)
+    if getattr(ptr, "attribute_name", None):
+        obj = StorableObject(
+            id=UID(),
+            data=getattr(obj.data, ptr.attribute_name),  # type: ignore
+            read_permissions=obj.read_permissions,  # type: ignore
+            search_permissions=obj.search_permissions,  # type: ignore
+        )
+    return obj  # type: ignore
 
 
 @bind_protobuf
@@ -108,10 +121,10 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
         resolved_self = None
         if not self.is_static:
-            resolved_self = node.store.get_object(key=self._self.id_at_location)
+            resolved_self = resolve_object(node, self._self)
 
             if resolved_self is None:
-                critical(
+                critical(  # type: ignore
                     f"execute_action on {self.path} failed due to missing object"
                     + f" at: {self._self.id_at_location}"
                 )

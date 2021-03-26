@@ -304,6 +304,7 @@ class Pointer(AbstractPointer):
             tags=self.tags,
             description=self.description,
             object_type=self.object_type,
+            attribute_name=getattr(self, "attribute_name", ""),
         )
 
     @staticmethod
@@ -328,13 +329,15 @@ class Pointer(AbstractPointer):
         pointer_type = getattr(points_to_type, proto.pointer_name)
         # WARNING: This is sending a serialized Address back to the constructor
         # which currently depends on a Client for send_immediate_msg_with_reply
-        return pointer_type(
+        res = pointer_type(
             id_at_location=_deserialize(blob=proto.id_at_location),
             client=_deserialize(blob=proto.location),
             tags=proto.tags,
             description=proto.description,
             object_type=proto.object_type,
         )
+        res.attribute_name = proto.attribute_name
+        return res
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
