@@ -9,6 +9,7 @@ import sys
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Optional
 from typing import Union
 
 # third party
@@ -23,6 +24,7 @@ from ...proto.core.plan.plan_pb2 import Plan as Plan_PB
 from ..common.object import Serializable
 from ..common.serde.serializable import bind_protobuf
 from ..node.abstract.node import AbstractNode
+from ..node.common import client
 from ..node.common.action.common import Action
 from ..node.common.util import listify
 from ..pointer.pointer import Pointer
@@ -56,7 +58,7 @@ class Plan(Serializable):
 
     def __call__(
         self,
-        node: AbstractNode = None,
+        node: Optional[AbstractNode] = None,
         verify_key: VerifyKey = None,
         **kwargs: Dict[str, Any],
     ) -> List[StorableObject]:
@@ -108,7 +110,7 @@ class Plan(Serializable):
         else:
             return []
 
-    def execute_locally(self, **kwargs):
+    def execute_locally(self, **kwargs: Any) -> List[StorableObject]:
         """Execute a plan by sending it to a virtual machine and calling execute on the pointer.
         This is a workaround until we have a way to execute plans locally.
         """
@@ -117,8 +119,8 @@ class Plan(Serializable):
         from ...core.node.vm.vm import VirtualMachine  # noqa: F401
 
         alice = VirtualMachine(name="plan_executor")
-        alice_client = alice.get_client()
-        self_ptr = self.send(alice_client)
+        alice_client: client.Client = alice.get_client()
+        self_ptr = self.send(alice_client)  # type: ignore
         out = self_ptr(**kwargs)
         return out.get()
 

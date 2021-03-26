@@ -1,104 +1,50 @@
 # stdlib
 import base64
-import binascii
-from collections import OrderedDict as PyOrderedDict
-import json
-import random
+import secrets
 from timeit import timeit
+from typing import Any as TypeAny
+from typing import Dict as TypeDict
+from typing import Generator
+from typing import List as TypeList
+from typing import Union
 
 # third party
 import requests
-import websocket
 
 # syft relative
-from .. import deserialize
-from .. import serialize
-from ..lib.python.collections.ordered_dict import OrderedDict
+from ..core.plan import Plan
+from ..federated.model_centric_fl_base import ModelCentricFLBase
 from ..lib.python.list import List
 from ..proto.core.plan.plan_pb2 import Plan as PlanPB
-from ..proto.lib.python.collections.ordered_dict_pb2 import OrderedDict as OrderedDictPB
 from ..proto.lib.python.list_pb2 import List as ListPB
-from .model_centric_fl_client import GridError
 
-TIMEOUT_INTERVAL = 60
 CHUNK_SIZE = 655360  # 640KB
 SPEED_MULT_FACTOR = 10
 MAX_BUFFER_SIZE = 1048576 * 64  # 64 MB
 MAX_SPEED_TESTS = 3
 
 
-class ModelCentricFLWorker:
+class ModelCentricFLWorker(ModelCentricFLBase):
     CYCLE_STATUS_ACCEPTED = "accepted"
     CYCLE_STATUS_REJECTED = "rejected"
     PLAN_TYPE_LIST = "list"
     PLAN_TYPE_TORCHSCRIPT = "torchscript"
 
-    def __init__(self, id: str, address: str, secure: bool = False):
-        self.id = id
-        self.address = address
-        self.secure = secure
-        self.ws = None
-
-    @property
-    def ws_url(self):
-        return f"wss://{self.address}" if self.secure else f"ws://{self.address}"
-
-    @property
-    def http_url(self):
-        return f"https://{self.address}" if self.secure else f"http://{self.address}"
-
-    def connect(self):
-        args_ = {"max_size": None, "timeout": TIMEOUT_INTERVAL, "url": self.ws_url}
-
-        self.ws = websocket.create_connection(**args_)
-
-    def _send_msg(self, message: dict) -> dict:
-        """Prepare/send a JSON message to a PyGrid server and receive the response.
-
-        Args:
-            message (dict) : message payload.
-        Returns:
-            response (dict) : response payload.
-        """
-        if self.ws is None or not self.ws.connected:
-            self.connect()
-
-        self.ws.send(json.dumps(message))
-        json_response = json.loads(self.ws.recv())
-
-        error = json_response["data"].get("error", None)
-        if error is not None:
-            raise GridError(error, None)
-
-        return json_response
-
-    def _send_http_req(
-        self, method, path: str, params: dict = None, body: bytes = None
-    ):
-        if method == "GET":
-            res = requests.get(self.http_url + path, params)
-        elif method == "POST":
-            res = requests.post(self.http_url + path, params=params, data=body)
-
-        if not res.ok:
-            raise GridError("HTTP response is not OK", res.status_code)
-
-        response = res.content
-        return response
-
-    def _yield_chunk_from_request(self, request, chunk_size):
+    def _yield_chunk_from_request(
+        self, request: requests.Response, chunk_size: int
+    ) -> Generator:
         for chunk in request.iter_content(chunk_size=chunk_size):
             yield chunk
 
-    def _read_n_request_chunks(self, chunk_generator, n):
+    def _read_n_request_chunks(self, chunk_generator: Generator, n: int) -> bool:
         for i in range(n):
             try:
                 next(chunk_generator)
-            except:
+            except Exception:
                 return False
         return True
 
-    def _get_ping(self, worker_id, random_id):
+    def _get_ping(self, worker_id: str, random_id: int) -> float:
         params = {"is_ping": 1, "worker_id": worker_id, "random": random_id}
         ping = (
             timeit(
@@ -109,7 +55,7 @@ class ModelCentricFLWorker:
         )  # for ms
         return ping
 
-    def _get_upload_speed(self, worker_id, random_id):
+    def _get_upload_speed(self, worker_id: str, random_id: int) -> float:
         buffer_size = CHUNK_SIZE
         speed_history = []
 
@@ -136,8 +82,11 @@ class ModelCentricFLWorker:
             avg_speed = sum(speed_history) / len(speed_history)
             return avg_speed
 
-    def _get_download_speed(self, worker_id, random_id):
-        params = {"worker_id": worker_id, "random": random_id}
+    def _get_download_speed(self, worker_id: str, random_id: int) -> float:
+        params: TypeDict[str, Union[str, int]] = {
+            "worker_id": worker_id,
+            "random": random_id,
+        }
         speed_history = []
         with requests.get(
             self.http_url + "/model-centric/speed-test", params, stream=True
@@ -165,26 +114,9 @@ class ModelCentricFLWorker:
             avg_speed = sum(speed_history) / len(speed_history)
             return avg_speed
 
-    def _serialize(self, obj):
-        """Serializes object to protobuf"""
-        pb = serialize(obj)
-        return pb.SerializeToString()
-
-    def _serialize_object(self, obj):
-        serialized_object = {}
-        for k, v in obj.items():
-            serialized_object[k] = binascii.hexlify(self._serialize(v)).decode()
-        return serialized_object
-
-    def _unserialize(self, serialized_obj, obj_protobuf_type):
-        pb = obj_protobuf_type()
-        pb.ParseFromString(serialized_obj)
-        return deserialize(pb)
-
-    def close(self):
-        self.ws.shutdown()
-
-    def authenticate(self, auth_token, model_name, model_version):
+    def authenticate(
+        self, auth_token: str, model_name: str, model_version: str
+    ) -> TypeDict[str, TypeAny]:
         message = {
             "type": "model-centric/authenticate",
             "data": {
@@ -196,7 +128,13 @@ class ModelCentricFLWorker:
 
         return self._send_msg(message)
 
-    def cycle_request(self, worker_id, model_name, model_version, speed_info):
+    def cycle_request(
+        self,
+        worker_id: str,
+        model_name: str,
+        model_version: str,
+        speed_info: TypeDict[str, TypeAny],
+    ) -> TypeDict[str, TypeAny]:
         message = {
             "type": "model-centric/cycle-request",
             "data": {
@@ -208,7 +146,7 @@ class ModelCentricFLWorker:
         }
         return self._send_msg(message)
 
-    def get_model(self, worker_id, request_key, model_id):
+    def get_model(self, worker_id: str, request_key: str, model_id: int) -> TypeList:
         params = {
             "worker_id": worker_id,
             "request_key": request_key,
@@ -217,9 +155,11 @@ class ModelCentricFLWorker:
         serialized_model = self._send_http_req(
             "GET", "/model-centric/get-model", params
         )
-        return self._unserialize(serialized_model, ListPB)
+        return self._unserialize(serialized_model, ListPB).upcast()
 
-    def get_plan(self, worker_id, request_key, plan_id, receive_operations_as):
+    def get_plan(
+        self, worker_id: str, request_key: str, plan_id: int, receive_operations_as: str
+    ) -> Plan:
         params = {
             "worker_id": worker_id,
             "request_key": request_key,
@@ -229,7 +169,9 @@ class ModelCentricFLWorker:
         serialized_plan = self._send_http_req("GET", "/model-centric/get-plan", params)
         return self._unserialize(serialized_plan, PlanPB)
 
-    def report(self, worker_id: str, request_key: str, diff: List):
+    def report(
+        self, worker_id: str, request_key: str, diff: TypeList
+    ) -> TypeDict[str, TypeAny]:
         diff_serialized = self._serialize(List(diff))
         diff_base64 = base64.b64encode(diff_serialized).decode("ascii")
         params = {
@@ -240,11 +182,10 @@ class ModelCentricFLWorker:
                 "diff": diff_base64,
             },
         }
-        res = self._send_msg(params)
-        return res
+        return self._send_msg(params)
 
-    def get_connection_speed(self, worker_id):
-        random_num = random.getrandbits(128)
+    def get_connection_speed(self, worker_id: str) -> TypeDict[str, TypeAny]:
+        random_num = secrets.randbits(128)
         ping = self._get_ping(worker_id, random_num)
         upload_speed = self._get_upload_speed(worker_id, random_num)
         download_speed = self._get_download_speed(worker_id, random_num)

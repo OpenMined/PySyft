@@ -3,6 +3,11 @@ import base64
 import json
 import os
 import time
+from typing import Any
+from typing import Generator
+from typing import List as TypeList
+from typing import Optional
+from typing import Tuple as TypeTuple
 
 # third party
 import jwt
@@ -13,36 +18,33 @@ import torch as th
 from torchvision import datasets
 from torchvision import transforms
 from websocket import create_connection
+from xprocess import ProcessStarter
 
 # syft absolute
 import syft as sy
 from syft import deserialize
-from syft import logger
 from syft import serialize
 from syft.core.plan.plan_builder import ROOT_CLIENT
 from syft.core.plan.plan_builder import make_plan
+from syft.federated import JSONDict
 from syft.federated.fl_client import FLClient
 from syft.federated.fl_job import FLJob
 from syft.federated.model_centric_fl_client import ModelCentricFLClient
 from syft.lib.python.int import Int
 from syft.lib.python.list import List
+from syft.lib.torch.module import Module as SyModule
 from syft.proto.core.plan.plan_pb2 import Plan as PlanPB
 from syft.proto.lib.python.list_pb2 import List as ListPB
 from syft.util import get_root_data_path
 
 th.random.manual_seed(42)
 
-# third party
-import pytest
-from xprocess import ProcessStarter
-
 here = os.path.dirname(__file__)
-
 DOMAIN_PORT = 7000
 
 
 @pytest.fixture
-def pygrid_domain(xprocess):
+def pygrid_domain(xprocess: Any) -> Generator:
     class Starter(ProcessStarter):
         # startup pattern
         pattern = "Starting app"
@@ -70,7 +72,7 @@ def pygrid_domain(xprocess):
 
 
 @pytest.mark.grid
-def test_create_and_execute_plan(pygrid_domain) -> None:
+def test_create_and_execute_plan(pygrid_domain: Any) -> None:
     model_param_type_size = create_plan()
     matches = [
         (th.nn.Parameter, th.Size([100, 784])),
@@ -87,42 +89,55 @@ def test_create_and_execute_plan(pygrid_domain) -> None:
 
 
 class MLP(sy.Module):
-    def __init__(self, torch_ref):
+    def __init__(self, torch_ref: Any) -> None:
         super().__init__(torch_ref=torch_ref)
         self.l1 = self.torch_ref.nn.Linear(784, 100)
         self.a1 = self.torch_ref.nn.ReLU()
         self.l2 = self.torch_ref.nn.Linear(100, 10)
 
-    def forward(self, x):
+    def forward(self, x: Any) -> Any:
         x_reshaped = x.view(-1, 28 * 28)
         l1_out = self.a1(self.l1(x_reshaped))
         l2_out = self.l2(l1_out)
         return l2_out
 
 
-def cross_entropy_loss(logits, targets, batch_size):
+def cross_entropy_loss(
+    logits: th.Tensor, targets: th.Tensor, batch_size: int
+) -> th.Tensor:
     norm_logits = logits - logits.max()
     log_probs = norm_logits - norm_logits.exp().sum(dim=1, keepdim=True).log()
     return -(targets * log_probs).sum() / batch_size
 
 
-def sgd_step(model, lr=0.1):
+def sgd_step(model: SyModule, lr: float = 0.1) -> None:
     with ROOT_CLIENT.torch.no_grad():
         for p in model.parameters():
             p.data = p.data - lr * p.grad
             p.grad = th.zeros_like(p.grad.get())
 
 
-def set_params(model, params):
+def set_params(model: SyModule, params: List) -> None:
     for p, p_new in zip(model.parameters(), params):
         p.data = p_new.data
 
 
-def create_plan() -> None:
+def read_file(fname: str) -> str:
+    with open(fname, "r") as f:
+        return f.read()
+
+
+private_key = read_file(f"{here}/example_rsa").strip()
+public_key = read_file(f"{here}/example_rsa.pub").strip()
+
+auth_token = jwt.encode({}, private_key, algorithm="RS256").decode("ascii")
+
+
+def create_plan() -> TypeList[TypeTuple[type, th.Size]]:
     local_model = MLP(th)
 
     @make_plan
-    def train(
+    def train(  # type: ignore
         xs=th.rand([64 * 3, 1, 28, 28]),
         ys=th.randint(0, 10, [64 * 3, 10]),
         params=List(local_model.parameters()),
@@ -141,7 +156,7 @@ def create_plan() -> None:
         return model.parameters()
 
     @make_plan
-    def avg_plan(
+    def avg_plan(  # type: ignore
         avg=List(local_model.parameters()),
         item=List(local_model.parameters()),
         num=Int(0),
@@ -183,14 +198,14 @@ def create_plan() -> None:
     # Auth
     grid_address = f"localhost:{DOMAIN_PORT}"
 
-    grid = ModelCentricFLClient(id="test", address=grid_address, secure=False)
+    grid = ModelCentricFLClient(address=grid_address, secure=False)
     grid.connect()
 
     # Host
 
     # If the process already exists, might you need to clear the db.
     # To do that, set path below correctly and run:
-    response = grid.host_federated_training(
+    grid.host_federated_training(
         model=local_model,
         client_plans={"training_plan": train},
         client_protocols={},
@@ -202,13 +217,11 @@ def create_plan() -> None:
     # Authenticate for cycle
 
     # Helper function to make WS requests
-    def sendWsMessage(data):
+    def sendWsMessage(data: JSONDict) -> JSONDict:
         ws = create_connection("ws://" + grid_address)
         ws.send(json.dumps(data))
         message = ws.recv()
         return json.loads(message)
-
-    auth_token = jwt.encode({}, private_key, algorithm="RS256").decode("ascii")
 
     auth_request = {
         "type": "model-centric/authenticate",
@@ -235,7 +248,6 @@ def create_plan() -> None:
         },
     }
     cycle_response = sendWsMessage(cycle_request)
-
     # Download model
 
     worker_id = auth_response["data"]["worker_id"]
@@ -243,7 +255,9 @@ def create_plan() -> None:
     model_id = cycle_response["data"]["model_id"]
     training_plan_id = cycle_response["data"]["plans"]["training_plan"]
 
-    def get_model(grid_address: str, worker_id, request_key, model_id):
+    def get_model(
+        grid_address: str, worker_id: str, request_key: str, model_id: int
+    ) -> List:
         req = requests.get(
             (
                 f"http://{grid_address}/model-centric/get-model?worker_id={worker_id}&"
@@ -310,21 +324,7 @@ def create_plan() -> None:
     return param_type_size
 
 
-def read_file(fname):
-    with open(fname, "r") as f:
-        return f.read()
-
-
-private_key = read_file(f"{here}/example_rsa").strip()
-public_key = read_file(f"{here}/example_rsa.pub").strip()
-
-
-def execute_plan() -> None:
-    logger.remove()
-    th.random.manual_seed(42)
-
-    auth_token = jwt.encode({}, private_key, algorithm="RS256").decode("ascii")
-
+def execute_plan() -> float:
     # PyGrid Node address
     gridAddress = f"ws://localhost:{DOMAIN_PORT}"
 
@@ -363,12 +363,12 @@ def execute_plan() -> None:
         get_root_data_path(), train=True, download=True, transform=tfs
     )
 
-    cycles_log = []
+    cycles_log: TypeList = []
     status = {"ended": False}
 
     # Called when client is accepted into FL cycle
-    def on_accepted(job: FLJob):
-        print(f"Accepted into cycle {len(cycles_log) + 1}!")
+    def on_accepted(job: FLJob) -> None:
+        print(f"Accepted into {job} cycle {len(cycles_log) + 1}.")
 
         cycle_params = job.client_config
         batch_size, max_updates = (
@@ -376,7 +376,8 @@ def execute_plan() -> None:
             cycle_params["max_updates"],
         )
         training_plan, model_params = job.plans["training_plan"], job.model
-        losses, accuracies = [], []
+        losses: TypeList = []
+        accuracies: TypeList = []
 
         train_loader = th.utils.data.DataLoader(
             train_set, batch_size=batch_size, drop_last=True, shuffle=True
@@ -395,22 +396,20 @@ def execute_plan() -> None:
         cycles_log.append((losses, accuracies))
 
     # Called when the client is rejected from cycle
-    def on_rejected(job: FLJob, timeout):
+    def on_rejected(job: FLJob, timeout: Optional[int] = None) -> None:
         if timeout is None:
-            print(
-                f"Rejected from cycle without timeout (this means FL training is done)"
-            )
+            print(f"Rejected from {job} cycle without timeout, FL training complete.")
         else:
-            print(f"Rejected from cycle with timeout: {timeout}")
+            print(f"Rejected from {job} cycle with timeout: {timeout}.")
         status["ended"] = True
 
-    # Called when error occured
-    def on_error(job: FLJob, error: Exception):
-        print(f"Error: {error}")
+    # Called when error occurred
+    def on_error(job: FLJob, error: Exception) -> None:
+        print(f"Error: {job} {error}")
         status["ended"] = True
 
-    def create_client_and_run_cycle():
-        client = FLClient(url=gridAddress, auth_token=auth_token, verbose=True)
+    def create_client_and_run_cycle() -> None:
+        client = FLClient(url=gridAddress, auth_token=auth_token, secure=False)
         client.worker_id = client.grid_worker.authenticate(
             client.auth_token, model_name, model_version
         )["data"]["worker_id"]
@@ -430,13 +429,13 @@ def execute_plan() -> None:
 
     # Download trained model
     grid_address = f"localhost:{DOMAIN_PORT}"
-    grid = ModelCentricFLClient(id="test", address=grid_address, secure=False)
+    grid = ModelCentricFLClient(address=grid_address, secure=False)
     grid.connect()
 
-    trained_params = grid.get_model(model_name, model_version)
+    trained_params = grid.retrieve_model(model_name, model_version)
     # Inference
 
-    def test(test_loader, model):
+    def test(test_loader: th.utils.data.DataLoader, model: SyModule) -> th.Tensor:
         correct = []
         model.eval()
         for data, target in test_loader:
