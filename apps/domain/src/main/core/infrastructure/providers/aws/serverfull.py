@@ -245,14 +245,13 @@ class AWS_Serverfull(AWS):
             f"""
             ## For debugging
             # redirect stdout/stderr to a file
-            exec &> server_log.out
+            exec &> logs.out
             echo 'Simple Web Server for testing the deployment'
             sudo apt update -y
             sudo apt install apache2 -y
             sudo systemctl start apache2
             echo '<h1>OpenMined {self.config.app.name} Server ({index}) Deployed via Terraform</h1>' | sudo tee /var/www/html/index.html
 
-            exec &> conda_log.out
             echo 'Setup Miniconda environment'
             sudo wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
             sudo bash miniconda.sh -b -p miniconda
@@ -263,26 +262,22 @@ class AWS_Serverfull(AWS):
             conda create -y -n pygrid python=3.7
             conda activate pygrid
 
-            exec &> poetry_log.out
             echo 'Install poetry...'
             pip install poetry
 
-            exec &> gcc_log.out
             echo 'Install GCC'
             sudo apt-get install zip unzip -y
             sudo apt-get install python3-dev -y
             sudo apt-get install libevent-dev -y
             sudo apt-get install gcc -y
 
-            exec &> terraform_install.out
             curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
             sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" -y
             sudo apt-get update -y && sudo apt-get install terraform -y
 
-            exec &> env_vars.out
             echo "Setting environment variables"
-            # export DATABASE_URL={self.database.engine}:pymysql://{self.database.username}:{self.database.password}@{var(self.database.endpoint)}://{self.database.name}
-            export DATABASE_URL="sqlite:///pygrid.db"
+            export DATABASE_URL={self.database.engine}:pymysql://{self.database.username}:{self.database.password}@{var(self.database.endpoint)}://{self.database.name}
+            # export DATABASE_URL="sqlite:///pygrid.db"
             export CLOUD_PROVIDER={self.config.provider}
             export REGION={self.config.vpc.region}
             export VPC_ID={var(self.vpc.id)}
@@ -293,21 +288,19 @@ class AWS_Serverfull(AWS):
             export AWS_ACCESS_KEY_ID={self.config.credentials.cloud.aws_access_key_id}
             export AWS_SECRET_ACCESS_KEY={self.config.credentials.cloud.aws_secret_access_key}
 
-            exec &> grid_log.out
+
             echo 'Cloning PyGrid'
             git clone https://github.com/OpenMined/PyGrid && cd /PyGrid/
-            git checkout cli_integrated
+            git checkout pygrid_0.4.0
 
             cd /PyGrid/apps/{self.config.app.name}
 
-            exec &> dependencies_log.out
             echo 'Installing {self.config.app.name} Dependencies'
             poetry install
 
             ## TODO(amr): remove this after poetry updates
             pip install pymysql
 
-            exec &> start_app.out
             nohup ./run.sh --port {app.port}  --host 0.0.0.0
             """
         )
