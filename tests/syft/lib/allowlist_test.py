@@ -80,7 +80,6 @@ has_cuda = th.cuda.is_available()
 # is_property:  this helps understand if the attribute can be called or not
 # return_type:  this helps verify that the return type matches the expected return type
 
-
 # this handles instances where the allow list provides more meta information
 def get_return_type(support_dict: Union[str, Dict[str, str]]) -> str:
     if isinstance(support_dict, str):
@@ -454,19 +453,50 @@ def test_all_allowlisted_tensor_methods(
         requires_grad = False
         if op_name in ["backward", "retain_grad", "grad"]:
             requires_grad = True
-        if len(self_tensor) == 3 and self_tensor[0] == "torch_method":
+        if len(self_tensor) == 3 and self_tensor[0] == "@torch_method":
+            # for "tensor_sparse" and "tensor_quantize"
             # third party
             import torch
 
             method = getattr(torch, self_tensor[1])
-            self_tensor, self_tensor_copy = method(*self_tensor[2]), method(
-                *self_tensor[2]
+
+            def gen_tensor(method, argslist: ListType) -> torch.Tensor:
+                for i in range(len(argslist)):
+                    if (
+                        isinstance(argslist[i], list)
+                        and len(argslist[i]) == 3
+                        and argslist[i][0] == "@torch_method"
+                    ):
+                        argmethod = getattr(torch, argslist[i][1])
+                        arg = gen_tensor(argmethod, *argslist[i][2:])
+                        argslist[i] = arg
+                # for torch.quantize_per_tensor, it has a dtype that is specified directly in allowlist_test.json
+                dt_in_arg = False
+                for i in range(len(argslist)):
+                    if isinstance(argslist[i], str):
+                        dt_in_arg = True
+                        if argslist[i] == "@torch.qint8":
+                            argslist[i] = torch.qint8
+                        elif argslist[i] == "@torch.quint8":
+                            argslist[i] = torch.quint8
+                        elif argslist[i] == "@torch.qint32":
+                            argslist[i] == torch.qint32
+                        else:
+                            raise Exception("unsupported dtype")
+                        break
+                if dt_in_arg:
+                    ten = method(*argslist)
+                else:
+                    ten = method(*argslist, dtype=t_type)
+
+                if cuda:
+                    ten = ten.cuda()
+                return ten
+
+            self_tensor, self_tensor_copy = (
+                gen_tensor(method, self_tensor[2][:]),
+                gen_tensor(method, self_tensor[2][:]),
             )
-            if cuda:
-                self_tensor, self_tensor_copy = (
-                    self_tensor.cuda(),
-                    self_tensor_copy.cuda(),
-                )
         else:
             self_tensor, self_tensor_copy = (
                 th.tensor(self_tensor, dtype=t_type, requires_grad=requires_grad)
