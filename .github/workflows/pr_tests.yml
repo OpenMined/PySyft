@@ -315,7 +315,7 @@ jobs:
           pytest -m duet -n 1 --suppress-no-test-exit-code
 
   pygrid-unit-tests:
-    needs: [python-linting]
+    needs: [python-tests-fast-latest]
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 3
@@ -374,7 +374,7 @@ jobs:
           pytest ./pygrid/apps/worker/tests
 
   pygrid-integration-tests:
-    needs: [python-linting]
+    needs: [python-tests-fast-latest]
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 1
