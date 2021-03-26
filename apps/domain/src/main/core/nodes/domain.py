@@ -1,5 +1,7 @@
 from typing import Optional
 from typing import Dict
+from typing import List
+from typing import Any
 
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
@@ -24,7 +26,7 @@ from ..services.user_service import UserManagerService
 from ..services.dataset_service import DatasetManagerService
 from ..services.group_service import GroupManagerService
 from ..services.transfer_service import TransferObjectService
-from ..services.request_service import RequestService
+from ..services.request_service import RequestService, RequestServiceWithoutReply
 
 # Database Management
 from ..database import db
@@ -46,6 +48,27 @@ from flask import current_app as app
 from threading import Thread
 
 import syft as sy
+from syft.core.node.common.service.obj_action_service import (
+    ImmediateObjectActionServiceWithReply,
+)
+from syft.core.node.common.service.obj_search_service import (
+    ImmediateObjectSearchService,
+)
+from syft.core.node.common.service.resolve_pointer_type_service import (
+    ResolvePointerTypeService,
+)
+from syft.core.node.common.service.get_repr_service import GetReprService
+from syft.core.node.common.service.repr_service import ReprService
+from syft.core.node.common.service.heritage_update_service import HeritageUpdateService
+from syft.core.node.common.service.child_node_lifecycle_service import (
+    ChildNodeLifecycleService,
+)
+from syft.core.node.common.service.obj_action_service import (
+    ImmediateObjectActionServiceWithoutReply,
+)
+from syft.core.node.common.service.obj_search_permission_service import (
+    ImmediateObjectSearchPermissionUpdateService,
+)
 
 # import tenseal as ts
 
@@ -90,6 +113,28 @@ class GridDomain(Domain):
         self.env_clients = {}
         self.setup_configs = {}
 
+        # Reset Node Services
+        self.immediate_msg_with_reply_router = {}
+        self.immediate_msg_without_reply_router = {}
+        self.immediate_services_with_reply: List[Any] = []
+        self.immediate_services_without_reply: List[Any] = []
+
+        # Common Node Services
+        self.immediate_services_with_reply.append(ImmediateObjectActionServiceWithReply)
+        self.immediate_services_with_reply.append(ImmediateObjectSearchService)
+        self.immediate_services_with_reply.append(GetReprService)
+        self.immediate_services_with_reply.append(ResolvePointerTypeService)
+
+        self.immediate_services_without_reply.append(ReprService)
+        self.immediate_services_without_reply.append(HeritageUpdateService)
+        self.immediate_services_without_reply.append(ChildNodeLifecycleService)
+        self.immediate_services_without_reply.append(
+            ImmediateObjectActionServiceWithoutReply
+        )
+        self.immediate_services_without_reply.append(
+            ImmediateObjectSearchPermissionUpdateService
+        )
+
         # Grid Domain Services
         self.immediate_services_with_reply.append(AssociationRequestService)
         self.immediate_services_with_reply.append(DomainInfrastructureService)
@@ -101,11 +146,9 @@ class GridDomain(Domain):
         self.immediate_services_with_reply.append(GroupManagerService)
         self.immediate_services_with_reply.append(TransferObjectService)
         self.immediate_services_with_reply.append(RequestService)
-        self._register_services()
 
-        self.__handlers_flag = True
-        # thread = Thread(target=self.thread_run_handlers)
-        # thread.start()
+        self.immediate_services_without_reply.append(RequestServiceWithoutReply)
+        self._register_services()
 
     def login(self, email: str, password: str) -> Dict:
         user = self.users.login(email=email, password=password)
