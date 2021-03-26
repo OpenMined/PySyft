@@ -259,6 +259,11 @@ class Pointer(AbstractPointer):
         # syft relative
         from ..node.domain.service import RequestStatus
 
+        if not self.gc_enabled:
+            raise ReferenceError(
+                "Object has already been deleted. This pointer isn't usable"
+            )
+
         if not request_block:
             result = self._get(delete_obj=delete_obj, verbose=verbose)
         else:
