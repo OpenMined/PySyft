@@ -115,12 +115,11 @@ def test_len(custom_client: Client) -> None:
 def test_iter(custom_client: Client) -> None:
     a_ptr = custom_client.module_test.A()
     iter_from_ptr = a_ptr.__iter__()
-
     a = module_test.A()
     iter_from_obj = iter(a)
 
     for _ in range(1, module_test.A.static_attr):
-        assert next(iter_from_obj) == iter_from_ptr.__next__()
+        assert next(iter_from_ptr).get() == next(iter_from_obj)
 
 
 def test_method(custom_client: Client) -> None:

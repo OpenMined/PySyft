@@ -11,10 +11,12 @@ nest_asyncio
 packaging
 pandas
 protobuf
+PyJWT==1.7.1
 PyNaCl
 requests
 scikit-learn
 sqlitedict
+syft-proto
 typeguard
 typing-extensions # backport to older python 3
-websockets
+websocket-client
