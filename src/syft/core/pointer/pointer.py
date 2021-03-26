@@ -260,7 +260,7 @@ class Pointer(AbstractPointer):
         from ..node.domain.service import RequestStatus
 
         if not request_block:
-            return self._get(delete_obj=delete_obj, verbose=verbose)
+            result = self._get(delete_obj=delete_obj, verbose=verbose)
         else:
             response_status = self.request(
                 reason=reason,
@@ -272,9 +272,14 @@ class Pointer(AbstractPointer):
                 response_status is not None
                 and response_status == RequestStatus.Accepted
             ):
-                return self._get(delete_obj=delete_obj, verbose=verbose)
+                result = self._get(delete_obj=delete_obj, verbose=verbose)
+            else:
+                return None
 
-        return None
+        if result is not None and delete_obj:
+            self.gc_enabled = False
+
+        return result
 
     def _object2proto(self) -> Pointer_PB:
         """Returns a protobuf serialization of self.
@@ -569,7 +574,6 @@ class Pointer(AbstractPointer):
         if (_client_type == Address) or issubclass(_client_type, AbstractNode):
             # it is a serialized pointer that we receive from another client do nothing
             return
-
         if self.gc_enabled:
             # Create the delete message
             msg = GarbageCollectObjectAction(
