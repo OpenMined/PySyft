@@ -302,6 +302,7 @@ jobs:
           pytest ./pygrid/apps/worker/tests
 
   pygrid-integration-tests:
+    needs: [python-linting]
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 1
