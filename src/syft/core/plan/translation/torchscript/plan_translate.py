@@ -43,17 +43,19 @@ def translate(plan: Plan) -> PlanTorchscript:
             for name, arg in zip(self._kwarg_names, args):
                 found = False
                 for ptr in ROOT_CLIENT.store:
-                    store_value = PLAN_BUILDER_VM.store[ptr.id_at_location].data
-                    if isinstance(arg, (SyList, list)) and isinstance(
+                    store_value: Any = PLAN_BUILDER_VM.store[ptr.id_at_location].data
+                    is_list = isinstance(arg, (SyList, list)) and isinstance(
                         store_value, (SyList, list)
-                    ):
-                        # Assume lists match if their contents are equal
-                        found = all(map(lambda a, b: a is b, store_value, arg))
-                    elif isinstance(
+                    )
+                    is_dict = isinstance(
                         arg, (dict, Dict, OrderedDict, SyOrderedDict)
                     ) and isinstance(
                         store_value, (dict, Dict, OrderedDict, SyOrderedDict)
-                    ):
+                    )
+                    if is_list:
+                        # Assume lists match if their contents are equal
+                        found = all(map(lambda a, b: a is b, store_value, arg))
+                    elif is_dict:
                         # Assume dicts match if their contents are equal
                         arg_keys, store_value_keys = sorted(arg.keys()), sorted(
                             store_value.keys()
