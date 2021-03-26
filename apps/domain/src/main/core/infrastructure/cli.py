@@ -119,7 +119,7 @@ def deploy(config: SimpleNamespace, provider: str, app: str):
         f"""Your current configration are:\n\n{colored(config_json)}\n\nContinue?"""
     ):
 
-        # config.credentials = credentials
+        config.credentials = credentials
         click.echo(colored("STARTING DEPLOYMENT... 🔃", color=COLORS.green))
 
         deployed, output = _deploy(config)
