@@ -146,7 +146,7 @@ class StorableObject(AbstractStorableObject):
                     proto.tags.append(tag)
 
         # Step 6: save read permissions
-        if len(self.read_permissions.keys()) > 0:
+        if len(self.read_permissions) > 0:
             permission_data = sy.lib.python.Dict()
             for k, v in self.read_permissions.items():
                 permission_data[k] = v
@@ -169,8 +169,6 @@ class StorableObject(AbstractStorableObject):
         if not isinstance(id, UID):
             traceback_and_raise(ValueError("TODO"))
 
-        # TODO: FIX THIS SECURITY BUG!!! WE CANNOT USE
-        # PYDOC.LOCATE!!!
         # Step 2: get the type of wrapper to use to deserialize
         data_type = index_syft_by_module_name(fully_qualified_name=proto.data_type)
 
