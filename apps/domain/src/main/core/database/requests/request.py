@@ -13,11 +13,12 @@ class Request(BaseModel):
         reason (String): Motivation of the request.
         status (String): The status of the request, wich can be 'pending', 'accepted' or 'denied'.
         request_type (String): Wheter the type of the request is 'permissions' or 'budget'.
+        verify_key (String): User Verify Key.
     """
 
     __tablename__ = "request"
 
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    id = db.Column(db.String(255), primary_key=True)
     date = db.Column(db.DateTime())
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
     user_name = db.Column(db.String(255))
@@ -25,6 +26,9 @@ class Request(BaseModel):
     reason = db.Column(db.String(255))
     status = db.Column(db.String(255), default="pending")
     request_type = db.Column(db.String(255))
+    verify_key = db.Column(db.String(255))
+    object_type = db.Column(db.String(255))
+    tags = db.Column(db.JSON())
 
     def __str__(self):
         return f"< Request id : {self.id}, user: {self.user_id}, Date: {self.date}, Object: {self.object_id}, reason: {self.reason}, status: {self.status}, type: {self.type} >"
