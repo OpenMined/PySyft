@@ -179,8 +179,10 @@ def connect(
             return locations
 
         def __perform_grid_request(
-            self, grid_msg: Any, content: Dict[Any, Any] = {}
+            self, grid_msg: Any, content: Optional[Dict[Any, Any]] = None
         ) -> Dict[Any, Any]:
+            if content is None:
+                content = {}
             signed_msg = self.__build_msg(grid_msg=grid_msg, content=content)
             response = self.send_immediate_msg_with_reply(msg=signed_msg)
             return self.__process_response(response=response)
