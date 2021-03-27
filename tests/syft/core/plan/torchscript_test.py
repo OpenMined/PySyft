@@ -4,6 +4,7 @@ import torch as th
 # syft absolute
 import syft as sy
 from syft import make_plan
+from syft.core.plan.plan_builder import PLAN_BUILDER_VM
 from syft.core.plan.plan_builder import ROOT_CLIENT
 from syft.core.plan.translation.torchscript.plan_translate import translate
 
@@ -54,10 +55,19 @@ def test_mnist_demo_plan_translation() -> None:
     target = th.nn.functional.one_hot(th.randint(0, classes_num, [bs]), classes_num)
     lr = th.tensor([0.1])
     batch_size = th.tensor([bs])
-    model_state_zeros = sy.lib.python.collections.OrderedDict(
-        {k: v * 0 for k, v in model.state_dict().items()}
+    model_params_zeros = sy.lib.python.List(
+        [th.nn.Parameter(th.zeros_like(param)) for param in model.parameters()]
     )
-    model_state = sy.lib.python.collections.OrderedDict(model.state_dict())
+    model_params = sy.lib.python.List(model.parameters())
+
+    def set_remote_model_params(module_ptrs, params_list_ptr):  # type: ignore
+        param_idx = 0
+        for module_name, module_ptr in module_ptrs.items():
+            for param_name, _ in PLAN_BUILDER_VM.store[
+                module_ptr.id_at_location
+            ].data.named_parameters():
+                module_ptr.register_parameter(param_name, params_list_ptr[param_idx])
+                param_idx += 1
 
     @make_plan
     def training_plan(  # type: ignore
@@ -65,32 +75,32 @@ def test_mnist_demo_plan_translation() -> None:
         targets=target,
         lr=lr,
         batch_size=batch_size,
-        model_state=model_state_zeros,
+        model_params=model_params_zeros,
     ):
         # send the model to plan builder (but not its default params)
-        model_ptr = model.send(ROOT_CLIENT, send_parameters=False)
+        local_model = model.send(ROOT_CLIENT, send_parameters=False)
 
         # set model params from input
-        model_ptr.__dict__["real_module"].load_state_dict(model_state)
+        set_remote_model_params(local_model.modules, model_params)
 
         # forward
-        logits = model_ptr(data)
+        logits = local_model(data)
 
         # loss
-        loss, loss_grad = model_ptr.softmax_cross_entropy_with_logits(
+        loss, loss_grad = local_model.softmax_cross_entropy_with_logits(
             logits, targets, batch_size
         )
 
         # backward
-        grads = model_ptr.backward(data, loss_grad)
+        grads = local_model.backward(data, loss_grad)
 
         # SGD step
         updated_params = tuple(
-            param - lr * grad for param, grad in zip(model_ptr.parameters(), grads)
+            param - lr * grad for param, grad in zip(local_model.parameters(), grads)
         )
 
         # accuracy
-        acc = model_ptr.accuracy(logits, targets, batch_size)
+        acc = local_model.accuracy(logits, targets, batch_size)
 
         # return things
         return (loss, acc, *updated_params)
@@ -102,7 +112,7 @@ def test_mnist_demo_plan_translation() -> None:
     print(ts_plan.torchscript.code)
 
     # Execute translated plan
-    ts_res = ts_plan(data, target, lr, batch_size, model_state)
+    ts_res = ts_plan(data, target, lr, batch_size, model_params)
 
     # Check that the plan also works as usual
     vm = sy.VirtualMachine()
@@ -110,7 +120,11 @@ def test_mnist_demo_plan_translation() -> None:
 
     plan_ptr = training_plan.send(client)
     res_ptr = plan_ptr(
-        data=data, targets=target, lr=lr, batch_size=batch_size, model_state=model_state
+        data=data,
+        targets=target,
+        lr=lr,
+        batch_size=batch_size,
+        model_params=model_params,
     )
     res = res_ptr.get()
 
