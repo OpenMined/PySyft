@@ -8,6 +8,7 @@
 
 # stdlib
 from typing import Any as TypeAny
+from typing import Dict as TypeDict
 from typing import List as TypeList
 
 # third party
@@ -17,6 +18,7 @@ import pytest
 # syft absolute
 from syft import logger
 from syft.lib import VendorLibraryImportException
+from syft.lib import _load_lib
 from syft.lib import vendor_requirements_available
 
 logger.remove()
@@ -37,6 +39,8 @@ def pytest_configure(config: _pytest.config.Config) -> None:
     config.addinivalue_line("markers", "libs: runs valid vendor tests")
     config.addinivalue_line("markers", "benchmark: runs benchmark tests")
     config.addinivalue_line("markers", "torch: runs torch tests")
+    config.addinivalue_line("markers", "duet: runs duet notebook integration tests")
+    config.addinivalue_line("markers", "grid: runs grid tests")
 
 
 def pytest_collection_modifyitems(
@@ -48,6 +52,8 @@ def pytest_collection_modifyitems(
     # $ pytest -m libs for the vendor tests
     slow_tests = pytest.mark.slow
     fast_tests = pytest.mark.fast
+    duet_tests = pytest.mark.duet
+    grid_tests = pytest.mark.grid
     all_tests = pytest.mark.all
 
     # dynamically filtered vendor lib tests
@@ -55,17 +61,47 @@ def pytest_collection_modifyitems(
     # these tests is to add a different tag called "libs" and then run
     # the tests against that dynamic keyword
     vendor_tests = pytest.mark.libs  # note libs != vendor
+    loaded_libs: TypeDict[str, bool] = {}
+    vendor_skip = pytest.mark.skip(reason="vendor requirements not met")
     for item in items:
+        if item.location[0].startswith("PyGrid"):
+            # Ignore if PyGrid folder checked out in main dir
+            continue
+
+        if "grid" in item.keywords:
+            item.add_marker(grid_tests)
+            continue
         # mark with: pytest.mark.vendor
         # run with: pytest -m libs -n auto 0
         if "vendor" in item.keywords:
             vendor_requirements = item.own_markers[0].kwargs
+
+            # try to load the lib first and if it fails just skip
+            if "lib" in vendor_requirements:
+                lib_name = vendor_requirements["lib"]
+                if lib_name not in loaded_libs:
+                    try:
+                        _load_lib(lib=lib_name)
+                        loaded_libs[lib_name] = True
+                    except Exception as e:
+                        print(f"Failed to load {lib_name}. {e}")
+                        loaded_libs[lib_name] = False
+                if not loaded_libs[lib_name]:
+                    item.add_marker(vendor_skip)
+                    continue
+
             try:
+                # test the vendor requirements of the specific test if the library
+                # was loaded successfully
                 if vendor_requirements_available(
                     vendor_requirements=vendor_requirements
                 ):
-                    item.add_marker(vendor_tests)
+                    if item.location[0].startswith("tests/syft/notebooks"):
+                        item.add_marker(duet_tests)
+                    else:
+                        item.add_marker(vendor_tests)
                     item.add_marker(all_tests)
+
             except VendorLibraryImportException as e:
                 print(e)
             except Exception as e:
@@ -83,4 +119,8 @@ def pytest_collection_modifyitems(
         if "slow" in item.keywords:
             item.add_marker(slow_tests)
         else:
+            if item.location[0].startswith("tests/syft/notebooks"):
+                item.add_marker(duet_tests)
+                continue
+            # fast is the default catch all
             item.add_marker(fast_tests)

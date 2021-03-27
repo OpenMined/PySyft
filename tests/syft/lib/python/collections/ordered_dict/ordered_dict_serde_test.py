@@ -2,6 +2,7 @@
 from collections import OrderedDict as PyOrderectDict
 
 # third party
+import pytest
 import torch as th
 
 # syft absolute
@@ -69,3 +70,19 @@ def test_list_send() -> None:
     res = ptr.get()
     for res_el, original_el in zip(res, syft_list):
         assert res_el == original_el
+
+
+@pytest.mark.parametrize("method_name", ["items", "keys", "values"])
+def test_iterator_methods(method_name: str) -> None:
+    alice = sy.VirtualMachine(name="alice")
+    alice_client = alice.get_root_client()
+
+    d = OrderedDict({"#1": 1, "#2": 2})
+    dptr = d.send(alice_client)
+
+    itemsptr = getattr(dptr, method_name)()
+    assert type(itemsptr).__name__ == "IteratorPointer"
+
+    for itemptr, local_item in zip(itemsptr, getattr(d, method_name)()):
+        get_item = itemptr.get()
+        assert get_item == local_item

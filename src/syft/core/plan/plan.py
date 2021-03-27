@@ -1,9 +1,15 @@
+"""
+This is the main Plan class which is responsible for containing a list of Actions
+which can be serialized, deserialized, and executed by substituting the run time
+pointers with the original traced pointers and replaying the actions against a node.
+"""
 # stdlib
 import re
 import sys
 from typing import Any
+from typing import Dict
 from typing import List
-from typing import Tuple
+from typing import Optional
 from typing import Union
 
 # third party
@@ -12,14 +18,17 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from ... import serialize
+from ...logger import traceback_and_raise
 from ...proto.core.node.common.action.action_pb2 import Action as Action_PB
 from ...proto.core.plan.plan_pb2 import Plan as Plan_PB
 from ..common.object import Serializable
 from ..common.serde.serializable import bind_protobuf
 from ..node.abstract.node import AbstractNode
+from ..node.common import client
 from ..node.common.action.common import Action
 from ..node.common.util import listify
 from ..pointer.pointer import Pointer
+from ..store.storeable_object import StorableObject
 
 CAMEL_TO_SNAKE_PAT = re.compile(r"(?<!^)(?=[A-Z])")
 
@@ -35,14 +44,24 @@ class Plan(Serializable):
     """
 
     def __init__(
-        self, actions: List[Action], inputs: Union[Pointer, List[Pointer], None] = None
+        self,
+        actions: Union[List[Action], None] = None,
+        inputs: Union[Dict[str, Pointer], None] = None,
+        outputs: Union[Pointer, List[Pointer], None] = None,
     ):
-        self.actions = actions
-        self.inputs: List[Pointer] = listify(inputs)
+        """
+        Initialize the Plan with actions, inputs and outputs
+        """
+        self.actions: List[Action] = listify(actions)
+        self.inputs: Dict[str, Pointer] = inputs if inputs is not None else dict()
+        self.outputs: List[Pointer] = listify(outputs)
 
     def __call__(
-        self, node: AbstractNode, verify_key: VerifyKey, *args: Tuple[Any]
-    ) -> None:
+        self,
+        node: Optional[AbstractNode] = None,
+        verify_key: VerifyKey = None,
+        **kwargs: Dict[str, Any],
+    ) -> List[StorableObject]:
         """
         1) For all pointers that were passed into the init as `inputs`, this method
            replaces those pointers in self.actions by the pointers passed in as *args.
@@ -57,21 +76,53 @@ class Plan(Serializable):
         Args:
             *args: the new inputs for the plan, passed as pointers
         """
-        inputs = listify(args)
 
         # this is pretty cumbersome, we are searching through all actions to check
         # if we need to redefine some of their attributes that are inputs in the
         # graph of actions
-        for i, (current_input, new_input) in enumerate(zip(self.inputs, inputs)):
+        if node is None:
+            return self.execute_locally(**kwargs)
+
+        new_inputs: Dict[str, Pointer] = {}
+        for k, current_input in self.inputs.items():
+            new_input = kwargs[k]
+            if not issubclass(type(new_input), Pointer):
+                traceback_and_raise(
+                    f"Calling Plan without a Pointer. {k} == {type(new_input)} "
+                )
             for a in self.actions:
                 if hasattr(a, "remap_input"):
                     a.remap_input(current_input, new_input)  # type: ignore
 
             # redefine the inputs of the plan
-            self.inputs[i] = new_input
+            new_inputs[k] = new_input  # type: ignore
+        self.inputs = new_inputs
 
         for a in self.actions:
             a.execute_action(node, verify_key)
+
+        if len(self.outputs):
+            resolved_outputs = []
+            for arg in self.outputs:
+                r_arg = node.store[arg.id_at_location]
+                resolved_outputs.append(r_arg.data)
+            return resolved_outputs
+        else:
+            return []
+
+    def execute_locally(self, **kwargs: Any) -> List[StorableObject]:
+        """Execute a plan by sending it to a virtual machine and calling execute on the pointer.
+        This is a workaround until we have a way to execute plans locally.
+        """
+        # prevent circular dependency
+        # syft relative
+        from ...core.node.vm.vm import VirtualMachine  # noqa: F401
+
+        alice = VirtualMachine(name="plan_executor")
+        alice_client: client.Client = alice.get_client()
+        self_ptr = self.send(alice_client)  # type: ignore
+        out = self_ptr(**kwargs)
+        return out.get()
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
@@ -110,18 +161,20 @@ class Plan(Serializable):
         """
 
         def camel_to_snake(s: str) -> str:
+            """Convert CamelCase classes to snake case for matching protobuf names"""
             return CAMEL_TO_SNAKE_PAT.sub("_", s).lower()
 
         actions_pb = [
             Action_PB(
                 obj_type=".".join([action.__module__, action.__class__.__name__]),
-                **{camel_to_snake(action.__class__.__name__): serialize(action)}
+                **{camel_to_snake(action.__class__.__name__): serialize(action)},
             )
             for action in self.actions
         ]
-        inputs_pb = [inp._object2proto() for inp in self.inputs]
+        inputs_pb = {k: v._object2proto() for k, v in self.inputs.items()}
+        outputs_pb = [out._object2proto() for out in self.outputs]
 
-        return Plan_PB(actions=actions_pb, inputs=inputs_pb)
+        return Plan_PB(actions=actions_pb, inputs=inputs_pb, outputs=outputs_pb)
 
     @staticmethod
     def _proto2object(proto: Plan_PB) -> "Plan":
@@ -148,8 +201,9 @@ class Plan(Serializable):
             inner_action = getattr(action_proto, action_proto.WhichOneof("action"))
             actions.append(action_cls._proto2object(inner_action))
 
-        inputs = [
-            Pointer._proto2object(pointer_proto) for pointer_proto in proto.inputs
+        inputs = {k: Pointer._proto2object(proto.inputs[k]) for k in proto.inputs}
+        outputs = [
+            Pointer._proto2object(pointer_proto) for pointer_proto in proto.outputs
         ]
 
-        return Plan(actions=actions, inputs=inputs)
+        return Plan(actions=actions, inputs=inputs, outputs=outputs)

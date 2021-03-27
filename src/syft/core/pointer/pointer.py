@@ -113,6 +113,7 @@ from ..node.common.action.garbage_collect_object_action import (
     GarbageCollectObjectAction,
 )
 from ..node.common.action.get_object_action import GetObjectAction
+from ..node.common.service.get_repr_service import GetReprMessage
 from ..node.common.service.obj_search_permission_service import (
     ObjectSearchPermissionUpdateMessage,
 )
@@ -202,6 +203,45 @@ class Pointer(AbstractPointer):
             verbose=verbose,
         )
 
+    def print(self) -> "Pointer":
+        obj = None
+        try:
+            obj_msg = GetReprMessage(
+                id_at_location=self.id_at_location,
+                address=self.client.address,
+                reply_to=self.client.address,
+            )
+
+            obj = self.client.send_immediate_msg_with_reply(msg=obj_msg).repr
+        except Exception as e:
+            if "You do not have permission to .get()" in str(
+                e
+            ) or "UnknownPrivateException" in str(e):
+                # syft relative
+                from ..node.domain.service import RequestStatus
+
+                response_status = self.request(
+                    reason="Calling remote print",
+                    block=True,
+                    timeout_secs=3,
+                )
+                if (
+                    response_status is not None
+                    and response_status == RequestStatus.Accepted
+                ):
+                    return self.print()
+
+        # TODO: Create a remote print interface for objects which displays them in a
+        # nice way, we could also even buffer this between chained ops until we return
+        # so that we can print once and display a nice list of data and ops
+        # issue: https://github.com/OpenMined/PySyft/issues/5167
+        if obj is not None:
+            print(obj)
+        else:
+            print(f"No permission to print() {self}")
+
+        return self
+
     def get(
         self,
         request_block: bool = False,
@@ -220,7 +260,7 @@ class Pointer(AbstractPointer):
         from ..node.domain.service import RequestStatus
 
         if not request_block:
-            return self._get(delete_obj=delete_obj, verbose=verbose)
+            result = self._get(delete_obj=delete_obj, verbose=verbose)
         else:
             response_status = self.request(
                 reason=reason,
@@ -232,9 +272,14 @@ class Pointer(AbstractPointer):
                 response_status is not None
                 and response_status == RequestStatus.Accepted
             ):
-                return self._get(delete_obj=delete_obj, verbose=verbose)
+                result = self._get(delete_obj=delete_obj, verbose=verbose)
+            else:
+                return None
 
-        return None
+        if result is not None and delete_obj:
+            self.gc_enabled = False
+
+        return result
 
     def _object2proto(self) -> Pointer_PB:
         """Returns a protobuf serialization of self.
@@ -529,7 +574,6 @@ class Pointer(AbstractPointer):
         if (_client_type == Address) or issubclass(_client_type, AbstractNode):
             # it is a serialized pointer that we receive from another client do nothing
             return
-
         if self.gc_enabled:
             # Create the delete message
             msg = GarbageCollectObjectAction(

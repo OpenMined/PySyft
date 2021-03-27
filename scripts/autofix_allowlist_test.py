@@ -16,15 +16,22 @@ torch_version = torch.__version__
 # --------------------------------------
 # add exception and it's handler
 # --------------------------------------
-exception_pattern_1 = re.compile("no attribute|no NVIDIA driver")
+exception_pattern_1 = re.compile(
+    "no attribute" + "|no NVIDIA driver" + "|Torch not compiled with CUDA enabled"
+)
 
 
 def fix_exception_pattern_1(not_available: list, **kwargs: Any) -> None:
-    ele = {"lte_version": torch_version, "gte_version": torch_version}
+    ele = {
+        "lte_version": torch_version,
+        "gte_version": torch_version,
+        "reason": "no_cpu",
+    }
     if ele not in not_available:
         not_available.append(ele)
 
 
+# errors caused by "self"
 exception_pattern_2 = re.compile(
     "convert"
     + "|implement"
@@ -34,8 +41,12 @@ exception_pattern_2 = re.compile(
     + "|'CPU' backend"
     + "|xpected"
     + "|can't be cast to the desired output type"
-    + "|Can only calculate the mean of floating types"
+    + "|Can only calculate the mean of"
     + "|input tensor"
+    + "|Invalid device, must be xpu device"
+    + "|Can only calculate the norm of"
+    + "|the base given to float_power_ has dtype"
+    + "|sinc_cpu"
 )
 
 
@@ -66,6 +77,7 @@ def fix_exception_pattern_2(
         not_available[i]["data_types"].append(tensor_type)
 
 
+# errors caused by improper armuments
 exception_pattern_3 = re.compile("argument")
 
 
@@ -89,8 +101,16 @@ def fix_exception_pattern_3(not_available: list, inputs: Any, **kwargs: None) ->
         )
         return i + 1
 
+    def exactly_eq(a: Any, b: Any) -> bool:
+        """
+        `True==1` and `False==0` will return True;
+        But we want them be False, so we also check if they are of the same type.
+        """
+        return type(a) == type(b) and a == b
+
     i = get_ele_index()
-    if inputs not in not_available[i]["inputs"]:
+    already_exists = sum([exactly_eq(inputs, _) for _ in not_available[i]["inputs"]])
+    if not already_exists:
         not_available[i]["inputs"].append(inputs)
 
 
@@ -138,7 +158,7 @@ while continue_loop:
 
     # run slow test
     print("Running slow test ...This may take a while.")
-    os.system("pytest -m torch -n auto -p no:benchmark")
+    os.system("pytest -m torch -n auto -p no:benchmark --tb=no")
     print("Slow test done.")
     print()
 
@@ -244,3 +264,72 @@ while continue_loop:
     # update allowlist_test.json
     with open(f"{root_dir}/tests/syft/lib/allowlist_test.json", "w") as f:
         json.dump(allowlist_test, f, indent=2)
+
+
+# read allowlist_test.json
+with open(f"{root_dir}/tests/syft/lib/allowlist_test.json", "r") as f:
+    allowlist_test = json.load(f)
+
+# optimize json file
+for op, config in allowlist_test["tests"]["torch.Tensor"].items():
+    lte_key = "lte_version"
+    gte_key = "gte_version"
+
+    # look at not available rules
+    if "not_available" in config:
+        na_rules = config["not_available"]
+        new_rule = None
+        for rule in na_rules:
+            if lte_key in rule and gte_key in rule:
+                rule_lte_version = rule[lte_key]
+                rule_gte_version = rule[gte_key]
+                if (
+                    rule_lte_version == torch_version
+                    and rule_gte_version == torch_version
+                ):
+                    new_rule = rule
+
+        old_rule = None
+        match_found = False
+        # found a new rule to optimize
+        if new_rule is not None:
+            for rule in na_rules:
+                if new_rule != rule:
+                    old_rule_copy = rule.copy()
+                    old_rule_copy.pop(lte_key, None)
+                    old_rule_copy.pop(gte_key, None)
+                    new_rule_copy = new_rule.copy()
+                    new_rule_copy.pop(lte_key, None)
+                    new_rule_copy.pop(gte_key, None)
+                    if old_rule_copy.keys() == new_rule_copy.keys():
+                        for k in old_rule_copy.keys():
+                            if isinstance(old_rule_copy[k], list) and isinstance(
+                                new_rule_copy[k], list
+                            ):
+                                old_rule_copy[k] = sorted(
+                                    old_rule_copy[k], key=lambda x: str(x)
+                                )
+                                new_rule_copy[k] = sorted(
+                                    new_rule_copy[k], key=lambda x: str(x)
+                                )
+
+                        # two rules with no version limits and sorted lists match
+                        if old_rule_copy == new_rule_copy:
+                            match_found = True
+                            old_rule = rule.copy()
+
+        # remove the new rule and update the old rule to use current torch_version
+        if match_found:
+            new_na_rules = []
+            for rule in config["not_available"]:
+                if rule == new_rule:
+                    continue
+                if rule == old_rule:
+                    rule[lte_key] = torch_version
+
+                new_na_rules.append(rule)
+            config["not_available"] = new_na_rules
+
+# update allowlist_test.json
+with open(f"{root_dir}/tests/syft/lib/allowlist_test.json", "w") as f:
+    json.dump(allowlist_test, f, indent=2)

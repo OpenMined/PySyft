@@ -15,4 +15,7 @@ pytest
 pytest-asyncio
 pytest-benchmark
 pytest-cov
+pytest-custom_exit_code
+pytest-sugar
 pytest-xdist[psutil]
+pytest-xprocess

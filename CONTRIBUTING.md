@@ -145,7 +145,7 @@ $ brew install protobuf
 For Ubuntu based systems install protobuf and protoc using the following command:
 
 ```
-$ sudo apt install  install protobuf-compiler
+$ sudo apt install protobuf-compiler
 ```
 
 ## Python Versions

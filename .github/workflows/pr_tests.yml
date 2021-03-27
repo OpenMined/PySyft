@@ -15,6 +15,7 @@ on:
       - "**.txt"
       - "setup.cfg"
       - ".github/workflows/**.yml"
+      - "examples/private-ai-series/**.ipynb"
 
 jobs:
   python-linting:
@@ -22,7 +23,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        python-version: [3.8]
+        python-version: [3.9]
 
     steps:
       - uses: actions/checkout@v2
@@ -57,7 +58,6 @@ jobs:
       - name: Build Protos
         run: |
           set -e
-
           pip install black isort
           ./scripts/build_proto.sh
 
@@ -69,27 +69,43 @@ jobs:
       #     pip install darglint flake8
       #     flake8 src tests
 
+      # check docstring coverage. If head coverage < base, exitcode = 1
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Install docstr-coverage
+        run: pip install docstr-coverage
+
+      - name: Get base coverage
+        run: |
+          git checkout ${{ github.event.pull_request.base.sha }}
+          echo "BASE_COV=$(docstr-coverage -p src)" >> $GITHUB_ENV
+
+      - name: Get head coverage
+        continue-on-error: true
+        run: |
+          git checkout ${{ github.event.pull_request.head.sha }}
+          docstr-coverage -p --fail-under=$BASE_COV src
+
+      - name: Check docstring modified files
+        if: ${{ failure() }}
+        run: |
+          git diff --name-only $(git merge-base ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }}) | xargs docstr-coverage --accept-empty
+
   python-tests-fast:
     needs: [python-linting]
     strategy:
       max-parallel: 30
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        python-version: [3.6, 3.7, 3.8]
-        torch-version: [1.6.0, 1.7.0, 1.7.1]
-        # include:
-        # - os: ubuntu-latest
-        #   python-version: 3.7
-        #   torch-version: 1.4.0
-        # - os: windows-latest
-        #   python-version: 3.9
-        #   torch-version: 1.7.1
-        # - os: ubuntu-20.04
-        #   python-version: 3.9
-        #   torch-version: 1.7.1
-        # - os: macos-latest
-        #   python-version: 3.9
-        #   torch-version: 1.7.1
+        python-version: [3.6, 3.7, 3.8, 3.9]
+        torch-version: [1.6.0, 1.7.1, 1.8.0]
+        exclude:
+          - python-version: 3.9
+            torch-version: 1.6.0
+          - python-version: 3.9
+            torch-version: 1.7.1
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -119,7 +135,8 @@ jobs:
 
       - name: Install PyTorch
         run: |
-          python .github/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
+          pip install packaging
+          python scripts/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
           cat ./requirements.torch.txt
           pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html
 
@@ -141,29 +158,31 @@ jobs:
       - name: Install supported library packages Linux and MacOS - Ignore Errors
         if: startsWith(runner.os, 'Windows') != true
         run: |
-          cat requirements/supported_libs.txt | xargs -I {} -n 1 pip install {} --default-timeout=60 || true
+          cat requirements.libs.txt | xargs -I {} -n 1 pip install {} --no-deps --default-timeout=60 || true
 
       - name: Install supported library packages Windows - Ignore Errors
         if: startsWith(runner.os, 'Windows')
         run: |
-          foreach ($i in cat requirements/supported_libs.txt) {
-            pip install $i --default-timeout=60
+          foreach ($i in cat requirements.libs.txt) {
+            pip install $i --no-deps --default-timeout=60
           }
 
       - name: Run supported library tests
         run: |
+          pip install -r requirements.libs.deps.txt
           pip list
-          pytest -m libs -n auto -k "not tenseal"
-          pytest -m libs -n 1 -k "tenseal"
+          pytest -m libs --co
+          pytest -m libs -n auto -k "not tenseal" --suppress-no-test-exit-code
+          pytest -m libs -n 1 -k "tenseal" --suppress-no-test-exit-code
 
   python-nb-examples:
     needs: [python-linting]
     runs-on: ${{ matrix.os }}
     strategy:
-      max-parallel: 1
+      max-parallel: 2
       matrix:
-        python-version: [3.8]
-        torch-version: [1.7.1]
+        python-version: [3.9]
+        torch-version: [1.8.0]
         # os: [ubuntu-latest, macos-latest]
         os: [ubuntu-latest]
     steps:
@@ -193,7 +212,8 @@ jobs:
 
       - name: Install PyTorch
         run: |
-          python .github/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
+          pip install packaging
+          python scripts/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
           cat ./requirements.torch.txt
           pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html
 
@@ -210,15 +230,17 @@ jobs:
           ./scripts/nb_test.sh
           pytest examples/api -n auto
 
-      - name: Install supported library packages
+      - name: Install supported library packages Linux and MacOS - Ignore Errors
+        if: startsWith(runner.os, 'Windows') != true
         run: |
-          pip install -r requirements/supported_libs.txt
-        timeout-minutes: 10
+          cat requirements.libs.txt | xargs -I {} -n 1 pip install {} --no-deps --default-timeout=60 || true
+          pip install -r requirements.libs.deps.txt
 
       - name: Run notebook Duet examples
         run: |
+          python ./scripts/mnist.py
           python ./scripts/nb_duet_test.py
-          cd tests/syft/notebooks/ && pytest . -n 1
+          pytest -m duet -n 1 --suppress-no-test-exit-code
 
   pygrid-unit-tests:
     needs: [python-linting]
@@ -226,8 +248,8 @@ jobs:
     strategy:
       max-parallel: 3
       matrix:
-        python-version: [3.6, 3.7, 3.8]
-        torch-version: [1.7.1]
+        python-version: [3.6, 3.7, 3.8, 3.9]
+        torch-version: [1.8.0]
 
     steps:
       - uses: actions/checkout@v2
@@ -262,7 +284,8 @@ jobs:
 
       - name: Install PyTorch
         run: |
-          python .github/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
+          pip install packaging
+          python scripts/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
           cat ./requirements.torch.txt
           pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html
 
@@ -272,7 +295,65 @@ jobs:
           pip install -e . --default-timeout=60
           pip install pytest PyJWT==1.7.1 flask_sockets flask_sqlalchemy bcrypt \
                       sqlalchemy_utils flask_migrate sqlalchemy_mixins flask_executor \
+                      "sqlalchemy>=1.3,<1.4" terrascript PyInquirer requests_toolbelt scipy \
                       --default-timeout=60
           pytest ./pygrid/apps/domain/tests
           pytest ./pygrid/apps/network/tests
           pytest ./pygrid/apps/worker/tests
+
+  pygrid-integration-tests:
+    needs: [python-linting]
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix:
+        python-version: [3.9]
+        torch-version: [1.8.0]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
+
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - uses: actions/checkout@v2
+        with:
+          repository: "koenvanderveen/PyGrid"
+          ref: "mcfl"
+          path: "pygrid"
+
+      - name: Install PyTorch
+        run: |
+          pip install packaging
+          python scripts/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
+          cat ./requirements.torch.txt
+          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html
+
+      - name: Test PyGrid
+        continue-on-error: true
+        run: |
+          pip install -e . --default-timeout=60
+          pip install pytest pytest-xprocess PyJWT==1.7.1 flask_sockets flask_sqlalchemy bcrypt \
+                      sqlalchemy_utils flask_migrate sqlalchemy_mixins flask_executor \
+                      terrascript PyInquirer requests_toolbelt scipy tenseal \
+                      "sqlalchemy>=1.3,<1.4" --default-timeout=60
+          pytest -m grid
