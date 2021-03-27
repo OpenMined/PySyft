@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package syft.core.node.common.remote_dataloader;
+
+message RemoteDataset {
+  string data_type = 1;
+  string path = 2;
+}
+
+message RemoteDataLoader {
+  RemoteDataset remote_dataset = 1;
+  int64 batch_size = 2;
+}

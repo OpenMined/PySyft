@@ -245,7 +245,7 @@ jobs:
         run: |
           python ./scripts/mnist.py
           python ./scripts/nb_duet_test.py
-          cd tests/syft/notebooks && pytest . -n 1 --suppress-no-test-exit-code
+          pytest -m duet -n 1 --suppress-no-test-exit-code
 
   pygrid-unit-tests:
     needs: [python-linting]
@@ -300,7 +300,65 @@ jobs:
           pip install -e . --default-timeout=60
           pip install pytest PyJWT==1.7.1 flask_sockets flask_sqlalchemy bcrypt \
                       sqlalchemy_utils flask_migrate sqlalchemy_mixins flask_executor \
+                      "sqlalchemy>=1.3,<1.4" terrascript PyInquirer requests_toolbelt scipy \
                       --default-timeout=60
           pytest ./pygrid/apps/domain/tests
           pytest ./pygrid/apps/network/tests
           pytest ./pygrid/apps/worker/tests
+
+  pygrid-integration-tests:
+    needs: [python-linting]
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix:
+        python-version: [3.9]
+        torch-version: [1.8.0]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
+
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - uses: actions/checkout@v2
+        with:
+          repository: "koenvanderveen/PyGrid"
+          ref: "mcfl"
+          path: "pygrid"
+
+      - name: Install PyTorch
+        run: |
+          pip install packaging
+          python scripts/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
+          cat ./requirements.torch.txt
+          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html
+
+      - name: Test PyGrid
+        continue-on-error: true
+        run: |
+          pip install -e . --default-timeout=60
+          pip install pytest pytest-xprocess PyJWT==1.7.1 flask_sockets flask_sqlalchemy bcrypt \
+                      sqlalchemy_utils flask_migrate sqlalchemy_mixins flask_executor \
+                      terrascript PyInquirer requests_toolbelt scipy tenseal \
+                      "sqlalchemy>=1.3,<1.4" --default-timeout=60
+          pytest -m grid
