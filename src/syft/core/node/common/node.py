@@ -266,8 +266,8 @@ class Node(AbstractNode):
     def icon(self) -> str:
         return "📍"
 
-    def get_client(self, routes: List[Route] = []) -> ClientT:
-        if not len(routes):
+    def get_client(self, routes: Optional[List[Route]] = None) -> ClientT:
+        if not routes:
             conn_client = create_virtual_connection(node=self)
             solo = SoloRoute(destination=self.target_id, connection=conn_client)
             # inject name
@@ -285,7 +285,7 @@ class Node(AbstractNode):
             verify_key=None,  # DO NOT PASS IN A VERIFY KEY!!! The client generates one.
         )
 
-    def get_root_client(self, routes: List[Route] = []) -> ClientT:
+    def get_root_client(self, routes: Optional[List[Route]] = None) -> ClientT:
         client: ClientT = self.get_client(routes=routes)
         self.root_verify_key = client.verify_key
         return client
