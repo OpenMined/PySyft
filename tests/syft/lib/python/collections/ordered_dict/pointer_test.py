@@ -53,13 +53,9 @@ objects = [
         remote_python.collections.OrderedDict([("1", 1), ("2", 2), ("3", 3)]),
     ),
     (
-        OrderedDict([(i, j) for i, j in zip(range(100), range(100))]),
-        sy.lib.python.collections.OrderedDict(
-            [(i, j) for i, j in zip(range(100), range(100))]
-        ),
-        remote_python.collections.OrderedDict(
-            [(i, j) for i, j in zip(range(100), range(100))]
-        ),
+        OrderedDict(list(zip(range(100), range(100)))),
+        sy.lib.python.collections.OrderedDict(list(zip(range(100), range(100)))),
+        remote_python.collections.OrderedDict(list(zip(range(100), range(100)))),
     ),
 ]
 
