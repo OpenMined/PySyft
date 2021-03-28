@@ -43,7 +43,7 @@ def version_supported(support_dict: Union[str, Dict[str, str]]) -> bool:
             return True
         return TORCHVISION_VERSION >= version.parse(support_dict["min_version"])
 
-
+# Tests would fail for TorchVision < 0.8.0 due to `Tensor` image input not supported for some `transforms.functional` methods
 def test_allowlist(alice: sy.VirtualMachine, tens: torch.Tensor) -> None:
     alice_client = alice.get_root_client()
     torchvision = alice_client.torchvision
