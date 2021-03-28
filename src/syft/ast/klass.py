@@ -234,7 +234,7 @@ def wrap_iterator(attrs: Dict[str, Union[str, CallableT, property]]) -> None:
     iter_target = attrs[attr_name]
 
     # skip if __iter__ has already been wrapped
-    if "wrap_iter" in iter_target.__qualname__:
+    if "__qual_name__" in dir(iter_target) and "wrap_iter" in iter_target.__qualname__:
         return
 
     if not callable(iter_target):
