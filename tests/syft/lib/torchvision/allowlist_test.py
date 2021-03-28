@@ -1,6 +1,7 @@
 # stdlib
 from os import path
 import os.path
+import json
 from typing import Dict
 from typing import Union
 
@@ -52,6 +53,14 @@ def test_allowlist(alice: sy.VirtualMachine, tens: torch.Tensor) -> None:
         tx = tx * 2
     except Exception as e:
         print(e)
+
+    try:
+        with open(__file__.replace(".py", "_params.json"), "r") as f:
+            TEST_PARAMS = json.loads(f.read())
+    except Exception as e:
+        print(f"Exception {e} triggered")
+        raise e
+
     transforms = torchvision.transforms
     transforms.RandomAffine(2)
     for item in allowlist:
@@ -60,13 +69,11 @@ def test_allowlist(alice: sy.VirtualMachine, tens: torch.Tensor) -> None:
         if (
             arr[1] == "datasets"
             and len(arr) <= 3
-            and isinstance(allowlist[item], dict)
-            and "test_parameters" in allowlist[item].keys()
+            and item in TEST_PARAMS.keys()
             and version_supported(support_dict=allowlist[item])
-        ):
-            print(item)
+        ): 
             try:
-                exec(item + allowlist[item]["test_parameters"])
+                exec(item + TEST_PARAMS[item])
             except RuntimeError as e:
                 assert (
                     "not found" in str(e)
@@ -82,8 +89,7 @@ def test_allowlist(alice: sy.VirtualMachine, tens: torch.Tensor) -> None:
             except KeyError:
                 pass
         elif (
-            isinstance(allowlist[item], dict)
+            item in TEST_PARAMS.keys()
             and version_supported(support_dict=allowlist[item])
-            and "test_parameters" in allowlist[item].keys()
         ):
-            exec(item + allowlist[item]["test_parameters"])
+            exec(item + TEST_PARAMS[item])
