@@ -142,7 +142,7 @@ def _load_lib(*, lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
             _regenerate_unions(lib_ast=lib_ast, client=client)
 
 
-def load(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
+def load(*libs, options: TypeDict[str, TypeAny] = {}) -> None:
     """
     Load and Update Node with given library module
 
@@ -150,12 +150,15 @@ def load(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
         lib: name of library to load and update Node with
         options: external requirements for loading library successfully
     """
-    try:
-        _load_lib(lib=lib, options=options)
-    except VendorLibraryImportException as e:
-        critical(e)
-    except Exception as e:
-        critical(f"Unable to load package support for: {lib}. {e}")
+    if not isinstance(libs[0], str):
+        libs = libs[0]
+    for lib in libs:
+        try:
+            _load_lib(lib=lib, options=options)
+        except VendorLibraryImportException as e:
+            critical(e)
+        except Exception as e:
+            critical(f"Unable to load package support for: {lib}. {e}")
 
 
 def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
@@ -171,7 +174,7 @@ def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
     msg = "load_lib() is deprecated please use load() in the future"
     warning(msg, print=True)
     warnings.warn(msg, DeprecationWarning)
-    load(lib=lib, options=options)
+    load(lib, options=options)
 
 
 # now we need to load the relevant frameworks onto the node
