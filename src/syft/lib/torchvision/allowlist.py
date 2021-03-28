@@ -115,7 +115,9 @@ allowlist["torchvision.datasets.UCF101.__len__"] = "syft.lib.python.Int"
 allowlist["torchvision.datasets.USPS"] = "torchvision.datasets.USPS"
 allowlist["torchvision.datasets.USPS.__len__"] = "syft.lib.python.Int"
 
-allowlist["torchvision.datasets.VOCSegmentation"] = "torchvision.datasets.VOCSegmentation"
+allowlist[
+    "torchvision.datasets.VOCSegmentation"
+] = "torchvision.datasets.VOCSegmentation"
 allowlist["torchvision.datasets.VOCSegmentation.__len__"] = "syft.lib.python.Int"
 
 allowlist["torchvision.datasets.VOCDetection"] = "torchvision.datasets.VOCDetection"
@@ -177,7 +179,9 @@ allowlist["torchvision.transforms.RandomOrder"] = "torchvision.transforms.Random
 allowlist[
     "torchvision.transforms.LinearTransformation"
 ] = "torchvision.transforms.LinearTransformation"
-allowlist["torchvision.transforms.RandomErasing"] = "torchvision.transforms.RandomErasing"
+allowlist[
+    "torchvision.transforms.RandomErasing"
+] = "torchvision.transforms.RandomErasing"
 allowlist["torchvision.transforms.ConvertImageDtype"] = {
     "return_type": "torchvision.transforms.ConvertImageDtype",
     "min_version": "0.8.0",
@@ -222,7 +226,8 @@ allowlist["torchvision.transforms.functional.invert"] = {
     "min_version": "0.9.0",
 }
 allowlist["torchvision.transforms.functional.normalize"] = "torch.Tensor"
-# "test_parameters (tests/lib/torchvision/allowlist_test_parameters.json): (tens, [0.5, 0.5, 0.5], [1, 1, 1]).unsqueeze(0)",
+# "test_parameters (tests/lib/torchvision/allowlist_test_parameters.json): (tens, [0.5,
+#  0.5, 0.5], [1, 1, 1]).unsqueeze(0)",
 # currently not added because of test issues with hier versions
 # (//) works for 1.6.0 and / works for higher version :(
 

@@ -1,7 +1,7 @@
 # stdlib
+import json
 from os import path
 import os.path
-import json
 from typing import Dict
 from typing import Union
 
@@ -43,7 +43,9 @@ def version_supported(support_dict: Union[str, Dict[str, str]]) -> bool:
             return True
         return TORCHVISION_VERSION >= version.parse(support_dict["min_version"])
 
-# Tests would fail for TorchVision < 0.8.0 due to `Tensor` image input not supported for some `transforms.functional` methods
+
+# Tests would fail for TorchVision < 0.8.0 due to `Tensor` image input not supported for
+# some `transforms.functional` methods
 def test_allowlist(alice: sy.VirtualMachine, tens: torch.Tensor) -> None:
     alice_client = alice.get_root_client()
     torchvision = alice_client.torchvision
@@ -71,7 +73,7 @@ def test_allowlist(alice: sy.VirtualMachine, tens: torch.Tensor) -> None:
             and len(arr) <= 3
             and item in TEST_PARAMS.keys()
             and version_supported(support_dict=allowlist[item])
-        ): 
+        ):
             try:
                 exec(item + TEST_PARAMS[item])
             except RuntimeError as e:
@@ -88,8 +90,7 @@ def test_allowlist(alice: sy.VirtualMachine, tens: torch.Tensor) -> None:
                 assert "No module named" in str(e)
             except KeyError:
                 pass
-        elif (
-            item in TEST_PARAMS.keys()
-            and version_supported(support_dict=allowlist[item])
+        elif item in TEST_PARAMS.keys() and version_supported(
+            support_dict=allowlist[item]
         ):
             exec(item + TEST_PARAMS[item])
