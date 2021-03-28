@@ -401,8 +401,8 @@ class RequestService(ImmediateNodeServiceWithReply):
         GetAllRequestHandlersResponseMessage,
     ]:
         return RequestService.msg_handler_map[type(msg)](
-                msg=msg, node=node, verify_key=verify_key
-            )
+            msg=msg, node=node, verify_key=verify_key
+        )
 
     @staticmethod
     def message_handler_types() -> List[Type[ImmediateSyftMessageWithReply]]:
