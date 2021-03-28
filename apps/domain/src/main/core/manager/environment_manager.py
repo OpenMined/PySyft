@@ -28,6 +28,9 @@ class EnvironmentManager(DatabaseManager):
         )
         return objects
 
+    def get_all_associations(self):
+        return list(self.db.session.query(self._association_schema).all())
+
     def delete_associations(self, environment_id):
         # Delete User environment Association
         associations = (
