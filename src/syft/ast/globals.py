@@ -16,7 +16,7 @@ from .module import Module
 
 
 class Globals(Module):
-    """The collection of frameworks held in the global namespace"""
+    """The collection of frameworks held in the global namespace."""
 
     registered_clients: Dict[UID, Any] = {}
     loaded_lib_constructors: Dict[str, CallableT] = {}
@@ -29,18 +29,14 @@ class Globals(Module):
         path_and_name: Optional[str] = None,
         return_type_name: Optional[str] = None,
     ):
-        """
-        Base constructor for all frameworks in global namespace.
+        """Base constructor for all frameworks in global namespace.
 
         Args:
             client: The client who will use all frameworks for executing all the computations.
             object_ref: The python object for which computation is being performed.
-            parent: The parent node is optional as importing frameworks don't need any parent
-                node.
-            path_and_name: The path for current frameworks in global namespace,
-                e.g. `syft.lib.python.List`.
-            return_type_name: The return type name of given action as a string with it's full
-                path.
+            parent: The parent node is optional as importing frameworks don't need any parent node.
+            path_and_name: The path for current frameworks in global namespace, e.g. `syft.lib.python.List`.
+            return_type_name: The return type name of given action as a string with it's full path.
         """
         super().__init__(
             client=client,
@@ -56,19 +52,16 @@ class Globals(Module):
         index: int = 0,
         obj_type: Optional[type] = None,
     ) -> Optional[Union[Callable, CallableT]]:
-        """
-        Execute the given node object reference with the framework paths in global space.
+        """Execute the given node object reference with the framework paths in global space.
 
         Args:
-            path: The path for the node in the module to execute,
-                e.g. `syft.lib.python.List` or ["syft", "lib", "python", "List"]
+            path: The path for the node in the module to execute, e.g. `syft.lib.python.List` or ["syft", "lib", "python", "List"].
             index : The associated position in the path for the current node.
             obj_type: The type of the object to be called, whose path is resolved from `lookup_cache`.
 
         Returns:
             The results of running the computation on the object reference.
         """
-
         self.apply_node_changes()
 
         _path: List[str] = (
@@ -90,22 +83,15 @@ class Globals(Module):
         framework_reference: Optional[ModuleType] = None,
         is_static: bool = False,
     ) -> None:
-        """
-        Adds new nodes in the AST based on the type of the current node and
-        the type of the object to be added.
+        """Adds new nodes in the AST based on the type of the current node and the type of the object to be added.
 
         Args:
-            path: The path for the node in the AST to be added,
-                e.g. `syft.lib.python.List` or ["syft", "lib", "python", "List"]
+            path: The path for the node in the AST to be added, e.g. `syft.lib.python.List` or ["syft", "lib", "python", "List"].
             index: The associated position in the path for the current node.
-            framework_reference: The python framework in which we can resolve the same path
-                to obtain the Python object.
-            return_type_name: The return type name of given action as a string with it's full
-                path.
-            is_static: If the queried object is static, it has to found on the ast
-                itself, not on an existing pointer.
+            framework_reference: The python framework in which we can resolve the same path to obtain the Python object.
+            return_type_name: The return type name of given action as a string with it's full path.
+            is_static: If the queried object is static, it has to found on the ast itself, not on an existing pointer.
         """
-
         if isinstance(path, str):
             path = path.split(".")
 
@@ -132,11 +118,15 @@ class Globals(Module):
         attr.add_path(path=path, index=1, return_type_name=return_type_name)
 
     def register_updates(self, client: Any) -> None:
-        # any previously loaded libs need to be applied
+        """Any previously loaded libs need to be applied.
+
+        Args:
+            client: The client who will be executing all the computations.
+        """
         for _, update_ast in self.loaded_lib_constructors.items():
             update_ast(ast_or_client=client)
 
-        # make sure to get any future updates
+        """Make sure to get any future updates."""
         self.registered_clients[client.id] = client
 
     def apply_node_changes(self) -> None:
