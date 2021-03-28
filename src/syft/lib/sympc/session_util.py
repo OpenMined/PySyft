@@ -34,7 +34,7 @@ def protobuf_session_serializer(session: Session) -> MPCSession_PB:
         ring_size=rs_bytes,
         nr_parties=nr_parties_bytes,
         rank=session.rank,
-        protocol = protocol_serialized,
+        protocol=protocol_serialized,
     )
 
 
@@ -48,7 +48,12 @@ def protobuf_session_deserializer(proto: MPCSession_PB) -> Session:
     nr_parties = int.from_bytes(proto.nr_parties, "big")
     protocol_deserialized = proto.protocol.decode()
 
-    session = Session(config=conf, uuid=id_session, ring_size=ring_size, protocol=protocol_deserialized)
+    session = Session(
+        config=conf, 
+        uuid=id_session, 
+        ring_size=ring_size, 
+        protocol=protocol_deserialized
+    )
     session.rank = rank
     session.crypto_store = CryptoStore()
     session.nr_parties = nr_parties
