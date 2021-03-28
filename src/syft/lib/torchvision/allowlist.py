@@ -2,7 +2,8 @@
 from typing import Dict
 from typing import Union
 
-allowlist: Dict[str, Union[str, Dict[str, str]]] = {}  # (path: str, return_type:type)
+# (path: str, return_type:type)
+allowlist: Dict[str, Union[str, Dict[str, str]]] = {}
 
 allowlist["torchvision.__version__"] = "syft.lib.python.String"
 # MNIST
@@ -118,13 +119,15 @@ allowlist["torchvision.datasets.VOCSegmentation"] = "torchvision.datasets.VOCSeg
 allowlist["torchvision.datasets.VOCSegmentation.__len__"] = "syft.lib.python.Int"
 
 allowlist["torchvision.datasets.VOCDetection"] = "torchvision.datasets.VOCDetection"
-allowlist["torchvision.datasets.VOCDetection.__len__"] = "torchvision.datasets.VOCDetection"
+allowlist[
+    "torchvision.datasets.VOCDetection.__len__"
+] = "torchvision.datasets.VOCDetection"
 
 # Transforms
 allowlist["torchvision.transforms.CenterCrop"] = "torchvision.transforms.CenterCrop"
 allowlist["torchvision.transforms.ColorJitter"] = "torchvision.transforms.ColorJitter"
 
-# This is an interesting case, for some versions p = 0.2 is needed, for others its not needed
+# This is an interesting case, for some versions p = 0.2 is needed, for others its not
 
 allowlist["torchvision.transforms.FiveCrop"] = "torchvision.transforms.FiveCrop"
 
@@ -137,15 +140,29 @@ allowlist["torchvision.transforms.RandomAffine"] = "torchvision.transforms.Rando
 allowlist["torchvision.transforms.RandomApply"] = "torchvision.transforms.RandomApply"
 
 allowlist["torchvision.transforms.RandomCrop"] = "torchvision.transforms.RandomCrop"
-allowlist["torchvision.transforms.RandomGrayscale"] = "torchvision.transforms.RandomGrayscale"
+allowlist[
+    "torchvision.transforms.RandomGrayscale"
+] = "torchvision.transforms.RandomGrayscale"
 
-allowlist["torchvision.transforms.RandomHorizontalFlip"] = "torchvision.transforms.RandomHorizontalFlip"
-allowlist["torchvision.transforms.RandomPerspective"] = "torchvision.transforms.RandomPerspective"
+allowlist[
+    "torchvision.transforms.RandomHorizontalFlip"
+] = "torchvision.transforms.RandomHorizontalFlip"
+allowlist[
+    "torchvision.transforms.RandomPerspective"
+] = "torchvision.transforms.RandomPerspective"
 
-allowlist["torchvision.transforms.RandomResizedCrop"] = "torchvision.transforms.RandomResizedCrop"
-allowlist["torchvision.transforms.RandomRotation"] = "torchvision.transforms.RandomRotation"
-allowlist["torchvision.transforms.RandomSizedCrop"] = "torchvision.transforms.RandomSizedCrop"
-allowlist["torchvision.transforms.RandomVerticalFlip"] = "torchvision.transforms.RandomVerticalFlip"
+allowlist[
+    "torchvision.transforms.RandomResizedCrop"
+] = "torchvision.transforms.RandomResizedCrop"
+allowlist[
+    "torchvision.transforms.RandomRotation"
+] = "torchvision.transforms.RandomRotation"
+allowlist[
+    "torchvision.transforms.RandomSizedCrop"
+] = "torchvision.transforms.RandomSizedCrop"
+allowlist[
+    "torchvision.transforms.RandomVerticalFlip"
+] = "torchvision.transforms.RandomVerticalFlip"
 allowlist["torchvision.transforms.Resize"] = "torchvision.transforms.Resize"
 allowlist["torchvision.transforms.Scale"] = "torchvision.transforms.Scale"
 allowlist["torchvision.transforms.TenCrop"] = "torchvision.transforms.TenCrop"
@@ -160,9 +177,7 @@ allowlist["torchvision.transforms.RandomOrder"] = "torchvision.transforms.Random
 allowlist[
     "torchvision.transforms.LinearTransformation"
 ] = "torchvision.transforms.LinearTransformation"
-allowlist[
-    "torchvision.transforms.RandomErasing"
-] = "torchvision.transforms.RandomErasing"
+allowlist["torchvision.transforms.RandomErasing"] = "torchvision.transforms.RandomErasing"
 allowlist["torchvision.transforms.ConvertImageDtype"] = {
     "return_type": "torchvision.transforms.ConvertImageDtype",
     "min_version": "0.8.0",
@@ -207,13 +222,13 @@ allowlist["torchvision.transforms.functional.invert"] = {
     "min_version": "0.9.0",
 }
 allowlist["torchvision.transforms.functional.normalize"] = "torch.Tensor"
-    # "test_parameters (tests/lib/torchvision/allowlist_test_parameters.json): (tens, [0.5, 0.5, 0.5], [1, 1, 1]).unsqueeze(0)",
-    # currently not added because of test issues with hier versions
-    # (//) works for 1.6.0 and / works for higher version :(
+# "test_parameters (tests/lib/torchvision/allowlist_test_parameters.json): (tens, [0.5, 0.5, 0.5], [1, 1, 1]).unsqueeze(0)",
+# currently not added because of test issues with hier versions
+# (//) works for 1.6.0 and / works for higher version :(
 
 allowlist["torchvision.transforms.functional.pad"] = {
     "return_type": "torch.Tensor",
-    "min_version": "0.6.0"
+    "min_version": "0.6.0",
 }
 allowlist["torchvision.transforms.functional.perspective"] = "torch.Tensor"
 
