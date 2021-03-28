@@ -59,6 +59,13 @@ def create_worker_msg(
         _current_user_id = msg.content.get("current_user", None)
         instance_type = msg.content.get("instance_type", None)
 
+        users = node.users
+
+        if not _current_user_id:
+            _current_user_id = users.first(
+                verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+            ).id
+
         if instance_type is None:
             raise MissingRequestKeyError
 
@@ -93,23 +100,30 @@ def create_worker_msg(
                 "instance_type": config.vpc.instance_type.InstanceType,
             }
             new_env = node.environments.register(**env_parameters)
-            node.environments.association(user_id=_current_user_id, env_id=new_env.id)
-
             deployed, output = deployment.deploy()  # Deploy
-
             if deployed:
+                worker_client = connect(
+                    url="http://" + output["instance_0_endpoint"]["value"][0],
+                    conn_type=GridHTTPConnection,  # HTTP Connection Protocol
+                )
+
                 node.environments.set(
                     id=config.app.id,
                     created_at=datetime.now(),
                     state=states["success"],
                     address=output["instance_0_endpoint"]["value"][0],
+                    syft_address=serialize(worker_client.address)
+                    .SerializeToString()
+                    .decode("ISO-8859-1"),
                 )
-                # TODO: Modify this (@ionesio)
-                # node.in_memory_client_registry[output.] = env_client
+
+                node.environments.association(
+                    user_id=_current_user_id, env_id=new_env.id
+                )
+                node.in_memory_client_registry[worker_client.domain_id] = worker_client
             else:
                 node.environments.set(id=config.app.id, state=states["failed"])
                 raise Exception("Worker creation failed!")
-
         final_msg = "Worker created successfully!"
         return CreateWorkerResponse(
             address=msg.reply_to, status_code=200, content={"msg": final_msg}
@@ -178,9 +192,11 @@ def get_workers_msg(
                 or (include_failed and _env.state == states["failed"])
                 or (include_destroyed and _env.state == states["destroyed"])
             ):
-                workers.append(model_to_json(_env))
+                worker = model_to_json(_env)
+                del worker["syft_address"]
+                workers.append(worker)
 
-        _msg = {"workers": workers}
+        _msg = workers
 
         return GetWorkersResponse(address=msg.reply_to, status_code=200, content=_msg)
     except Exception as e:
@@ -243,56 +259,10 @@ def del_worker_msg(
         )
 
 
-# def update_worker_msg(
-#     msg: UpdateWorkerMessage,
-#     node: AbstractNode,
-#     verify_key: VerifyKey,
-# ) -> UpdateWorkerResponse:
-#     # Get Payload Content
-#     _worker_id = msg.content.get("worker_id", None)
-#     _current_user_id = msg.content.get("current_user", None)
-#
-#     env_parameters = {
-#         i: msg.content[i]
-#         for i in msg.content.keys()
-#         if i in list(Environment.__table__.columns.keys())
-#     }
-#
-#     users = node.users
-#     if not _current_user_id:
-#         _current_user_id = users.first(
-#             verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
-#         ).id
-#
-#     _current_user = users.first(id=_current_user_id)
-#
-#     # Owner / Admin
-#     if users.can_manage_infrastructure(user_id=_current_user_id):
-#         node.environments.modify({"id": _worker_id}, env_parameters)
-#     else:  # Env Owner
-#         envs = [
-#             int(env.id)
-#             for env in node.environments.get_environments(user=_current_user_id)
-#         ]
-#         if int(_worker_id) in envs:
-#             node.environments.modify({"id": _worker_id}, env_parameters)
-#         else:
-#             raise AuthorizationError(
-#                 "You're not allowed to update this environment information!"
-#             )
-#     return UpdateWorkerResponse(
-#         address=msg.reply_to,
-#         status_code=200,
-#         content={"msg": "Worker was updated succesfully!"},
-#     )
-
-
 class DomainInfrastructureService(ImmediateNodeServiceWithReply):
 
     msg_handler_map = {
         CreateWorkerMessage: create_worker_msg,
-        # CheckWorkerDeploymentMessage: check_worker_deployment_msg,
-        # UpdateWorkerMessage: update_worker_msg,
         GetWorkerMessage: get_worker_msg,
         GetWorkersMessage: get_workers_msg,
         DeleteWorkerMessage: del_worker_msg,
