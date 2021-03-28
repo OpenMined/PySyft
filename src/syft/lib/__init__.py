@@ -5,6 +5,9 @@ from types import ModuleType
 from typing import Any
 from typing import Any as TypeAny
 from typing import Dict as TypeDict
+from typing import List as TypeList
+from typing import Set as TypeSet
+from typing import Tuple as TypeTuple
 from typing import Optional
 from typing import Union as TypeUnion
 import warnings
@@ -142,7 +145,7 @@ def _load_lib(*, lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
             _regenerate_unions(lib_ast=lib_ast, client=client)
 
 
-def load(*libs, options: TypeDict[str, TypeAny] = {}) -> None:
+def load(*libs: TypeUnion[TypeList, TypeTuple, TypeSet, str], options: TypeDict[str, TypeAny] = {}) -> None:
     """
     Load and Update Node with given library module
 
@@ -151,10 +154,10 @@ def load(*libs, options: TypeDict[str, TypeAny] = {}) -> None:
         options: external requirements for loading library successfully
     """
     if not isinstance(libs[0], str):
-        libs = libs[0]
+        libs = tuple(libs[0])
     for lib in libs:
         try:
-            _load_lib(lib=lib, options=options)
+            _load_lib(lib=str(lib), options=options)
         except VendorLibraryImportException as e:
             critical(e)
         except Exception as e:
