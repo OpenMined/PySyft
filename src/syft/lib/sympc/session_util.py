@@ -48,16 +48,13 @@ def protobuf_session_deserializer(proto: MPCSession_PB) -> Session:
     nr_parties = int.from_bytes(proto.nr_parties, "big")
     protocol_deserialized = proto.protocol.decode()
 
-<<<<<<< HEAD
     session = Session(
         config=conf,
         uuid=id_session,
         ring_size=ring_size,
         protocol=protocol_deserialized,
     )
-=======
     session = Session(config=conf, uuid=id_session, ring_size=ring_size, protocol=protocol_deserialized)
->>>>>>> parent of f190ba1e1... Included reformatted files
     session.rank = rank
     session.crypto_store = CryptoStore()
     session.nr_parties = nr_parties
