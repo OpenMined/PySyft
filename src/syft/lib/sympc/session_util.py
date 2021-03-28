@@ -49,10 +49,10 @@ def protobuf_session_deserializer(proto: MPCSession_PB) -> Session:
     protocol_deserialized = proto.protocol.decode()
 
     session = Session(
-        config=conf, 
-        uuid=id_session, 
-        ring_size=ring_size, 
-        protocol=protocol_deserialized
+        config=conf,
+        uuid=id_session,
+        ring_size=ring_size,
+        protocol=protocol_deserialized,
     )
     session.rank = rank
     session.crypto_store = CryptoStore()
