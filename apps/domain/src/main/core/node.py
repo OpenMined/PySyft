@@ -46,7 +46,7 @@ def create_worker_app(app, args):
     return app
 
 
-def create_network_app(app, args):
+def create_network_app(app, args, testing=False):
     test_config = None
     if args.start_local_db:
         test_config = {"SQLALCHEMY_DATABASE_URI": "sqlite:///nodedatabase.db"}
@@ -75,7 +75,7 @@ def create_network_app(app, args):
 
     db.create_all()
 
-    if True:  # not app.config["TESTING"]:
+    if not testing:
         if len(db.session.query(Role).all()) == 0:
             seed_db()
 
@@ -97,7 +97,7 @@ def create_network_app(app, args):
     return app
 
 
-def create_domain_app(app, args):
+def create_domain_app(app, args, testing=False):
     test_config = None
     if args.start_local_db:
         test_config = {"SQLALCHEMY_DATABASE_URI": "sqlite:///nodedatabase.db"}
@@ -129,7 +129,7 @@ def create_domain_app(app, args):
 
     db.create_all()
 
-    if not app.config["TESTING"]:
+    if not testing:
         if len(db.session.query(Role).all()) == 0:
             seed_db()
 

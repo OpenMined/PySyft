@@ -60,7 +60,9 @@ logging.basicConfig(
 logger = logging.getLogger()
 
 
-def create_app(args, secret_key=DEFAULT_SECRET_KEY, debug=False) -> Flask:
+def create_app(
+    args, secret_key=DEFAULT_SECRET_KEY, debug=False, testing=False
+) -> Flask:
     """This method creates a new Flask App instance and attach it with some
     HTTP/Websocket bluetprints.
 
@@ -79,7 +81,7 @@ def create_app(args, secret_key=DEFAULT_SECRET_KEY, debug=False) -> Flask:
     # sockets = Sockets(app)
 
     # Create Domain APP
-    app = create_domain_app(app=app, args=args)
+    app = create_domain_app(app=app, args=args, testing=testing)
 
     app.debug = debug
     app.config["SECRET_KEY"] = secret_key
