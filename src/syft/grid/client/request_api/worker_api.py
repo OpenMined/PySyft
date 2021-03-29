@@ -41,7 +41,7 @@ class WorkerRequestAPI(GridRequestAPI):
 
     def to_obj(self, result: Any) -> Any:
         _raw_worker = super().to_obj(result)
-        _raw_addr = _raw_worker.address.encode("ISO-8859-1")
+        _raw_addr = _raw_worker.syft_address.encode("ISO-8859-1")
 
         addr_pb = Address_PB()
         addr_pb.ParseFromString(_raw_addr)
