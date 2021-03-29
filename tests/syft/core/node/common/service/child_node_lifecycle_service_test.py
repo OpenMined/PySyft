@@ -10,7 +10,9 @@ from syft.core.node.common.service.child_node_lifecycle_service import (
 
 
 @pytest.mark.slow
-def test_child_node_lifecycle_message_serde(node, client) -> None:
+def test_child_node_lifecycle_message_serde(
+    node: sy.VirtualMachine, client: sy.VirtualMachineClient
+) -> None:
     second_client = node.get_client()
 
     # bob_phone_client.register(client=bob_vm_client)

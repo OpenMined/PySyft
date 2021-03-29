@@ -74,7 +74,9 @@ objects = ["Op en Min ed", "george", "J A Y", "ANDREW", "tud\t\nor"]
 
 @pytest.mark.parametrize("test_object", objects)
 @pytest.mark.parametrize("func", inputs.keys())
-def test_pointer_objectives(test_object, func, node, client):
+def test_pointer_objectives(
+    test_object, func, node: sy.VirtualMachine, client: sy.VirtualMachineClient
+):
     remote_python = client.syft.lib.python.String
     local_constructor = sy.lib.python.String
 

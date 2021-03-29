@@ -53,7 +53,9 @@ objects = [0.5, 42.5, 2 ** 10 + 0.5, -(2 ** 10 + 0.5)]
 
 @pytest.mark.parametrize("test_object", objects)
 @pytest.mark.parametrize("func", inputs.keys())
-def test_pointer_objectives(test_object, func, node, client):
+def test_pointer_objectives(
+    test_object, func, node: sy.VirtualMachine, client: sy.VirtualMachineClient
+):
     py_obj, sy_obj, remote_sy_obj = (
         test_object,
         sy.lib.python.Float(test_object),

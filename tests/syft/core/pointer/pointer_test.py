@@ -37,7 +37,12 @@ def validate_permission_error(data_ptr: Pointer) -> None:
 
 @pytest.mark.slow
 @pytest.mark.parametrize("with_verify_key", [True, False])
-def test_make_pointable(with_verify_key: bool, node, client, root_client) -> None:
+def test_make_pointable(
+    with_verify_key: bool,
+    node: sy.VirtualMachine,
+    client: sy.VirtualMachineClient,
+    root_client: sy.VirtualMachineClient,
+) -> None:
     ten = th.tensor([1, 2])
     ptr = ten.send(root_client, pointable=False)
 
@@ -53,7 +58,12 @@ def test_make_pointable(with_verify_key: bool, node, client, root_client) -> Non
 
 @pytest.mark.slow
 @pytest.mark.parametrize("with_verify_key", [True, False])
-def test_make_unpointable(with_verify_key: bool, node, client, root_client) -> None:
+def test_make_unpointable(
+    with_verify_key: bool,
+    node: sy.VirtualMachine,
+    client: sy.VirtualMachineClient,
+    root_client: sy.VirtualMachineClient,
+) -> None:
     ten = th.tensor([1, 2])
     ptr = ten.send(root_client, pointable=False)
 
@@ -73,7 +83,9 @@ def test_make_unpointable(with_verify_key: bool, node, client, root_client) -> N
 
 
 @pytest.mark.slow
-def test_pointable_property(client, root_client) -> None:
+def test_pointable_property(
+    client: sy.VirtualMachineClient, root_client: sy.VirtualMachineClient
+) -> None:
     ten = th.tensor([1, 2])
     ptr = ten.send(root_client, pointable=False)
     assert len(client.store) == 0
@@ -93,7 +105,7 @@ def test_pointable_property(client, root_client) -> None:
 
 @pytest.mark.slow
 @pytest.mark.xfail
-def test_tags(root_client) -> None:
+def test_tags(root_client: sy.VirtualMachineClient) -> None:
     ten = th.tensor([1, 2])
 
     ten = ten.tag("tag1", "tag1", "other")
@@ -141,7 +153,7 @@ def test_tags(root_client) -> None:
     assert len(f_root) == 3
 
 
-def test_issue_5170(client) -> None:
+def test_issue_5170(client: sy.VirtualMachineClient) -> None:
     sy.lib.python.List([1, 2, 3]).send(client, pointable=True, tags=["f"])
 
     f_guest = client.store["f"]
@@ -155,7 +167,7 @@ def test_issue_5170(client) -> None:
     assert str(e.value) == "Request to access data length rejected."
 
 
-def test_description(root_client) -> None:
+def test_description(root_client: sy.VirtualMachineClient) -> None:
     ten = th.tensor([1, 2])
 
     ten = ten.describe("description 1")
@@ -171,7 +183,9 @@ def test_description(root_client) -> None:
     assert ptr.description == "description 2"
 
 
-def test_printing(client, root_client) -> None:
+def test_printing(
+    client: sy.VirtualMachineClient, root_client: sy.VirtualMachineClient
+) -> None:
     data_types = [
         sy.lib.python.Int(1),
         sy.lib.python.Float(1.5),
@@ -188,7 +202,9 @@ def test_printing(client, root_client) -> None:
         validate_permission_error(data.send(client))
 
 
-def test_printing_remote_creation(client, root_client) -> None:
+def test_printing_remote_creation(
+    client: sy.VirtualMachineClient, root_client: sy.VirtualMachineClient
+) -> None:
     def create_data_types(client: AbstractNodeClient) -> List[Pointer]:
         return [
             client.syft.lib.python.Int(1),
@@ -207,10 +223,8 @@ def test_printing_remote_creation(client, root_client) -> None:
         validate_permission_error(elem)
 
 
-def test_exhausted() -> None:
-    client = sy.VirtualMachine().get_root_client()
-
-    int_ptr = client.syft.lib.python.Int(0)
+def test_exhausted(root_client: sy.VirtualMachineClient) -> None:
+    int_ptr = root_client.syft.lib.python.Int(0)
     int_ptr.get()  # ptr gets exhausted after this call
 
     with pytest.raises(ReferenceError) as e:

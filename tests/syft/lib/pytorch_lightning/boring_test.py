@@ -12,7 +12,7 @@ import syft as sy
 
 
 @pytest.mark.vendor(lib="pytorch_lightning")
-def test_lightning(root_client) -> None:
+def test_lightning(root_client: sy.VirtualMachineClient) -> None:
     # third party
     from pytorch_lightning import Trainer
     from pytorch_lightning.experimental.plugins.secure.pysyft import SyLightningModule

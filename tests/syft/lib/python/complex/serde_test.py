@@ -18,7 +18,7 @@ def test_serde() -> None:
     assert deserialized == syft_complex
 
 
-def test_send(client) -> None:
+def test_send(client: sy.VirtualMachineClient) -> None:
     syft_complex = Complex("2+3j")
     ptr = syft_complex.send(client)
     # Check pointer type

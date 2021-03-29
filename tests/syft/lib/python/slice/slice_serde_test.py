@@ -22,7 +22,7 @@ def test_slice_serde() -> None:
     assert deserialized.step == syft_slice.step
 
 
-def test_slice_send(client) -> None:
+def test_slice_send(client: sy.VirtualMachineClient) -> None:
     syft_slice = Slice(1, 3, None)
     ptr = syft_slice.send(client)
 

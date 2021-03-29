@@ -119,20 +119,20 @@ def pytest_collection_modifyitems(
 
 
 @pytest.fixture(scope="session")
-def node():
+def node() -> sy.VirtualMachine:
     return sy.VirtualMachine(name="Bob")
 
 
 @pytest.fixture(autouse=True)
-def node_store(node):
+def node_store(node: sy.VirtualMachine) -> None:
     node.store.clear()
 
 
 @pytest.fixture(scope="session")
-def client(node):
+def client(node: sy.VirtualMachine) -> sy.VirtualMachineClient:
     return node.get_client()
 
 
 @pytest.fixture(scope="session")
-def root_client(node):
+def root_client(node: sy.VirtualMachine) -> sy.VirtualMachineClient:
     return node.get_root_client()

@@ -213,7 +213,9 @@ def test_send_message_from_network_client_to_vm() -> None:
 
 @pytest.mark.slow
 @pytest.mark.asyncio
-def test_autoapprove_requests_made_by_root_clients_5015(client, root_client) -> None:
+def test_autoapprove_requests_made_by_root_clients_5015(
+    client: sy.VirtualMachineClient, root_client: sy.VirtualMachineClient
+) -> None:
     # third party
     import torch
 

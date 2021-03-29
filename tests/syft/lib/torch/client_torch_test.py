@@ -11,7 +11,7 @@ import syft as sy
 
 
 @pytest.mark.slow
-def test_torch_function(client) -> None:
+def test_torch_function(client: sy.VirtualMachineClient) -> None:
     x = th.tensor([[-0.1, 0.1], [0.2, 0.3]])
     ptr_x = x.send(client)
     ptr_res = client.torch.zeros_like(ptr_x)

@@ -24,7 +24,7 @@ def context() -> Any:
 
 
 @pytest.mark.vendor(lib="tenseal")
-def test_context_send(context: Any, root_client) -> None:
+def test_context_send(context: Any, root_client: sy.VirtualMachineClient) -> None:
     """Test sending a TenSEAL context
 
     Args:
@@ -39,7 +39,7 @@ def test_context_send(context: Any, root_client) -> None:
 
 @pytest.mark.parametrize("scheme", [ts.SCHEME_TYPE.CKKS, ts.SCHEME_TYPE.BFV])
 @pytest.mark.vendor(lib="tenseal")
-def test_scheme_send(scheme: Any, client: sy.VirtualMachine) -> None:
+def test_scheme_send(scheme: Any, client: sy.VirtualMachineClient) -> None:
     """Test sending a TenSEAL scheme
 
     Args:
@@ -50,7 +50,7 @@ def test_scheme_send(scheme: Any, client: sy.VirtualMachine) -> None:
 
 
 @pytest.mark.vendor(lib="tenseal")
-def test_context_link(context: Any, root_client: sy.VirtualMachine) -> None:
+def test_context_link(context: Any, root_client: sy.VirtualMachineClient) -> None:
     v1 = [0, 1, 2, 3, 4]
     enc_v1 = ts.ckks_vector(context, v1)
 
@@ -64,7 +64,7 @@ def test_context_link(context: Any, root_client: sy.VirtualMachine) -> None:
 
 
 @pytest.mark.vendor(lib="tenseal")
-def test_context_link_ptr(context: Any, root_client: sy.VirtualMachine) -> None:
+def test_context_link_ptr(context: Any, root_client: sy.VirtualMachineClient) -> None:
     v1 = [0, 1, 2, 3, 4]
     enc_v1 = ts.ckks_vector(context, v1)
 
@@ -88,7 +88,7 @@ def test_context_link_ptr(context: Any, root_client: sy.VirtualMachine) -> None:
 
 @pytest.mark.vendor(lib="tenseal")
 def test_context_generate_relin_keys(
-    context: Any, root_client: sy.VirtualMachine
+    context: Any, root_client: sy.VirtualMachineClient
 ) -> None:
     context.generate_relin_keys()
     ctx_ptr = context.send(root_client, pointable=True)
@@ -98,7 +98,7 @@ def test_context_generate_relin_keys(
 
 @pytest.mark.vendor(lib="tenseal")
 def test_context_generate_galois_keys(
-    context: Any, root_client: sy.VirtualMachine
+    context: Any, root_client: sy.VirtualMachineClient
 ) -> None:
     context.generate_galois_keys()
     ctx_ptr = context.send(root_client, pointable=True)
@@ -107,7 +107,9 @@ def test_context_generate_galois_keys(
 
 
 @pytest.mark.vendor(lib="tenseal")
-def test_context_make_public(context: Any, root_client: sy.VirtualMachine) -> None:
+def test_context_make_public(
+    context: Any, root_client: sy.VirtualMachineClient
+) -> None:
     context.make_context_public(generate_galois_keys=False, generate_relin_keys=False)
 
     ctx_ptr = context.send(root_client, pointable=True)
@@ -121,7 +123,7 @@ def test_context_make_public(context: Any, root_client: sy.VirtualMachine) -> No
 
 
 @pytest.mark.vendor(lib="tenseal")
-def test_context_options(context: Any, root_client: sy.VirtualMachine) -> None:
+def test_context_options(context: Any, root_client: sy.VirtualMachineClient) -> None:
     ctx_ptr = context.send(root_client, pointable=True)
 
     assert ctx_ptr.auto_mod_switch.get()

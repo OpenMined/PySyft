@@ -7,7 +7,7 @@ from syft.grid.duet.ui import LOGO_URL
 
 
 @pytest.mark.vendor(lib="PIL")
-def test_send_and_get(root_client) -> None:
+def test_send_and_get(root_client: sy.VirtualMachineClient) -> None:
     # third party
     import PIL
 
@@ -21,7 +21,7 @@ def test_send_and_get(root_client) -> None:
 
 
 @pytest.mark.vendor(lib="PIL")
-def test_remote_create(root_client) -> None:
+def test_remote_create(root_client: sy.VirtualMachineClient) -> None:
     # third party
     import PIL
     import numpy as np

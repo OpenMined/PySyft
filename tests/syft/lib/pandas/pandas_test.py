@@ -10,7 +10,7 @@ import syft as sy
 
 
 @pytest.mark.vendor(lib="pandas")
-def test_pandas(root_client) -> None:
+def test_pandas(root_client: sy.VirtualMachineClient) -> None:
     sy.load("pandas")
     # third party
     import pandas as pd
@@ -28,7 +28,7 @@ def test_pandas(root_client) -> None:
 
 
 @pytest.mark.vendor(lib="pandas")
-def test_slice_dataframe(root_client) -> None:
+def test_slice_dataframe(root_client: sy.VirtualMachineClient) -> None:
     sy.load("pandas")
     # third party
     import pandas as pd

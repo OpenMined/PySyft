@@ -58,7 +58,13 @@ def assert_serde(y):  # type: ignore
 
 
 @pytest.mark.parametrize("op_name, ten, _arg", parameters)
-def test_returntypes(op_name: str, ten: torch.Tensor, _arg: Any, node, client) -> None:
+def test_returntypes(
+    op_name: str,
+    ten: torch.Tensor,
+    _arg: Any,
+    node: sy.VirtualMachine,
+    client: sy.VirtualMachineClient,
+) -> None:
     # serde y=ten.op(_arg)
     op = getattr(ten, op_name)
     if _arg is not None:

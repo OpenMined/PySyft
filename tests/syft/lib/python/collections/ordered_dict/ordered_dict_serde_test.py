@@ -55,7 +55,7 @@ def test_dict_serde() -> None:
         assert deserialized_el == original_el
 
 
-def test_list_send(root_client) -> None:
+def test_list_send(root_client: sy.VirtualMachineClient) -> None:
     syft_list = OrderedDict(
         {String("t1"): String("test"), String("t2"): String("test")}
     )
@@ -70,7 +70,9 @@ def test_list_send(root_client) -> None:
 
 
 @pytest.mark.parametrize("method_name", ["items", "keys", "values"])
-def test_iterator_methods(method_name: str, root_client) -> None:
+def test_iterator_methods(
+    method_name: str, root_client: sy.VirtualMachineClient
+) -> None:
     d = OrderedDict({"#1": 1, "#2": 2})
     dptr = d.send(root_client)
 

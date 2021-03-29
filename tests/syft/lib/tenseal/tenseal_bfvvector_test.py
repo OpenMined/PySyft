@@ -21,7 +21,9 @@ def context() -> Any:
 
 
 @pytest.mark.vendor(lib="tenseal")
-def test_tenseal_bfvvector_sanity(context: Any, root_client: sy.VirtualMachine) -> None:
+def test_tenseal_bfvvector_sanity(
+    context: Any, root_client: sy.VirtualMachineClient
+) -> None:
     v1 = [0, 1, 2, 3, 4]
     enc_v1 = ts.bfv_vector(context, v1)
 
@@ -35,7 +37,9 @@ def test_tenseal_bfvvector_sanity(context: Any, root_client: sy.VirtualMachine) 
 
 
 @pytest.mark.vendor(lib="tenseal")
-def test_tenseal_bfvvector_add(context: Any, root_client: sy.VirtualMachine) -> None:
+def test_tenseal_bfvvector_add(
+    context: Any, root_client: sy.VirtualMachineClient
+) -> None:
     v1 = [0, 1, 2, 3, 4]
     v2 = [4, 3, 2, 1, 0]
     expected = [v1 + v2 for v1, v2 in zip(v1, v2)]
@@ -64,7 +68,9 @@ def test_tenseal_bfvvector_add(context: Any, root_client: sy.VirtualMachine) -> 
 
 
 @pytest.mark.vendor(lib="tenseal")
-def test_tenseal_bfvvector_sub(context: Any, root_client: sy.VirtualMachine) -> None:
+def test_tenseal_bfvvector_sub(
+    context: Any, root_client: sy.VirtualMachineClient
+) -> None:
     v1 = [0, 1, 2, 3, 4]
     v2 = [4, 3, 2, 1, 0]
     expected = [v1 - v2 for v1, v2 in zip(v1, v2)]
@@ -124,7 +130,9 @@ def test_tenseal_bfvvector_mul(
 
 
 @pytest.mark.vendor(lib="tenseal")
-def test_tenseal_bfvvector_iadd(context: Any, root_client: sy.VirtualMachine) -> None:
+def test_tenseal_bfvvector_iadd(
+    context: Any, root_client: sy.VirtualMachineClient
+) -> None:
     v1 = [0, 1, 2, 3, 4]
     v2 = [4, 3, 2, 1, 0]
     expected = [v1 + v2 for v1, v2 in zip(v1, v2)]
@@ -156,7 +164,9 @@ def test_tenseal_bfvvector_iadd(context: Any, root_client: sy.VirtualMachine) ->
 
 
 @pytest.mark.vendor(lib="tenseal")
-def test_tenseal_bfvvector_isub(context: Any, root_client: sy.VirtualMachine) -> None:
+def test_tenseal_bfvvector_isub(
+    context: Any, root_client: sy.VirtualMachineClient
+) -> None:
     v1 = [0, 1, 2, 3, 4]
     v2 = [4, 3, 2, 1, 0]
     expected = [v1 - v2 for v1, v2 in zip(v1, v2)]

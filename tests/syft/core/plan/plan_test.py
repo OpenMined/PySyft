@@ -36,7 +36,7 @@ from syft.core.store.storeable_object import StorableObject
 from syft.lib.python.list import List
 
 
-def test_plan_serialization(client) -> None:
+def test_plan_serialization(client: sy.VirtualMachineClient) -> None:
 
     # cumbersome way to get a pointer as input for our actions,
     # there is probably a better/shorter way
@@ -98,7 +98,7 @@ def test_plan_serialization(client) -> None:
     assert all(isinstance(a, Action) for a in plan_reconstructed.actions)
 
 
-def test_plan_execution(client) -> None:
+def test_plan_execution(client: sy.VirtualMachineClient) -> None:
     tensor_pointer1 = th.tensor([1, 2, 3]).send(client)
     tensor_pointer2 = th.tensor([4, 5, 6]).send(client)
     tensor_pointer3 = th.tensor([7, 8, 9]).send(client)
@@ -142,7 +142,7 @@ def test_plan_execution(client) -> None:
     assert all(expected_tensor2 == result_tensor_pointer2.get())
 
 
-def test_plan_batched_execution(client: sy.VirtualMachine) -> None:
+def test_plan_batched_execution(client: sy.VirtualMachineClient) -> None:
     # placeholders for our input
     input_tensor_pointer1 = th.tensor([0, 0]).send(client)
     input_tensor_pointer2 = th.tensor([0, 0]).send(client)
@@ -206,7 +206,7 @@ def test_plan_batched_execution(client: sy.VirtualMachine) -> None:
         assert all(result_tensor_pointer3.get(delete_obj=False))
 
 
-def test_make_plan(client: sy.VirtualMachine) -> None:
+def test_make_plan(client: sy.VirtualMachineClient) -> None:
     @make_plan
     def add_plan(inp=th.zeros((3))) -> th.Tensor:  # type: ignore
         return inp + inp
@@ -218,7 +218,7 @@ def test_make_plan(client: sy.VirtualMachine) -> None:
 
 
 @pytest.mark.xfail
-def test_plan_deterministic_bytes(root_client) -> None:
+def test_plan_deterministic_bytes(root_client: sy.VirtualMachineClient) -> None:
     # TODO: https://github.com/OpenMined/PySyft/issues/5292
     @make_plan
     def add_plan(inp=th.zeros((3))) -> th.Tensor:  # type: ignore
@@ -237,7 +237,7 @@ def test_plan_deterministic_bytes(root_client) -> None:
     assert plan1 == plan2
 
 
-def test_make_plan2(root_client) -> None:
+def test_make_plan2(root_client: sy.VirtualMachineClient) -> None:
     @make_plan
     def mul_plan(inp=th.zeros((3)), inp2=th.zeros((3))) -> th.Tensor:  # type: ignore
         return inp * inp2
@@ -263,7 +263,7 @@ def test_make_plan_error_no_kwargs() -> None:
     assertRaises(ValueError, test_define_plan, "__call__")
 
 
-def test_mlp_plan(client: sy.VirtualMachine) -> None:
+def test_mlp_plan(client: sy.VirtualMachineClient) -> None:
     class MLP(sy.Module):
         def __init__(self, torch_ref):  # type: ignore
             super().__init__(torch_ref=torch_ref)

@@ -69,7 +69,9 @@ objects = [0, 42, 2 ** 10, -(2 ** 10)]
 
 @pytest.mark.parametrize("test_object", objects)
 @pytest.mark.parametrize("func", inputs.keys())
-def test_pointer_objectives(test_object, func, node, client):
+def test_pointer_objectives(
+    test_object, func, node: sy.VirtualMachine, client: sy.VirtualMachineClient
+):
     py_obj, sy_obj, remote_sy_obj = (
         test_object,
         sy.lib.python.Int(test_object),
@@ -114,7 +116,9 @@ def test_pointer_objectives(test_object, func, node, client):
 
 @pytest.mark.parametrize("test_object", objects)
 @pytest.mark.parametrize("property", properties)
-def test_pointer_properties(test_object, property, node, client):
+def test_pointer_properties(
+    test_object, property, node: sy.VirtualMachine, client: sy.VirtualMachineClient
+):
     py_obj, sy_obj, remote_sy_obj = (
         test_object,
         sy.lib.python.Int(test_object),

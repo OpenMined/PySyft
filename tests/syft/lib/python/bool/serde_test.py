@@ -18,7 +18,7 @@ def test_serde() -> None:
     assert deserialized == syft_bool
 
 
-def test_send(client) -> None:
+def test_send(client: sy.VirtualMachineClient) -> None:
     syft_bool = Bool(5)
     ptr = syft_bool.send(client)
     # Check pointer type

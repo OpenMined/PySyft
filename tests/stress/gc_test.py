@@ -10,7 +10,9 @@ import syft as sy
 
 
 @pytest.mark.slow
-def test_same_var_for_ptr_gc(client, node) -> None:
+def test_same_var_for_ptr_gc(
+    node: sy.VirtualMachine, client: sy.VirtualMachineClient
+) -> None:
     """
     Test for checking if the gc is correctly triggered
     when the last reference to the ptr is overwritten
@@ -32,7 +34,9 @@ def test_same_var_for_ptr_gc(client, node) -> None:
     assert len(client.store) == 0
 
 
-def test_send_same_obj_gc(node, root_client) -> None:
+def test_send_same_obj_gc(
+    node: sy.VirtualMachine, root_client: sy.VirtualMachineClient
+) -> None:
     """
     Test if sending the same object multiple times, register the
     object multiple times - because each send generated another

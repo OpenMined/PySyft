@@ -220,7 +220,7 @@ def test_module_send_get(
 
 
 @pytest.mark.slow
-def test_debug_sum_layers(root_client: sy.VirtualMachine, model: SyNet) -> None:
+def test_debug_sum_layers(root_client: sy.VirtualMachineClient, model: SyNet) -> None:
     assert model.debug_sum_layers() is None
     model_ptr = model.send(root_client)
 

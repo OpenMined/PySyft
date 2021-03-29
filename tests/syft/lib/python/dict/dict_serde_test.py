@@ -63,7 +63,7 @@ def test_dict_serde() -> None:
         assert deserialized_el == original_el
 
 
-def test_list_send(client) -> None:
+def test_list_send(client: sy.VirtualMachineClient) -> None:
     syft_list = Dict({String("t1"): String("test"), String("t2"): String("test")})
     ptr = syft_list.send(client)
     # Check pointer type

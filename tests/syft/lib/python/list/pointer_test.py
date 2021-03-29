@@ -62,7 +62,9 @@ objects = [0, 1]
 @pytest.mark.slow
 @pytest.mark.parametrize("test_object", objects)
 @pytest.mark.parametrize("func", inputs.keys())
-def test_pointer_objectives(test_object, func, node, client):
+def test_pointer_objectives(
+    test_object, func, node: sy.VirtualMachine, client: sy.VirtualMachineClient
+):
     py_obj = mapping[test_object]()
     sy_obj, remote_sy_obj = sy.lib.python.List(py_obj), client.syft.lib.python.List(
         py_obj
@@ -114,7 +116,7 @@ def test_pointer_objectives(test_object, func, node, client):
 
 @pytest.mark.slow
 @pytest.mark.parametrize("test_object", objects)
-def test_iterator(test_object, client):
+def test_iterator(test_object, client: sy.VirtualMachineClient):
     py_obj = mapping[test_object]()
     sy_obj, remote_sy_obj = sy.lib.python.List(py_obj), client.syft.lib.python.List(
         py_obj

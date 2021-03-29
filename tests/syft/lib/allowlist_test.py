@@ -408,7 +408,7 @@ def test_all_allowlisted_tensor_methods(
     is_property: bool,
     return_type: str,
     deterministic: bool,
-    client,
+    client: sy.VirtualMachineClient,
 ) -> None:
 
     support_data = {}

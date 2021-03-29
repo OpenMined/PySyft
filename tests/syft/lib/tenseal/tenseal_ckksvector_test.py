@@ -32,7 +32,7 @@ def context() -> Any:
 
 @pytest.mark.vendor(lib="tenseal")
 def test_tenseal_ckksvector_sanity(
-    context: Any, root_client: sy.VirtualMachine
+    context: Any, root_client: sy.VirtualMachineClient
 ) -> None:
     v1 = [0, 1, 2, 3, 4]
     enc_v1 = ts.ckks_vector(context, v1)
@@ -46,7 +46,9 @@ def test_tenseal_ckksvector_sanity(
 
 
 @pytest.mark.vendor(lib="tenseal")
-def test_tenseal_ckksvector_add(context: Any, root_client: sy.VirtualMachine) -> None:
+def test_tenseal_ckksvector_add(
+    context: Any, root_client: sy.VirtualMachineClient
+) -> None:
     v1 = [0, 1, 2, 3, 4]
     v2 = [4, 3, 2, 1, 0]
     expected = [v1 + v2 for v1, v2 in zip(v1, v2)]
@@ -75,7 +77,9 @@ def test_tenseal_ckksvector_add(context: Any, root_client: sy.VirtualMachine) ->
 
 
 @pytest.mark.vendor(lib="tenseal")
-def test_tenseal_ckksvector_sub(context: Any, root_client: sy.VirtualMachine) -> None:
+def test_tenseal_ckksvector_sub(
+    context: Any, root_client: sy.VirtualMachineClient
+) -> None:
     v1 = [0, 1, 2, 3, 4]
     v2 = [4, 3, 2, 1, 0]
     expected = [v1 - v2 for v1, v2 in zip(v1, v2)]
@@ -104,7 +108,9 @@ def test_tenseal_ckksvector_sub(context: Any, root_client: sy.VirtualMachine) ->
 
 
 @pytest.mark.vendor(lib="tenseal")
-def test_tenseal_ckksvector_mul(context: Any, root_client: sy.VirtualMachine) -> None:
+def test_tenseal_ckksvector_mul(
+    context: Any, root_client: sy.VirtualMachineClient
+) -> None:
     v1 = [0, 1, 2, 3, 4]
     v2 = [4, 3, 2, 1, 0]
     expected = [v1 * v2 for v1, v2 in zip(v1, v2)]
@@ -133,7 +139,9 @@ def test_tenseal_ckksvector_mul(context: Any, root_client: sy.VirtualMachine) ->
 
 
 @pytest.mark.vendor(lib="tenseal")
-def test_tenseal_ckksvector_iadd(context: Any, root_client: sy.VirtualMachine) -> None:
+def test_tenseal_ckksvector_iadd(
+    context: Any, root_client: sy.VirtualMachineClient
+) -> None:
     v1 = [0, 1, 2, 3, 4]
     v2 = [4, 3, 2, 1, 0]
     expected = [v1 + v2 for v1, v2 in zip(v1, v2)]
@@ -165,7 +173,9 @@ def test_tenseal_ckksvector_iadd(context: Any, root_client: sy.VirtualMachine) -
 
 
 @pytest.mark.vendor(lib="tenseal")
-def test_tenseal_ckksvector_isub(context: Any, root_client: sy.VirtualMachine) -> None:
+def test_tenseal_ckksvector_isub(
+    context: Any, root_client: sy.VirtualMachineClient
+) -> None:
     v1 = [0, 1, 2, 3, 4]
     v2 = [4, 3, 2, 1, 0]
     expected = [v1 - v2 for v1, v2 in zip(v1, v2)]
@@ -191,7 +201,9 @@ def test_tenseal_ckksvector_isub(context: Any, root_client: sy.VirtualMachine) -
 
 
 @pytest.mark.vendor(lib="tenseal")
-def ptest_tenseal_ckksvector_imul(context: Any, root_client: sy.VirtualMachine) -> None:
+def ptest_tenseal_ckksvector_imul(
+    context: Any, root_client: sy.VirtualMachineClient
+) -> None:
     v1 = [0, 1, 2, 3, 4]
     v2 = [4, 3, 2, 1, 0]
     expected = [v1 * v2 for v1, v2 in zip(v1, v2)]
@@ -217,7 +229,9 @@ def ptest_tenseal_ckksvector_imul(context: Any, root_client: sy.VirtualMachine) 
 
 
 @pytest.mark.vendor(lib="tenseal")
-def test_tenseal_ckksvector_power(context: Any, root_client: sy.VirtualMachine) -> None:
+def test_tenseal_ckksvector_power(
+    context: Any, root_client: sy.VirtualMachineClient
+) -> None:
     enc_v1 = ts.ckks_vector(context, [0, 1, 2, 3, 4])
 
     ctx_ptr = context.send(root_client, pointable=True)
@@ -234,7 +248,7 @@ def test_tenseal_ckksvector_power(context: Any, root_client: sy.VirtualMachine) 
 
 @pytest.mark.vendor(lib="tenseal")
 def test_tenseal_ckksvector_negation(
-    context: Any, root_client: sy.VirtualMachine
+    context: Any, root_client: sy.VirtualMachineClient
 ) -> None:
     enc_v1 = ts.ckks_vector(context, [1, 2, 3, 4, 5])
 
@@ -252,7 +266,7 @@ def test_tenseal_ckksvector_negation(
 
 @pytest.mark.vendor(lib="tenseal")
 def test_tenseal_ckksvector_square(
-    context: Any, root_client: sy.VirtualMachine
+    context: Any, root_client: sy.VirtualMachineClient
 ) -> None:
     enc_v1 = ts.ckks_vector(context, [0, 1, 2, 3, 4])
 
@@ -268,7 +282,9 @@ def test_tenseal_ckksvector_square(
 
 
 @pytest.mark.vendor(lib="tenseal")
-def test_tenseal_ckksvector_sum(context: Any, root_client: sy.VirtualMachine) -> None:
+def test_tenseal_ckksvector_sum(
+    context: Any, root_client: sy.VirtualMachineClient
+) -> None:
     enc_v1 = ts.ckks_vector(context, [0, 1, 2, 3, 4])
 
     ctx_ptr = context.send(root_client, pointable=True)
@@ -284,7 +300,7 @@ def test_tenseal_ckksvector_sum(context: Any, root_client: sy.VirtualMachine) ->
 
 @pytest.mark.vendor(lib="tenseal")
 def test_tenseal_ckksvector_polyval(
-    context: Any, root_client: sy.VirtualMachine
+    context: Any, root_client: sy.VirtualMachineClient
 ) -> None:
     polynom = [1, 2, 3, 4]
     enc_v1 = ts.ckks_vector(context, [-2, 2])
@@ -301,7 +317,9 @@ def test_tenseal_ckksvector_polyval(
 
 
 @pytest.mark.vendor(lib="tenseal")
-def test_tenseal_ckksvector_dot(context: Any, root_client: sy.VirtualMachine) -> None:
+def test_tenseal_ckksvector_dot(
+    context: Any, root_client: sy.VirtualMachineClient
+) -> None:
     v1 = [0, 1, 2, 3, 4]
     v2 = [4, 3, 2, 1, 0]
 
@@ -329,7 +347,7 @@ def test_tenseal_ckksvector_dot(context: Any, root_client: sy.VirtualMachine) ->
 
 @pytest.mark.vendor(lib="tenseal")
 def test_tenseal_ckksvector_matmul(
-    context: Any, root_client: sy.VirtualMachine
+    context: Any, root_client: sy.VirtualMachineClient
 ) -> None:
     v1 = [0, 1, 2, 3, 4]
     enc_v1 = ts.ckks_vector(context, v1)

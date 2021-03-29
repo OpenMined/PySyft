@@ -11,7 +11,9 @@ from syft.core.node.common.action.function_or_constructor_action import (
 
 # TODO test execution
 # TODO test permissions
-def test_run_function_or_constructor_action_serde(root_client) -> None:
+def test_run_function_or_constructor_action_serde(
+    root_client: sy.VirtualMachineClient,
+) -> None:
     args = (
         th.tensor([1, 2, 3]).send(root_client),
         th.tensor([4, 5, 5]).send(root_client),

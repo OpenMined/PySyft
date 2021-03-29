@@ -26,7 +26,9 @@ ten = th.rand((1000, 4))
 ds = ExampleDataset(ten)
 
 
-def test_remote_dataset(node: sy.VirtualMachine, client) -> None:
+def test_remote_dataset(
+    node: sy.VirtualMachine, client: sy.VirtualMachineClient
+) -> None:
     th.save(ds, "ds.pt")
 
     rds = RemoteDataset(path="ds.pt", data_type="torch_tensor")
@@ -40,7 +42,7 @@ def test_remote_dataset(node: sy.VirtualMachine, client) -> None:
     os.system("rm ds.pt")
 
 
-def test_remote_dataloader(root_client) -> None:
+def test_remote_dataloader(root_client: sy.VirtualMachineClient) -> None:
     th.save(ds, "ds.pt")
 
     rds = RemoteDataset(path="ds.pt", data_type="torch_tensor")

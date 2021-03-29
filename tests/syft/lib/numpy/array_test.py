@@ -9,7 +9,7 @@ import syft as sy
 
 
 @pytest.mark.vendor(lib="numpy")
-def test_remote_numpy_array(root_client) -> None:
+def test_remote_numpy_array(root_client: sy.VirtualMachineClient) -> None:
     # third party
     import numpy as np
 

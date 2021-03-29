@@ -38,7 +38,7 @@ def version_supported(support_dict: Union[str, Dict[str, str]]) -> bool:
         return TORCHVISION_VERSION >= version.parse(support_dict["min_version"])
 
 
-def test_allowlist(root_client: sy.VirtualMachine, tens: torch.Tensor) -> None:
+def test_allowlist(root_client: sy.VirtualMachineClient, tens: torch.Tensor) -> None:
     torchvision = root_client.torchvision
     torch = root_client.torch
     try:
