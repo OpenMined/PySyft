@@ -15,6 +15,7 @@ from ...core.common import UID
 from ...core.common.serde.serializable import bind_protobuf
 from ...proto.lib.python.string_pb2 import String as String_PB
 from .int import Int
+from .iterator import Iterator
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .slice import Slice
@@ -68,10 +69,8 @@ class String(UserString, PyPrimitive):
         res = super().__int__()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def __iter__(self) -> SyPrimitiveRet:
-        # TODO fix this
-        res = super().__iter__()
-        return PrimitiveFactory.generate_primitive(value=res)
+    def __iter__(self, max_len: Optional[int] = None) -> Iterator:
+        return Iterator(super().__iter__(), max_len=max_len)
 
     def __le__(self, other: Any) -> SyPrimitiveRet:
         res = super().__le__(other)
