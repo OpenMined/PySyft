@@ -217,7 +217,7 @@ class RequestService(ImmediateNodeServiceWithoutReply):
 
         # At receiving a request from DS, we clear it's object_tags, and re-set it as the
         # tags of the requested object. Because the DS may give fake tags.
-        while len(msg.object_tags):
+        while msg.object_tags:
             msg.object_tags.pop()
         msg.object_tags.extend(node.store[msg.object_id]._tags)
 
