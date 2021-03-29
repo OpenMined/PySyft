@@ -1,7 +1,8 @@
 # stdlib
 from collections import OrderedDict
 from typing import Any
-from typing import List
+from typing import Dict as TypeDict
+from typing import List as TypeList
 
 # third party
 import torch as th
@@ -12,24 +13,59 @@ from syft.core.plan.plan_builder import PLAN_BUILDER_VM
 from syft.core.plan.plan_builder import ROOT_CLIENT
 from syft.lib.python.collections import OrderedDict as SyOrderedDict
 from syft.lib.python.dict import Dict
-from syft.lib.python.list import List as SyList
+from syft.lib.python.list import List
 from syft.lib.python.primitive_interface import PyPrimitive
 from syft.logger import traceback_and_raise
+from syft.util import obj2pointer_type
 
 # syft relative
 from ....pointer.pointer import Pointer
 from .plan import PlanTorchscript
 
-__LIST_TYPE = (SyList, list)
+__LIST_TYPE = (list, List)
 __DICT_TYPE = (dict, Dict, OrderedDict, SyOrderedDict)
 
 
-def is_list(arg: Any, store_value: Any) -> bool:
-    return isinstance(arg, __LIST_TYPE) and isinstance(store_value, __LIST_TYPE)
+def is_list(*args: TypeList[Any]) -> bool:
+    return all([isinstance(arg, __LIST_TYPE) for arg in args])
 
 
-def is_dict(arg: Any, store_value: Any) -> bool:
-    return isinstance(arg, __DICT_TYPE) and isinstance(store_value, __DICT_TYPE)
+def is_dict(*args: TypeList[Any]) -> bool:
+    return all([isinstance(arg, __DICT_TYPE) for arg in args])
+
+
+def get_pointer_to_data_in_store(store, value: Any, client):
+    for obj in store.values():
+        store_value: Any = obj.data
+        if is_list(value, store_value):
+            # Assume lists match if their contents are equal
+            found = all(map(lambda a, b: a is b, value, store_value))
+        elif is_dict(value, store_value):
+            # Assume dicts match if their contents are equal
+            for k1, k2 in sorted(value.keys()), sorted(store_value.keys()):
+                if k1 != k2:
+                    found = False
+                    break
+                if value[k1] is not store_value[k2]:
+                    found = False
+                    break
+            else:
+                found = True
+        else:
+            found = store_value is value
+
+        if found:
+            ptr_type = obj2pointer_type(obj.data)
+            ptr = ptr_type(
+                client=client,
+                id_at_location=obj.id,
+                object_type=obj.object_type,
+                tags=obj.tags,
+                description=obj.description,
+            )
+            return ptr
+
+    return None
 
 
 def translate(plan: Plan) -> PlanTorchscript:
@@ -42,44 +78,24 @@ def translate(plan: Plan) -> PlanTorchscript:
         We use nn.Module to store input kwarg names inside torchscript.
         """
 
-        def __init__(self, kwarg_names: List[str]):
-            _kwarg_names: List[str]
+        def __init__(self, kwarg_names: TypeList[str]):
+            _kwarg_names: TypeList[str]
             super(PlanWrapper, self).__init__()
             self._kwarg_names = kwarg_names
 
         def forward(self, *args: Any) -> Any:
-            kwarg_ptrs: Dict[str, Pointer] = {}
+            kwarg_ptrs: TypeDict[str, Pointer] = {}
 
             # Since Syft Plan needs pointers as args,
             # reverse-map actual arg values to pointers
+            # by looking up these args in VM store
             for name, arg in zip(self._kwarg_names, args):
-                found = False
-                for ptr in ROOT_CLIENT.store:
-                    store_value: Any = PLAN_BUILDER_VM.store[ptr.id_at_location].data
-                    if is_list(arg, store_value):
-                        # Assume lists match if their contents are equal
-                        found = all(map(lambda a, b: a is b, store_value, arg))
-                    elif is_dict(arg, store_value):
-                        # Assume dicts match if their contents are equal
-                        for k1, k2 in sorted(arg.keys()), sorted(store_value.keys()):
-                            if k1 != k2:
-                                found = False
-                                break
-
-                            if args[k1] is not store_value[k2]:
-                                found = False
-                                break
-                        else:
-                            found = True
-                    else:
-                        found = store_value is arg
-
-                    if found:
-                        kwarg_ptrs[name] = ptr
-                        break
-
-                if not found:
+                ptr = get_pointer_to_data_in_store(
+                    PLAN_BUILDER_VM.store, arg, ROOT_CLIENT
+                )
+                if not ptr:
                     traceback_and_raise(f"Could not map '{name}' arg value to Pointer")
+                kwarg_ptrs[name] = ptr
 
             # Execute Plan in the same VM where it was built!
             res = plan(PLAN_BUILDER_VM, PLAN_BUILDER_VM.verify_key, **kwarg_ptrs)
