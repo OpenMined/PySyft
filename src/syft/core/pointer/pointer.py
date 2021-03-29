@@ -155,6 +155,10 @@ class Pointer(AbstractPointer):
             description=description,
         )
         self.object_type = object_type
+        # _exhausted becomes True in get() call
+        # when delete_obj is True and network call
+        # has already been made
+        self._exhausted = False
 
     def _get(self, delete_obj: bool = True, verbose: bool = False) -> StorableObject:
         """Method to download a remote object from a pointer object if you have the right
@@ -259,8 +263,13 @@ class Pointer(AbstractPointer):
         # syft relative
         from ..node.domain.service import RequestStatus
 
+        if self._exhausted:
+            raise ReferenceError(
+                "Object has already been deleted. This pointer is exhausted"
+            )
+
         if not request_block:
-            return self._get(delete_obj=delete_obj, verbose=verbose)
+            result = self._get(delete_obj=delete_obj, verbose=verbose)
         else:
             response_status = self.request(
                 reason=reason,
@@ -272,9 +281,15 @@ class Pointer(AbstractPointer):
                 response_status is not None
                 and response_status == RequestStatus.Accepted
             ):
-                return self._get(delete_obj=delete_obj, verbose=verbose)
+                result = self._get(delete_obj=delete_obj, verbose=verbose)
+            else:
+                return None
 
-        return None
+        if result is not None and delete_obj:
+            self.gc_enabled = False
+            self._exhausted = True
+
+        return result
 
     def _object2proto(self) -> Pointer_PB:
         """Returns a protobuf serialization of self.
@@ -569,7 +584,6 @@ class Pointer(AbstractPointer):
         if (_client_type == Address) or issubclass(_client_type, AbstractNode):
             # it is a serialized pointer that we receive from another client do nothing
             return
-
         if self.gc_enabled:
             # Create the delete message
             msg = GarbageCollectObjectAction(

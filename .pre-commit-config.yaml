@@ -31,7 +31,7 @@ repos:
     rev: v0.812
     hooks:
       - id: mypy
-        exclude: ^(src/syft/proto|tests/syft/lib/python|examples/duet)
+        exclude: ^(src/syft/proto|tests/syft/lib/python|examples/duet|pygrid)
         args: [
             "--ignore-missing-imports",
             "--scripts-are-modules",

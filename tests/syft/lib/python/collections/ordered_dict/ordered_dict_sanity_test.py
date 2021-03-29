@@ -1,7 +1,7 @@
 # flake8: noqa
 """
 File copied from cpython test suite:
-https://github.com/python/cpython/blob/3.8/Lib/test/test_ordered_dict.py
+https://github.com/python/cpython/blob/3.9/Lib/test/test_ordered_dict.py
 
 Sanity tests for OrderedDict
 """
@@ -21,6 +21,7 @@ import pytest
 
 # syft absolute
 from syft.core.common.uid import UID
+from syft.lib.python import SyNone
 from syft.lib.python.collections import OrderedDict as SyOrderedDict
 
 
@@ -46,7 +47,6 @@ def test_init():
     OrderedDict = SyOrderedDict
     with pytest.raises(TypeError):
         OrderedDict([("a", 1), ("b", 2)], None)  # too many args
-
     pairs = [("a", 1), ("b", 2), ("c", 3), ("d", 4), ("e", 5)]
     assertEqual(sorted(OrderedDict(dict(pairs)).items()), pairs)  # dict input
     assertEqual(sorted(OrderedDict(**dict(pairs)).items()), pairs)  # kwds input
@@ -75,7 +75,6 @@ def test_468():
     items = [("a", 1), ("b", 2), ("c", 3), ("d", 4), ("e", 5), ("f", 6), ("g", 7)]
     shuffle(items)
     argdict = OrderedDict(items)
-
     unpacked = {}
     for item in argdict:
         unpacked[str(item)] = argdict[item]
@@ -101,18 +100,10 @@ def test_update():
     od.update([("a", 1), ("b", 2), ("c", 9), ("d", 4)], c=3, e=5)
     assertEqual(list(od.items()), pairs)  # mixed input
 
-    # Issue 9137: Named argument called 'other' or 'self'
+    # Issue 9137: Named argument called 'other' or ''
     # shouldn't be treated specially.
+    od = OrderedDict()
 
-    # This doesn't work with Python 3.6
-    # od = OrderedDict()
-    # od.update(self=23)
-    # assertEqual(list(od.items()), [("self", 23)])
-    # od = OrderedDict()
-    # od.update(red=5, blue=6, other=7, self=8)
-    # assertEqual(
-    #    sorted(list(od.items())), [("blue", 6), ("other", 7), ("red", 5), ("self", 8)]
-    # )
     od = OrderedDict()
     od.update(other={})
     assertEqual(list(od.items()), [("other", {})])
@@ -126,8 +117,8 @@ def test_update():
         [("a", 1), ("b", 2), ("c", 3), ("d", 4), ("e", 5), ("f", 6), ("g", 7)],
     )
 
-    assertRaises(TypeError, OrderedDict().update, 42)
-    assertRaises(TypeError, OrderedDict().update, (), ())
+    pytest.raises(TypeError, OrderedDict().update, 42)
+    pytest.raises(TypeError, OrderedDict().update, (), ())
 
     d = OrderedDict(
         [("a", 1), ("b", 2), ("c", 3), ("d", 44), ("e", 55)],
@@ -152,7 +143,7 @@ def test_init_calls():
     assertEqual(calls, ["keys"])
 
 
-def test_fromkeys():
+def test_FromKeys():
     OrderedDict = SyOrderedDict
     od = OrderedDict.FromKeys("abc")
     assertEqual(list(od.items()), [(c, None) for c in "abc"])
@@ -183,7 +174,7 @@ def test_delitem():
     pairs = [("c", 1), ("b", 2), ("a", 3), ("d", 4), ("e", 5), ("f", 6)]
     od = OrderedDict(pairs)
     del od["a"]
-    assert "a" not in od
+    assertNotIn("a", od)
     with pytest.raises(KeyError):
         del od["a"]
     assertEqual(list(od.items()), pairs[:2] + pairs[3:])
@@ -209,9 +200,9 @@ def test_iterators():
     assertEqual(list(od.values()), [t[1] for t in pairs])
     assertEqual(list(od.items()), pairs)
     assertEqual(list(reversed(od)), [t[0] for t in reversed(pairs)])
-    assertEqual(list(reversed(od.keys())), [t[0] for t in reversed(pairs)])
-    assertEqual(list(reversed(od.values())), [t[1] for t in reversed(pairs)])
-    assertEqual(list(reversed(od.items())), list(reversed(pairs)))
+    assertEqual(list(reversed(list(od.keys()))), [t[0] for t in reversed(pairs)])
+    assertEqual(list(reversed(list(od.values()))), [t[1] for t in reversed(pairs)])
+    assertEqual(list(reversed(list(od.items()))), list(reversed(pairs)))
 
 
 def test_detect_deletion_during_iteration():
@@ -248,9 +239,9 @@ def test_iterators_empty():
     assertEqual(list(od.values()), empty)
     assertEqual(list(od.items()), empty)
     assertEqual(list(reversed(od)), empty)
-    assertEqual(list(reversed(od.keys())), empty)
-    assertEqual(list(reversed(od.values())), empty)
-    assertEqual(list(reversed(od.items())), empty)
+    assertEqual(list(reversed(list(od.keys()))), empty)
+    assertEqual(list(reversed(list(od.values()))), empty)
+    assertEqual(list(reversed(list(od.items()))), empty)
 
 
 def test_popitem():
@@ -371,9 +362,7 @@ def test_reduce_not_too_fat():
 
     od.x = 10
     assertEqual(od.__dict__["x"], 10)
-
-    res = od.__reduce__()[2]
-    assertEqual(res, {"x": 10})
+    assertEqual(od.__reduce__()[2], {"x": 10})
 
 
 def test_pickle_recursive():
@@ -385,8 +374,8 @@ def test_pickle_recursive():
     for proto in range(-1, pickle.HIGHEST_PROTOCOL + 1):
         dup = pickle.loads(pickle.dumps(od, proto))
         assert dup is not od
-        assert list(dup.keys()) == [1]
-        assert dup[1] is dup
+        assertEqual(list(dup.keys()), [1])
+        assert dup[1], dup
 
 
 def test_repr():
@@ -406,7 +395,8 @@ def test_repr_recursive():
     od = OrderedDict.FromKeys("abc")
     od["x"] = od
     assertEqual(
-        repr(od), "OrderedDict([('a', None), ('b', None), ('c', None), ('x', ...)])"
+        repr(od),
+        f"OrderedDict([('a', {repr(SyNone)}), ('b', {repr(SyNone)}), ('c', {repr(SyNone)}), ('x', ...)])",
     )
 
 
@@ -508,14 +498,14 @@ def test_views():
     # See http://bugs.python.org/issue24286
     s = "the quick brown fox jumped over a lazy dog yesterday before dawn".split()
     od = OrderedDict.FromKeys(s)
-    assertEqual(od.keys(), list(dict(od).keys()))
-    assertEqual(od.items(), list(dict(od).items()))
+    assertEqual(list(od.keys()), list(dict(od).keys()))
+    assertEqual(list(od.items()), list(dict(od).items()))
 
 
 def test_override_update():
     OrderedDict = SyOrderedDict
-
     # Verify that subclasses can override update() without breaking __init__()
+
     class MyOD(OrderedDict):
         def update(self, *args, **kwds):
             raise Exception()
@@ -612,11 +602,11 @@ def test_issue24347():
         od[key] = i
 
     # These should not crash.
-    with pytest.raises(KeyError):
+    with pytest.raises(RuntimeError):
         list(od.values())
-    with pytest.raises(KeyError):
+    with pytest.raises(RuntimeError):
         list(od.items())
-    with pytest.raises(KeyError):
+    with pytest.raises(RuntimeError):
         repr(od)
     with pytest.raises(KeyError):
         od.copy()
@@ -675,7 +665,7 @@ def test_dict_delitem():
     od["spam"] = 1
     od["ham"] = 2
     dict.__delitem__(od, "spam")
-    with pytest.raises(KeyError):
+    with pytest.raises(RuntimeError):
         repr(od)
 
 
@@ -694,7 +684,7 @@ def test_dict_pop():
     od["spam"] = 1
     od["ham"] = 2
     dict.pop(od, "spam")
-    with pytest.raises(KeyError):
+    with pytest.raises(RuntimeError):
         repr(od)
 
 
@@ -704,7 +694,7 @@ def test_dict_popitem():
     od["spam"] = 1
     od["ham"] = 2
     dict.popitem(od)
-    with pytest.raises(KeyError):
+    with pytest.raises(RuntimeError):
         repr(od)
 
 

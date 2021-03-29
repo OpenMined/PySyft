@@ -575,7 +575,7 @@ def inherit_tags(
 ) -> None:
     tags = []
     if self_obj is not None and hasattr(self_obj, "tags"):
-        tags.extend([tag for tag in self_obj.tags])  # type: ignore
+        tags.extend(list(self_obj.tags))  # type: ignore
 
     for arg in args:
         if hasattr(arg, "tags"):
