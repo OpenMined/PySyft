@@ -276,7 +276,7 @@ class AWS_Serverfull(AWS):
             sudo apt-get update -y && sudo apt-get install terraform -y
 
             echo "Setting environment variables"
-            export DATABASE_URL={self.database.engine}:pymysql://{self.database.username}:{self.database.password}@{var(self.database.endpoint)}://{self.database.name}
+            export DATABASE_URL={self.database.engine}+pymysql://{self.database.username}:{self.database.password}@{var(self.database.endpoint)}/{self.database.name}
             # export DATABASE_URL="sqlite:///pygrid.db"
             export CLOUD_PROVIDER={self.config.provider}
             export REGION={self.config.vpc.region}
