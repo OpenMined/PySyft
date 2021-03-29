@@ -12,7 +12,7 @@ import syft as sy
 
 
 @pytest.mark.vendor(lib="pytorch_lightning")
-def test_lightning(root_client: sy.VirtualMachineClient) -> None:
+def test_lightning() -> None:
     # third party
     from pytorch_lightning import Trainer
     from pytorch_lightning.experimental.plugins.secure.pysyft import SyLightningModule
@@ -26,7 +26,8 @@ def test_lightning(root_client: sy.VirtualMachineClient) -> None:
 
     tmpdir = "./"
 
-    sy.client_cache["duet"] = root_client
+    duet = sy.VirtualMachine().get_root_client()
+    sy.client_cache["duet"] = duet
 
     class BoringSyNet(sy.Module):
         def __init__(self, torch_ref: Any) -> None:
@@ -62,7 +63,7 @@ def test_lightning(root_client: sy.VirtualMachineClient) -> None:
             return self.torch.utils.data.DataLoader(self.torch.randn(64, 32))
 
     module = BoringSyNet(torch)
-    model = LiftSyLightningModule(module=module, duet=root_client)
+    model = LiftSyLightningModule(module=module, duet=duet)
 
     trainer = Trainer(
         default_root_dir=tmpdir,
@@ -76,7 +77,7 @@ def test_lightning(root_client: sy.VirtualMachineClient) -> None:
     trainer.test(model)
 
     model = LiftSyLightningModule.load_from_checkpoint(
-        trainer.checkpoint_callback.best_model_path, module=module, duet=root_client
+        trainer.checkpoint_callback.best_model_path, module=module, duet=duet
     )
     trainer.fit(model)
 
