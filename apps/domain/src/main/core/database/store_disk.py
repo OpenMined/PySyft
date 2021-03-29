@@ -84,7 +84,7 @@ class DiskObjectStore(ObjectStore):
     def __contains__(self, key: UID) -> bool:
         return (
             self.db.session.query(BinObject).filter_by(id=str(key.value)).first()
-            != None
+            is not None
         )
 
     def __getitem__(self, key: UID) -> StorableObject:

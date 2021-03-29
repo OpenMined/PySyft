@@ -12,11 +12,12 @@ import jwt
 
 from src.main.core.database.store_disk import (
     DiskObjectStore,
-    create_dataset,
     create_storable,
 )
 from src.main.core.database.bin_storage.metadata import StorageMetadata, get_metadata
-from src.main.core.database.bin_storage.bin_obj import BinaryObject
+from src.main.core.database.bin_storage.bin_obj import BinObject
+from src.main.core.datasets.dataset_ops import create_dataset
+
 from src.main.core.database import *
 
 ENCODING = "UTF-8"
@@ -70,13 +71,6 @@ storable3 = create_storable(
     tags=["new", "dummy", "tensor"],
 )
 
-dataset = create_dataset(
-    _id=UID(),
-    data=[storable, storable2],
-    description="Dummy tensor",
-    tags=["dummy", "tensor"],
-)
-
 tensor1 = {
     "content": "1, 2, 3, 4\n10, 20, 30, 40",
     "manifest": "Suspendisse et fermentum lectus",
@@ -116,7 +110,7 @@ def cleanup(database):
         database.session.query(Role).delete()
         database.session.query(Group).delete()
         database.session.query(UserGroup).delete()
-        database.session.query(BinaryObject).delete()
+        database.session.query(BinObject).delete()
         database.session.query(JsonObject).delete()
         database.session.query(StorageMetadata).delete()
         database.session.commit()
@@ -168,13 +162,19 @@ def test_create_dataset(client, database, cleanup):
     assert result.status_code == 200
 
     _id = result.get_json().get("id", None)
-    assert database.session.query(BinaryObject).get(_id) is not None
-    assert database.session.query(BinaryObject).get(_id).binary is not None
-    df = database.session.query(BinaryObject).get(_id).binary
-    assert deserialize(blob=df, from_bytes=True).id.value.hex == _id
+    storables = (
+        database.session.query(DatasetGroup.bin_object).filter_by(dataset=_id).all()
+    )
+    assert storables is not None
+    assert len(storables) == 2
+    storables = [el[0] for el in storables]
+
+    assert database.session.query(BinObject).get(storables[0]) is not None
+    assert database.session.query(BinObject).get(storables[1]) is not None
 
     assert database.session.query(JsonObject).get(_id) is not None
     assert database.session.query(JsonObject).get(_id).binary is not None
+
     _json = database.session.query(JsonObject).get(_id).binary
     assert _json["id"] == _id
     assert _json["tags"] == payload["tags"]
@@ -203,8 +203,8 @@ def test_get_all_datasets_metadata(client, database, cleanup):
         "tensors": {"train": tensor2.copy()},
     }
     storage = DiskObjectStore(database)
-    df_json1 = storage.store_json(dataset)
-    df_json2 = storage.store_json(new_dataset)
+    df_json1 = create_dataset(dataset)
+    df_json2 = create_dataset(new_dataset)
 
     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
     headers = {
@@ -238,7 +238,7 @@ def test_get_specific_dataset_metadata(client, database, cleanup):
     database.session.commit()
 
     storage = DiskObjectStore(database)
-    df_metadata = storage.store_json(dataset)
+    df_metadata = create_dataset(dataset)
 
     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
     headers = {
@@ -279,14 +279,17 @@ def test_update_dataset(client, database, cleanup):
         "tensors": {"train": tensor2.copy()},
     }
     storage = DiskObjectStore(database)
-    df_json1 = storage.store_json(dataset)
+    df_json1 = create_dataset(dataset)
 
     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
     headers = {
         "token": token.decode("UTF-8"),
     }
 
-    assert database.session.query(BinaryObject).get(df_json1["id"]).binary is not None
+    assert (
+        database.session.query(DatasetGroup).filter_by(dataset=df_json1["id"]).all()
+        is not None
+    )
     assert database.session.query(JsonObject).get(df_json1["id"]) is not None
     assert database.session.query(JsonObject).get(df_json1["id"]).binary == df_json1
 
@@ -300,7 +303,16 @@ def test_update_dataset(client, database, cleanup):
     assert result.status_code == 200
     assert result.get_json()["id"] == df_json1["id"]
 
-    assert database.session.query(BinaryObject).get(df_json1["id"]).binary is not None
+    assert (
+        database.session.query(DatasetGroup).filter_by(dataset=df_json1["id"]).all()
+        is not None
+    )
+    assert (
+        len(
+            database.session.query(DatasetGroup).filter_by(dataset=df_json1["id"]).all()
+        )
+        == 1
+    )
     assert database.session.query(JsonObject).get(df_json1["id"]) is not None
 
     metadata = database.session.query(JsonObject).get(df_json1["id"])
@@ -327,7 +339,7 @@ def test_delete_dataset(client, database, cleanup):
     database.session.commit()
 
     storage = DiskObjectStore(database)
-    df_json1 = storage.store_json(dataset)
+    df_json1 = create_dataset(dataset)
     _id = df_json1["id"]
 
     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
@@ -335,8 +347,12 @@ def test_delete_dataset(client, database, cleanup):
         "token": token.decode("UTF-8"),
     }
 
-    assert database.session.query(BinaryObject).get(_id) is not None
-    assert database.session.query(BinaryObject).get(_id).binary is not None
+    assert database.session.query(DatasetGroup).filter_by(dataset=_id).all() is not None
+
+    storable_ids = (
+        database.session.query(DatasetGroup.bin_object).filter_by(dataset=_id).all()
+    )
+    storable_ids = [x[0] for x in storable_ids]
 
     assert database.session.query(JsonObject).get(_id) is not None
     assert database.session.query(JsonObject).get(_id).binary is not None
@@ -353,5 +369,10 @@ def test_delete_dataset(client, database, cleanup):
     )
 
     assert result.status_code == 204
-    assert database.session.query(BinaryObject).get(_id) is None
+
+    for strbl_id in storable_ids:
+        assert db.session.query(BinObject).filter_by(id=strbl_id).first() is None
+        assert db.session.query(ObjectMetadata).filter_by(id=strbl_id).first() is None
+
+    assert database.session.query(DatasetGroup).filter_by(dataset=_id).all() == []
     assert database.session.query(JsonObject).get(_id) is None
