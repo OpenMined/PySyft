@@ -41,6 +41,7 @@ def pytest_configure(config: _pytest.config.Config) -> None:
     config.addinivalue_line("markers", "benchmark: runs benchmark tests")
     config.addinivalue_line("markers", "torch: runs torch tests")
     config.addinivalue_line("markers", "duet: runs duet notebook integration tests")
+    config.addinivalue_line("markers", "grid: runs grid tests")
 
 
 def pytest_collection_modifyitems(
@@ -53,6 +54,7 @@ def pytest_collection_modifyitems(
     slow_tests = pytest.mark.slow
     fast_tests = pytest.mark.fast
     duet_tests = pytest.mark.duet
+    grid_tests = pytest.mark.grid
     all_tests = pytest.mark.all
 
     # dynamically filtered vendor lib tests
@@ -63,6 +65,13 @@ def pytest_collection_modifyitems(
     loaded_libs: TypeDict[str, bool] = {}
     vendor_skip = pytest.mark.skip(reason="vendor requirements not met")
     for item in items:
+        if item.location[0].startswith("PyGrid"):
+            # Ignore if PyGrid folder checked out in main dir
+            continue
+
+        if "grid" in item.keywords:
+            item.add_marker(grid_tests)
+            continue
         # mark with: pytest.mark.vendor
         # run with: pytest -m libs -n auto 0
         if "vendor" in item.keywords:
