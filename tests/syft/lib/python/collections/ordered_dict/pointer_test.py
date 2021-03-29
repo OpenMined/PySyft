@@ -8,14 +8,12 @@ import pytest
 # syft absolute
 import syft as sy
 
-alice = sy.VirtualMachine(name="alice")
-alice_client = alice.get_root_client()
-remote_python = alice_client.syft.lib.python
 
-
-def get_permission(obj: Any) -> None:
-    remote_obj = alice.store[obj.id_at_location]
-    remote_obj.read_permissions[alice_client.verify_key] = obj.id_at_location
+def get_permission(
+    obj: Any, node: sy.VirtualMachine, client: sy.VirtualMachineClient
+) -> None:
+    remote_obj = node.store[obj.id_at_location]
+    remote_obj.read_permissions[client.verify_key] = obj.id_at_location
 
 
 inputs = {
@@ -47,24 +45,21 @@ inputs = {
 }
 
 objects = [
-    (
-        OrderedDict([("1", 1), ("2", 2), ("3", 3)]),
-        sy.lib.python.collections.OrderedDict([("1", 1), ("2", 2), ("3", 3)]),
-        remote_python.collections.OrderedDict([("1", 1), ("2", 2), ("3", 3)]),
-    ),
-    (
-        OrderedDict(list(zip(range(100), range(100)))),
-        sy.lib.python.collections.OrderedDict(list(zip(range(100), range(100)))),
-        remote_python.collections.OrderedDict(list(zip(range(100), range(100)))),
-    ),
+    [("1", 1), ("2", 2), ("3", 3)],
+    list(zip(range(100), range(100))),
 ]
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("test_objects", objects)
+@pytest.mark.parametrize("test_object", objects)
 @pytest.mark.parametrize("func", inputs.keys())
-def test_pointer_objectives(test_objects, func):
-    py_obj, sy_obj, remote_sy_obj = test_objects
+def test_pointer_objectives(test_object, func, node, client):
+    py_obj, sy_obj, remote_sy_obj = (
+        OrderedDict(test_object),
+        sy.lib.python.collections.OrderedDict(test_object),
+        client.syft.lib.python.collections.OrderedDict(test_object),
+    )
+
     possible_inputs = inputs[func]
 
     if not hasattr(py_obj, func):
@@ -95,7 +90,7 @@ def test_pointer_objectives(test_objects, func):
 
         try:
             remote_sy_res = remote_sy_method(*possible_input)
-            get_permission(remote_sy_res)
+            get_permission(remote_sy_res, node, client)
             remote_sy_res = remote_sy_res.get()
         except Exception as remote_sy_e:
             remote_sy_res = str(remote_sy_e)

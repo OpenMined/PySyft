@@ -18,12 +18,9 @@ def test_serde() -> None:
     assert deserialized == syft_complex
 
 
-def test_send() -> None:
-    alice = sy.VirtualMachine(name="alice")
-    alice_client = alice.get_client()
-
+def test_send(client) -> None:
     syft_complex = Complex("2+3j")
-    ptr = syft_complex.send(alice_client)
+    ptr = syft_complex.send(client)
     # Check pointer type
     assert ptr.__class__.__name__ == "ComplexPointer"
 

@@ -18,8 +18,7 @@ from syft.grid.messages.dataset_messages import UpdateDatasetMessage
 from syft.grid.messages.dataset_messages import UpdateDatasetResponse
 
 
-def test_create_dataset_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_create_dataset_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     request_content = {
@@ -33,7 +32,7 @@ def test_create_dataset_message_serde() -> None:
     msg = CreateDatasetMessage(
         address=target,
         content=request_content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)
@@ -64,15 +63,14 @@ def test_create_dataset_response_serde() -> None:
     assert msg == msg2
 
 
-def test_delete_dataset_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_delete_dataset_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     request_content = {"dataset_id": "f2a6as5d16fasd"}
     msg = DeleteDatasetMessage(
         address=target,
         content=request_content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)
@@ -103,8 +101,7 @@ def test_delete_dataset_response_serde() -> None:
     assert msg == msg2
 
 
-def test_update_dataset_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_update_dataset_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     content = {
@@ -118,7 +115,7 @@ def test_update_dataset_message_serde() -> None:
     msg = UpdateDatasetMessage(
         address=target,
         content=content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)
@@ -149,15 +146,14 @@ def test_update_dataset_response_serde() -> None:
     assert msg == msg2
 
 
-def test_get_dataset_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_get_dataset_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     content = {"dataset_id": "eqw9e4a5d846"}
     msg = GetDatasetMessage(
         address=target,
         content=content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)
@@ -196,15 +192,14 @@ def test_get_dataset_response_serde() -> None:
     assert msg == msg2
 
 
-def test_get_all_datasets_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_get_all_datasets_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     content: Dict[Any, Any] = {}
     msg = GetDatasetsMessage(
         address=target,
         content=content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)

@@ -18,23 +18,19 @@ def get_verify_key() -> VerifyKey:
     return get_signing_key().verify_key
 
 
-def test_to_string() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
-
-    assert str(bob_vm) == f"VirtualMachine: Bob: {bob_vm.id}"
-    assert bob_vm.__repr__() == f"VirtualMachine: Bob: {bob_vm.id}"
+def test_to_string(node: sy.VirtualMachine) -> None:
+    assert str(node) == f"VirtualMachine: Bob: {node.id}"
+    assert node.__repr__() == f"VirtualMachine: Bob: {node.id}"
 
 
-def test_send_message_from_vm_client_to_vm() -> None:
-
-    bob_vm = sy.VirtualMachine(name="Bob")
-    bob_vm_client = bob_vm.get_client()
-
-    assert bob_vm.device is None
+def test_send_message_from_vm_client_to_vm(
+    node: sy.VirtualMachine, client: sy.VirtualMachineClient
+) -> None:
+    assert node.device is None
 
     with pytest.raises(AuthorizationException):
-        bob_vm_client.send_immediate_msg_without_reply(
-            msg=sy.ReprMessage(address=bob_vm_client.address)
+        client.send_immediate_msg_without_reply(
+            msg=sy.ReprMessage(address=client.address)
         )
 
 
@@ -49,21 +45,19 @@ def test_send_message_from_device_client_to_device() -> None:
 
 
 @pytest.mark.slow
-def test_register_vm_on_device_fails() -> None:
-
-    bob_vm = sy.VirtualMachine(name="Bob")
-    bob_vm_client = bob_vm.get_client()
-
+def test_register_vm_on_device_fails(
+    node: sy.VirtualMachine, client: sy.VirtualMachineClient
+) -> None:
     bob_phone = sy.Device(name="Bob's iPhone")
     bob_phone_client = bob_phone.get_client()
 
     with pytest.raises(AuthorizationException):
-        bob_phone_client.register(client=bob_vm_client)
+        bob_phone_client.register(client=client)
 
-    assert bob_vm.device is None
+    assert node.device is None
 
     # TODO: prevent device being set when Authorization fails
-    assert bob_vm_client.device is not None
+    assert client.device is not None
 
 
 @pytest.mark.slow
@@ -219,17 +213,14 @@ def test_send_message_from_network_client_to_vm() -> None:
 
 @pytest.mark.slow
 @pytest.mark.asyncio
-def test_autoapprove_requests_made_by_root_clients_5015() -> None:
+def test_autoapprove_requests_made_by_root_clients_5015(client, root_client) -> None:
     # third party
     import torch
 
-    alice = sy.VirtualMachine(name="alice")
-    alice_client = alice.get_root_client()
-    p = alice_client.torch.Tensor([1, 2, 3])
+    p = root_client.torch.Tensor([1, 2, 3])
     t = p.get(request_block=True, reason="Test")
     assert torch.equal(t, torch.Tensor([1, 2, 3]))
 
-    alice_guest = alice.get_client()
-    p = alice_guest.torch.Tensor([1, 2, 3])
+    p = client.torch.Tensor([1, 2, 3])
     t = p.get(request_block=True, reason="Test")
     assert t is None

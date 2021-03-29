@@ -10,13 +10,10 @@ import syft as sy
 
 
 @pytest.mark.vendor(lib="pandas")
-def test_pandas() -> None:
+def test_pandas(root_client) -> None:
     sy.load("pandas")
     # third party
     import pandas as pd
-
-    bob = sy.VirtualMachine(name="Bob")
-    client = bob.get_root_client()
 
     data = {
         "col_1": {0: 3, 1: 2, 2: 1, 3: 0},
@@ -24,20 +21,17 @@ def test_pandas() -> None:
     }
     df = pd.DataFrame.from_dict(data)
 
-    df_ptr = df.send(client)
+    df_ptr = df.send(root_client)
 
     df2 = df_ptr.get()
     assert df2.to_dict() == data
 
 
 @pytest.mark.vendor(lib="pandas")
-def test_slice_dataframe() -> None:
+def test_slice_dataframe(root_client) -> None:
     sy.load("pandas")
     # third party
     import pandas as pd
-
-    bob = sy.VirtualMachine(name="Bob")
-    client = bob.get_root_client()
 
     data: Dict[str, Dict] = {
         "col_1": {0: 3, 1: 2, 2: 1, 3: 0},
@@ -45,7 +39,7 @@ def test_slice_dataframe() -> None:
     }
     df = pd.DataFrame.from_dict(data)
 
-    df_ptr = df.send(client)
+    df_ptr = df.send(root_client)
 
     df_reverse_ptr = df_ptr[::-1]  # use slice to reverse the column data
     df_reverse = df_reverse_ptr.get()

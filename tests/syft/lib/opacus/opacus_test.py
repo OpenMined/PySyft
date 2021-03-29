@@ -6,12 +6,11 @@ import syft as sy
 
 
 @pytest.mark.vendor(lib="opacus")
-def test_remote_engine_simple() -> None:
+def test_remote_engine_simple(root_client: sy.VirtualMachineClient) -> None:
     sy.load("opacus")
 
-    data_owner = sy.VirtualMachine().get_root_client()
-    remote_opacus = data_owner.opacus
-    remote_torch = data_owner.torch
+    remote_opacus = root_client.opacus
+    remote_torch = root_client.torch
 
     model_ptr = remote_torch.nn.Linear(1, 1)
     batch_size = 16

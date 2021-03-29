@@ -17,12 +17,9 @@ def test_string_serde() -> None:
     assert deserialized.id == syft_string.id
 
 
-def test_string_send() -> None:
-    alice = syft.VirtualMachine(name="alice")
-    alice_client = alice.get_client()
-
+def test_string_send(client) -> None:
     syft_string = String("Hello OpenMined!")
-    ptr = syft_string.send(alice_client)
+    ptr = syft_string.send(client)
 
     # Check pointer type
     assert ptr.__class__.__name__ == "StringPointer"

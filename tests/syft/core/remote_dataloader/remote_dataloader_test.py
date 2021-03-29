@@ -25,16 +25,12 @@ class ExampleDataset(Dataset):
 ten = th.rand((1000, 4))
 ds = ExampleDataset(ten)
 
-alice = sy.VirtualMachine()
-alice_client = alice.get_root_client()
 
-
-def test_remote_dataset() -> None:
-    alice.store.clear()
+def test_remote_dataset(node: sy.VirtualMachine, client) -> None:
     th.save(ds, "ds.pt")
 
     rds = RemoteDataset(path="ds.pt", data_type="torch_tensor")
-    rds_ptr = rds.send(alice_client)
+    rds_ptr = rds.send(client)
     rds_ptr.load_dataset()
 
     assert rds_ptr.len().get() == 1000
@@ -44,13 +40,12 @@ def test_remote_dataset() -> None:
     os.system("rm ds.pt")
 
 
-def test_remote_dataloader() -> None:
-    alice.store.clear()
+def test_remote_dataloader(root_client) -> None:
     th.save(ds, "ds.pt")
 
     rds = RemoteDataset(path="ds.pt", data_type="torch_tensor")
     rdl = RemoteDataLoader(remote_dataset=rds, batch_size=4)
-    rdl_ptr = rdl.send(alice_client)
+    rdl_ptr = rdl.send(root_client)
 
     rdl_ptr.load_dataset()
     rdl_ptr.create_dataloader()

@@ -3,14 +3,10 @@ import pytest
 import torch as th
 
 # syft absolute
-import syft as sy
 from syft.lib import load_lib
 
 
-def test_searchable_pointable() -> None:
-    bob = sy.VirtualMachine(name="Bob")
-    root_client = bob.get_root_client()
-
+def test_searchable_pointable(root_client) -> None:
     with pytest.deprecated_call():
         x_ptr = th.Tensor([1, 2, 3]).send(root_client, searchable=True)
 

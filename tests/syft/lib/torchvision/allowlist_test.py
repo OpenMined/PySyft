@@ -29,11 +29,6 @@ def tens() -> torch.Tensor:
         return torch.load(path_file)
 
 
-@pytest.fixture(scope="function")
-def alice() -> sy.VirtualMachine:
-    return sy.VirtualMachine(name="alice")
-
-
 def version_supported(support_dict: Union[str, Dict[str, str]]) -> bool:
     if isinstance(support_dict, str):
         return True
@@ -43,10 +38,9 @@ def version_supported(support_dict: Union[str, Dict[str, str]]) -> bool:
         return TORCHVISION_VERSION >= version.parse(support_dict["min_version"])
 
 
-def test_allowlist(alice: sy.VirtualMachine, tens: torch.Tensor) -> None:
-    alice_client = alice.get_root_client()
-    torchvision = alice_client.torchvision
-    torch = alice_client.torch
+def test_allowlist(root_client: sy.VirtualMachine, tens: torch.Tensor) -> None:
+    torchvision = root_client.torchvision
+    torch = root_client.torch
     try:
         tx = torch.rand(4)
         tx = tx * 2

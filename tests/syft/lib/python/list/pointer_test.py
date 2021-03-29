@@ -7,14 +7,12 @@ import pytest
 # syft absolute
 import syft as sy
 
-alice = sy.VirtualMachine(name="alice")
-alice_client = alice.get_root_client()
-remote_python = alice_client.syft.lib.python
 
-
-def get_permission(obj: Any) -> None:
-    remote_obj = alice.store[obj.id_at_location]
-    remote_obj.read_permissions[alice_client.verify_key] = obj.id_at_location
+def get_permission(
+    obj: Any, node: sy.VirtualMachine, client: sy.VirtualMachineClient
+) -> None:
+    remote_obj = node.store[obj.id_at_location]
+    remote_obj.read_permissions[client.verify_key] = obj.id_at_location
 
 
 inputs = {
@@ -48,19 +46,11 @@ inputs = {
 
 
 def generate_0():
-    return (
-        [41, 15, 3, 80],
-        sy.lib.python.List([41, 15, 3, 80]),
-        remote_python.List([41, 15, 3, 80]),
-    )
+    return ([41, 15, 3, 80],)
 
 
 def generate_1():
-    return (
-        list(range(2 ** 5)),
-        sy.lib.python.List(list(range(2 ** 5))),
-        remote_python.List(list(range(2 ** 5))),
-    )
+    return (list(range(2 ** 5)),)
 
 
 mapping = {0: generate_0, 1: generate_1}
@@ -70,10 +60,13 @@ objects = [0, 1]
 
 @pytest.mark.xfail
 @pytest.mark.slow
-@pytest.mark.parametrize("test_objects", objects)
+@pytest.mark.parametrize("test_object", objects)
 @pytest.mark.parametrize("func", inputs.keys())
-def test_pointer_objectives(test_objects, func):
-    py_obj, sy_obj, remote_sy_obj = mapping[test_objects]()
+def test_pointer_objectives(test_object, func, node, client):
+    py_obj = mapping[test_object]()
+    sy_obj, remote_sy_obj = sy.lib.python.List(py_obj), client.syft.lib.python.List(
+        py_obj
+    )
     possible_inputs = inputs[func]
 
     if not hasattr(py_obj, func):
@@ -100,7 +93,7 @@ def test_pointer_objectives(test_objects, func):
 
         try:
             remote_sy_res = remote_sy_method(*possible_input)
-            get_permission(remote_sy_res)
+            get_permission(remote_sy_res, node, client)
             remote_sy_res = remote_sy_res.get()
         except Exception as remote_sy_e:
             remote_sy_res = str(remote_sy_e)
@@ -115,14 +108,17 @@ def test_pointer_objectives(test_objects, func):
 
         assert py_obj == sy_obj
         # TODO add this as well when the store logic will work
-        get_permission(remote_sy_obj)
+        get_permission(remote_sy_obj, node, client)
         assert sy_obj == remote_sy_obj.get()
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("test_objects", objects)
-def test_iterator(test_objects):
-    py_obj, sy_obj, remote_sy_obj = mapping[test_objects]()
+@pytest.mark.parametrize("test_object", objects)
+def test_iterator(test_object, client):
+    py_obj = mapping[test_object]()
+    sy_obj, remote_sy_obj = sy.lib.python.List(py_obj), client.syft.lib.python.List(
+        py_obj
+    )
 
     py_iter = iter(py_obj)
     sy_iter = iter(sy_obj)
@@ -140,9 +136,12 @@ def test_iterator(test_objects):
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("test_objects", objects)
-def test_reversed_iterator(test_objects):
-    py_obj, sy_obj, remote_sy_obj = mapping[test_objects]()
+@pytest.mark.parametrize("test_object", objects)
+def test_reversed_iterator(test_object, client):
+    py_obj = mapping[test_object]()
+    sy_obj, remote_sy_obj = sy.lib.python.List(py_obj), client.syft.lib.python.List(
+        py_obj
+    )
 
     py_iter = reversed(py_obj)
     sy_iter = reversed(sy_obj)
