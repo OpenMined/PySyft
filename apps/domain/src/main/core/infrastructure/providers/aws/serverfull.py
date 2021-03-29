@@ -301,7 +301,7 @@ class AWS_Serverfull(AWS):
             ## TODO(amr): remove this after poetry updates
             pip install pymysql
 
-            nohup ./run.sh --port {app.port}  --host 0.0.0.0
+            nohup ./run.sh --port {app.port}  --host 0.0.0.0 --start_local_db
             """
         )
         return exec_script
