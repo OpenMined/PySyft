@@ -26,12 +26,12 @@ def test_same_var_for_ptr_gc(
         """
         ptr = x.send(client, pointable=False)
 
-    assert len(client.store) == 1
+    assert len(node.store) == 1
 
     ptr.get()
     gc.collect()
 
-    assert len(client.store) == 0
+    assert len(node.store) == 0
 
 
 def test_send_same_obj_gc(
