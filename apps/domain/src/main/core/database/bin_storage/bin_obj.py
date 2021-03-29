@@ -10,9 +10,9 @@ bin_to_proto = {TensorProto_PB.__name__: TensorProto_PB}
 class BinObject(BaseModel):
     __tablename__ = "bin_object"
 
-    id = db.Column(db.String(), primary_key=True)
-    binary = db.Column(db.LargeBinary())
-    protobuf_name = db.Column(db.String())
+    id = db.Column(db.String(2056), primary_key=True)
+    binary = db.Column(db.LargeBinary(4096))
+    protobuf_name = db.Column(db.String(2056))
 
     @property
     def object(self):
