@@ -17,7 +17,7 @@ FAMILY_2_STR = {
     statsmodels.genmod.families.family.InverseGaussian: "InverseGaussian",
     statsmodels.genmod.families.family.NegativeBinomial: "NegativeBinomial",
     statsmodels.genmod.families.family.Poisson: "Poisson",
-    statsmodels.genmod.families.family.Tweedie: "Tweedie"
+    statsmodels.genmod.families.family.Tweedie: "Tweedie",
 }
 LINK_2_STR = {
     statsmodels.genmod.families.links.log: "log",
@@ -28,7 +28,7 @@ LINK_2_STR = {
     statsmodels.genmod.families.links.inverse_power: "inverse_power",
     statsmodels.genmod.families.links.inverse_squared: "inverse_squared",
     statsmodels.genmod.families.links.nbinom: "nbinom",
-    statsmodels.genmod.families.links.probit: "probit"
+    statsmodels.genmod.families.links.probit: "probit",
 }
 
 STR_2_FAMILY = {v: k for k, v in FAMILY_2_STR.items()}
@@ -43,10 +43,7 @@ def object2proto(obj: Type[statsmodels.genmod.families.family.Family]) -> Family
     family_name_proto = family_name_prim._object2proto()
     link_name_proto = link_name_prim._object2proto()
 
-    return FamilyProto(
-        family=family_name_proto,
-        link=link_name_proto
-    )
+    return FamilyProto(family=family_name_proto, link=link_name_proto)
 
 
 def proto2object(proto: FamilyProto) -> Type[statsmodels.genmod.families.family.Family]:

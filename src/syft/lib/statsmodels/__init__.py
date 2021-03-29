@@ -17,9 +17,7 @@ from ...ast.globals import Globals
 from ..util import generic_update_ast
 
 LIB_NAME = "statsmodels"
-PACKAGE_SUPPORT = {
-    "lib": LIB_NAME
-}
+PACKAGE_SUPPORT = {"lib": LIB_NAME}
 
 
 def create_ast(client: TypeAny = None) -> Globals:
@@ -29,11 +27,13 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("statsmodels", statsmodels),
         ("statsmodels.api", sm),
         ("statsmodels.genmod", statsmodels.genmod),
-        ("statsmodels.genmod.generalized_linear_model",
-         statsmodels.genmod.generalized_linear_model),
+        (
+            "statsmodels.genmod.generalized_linear_model",
+            statsmodels.genmod.generalized_linear_model,
+        ),
         ("statsmodels.genmod.families", statsmodels.genmod.families),
         ("statsmodels.iolib", statsmodels.iolib),
-        ("statsmodels.iolib.summary", statsmodels.iolib.summary)
+        ("statsmodels.iolib.summary", statsmodels.iolib.summary),
     ]
 
     classes: TypeList[TypeTuple[str, str, TypeAny]] = [
@@ -45,80 +45,68 @@ def create_ast(client: TypeAny = None) -> Globals:
         (
             "statsmodels.genmod.generalized_linear_model.GLMResults",
             "statsmodels.genmod.generalized_linear_model.GLMResults",
-            statsmodels.genmod.generalized_linear_model.GLMResults
+            statsmodels.genmod.generalized_linear_model.GLMResults,
         ),
         (
             "statsmodels.genmod.generalized_linear_model.GLMResultsWrapper",
             "statsmodels.genmod.generalized_linear_model.GLMResultsWrapper",
-            statsmodels.genmod.generalized_linear_model.GLMResultsWrapper
+            statsmodels.genmod.generalized_linear_model.GLMResultsWrapper,
         ),
         (
             "statsmodels.iolib.summary.Summary",
             "statsmodels.iolib.summary.Summary",
-            statsmodels.iolib.summary.Summary
+            statsmodels.iolib.summary.Summary,
         ),
         (
             "statsmodels.genmod.families.Binomial",
             "statsmodels.genmod.families.Binomial",
-            statsmodels.genmod.families.Binomial
+            statsmodels.genmod.families.Binomial,
         ),
         (
             "statsmodels.genmod.families.family.Gamma",
             "statsmodels.genmod.families.family.Gamma",
-            statsmodels.genmod.families.family.Gamma
+            statsmodels.genmod.families.family.Gamma,
         ),
         (
             "statsmodels.genmod.families.family.Gaussian",
             "statsmodels.genmod.families.family.Gaussian",
-            statsmodels.genmod.families.family.Gaussian
+            statsmodels.genmod.families.family.Gaussian,
         ),
         (
             "statsmodels.genmod.families.family.InverseGaussian",
             "statsmodels.genmod.families.family.InverseGaussian",
-            statsmodels.genmod.families.family.InverseGaussian
+            statsmodels.genmod.families.family.InverseGaussian,
         ),
         (
             "statsmodels.genmod.families.family.NegativeBinomial",
             "statsmodels.genmod.families.family.NegativeBinomial",
-            statsmodels.genmod.families.family.NegativeBinomial
+            statsmodels.genmod.families.family.NegativeBinomial,
         ),
         (
             "statsmodels.genmod.families.family.Poisson",
             "statsmodels.genmod.families.family.Poisson",
-            statsmodels.genmod.families.family.Poisson
+            statsmodels.genmod.families.family.Poisson,
         ),
         (
             "statsmodels.genmod.families.family.Tweedie",
             "statsmodels.genmod.families.family.Tweedie",
-            statsmodels.genmod.families.family.Tweedie
+            statsmodels.genmod.families.family.Tweedie,
         ),
     ]
 
     methods = [
         (
             "statsmodels.genmod.generalized_linear_model.GLM.fit",
-            "statsmodels.genmod.generalized_linear_model.GLMResultsWrapper"
+            "statsmodels.genmod.generalized_linear_model.GLMResultsWrapper",
         ),
         (
             "statsmodels.genmod.generalized_linear_model.GLMResults.summary",
             "statsmodels.iolib.summary.Summary",
         ),
-        (
-            "statsmodels.iolib.summary.Summary.as_csv",
-            "syft.lib.python.String"
-        ),
-        (
-            "statsmodels.iolib.summary.Summary.as_html",
-            "syft.lib.python.String"
-        ),
-        (
-            "statsmodels.iolib.summary.Summary.as_latex",
-            "syft.lib.python.String"
-        ),
-        (
-            "statsmodels.iolib.summary.Summary.as_text",
-            "syft.lib.python.String"
-        )
+        ("statsmodels.iolib.summary.Summary.as_csv", "syft.lib.python.String"),
+        ("statsmodels.iolib.summary.Summary.as_html", "syft.lib.python.String"),
+        ("statsmodels.iolib.summary.Summary.as_latex", "syft.lib.python.String"),
+        ("statsmodels.iolib.summary.Summary.as_text", "syft.lib.python.String"),
     ]
 
     add_modules(ast, modules)
