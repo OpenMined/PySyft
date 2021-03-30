@@ -4,8 +4,11 @@ from typing import Callable
 from typing import Dict
 
 # syft relative
-from ...messages.association_messages import GridRequestMessage
-from ...messages.association_messages import GridResponseMessage
+from ...messages.association_messages import DeleteAssociationRequestMessage
+from ...messages.association_messages import GetAssociationRequestMessage
+from ...messages.association_messages import GetAssociationRequestsMessage
+from ...messages.association_messages import RespondAssociationRequestMessage
+from ...messages.association_messages import SendAssociationRequestMessage
 from .request_api import GridRequestAPI
 
 
