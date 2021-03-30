@@ -213,7 +213,7 @@ def test_plan_batched_execution() -> None:
         plan_pointer(x=x, y=y)
 
         # checks if (model(x) == y) == [True, True]
-        assert all(result_tensor_pointer3.get())
+        assert all(result_tensor_pointer3.get(delete_obj=False))
 
 
 def test_make_plan() -> None:

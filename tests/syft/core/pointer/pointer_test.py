@@ -232,3 +232,15 @@ def test_printing_remote_creation() -> None:
     basic_client = bob.get_client()
     for idx, elem in enumerate(create_data_types(basic_client)):
         validate_permission_error(elem)
+
+
+def test_exhausted() -> None:
+    client = sy.VirtualMachine().get_root_client()
+
+    int_ptr = client.syft.lib.python.Int(0)
+    int_ptr.get()  # ptr gets exhausted after this call
+
+    with pytest.raises(ReferenceError) as e:
+        int_ptr.get()
+
+    assert str(e.value) == "Object has already been deleted. This pointer is exhausted"
