@@ -337,6 +337,18 @@ docs = ["sphinx", "pallets-sphinx-themes", "sphinxcontrib-log-cabinet", "sphinx-
 dotenv = ["python-dotenv"]
 
 [[package]]
+name = "flask-cors"
+version = "3.0.10"
+description = "A Flask extension adding a decorator for CORS support"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+Flask = ">=0.9"
+Six = "*"
+
+[[package]]
 name = "flask-executor"
 version = "0.9.4"
 description = "An easy to use Flask wrapper for concurrent.futures"
@@ -1223,7 +1235,7 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "9e8ed32a6ddc58d5dc9483b2f48e66b0d7a259c83ebcffffc3264deea33eddde"
+content-hash = "6968101377ecf178a03ccfbe46fb0c99ffc448798a7ec2722e91a572ceeecae2"
 
 [metadata.files]
 aioice = [
@@ -1538,6 +1550,10 @@ flake8-comprehensions = [
 flask = [
     {file = "Flask-1.1.2-py2.py3-none-any.whl", hash = "sha256:8a4fdd8936eba2512e9c85df320a37e694c93945b33ef33c89946a340a238557"},
     {file = "Flask-1.1.2.tar.gz", hash = "sha256:4efa1ae2d7c9865af48986de8aeb8504bf32c7f3d6fdc9353d34b21f4b127060"},
+]
+flask-cors = [
+    {file = "Flask-Cors-3.0.10.tar.gz", hash = "sha256:b60839393f3b84a0f3746f6cdca56c1ad7426aa738b70d6c61375857823181de"},
+    {file = "Flask_Cors-3.0.10-py2.py3-none-any.whl", hash = "sha256:74efc975af1194fc7891ff5cd85b0f7478be4f7f59fe158102e91abb72bb4438"},
 ]
 flask-executor = [
     {file = "Flask-Executor-0.9.4.tar.gz", hash = "sha256:31b4a1141515214abc67b5f35507e5625ca33894f897afd422d5bfe223804242"},
