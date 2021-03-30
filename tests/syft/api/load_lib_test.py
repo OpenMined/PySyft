@@ -1,6 +1,9 @@
 # stdlib
 import logging
 
+# third party
+import _pytest
+
 # syft absolute
 import syft as sy
 
@@ -13,7 +16,7 @@ def test_load_lib() -> None:
     assert sy.lib.load({"tenseal"}) is None
 
 
-def test_load_errors(caplog) -> None:
+def test_load_errors(caplog: _pytest.logging.LogCaptureFixture) -> None:
     # Error if a non-supported library is loaded
     with caplog.at_level(logging.CRITICAL, logger="syft.logger"):
         sy.lib.load("non_compatible")
