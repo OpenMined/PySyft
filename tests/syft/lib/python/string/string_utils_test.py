@@ -1,7 +1,7 @@
 # flake8: noqa
 """
 File copied from cpython test suite:
-https://github.com/python/cpython/blob/3.8/Lib/test/string_tests.py
+https://github.com/python/cpython/blob/3.9/Lib/test/string_tests.py
 
 Common tests shared by test_unicode, test_userstring and test_bytes.
 """
@@ -16,7 +16,8 @@ from test import support
 import pytest
 
 # syft absolute
-from syft.lib import python
+from syft.lib.python import List
+from syft.lib.python import String
 
 
 class Sequence:
@@ -82,45 +83,43 @@ def checkcall(obj, methodname, *args):
 
 @pytest.mark.slow
 def test_find():
-    checkequal(0, python.String("abcdefghiabc"), "find", python.String("abc"))
-    checkequal(9, python.String("abcdefghiabc"), "find", python.String("abc"), 1)
-    checkequal(-1, python.String("abcdefghiabc"), "find", python.String("def"), 4)
+    checkequal(0, String("abcdefghiabc"), "find", String("abc"))
+    checkequal(9, String("abcdefghiabc"), "find", String("abc"), 1)
+    checkequal(-1, String("abcdefghiabc"), "find", String("def"), 4)
 
-    checkequal(0, python.String("abc"), "find", python.String(""), 0)
-    checkequal(3, python.String("abc"), "find", python.String(""), 3)
-    checkequal(-1, python.String("abc"), "find", python.String(""), 4)
+    checkequal(0, String("abc"), "find", String(""), 0)
+    checkequal(3, String("abc"), "find", String(""), 3)
+    checkequal(-1, String("abc"), "find", String(""), 4)
 
     # to check the ability to pass None as defaults
-    checkequal(2, python.String("rrarrrrrrrrra"), "find", python.String("a"))
-    checkequal(12, python.String("rrarrrrrrrrra"), "find", python.String("a"), 4)
-    checkequal(-1, python.String("rrarrrrrrrrra"), "find", python.String("a"), 4, 6)
-    checkequal(12, python.String("rrarrrrrrrrra"), "find", python.String("a"), 4, None)
-    checkequal(2, python.String("rrarrrrrrrrra"), "find", python.String("a"), None, 6)
+    checkequal(2, String("rrarrrrrrrrra"), "find", String("a"))
+    checkequal(12, String("rrarrrrrrrrra"), "find", String("a"), 4)
+    checkequal(-1, String("rrarrrrrrrrra"), "find", String("a"), 4, 6)
+    checkequal(12, String("rrarrrrrrrrra"), "find", String("a"), 4, None)
+    checkequal(2, String("rrarrrrrrrrra"), "find", String("a"), None, 6)
 
-    checkraises(TypeError, python.String("hello"), "find")
+    checkraises(TypeError, String("hello"), "find")
 
     if contains_bytes:
-        checkequal(-1, python.String("hello"), "find", 42)
+        checkequal(-1, String("hello"), "find", 42)
     else:
-        checkraises(TypeError, python.String("hello"), "find", 42)
+        checkraises(TypeError, String("hello"), "find", 42)
 
-    checkequal(0, python.String(""), "find", python.String(""))
-    checkequal(-1, python.String(""), "find", python.String(""), 1, 1)
-    checkequal(-1, python.String(""), "find", python.String(""), sys.maxsize, 0)
+    checkequal(0, String(""), "find", String(""))
+    checkequal(-1, String(""), "find", String(""), 1, 1)
+    checkequal(-1, String(""), "find", String(""), sys.maxsize, 0)
 
-    checkequal(-1, python.String(""), "find", python.String("xx"))
-    checkequal(-1, python.String(""), "find", python.String("xx"), 1, 1)
-    checkequal(-1, python.String(""), "find", python.String("xx"), sys.maxsize, 0)
+    checkequal(-1, String(""), "find", String("xx"))
+    checkequal(-1, String(""), "find", String("xx"), 1, 1)
+    checkequal(-1, String(""), "find", String("xx"), sys.maxsize, 0)
 
     # issue 7458
-    checkequal(
-        -1, python.String("ab"), "find", python.String("xxx"), sys.maxsize + 1, 0
-    )
+    checkequal(-1, String("ab"), "find", String("xxx"), sys.maxsize + 1, 0)
 
     # For a variety of combinations,
     #    verify that str.find() matches __contains__
     #    and that the found substring is really at that location
-    charset = [python.String(""), python.String("a"), python.String("b")]
+    charset = [String(""), String("a"), String("b")]
     digits = 4
     base = len(charset)
     teststrings = set()
@@ -129,7 +128,7 @@ def test_find():
         for j in range(digits):
             i, m = divmod(i, base)
             entry.append(charset[m])
-        teststrings.add(python.String("").join(entry))
+        teststrings.add(String("").join(entry))
     for i in teststrings:
         for j in teststrings:
             loc = i.find(j)
@@ -143,33 +142,33 @@ def test_find():
 
 @pytest.mark.slow
 def test_rfind():
-    checkequal(9, python.String("abcdefghiabc"), "rfind", python.String("abc"))
-    checkequal(12, python.String("abcdefghiabc"), "rfind", "")
-    checkequal(0, python.String("abcdefghiabc"), "rfind", python.String("abcd"))
-    checkequal(-1, python.String("abcdefghiabc"), "rfind", python.String("abcz"))
+    checkequal(9, String("abcdefghiabc"), "rfind", String("abc"))
+    checkequal(12, String("abcdefghiabc"), "rfind", "")
+    checkequal(0, String("abcdefghiabc"), "rfind", String("abcd"))
+    checkequal(-1, String("abcdefghiabc"), "rfind", String("abcz"))
 
-    checkequal(3, python.String("abc"), "rfind", python.String(""), 0)
-    checkequal(3, python.String("abc"), "rfind", python.String(""), 3)
-    checkequal(-1, python.String("abc"), "rfind", python.String(""), 4)
+    checkequal(3, String("abc"), "rfind", String(""), 0)
+    checkequal(3, String("abc"), "rfind", String(""), 3)
+    checkequal(-1, String("abc"), "rfind", String(""), 4)
 
     # to check the ability to pass None as defaults
-    checkequal(12, python.String("rrarrrrrrrrra"), "rfind", python.String("a"))
-    checkequal(12, python.String("rrarrrrrrrrra"), "rfind", python.String("a"), 4)
-    checkequal(-1, python.String("rrarrrrrrrrra"), "rfind", python.String("a"), 4, 6)
-    checkequal(12, python.String("rrarrrrrrrrra"), "rfind", python.String("a"), 4, None)
-    checkequal(2, python.String("rrarrrrrrrrra"), "rfind", python.String("a"), None, 6)
+    checkequal(12, String("rrarrrrrrrrra"), "rfind", String("a"))
+    checkequal(12, String("rrarrrrrrrrra"), "rfind", String("a"), 4)
+    checkequal(-1, String("rrarrrrrrrrra"), "rfind", String("a"), 4, 6)
+    checkequal(12, String("rrarrrrrrrrra"), "rfind", String("a"), 4, None)
+    checkequal(2, String("rrarrrrrrrrra"), "rfind", String("a"), None, 6)
 
-    checkraises(TypeError, python.String("hello"), "rfind")
+    checkraises(TypeError, String("hello"), "rfind")
 
     if contains_bytes:
-        checkequal(-1, python.String("hello"), "rfind", 42)
+        checkequal(-1, String("hello"), "rfind", 42)
     else:
-        checkraises(TypeError, python.String("hello"), "rfind", 42)
+        checkraises(TypeError, String("hello"), "rfind", 42)
 
     # For a variety of combinations,
     #    verify that str.rfind() matches __contains__
     #    and that the found substring is really at that location
-    charset = [python.String(""), python.String("a"), python.String("b")]
+    charset = [String(""), String("a"), String("b")]
     digits = 3
     base = len(charset)
     teststrings = set()
@@ -178,7 +177,7 @@ def test_rfind():
         for j in range(digits):
             i, m = divmod(i, base)
             entry.append(charset[m])
-        teststrings.add(python.String("").join(entry))
+        teststrings.add(String("").join(entry))
     for i in teststrings:
         for j in teststrings:
             loc = i.rfind(j)
@@ -189,235 +188,207 @@ def test_rfind():
                 assert i[loc : loc + len(j)] == j  # noqa: E203
 
     # issue 7458
-    checkequal(
-        -1, python.String("ab"), "rfind", python.String("xxx"), sys.maxsize + 1, 0
-    )
+    checkequal(-1, String("ab"), "rfind", String("xxx"), sys.maxsize + 1, 0)
 
     # issue #15534
-    checkequal(0, python.String("<......\u043c..."), "rfind", "<")
+    checkequal(0, String("<......\u043c..."), "rfind", "<")
 
 
 def test_index():
-    checkequal(0, python.String("abcdefghiabc"), "index", python.String(""))
-    checkequal(3, python.String("abcdefghiabc"), "index", python.String("def"))
-    checkequal(0, python.String("abcdefghiabc"), "index", python.String("abc"))
-    checkequal(9, python.String("abcdefghiabc"), "index", "abc", 1)
+    checkequal(0, String("abcdefghiabc"), "index", String(""))
+    checkequal(3, String("abcdefghiabc"), "index", String("def"))
+    checkequal(0, String("abcdefghiabc"), "index", String("abc"))
+    checkequal(9, String("abcdefghiabc"), "index", "abc", 1)
 
-    checkraises(
-        ValueError, python.String("abcdefghiabc"), "index", python.String("hib")
-    )
-    checkraises(
-        ValueError, python.String("abcdefghiab"), "index", python.String("abc"), 1
-    )
-    checkraises(
-        ValueError, python.String("abcdefghi"), "index", python.String("ghi"), 8
-    )
-    checkraises(
-        ValueError, python.String("abcdefghi"), "index", python.String("ghi"), -1
-    )
+    checkraises(ValueError, String("abcdefghiabc"), "index", String("hib"))
+    checkraises(ValueError, String("abcdefghiab"), "index", String("abc"), 1)
+    checkraises(ValueError, String("abcdefghi"), "index", String("ghi"), 8)
+    checkraises(ValueError, String("abcdefghi"), "index", String("ghi"), -1)
 
     # to check the ability to pass None as defaults
-    checkequal(2, python.String("rrarrrrrrrrra"), "index", python.String("a"))
-    checkequal(12, python.String("rrarrrrrrrrra"), "index", python.String("a"), 4)
-    checkraises(
-        ValueError, python.String("rrarrrrrrrrra"), "index", python.String("a"), 4, 6
-    )
-    checkequal(12, python.String("rrarrrrrrrrra"), "index", python.String("a"), 4, None)
-    checkequal(2, python.String("rrarrrrrrrrra"), "index", python.String("a"), None, 6)
+    checkequal(2, String("rrarrrrrrrrra"), "index", String("a"))
+    checkequal(12, String("rrarrrrrrrrra"), "index", String("a"), 4)
+    checkraises(ValueError, String("rrarrrrrrrrra"), "index", String("a"), 4, 6)
+    checkequal(12, String("rrarrrrrrrrra"), "index", String("a"), 4, None)
+    checkequal(2, String("rrarrrrrrrrra"), "index", String("a"), None, 6)
 
-    checkraises(TypeError, python.String("hello"), "index")
+    checkraises(TypeError, String("hello"), "index")
 
-    checkraises(ValueError, python.String("hello"), "index", 42)
+    checkraises(ValueError, String("hello"), "index", 42)
 
 
 def test_rindex():
-    checkequal(12, python.String("abcdefghiabc"), "rindex", python.String(""))
-    checkequal(3, python.String("abcdefghiabc"), "rindex", python.String("def"))
-    checkequal(9, python.String("abcdefghiabc"), "rindex", python.String("abc"))
-    checkequal(0, python.String("abcdefghiabc"), "rindex", python.String("abc"), 0, -1)
+    checkequal(12, String("abcdefghiabc"), "rindex", String(""))
+    checkequal(3, String("abcdefghiabc"), "rindex", String("def"))
+    checkequal(9, String("abcdefghiabc"), "rindex", String("abc"))
+    checkequal(0, String("abcdefghiabc"), "rindex", String("abc"), 0, -1)
 
-    checkraises(
-        ValueError, python.String("abcdefghiabc"), "rindex", python.String("hib")
-    )
-    checkraises(
-        ValueError, python.String("defghiabc"), "rindex", python.String("def"), 1
-    )
-    checkraises(ValueError, python.String("defghiabc"), "rindex", "abc", 0, -1)
-    checkraises(
-        ValueError, python.String("abcdefghi"), "rindex", python.String("ghi"), 0, 8
-    )
-    checkraises(
-        ValueError, python.String("abcdefghi"), "rindex", python.String("ghi"), 0, -1
-    )
+    checkraises(ValueError, String("abcdefghiabc"), "rindex", String("hib"))
+    checkraises(ValueError, String("defghiabc"), "rindex", String("def"), 1)
+    checkraises(ValueError, String("defghiabc"), "rindex", "abc", 0, -1)
+    checkraises(ValueError, String("abcdefghi"), "rindex", String("ghi"), 0, 8)
+    checkraises(ValueError, String("abcdefghi"), "rindex", String("ghi"), 0, -1)
 
     # to check the ability to pass None as defaults
-    checkequal(12, python.String("rrarrrrrrrrra"), "rindex", "a")
-    checkequal(12, python.String("rrarrrrrrrrra"), "rindex", "a", 4)
-    checkraises(
-        ValueError, python.String("rrarrrrrrrrra"), "rindex", python.String("a"), 4, 6
-    )
-    checkequal(
-        12, python.String("rrarrrrrrrrra"), "rindex", python.String("a"), 4, None
-    )
-    checkequal(2, python.String("rrarrrrrrrrra"), "rindex", python.String("a"), None, 6)
+    checkequal(12, String("rrarrrrrrrrra"), "rindex", "a")
+    checkequal(12, String("rrarrrrrrrrra"), "rindex", "a", 4)
+    checkraises(ValueError, String("rrarrrrrrrrra"), "rindex", String("a"), 4, 6)
+    checkequal(12, String("rrarrrrrrrrra"), "rindex", String("a"), 4, None)
+    checkequal(2, String("rrarrrrrrrrra"), "rindex", String("a"), None, 6)
 
     checkraises(TypeError, "hello", "rindex")
 
     if contains_bytes:
         checkraises(ValueError, "hello", "rindex", 42)
     else:
-        checkraises(TypeError, python.String("hello"), "rindex", 42)
+        checkraises(TypeError, String("hello"), "rindex", 42)
 
 
 def test_lower():
     checkequal(
-        python.String("hello"),
-        python.String("HeLLo"),
+        String("hello"),
+        String("HeLLo"),
         "lower",
     )
-    checkequal(python.String("hello"), python.String("hello"), "lower")
-    checkraises(TypeError, python.String("hello"), "lower", 42)
+    checkequal(String("hello"), String("hello"), "lower")
+    checkraises(TypeError, String("hello"), "lower", 42)
 
 
 def test_upper():
-    checkequal(python.String("HELLO"), python.String("HeLLo"), "upper")
-    checkequal(python.String("HELLO"), python.String("HELLO"), "upper")
+    checkequal(String("HELLO"), String("HeLLo"), "upper")
+    checkequal(String("HELLO"), String("HELLO"), "upper")
     checkraises(TypeError, "hello", "upper", 42)
 
 
 def test_expandtabs():
     checkequal(
-        python.String("abc\rab      def\ng       hi"),
-        python.String("abc\rab\tdef\ng\thi"),
+        String("abc\rab      def\ng       hi"),
+        String("abc\rab\tdef\ng\thi"),
         "expandtabs",
     )
     checkequal(
-        python.String("abc\rab      def\ng       hi"),
-        python.String("abc\rab\tdef\ng\thi"),
+        String("abc\rab      def\ng       hi"),
+        String("abc\rab\tdef\ng\thi"),
         "expandtabs",
         8,
     )
+    checkequal("abc\rab  def\ng   hi", String("abc\rab\tdef\ng\thi"), "expandtabs", 4)
     checkequal(
-        "abc\rab  def\ng   hi", python.String("abc\rab\tdef\ng\thi"), "expandtabs", 4
-    )
-    checkequal(
-        python.String("abc\r\nab      def\ng       hi"),
-        python.String("abc\r\nab\tdef\ng\thi"),
+        String("abc\r\nab      def\ng       hi"),
+        String("abc\r\nab\tdef\ng\thi"),
         "expandtabs",
     )
     checkequal(
-        python.String("abc\r\nab      def\ng       hi"),
+        String("abc\r\nab      def\ng       hi"),
         "abc\r\nab\tdef\ng\thi",
         "expandtabs",
         8,
     )
     checkequal(
-        python.String("abc\r\nab  def\ng   hi"),
+        String("abc\r\nab  def\ng   hi"),
         "abc\r\nab\tdef\ng\thi",
         "expandtabs",
         4,
     )
     checkequal(
-        python.String("abc\r\nab\r\ndef\ng\r\nhi"),
-        python.String("abc\r\nab\r\ndef\ng\r\nhi"),
+        String("abc\r\nab\r\ndef\ng\r\nhi"),
+        String("abc\r\nab\r\ndef\ng\r\nhi"),
         "expandtabs",
         4,
     )
     # check keyword args
     checkequal(
-        python.String("abc\rab      def\ng       hi"),
-        python.String("abc\rab\tdef\ng\thi"),
+        String("abc\rab      def\ng       hi"),
+        String("abc\rab\tdef\ng\thi"),
         "expandtabs",
         tabsize=8,
     )
     checkequal(
         "abc\rab  def\ng   hi",
-        python.String("abc\rab\tdef\ng\thi"),
+        String("abc\rab\tdef\ng\thi"),
         "expandtabs",
         tabsize=4,
     )
 
-    checkequal("  a\n b", python.String(" \ta\n\tb"), "expandtabs", 1)
+    checkequal("  a\n b", String(" \ta\n\tb"), "expandtabs", 1)
 
-    checkraises(TypeError, python.String("hello"), "expandtabs", 42, 42)
+    checkraises(TypeError, String("hello"), "expandtabs", 42, 42)
     # This test is only valid when sizeof(int) == sizeof(void*) == 4.
     if sys.maxsize < (1 << 32) and struct.calcsize("P") == 4:
-        checkraises(OverflowError, python.String("\ta\n\tb"), "expandtabs", sys.maxsize)
+        checkraises(OverflowError, String("\ta\n\tb"), "expandtabs", sys.maxsize)
 
 
 def test_split():
     # by a char
     checkequal(
-        [python.String("a"), python.String("b"), "c", python.String("d")],
-        python.String("a|b|c|d"),
+        [String("a"), String("b"), "c", String("d")],
+        String("a|b|c|d"),
         "split",
         "|",
     )
-    checkequal(["a|b|c|d"], python.String("a|b|c|d"), "split", "|", 0)
+    checkequal(["a|b|c|d"], String("a|b|c|d"), "split", "|", 0)
     checkequal(
-        ["a", python.String("b|c|d")],
-        python.String("a|b|c|d"),
+        ["a", String("b|c|d")],
+        String("a|b|c|d"),
         "split",
-        python.String("|"),
+        String("|"),
         1,
     )
-    checkequal(["a", "b", "c|d"], python.String("a|b|c|d"), "split", "|", 2)
+    checkequal(["a", "b", "c|d"], String("a|b|c|d"), "split", "|", 2)
+    checkequal(["a", "b", "c", "d"], String("a|b|c|d"), "split", String("|"), 3)
     checkequal(
-        ["a", "b", "c", "d"], python.String("a|b|c|d"), "split", python.String("|"), 3
-    )
-    checkequal(
-        ["a", python.String("b"), python.String("c"), python.String("d")],
-        python.String("a|b|c|d"),
+        ["a", String("b"), String("c"), String("d")],
+        String("a|b|c|d"),
         "split",
         "|",
         4,
     )
     checkequal(
         ["a", "b", "c", "d"],
-        python.String("a|b|c|d"),
+        String("a|b|c|d"),
         "split",
-        python.String("|"),
+        String("|"),
         sys.maxsize - 2,
     )
-    checkequal(["a|b|c|d"], python.String("a|b|c|d"), "split", python.String("|"), 0)
+    checkequal(["a|b|c|d"], String("a|b|c|d"), "split", String("|"), 0)
     checkequal(
-        [python.String("a"), python.String(""), python.String("b||c||d")],
-        python.String("a||b||c||d"),
+        [String("a"), String(""), String("b||c||d")],
+        String("a||b||c||d"),
         "split",
-        python.String("|"),
+        String("|"),
         2,
     )
-    checkequal([python.String("abcd")], python.String("abcd"), "split", "|")
-    checkequal([""], python.String(""), "split", "|")
+    checkequal([String("abcd")], String("abcd"), "split", "|")
+    checkequal([""], String(""), "split", "|")
     checkequal(
-        [python.String("endcase "), python.String("")],
-        python.String("endcase |"),
+        [String("endcase "), String("")],
+        String("endcase |"),
         "split",
-        python.String("|"),
+        String("|"),
     )
     checkequal(
-        ["", python.String(" startcase")],
-        python.String("| startcase"),
+        ["", String(" startcase")],
+        String("| startcase"),
         "split",
-        python.String("|"),
+        String("|"),
     )
     checkequal(
-        [python.String(""), python.String("bothcase"), python.String("")],
-        python.String("|bothcase|"),
+        [String(""), String("bothcase"), String("")],
+        String("|bothcase|"),
         "split",
         "|",
     )
     checkequal(
-        ["a", "", python.String("b\x00c\x00d")],
-        python.String("a\x00\x00b\x00c\x00d"),
+        ["a", "", String("b\x00c\x00d")],
+        String("a\x00\x00b\x00c\x00d"),
         "split",
         "\x00",
         2,
     )
 
-    checkequal(["a"] * 20, (python.String("a|") * 20)[:-1], "split", python.String("|"))
+    checkequal(["a"] * 20, (String("a|") * 20)[:-1], "split", String("|"))
     checkequal(
-        [python.String("a")] * 15 + [python.String("a|a|a|a|a")],
+        [String("a")] * 15 + [String("a|a|a|a|a")],
         ("a|" * 20)[:-1],
         "split",
         "|",
@@ -427,494 +398,478 @@ def test_split():
     # by string
     checkequal(
         [
-            python.String("a"),
-            python.String("b"),
-            python.String("c"),
-            python.String("d"),
+            String("a"),
+            String("b"),
+            String("c"),
+            String("d"),
         ],
-        python.String("a//b//c//d"),
+        String("a//b//c//d"),
         "split",
-        python.String("//"),
+        String("//"),
     )
     checkequal(
-        [python.String("a"), python.String("b//c//d")],
-        python.String("a//b//c//d"),
+        [String("a"), String("b//c//d")],
+        String("a//b//c//d"),
         "split",
         "//",
         1,
     )
+    checkequal(["a", "b", "c//d"], String("a//b//c//d"), "split", String("//"), 2)
+    checkequal(["a", "b", "c", "d"], String("a//b//c//d"), "split", "//", 3)
     checkequal(
-        ["a", "b", "c//d"], python.String("a//b//c//d"), "split", python.String("//"), 2
-    )
-    checkequal(["a", "b", "c", "d"], python.String("a//b//c//d"), "split", "//", 3)
-    checkequal(
-        ["a", "b", "c", python.String("d")],
-        python.String("a//b//c//d"),
+        ["a", "b", "c", String("d")],
+        String("a//b//c//d"),
         "split",
         "//",
         4,
     )
     checkequal(
         ["a", "b", "c", "d"],
-        python.String("a//b//c//d"),
+        String("a//b//c//d"),
         "split",
-        python.String("//"),
+        String("//"),
         sys.maxsize - 10,
     )
     checkequal(
-        [python.String("a//b//c//d")],
-        python.String("a//b//c//d"),
+        [String("a//b//c//d")],
+        String("a//b//c//d"),
         "split",
-        python.String("//"),
+        String("//"),
         0,
     )
     checkequal(
-        [python.String("a"), python.String(""), "b////c////d"],
-        python.String("a////b////c////d"),
+        [String("a"), String(""), "b////c////d"],
+        String("a////b////c////d"),
         "split",
         "//",
         2,
     )
     checkequal(
-        [python.String(""), python.String(" bothcase "), python.String("")],
-        python.String("test bothcase test"),
+        [String(""), String(" bothcase "), String("")],
+        String("test bothcase test"),
         "split",
-        python.String("test"),
+        String("test"),
     )
     checkequal(
-        [python.String("a"), python.String("bc")],
-        python.String("abbbc"),
+        [String("a"), String("bc")],
+        String("abbbc"),
         "split",
-        python.String("bb"),
+        String("bb"),
     )
     checkequal(
-        [python.String(""), python.String("")],
-        python.String("aaa"),
+        [String(""), String("")],
+        String("aaa"),
         "split",
-        python.String("aaa"),
+        String("aaa"),
     )
+    checkequal([String("aaa")], String("aaa"), "split", String("aaa"), 0)
     checkequal(
-        [python.String("aaa")], python.String("aaa"), "split", python.String("aaa"), 0
-    )
-    checkequal(
-        [python.String("ab"), python.String("ab")],
-        python.String("abbaab"),
+        [String("ab"), String("ab")],
+        String("abbaab"),
         "split",
-        python.String("ba"),
+        String("ba"),
     )
+    checkequal([String("aaaa")], String("aaaa"), "split", String("aab"))
+    checkequal([String("")], String(""), "split", String("aaa"))
+    checkequal([String("aa")], String("aa"), "split", String("aaa"))
     checkequal(
-        [python.String("aaaa")], python.String("aaaa"), "split", python.String("aab")
-    )
-    checkequal([python.String("")], python.String(""), "split", python.String("aaa"))
-    checkequal(
-        [python.String("aa")], python.String("aa"), "split", python.String("aaa")
-    )
-    checkequal(
-        [python.String("A"), python.String("bobb")],
-        python.String("Abbobbbobb"),
+        [String("A"), String("bobb")],
+        String("Abbobbbobb"),
         "split",
-        python.String("bbobb"),
+        String("bbobb"),
     )
     checkequal(
-        [python.String("A"), python.String("B"), python.String("")],
-        python.String("AbbobbBbbobb"),
+        [String("A"), String("B"), String("")],
+        String("AbbobbBbbobb"),
         "split",
-        python.String("bbobb"),
+        String("bbobb"),
     )
 
     checkequal(
-        [python.String("a")] * 20,
-        (python.String("aBLAH") * 20)[:-4],
+        [String("a")] * 20,
+        (String("aBLAH") * 20)[:-4],
         "split",
-        python.String("BLAH"),
+        String("BLAH"),
     )
     checkequal(
-        [python.String("a")] * 20,
-        (python.String("aBLAH") * 20)[:-4],
+        [String("a")] * 20,
+        (String("aBLAH") * 20)[:-4],
         "split",
-        python.String("BLAH"),
+        String("BLAH"),
         19,
     )
     checkequal(
-        [python.String("a")] * 18 + [python.String("aBLAHa")],
-        (python.String("aBLAH") * 20)[:-4],
+        [String("a")] * 18 + [String("aBLAHa")],
+        (String("aBLAH") * 20)[:-4],
         "split",
-        python.String("BLAH"),
+        String("BLAH"),
         18,
     )
 
     # with keyword args
     checkequal(
         [
-            python.String("a"),
-            python.String("b"),
-            python.String("c"),
-            python.String("d"),
+            String("a"),
+            String("b"),
+            String("c"),
+            String("d"),
         ],
-        python.String("a|b|c|d"),
+        String("a|b|c|d"),
         "split",
-        sep=python.String("|"),
+        sep=String("|"),
     )
     checkequal(
-        [python.String("a"), python.String("b|c|d")],
-        python.String("a|b|c|d"),
+        [String("a"), String("b|c|d")],
+        String("a|b|c|d"),
         "split",
-        python.String("|"),
+        String("|"),
         maxsplit=1,
     )
     checkequal(
-        [python.String("a"), python.String("b|c|d")],
-        python.String("a|b|c|d"),
+        [String("a"), String("b|c|d")],
+        String("a|b|c|d"),
         "split",
-        sep=python.String("|"),
+        sep=String("|"),
         maxsplit=1,
     )
     checkequal(
-        [python.String("a"), python.String("b|c|d")],
-        python.String("a|b|c|d"),
+        [String("a"), String("b|c|d")],
+        String("a|b|c|d"),
         "split",
         maxsplit=1,
-        sep=python.String("|"),
+        sep=String("|"),
     )
     checkequal(
-        [python.String("a"), python.String("b c d")],
-        python.String("a b c d"),
+        [String("a"), String("b c d")],
+        String("a b c d"),
         "split",
         maxsplit=1,
     )
 
     # argument type
-    checkraises(TypeError, python.String("hello"), "split", 42, 42, 42)
+    checkraises(TypeError, String("hello"), "split", 42, 42, 42)
 
     # null case
-    checkraises(ValueError, python.String("hello"), "split", python.String(""))
-    checkraises(ValueError, python.String("hello"), "split", python.String(""), 0)
+    checkraises(ValueError, String("hello"), "split", String(""))
+    checkraises(ValueError, String("hello"), "split", String(""), 0)
 
 
 def test_rsplit():
     # by a char
     checkequal(
         [
-            python.String("a"),
-            python.String("b"),
-            python.String("c"),
-            python.String("d"),
+            String("a"),
+            String("b"),
+            String("c"),
+            String("d"),
         ],
-        python.String("a|b|c|d"),
+        String("a|b|c|d"),
         "rsplit",
-        python.String("|"),
+        String("|"),
     )
     checkequal(
-        [python.String("a|b|c"), python.String("d")],
-        python.String("a|b|c|d"),
+        [String("a|b|c"), String("d")],
+        String("a|b|c|d"),
         "rsplit",
-        python.String("|"),
+        String("|"),
         1,
     )
     checkequal(
-        [python.String("a|b"), python.String("c"), python.String("d")],
-        python.String("a|b|c|d"),
+        [String("a|b"), String("c"), String("d")],
+        String("a|b|c|d"),
         "rsplit",
-        python.String("|"),
+        String("|"),
         2,
     )
     checkequal(
         [
-            python.String("a"),
-            python.String("b"),
-            python.String("c"),
-            python.String("d"),
+            String("a"),
+            String("b"),
+            String("c"),
+            String("d"),
         ],
-        python.String("a|b|c|d"),
+        String("a|b|c|d"),
         "rsplit",
-        python.String("|"),
+        String("|"),
         3,
     )
     checkequal(
         [
-            python.String("a"),
-            python.String("b"),
-            python.String("c"),
-            python.String("d"),
+            String("a"),
+            String("b"),
+            String("c"),
+            String("d"),
         ],
-        python.String("a|b|c|d"),
+        String("a|b|c|d"),
         "rsplit",
-        python.String("|"),
+        String("|"),
         4,
     )
     checkequal(
         [
-            python.String("a"),
-            python.String("b"),
-            python.String("c"),
-            python.String("d"),
+            String("a"),
+            String("b"),
+            String("c"),
+            String("d"),
         ],
-        python.String("a|b|c|d"),
+        String("a|b|c|d"),
         "rsplit",
-        python.String("|"),
+        String("|"),
         sys.maxsize - 100,
     )
     checkequal(
-        [python.String("a|b|c|d")],
-        python.String("a|b|c|d"),
+        [String("a|b|c|d")],
+        String("a|b|c|d"),
         "rsplit",
-        python.String("|"),
+        String("|"),
         0,
     )
     checkequal(
-        [python.String("a||b||c"), python.String(""), python.String("d")],
-        python.String("a||b||c||d"),
+        [String("a||b||c"), String(""), String("d")],
+        String("a||b||c||d"),
         "rsplit",
-        python.String("|"),
+        String("|"),
         2,
     )
+    checkequal([String("abcd")], String("abcd"), "rsplit", String("|"))
+    checkequal([String("")], String(""), "rsplit", String("|"))
     checkequal(
-        [python.String("abcd")], python.String("abcd"), "rsplit", python.String("|")
-    )
-    checkequal([python.String("")], python.String(""), "rsplit", python.String("|"))
-    checkequal(
-        [python.String(""), python.String(" begincase")],
-        python.String("| begincase"),
+        [String(""), String(" begincase")],
+        String("| begincase"),
         "rsplit",
-        python.String("|"),
+        String("|"),
     )
     checkequal(
-        [python.String("endcase "), python.String("")],
-        python.String("endcase |"),
+        [String("endcase "), String("")],
+        String("endcase |"),
         "rsplit",
-        python.String("|"),
+        String("|"),
     )
     checkequal(
-        [python.String(""), python.String("bothcase"), python.String("")],
-        python.String("|bothcase|"),
+        [String(""), String("bothcase"), String("")],
+        String("|bothcase|"),
         "rsplit",
-        python.String("|"),
+        String("|"),
     )
 
     checkequal(
-        [python.String("a\x00\x00b"), python.String("c"), python.String("d")],
-        python.String("a\x00\x00b\x00c\x00d"),
+        [String("a\x00\x00b"), String("c"), String("d")],
+        String("a\x00\x00b\x00c\x00d"),
         "rsplit",
-        python.String("\x00"),
+        String("\x00"),
         2,
     )
 
     checkequal(
-        [python.String("a")] * 20,
-        (python.String("a|") * 20)[:-1],
+        [String("a")] * 20,
+        (String("a|") * 20)[:-1],
         "rsplit",
-        python.String("|"),
+        String("|"),
     )
     checkequal(
-        [python.String("a|a|a|a|a")] + [python.String("a")] * 15,
-        (python.String("a|") * 20)[:-1],
+        [String("a|a|a|a|a")] + [String("a")] * 15,
+        (String("a|") * 20)[:-1],
         "rsplit",
-        python.String("|"),
+        String("|"),
         15,
     )
 
     # by string
     checkequal(
         [
-            python.String("a"),
-            python.String("b"),
-            python.String("c"),
-            python.String("d"),
+            String("a"),
+            String("b"),
+            String("c"),
+            String("d"),
         ],
-        python.String("a//b//c//d"),
+        String("a//b//c//d"),
         "rsplit",
-        python.String("//"),
+        String("//"),
     )
     checkequal(
-        [python.String("a//b//c"), python.String("d")],
-        python.String("a//b//c//d"),
+        [String("a//b//c"), String("d")],
+        String("a//b//c//d"),
         "rsplit",
-        python.String("//"),
+        String("//"),
         1,
     )
     checkequal(
-        [python.String("a//b"), python.String("c"), python.String("d")],
-        python.String("a//b//c//d"),
+        [String("a//b"), String("c"), String("d")],
+        String("a//b//c//d"),
         "rsplit",
-        python.String("//"),
+        String("//"),
         2,
     )
     checkequal(
         [
-            python.String("a"),
-            python.String("b"),
-            python.String("c"),
-            python.String("d"),
+            String("a"),
+            String("b"),
+            String("c"),
+            String("d"),
         ],
-        python.String("a//b//c//d"),
+        String("a//b//c//d"),
         "rsplit",
-        python.String("//"),
+        String("//"),
         3,
     )
     checkequal(
         [
-            python.String("a"),
-            python.String("b"),
-            python.String("c"),
-            python.String("d"),
+            String("a"),
+            String("b"),
+            String("c"),
+            String("d"),
         ],
-        python.String("a//b//c//d"),
+        String("a//b//c//d"),
         "rsplit",
-        python.String("//"),
+        String("//"),
         4,
     )
     checkequal(
         [
-            python.String("a"),
-            python.String("b"),
-            python.String("c"),
-            python.String("d"),
+            String("a"),
+            String("b"),
+            String("c"),
+            String("d"),
         ],
-        python.String("a//b//c//d"),
+        String("a//b//c//d"),
         "rsplit",
-        python.String("//"),
+        String("//"),
         sys.maxsize - 5,
     )
     checkequal(
-        [python.String("a//b//c//d")],
-        python.String("a//b//c//d"),
+        [String("a//b//c//d")],
+        String("a//b//c//d"),
         "rsplit",
-        python.String("//"),
+        String("//"),
         0,
     )
     checkequal(
-        [python.String("a////b////c"), python.String(""), python.String("d")],
-        python.String("a////b////c////d"),
+        [String("a////b////c"), String(""), String("d")],
+        String("a////b////c////d"),
         "rsplit",
-        python.String("//"),
+        String("//"),
         2,
     )
     checkequal(
-        [python.String(""), python.String(" begincase")],
-        python.String("test begincase"),
+        [String(""), String(" begincase")],
+        String("test begincase"),
         "rsplit",
-        python.String("test"),
+        String("test"),
     )
     checkequal(
-        [python.String("endcase "), python.String("")],
-        python.String("endcase test"),
+        [String("endcase "), String("")],
+        String("endcase test"),
         "rsplit",
-        python.String("test"),
+        String("test"),
     )
     checkequal(
-        [python.String(""), python.String(" bothcase "), python.String("")],
-        python.String("test bothcase test"),
+        [String(""), String(" bothcase "), String("")],
+        String("test bothcase test"),
         "rsplit",
-        python.String("test"),
+        String("test"),
     )
     checkequal(
-        [python.String("ab"), python.String("c")],
-        python.String("abbbc"),
+        [String("ab"), String("c")],
+        String("abbbc"),
         "rsplit",
-        python.String("bb"),
+        String("bb"),
     )
     checkequal(
-        [python.String(""), python.String("")],
-        python.String("aaa"),
+        [String(""), String("")],
+        String("aaa"),
         "rsplit",
-        python.String("aaa"),
+        String("aaa"),
     )
+    checkequal([String("aaa")], String("aaa"), "rsplit", String("aaa"), 0)
     checkequal(
-        [python.String("aaa")], python.String("aaa"), "rsplit", python.String("aaa"), 0
-    )
-    checkequal(
-        [python.String("ab"), python.String("ab")],
-        python.String("abbaab"),
+        [String("ab"), String("ab")],
+        String("abbaab"),
         "rsplit",
-        python.String("ba"),
+        String("ba"),
     )
+    checkequal([String("aaaa")], String("aaaa"), "rsplit", String("aab"))
+    checkequal([String("")], String(""), "rsplit", String("aaa"))
+    checkequal([String("aa")], String("aa"), "rsplit", String("aaa"))
     checkequal(
-        [python.String("aaaa")], python.String("aaaa"), "rsplit", python.String("aab")
-    )
-    checkequal([python.String("")], python.String(""), "rsplit", python.String("aaa"))
-    checkequal(
-        [python.String("aa")], python.String("aa"), "rsplit", python.String("aaa")
-    )
-    checkequal(
-        [python.String("bbob"), python.String("A")],
-        python.String("bbobbbobbA"),
+        [String("bbob"), String("A")],
+        String("bbobbbobbA"),
         "rsplit",
-        python.String("bbobb"),
+        String("bbobb"),
     )
     checkequal(
-        [python.String(""), python.String("B"), python.String("A")],
-        python.String("bbobbBbbobbA"),
+        [String(""), String("B"), String("A")],
+        String("bbobbBbbobbA"),
         "rsplit",
-        python.String("bbobb"),
+        String("bbobb"),
     )
 
     checkequal(
-        [python.String("a")] * 20,
-        (python.String("aBLAH") * 20)[:-4],
+        [String("a")] * 20,
+        (String("aBLAH") * 20)[:-4],
         "rsplit",
-        python.String("BLAH"),
+        String("BLAH"),
     )
     checkequal(
-        [python.String("a")] * 20,
-        (python.String("aBLAH") * 20)[:-4],
+        [String("a")] * 20,
+        (String("aBLAH") * 20)[:-4],
         "rsplit",
-        python.String("BLAH"),
+        String("BLAH"),
         19,
     )
     checkequal(
-        [python.String("aBLAHa")] + [python.String("a")] * 18,
-        (python.String("aBLAH") * 20)[:-4],
+        [String("aBLAHa")] + [String("a")] * 18,
+        (String("aBLAH") * 20)[:-4],
         "rsplit",
-        python.String("BLAH"),
+        String("BLAH"),
         18,
     )
 
     # with keyword args
     checkequal(
         [
-            python.String("a"),
-            python.String("b"),
-            python.String("c"),
-            python.String("d"),
+            String("a"),
+            String("b"),
+            String("c"),
+            String("d"),
         ],
-        python.String("a|b|c|d"),
+        String("a|b|c|d"),
         "rsplit",
-        sep=python.String("|"),
+        sep=String("|"),
     )
     checkequal(
-        [python.String("a|b|c"), python.String("d")],
-        python.String("a|b|c|d"),
+        [String("a|b|c"), String("d")],
+        String("a|b|c|d"),
         "rsplit",
-        python.String("|"),
+        String("|"),
         maxsplit=1,
     )
     checkequal(
-        [python.String("a|b|c"), python.String("d")],
-        python.String("a|b|c|d"),
+        [String("a|b|c"), String("d")],
+        String("a|b|c|d"),
         "rsplit",
-        sep=python.String("|"),
+        sep=String("|"),
         maxsplit=1,
     )
     checkequal(
-        [python.String("a|b|c"), python.String("d")],
-        python.String("a|b|c|d"),
+        [String("a|b|c"), String("d")],
+        String("a|b|c|d"),
         "rsplit",
         maxsplit=1,
-        sep=python.String("|"),
+        sep=String("|"),
     )
     checkequal(
-        [python.String("a b c"), python.String("d")],
-        python.String("a b c d"),
+        [String("a b c"), String("d")],
+        String("a b c d"),
         "rsplit",
         maxsplit=1,
     )
 
     # argument type
-    checkraises(TypeError, python.String("hello"), "rsplit", 42, 42, 42)
+    checkraises(TypeError, String("hello"), "rsplit", 42, 42, 42)
 
     # null case
-    checkraises(ValueError, python.String("hello"), "rsplit", python.String(""))
-    checkraises(ValueError, python.String("hello"), "rsplit", python.String(""), 0)
+    checkraises(ValueError, String("hello"), "rsplit", String(""))
+    checkraises(ValueError, String("hello"), "rsplit", String(""), 0)
 
 
 def test_replace():
@@ -922,1659 +877,1684 @@ def test_replace():
 
     # Operations on the empty string
     EQ(
-        python.String(""),
-        python.String(""),
+        String(""),
+        String(""),
         "replace",
-        python.String(""),
-        python.String(""),
+        String(""),
+        String(""),
     )
     EQ(
-        python.String("A"),
-        python.String(""),
+        String("A"),
+        String(""),
         "replace",
-        python.String(""),
-        python.String("A"),
+        String(""),
+        String("A"),
     )
     EQ(
-        python.String(""),
-        python.String(""),
+        String(""),
+        String(""),
         "replace",
-        python.String("A"),
-        python.String(""),
+        String("A"),
+        String(""),
     )
     EQ(
-        python.String(""),
-        python.String(""),
+        String(""),
+        String(""),
         "replace",
-        python.String("A"),
-        python.String("A"),
+        String("A"),
+        String("A"),
     )
     EQ(
-        python.String(""),
-        python.String(""),
+        String(""),
+        String(""),
         "replace",
-        python.String(""),
-        python.String(""),
+        String(""),
+        String(""),
         100,
     )
     EQ(
-        python.String(""),
-        python.String(""),
+        String(""),
+        String(""),
         "replace",
-        python.String(""),
-        python.String(""),
+        String(""),
+        String(""),
         sys.maxsize,
     )
 
-    # interleave (from==python.String(""), 'to' gets inserted everywhere)
+    # interleave (from==String(""), 'to' gets inserted everywhere)
     EQ(
-        python.String("A"),
-        python.String("A"),
+        String("A"),
+        String("A"),
         "replace",
-        python.String(""),
-        python.String(""),
+        String(""),
+        String(""),
     )
     EQ(
-        python.String("*A*"),
-        python.String("A"),
+        String("*A*"),
+        String("A"),
         "replace",
-        python.String(""),
-        python.String("*"),
+        String(""),
+        String("*"),
     )
     EQ(
-        python.String("*1A*1"),
-        python.String("A"),
+        String("*1A*1"),
+        String("A"),
         "replace",
-        python.String(""),
-        python.String("*1"),
+        String(""),
+        String("*1"),
     )
     EQ(
-        python.String("*-#A*-#"),
-        python.String("A"),
+        String("*-#A*-#"),
+        String("A"),
         "replace",
-        python.String(""),
-        python.String("*-#"),
+        String(""),
+        String("*-#"),
     )
     EQ(
-        python.String("*-A*-A*-"),
-        python.String("AA"),
+        String("*-A*-A*-"),
+        String("AA"),
         "replace",
-        python.String(""),
-        python.String("*-"),
+        String(""),
+        String("*-"),
     )
     EQ(
-        python.String("*-A*-A*-"),
-        python.String("AA"),
+        String("*-A*-A*-"),
+        String("AA"),
         "replace",
-        python.String(""),
-        python.String("*-"),
+        String(""),
+        String("*-"),
         -1,
     )
     EQ(
-        python.String("*-A*-A*-"),
-        python.String("AA"),
+        String("*-A*-A*-"),
+        String("AA"),
         "replace",
-        python.String(""),
-        python.String("*-"),
+        String(""),
+        String("*-"),
         sys.maxsize,
     )
     EQ(
-        python.String("*-A*-A*-"),
-        python.String("AA"),
+        String("*-A*-A*-"),
+        String("AA"),
         "replace",
-        python.String(""),
-        python.String("*-"),
+        String(""),
+        String("*-"),
         4,
     )
     EQ(
-        python.String("*-A*-A*-"),
-        python.String("AA"),
+        String("*-A*-A*-"),
+        String("AA"),
         "replace",
-        python.String(""),
-        python.String("*-"),
+        String(""),
+        String("*-"),
         3,
     )
     EQ(
-        python.String("*-A*-A"),
-        python.String("AA"),
+        String("*-A*-A"),
+        String("AA"),
         "replace",
-        python.String(""),
-        python.String("*-"),
+        String(""),
+        String("*-"),
         2,
     )
     EQ(
-        python.String("*-AA"),
-        python.String("AA"),
+        String("*-AA"),
+        String("AA"),
         "replace",
-        python.String(""),
-        python.String("*-"),
+        String(""),
+        String("*-"),
         1,
     )
     EQ(
-        python.String("AA"),
-        python.String("AA"),
+        String("AA"),
+        String("AA"),
         "replace",
-        python.String(""),
-        python.String("*-"),
+        String(""),
+        String("*-"),
         0,
     )
 
-    # single character deletion (from==python.String("A"), to==python.String(""))
+    # single character deletion (from==String("A"), to==String(""))
     EQ(
-        python.String(""),
-        python.String("A"),
+        String(""),
+        String("A"),
         "replace",
-        python.String("A"),
-        python.String(""),
+        String("A"),
+        String(""),
     )
     EQ(
-        python.String(""),
-        python.String("AAA"),
+        String(""),
+        String("AAA"),
         "replace",
-        python.String("A"),
-        python.String(""),
+        String("A"),
+        String(""),
     )
     EQ(
-        python.String(""),
-        python.String("AAA"),
+        String(""),
+        String("AAA"),
         "replace",
-        python.String("A"),
-        python.String(""),
+        String("A"),
+        String(""),
         -1,
     )
     EQ(
-        python.String(""),
-        python.String("AAA"),
+        String(""),
+        String("AAA"),
         "replace",
-        python.String("A"),
-        python.String(""),
+        String("A"),
+        String(""),
         sys.maxsize,
     )
     EQ(
-        python.String(""),
-        python.String("AAA"),
+        String(""),
+        String("AAA"),
         "replace",
-        python.String("A"),
-        python.String(""),
+        String("A"),
+        String(""),
         4,
     )
     EQ(
-        python.String(""),
-        python.String("AAA"),
+        String(""),
+        String("AAA"),
         "replace",
-        python.String("A"),
-        python.String(""),
+        String("A"),
+        String(""),
         3,
     )
     EQ(
-        python.String("A"),
-        python.String("AAA"),
+        String("A"),
+        String("AAA"),
         "replace",
-        python.String("A"),
-        python.String(""),
+        String("A"),
+        String(""),
         2,
     )
     EQ(
-        python.String("AA"),
-        python.String("AAA"),
+        String("AA"),
+        String("AAA"),
         "replace",
-        python.String("A"),
-        python.String(""),
+        String("A"),
+        String(""),
         1,
     )
     EQ(
-        python.String("AAA"),
-        python.String("AAA"),
+        String("AAA"),
+        String("AAA"),
         "replace",
-        python.String("A"),
-        python.String(""),
+        String("A"),
+        String(""),
         0,
     )
     EQ(
-        python.String(""),
-        python.String("AAAAAAAAAA"),
+        String(""),
+        String("AAAAAAAAAA"),
         "replace",
-        python.String("A"),
-        python.String(""),
+        String("A"),
+        String(""),
     )
     EQ(
-        python.String("BCD"),
-        python.String("ABACADA"),
+        String("BCD"),
+        String("ABACADA"),
         "replace",
-        python.String("A"),
-        python.String(""),
+        String("A"),
+        String(""),
     )
     EQ(
-        python.String("BCD"),
-        python.String("ABACADA"),
+        String("BCD"),
+        String("ABACADA"),
         "replace",
-        python.String("A"),
-        python.String(""),
+        String("A"),
+        String(""),
         -1,
     )
     EQ(
-        python.String("BCD"),
-        python.String("ABACADA"),
+        String("BCD"),
+        String("ABACADA"),
         "replace",
-        python.String("A"),
-        python.String(""),
+        String("A"),
+        String(""),
         sys.maxsize,
     )
     EQ(
-        python.String("BCD"),
-        python.String("ABACADA"),
+        String("BCD"),
+        String("ABACADA"),
         "replace",
-        python.String("A"),
-        python.String(""),
+        String("A"),
+        String(""),
         5,
     )
     EQ(
-        python.String("BCD"),
-        python.String("ABACADA"),
+        String("BCD"),
+        String("ABACADA"),
         "replace",
-        python.String("A"),
-        python.String(""),
+        String("A"),
+        String(""),
         4,
     )
     EQ(
-        python.String("BCDA"),
-        python.String("ABACADA"),
+        String("BCDA"),
+        String("ABACADA"),
         "replace",
-        python.String("A"),
-        python.String(""),
+        String("A"),
+        String(""),
         3,
     )
     EQ(
-        python.String("BCADA"),
-        python.String("ABACADA"),
+        String("BCADA"),
+        String("ABACADA"),
         "replace",
-        python.String("A"),
-        python.String(""),
+        String("A"),
+        String(""),
         2,
     )
     EQ(
-        python.String("BACADA"),
-        python.String("ABACADA"),
+        String("BACADA"),
+        String("ABACADA"),
         "replace",
-        python.String("A"),
-        python.String(""),
+        String("A"),
+        String(""),
         1,
     )
     EQ(
-        python.String("ABACADA"),
-        python.String("ABACADA"),
+        String("ABACADA"),
+        String("ABACADA"),
         "replace",
-        python.String("A"),
-        python.String(""),
+        String("A"),
+        String(""),
         0,
     )
     EQ(
-        python.String("BCD"),
-        python.String("ABCAD"),
+        String("BCD"),
+        String("ABCAD"),
         "replace",
-        python.String("A"),
-        python.String(""),
+        String("A"),
+        String(""),
     )
     EQ(
-        python.String("BCD"),
-        python.String("ABCADAA"),
+        String("BCD"),
+        String("ABCADAA"),
         "replace",
-        python.String("A"),
-        python.String(""),
+        String("A"),
+        String(""),
     )
     EQ(
-        python.String("BCD"),
-        python.String("BCD"),
+        String("BCD"),
+        String("BCD"),
         "replace",
-        python.String("A"),
-        python.String(""),
+        String("A"),
+        String(""),
     )
     EQ(
-        python.String("*************"),
-        python.String("*************"),
+        String("*************"),
+        String("*************"),
         "replace",
-        python.String("A"),
-        python.String(""),
+        String("A"),
+        String(""),
     )
     EQ(
-        python.String("^A^"),
-        python.String("^") + python.String("A") * 1000 + python.String("^"),
+        String("^A^"),
+        String("^") + String("A") * 1000 + String("^"),
         "replace",
-        python.String("A"),
-        python.String(""),
+        String("A"),
+        String(""),
         999,
     )
 
-    # substring deletion (from==python.String("the"), to==python.String(""))
+    # substring deletion (from==String("the"), to==String(""))
     EQ(
-        python.String(""),
-        python.String("the"),
+        String(""),
+        String("the"),
         "replace",
-        python.String("the"),
-        python.String(""),
+        String("the"),
+        String(""),
     )
     EQ(
-        python.String("ater"),
-        python.String("theater"),
+        String("ater"),
+        String("theater"),
         "replace",
-        python.String("the"),
-        python.String(""),
+        String("the"),
+        String(""),
     )
     EQ(
-        python.String(""),
-        python.String("thethe"),
+        String(""),
+        String("thethe"),
         "replace",
-        python.String("the"),
-        python.String(""),
+        String("the"),
+        String(""),
     )
     EQ(
-        python.String(""),
-        python.String("thethethethe"),
+        String(""),
+        String("thethethethe"),
         "replace",
-        python.String("the"),
-        python.String(""),
+        String("the"),
+        String(""),
     )
     EQ(
-        python.String("aaaa"),
-        python.String("theatheatheathea"),
+        String("aaaa"),
+        String("theatheatheathea"),
         "replace",
-        python.String("the"),
-        python.String(""),
+        String("the"),
+        String(""),
     )
     EQ(
-        python.String("that"),
-        python.String("that"),
+        String("that"),
+        String("that"),
         "replace",
-        python.String("the"),
-        python.String(""),
+        String("the"),
+        String(""),
     )
     EQ(
-        python.String("thaet"),
-        python.String("thaet"),
+        String("thaet"),
+        String("thaet"),
         "replace",
-        python.String("the"),
-        python.String(""),
+        String("the"),
+        String(""),
     )
     EQ(
-        python.String("here and re"),
-        python.String("here and there"),
+        String("here and re"),
+        String("here and there"),
         "replace",
-        python.String("the"),
-        python.String(""),
+        String("the"),
+        String(""),
     )
     EQ(
-        python.String("here and re and re"),
-        python.String("here and there and there"),
+        String("here and re and re"),
+        String("here and there and there"),
         "replace",
-        python.String("the"),
-        python.String(""),
+        String("the"),
+        String(""),
         sys.maxsize,
     )
     EQ(
-        python.String("here and re and re"),
-        python.String("here and there and there"),
+        String("here and re and re"),
+        String("here and there and there"),
         "replace",
-        python.String("the"),
-        python.String(""),
+        String("the"),
+        String(""),
         -1,
     )
     EQ(
-        python.String("here and re and re"),
-        python.String("here and there and there"),
+        String("here and re and re"),
+        String("here and there and there"),
         "replace",
-        python.String("the"),
-        python.String(""),
+        String("the"),
+        String(""),
         3,
     )
     EQ(
-        python.String("here and re and re"),
-        python.String("here and there and there"),
+        String("here and re and re"),
+        String("here and there and there"),
         "replace",
-        python.String("the"),
-        python.String(""),
+        String("the"),
+        String(""),
         2,
     )
     EQ(
-        python.String("here and re and there"),
-        python.String("here and there and there"),
+        String("here and re and there"),
+        String("here and there and there"),
         "replace",
-        python.String("the"),
-        python.String(""),
+        String("the"),
+        String(""),
         1,
     )
     EQ(
-        python.String("here and there and there"),
-        python.String("here and there and there"),
+        String("here and there and there"),
+        String("here and there and there"),
         "replace",
-        python.String("the"),
-        python.String(""),
+        String("the"),
+        String(""),
         0,
     )
     EQ(
-        python.String("here and re and re"),
-        python.String("here and there and there"),
+        String("here and re and re"),
+        String("here and there and there"),
         "replace",
-        python.String("the"),
-        python.String(""),
+        String("the"),
+        String(""),
     )
 
     EQ(
-        python.String("abc"),
-        python.String("abc"),
+        String("abc"),
+        String("abc"),
         "replace",
-        python.String("the"),
-        python.String(""),
+        String("the"),
+        String(""),
     )
     EQ(
-        python.String("abcdefg"),
-        python.String("abcdefg"),
+        String("abcdefg"),
+        String("abcdefg"),
         "replace",
-        python.String("the"),
-        python.String(""),
+        String("the"),
+        String(""),
     )
 
-    # substring deletion (from==python.String("bob"), to==python.String(""))
+    # substring deletion (from==String("bob"), to==String(""))
     EQ(
-        python.String("bob"),
-        python.String("bbobob"),
+        String("bob"),
+        String("bbobob"),
         "replace",
-        python.String("bob"),
-        python.String(""),
+        String("bob"),
+        String(""),
     )
     EQ(
-        python.String("bobXbob"),
-        python.String("bbobobXbbobob"),
+        String("bobXbob"),
+        String("bbobobXbbobob"),
         "replace",
-        python.String("bob"),
-        python.String(""),
+        String("bob"),
+        String(""),
     )
     EQ(
-        python.String("aaaaaaa"),
-        python.String("aaaaaaabob"),
+        String("aaaaaaa"),
+        String("aaaaaaabob"),
         "replace",
-        python.String("bob"),
-        python.String(""),
+        String("bob"),
+        String(""),
     )
     EQ(
-        python.String("aaaaaaa"),
-        python.String("aaaaaaa"),
+        String("aaaaaaa"),
+        String("aaaaaaa"),
         "replace",
-        python.String("bob"),
-        python.String(""),
+        String("bob"),
+        String(""),
     )
 
     # single character replace in place (len(from)==len(to)==1)
     EQ(
-        python.String("Who goes there?"),
-        python.String("Who goes there?"),
+        String("Who goes there?"),
+        String("Who goes there?"),
         "replace",
-        python.String("o"),
-        python.String("o"),
+        String("o"),
+        String("o"),
     )
     EQ(
-        python.String("WhO gOes there?"),
-        python.String("Who goes there?"),
+        String("WhO gOes there?"),
+        String("Who goes there?"),
         "replace",
-        python.String("o"),
-        python.String("O"),
+        String("o"),
+        String("O"),
     )
     EQ(
-        python.String("WhO gOes there?"),
-        python.String("Who goes there?"),
+        String("WhO gOes there?"),
+        String("Who goes there?"),
         "replace",
-        python.String("o"),
-        python.String("O"),
+        String("o"),
+        String("O"),
         sys.maxsize,
     )
     EQ(
-        python.String("WhO gOes there?"),
-        python.String("Who goes there?"),
+        String("WhO gOes there?"),
+        String("Who goes there?"),
         "replace",
-        python.String("o"),
-        python.String("O"),
+        String("o"),
+        String("O"),
         -1,
     )
     EQ(
-        python.String("WhO gOes there?"),
-        python.String("Who goes there?"),
+        String("WhO gOes there?"),
+        String("Who goes there?"),
         "replace",
-        python.String("o"),
-        python.String("O"),
+        String("o"),
+        String("O"),
         3,
     )
     EQ(
-        python.String("WhO gOes there?"),
-        python.String("Who goes there?"),
+        String("WhO gOes there?"),
+        String("Who goes there?"),
         "replace",
-        python.String("o"),
-        python.String("O"),
+        String("o"),
+        String("O"),
         2,
     )
     EQ(
-        python.String("WhO goes there?"),
-        python.String("Who goes there?"),
+        String("WhO goes there?"),
+        String("Who goes there?"),
         "replace",
-        python.String("o"),
-        python.String("O"),
+        String("o"),
+        String("O"),
         1,
     )
     EQ(
-        python.String("Who goes there?"),
-        python.String("Who goes there?"),
+        String("Who goes there?"),
+        String("Who goes there?"),
         "replace",
-        python.String("o"),
-        python.String("O"),
+        String("o"),
+        String("O"),
         0,
     )
 
     EQ(
-        python.String("Who goes there?"),
-        python.String("Who goes there?"),
+        String("Who goes there?"),
+        String("Who goes there?"),
         "replace",
-        python.String("a"),
-        python.String("q"),
+        String("a"),
+        String("q"),
     )
     EQ(
-        python.String("who goes there?"),
-        python.String("Who goes there?"),
+        String("who goes there?"),
+        String("Who goes there?"),
         "replace",
-        python.String("W"),
-        python.String("w"),
+        String("W"),
+        String("w"),
     )
     EQ(
-        python.String("wwho goes there?ww"),
-        python.String("WWho goes there?WW"),
+        String("wwho goes there?ww"),
+        String("WWho goes there?WW"),
         "replace",
-        python.String("W"),
-        python.String("w"),
+        String("W"),
+        String("w"),
     )
     EQ(
-        python.String("Who goes there!"),
-        python.String("Who goes there?"),
+        String("Who goes there!"),
+        String("Who goes there?"),
         "replace",
-        python.String("?"),
-        python.String("!"),
+        String("?"),
+        String("!"),
     )
     EQ(
-        python.String("Who goes there!!"),
-        python.String("Who goes there??"),
+        String("Who goes there!!"),
+        String("Who goes there??"),
         "replace",
-        python.String("?"),
-        python.String("!"),
+        String("?"),
+        String("!"),
     )
 
     EQ(
-        python.String("Who goes there?"),
-        python.String("Who goes there?"),
+        String("Who goes there?"),
+        String("Who goes there?"),
         "replace",
-        python.String("."),
-        python.String("!"),
+        String("."),
+        String("!"),
     )
 
     # substring replace in place (len(from)==len(to) > 1)
     EQ(
-        python.String("Th** ** a t**sue"),
-        python.String("This is a tissue"),
+        String("Th** ** a t**sue"),
+        String("This is a tissue"),
         "replace",
-        python.String("is"),
-        python.String("**"),
+        String("is"),
+        String("**"),
     )
     EQ(
-        python.String("Th** ** a t**sue"),
-        python.String("This is a tissue"),
+        String("Th** ** a t**sue"),
+        String("This is a tissue"),
         "replace",
-        python.String("is"),
-        python.String("**"),
+        String("is"),
+        String("**"),
         sys.maxsize,
     )
     EQ(
-        python.String("Th** ** a t**sue"),
-        python.String("This is a tissue"),
+        String("Th** ** a t**sue"),
+        String("This is a tissue"),
         "replace",
-        python.String("is"),
-        python.String("**"),
+        String("is"),
+        String("**"),
         -1,
     )
     EQ(
-        python.String("Th** ** a t**sue"),
-        python.String("This is a tissue"),
+        String("Th** ** a t**sue"),
+        String("This is a tissue"),
         "replace",
-        python.String("is"),
-        python.String("**"),
+        String("is"),
+        String("**"),
         4,
     )
     EQ(
-        python.String("Th** ** a t**sue"),
-        python.String("This is a tissue"),
+        String("Th** ** a t**sue"),
+        String("This is a tissue"),
         "replace",
-        python.String("is"),
-        python.String("**"),
+        String("is"),
+        String("**"),
         3,
     )
     EQ(
-        python.String("Th** ** a tissue"),
-        python.String("This is a tissue"),
+        String("Th** ** a tissue"),
+        String("This is a tissue"),
         "replace",
-        python.String("is"),
-        python.String("**"),
+        String("is"),
+        String("**"),
         2,
     )
     EQ(
-        python.String("Th** is a tissue"),
-        python.String("This is a tissue"),
+        String("Th** is a tissue"),
+        String("This is a tissue"),
         "replace",
-        python.String("is"),
-        python.String("**"),
+        String("is"),
+        String("**"),
         1,
     )
     EQ(
-        python.String("This is a tissue"),
-        python.String("This is a tissue"),
+        String("This is a tissue"),
+        String("This is a tissue"),
         "replace",
-        python.String("is"),
-        python.String("**"),
+        String("is"),
+        String("**"),
         0,
     )
     EQ(
-        python.String("cobob"),
-        python.String("bobob"),
+        String("cobob"),
+        String("bobob"),
         "replace",
-        python.String("bob"),
-        python.String("cob"),
+        String("bob"),
+        String("cob"),
     )
     EQ(
-        python.String("cobobXcobocob"),
-        python.String("bobobXbobobob"),
+        String("cobobXcobocob"),
+        String("bobobXbobobob"),
         "replace",
-        python.String("bob"),
-        python.String("cob"),
+        String("bob"),
+        String("cob"),
     )
     EQ(
-        python.String("bobob"),
-        python.String("bobob"),
+        String("bobob"),
+        String("bobob"),
         "replace",
-        python.String("bot"),
-        python.String("bot"),
+        String("bot"),
+        String("bot"),
     )
 
     # replace single character (len(from)==1, len(to)>1)
     EQ(
-        python.String("ReyKKjaviKK"),
-        python.String("Reykjavik"),
+        String("ReyKKjaviKK"),
+        String("Reykjavik"),
         "replace",
-        python.String("k"),
-        python.String("KK"),
+        String("k"),
+        String("KK"),
     )
     EQ(
-        python.String("ReyKKjaviKK"),
-        python.String("Reykjavik"),
+        String("ReyKKjaviKK"),
+        String("Reykjavik"),
         "replace",
-        python.String("k"),
-        python.String("KK"),
+        String("k"),
+        String("KK"),
         -1,
     )
     EQ(
-        python.String("ReyKKjaviKK"),
-        python.String("Reykjavik"),
+        String("ReyKKjaviKK"),
+        String("Reykjavik"),
         "replace",
-        python.String("k"),
-        python.String("KK"),
+        String("k"),
+        String("KK"),
         sys.maxsize,
     )
     EQ(
-        python.String("ReyKKjaviKK"),
-        python.String("Reykjavik"),
+        String("ReyKKjaviKK"),
+        String("Reykjavik"),
         "replace",
-        python.String("k"),
-        python.String("KK"),
+        String("k"),
+        String("KK"),
         2,
     )
     EQ(
-        python.String("ReyKKjavik"),
-        python.String("Reykjavik"),
+        String("ReyKKjavik"),
+        String("Reykjavik"),
         "replace",
-        python.String("k"),
-        python.String("KK"),
+        String("k"),
+        String("KK"),
         1,
     )
     EQ(
-        python.String("Reykjavik"),
-        python.String("Reykjavik"),
+        String("Reykjavik"),
+        String("Reykjavik"),
         "replace",
-        python.String("k"),
-        python.String("KK"),
+        String("k"),
+        String("KK"),
         0,
     )
     EQ(
-        python.String("A----B----C----"),
-        python.String("A.B.C."),
+        String("A----B----C----"),
+        String("A.B.C."),
         "replace",
-        python.String("."),
-        python.String("----"),
+        String("."),
+        String("----"),
     )
     # issue #15534
     EQ(
-        python.String("...\u043c......&lt;"),
-        python.String("...\u043c......<"),
+        String("...\u043c......&lt;"),
+        String("...\u043c......<"),
         "replace",
-        python.String("<"),
-        python.String("&lt;"),
+        String("<"),
+        String("&lt;"),
     )
 
     EQ(
-        python.String("Reykjavik"),
-        python.String("Reykjavik"),
+        String("Reykjavik"),
+        String("Reykjavik"),
         "replace",
-        python.String("q"),
-        python.String("KK"),
+        String("q"),
+        String("KK"),
     )
 
     # replace substring (len(from)>1, len(to)!=len(from))
     EQ(
-        python.String("ham, ham, eggs and ham"),
-        python.String("spam, spam, eggs and spam"),
+        String("ham, ham, eggs and ham"),
+        String("spam, spam, eggs and spam"),
         "replace",
-        python.String("spam"),
-        python.String("ham"),
+        String("spam"),
+        String("ham"),
     )
     EQ(
-        python.String("ham, ham, eggs and ham"),
-        python.String("spam, spam, eggs and spam"),
+        String("ham, ham, eggs and ham"),
+        String("spam, spam, eggs and spam"),
         "replace",
-        python.String("spam"),
-        python.String("ham"),
+        String("spam"),
+        String("ham"),
         sys.maxsize,
     )
     EQ(
-        python.String("ham, ham, eggs and ham"),
-        python.String("spam, spam, eggs and spam"),
+        String("ham, ham, eggs and ham"),
+        String("spam, spam, eggs and spam"),
         "replace",
-        python.String("spam"),
-        python.String("ham"),
+        String("spam"),
+        String("ham"),
         -1,
     )
     EQ(
-        python.String("ham, ham, eggs and ham"),
-        python.String("spam, spam, eggs and spam"),
+        String("ham, ham, eggs and ham"),
+        String("spam, spam, eggs and spam"),
         "replace",
-        python.String("spam"),
-        python.String("ham"),
+        String("spam"),
+        String("ham"),
         4,
     )
     EQ(
-        python.String("ham, ham, eggs and ham"),
-        python.String("spam, spam, eggs and spam"),
+        String("ham, ham, eggs and ham"),
+        String("spam, spam, eggs and spam"),
         "replace",
-        python.String("spam"),
-        python.String("ham"),
+        String("spam"),
+        String("ham"),
         3,
     )
     EQ(
-        python.String("ham, ham, eggs and spam"),
-        python.String("spam, spam, eggs and spam"),
+        String("ham, ham, eggs and spam"),
+        String("spam, spam, eggs and spam"),
         "replace",
-        python.String("spam"),
-        python.String("ham"),
+        String("spam"),
+        String("ham"),
         2,
     )
     EQ(
-        python.String("ham, spam, eggs and spam"),
-        python.String("spam, spam, eggs and spam"),
+        String("ham, spam, eggs and spam"),
+        String("spam, spam, eggs and spam"),
         "replace",
-        python.String("spam"),
-        python.String("ham"),
+        String("spam"),
+        String("ham"),
         1,
     )
     EQ(
-        python.String("spam, spam, eggs and spam"),
-        python.String("spam, spam, eggs and spam"),
+        String("spam, spam, eggs and spam"),
+        String("spam, spam, eggs and spam"),
         "replace",
-        python.String("spam"),
-        python.String("ham"),
+        String("spam"),
+        String("ham"),
         0,
     )
 
     EQ(
-        python.String("bobob"),
-        python.String("bobobob"),
+        String("bobob"),
+        String("bobobob"),
         "replace",
-        python.String("bobob"),
-        python.String("bob"),
+        String("bobob"),
+        String("bob"),
     )
     EQ(
-        python.String("bobobXbobob"),
-        python.String("bobobobXbobobob"),
+        String("bobobXbobob"),
+        String("bobobobXbobobob"),
         "replace",
-        python.String("bobob"),
-        python.String("bob"),
+        String("bobob"),
+        String("bob"),
     )
     EQ(
-        python.String("BOBOBOB"),
-        python.String("BOBOBOB"),
+        String("BOBOBOB"),
+        String("BOBOBOB"),
         "replace",
-        python.String("bob"),
-        python.String("bobby"),
+        String("bob"),
+        String("bobby"),
     )
 
     checkequal(
-        python.String("one@two!three!"),
-        python.String("one!two!three!"),
+        String("one@two!three!"),
+        String("one!two!three!"),
         "replace",
-        python.String("!"),
-        python.String("@"),
+        String("!"),
+        String("@"),
         1,
     )
     checkequal(
-        python.String("onetwothree"),
-        python.String("one!two!three!"),
+        String("onetwothree"),
+        String("one!two!three!"),
         "replace",
-        python.String("!"),
-        python.String(""),
+        String("!"),
+        String(""),
     )
     checkequal(
-        python.String("one@two@three!"),
-        python.String("one!two!three!"),
+        String("one@two@three!"),
+        String("one!two!three!"),
         "replace",
-        python.String("!"),
-        python.String("@"),
+        String("!"),
+        String("@"),
         2,
     )
     checkequal(
-        python.String("one@two@three@"),
-        python.String("one!two!three!"),
+        String("one@two@three@"),
+        String("one!two!three!"),
         "replace",
-        python.String("!"),
-        python.String("@"),
+        String("!"),
+        String("@"),
         3,
     )
     checkequal(
-        python.String("one@two@three@"),
-        python.String("one!two!three!"),
+        String("one@two@three@"),
+        String("one!two!three!"),
         "replace",
-        python.String("!"),
-        python.String("@"),
+        String("!"),
+        String("@"),
         4,
     )
     checkequal(
-        python.String("one!two!three!"),
-        python.String("one!two!three!"),
+        String("one!two!three!"),
+        String("one!two!three!"),
         "replace",
-        python.String("!"),
-        python.String("@"),
+        String("!"),
+        String("@"),
         0,
     )
     checkequal(
-        python.String("one@two@three@"),
-        python.String("one!two!three!"),
+        String("one@two@three@"),
+        String("one!two!three!"),
         "replace",
-        python.String("!"),
-        python.String("@"),
+        String("!"),
+        String("@"),
     )
     checkequal(
-        python.String("one!two!three!"),
-        python.String("one!two!three!"),
+        String("one!two!three!"),
+        String("one!two!three!"),
         "replace",
-        python.String("x"),
-        python.String("@"),
+        String("x"),
+        String("@"),
     )
     checkequal(
-        python.String("one!two!three!"),
-        python.String("one!two!three!"),
+        String("one!two!three!"),
+        String("one!two!three!"),
         "replace",
-        python.String("x"),
-        python.String("@"),
+        String("x"),
+        String("@"),
         2,
     )
     checkequal(
-        python.String("-a-b-c-"),
-        python.String("abc"),
+        String("-a-b-c-"),
+        String("abc"),
         "replace",
-        python.String(""),
-        python.String("-"),
+        String(""),
+        String("-"),
     )
     checkequal(
-        python.String("-a-b-c"),
-        python.String("abc"),
+        String("-a-b-c"),
+        String("abc"),
         "replace",
-        python.String(""),
-        python.String("-"),
+        String(""),
+        String("-"),
         3,
     )
     checkequal(
-        python.String("abc"),
-        python.String("abc"),
+        String("abc"),
+        String("abc"),
         "replace",
-        python.String(""),
-        python.String("-"),
+        String(""),
+        String("-"),
         0,
     )
     checkequal(
-        python.String(""),
-        python.String(""),
+        String(""),
+        String(""),
         "replace",
-        python.String(""),
-        python.String(""),
+        String(""),
+        String(""),
     )
     checkequal(
-        python.String("abc"),
-        python.String("abc"),
+        String("abc"),
+        String("abc"),
         "replace",
-        python.String("ab"),
-        python.String("--"),
+        String("ab"),
+        String("--"),
         0,
     )
     checkequal(
-        python.String("abc"),
-        python.String("abc"),
+        String("abc"),
+        String("abc"),
         "replace",
-        python.String("xy"),
-        python.String("--"),
+        String("xy"),
+        String("--"),
     )
     # Next three for SF bug 422088: [OSF1 alpha] string.replace(); died with
     # MemoryError due to empty result (platform malloc issue when requesting
     # 0 bytes).
     checkequal(
-        python.String(""),
-        python.String("123"),
+        String(""),
+        String("123"),
         "replace",
-        python.String("123"),
-        python.String(""),
+        String("123"),
+        String(""),
     )
     checkequal(
-        python.String(""),
-        python.String("123123"),
+        String(""),
+        String("123123"),
         "replace",
-        python.String("123"),
-        python.String(""),
+        String("123"),
+        String(""),
     )
     checkequal(
-        python.String("x"),
-        python.String("123x123"),
+        String("x"),
+        String("123x123"),
         "replace",
-        python.String("123"),
-        python.String(""),
+        String("123"),
+        String(""),
     )
 
-    checkraises(TypeError, python.String("hello"), "replace")
-    checkraises(TypeError, python.String("hello"), "replace", 42)
+    checkraises(TypeError, String("hello"), "replace")
+    checkraises(TypeError, String("hello"), "replace", 42)
+
+
+if sys.version_info >= (3, 9):
+
+    def test_removeprefix():
+        checkequal("am", String("spam"), "removeprefix", String("sp"))
+        checkequal("spamspam", String("spamspamspam"), "removeprefix", String("spam"))
+        checkequal("spam", String("spam"), "removeprefix", String("python"))
+        checkequal("spam", String("spam"), "removeprefix", String("spider"))
+        checkequal("spam", String("spam"), "removeprefix", String("spam and eggs"))
+
+        checkequal("", String(""), "removeprefix", String(""))
+        checkequal("", String(""), "removeprefix", String("abcde"))
+        checkequal("abcde", String("abcde"), "removeprefix", String(""))
+        checkequal("", String("abcde"), "removeprefix", String("abcde"))
+
+        checkraises(TypeError, String("hello"), "removeprefix")
+        checkraises(TypeError, String("hello"), "removeprefix", 42)
+        checkraises(TypeError, String("hello"), "removeprefix", 42, "h")
+        checkraises(TypeError, String("hello"), "removeprefix", "h", 42)
+        checkraises(TypeError, String("hello"), "removeprefix", ("he", "l"))
+
+    def test_removesuffix():
+        checkequal("sp", String("spam"), "removesuffix", String("am"))
+        checkequal("spamspam", String("spamspamspam"), "removesuffix", String("spam"))
+        checkequal("spam", String("spam"), "removesuffix", String("python"))
+        checkequal("spam", String("spam"), "removesuffix", String("blam"))
+        checkequal("spam", String("spam"), "removesuffix", String("eggs and spam"))
+
+        checkequal("", String(""), "removesuffix", String(""))
+        checkequal("", String(""), "removesuffix", String("abcde"))
+        checkequal("abcde", String("abcde"), "removesuffix", String(""))
+        checkequal("", String("abcde"), "removesuffix", String("abcde"))
+
+        checkraises(TypeError, String("hello"), "removesuffix")
+        checkraises(TypeError, String("hello"), "removesuffix", 42)
+        checkraises(TypeError, String("hello"), "removesuffix", 42, "h")
+        checkraises(TypeError, String("hello"), "removesuffix", "h", 42)
+        checkraises(TypeError, String("hello"), "removesuffix", ("lo", "l"))
 
 
 @pytest.mark.xfail
 def test_multiple_arguments():
-    checkraises(TypeError, python.String("hello"), "replace", 42, python.String("h"))
-    checkraises(TypeError, python.String("hello"), "replace", python.String("h"), 42)
+    checkraises(TypeError, String("hello"), "replace", 42, String("h"))
+    checkraises(TypeError, String("hello"), "replace", String("h"), 42)
 
 
 def test_capitalize():
-    checkequal(python.String(" hello "), python.String(" hello "), "capitalize")
-    checkequal(python.String("Hello "), python.String("Hello "), "capitalize")
-    checkequal(python.String("Hello "), python.String("hello "), "capitalize")
-    checkequal(python.String("Aaaa"), python.String("aaaa"), "capitalize")
-    checkequal(python.String("Aaaa"), python.String("AaAa"), "capitalize")
+    checkequal(String(" hello "), String(" hello "), "capitalize")
+    checkequal(String("Hello "), String("Hello "), "capitalize")
+    checkequal(String("Hello "), String("hello "), "capitalize")
+    checkequal(String("Aaaa"), String("aaaa"), "capitalize")
+    checkequal(String("Aaaa"), String("AaAa"), "capitalize")
 
-    checkraises(TypeError, python.String("hello"), "capitalize", 42)
+    checkraises(TypeError, String("hello"), "capitalize", 42)
 
 
 def test_additional_split():
     checkequal(
         [
-            python.String("this"),
-            python.String("is"),
-            python.String("the"),
+            String("this"),
+            String("is"),
+            String("the"),
             "split",
-            python.String("function"),
+            String("function"),
         ],
-        python.String("this is the split function"),
+        String("this is the split function"),
         "split",
     )
 
     # by whitespace
     checkequal(
         [
-            python.String("a"),
-            python.String("b"),
-            python.String("c"),
-            python.String("d"),
+            String("a"),
+            String("b"),
+            String("c"),
+            String("d"),
         ],
-        python.String("a b c d "),
+        String("a b c d "),
         "split",
     )
     checkequal(
-        [python.String("a"), python.String("b c d")],
-        python.String("a b c d"),
+        [String("a"), String("b c d")],
+        String("a b c d"),
         "split",
         None,
         1,
     )
     checkequal(
-        [python.String("a"), python.String("b"), python.String("c d")],
-        python.String("a b c d"),
+        [String("a"), String("b"), String("c d")],
+        String("a b c d"),
         "split",
         None,
         2,
     )
     checkequal(
         [
-            python.String("a"),
-            python.String("b"),
-            python.String("c"),
-            python.String("d"),
+            String("a"),
+            String("b"),
+            String("c"),
+            String("d"),
         ],
-        python.String("a b c d"),
+        String("a b c d"),
         "split",
         None,
         3,
     )
     checkequal(
         [
-            python.String("a"),
-            python.String("b"),
-            python.String("c"),
-            python.String("d"),
+            String("a"),
+            String("b"),
+            String("c"),
+            String("d"),
         ],
-        python.String("a b c d"),
+        String("a b c d"),
         "split",
         None,
         4,
     )
     checkequal(
         [
-            python.String("a"),
-            python.String("b"),
-            python.String("c"),
-            python.String("d"),
+            String("a"),
+            String("b"),
+            String("c"),
+            String("d"),
         ],
-        python.String("a b c d"),
+        String("a b c d"),
         "split",
         None,
         sys.maxsize - 1,
     )
-    checkequal([python.String("a b c d")], python.String("a b c d"), "split", None, 0)
-    checkequal([python.String("a b c d")], python.String("  a b c d"), "split", None, 0)
+    checkequal([String("a b c d")], String("a b c d"), "split", None, 0)
+    checkequal([String("a b c d")], String("  a b c d"), "split", None, 0)
     checkequal(
-        [python.String("a"), python.String("b"), python.String("c  d")],
-        python.String("a  b  c  d"),
+        [String("a"), String("b"), String("c  d")],
+        String("a  b  c  d"),
         "split",
         None,
         2,
     )
 
-    checkequal([], python.String("         "), "split")
-    checkequal([python.String("a")], python.String("  a    "), "split")
+    checkequal([], String("         "), "split")
+    checkequal([String("a")], String("  a    "), "split")
+    checkequal([String("a"), String("b")], String("  a    b   "), "split")
     checkequal(
-        [python.String("a"), python.String("b")], python.String("  a    b   "), "split"
-    )
-    checkequal(
-        [python.String("a"), python.String("b   ")],
-        python.String("  a    b   "),
+        [String("a"), String("b   ")],
+        String("  a    b   "),
         "split",
         None,
         1,
     )
     checkequal(
-        [python.String("a    b   c   ")],
-        python.String("  a    b   c   "),
+        [String("a    b   c   ")],
+        String("  a    b   c   "),
         "split",
         None,
         0,
     )
     checkequal(
-        [python.String("a"), python.String("b   c   ")],
-        python.String("  a    b   c   "),
+        [String("a"), String("b   c   ")],
+        String("  a    b   c   "),
         "split",
         None,
         1,
     )
     checkequal(
-        [python.String("a"), python.String("b"), python.String("c   ")],
-        python.String("  a    b   c   "),
+        [String("a"), String("b"), String("c   ")],
+        String("  a    b   c   "),
         "split",
         None,
         2,
     )
     checkequal(
-        [python.String("a"), python.String("b"), python.String("c")],
-        python.String("  a    b   c   "),
+        [String("a"), String("b"), String("c")],
+        String("  a    b   c   "),
         "split",
         None,
         3,
     )
     checkequal(
-        [python.String("a"), python.String("b")],
-        python.String("\n\ta \t\r b \v "),
+        [String("a"), String("b")],
+        String("\n\ta \t\r b \v "),
         "split",
     )
-    aaa = python.String(" a ") * 20
-    checkequal([python.String("a")] * 20, aaa, "split")
-    checkequal([python.String("a")] + [aaa[4:]], aaa, "split", None, 1)
-    checkequal(
-        [python.String("a")] * 19 + [python.String("a ")], aaa, "split", None, 19
-    )
+    aaa = String(" a ") * 20
+    checkequal([String("a")] * 20, aaa, "split")
+    checkequal([String("a")] + [aaa[4:]], aaa, "split", None, 1)
+    checkequal([String("a")] * 19 + [String("a ")], aaa, "split", None, 19)
 
     for b in (
-        python.String("arf\tbarf"),
-        python.String("arf\nbarf"),
-        python.String("arf\rbarf"),
-        python.String("arf\fbarf"),
-        python.String("arf\vbarf"),
+        String("arf\tbarf"),
+        String("arf\nbarf"),
+        String("arf\rbarf"),
+        String("arf\fbarf"),
+        String("arf\vbarf"),
     ):
-        checkequal([python.String("arf"), python.String("barf")], b, "split")
-        checkequal([python.String("arf"), python.String("barf")], b, "split", None)
-        checkequal([python.String("arf"), python.String("barf")], b, "split", None, 2)
+        checkequal([String("arf"), String("barf")], b, "split")
+        checkequal([String("arf"), String("barf")], b, "split", None)
+        checkequal([String("arf"), String("barf")], b, "split", None, 2)
 
 
 def test_additional_rsplit():
     checkequal(
         [
-            python.String("this"),
-            python.String("is"),
-            python.String("the"),
+            String("this"),
+            String("is"),
+            String("the"),
             "rsplit",
-            python.String("function"),
+            String("function"),
         ],
-        python.String("this is the rsplit function"),
+        String("this is the rsplit function"),
         "rsplit",
     )
 
     # by whitespace
     checkequal(
         [
-            python.String("a"),
-            python.String("b"),
-            python.String("c"),
-            python.String("d"),
+            String("a"),
+            String("b"),
+            String("c"),
+            String("d"),
         ],
-        python.String("a b c d "),
+        String("a b c d "),
         "rsplit",
     )
     checkequal(
-        [python.String("a b c"), python.String("d")],
-        python.String("a b c d"),
+        [String("a b c"), String("d")],
+        String("a b c d"),
         "rsplit",
         None,
         1,
     )
     checkequal(
-        [python.String("a b"), python.String("c"), python.String("d")],
-        python.String("a b c d"),
+        [String("a b"), String("c"), String("d")],
+        String("a b c d"),
         "rsplit",
         None,
         2,
     )
     checkequal(
         [
-            python.String("a"),
-            python.String("b"),
-            python.String("c"),
-            python.String("d"),
+            String("a"),
+            String("b"),
+            String("c"),
+            String("d"),
         ],
-        python.String("a b c d"),
+        String("a b c d"),
         "rsplit",
         None,
         3,
     )
     checkequal(
         [
-            python.String("a"),
-            python.String("b"),
-            python.String("c"),
-            python.String("d"),
+            String("a"),
+            String("b"),
+            String("c"),
+            String("d"),
         ],
-        python.String("a b c d"),
+        String("a b c d"),
         "rsplit",
         None,
         4,
     )
     checkequal(
         [
-            python.String("a"),
-            python.String("b"),
-            python.String("c"),
-            python.String("d"),
+            String("a"),
+            String("b"),
+            String("c"),
+            String("d"),
         ],
-        python.String("a b c d"),
+        String("a b c d"),
         "rsplit",
         None,
         sys.maxsize - 20,
     )
-    checkequal([python.String("a b c d")], python.String("a b c d"), "rsplit", None, 0)
+    checkequal([String("a b c d")], String("a b c d"), "rsplit", None, 0)
+    checkequal([String("a b c d")], String("a b c d  "), "rsplit", None, 0)
     checkequal(
-        [python.String("a b c d")], python.String("a b c d  "), "rsplit", None, 0
-    )
-    checkequal(
-        [python.String("a  b"), python.String("c"), python.String("d")],
-        python.String("a  b  c  d"),
+        [String("a  b"), String("c"), String("d")],
+        String("a  b  c  d"),
         "rsplit",
         None,
         2,
     )
 
-    checkequal([], python.String("         "), "rsplit")
-    checkequal([python.String("a")], python.String("  a    "), "rsplit")
+    checkequal([], String("         "), "rsplit")
+    checkequal([String("a")], String("  a    "), "rsplit")
+    checkequal([String("a"), String("b")], String("  a    b   "), "rsplit")
     checkequal(
-        [python.String("a"), python.String("b")], python.String("  a    b   "), "rsplit"
-    )
-    checkequal(
-        [python.String("  a"), python.String("b")],
-        python.String("  a    b   "),
+        [String("  a"), String("b")],
+        String("  a    b   "),
         "rsplit",
         None,
         1,
     )
     checkequal(
-        [python.String("  a    b   c")],
-        python.String("  a    b   c   "),
+        [String("  a    b   c")],
+        String("  a    b   c   "),
         "rsplit",
         None,
         0,
     )
     checkequal(
-        [python.String("  a    b"), python.String("c")],
-        python.String("  a    b   c   "),
+        [String("  a    b"), String("c")],
+        String("  a    b   c   "),
         "rsplit",
         None,
         1,
     )
     checkequal(
-        [python.String("  a"), python.String("b"), python.String("c")],
-        python.String("  a    b   c   "),
+        [String("  a"), String("b"), String("c")],
+        String("  a    b   c   "),
         "rsplit",
         None,
         2,
     )
     checkequal(
-        [python.String("a"), python.String("b"), python.String("c")],
-        python.String("  a    b   c   "),
+        [String("a"), String("b"), String("c")],
+        String("  a    b   c   "),
         "rsplit",
         None,
         3,
     )
     checkequal(
-        [python.String("a"), python.String("b")],
-        python.String("\n\ta \t\r b \v "),
+        [String("a"), String("b")],
+        String("\n\ta \t\r b \v "),
         "rsplit",
         None,
         88,
     )
-    aaa = python.String(" a ") * 20
-    checkequal([python.String("a")] * 20, aaa, "rsplit")
-    checkequal([aaa[:-4]] + [python.String("a")], aaa, "rsplit", None, 1)
-    checkequal(
-        [python.String(" a  a")] + [python.String("a")] * 18, aaa, "rsplit", None, 18
-    )
+    aaa = String(" a ") * 20
+    checkequal([String("a")] * 20, aaa, "rsplit")
+    checkequal([aaa[:-4]] + [String("a")], aaa, "rsplit", None, 1)
+    checkequal([String(" a  a")] + [String("a")] * 18, aaa, "rsplit", None, 18)
 
     for b in (
-        python.String("arf\tbarf"),
-        python.String("arf\nbarf"),
-        python.String("arf\rbarf"),
-        python.String("arf\fbarf"),
-        python.String("arf\vbarf"),
+        String("arf\tbarf"),
+        String("arf\nbarf"),
+        String("arf\rbarf"),
+        String("arf\fbarf"),
+        String("arf\vbarf"),
     ):
-        checkequal([python.String("arf"), python.String("barf")], b, "rsplit")
-        checkequal([python.String("arf"), python.String("barf")], b, "rsplit", None)
-        checkequal([python.String("arf"), python.String("barf")], b, "rsplit", None, 2)
+        checkequal([String("arf"), String("barf")], b, "rsplit")
+        checkequal([String("arf"), String("barf")], b, "rsplit", None)
+        checkequal([String("arf"), String("barf")], b, "rsplit", None, 2)
 
 
 def test_strip_whitespace():
-    checkequal(python.String("hello"), python.String("   hello   "), "strip")
-    checkequal(python.String("hello   "), python.String("   hello   "), "lstrip")
-    checkequal(python.String("   hello"), python.String("   hello   "), "rstrip")
-    checkequal(python.String("hello"), python.String("hello"), "strip")
+    checkequal(String("hello"), String("   hello   "), "strip")
+    checkequal(String("hello   "), String("   hello   "), "lstrip")
+    checkequal(String("   hello"), String("   hello   "), "rstrip")
+    checkequal(String("hello"), String("hello"), "strip")
 
-    b = python.String(" \t\n\r\f\vabc \t\n\r\f\v")
-    checkequal(python.String("abc"), b, "strip")
-    checkequal(python.String("abc \t\n\r\f\v"), b, "lstrip")
-    checkequal(python.String(" \t\n\r\f\vabc"), b, "rstrip")
+    b = String(" \t\n\r\f\vabc \t\n\r\f\v")
+    checkequal(String("abc"), b, "strip")
+    checkequal(String("abc \t\n\r\f\v"), b, "lstrip")
+    checkequal(String(" \t\n\r\f\vabc"), b, "rstrip")
 
     # strip/lstrip/rstrip with None arg
-    checkequal(python.String("hello"), python.String("   hello   "), "strip", None)
-    checkequal(python.String("hello   "), python.String("   hello   "), "lstrip", None)
-    checkequal(python.String("   hello"), python.String("   hello   "), "rstrip", None)
-    checkequal(python.String("hello"), python.String("hello"), "strip", None)
+    checkequal(String("hello"), String("   hello   "), "strip", None)
+    checkequal(String("hello   "), String("   hello   "), "lstrip", None)
+    checkequal(String("   hello"), String("   hello   "), "rstrip", None)
+    checkequal(String("hello"), String("hello"), "strip", None)
 
 
 def test_strip():
     # strip/lstrip/rstrip with str arg
     checkequal(
-        python.String("hello"),
-        python.String("xyzzyhelloxyzzy"),
+        String("hello"),
+        String("xyzzyhelloxyzzy"),
         "strip",
-        python.String("xyz"),
+        String("xyz"),
     )
     checkequal(
-        python.String("helloxyzzy"),
-        python.String("xyzzyhelloxyzzy"),
+        String("helloxyzzy"),
+        String("xyzzyhelloxyzzy"),
         "lstrip",
-        python.String("xyz"),
+        String("xyz"),
     )
     checkequal(
-        python.String("xyzzyhello"),
-        python.String("xyzzyhelloxyzzy"),
+        String("xyzzyhello"),
+        String("xyzzyhelloxyzzy"),
         "rstrip",
-        python.String("xyz"),
+        String("xyz"),
     )
+    checkequal(String("hello"), String("hello"), "strip", String("xyz"))
     checkequal(
-        python.String("hello"), python.String("hello"), "strip", python.String("xyz")
-    )
-    checkequal(
-        python.String(""),
-        python.String("mississippi"),
+        String(""),
+        String("mississippi"),
         "strip",
-        python.String("mississippi"),
+        String("mississippi"),
     )
 
     # only trim the start and end; does not strip internal characters
     checkequal(
-        python.String("mississipp"),
-        python.String("mississippi"),
+        String("mississipp"),
+        String("mississippi"),
         "strip",
-        python.String("i"),
+        String("i"),
     )
 
-    checkraises(TypeError, python.String("hello"), "strip", 42, 42)
-    checkraises(TypeError, python.String("hello"), "lstrip", 42, 42)
-    checkraises(TypeError, python.String("hello"), "rstrip", 42, 42)
+    checkraises(TypeError, String("hello"), "strip", 42, 42)
+    checkraises(TypeError, String("hello"), "lstrip", 42, 42)
+    checkraises(TypeError, String("hello"), "rstrip", 42, 42)
 
 
 def test_ljust():
-    checkequal(python.String("abc       "), python.String("abc"), "ljust", 10)
-    checkequal(python.String("abc   "), python.String("abc"), "ljust", 6)
-    checkequal(python.String("abc"), python.String("abc"), "ljust", 3)
-    checkequal(python.String("abc"), python.String("abc"), "ljust", 2)
+    checkequal(String("abc       "), String("abc"), "ljust", 10)
+    checkequal(String("abc   "), String("abc"), "ljust", 6)
+    checkequal(String("abc"), String("abc"), "ljust", 3)
+    checkequal(String("abc"), String("abc"), "ljust", 2)
     checkequal(
-        python.String("abc*******"),
-        python.String("abc"),
+        String("abc*******"),
+        String("abc"),
         "ljust",
         10,
-        python.String("*"),
+        String("*"),
     )
-    checkraises(TypeError, python.String("abc"), "ljust")
+    checkraises(TypeError, String("abc"), "ljust")
 
 
 def test_rjust():
-    checkequal(python.String("       abc"), python.String("abc"), "rjust", 10)
-    checkequal(python.String("   abc"), python.String("abc"), "rjust", 6)
-    checkequal(python.String("abc"), python.String("abc"), "rjust", 3)
-    checkequal(python.String("abc"), python.String("abc"), "rjust", 2)
+    checkequal(String("       abc"), String("abc"), "rjust", 10)
+    checkequal(String("   abc"), String("abc"), "rjust", 6)
+    checkequal(String("abc"), String("abc"), "rjust", 3)
+    checkequal(String("abc"), String("abc"), "rjust", 2)
     checkequal(
-        python.String("*******abc"),
-        python.String("abc"),
+        String("*******abc"),
+        String("abc"),
         "rjust",
         10,
-        python.String("*"),
+        String("*"),
     )
-    checkraises(TypeError, python.String("abc"), "rjust")
+    checkraises(TypeError, String("abc"), "rjust")
 
 
 def test_center():
-    checkequal(python.String("   abc    "), python.String("abc"), "center", 10)
-    checkequal(python.String(" abc  "), python.String("abc"), "center", 6)
-    checkequal(python.String("abc"), python.String("abc"), "center", 3)
-    checkequal(python.String("abc"), python.String("abc"), "center", 2)
+    checkequal(String("   abc    "), String("abc"), "center", 10)
+    checkequal(String(" abc  "), String("abc"), "center", 6)
+    checkequal(String("abc"), String("abc"), "center", 3)
+    checkequal(String("abc"), String("abc"), "center", 2)
     checkequal(
-        python.String("***abc****"),
-        python.String("abc"),
+        String("***abc****"),
+        String("abc"),
         "center",
         10,
-        python.String("*"),
+        String("*"),
     )
-    checkraises(TypeError, python.String("abc"), "center")
+    checkraises(TypeError, String("abc"), "center")
 
 
 def test_swapcase():
-    checkequal(
-        python.String("hEllO CoMPuTErS"), python.String("HeLLo cOmpUteRs"), "swapcase"
-    )
-    checkraises(TypeError, python.String("hello"), "swapcase", 42)
+    checkequal(String("hEllO CoMPuTErS"), String("HeLLo cOmpUteRs"), "swapcase")
+    checkraises(TypeError, String("hello"), "swapcase", 42)
 
 
 def test_zfill():
-    checkequal(python.String("123"), python.String("123"), "zfill", 2)
-    checkequal(python.String("123"), python.String("123"), "zfill", 3)
-    checkequal(python.String("0123"), python.String("123"), "zfill", 4)
-    checkequal(python.String("+123"), python.String("+123"), "zfill", 3)
-    checkequal(python.String("+123"), python.String("+123"), "zfill", 4)
-    checkequal(python.String("+0123"), python.String("+123"), "zfill", 5)
-    checkequal(python.String("-123"), python.String("-123"), "zfill", 3)
-    checkequal(python.String("-123"), python.String("-123"), "zfill", 4)
-    checkequal(python.String("-0123"), python.String("-123"), "zfill", 5)
-    checkequal(python.String("000"), python.String(""), "zfill", 3)
-    checkequal(python.String("34"), python.String("34"), "zfill", 1)
-    checkequal(python.String("0034"), python.String("34"), "zfill", 4)
+    checkequal(String("123"), String("123"), "zfill", 2)
+    checkequal(String("123"), String("123"), "zfill", 3)
+    checkequal(String("0123"), String("123"), "zfill", 4)
+    checkequal(String("+123"), String("+123"), "zfill", 3)
+    checkequal(String("+123"), String("+123"), "zfill", 4)
+    checkequal(String("+0123"), String("+123"), "zfill", 5)
+    checkequal(String("-123"), String("-123"), "zfill", 3)
+    checkequal(String("-123"), String("-123"), "zfill", 4)
+    checkequal(String("-0123"), String("-123"), "zfill", 5)
+    checkequal(String("000"), String(""), "zfill", 3)
+    checkequal(String("34"), String("34"), "zfill", 1)
+    checkequal(String("0034"), String("34"), "zfill", 4)
 
-    checkraises(TypeError, python.String("123"), "zfill")
+    checkraises(TypeError, String("123"), "zfill")
 
 
 def test_islower():
-    checkequal(False, python.String(""), "islower")
-    checkequal(True, python.String("a"), "islower")
-    checkequal(False, python.String("A"), "islower")
-    checkequal(False, python.String("\n"), "islower")
-    checkequal(True, python.String("abc"), "islower")
-    checkequal(False, python.String("aBc"), "islower")
-    checkequal(True, python.String("abc\n"), "islower")
-    checkraises(TypeError, python.String("abc"), "islower", 42)
+    checkequal(False, String(""), "islower")
+    checkequal(True, String("a"), "islower")
+    checkequal(False, String("A"), "islower")
+    checkequal(False, String("\n"), "islower")
+    checkequal(True, String("abc"), "islower")
+    checkequal(False, String("aBc"), "islower")
+    checkequal(True, String("abc\n"), "islower")
+    checkraises(TypeError, String("abc"), "islower", 42)
 
 
 def test_isupper():
-    checkequal(False, python.String(""), "isupper")
-    checkequal(False, python.String("a"), "isupper")
-    checkequal(True, python.String("A"), "isupper")
-    checkequal(False, python.String("\n"), "isupper")
-    checkequal(True, python.String("ABC"), "isupper")
-    checkequal(False, python.String("AbC"), "isupper")
-    checkequal(True, python.String("ABC\n"), "isupper")
-    checkraises(TypeError, python.String("abc"), "isupper", 42)
+    checkequal(False, String(""), "isupper")
+    checkequal(False, String("a"), "isupper")
+    checkequal(True, String("A"), "isupper")
+    checkequal(False, String("\n"), "isupper")
+    checkequal(True, String("ABC"), "isupper")
+    checkequal(False, String("AbC"), "isupper")
+    checkequal(True, String("ABC\n"), "isupper")
+    checkraises(TypeError, String("abc"), "isupper", 42)
 
 
 def test_istitle():
-    checkequal(False, python.String(""), "istitle")
-    checkequal(False, python.String("a"), "istitle")
-    checkequal(True, python.String("A"), "istitle")
-    checkequal(False, python.String("\n"), "istitle")
-    checkequal(True, python.String("A Titlecased Line"), "istitle")
-    checkequal(True, python.String("A\nTitlecased Line"), "istitle")
-    checkequal(True, python.String("A Titlecased, Line"), "istitle")
-    checkequal(False, python.String("Not a capitalized String"), "istitle")
-    checkequal(False, python.String("Not\ta Titlecase String"), "istitle")
-    checkequal(False, python.String("Not--a Titlecase String"), "istitle")
-    checkequal(False, python.String("NOT"), "istitle")
-    checkraises(TypeError, python.String("abc"), "istitle", 42)
+    checkequal(False, String(""), "istitle")
+    checkequal(False, String("a"), "istitle")
+    checkequal(True, String("A"), "istitle")
+    checkequal(False, String("\n"), "istitle")
+    checkequal(True, String("A Titlecased Line"), "istitle")
+    checkequal(True, String("A\nTitlecased Line"), "istitle")
+    checkequal(True, String("A Titlecased, Line"), "istitle")
+    checkequal(False, String("Not a capitalized String"), "istitle")
+    checkequal(False, String("Not\ta Titlecase String"), "istitle")
+    checkequal(False, String("Not--a Titlecase String"), "istitle")
+    checkequal(False, String("NOT"), "istitle")
+    checkraises(TypeError, String("abc"), "istitle", 42)
 
 
 def test_isspace():
-    checkequal(False, python.String(""), "isspace")
-    checkequal(False, python.String("a"), "isspace")
-    checkequal(True, python.String(" "), "isspace")
-    checkequal(True, python.String("\t"), "isspace")
-    checkequal(True, python.String("\r"), "isspace")
-    checkequal(True, python.String("\n"), "isspace")
-    checkequal(True, python.String(" \t\r\n"), "isspace")
-    checkequal(False, python.String(" \t\r\na"), "isspace")
-    checkraises(TypeError, python.String("abc"), "isspace", 42)
+    checkequal(False, String(""), "isspace")
+    checkequal(False, String("a"), "isspace")
+    checkequal(True, String(" "), "isspace")
+    checkequal(True, String("\t"), "isspace")
+    checkequal(True, String("\r"), "isspace")
+    checkequal(True, String("\n"), "isspace")
+    checkequal(True, String(" \t\r\n"), "isspace")
+    checkequal(False, String(" \t\r\na"), "isspace")
+    checkraises(TypeError, String("abc"), "isspace", 42)
 
 
 def test_isalpha():
-    checkequal(False, python.String(""), "isalpha")
-    checkequal(True, python.String("a"), "isalpha")
-    checkequal(True, python.String("A"), "isalpha")
-    checkequal(False, python.String("\n"), "isalpha")
-    checkequal(True, python.String("abc"), "isalpha")
-    checkequal(False, python.String("aBc123"), "isalpha")
-    checkequal(False, python.String("abc\n"), "isalpha")
-    checkraises(TypeError, python.String("abc"), "isalpha", 42)
+    checkequal(False, String(""), "isalpha")
+    checkequal(True, String("a"), "isalpha")
+    checkequal(True, String("A"), "isalpha")
+    checkequal(False, String("\n"), "isalpha")
+    checkequal(True, String("abc"), "isalpha")
+    checkequal(False, String("aBc123"), "isalpha")
+    checkequal(False, String("abc\n"), "isalpha")
+    checkraises(TypeError, String("abc"), "isalpha", 42)
 
 
 def test_isalnum():
-    checkequal(False, python.String(""), "isalnum")
-    checkequal(True, python.String("a"), "isalnum")
-    checkequal(True, python.String("A"), "isalnum")
-    checkequal(False, python.String("\n"), "isalnum")
-    checkequal(True, python.String("123abc456"), "isalnum")
-    checkequal(True, python.String("a1b3c"), "isalnum")
-    checkequal(False, python.String("aBc000 "), "isalnum")
-    checkequal(False, python.String("abc\n"), "isalnum")
-    checkraises(TypeError, python.String("abc"), "isalnum", 42)
+    checkequal(False, String(""), "isalnum")
+    checkequal(True, String("a"), "isalnum")
+    checkequal(True, String("A"), "isalnum")
+    checkequal(False, String("\n"), "isalnum")
+    checkequal(True, String("123abc456"), "isalnum")
+    checkequal(True, String("a1b3c"), "isalnum")
+    checkequal(False, String("aBc000 "), "isalnum")
+    checkequal(False, String("abc\n"), "isalnum")
+    checkraises(TypeError, String("abc"), "isalnum", 42)
 
 
 def test_isascii():
     if sys.version_info >= (3, 7):
-        checkequal(True, python.String(""), "isascii")
-        checkequal(True, python.String("\x00"), "isascii")
-        checkequal(True, python.String("\x7f"), "isascii")
-        checkequal(True, python.String("\x00\x7f"), "isascii")
-        checkequal(False, python.String("\x80"), "isascii")
-        checkequal(False, python.String("\xe9"), "isascii")
+        checkequal(True, String(""), "isascii")
+        checkequal(True, String("\x00"), "isascii")
+        checkequal(True, String("\x7f"), "isascii")
+        checkequal(True, String("\x00\x7f"), "isascii")
+        checkequal(False, String("\x80"), "isascii")
+        checkequal(False, String("\xe9"), "isascii")
         # bytes.isascii() and bytearray.isascii() has optimization which
         # check 4 or 8 bytes at once.  So check some alignments.
         for p in range(8):
-            checkequal(True, python.String(" ") * p + python.String("\x7f"), "isascii")
-            checkequal(False, python.String(" ") * p + python.String("\x80"), "isascii")
+            checkequal(True, String(" ") * p + String("\x7f"), "isascii")
+            checkequal(False, String(" ") * p + String("\x80"), "isascii")
             checkequal(
                 True,
-                python.String(" ") * p + python.String("\x7f") + python.String(" ") * 8,
+                String(" ") * p + String("\x7f") + String(" ") * 8,
                 "isascii",
             )
             checkequal(
                 False,
-                python.String(" ") * p + python.String("\x80") + python.String(" ") * 8,
+                String(" ") * p + String("\x80") + String(" ") * 8,
                 "isascii",
             )
     else:
         with pytest.raises(AttributeError):
-            checkequal(True, python.String(""), "isascii")
+            checkequal(True, String(""), "isascii")
 
 
 def test_isdigit():
-    checkequal(False, python.String(""), "isdigit")
-    checkequal(False, python.String("a"), "isdigit")
-    checkequal(True, python.String("0"), "isdigit")
-    checkequal(True, python.String("0123456789"), "isdigit")
-    checkequal(False, python.String("0123456789a"), "isdigit")
+    checkequal(False, String(""), "isdigit")
+    checkequal(False, String("a"), "isdigit")
+    checkequal(True, String("0"), "isdigit")
+    checkequal(True, String("0123456789"), "isdigit")
+    checkequal(False, String("0123456789a"), "isdigit")
 
-    checkraises(TypeError, python.String("abc"), "isdigit", 42)
+    checkraises(TypeError, String("abc"), "isdigit", 42)
 
 
 def test_title():
-    checkequal(python.String(" Hello "), python.String(" hello "), "title")
-    checkequal(python.String("Hello "), python.String("hello "), "title")
-    checkequal(python.String("Hello "), python.String("Hello "), "title")
+    checkequal(String(" Hello "), String(" hello "), "title")
+    checkequal(String("Hello "), String("hello "), "title")
+    checkequal(String("Hello "), String("Hello "), "title")
     checkequal(
-        python.String("Format This As Title String"),
-        python.String("fOrMaT thIs aS titLe String"),
+        String("Format This As Title String"),
+        String("fOrMaT thIs aS titLe String"),
         "title",
     )
     checkequal(
-        python.String("Format,This-As*Title;String"),
-        python.String("fOrMaT,thIs-aS*titLe;String"),
+        String("Format,This-As*Title;String"),
+        String("fOrMaT,thIs-aS*titLe;String"),
         "title",
     )
-    checkequal(python.String("Getint"), python.String("getInt"), "title")
-    checkraises(TypeError, python.String("hello"), "title", 42)
+    checkequal(String("Getint"), String("getInt"), "title")
+    checkraises(TypeError, String("hello"), "title", 42)
 
 
 def test_splitlines():
     checkequal(
         [
-            python.String("abc"),
-            python.String("def"),
-            python.String(""),
-            python.String("ghi"),
+            String("abc"),
+            String("def"),
+            String(""),
+            String("ghi"),
         ],
-        python.String("abc\ndef\n\rghi"),
+        String("abc\ndef\n\rghi"),
         "splitlines",
     )
     checkequal(
         [
-            python.String("abc"),
-            python.String("def"),
-            python.String(""),
-            python.String("ghi"),
+            String("abc"),
+            String("def"),
+            String(""),
+            String("ghi"),
         ],
-        python.String("abc\ndef\n\r\nghi"),
+        String("abc\ndef\n\r\nghi"),
         "splitlines",
     )
     checkequal(
-        [python.String("abc"), python.String("def"), python.String("ghi")],
-        python.String("abc\ndef\r\nghi"),
+        [String("abc"), String("def"), String("ghi")],
+        String("abc\ndef\r\nghi"),
         "splitlines",
     )
     checkequal(
-        [python.String("abc"), python.String("def"), python.String("ghi")],
-        python.String("abc\ndef\r\nghi\n"),
+        [String("abc"), String("def"), String("ghi")],
+        String("abc\ndef\r\nghi\n"),
         "splitlines",
     )
     checkequal(
         [
-            python.String("abc"),
-            python.String("def"),
-            python.String("ghi"),
-            python.String(""),
+            String("abc"),
+            String("def"),
+            String("ghi"),
+            String(""),
         ],
-        python.String("abc\ndef\r\nghi\n\r"),
+        String("abc\ndef\r\nghi\n\r"),
         "splitlines",
     )
     checkequal(
         [
-            python.String(""),
-            python.String("abc"),
-            python.String("def"),
-            python.String("ghi"),
-            python.String(""),
+            String(""),
+            String("abc"),
+            String("def"),
+            String("ghi"),
+            String(""),
         ],
-        python.String("\nabc\ndef\r\nghi\n\r"),
+        String("\nabc\ndef\r\nghi\n\r"),
         "splitlines",
     )
     checkequal(
         [
-            python.String(""),
-            python.String("abc"),
-            python.String("def"),
-            python.String("ghi"),
-            python.String(""),
+            String(""),
+            String("abc"),
+            String("def"),
+            String("ghi"),
+            String(""),
         ],
-        python.String("\nabc\ndef\r\nghi\n\r"),
+        String("\nabc\ndef\r\nghi\n\r"),
         "splitlines",
         False,
     )
     checkequal(
         [
-            python.String("\n"),
-            python.String("abc\n"),
-            python.String("def\r\n"),
-            python.String("ghi\n"),
-            python.String("\r"),
+            String("\n"),
+            String("abc\n"),
+            String("def\r\n"),
+            String("ghi\n"),
+            String("\r"),
         ],
-        python.String("\nabc\ndef\r\nghi\n\r"),
+        String("\nabc\ndef\r\nghi\n\r"),
         "splitlines",
         True,
     )
     checkequal(
         [
-            python.String(""),
-            python.String("abc"),
-            python.String("def"),
-            python.String("ghi"),
-            python.String(""),
+            String(""),
+            String("abc"),
+            String("def"),
+            String("ghi"),
+            String(""),
         ],
-        python.String("\nabc\ndef\r\nghi\n\r"),
+        String("\nabc\ndef\r\nghi\n\r"),
         "splitlines",
         keepends=False,
     )
     checkequal(
         [
-            python.String("\n"),
-            python.String("abc\n"),
-            python.String("def\r\n"),
-            python.String("ghi\n"),
-            python.String("\r"),
+            String("\n"),
+            String("abc\n"),
+            String("def\r\n"),
+            String("ghi\n"),
+            String("\r"),
         ],
-        python.String("\nabc\ndef\r\nghi\n\r"),
+        String("\nabc\ndef\r\nghi\n\r"),
         "splitlines",
         keepends=True,
     )
 
-    checkraises(TypeError, python.String("abc"), "splitlines", 42, 42)
+    checkraises(TypeError, String("abc"), "splitlines", 42, 42)
 
 
 # fixes python <= 3.7
@@ -2587,337 +2567,285 @@ def test_capitalize_nonascii():
         # a, b, capitalize
         # ῼῳῳῳ, ῳῳῼῼ, capitalize
         checkequal(
-            python.String("\u1ffc\u1ff3\u1ff3\u1ff3"),
-            python.String("\u1ff3\u1ff3\u1ffc\u1ffc"),
+            String("\u1ffc\u1ff3\u1ff3\u1ff3"),
+            String("\u1ff3\u1ff3\u1ffc\u1ffc"),
             "capitalize",
         )
     else:
         # a, b, capitalize
         # ΩΙῳῳῳ, ῳῳῼῼ, capitalize
         checkequal(
-            python.String("\u03a9\u0399\u1ff3\u1ff3\u1ff3"),
-            python.String("\u1ff3\u1ff3\u1ffc\u1ffc"),
+            String("\u03a9\u0399\u1ff3\u1ff3\u1ff3"),
+            String("\u1ff3\u1ff3\u1ffc\u1ffc"),
             "capitalize",
         )
     # check with cased non-letter chars
     checkequal(
-        python.String("\u24c5\u24e8\u24e3\u24d7\u24de\u24dd"),
-        python.String("\u24c5\u24ce\u24c9\u24bd\u24c4\u24c3"),
+        String("\u24c5\u24e8\u24e3\u24d7\u24de\u24dd"),
+        String("\u24c5\u24ce\u24c9\u24bd\u24c4\u24c3"),
         "capitalize",
     )
     checkequal(
-        python.String("\u24c5\u24e8\u24e3\u24d7\u24de\u24dd"),
-        python.String("\u24df\u24e8\u24e3\u24d7\u24de\u24dd"),
+        String("\u24c5\u24e8\u24e3\u24d7\u24de\u24dd"),
+        String("\u24df\u24e8\u24e3\u24d7\u24de\u24dd"),
         "capitalize",
     )
     checkequal(
-        python.String("\u2160\u2171\u2172"),
-        python.String("\u2160\u2161\u2162"),
+        String("\u2160\u2171\u2172"),
+        String("\u2160\u2161\u2162"),
         "capitalize",
     )
     checkequal(
-        python.String("\u2160\u2171\u2172"),
-        python.String("\u2170\u2171\u2172"),
+        String("\u2160\u2171\u2172"),
+        String("\u2170\u2171\u2172"),
         "capitalize",
     )
     # check with Ll chars with no upper - nothing changes here
     checkequal(
-        python.String("\u019b\u1d00\u1d86\u0221\u1fb7"),
-        python.String("\u019b\u1d00\u1d86\u0221\u1fb7"),
+        String("\u019b\u1d00\u1d86\u0221\u1fb7"),
+        String("\u019b\u1d00\u1d86\u0221\u1fb7"),
         "capitalize",
     )
 
 
 def test_startswith():
-    checkequal(True, python.String("hello"), "startswith", python.String("he"))
-    checkequal(True, python.String("hello"), "startswith", python.String("hello"))
-    checkequal(
-        False, python.String("hello"), "startswith", python.String("hello world")
-    )
-    checkequal(True, python.String("hello"), "startswith", python.String(""))
-    checkequal(False, python.String("hello"), "startswith", python.String("ello"))
-    checkequal(True, python.String("hello"), "startswith", python.String("ello"), 1)
-    checkequal(True, python.String("hello"), "startswith", python.String("o"), 4)
-    checkequal(False, python.String("hello"), "startswith", python.String("o"), 5)
-    checkequal(True, python.String("hello"), "startswith", python.String(""), 5)
-    checkequal(False, python.String("hello"), "startswith", python.String("lo"), 6)
-    checkequal(
-        True, python.String("helloworld"), "startswith", python.String("lowo"), 3
-    )
-    checkequal(
-        True, python.String("helloworld"), "startswith", python.String("lowo"), 3, 7
-    )
-    checkequal(
-        False, python.String("helloworld"), "startswith", python.String("lowo"), 3, 6
-    )
-    checkequal(True, python.String(""), "startswith", python.String(""), 0, 1)
-    checkequal(True, python.String(""), "startswith", python.String(""), 0, 0)
-    checkequal(False, python.String(""), "startswith", python.String(""), 1, 0)
+    checkequal(True, String("hello"), "startswith", String("he"))
+    checkequal(True, String("hello"), "startswith", String("hello"))
+    checkequal(False, String("hello"), "startswith", String("hello world"))
+    checkequal(True, String("hello"), "startswith", String(""))
+    checkequal(False, String("hello"), "startswith", String("ello"))
+    checkequal(True, String("hello"), "startswith", String("ello"), 1)
+    checkequal(True, String("hello"), "startswith", String("o"), 4)
+    checkequal(False, String("hello"), "startswith", String("o"), 5)
+    checkequal(True, String("hello"), "startswith", String(""), 5)
+    checkequal(False, String("hello"), "startswith", String("lo"), 6)
+    checkequal(True, String("helloworld"), "startswith", String("lowo"), 3)
+    checkequal(True, String("helloworld"), "startswith", String("lowo"), 3, 7)
+    checkequal(False, String("helloworld"), "startswith", String("lowo"), 3, 6)
+    checkequal(True, String(""), "startswith", String(""), 0, 1)
+    checkequal(True, String(""), "startswith", String(""), 0, 0)
+    checkequal(False, String(""), "startswith", String(""), 1, 0)
 
     # test negative indices
-    checkequal(True, python.String("hello"), "startswith", python.String("he"), 0, -1)
-    checkequal(True, python.String("hello"), "startswith", python.String("he"), -53, -1)
-    checkequal(
-        False, python.String("hello"), "startswith", python.String("hello"), 0, -1
-    )
+    checkequal(True, String("hello"), "startswith", String("he"), 0, -1)
+    checkequal(True, String("hello"), "startswith", String("he"), -53, -1)
+    checkequal(False, String("hello"), "startswith", String("hello"), 0, -1)
     checkequal(
         False,
-        python.String("hello"),
+        String("hello"),
         "startswith",
-        python.String("hello world"),
+        String("hello world"),
         -1,
         -10,
     )
-    checkequal(False, python.String("hello"), "startswith", python.String("ello"), -5)
-    checkequal(True, python.String("hello"), "startswith", python.String("ello"), -4)
-    checkequal(False, python.String("hello"), "startswith", python.String("o"), -2)
-    checkequal(True, python.String("hello"), "startswith", python.String("o"), -1)
-    checkequal(True, python.String("hello"), "startswith", python.String(""), -3, -3)
-    checkequal(False, python.String("hello"), "startswith", python.String("lo"), -9)
+    checkequal(False, String("hello"), "startswith", String("ello"), -5)
+    checkequal(True, String("hello"), "startswith", String("ello"), -4)
+    checkequal(False, String("hello"), "startswith", String("o"), -2)
+    checkequal(True, String("hello"), "startswith", String("o"), -1)
+    checkequal(True, String("hello"), "startswith", String(""), -3, -3)
+    checkequal(False, String("hello"), "startswith", String("lo"), -9)
 
-    checkraises(TypeError, python.String("hello"), "startswith")
-    checkraises(TypeError, python.String("hello"), "startswith", 42)
+    checkraises(TypeError, String("hello"), "startswith")
+    checkraises(TypeError, String("hello"), "startswith", 42)
 
     # test tuple arguments
     checkequal(
         True,
-        python.String("hello"),
+        String("hello"),
         "startswith",
-        (python.String("he"), python.String("ha")),
+        (String("he"), String("ha")),
     )
     checkequal(
         False,
-        python.String("hello"),
+        String("hello"),
         "startswith",
-        (python.String("lo"), python.String("llo")),
+        (String("lo"), String("llo")),
     )
     checkequal(
         True,
-        python.String("hello"),
+        String("hello"),
         "startswith",
-        (python.String("hellox"), python.String("hello")),
+        (String("hellox"), String("hello")),
     )
-    checkequal(False, python.String("hello"), "startswith", ())
+    checkequal(False, String("hello"), "startswith", ())
     checkequal(
         True,
-        python.String("helloworld"),
+        String("helloworld"),
         "startswith",
-        (python.String("hellowo"), python.String("rld"), python.String("lowo")),
+        (String("hellowo"), String("rld"), String("lowo")),
         3,
     )
     checkequal(
         False,
-        python.String("helloworld"),
+        String("helloworld"),
         "startswith",
-        (python.String("hellowo"), python.String("ello"), python.String("rld")),
+        (String("hellowo"), String("ello"), String("rld")),
         3,
     )
     checkequal(
         True,
-        python.String("hello"),
+        String("hello"),
         "startswith",
-        (python.String("lo"), python.String("he")),
+        (String("lo"), String("he")),
         0,
         -1,
     )
     checkequal(
         False,
-        python.String("hello"),
+        String("hello"),
         "startswith",
-        (python.String("he"), python.String("hel")),
+        (String("he"), String("hel")),
         0,
         1,
     )
     checkequal(
         True,
-        python.String("hello"),
+        String("hello"),
         "startswith",
-        (python.String("he"), python.String("hel")),
+        (String("he"), String("hel")),
         0,
         2,
     )
 
-    checkraises(TypeError, python.String("hello"), "startswith", (42,))
+    checkraises(TypeError, String("hello"), "startswith", (42,))
 
 
 def test_endswith():
-    checkequal(True, python.String("hello"), "endswith", python.String("lo"))
-    checkequal(False, python.String("hello"), "endswith", python.String("he"))
-    checkequal(True, python.String("hello"), "endswith", python.String(""))
-    checkequal(False, python.String("hello"), "endswith", python.String("hello world"))
-    checkequal(False, python.String("helloworld"), "endswith", python.String("worl"))
-    checkequal(
-        True, python.String("helloworld"), "endswith", python.String("worl"), 3, 9
-    )
-    checkequal(
-        True, python.String("helloworld"), "endswith", python.String("world"), 3, 12
-    )
-    checkequal(
-        True, python.String("helloworld"), "endswith", python.String("lowo"), 1, 7
-    )
-    checkequal(
-        True, python.String("helloworld"), "endswith", python.String("lowo"), 2, 7
-    )
-    checkequal(
-        True, python.String("helloworld"), "endswith", python.String("lowo"), 3, 7
-    )
-    checkequal(
-        False, python.String("helloworld"), "endswith", python.String("lowo"), 4, 7
-    )
-    checkequal(
-        False, python.String("helloworld"), "endswith", python.String("lowo"), 3, 8
-    )
-    checkequal(False, python.String("ab"), "endswith", python.String("ab"), 0, 1)
-    checkequal(False, python.String("ab"), "endswith", python.String("ab"), 0, 0)
-    checkequal(True, python.String(""), "endswith", python.String(""), 0, 1)
-    checkequal(True, python.String(""), "endswith", python.String(""), 0, 0)
-    checkequal(False, python.String(""), "endswith", python.String(""), 1, 0)
+    checkequal(True, String("hello"), "endswith", String("lo"))
+    checkequal(False, String("hello"), "endswith", String("he"))
+    checkequal(True, String("hello"), "endswith", String(""))
+    checkequal(False, String("hello"), "endswith", String("hello world"))
+    checkequal(False, String("helloworld"), "endswith", String("worl"))
+    checkequal(True, String("helloworld"), "endswith", String("worl"), 3, 9)
+    checkequal(True, String("helloworld"), "endswith", String("world"), 3, 12)
+    checkequal(True, String("helloworld"), "endswith", String("lowo"), 1, 7)
+    checkequal(True, String("helloworld"), "endswith", String("lowo"), 2, 7)
+    checkequal(True, String("helloworld"), "endswith", String("lowo"), 3, 7)
+    checkequal(False, String("helloworld"), "endswith", String("lowo"), 4, 7)
+    checkequal(False, String("helloworld"), "endswith", String("lowo"), 3, 8)
+    checkequal(False, String("ab"), "endswith", String("ab"), 0, 1)
+    checkequal(False, String("ab"), "endswith", String("ab"), 0, 0)
+    checkequal(True, String(""), "endswith", String(""), 0, 1)
+    checkequal(True, String(""), "endswith", String(""), 0, 0)
+    checkequal(False, String(""), "endswith", String(""), 1, 0)
 
     # test negative indices
-    checkequal(True, python.String("hello"), "endswith", python.String("lo"), -2)
-    checkequal(False, python.String("hello"), "endswith", python.String("he"), -2)
-    checkequal(True, python.String("hello"), "endswith", python.String(""), -3, -3)
-    checkequal(
-        False, python.String("hello"), "endswith", python.String("hello world"), -10, -2
-    )
-    checkequal(
-        False, python.String("helloworld"), "endswith", python.String("worl"), -6
-    )
-    checkequal(
-        True, python.String("helloworld"), "endswith", python.String("worl"), -5, -1
-    )
-    checkequal(
-        True, python.String("helloworld"), "endswith", python.String("worl"), -5, 9
-    )
-    checkequal(
-        True, python.String("helloworld"), "endswith", python.String("world"), -7, 12
-    )
-    checkequal(
-        True, python.String("helloworld"), "endswith", python.String("lowo"), -99, -3
-    )
-    checkequal(
-        True, python.String("helloworld"), "endswith", python.String("lowo"), -8, -3
-    )
-    checkequal(
-        True, python.String("helloworld"), "endswith", python.String("lowo"), -7, -3
-    )
-    checkequal(
-        False, python.String("helloworld"), "endswith", python.String("lowo"), 3, -4
-    )
-    checkequal(
-        False, python.String("helloworld"), "endswith", python.String("lowo"), -8, -2
-    )
+    checkequal(True, String("hello"), "endswith", String("lo"), -2)
+    checkequal(False, String("hello"), "endswith", String("he"), -2)
+    checkequal(True, String("hello"), "endswith", String(""), -3, -3)
+    checkequal(False, String("hello"), "endswith", String("hello world"), -10, -2)
+    checkequal(False, String("helloworld"), "endswith", String("worl"), -6)
+    checkequal(True, String("helloworld"), "endswith", String("worl"), -5, -1)
+    checkequal(True, String("helloworld"), "endswith", String("worl"), -5, 9)
+    checkequal(True, String("helloworld"), "endswith", String("world"), -7, 12)
+    checkequal(True, String("helloworld"), "endswith", String("lowo"), -99, -3)
+    checkequal(True, String("helloworld"), "endswith", String("lowo"), -8, -3)
+    checkequal(True, String("helloworld"), "endswith", String("lowo"), -7, -3)
+    checkequal(False, String("helloworld"), "endswith", String("lowo"), 3, -4)
+    checkequal(False, String("helloworld"), "endswith", String("lowo"), -8, -2)
 
-    checkraises(TypeError, python.String("hello"), "endswith")
-    checkraises(TypeError, python.String("hello"), "endswith", 42)
+    checkraises(TypeError, String("hello"), "endswith")
+    checkraises(TypeError, String("hello"), "endswith", 42)
 
     # test tuple arguments
     checkequal(
         False,
-        python.String("hello"),
+        String("hello"),
         "endswith",
-        (python.String("he"), python.String("ha")),
+        (String("he"), String("ha")),
     )
     checkequal(
         True,
-        python.String("hello"),
+        String("hello"),
         "endswith",
-        (python.String("lo"), python.String("llo")),
+        (String("lo"), String("llo")),
     )
     checkequal(
         True,
-        python.String("hello"),
+        String("hello"),
         "endswith",
-        (python.String("hellox"), python.String("hello")),
+        (String("hellox"), String("hello")),
     )
-    checkequal(False, python.String("hello"), "endswith", ())
+    checkequal(False, String("hello"), "endswith", ())
     checkequal(
         True,
-        python.String("helloworld"),
+        String("helloworld"),
         "endswith",
-        (python.String("hellowo"), python.String("rld"), python.String("lowo")),
+        (String("hellowo"), String("rld"), String("lowo")),
         3,
     )
     checkequal(
         False,
-        python.String("helloworld"),
+        String("helloworld"),
         "endswith",
-        (python.String("hellowo"), python.String("ello"), python.String("rld")),
+        (String("hellowo"), String("ello"), String("rld")),
         3,
         -1,
     )
     checkequal(
         True,
-        python.String("hello"),
+        String("hello"),
         "endswith",
-        (python.String("hell"), python.String("ell")),
+        (String("hell"), String("ell")),
         0,
         -1,
     )
     checkequal(
         False,
-        python.String("hello"),
+        String("hello"),
         "endswith",
-        (python.String("he"), python.String("hel")),
+        (String("he"), String("hel")),
         0,
         1,
     )
     checkequal(
         True,
-        python.String("hello"),
+        String("hello"),
         "endswith",
-        (python.String("he"), python.String("hell")),
+        (String("he"), String("hell")),
         0,
         4,
     )
 
-    checkraises(TypeError, python.String("hello"), "endswith", (42,))
+    checkraises(TypeError, String("hello"), "endswith", (42,))
 
 
 def test___contains__():
-    checkequal(True, python.String(""), "__contains__", python.String(""))
-    checkequal(True, python.String("abc"), "__contains__", python.String(""))
-    checkequal(False, python.String("abc"), "__contains__", python.String("\0"))
-    checkequal(True, python.String("\0abc"), "__contains__", python.String("\0"))
-    checkequal(True, python.String("abc\0"), "__contains__", python.String("\0"))
-    checkequal(True, python.String("\0abc"), "__contains__", python.String("a"))
-    checkequal(True, python.String("asdf"), "__contains__", python.String("asdf"))
-    checkequal(False, python.String("asd"), "__contains__", python.String("asdf"))
-    checkequal(False, python.String(""), "__contains__", python.String("asdf"))
+    checkequal(True, String(""), "__contains__", String(""))
+    checkequal(True, String("abc"), "__contains__", String(""))
+    checkequal(False, String("abc"), "__contains__", String("\0"))
+    checkequal(True, String("\0abc"), "__contains__", String("\0"))
+    checkequal(True, String("abc\0"), "__contains__", String("\0"))
+    checkequal(True, String("\0abc"), "__contains__", String("a"))
+    checkequal(True, String("asdf"), "__contains__", String("asdf"))
+    checkequal(False, String("asd"), "__contains__", String("asdf"))
+    checkequal(False, String(""), "__contains__", String("asdf"))
 
 
 def test_subscript():
-    checkequal(python.String("a"), python.String("abc"), "__getitem__", 0)
-    checkequal(python.String("c"), python.String("abc"), "__getitem__", -1)
-    checkequal(python.String("a"), python.String("abc"), "__getitem__", 0)
-    checkequal(python.String("abc"), python.String("abc"), "__getitem__", slice(0, 3))
-    checkequal(
-        python.String("abc"), python.String("abc"), "__getitem__", slice(0, 1000)
-    )
-    checkequal(python.String("a"), python.String("abc"), "__getitem__", slice(0, 1))
-    checkequal(python.String(""), python.String("abc"), "__getitem__", slice(0, 0))
+    checkequal(String("a"), String("abc"), "__getitem__", 0)
+    checkequal(String("c"), String("abc"), "__getitem__", -1)
+    checkequal(String("a"), String("abc"), "__getitem__", 0)
+    checkequal(String("abc"), String("abc"), "__getitem__", slice(0, 3))
+    checkequal(String("abc"), String("abc"), "__getitem__", slice(0, 1000))
+    checkequal(String("a"), String("abc"), "__getitem__", slice(0, 1))
+    checkequal(String(""), String("abc"), "__getitem__", slice(0, 0))
 
-    checkraises(TypeError, python.String("abc"), "__getitem__", python.String("def"))
+    checkraises(TypeError, String("abc"), "__getitem__", String("def"))
 
 
 def test_slice():
-    checkequal(
-        python.String("abc"), python.String("abc"), "__getitem__", slice(0, 1000)
-    )
-    checkequal(python.String("abc"), python.String("abc"), "__getitem__", slice(0, 3))
-    checkequal(python.String("ab"), python.String("abc"), "__getitem__", slice(0, 2))
-    checkequal(python.String("bc"), python.String("abc"), "__getitem__", slice(1, 3))
-    checkequal(python.String("b"), python.String("abc"), "__getitem__", slice(1, 2))
-    checkequal(python.String(""), python.String("abc"), "__getitem__", slice(2, 2))
-    checkequal(
-        python.String(""), python.String("abc"), "__getitem__", slice(1000, 1000)
-    )
-    checkequal(
-        python.String(""), python.String("abc"), "__getitem__", slice(2000, 1000)
-    )
-    checkequal(python.String(""), python.String("abc"), "__getitem__", slice(2, 1))
+    checkequal(String("abc"), String("abc"), "__getitem__", slice(0, 1000))
+    checkequal(String("abc"), String("abc"), "__getitem__", slice(0, 3))
+    checkequal(String("ab"), String("abc"), "__getitem__", slice(0, 2))
+    checkequal(String("bc"), String("abc"), "__getitem__", slice(1, 3))
+    checkequal(String("b"), String("abc"), "__getitem__", slice(1, 2))
+    checkequal(String(""), String("abc"), "__getitem__", slice(2, 2))
+    checkequal(String(""), String("abc"), "__getitem__", slice(1000, 1000))
+    checkequal(String(""), String("abc"), "__getitem__", slice(2000, 1000))
+    checkequal(String(""), String("abc"), "__getitem__", slice(2, 1))
 
-    checkraises(TypeError, python.String("abc"), "__getitem__", python.String("def"))
+    checkraises(TypeError, String("abc"), "__getitem__", String("def"))
 
 
 @pytest.mark.slow
@@ -2931,7 +2859,7 @@ def test_extended_getslice():
             for step in indices[1:]:
                 L = list(s)[start:stop:step]
                 checkequal(
-                    python.String("").join(L),
+                    String("").join(L),
                     s,
                     "__getitem__",
                     slice(start, stop, step),
@@ -2939,12 +2867,12 @@ def test_extended_getslice():
 
 
 def test_mul():
-    checkequal(python.String(""), python.String("abc"), "__mul__", -1)
-    checkequal(python.String(""), python.String("abc"), "__mul__", 0)
-    checkequal(python.String("abc"), python.String("abc"), "__mul__", 1)
-    checkequal(python.String("abcabcabc"), python.String("abc"), "__mul__", 3)
-    checkraises(TypeError, python.String("abc"), "__mul__")
-    checkraises(TypeError, python.String("abc"), "__mul__", python.String(""))
+    checkequal(String(""), String("abc"), "__mul__", -1)
+    checkequal(String(""), String("abc"), "__mul__", 0)
+    checkequal(String("abc"), String("abc"), "__mul__", 1)
+    checkequal(String("abcabcabc"), String("abc"), "__mul__", 3)
+    checkraises(TypeError, String("abc"), "__mul__")
+    checkraises(TypeError, String("abc"), "__mul__", String(""))
     # XXX: on a 64-bit system, this doesn't raise an overflow error,
     # but either raises a MemoryError, or succeeds (if you have 54TiB)
     # checkraises(OverflowError, 10000*'abc', '__mul__', 2000000000)
@@ -2953,174 +2881,164 @@ def test_mul():
 @pytest.mark.slow
 def test_join():
     checkequal(
-        python.String("a b c d"),
-        python.String(" "),
+        String("a b c d"),
+        String(" "),
         "join",
         [
-            python.String("a"),
-            python.String("b"),
-            python.String("c"),
-            python.String("d"),
+            String("a"),
+            String("b"),
+            String("c"),
+            String("d"),
         ],
     )
     checkequal(
-        python.String("abcd"),
-        python.String(""),
+        String("abcd"),
+        String(""),
         "join",
         (
-            python.String("a"),
-            python.String("b"),
-            python.String("c"),
-            python.String("d"),
+            String("a"),
+            String("b"),
+            String("c"),
+            String("d"),
         ),
     )
     checkequal(
-        python.String("bd"),
-        python.String(""),
+        String("bd"),
+        String(""),
         "join",
-        (python.String(""), python.String("b"), python.String(""), python.String("d")),
+        (String(""), String("b"), String(""), String("d")),
     )
     checkequal(
-        python.String("ac"),
-        python.String(""),
+        String("ac"),
+        String(""),
         "join",
-        (python.String("a"), python.String(""), python.String("c"), python.String("")),
+        (String("a"), String(""), String("c"), String("")),
     )
-    checkequal(python.String("w x y z"), python.String(" "), "join", Sequence())
+    checkequal(String("w x y z"), String(" "), "join", Sequence())
+    checkequal(String("abc"), String("a"), "join", (String("abc"),))
     checkequal(
-        python.String("abc"), python.String("a"), "join", (python.String("abc"),)
-    )
-    checkequal(
-        python.String("z"),
-        python.String("a"),
+        String("z"),
+        String("a"),
         "join",
-        python.List([python.String("z")]),
+        List([String("z")]),
     )
     checkequal(
-        python.String("a.b.c"),
-        python.String("."),
+        String("a.b.c"),
+        String("."),
         "join",
-        [python.String("a"), python.String("b"), python.String("c")],
+        [String("a"), String("b"), String("c")],
     )
     checkraises(
         TypeError,
-        python.String("."),
+        String("."),
         "join",
-        [python.String("a"), python.String("b"), 3],
+        [String("a"), String("b"), 3],
     )
     for i in [5, 25, 125]:
         checkequal(
-            (((python.String("a") * i) + python.String("-")) * i)[:-1],
-            python.String("-"),
+            (((String("a") * i) + String("-")) * i)[:-1],
+            String("-"),
             "join",
-            [python.String("a") * i] * i,
+            [String("a") * i] * i,
         )
         checkequal(
-            (((python.String("a") * i) + python.String("-")) * i)[:-1],
-            python.String("-"),
+            (((String("a") * i) + String("-")) * i)[:-1],
+            String("-"),
             "join",
-            (python.String("a") * i,) * i,
+            (String("a") * i,) * i,
         )
 
-    checkequal(python.String("a b c"), python.String(" "), "join", BadSeq2())
+    checkequal(String("a b c"), String(" "), "join", BadSeq2())
 
-    checkraises(TypeError, python.String(" "), "join")
-    checkraises(TypeError, python.String(" "), "join", None)
-    checkraises(TypeError, python.String(" "), "join", 7)
-    checkraises(TypeError, python.String(" "), "join", [1, 2, bytes()])
+    checkraises(TypeError, String(" "), "join")
+    checkraises(TypeError, String(" "), "join", None)
+    checkraises(TypeError, String(" "), "join", 7)
+    checkraises(TypeError, String(" "), "join", [1, 2, bytes()])
 
 
 def test_formatting():
     checkequal(
-        python.String("+hello+"),
-        python.String("+%s+"),
+        String("+hello+"),
+        String("+%s+"),
         "__mod__",
-        python.String("hello"),
+        String("hello"),
     )
-    checkequal(python.String("+10+"), python.String("+%d+"), "__mod__", 10)
-    checkequal(python.String("a"), python.String("%c"), "__mod__", python.String("a"))
-    checkequal(python.String("a"), python.String("%c"), "__mod__", python.String("a"))
-    checkequal(python.String("$"), python.String("%c"), "__mod__", 36)
-    checkequal(python.String("10"), python.String("%d"), "__mod__", 10)
-    checkequal(python.String("\x7f"), python.String("%c"), "__mod__", 0x7F)
+    checkequal(String("+10+"), String("+%d+"), "__mod__", 10)
+    checkequal(String("a"), String("%c"), "__mod__", String("a"))
+    checkequal(String("a"), String("%c"), "__mod__", String("a"))
+    checkequal(String("$"), String("%c"), "__mod__", 36)
+    checkequal(String("10"), String("%d"), "__mod__", 10)
+    checkequal(String("\x7f"), String("%c"), "__mod__", 0x7F)
 
     for ordinal in (-100, 0x200000):
         # unicode raises ValueError, str raises OverflowError
-        checkraises(
-            (ValueError, OverflowError), python.String("%c"), "__mod__", ordinal
-        )
+        checkraises((ValueError, OverflowError), String("%c"), "__mod__", ordinal)
 
     longvalue = sys.maxsize + 10
     slongvalue = str(longvalue)
-    checkequal(python.String(" 42"), python.String("%3ld"), "__mod__", 42)
-    checkequal(python.String("42"), python.String("%d"), "__mod__", 42.0)
-    checkequal(slongvalue, python.String("%d"), "__mod__", longvalue)
-    checkcall(python.String("%d"), "__mod__", float(longvalue))
-    checkequal(python.String("0042.00"), python.String("%07.2f"), "__mod__", 42)
-    checkequal(python.String("0042.00"), python.String("%07.2F"), "__mod__", 42)
+    checkequal(String(" 42"), String("%3ld"), "__mod__", 42)
+    checkequal(String("42"), String("%d"), "__mod__", 42.0)
+    checkequal(slongvalue, String("%d"), "__mod__", longvalue)
+    checkcall(String("%d"), "__mod__", float(longvalue))
+    checkequal(String("0042.00"), String("%07.2f"), "__mod__", 42)
+    checkequal(String("0042.00"), String("%07.2F"), "__mod__", 42)
 
-    checkraises(TypeError, python.String("abc"), "__mod__")
-    checkraises(TypeError, python.String("%(foo)s"), "__mod__", 42)
-    checkraises(TypeError, python.String("%s%s"), "__mod__", (42,))
-    checkraises(TypeError, python.String("%c"), "__mod__", (None,))
-    checkraises(ValueError, python.String("%(foo"), "__mod__", {})
+    checkraises(TypeError, String("abc"), "__mod__")
+    checkraises(TypeError, String("%(foo)s"), "__mod__", 42)
+    checkraises(TypeError, String("%s%s"), "__mod__", (42,))
+    checkraises(TypeError, String("%c"), "__mod__", (None,))
+    checkraises(ValueError, String("%(foo"), "__mod__", {})
     checkraises(
         TypeError,
-        python.String("%(foo)s %(bar)s"),
+        String("%(foo)s %(bar)s"),
         "__mod__",
-        (python.String("foo"), 42),
+        (String("foo"), 42),
     )
+    checkraises(TypeError, String("%d"), "__mod__", String("42"))  # not numeric
     checkraises(
-        TypeError, python.String("%d"), "__mod__", python.String("42")
-    )  # not numeric
-    checkraises(
-        TypeError, python.String("%d"), "__mod__", (42 + 0j)
+        TypeError, String("%d"), "__mod__", (42 + 0j)
     )  # no int conversion provided
 
     # argument names with properly nested brackets are supported
     checkequal(
-        python.String("bar"),
-        python.String("%((foo))s"),
+        String("bar"),
+        String("%((foo))s"),
         "__mod__",
-        {python.String("(foo)"): python.String("bar")},
+        {String("(foo)"): String("bar")},
     )
 
     # 100 is a magic number in PyUnicode_Format, this forces a resize
     checkequal(
-        103 * python.String("a") + python.String("x"),
-        python.String("%sx"),
+        103 * String("a") + String("x"),
+        String("%sx"),
         "__mod__",
-        103 * python.String("a"),
+        103 * String("a"),
     )
 
     checkraises(
         TypeError,
-        python.String("%*s"),
+        String("%*s"),
         "__mod__",
-        (python.String("foo"), python.String("bar")),
+        (String("foo"), String("bar")),
     )
-    checkraises(
-        TypeError, python.String("%10.*f"), "__mod__", (python.String("foo"), 42.0)
-    )
-    checkraises(ValueError, python.String("%10"), "__mod__", (42,))
+    checkraises(TypeError, String("%10.*f"), "__mod__", (String("foo"), 42.0))
+    checkraises(ValueError, String("%10"), "__mod__", (42,))
 
     # Outrageously large width or precision should raise ValueError.
-    checkraises(ValueError, python.String("%%%df") % (2 ** 64), "__mod__", (3.2))
-    checkraises(ValueError, python.String("%%.%df") % (2 ** 64), "__mod__", (3.2))
+    checkraises(ValueError, String("%%%df") % (2 ** 64), "__mod__", (3.2))
+    checkraises(ValueError, String("%%.%df") % (2 ** 64), "__mod__", (3.2))
     checkraises(
         OverflowError,
-        python.String("%*s"),
+        String("%*s"),
         "__mod__",
-        (sys.maxsize + 1, python.String("")),
+        (sys.maxsize + 1, String("")),
     )
-    checkraises(
-        OverflowError, python.String("%.*f"), "__mod__", (sys.maxsize + 1, 1.0 / 7)
-    )
+    checkraises(OverflowError, String("%.*f"), "__mod__", (sys.maxsize + 1, 1.0 / 7))
 
     class X(object):
         pass
 
-    checkraises(TypeError, python.String("abc"), "__mod__", X())
+    checkraises(TypeError, String("abc"), "__mod__", X())
 
 
 @support.cpython_only
@@ -3133,28 +3051,26 @@ def test_formatting_c_limits():
     SIZE_MAX = (1 << (PY_SSIZE_T_MAX.bit_length() + 1)) - 1
     checkraises(
         OverflowError,
-        python.String("%*s"),
+        String("%*s"),
         "__mod__",
-        (PY_SSIZE_T_MAX + 1, python.String("")),
+        (PY_SSIZE_T_MAX + 1, String("")),
     )
-    checkraises(OverflowError, python.String("%.*f"), "__mod__", (INT_MAX + 1, 1.0 / 7))
+    checkraises(OverflowError, String("%.*f"), "__mod__", (INT_MAX + 1, 1.0 / 7))
     # Issue 15989
     checkraises(
         OverflowError,
-        python.String("%*s"),
+        String("%*s"),
         "__mod__",
-        (SIZE_MAX + 1, python.String("")),
+        (SIZE_MAX + 1, String("")),
     )
-    checkraises(
-        OverflowError, python.String("%.*f"), "__mod__", (UINT_MAX + 1, 1.0 / 7)
-    )
+    checkraises(OverflowError, String("%.*f"), "__mod__", (UINT_MAX + 1, 1.0 / 7))
 
 
 @pytest.mark.slow
 def test_floatformatting():
     # float formatting
     for prec in range(100):
-        format = python.String("%%.%if") % prec
+        format = String("%%.%if") % prec
         value = 0.01
         for x in range(60):
             value = value * 3.14159265359 / 3.0 * 10.0
@@ -3163,150 +3079,150 @@ def test_floatformatting():
 
 def test_inplace_rewrites():
     # Check that strings don't copy and modify cached single-character strings
-    checkequal(python.String("a"), python.String("A"), "lower")
-    checkequal(True, python.String("A"), "isupper")
-    checkequal(python.String("A"), python.String("a"), "upper")
-    checkequal(True, python.String("a"), "islower")
+    checkequal(String("a"), String("A"), "lower")
+    checkequal(True, String("A"), "isupper")
+    checkequal(String("A"), String("a"), "upper")
+    checkequal(True, String("a"), "islower")
 
     checkequal(
-        python.String("a"),
-        python.String("A"),
+        String("a"),
+        String("A"),
         "replace",
-        python.String("A"),
-        python.String("a"),
+        String("A"),
+        String("a"),
     )
-    checkequal(True, python.String("A"), "isupper")
+    checkequal(True, String("A"), "isupper")
 
-    checkequal(python.String("A"), python.String("a"), "capitalize")
-    checkequal(True, python.String("a"), "islower")
+    checkequal(String("A"), String("a"), "capitalize")
+    checkequal(True, String("a"), "islower")
 
-    checkequal(python.String("A"), python.String("a"), "swapcase")
-    checkequal(True, python.String("a"), "islower")
+    checkequal(String("A"), String("a"), "swapcase")
+    checkequal(True, String("a"), "islower")
 
-    checkequal(python.String("A"), python.String("a"), "title")
-    checkequal(True, python.String("a"), "islower")
+    checkequal(String("A"), String("a"), "title")
+    checkequal(True, String("a"), "islower")
 
 
 def test_partition():
     checkequal(
         (
-            python.String("this is the par"),
-            python.String("ti"),
-            python.String("tion method"),
+            String("this is the par"),
+            String("ti"),
+            String("tion method"),
         ),
-        python.String("this is the partition method"),
+        String("this is the partition method"),
         "partition",
-        python.String("ti"),
+        String("ti"),
     )
 
     # from raymond's original specification
-    S = python.String("http://www.python.org")
+    S = String("http://www.python.org")
     checkequal(
-        (python.String("http"), python.String("://"), python.String("www.python.org")),
+        (String("http"), String("://"), String("www.python.org")),
         S,
         "partition",
-        python.String("://"),
+        String("://"),
     )
     checkequal(
-        (python.String("http://www.python.org"), python.String(""), python.String("")),
+        (String("http://www.python.org"), String(""), String("")),
         S,
         "partition",
-        python.String("?"),
+        String("?"),
     )
     checkequal(
-        (python.String(""), python.String("http://"), python.String("www.python.org")),
+        (String(""), String("http://"), String("www.python.org")),
         S,
         "partition",
-        python.String("http://"),
+        String("http://"),
     )
     checkequal(
-        (python.String("http://www.python."), python.String("org"), python.String("")),
+        (String("http://www.python."), String("org"), String("")),
         S,
         "partition",
-        python.String("org"),
+        String("org"),
     )
 
-    checkraises(ValueError, S, "partition", python.String(""))
+    checkraises(ValueError, S, "partition", String(""))
     checkraises(TypeError, S, "partition", None)
 
 
 def test_rpartition():
     checkequal(
         (
-            python.String("this is the rparti"),
-            python.String("ti"),
-            python.String("on method"),
+            String("this is the rparti"),
+            String("ti"),
+            String("on method"),
         ),
-        python.String("this is the rpartition method"),
+        String("this is the rpartition method"),
         "rpartition",
-        python.String("ti"),
+        String("ti"),
     )
 
     # from raymond's original specification
-    S = python.String("http://www.python.org")
+    S = String("http://www.python.org")
     checkequal(
-        (python.String("http"), python.String("://"), python.String("www.python.org")),
+        (String("http"), String("://"), String("www.python.org")),
         S,
         "rpartition",
-        python.String("://"),
+        String("://"),
     )
     checkequal(
-        (python.String(""), python.String(""), python.String("http://www.python.org")),
+        (String(""), String(""), String("http://www.python.org")),
         S,
         "rpartition",
-        python.String("?"),
+        String("?"),
     )
     checkequal(
-        (python.String(""), python.String("http://"), python.String("www.python.org")),
+        (String(""), String("http://"), String("www.python.org")),
         S,
         "rpartition",
-        python.String("http://"),
+        String("http://"),
     )
     checkequal(
-        (python.String("http://www.python."), python.String("org"), python.String("")),
+        (String("http://www.python."), String("org"), String("")),
         S,
         "rpartition",
-        python.String("org"),
+        String("org"),
     )
 
-    checkraises(ValueError, S, "rpartition", python.String(""))
+    checkraises(ValueError, S, "rpartition", String(""))
     checkraises(TypeError, S, "rpartition", None)
 
 
 def test_none_arguments():
     # issue 11828
-    s = python.String("hello")
-    checkequal(2, s, "find", python.String("l"), None)
-    checkequal(3, s, "find", python.String("l"), -2, None)
-    checkequal(2, s, "find", python.String("l"), None, -2)
-    checkequal(0, s, "find", python.String("h"), None, None)
+    s = String("hello")
+    checkequal(2, s, "find", String("l"), None)
+    checkequal(3, s, "find", String("l"), -2, None)
+    checkequal(2, s, "find", String("l"), None, -2)
+    checkequal(0, s, "find", String("h"), None, None)
 
-    checkequal(3, s, "rfind", python.String("l"), None)
-    checkequal(3, s, "rfind", python.String("l"), -2, None)
-    checkequal(2, s, "rfind", python.String("l"), None, -2)
-    checkequal(0, s, "rfind", python.String("h"), None, None)
+    checkequal(3, s, "rfind", String("l"), None)
+    checkequal(3, s, "rfind", String("l"), -2, None)
+    checkequal(2, s, "rfind", String("l"), None, -2)
+    checkequal(0, s, "rfind", String("h"), None, None)
 
-    checkequal(2, s, "index", python.String("l"), None)
-    checkequal(3, s, "index", python.String("l"), -2, None)
-    checkequal(2, s, "index", python.String("l"), None, -2)
-    checkequal(0, s, "index", python.String("h"), None, None)
+    checkequal(2, s, "index", String("l"), None)
+    checkequal(3, s, "index", String("l"), -2, None)
+    checkequal(2, s, "index", String("l"), None, -2)
+    checkequal(0, s, "index", String("h"), None, None)
 
-    checkequal(3, s, "rindex", python.String("l"), None)
-    checkequal(3, s, "rindex", python.String("l"), -2, None)
-    checkequal(2, s, "rindex", python.String("l"), None, -2)
-    checkequal(0, s, "rindex", python.String("h"), None, None)
+    checkequal(3, s, "rindex", String("l"), None)
+    checkequal(3, s, "rindex", String("l"), -2, None)
+    checkequal(2, s, "rindex", String("l"), None, -2)
+    checkequal(0, s, "rindex", String("h"), None, None)
 
-    checkequal(2, s, "count", python.String("l"), None)
-    checkequal(1, s, "count", python.String("l"), -2, None)
-    checkequal(1, s, "count", python.String("l"), None, -2)
-    checkequal(0, s, "count", python.String("x"), None, None)
+    checkequal(2, s, "count", String("l"), None)
+    checkequal(1, s, "count", String("l"), -2, None)
+    checkequal(1, s, "count", String("l"), None, -2)
+    checkequal(0, s, "count", String("x"), None, None)
 
-    checkequal(True, s, "endswith", python.String("o"), None)
-    checkequal(True, s, "endswith", python.String("lo"), -2, None)
-    checkequal(True, s, "endswith", python.String("l"), None, -2)
-    checkequal(False, s, "endswith", python.String("x"), None, None)
+    checkequal(True, s, "endswith", String("o"), None)
+    checkequal(True, s, "endswith", String("lo"), -2, None)
+    checkequal(True, s, "endswith", String("l"), None, -2)
+    checkequal(False, s, "endswith", String("x"), None, None)
 
-    checkequal(True, s, "startswith", python.String("h"), None)
-    checkequal(True, s, "startswith", python.String("l"), -2, None)
-    checkequal(True, s, "startswith", python.String("h"), None, -2)
-    checkequal(False, s, "startswith", python.String("x"), None, None)
+    checkequal(True, s, "startswith", String("h"), None)
+    checkequal(True, s, "startswith", String("l"), -2, None)
+    checkequal(True, s, "startswith", String("h"), None, -2)
+    checkequal(False, s, "startswith", String("x"), None, None)
