@@ -7,6 +7,7 @@
 """
 
 # stdlib
+import logging
 from typing import Any as TypeAny
 from typing import Dict as TypeDict
 from typing import List as TypeList
@@ -22,6 +23,17 @@ from syft.lib import _load_lib
 from syft.lib import vendor_requirements_available
 
 logger.remove()
+
+
+@pytest.fixture
+def caplog(caplog):
+    class PropogateHandler(logging.Handler):
+        def emit(self, record):
+            logging.getLogger(record.name).handle(record)
+
+    logger.add(PropogateHandler())
+    yield caplog
+    logger.remove()
 
 
 def pytest_addoption(parser: _pytest.config.argparsing.Parser) -> None:
