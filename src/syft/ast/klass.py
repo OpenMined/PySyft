@@ -15,7 +15,7 @@ import warnings
 from .. import ast
 from .. import lib
 from ..ast.callable import Callable
-from ..core.common.group import VerifyAll
+from ..core.common.group import VERIFYALL
 from ..core.common.uid import UID
 from ..core.node.common.action.get_or_set_property_action import GetOrSetPropertyAction
 from ..core.node.common.action.get_or_set_property_action import PropertyActions
@@ -423,7 +423,7 @@ class Class(Callable):
                 data=self,
                 tags=tags,
                 description=description,
-                search_permissions={VerifyAll(): None} if pointable else {},
+                search_permissions={VERIFYALL: None} if pointable else {},
             )
             obj_msg = SaveObjectAction(obj=storable, address=client.address)
 
