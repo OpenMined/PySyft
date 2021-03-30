@@ -71,7 +71,7 @@ def create_worker_msg(
 
         config = Config(
             app=Config(name="worker", count=1, id=len(node.environments.all()) + 1),
-            apps=[Config(name="worker", count=1)],
+            apps=[Config(name="worker", count=1, port=5001)],
             serverless=False,
             websockets=False,
             provider=os.environ["CLOUD_PROVIDER"],

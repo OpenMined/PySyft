@@ -166,29 +166,21 @@ class AWS_Serverfull(AWS):
         kwargs = {}
         for count in range(self.config.app.count):
             app = self.config.apps[count]
+
             if self.worker:
                 instance_name = f"pygrid-worker-{str(self.config.app.id)}"
-                kwargs = {
-                    "name": instance_name,
-                    "subnet_ids": [
-                        public_subnet.id for _, public_subnet in self.subnets
-                    ],
-                    "tags": {"Name": instance_name},
-                }
+                user_data = self.write_worker_exec_script(app)
+                subnet_ids = [public_subnet.id for _, public_subnet in self.subnets]
             else:
                 instance_name = f"pygrid-{self.config.app.name}-instance-{count}"
-                self.write_exec_script(app, index=count)
-                kwargs = {
-                    "name": instance_name,
-                    "subnet_ids": [
-                        var(public_subnet.id) for _, public_subnet in self.subnets
-                    ],
-                    "user_data": self.write_exec_script(app, index=count),
-                    "tags": {"Name": instance_name},
-                }
+                user_data = self.write_domain_exec_script(app, index=count)
+                subnet_ids = [
+                    var(public_subnet.id) for _, public_subnet in self.subnets
+                ]
 
             instance = Module(
                 f"pygrid-instance-{count}",
+                name=instance_name,
                 instance_count=1,
                 source="terraform-aws-modules/ec2-instance/aws",
                 ami=var(self.ami.id),
@@ -196,7 +188,9 @@ class AWS_Serverfull(AWS):
                 associate_public_ip_address=True,
                 monitoring=True,
                 vpc_security_group_ids=[var(self.security_group.id)],
-                **kwargs,
+                subnet_ids=subnet_ids,
+                user_data=user_data,
+                tags={"Name": instance_name},
             )
 
             self.tfscript += instance
@@ -236,9 +230,8 @@ class AWS_Serverfull(AWS):
         )
         self.tfscript += self.load_balancer
 
-    def write_exec_script(self, app, index=0):
-        ##TODO(amr): remove `git checkout pygrid_0.3.0` after merge
-
+    def write_domain_exec_script(self, app, index=0):
+        branch = "pygrid_0.4.0"
         # exec_script = "#cloud-boothook\n#!/bin/bash\n"
         exec_script = "#!/bin/bash\n"
         exec_script += textwrap.dedent(
@@ -288,10 +281,9 @@ class AWS_Serverfull(AWS):
             export AWS_ACCESS_KEY_ID={self.config.credentials.cloud.aws_access_key_id}
             export AWS_SECRET_ACCESS_KEY={self.config.credentials.cloud.aws_secret_access_key}
 
-
             echo 'Cloning PyGrid'
             git clone https://github.com/OpenMined/PyGrid && cd /PyGrid/
-            git checkout pygrid_0.4.0
+            git checkout {branch}
 
             cd /PyGrid/apps/{self.config.app.name}
 
@@ -302,6 +294,45 @@ class AWS_Serverfull(AWS):
             pip install pymysql
 
             nohup ./run.sh --port {app.port}  --host 0.0.0.0 --start_local_db
+            """
+        )
+        return exec_script
+
+    def write_worker_exec_script(self, app):
+        branch = "pygrid_0.4.0"
+        exec_script = "#!/bin/bash\n"
+        exec_script += textwrap.dedent(
+            f"""
+            exec &> logs.out
+            sudo apt update -y
+            
+            echo 'Setup Miniconda environment'
+            sudo wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+            sudo bash miniconda.sh -b -p miniconda
+            sudo rm miniconda.sh
+            export PATH=/miniconda/bin:$PATH > ~/.bashrc
+            conda init bash
+            source ~/.bashrc
+            conda create -y -n pygrid python=3.7
+            conda activate pygrid
+            
+            echo 'Install poetry...'
+            pip install poetry
+            
+            echo 'Install GCC'
+            sudo apt-get install zip unzip -y
+            sudo apt-get install python3-dev -y
+            sudo apt-get install libevent-dev -y
+            sudo apt-get install gcc -y
+            
+            echo 'Cloning PyGrid'
+            git clone https://github.com/OpenMined/PyGrid && cd /PyGrid/
+            git checkout {branch}
+            
+            cd /PyGrid/apps/worker
+            echo 'Installing worker Dependencies'
+            poetry install
+            nohup ./run.sh --port {app.port}  --host 0.0.0.0
             """
         )
         return exec_script
