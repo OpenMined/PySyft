@@ -13,5 +13,6 @@ PyJWT==1.7.1
 PyNaCl
 requests
 sqlitedict
+syft-proto
 typing-extensions # backport to older python 3
 websocket-client
