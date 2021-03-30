@@ -232,6 +232,12 @@ def wrap_iterator(attrs: Dict[str, Union[str, CallableT, property]]) -> None:
 
     attr_name = "__iter__"
     iter_target = attrs[attr_name]
+
+    # skip if __iter__ has already been wrapped
+    qual_name = getattr(iter_target, "__qualname__", None)
+    if qual_name and "wrap_iter" in qual_name:
+        return
+
     if not callable(iter_target):
         traceback_and_raise(AttributeError("Can't wrap a non callable iter attribute"))
     else:
