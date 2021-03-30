@@ -1,6 +1,3 @@
-# stdlib
-from time import sleep
-
 # third party
 import torch
 

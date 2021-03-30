@@ -1,8 +1,5 @@
 """The GC class that would handle what happens when a pointer gets deleted."""
 
-# stdlib
-from typing import Any
-
 # syft relative
 from ..pointer.pointer import Pointer
 from .gc_strategy import GCStrategy
