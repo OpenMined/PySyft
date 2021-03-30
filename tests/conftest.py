@@ -7,8 +7,10 @@
 """
 
 # stdlib
+import logging
 from typing import Any as TypeAny
 from typing import Dict as TypeDict
+from typing import Generator
 from typing import List as TypeList
 
 # third party
@@ -23,6 +25,17 @@ from syft.lib import _load_lib
 from syft.lib import vendor_requirements_available
 
 logger.remove()
+
+
+@pytest.fixture
+def caplog(caplog: _pytest.logging.LogCaptureFixture) -> Generator:
+    class PropogateHandler(logging.Handler):
+        def emit(self, record: logging.LogRecord) -> None:
+            logging.getLogger(record.name).handle(record)
+
+    logger.add(PropogateHandler())
+    yield caplog
+    logger.remove()
 
 
 def pytest_addoption(parser: _pytest.config.argparsing.Parser) -> None:

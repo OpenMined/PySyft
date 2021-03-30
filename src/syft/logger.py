@@ -1,4 +1,5 @@
 # stdlib
+import logging
 import os
 from typing import Any
 from typing import Callable
@@ -20,7 +21,7 @@ def remove() -> None:
 
 
 def add(
-    sink: Union[None, str, os.PathLike, TextIO] = None,
+    sink: Union[None, str, os.PathLike, TextIO, logging.Handler] = None,
     level: str = "ERROR",
 ) -> None:
     sink = DEFAULT_SINK if sink is None else sink
@@ -40,7 +41,6 @@ def add(
         logger.add(
             sink=sink,
             format=LOG_FORMAT,
-            enqueue=True,
             colorize=False,
             diagnose=True,
             backtrace=True,
