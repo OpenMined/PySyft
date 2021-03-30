@@ -90,6 +90,11 @@ def get_instance_type(region):
         )
         instances += response["InstanceTypes"]
 
+    if len(instances) == 0:
+        raise Exception(
+            "This region has no instances belonging to your chosen instance category. \nPlease choose a different pair of region and instance category"
+        )
+
     # Sort instances
     sorted_instances = (
         sorted(instances, key=lambda i: i["GpuInfo"]["TotalGpuMemoryInMiB"])

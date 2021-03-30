@@ -99,9 +99,16 @@ def deploy(config: SimpleNamespace, provider: str, app: str):
 
     ## Prompting user to provide configuration for the selected cloud
     if config.provider == "aws":
-        config.vpc = aws_utils.get_vpc_config()
-        if not config.serverless:
-            config.vpc.instance_type = aws_utils.get_instance_type(config.vpc.region)
+        vpc, instance_type = None, None
+        while vpc is None or instance_type is None:
+            try:
+                vpc = aws_utils.get_vpc_config()
+                if not config.serverless:
+                    instance_type = aws_utils.get_instance_type(vpc.region)
+            except Exception as e:
+                click.echo(colored(str(e), color=COLORS.red))
+        config.vpc = vpc
+        config.vpc.instance_type = instance_type
     elif config.provider == "gcp":
         config.gcp = gcp_utils.get_gcp_config()
     elif config.provider == "azure":
