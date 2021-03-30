@@ -7,14 +7,10 @@ import pytest
 # syft absolute
 import syft as sy
 
-alice = sy.VirtualMachine(name="alice")
-alice_client = alice.get_root_client()
-remote_python = alice_client.syft.lib.python
 
-
-def get_permission(obj: Any) -> None:
-    remote_obj = alice.store[obj.id_at_location]
-    remote_obj.read_permissions[alice_client.verify_key] = obj.id_at_location
+def get_permission(obj: Any, node: sy.VirtualMachine) -> None:
+    remote_obj = node.store[obj.id_at_location]
+    remote_obj.read_permissions[node.verify_key] = obj.id_at_location
 
 
 inputs = {
@@ -73,23 +69,22 @@ inputs = {
     "zfill": [[5], [10]],
 }
 
-objects = [
-    (
-        "Op en Min ed",
-        sy.lib.python.String("Op en Min ed"),
-        remote_python.String("Op en Min ed"),
-    ),
-    ("george", sy.lib.python.String("george"), remote_python.String("george")),
-    ("J A Y", sy.lib.python.String("J A Y"), remote_python.String("J A Y")),
-    ("ANDREW", sy.lib.python.String("ANDREW"), remote_python.String("ANDREW")),
-    ("tud\t\nor", sy.lib.python.String("tud\t\nor"), remote_python.String("tud\t\nor")),
-]
+objects = ["Op en Min ed", "george", "J A Y", "ANDREW", "tud\t\nor"]
 
 
-@pytest.mark.parametrize("test_objects", objects)
+@pytest.mark.parametrize("test_object", objects)
 @pytest.mark.parametrize("func", inputs.keys())
-def test_pointer_objectives(test_objects, func):
-    py_obj, sy_obj, remote_sy_obj = test_objects
+def test_pointer_objectives(
+    test_object, func, node: sy.VirtualMachine, client: sy.VirtualMachineClient
+):
+    remote_python = client.syft.lib.python.String
+    local_constructor = sy.lib.python.String
+
+    py_obj, sy_obj, remote_sy_obj = (
+        test_object,
+        local_constructor(test_object),
+        remote_python(test_object),
+    )
     possible_inputs = inputs[func]
 
     if not hasattr(py_obj, func):
@@ -116,7 +111,7 @@ def test_pointer_objectives(test_objects, func):
 
         try:
             remote_sy_res = remote_sy_method(*possible_input)
-            get_permission(remote_sy_res)
+            get_permission(remote_sy_res, node)
             remote_sy_res = remote_sy_res.get()
         except Exception as remote_sy_e:
             remote_sy_res = str(remote_sy_e)

@@ -46,8 +46,8 @@ class WorkerRequestAPI(GridRequestAPI):
         addr_pb = Address_PB()
         addr_pb.ParseFromString(_raw_addr)
 
-        _worker_obj = self.domain_client.__class__(
-            credentials={},  # type: ignore
+        _worker_obj = self.domain_client.__class__(  # type: ignore
+            credentials={},
             url=self.domain_client.conn.base_url,  # type: ignore
             conn_type=self.domain_client.conn.__class__,  # type: ignore
             client_type=self.domain_client.client_type,  # type: ignore

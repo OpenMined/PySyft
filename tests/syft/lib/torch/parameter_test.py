@@ -10,52 +10,46 @@ import syft as sy
 
 
 @pytest.mark.slow
-def test_parameter_vm_remote_operation() -> None:
-
-    alice = sy.VirtualMachine(name="alice")
-    alice_client = alice.get_client()
-
+def test_parameter_vm_remote_operation(
+    node: sy.VirtualMachine, client: sy.VirtualMachineClient
+) -> None:
     x = th.nn.Parameter(th.randn(3, 3))
 
-    xp = x.send(alice_client, pointable=False)
+    xp = x.send(client, pointable=False)
 
     y = xp + xp
 
-    assert len(alice.store._objects) == 2
+    assert len(node.store._objects) == 2
 
     y.get()
 
-    assert len(alice.store._objects) == 1
+    assert len(node.store._objects) == 1
 
     del xp
 
     gc.collect()
 
-    assert len(alice.store._objects) == 0
+    assert len(node.store._objects) == 0
 
 
-def test_get_copy() -> None:
-
-    alice = sy.VirtualMachine(name="alice")
-    alice_client = alice.get_client()
-
+def test_get_copy(node: sy.VirtualMachine, client: sy.VirtualMachineClient) -> None:
     x = th.nn.Parameter(th.randn(3, 3))
 
-    xp = x.send(alice_client, pointable=False)
+    xp = x.send(client, pointable=False)
 
     y = xp + xp
 
-    assert len(alice.store._objects) == 2
+    assert len(node.store._objects) == 2
 
     y.get_copy()
 
     # no deletion of the object
-    assert len(alice.store._objects) == 2
+    assert len(node.store._objects) == 2
 
     del xp
     gc.collect()
 
-    assert len(alice.store._objects) == 1
+    assert len(node.store._objects) == 1
 
 
 def test_parameter_serde() -> None:

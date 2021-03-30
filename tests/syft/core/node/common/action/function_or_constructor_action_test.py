@@ -11,13 +11,12 @@ from syft.core.node.common.action.function_or_constructor_action import (
 
 # TODO test execution
 # TODO test permissions
-def test_run_function_or_constructor_action_serde() -> None:
-    alice = sy.VirtualMachine(name="alice")
-    alice_client = alice.get_client()
-
+def test_run_function_or_constructor_action_serde(
+    root_client: sy.VirtualMachineClient,
+) -> None:
     args = (
-        th.tensor([1, 2, 3]).send(alice_client),
-        th.tensor([4, 5, 5]).send(alice_client),
+        th.tensor([1, 2, 3]).send(root_client),
+        th.tensor([4, 5, 5]).send(root_client),
     )
 
     msg = RunFunctionOrConstructorAction(
@@ -25,7 +24,7 @@ def test_run_function_or_constructor_action_serde() -> None:
         args=args,
         kwargs={},
         id_at_location=UID(),
-        address=alice_client.address,
+        address=root_client.address,
         msg_id=UID(),
     )
 

@@ -18,8 +18,7 @@ from syft.grid.messages.infra_messages import UpdateWorkerMessage
 from syft.grid.messages.infra_messages import UpdateWorkerResponse
 
 
-def test_create_worker_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_create_worker_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     request_content = {
@@ -33,7 +32,7 @@ def test_create_worker_message_serde() -> None:
     msg = CreateWorkerMessage(
         address=target,
         content=request_content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)
@@ -64,15 +63,14 @@ def test_create_worker_response_serde() -> None:
     assert msg == msg2
 
 
-def test_delete_worker_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_delete_worker_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     request_content = {"worker_id": "f2a6as5d16fasd"}
     msg = DeleteWorkerMessage(
         address=target,
         content=request_content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)
@@ -103,8 +101,7 @@ def test_delete_worker_response_serde() -> None:
     assert msg == msg2
 
 
-def test_update_worker_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_update_worker_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     content = {
@@ -119,7 +116,7 @@ def test_update_worker_message_serde() -> None:
     msg = UpdateWorkerMessage(
         address=target,
         content=content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)
@@ -150,15 +147,14 @@ def test_update_worker_response_serde() -> None:
     assert msg == msg2
 
 
-def test_get_worker_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_get_worker_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     content = {"worker-id": "eqw9e4a5d846"}
     msg = GetWorkerMessage(
         address=target,
         content=content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)
@@ -195,15 +191,14 @@ def test_get_worker_response_serde() -> None:
     assert msg == msg2
 
 
-def test_get_all_workers_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_get_all_workers_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     content: Dict[Any, Any] = {}
     msg = GetWorkersMessage(
         address=target,
         content=content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)
