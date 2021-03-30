@@ -112,7 +112,6 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.lib.python.List.__ne__", "syft.lib.python.Bool"),
         ("syft.lib.python.List.__sizeof__", "syft.lib.python.Int"),
         ("syft.lib.python.List.__len__", "syft.lib.python.Int"),
-        ("syft.lib.python.List.__getitem__", "syft.lib.python.Any"),
         ("syft.lib.python.List.__setitem__", "syft.lib.python._SyNone"),
         ("syft.lib.python.List.__rmul__", "syft.lib.python.List"),
         ("syft.lib.python.List.copy", "syft.lib.python.List"),

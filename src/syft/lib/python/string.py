@@ -22,6 +22,10 @@ from .slice import Slice
 from .types import SyPrimitiveRet
 
 
+class StringIterator(Iterator):
+    pass
+
+
 @bind_protobuf
 class String(UserString, PyPrimitive):
     def __init__(self, value: Any = None, id: Optional[UID] = None):
@@ -70,7 +74,7 @@ class String(UserString, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     def __iter__(self, max_len: Optional[int] = None) -> Iterator:
-        return Iterator(super().__iter__(), max_len=max_len)
+        return StringIterator(super().__iter__(), max_len=max_len)
 
     def __le__(self, other: Any) -> SyPrimitiveRet:
         res = super().__le__(other)
