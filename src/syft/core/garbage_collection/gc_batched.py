@@ -1,17 +1,24 @@
 """A simple garbage collection heuritics."""
+# future
+from __future__ import annotations
+
 # stdlib
 from collections import defaultdict
 from typing import Dict
 from typing import List
+from typing import TYPE_CHECKING
 
 # syft relative
 from ..common.uid import UID
 from ..node.common.action.garbage_collect_batched_action import (
     GarbageCollectBatchedAction,
 )
-from ..node.common.client import Client
 from ..pointer.pointer import Pointer
 from .gc_strategy import GCStrategy
+
+if TYPE_CHECKING:
+    # syft relative
+    from ..node.common.client import Client
 
 
 class GCBatched(GCStrategy):
