@@ -15,40 +15,10 @@ from syft.core.common.serde.deserialize import _deserialize
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
 from syft.proto.grid.messages.association_messages_pb2 import (
-    DeleteAssociationRequestMessage as DeleteAssociationRequestMessage_PB,
+    GridRequestMessage as GridRequestMessage_PB,
 )
 from syft.proto.grid.messages.association_messages_pb2 import (
-    DeleteAssociationRequestResponse as DeleteAssociationRequestResponse_PB,
-)
-from syft.proto.grid.messages.association_messages_pb2 import (
-    GetAssociationRequestMessage as GetAssociationRequestMessage_PB,
-)
-from syft.proto.grid.messages.association_messages_pb2 import (
-    GetAssociationRequestResponse as GetAssociationRequestResponse_PB,
-)
-from syft.proto.grid.messages.association_messages_pb2 import (
-    GetAssociationRequestsMessage as GetAssociationRequestsMessage_PB,
-)
-from syft.proto.grid.messages.association_messages_pb2 import (
-    GetAssociationRequestsResponse as GetAssociationRequestsResponse_PB,
-)
-from syft.proto.grid.messages.association_messages_pb2 import (
-    ReceiveAssociationRequestMessage as ReceiveAssociationRequestMessage_PB,
-)
-from syft.proto.grid.messages.association_messages_pb2 import (
-    ReceiveAssociationRequestResponse as ReceiveAssociationRequestResponse_PB,
-)
-from syft.proto.grid.messages.association_messages_pb2 import (
-    RespondAssociationRequestMessage as RespondAssociationRequestMessage_PB,
-)
-from syft.proto.grid.messages.association_messages_pb2 import (
-    RespondAssociationRequestResponse as RespondAssociationRequestResponse_PB,
-)
-from syft.proto.grid.messages.association_messages_pb2 import (
-    SendAssociationRequestMessage as SendAssociationRequestMessage_PB,
-)
-from syft.proto.grid.messages.association_messages_pb2 import (
-    SendAssociationRequestResponse as SendAssociationRequestResponse_PB,
+    GridResponseMessage as GridResponseMessage_PB,
 )
 
 # syft relative
@@ -57,40 +27,42 @@ from ...core.common.serde.serializable import bind_protobuf
 
 @bind_protobuf
 @final
-class SendAssociationRequestMessage(ImmediateSyftMessageWithReply):
+class SendGridRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
         address: Address,
         content: Dict,
         reply_to: Address,
         msg_id: Optional[UID] = None,
+        type:
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.content = content
 
-    def _object2proto(self) -> SendAssociationRequestMessage_PB:
+    def _object2proto(self) -> GridRequestMessage_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
         this method transforms the current object into the corresponding
         Protobuf object so that it can be further serialized.
         :return: returns a protobuf object
-        :rtype: SendAssociationRequestMessage_PB
+        :rtype GridRequestMessage_PB:
         .. note::
             This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
-        return SendAssociationRequestMessage_PB(
+        return GridRequestMessage_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
             content=json.dumps(self.content),
             reply_to=serialize(self.reply_to),
+            type=
         )
 
     @staticmethod
     def _proto2object(
-        proto: SendAssociationRequestMessage_PB,
-    ) -> "SendAssociationRequestMessage":
+        proto: GridRequestMessage_PB,
+    ) -> "GridRequestMessage":
         """Creates a SendAssociationRequestMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -101,11 +73,12 @@ class SendAssociationRequestMessage(ImmediateSyftMessageWithReply):
             if you wish to deserialize an object.
         """
 
-        return SendAssociationRequestMessage(
+        return GridRequestMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             content=json.loads(proto.content),
             reply_to=_deserialize(blob=proto.reply_to),
+            type=#TODO: what here?
         )
 
     @staticmethod
@@ -123,7 +96,7 @@ class SendAssociationRequestMessage(ImmediateSyftMessageWithReply):
         :rtype: GeneratedProtocolMessageType
         """
 
-        return SendAssociationRequestMessage_PB
+        return GridRequestMessage_PB
 
 
 @bind_protobuf
