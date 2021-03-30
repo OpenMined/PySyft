@@ -91,6 +91,7 @@ def create_worker_msg(
     try:
         _current_user_id = msg.content.get("current_user", None)
         instance_type = msg.content.get("instance_type", None)
+        _worker_port = msg.content.get("port", 5001)
 
         users = node.users
 
@@ -104,7 +105,7 @@ def create_worker_msg(
 
         config = Config(
             app=Config(name="worker", count=1, id=len(node.environments.all()) + 1),
-            apps=[Config(name="worker", count=1, port=5001)],
+            apps=[Config(name="worker", count=1, port=_worker_port)],
             serverless=False,
             websockets=False,
             provider=os.environ["CLOUD_PROVIDER"],
@@ -139,7 +140,9 @@ def create_worker_msg(
                     id=config.app.id,
                     created_at=datetime.now(),
                     state=states["success"],
-                    address=output["instance_0_endpoint"]["value"][0],
+                    address=output["instance_0_endpoint"]["value"][0]
+                    + ":"
+                    + str(_worker_port),
                 )
 
                 node.environments.association(
@@ -182,7 +185,7 @@ def get_worker_msg(
             worker = node.environments.first(id=int(worker_id))
             try:
                 worker_client = connect(
-                    url="http://" + worker.address + ":5000",
+                    url="http://" + worker.address,
                     conn_type=GridHTTPConnection,  # HTTP Connection Protocol
                 )
 
