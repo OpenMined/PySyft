@@ -61,6 +61,7 @@ from ..exceptions import (
     MissingRequestKeyError,
     AuthorizationError,
     InvalidParameterValueError,
+    RequestError,
 )
 from ..database.utils import model_to_json
 from ..datasets.dataset_ops import update_dataset_metadata
@@ -230,34 +231,29 @@ def update_request_msg(
             message="Invalid request payload, empty fields (status)!"
         )
 
-    allowed = users.can_triage_requests(user_id=current_user_id)
+    _req = node.data_requests.first(id=request_id)
 
-    if allowed:
-        requests = node.data_requests
+    if not _req:
+        raise RequestError
 
-        if status not in ["accepted", "denied"]:
-            raise InvalidParameterValueError(
-                message='Request status should be either "accepted" or "denied"'
-            )
+    if status not in ["accepted", "denied"]:
+        raise InvalidParameterValueError(
+            message='Request status should be either "accepted" or "denied"'
+        )
 
-        if status == "accepted":
-            request = requests.first(id=request_id)
-            object_id = request.object_id
+    _can_triage_request = node.users.can_triage_requests(user_id=current_user_id)
+    _current_user_key = verify_key.encode(encoder=HexEncoder).decode("utf-8")
+    _req_owner = _current_user_key == _req.verify_key
 
-            # Accessing and updating the datase metadata
-            storage = node.disk_store
-            read_permission = {
-                "verify_key": verify_key.encode(encoder=HexEncoder).decode("utf-8"),
-                "request_id": request_id,
-            }
-
-            update_dataset_metadata(key=object_id, read_permissions=read_permission)
-
-        # TODO:
-        # 1 - The logic to change a user privacy budget needs to be implemented,
-        # as soon as this logic is ready this need to be updated.
-
-        requests.set(request_id=request_id, status=status)
+    if status == "accepted" and _can_triage_request:
+        tmp_obj = node.store[UID.from_string(_req.object_id)]
+        tmp_obj.read_permissions[
+            VerifyKey(_req.verify_key.encode("utf-8"), encoder=HexEncoder)
+        ] = _req.id
+        node.store[UID.from_string(_req.object_id)] = tmp_obj
+        node.data_requests.set(request_id=_req.id, status=status)
+    elif status == "denied" and (_can_triage_request or _req_owner):
+        node.data_requests.set(request_id=_req.id, status=status)
     else:
         raise AuthorizationError("You're not allowed to update Request information!")
 
