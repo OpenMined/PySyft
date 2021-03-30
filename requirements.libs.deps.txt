@@ -1,4 +1,5 @@
 fsspec
+joblib
 matplotlib
 scipy
 sycret>=0.1.3
