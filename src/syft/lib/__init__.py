@@ -5,6 +5,7 @@ from types import ModuleType
 from typing import Any
 from typing import Any as TypeAny
 from typing import Dict as TypeDict
+from typing import Iterable
 from typing import List as TypeList
 from typing import Optional
 from typing import Set as TypeSet
@@ -148,6 +149,7 @@ def _load_lib(*, lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
 def load(
     *libs: TypeUnion[TypeList, TypeTuple, TypeSet, str],
     options: TypeDict[str, TypeAny] = {},
+    **kwargs: str,
 ) -> None:
     """
     Load and Update Node with given library module
@@ -155,16 +157,31 @@ def load(
     Args:
         *libs: names of libraries to load and update Node with (can be variadic, tuple, list, set)
         options: external requirements for loading library successfully
+        **kwargs: for backward compatibility with calls like `syft.load(lib = "opacus")`
     """
-    if not isinstance(libs[0], str):
-        libs = tuple(libs[0])
-    for lib in libs:
-        try:
-            _load_lib(lib=str(lib), options=options)
-        except VendorLibraryImportException as e:
-            critical(e)
-        except Exception as e:
-            critical(f"Unable to load package support for: {lib}. {e}")
+    # For backward compatibility with calls like `syft.load(lib = "opacus")`
+    if "lib" in kwargs.keys():
+        libs += tuple(kwargs["lib"])
+
+    if isinstance(libs[0], Iterable):
+        if not isinstance(libs[0], str):
+            libs = tuple(libs[0])
+        for lib in libs:
+            if isinstance(lib, str):
+                try:
+                    _load_lib(lib=str(lib), options=options)
+                except VendorLibraryImportException as e:
+                    critical(e)
+                except Exception as e:
+                    critical(f"Unable to load package support for: {lib}. {e}")
+            else:
+                critical(
+                    f"Unable to load package support for: {lib}. Pass lib name as string object."
+                )
+    else:
+        critical(
+            "Unable to load package support for any library. Iterable object not found."
+        )
 
 
 def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
@@ -180,7 +197,7 @@ def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
     msg = "load_lib() is deprecated please use load() in the future"
     warning(msg, print=True)
     warnings.warn(msg, DeprecationWarning)
-    load(lib, options=options)
+    load(lib=lib, options=options)
 
 
 # now we need to load the relevant frameworks onto the node
