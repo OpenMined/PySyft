@@ -32,7 +32,7 @@ GenerateWrapper(
 
 def object2proto_group(obj: object) -> EC2_obj:
     proto = EC2_obj()
-    proto.group_nid = obj.group.nid()  # type: ignore
+    proto.group_nid = obj.nid()  # type: ignore
     return proto
 
 
