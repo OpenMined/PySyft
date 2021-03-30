@@ -8,48 +8,81 @@ from nacl.encoding import HexEncoder
 
 # third party
 from nacl.signing import SigningKey, VerifyKey
+from syft import deserialize, serialize
 from syft.core.common.message import ImmediateSyftMessageWithReply
 
 # syft relative
 from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.service.auth import service_auth
-
 from syft.core.node.common.service.node_service import (
     ImmediateNodeServiceWithoutReply,
     ImmediateNodeServiceWithReply,
 )
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.proto.core.io.address_pb2 import Address as Address_PB
+from syft.core.node.domain.client import DomainClient
 
 # from syft.grid.client import connect
 from syft.grid.client.client import connect
 from syft.grid.client.grid_connection import GridHTTPConnection
-from syft.core.node.domain.client import DomainClient
-from ..database.utils import model_to_json
-from syft import serialize, deserialize
-
-from syft.core.node.domain.client import DomainClient
 from syft.grid.connections.http_connection import HTTPConnection
-
 from syft.grid.messages.infra_messages import (
     CreateWorkerMessage,
     CreateWorkerResponse,
     DeleteWorkerMessage,
     DeleteWorkerResponse,
+    GetWorkerInstanceTypesMessage,
+    GetWorkerInstanceTypesResponse,
     GetWorkerMessage,
     GetWorkerResponse,
     GetWorkersMessage,
     GetWorkersResponse,
 )
+from syft.proto.core.io.address_pb2 import Address as Address_PB
 
 from ...core.database.environment.environment import states
-from ...core.infrastructure import AWS_Serverfull, Config, Provider
+from ...core.infrastructure import (
+    AWS_Serverfull,
+    Config,
+    Provider,
+    aws_utils,
+    azure_utils,
+    gcp_utils,
+)
 from ..database.utils import model_to_json
 from ..exceptions import AuthorizationError, MissingRequestKeyError
 
 # TODO: Modify existing routes or add new ones, to
 # 1. allow admin to get all workers deployed by a specific user
 # 2. allow admin to get all workers deployed by all users
+
+SUPPORTED_PROVIDERS = ["aws"]  # todo: add azure and gcp after testing worker deployment
+PROVIDER_UTILS = {"aws": aws_utils}
+
+
+def get_worker_instance_types_msg(
+    msg: GetWorkerInstanceTypesMessage, node: AbstractNode, verify_key: VerifyKey
+) -> GetWorkerInstanceTypesResponse:
+    try:
+        _current_user_id = msg.content.get("current_user", None)
+        provider = os.environ.get("CLOUD_PROVIDER")
+        region = os.environ.get("REGION")
+
+        if provider not in SUPPORTED_PROVIDERS:
+            raise Exception("Provider not supported")
+
+        # todo: We can make worker deployment a permissible operation
+        # Users can deploy certain instance types (such as "Free Tier Instances") without permission
+        # But to deploy other instance types, example those which are costly, they would need to ask permission
+        # This servide would then return only those instance types which the users has the permission to deploy
+
+        _msg = PROVIDER_UTILS[provider].get_all_instance_types(region)
+
+        return GetWorkerInstanceTypesResponse(
+            address=msg.reply_to, status_code=200, content=_msg
+        )
+    except Exception as e:
+        return GetWorkerInstanceTypesResponse(
+            address=msg.reply_to, status_code=500, content={"error": str(e)}
+        )
 
 
 def create_worker_msg(
@@ -272,6 +305,7 @@ def del_worker_msg(
 class DomainInfrastructureService(ImmediateNodeServiceWithReply):
 
     msg_handler_map = {
+        GetWorkerInstanceTypesMessage: get_worker_instance_types_msg,
         CreateWorkerMessage: create_worker_msg,
         GetWorkerMessage: get_worker_msg,
         GetWorkersMessage: get_workers_msg,
@@ -283,6 +317,7 @@ class DomainInfrastructureService(ImmediateNodeServiceWithReply):
     def process(
         node: AbstractNode,
         msg: Union[
+            GetWorkerInstanceTypesMessage,
             CreateWorkerMessage,
             GetWorkerMessage,
             GetWorkersMessage,
@@ -290,6 +325,7 @@ class DomainInfrastructureService(ImmediateNodeServiceWithReply):
         ],
         verify_key: VerifyKey,
     ) -> Union[
+        GetWorkerInstanceTypesResponse,
         CreateWorkerResponse,
         GetWorkerResponse,
         GetWorkersResponse,
@@ -302,6 +338,7 @@ class DomainInfrastructureService(ImmediateNodeServiceWithReply):
     @staticmethod
     def message_handler_types() -> List[Type[ImmediateSyftMessageWithReply]]:
         return [
+            GetWorkerInstanceTypesMessage,
             CreateWorkerMessage,
             # CheckWorkerDeploymentMessage,
             # UpdateWorkerMessage,
