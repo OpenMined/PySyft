@@ -313,7 +313,16 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
     def remap_input(self, current_input: Any, new_input: Any) -> None:
         """Redefines some of the arguments, and possibly the _self of the function"""
         if self._self.id_at_location == current_input.id_at_location:
-            self._self = new_input
+            attrribute_name = getattr(self._self, "attribute_name", "")
+            pointer_type = type(new_input)
+            self._self = pointer_type(
+                id_at_location=new_input.id_at_location,
+                client=new_input.client,
+                tags=new_input.tags,
+                description=new_input.description,
+                object_type=new_input.object_type,
+            )
+            self._self.attribute_name = attrribute_name
 
         for i, arg in enumerate(self.args):
             if arg.id_at_location == current_input.id_at_location:
