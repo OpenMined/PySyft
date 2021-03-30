@@ -1,12 +1,11 @@
 """Strategies that clients could use to trigger the garbage collection process."""
-
 # syft relative
 from .garbage_collection import GarbageCollection
 from .gc_batched import GCBatched
 from .gc_simple import GCSimple
 from .gc_strategy import GCStrategy
 
-__GC_DEFAULT_STRATEGY = GCSimple
+__GC_DEFAULT_STRATEGY: GCStrategy = GCSimple()
 
 
 def gc_get_default_strategy() -> GCStrategy:

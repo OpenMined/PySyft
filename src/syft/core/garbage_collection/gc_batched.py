@@ -57,7 +57,7 @@ class GCBatched(GCStrategy):
                 ids_at_location=ids_at_location, address=client.address
             )
 
-            client.send_eventual_msg_without_reply(msg)
+            client.send_immediate_msg_without_reply(msg)
 
         self.count_total = 0
         self.client_to_obj_ids.clear()

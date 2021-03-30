@@ -71,7 +71,7 @@ def test_gc_batched_strategy_per_total() -> None:
 
 def test_gc_change_default_gc_strategy(node: sy.VirtualMachine) -> None:
     gc_prev_strategy = gc_get_default_strategy()
-    gc_set_default_strategy(GCBatched)
+    gc_set_default_strategy(GCBatched())
 
     client = node.get_client()
 
