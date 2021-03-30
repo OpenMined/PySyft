@@ -149,7 +149,7 @@ def get_worker_msg(
             worker = node.environments.first(id=int(worker_id))
             try:
                 worker_client = connect(
-                    url="http://" + worker + ":5000",
+                    url="http://" + worker.address + ":5000",
                     conn_type=GridHTTPConnection,  # HTTP Connection Protocol
                 )
 
