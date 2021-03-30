@@ -57,3 +57,6 @@ def _create_VERIFYALL() -> Any:
 
 
 VERIFYALL = _create_VERIFYALL()
+VerifyAll = type(
+    VERIFYALL
+)  # deprecated: https://github.com/OpenMined/PySyft/issues/5396
