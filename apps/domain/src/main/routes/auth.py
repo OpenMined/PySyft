@@ -1,7 +1,9 @@
 from functools import wraps
 from json import dumps
-from flask import Response, request
 from json.decoder import JSONDecodeError
+
+from syft.core.node.common.node import DuplicateRequestException
+from flask import Response, request
 from flask import current_app as app
 import jwt
 
@@ -74,7 +76,11 @@ def error_handler(f, *args, **kwargs):
 
     try:
         response_body = f(*args, **kwargs)
-    except (InvalidCredentialsError, AuthorizationError) as e:
+    except (
+        InvalidCredentialsError,
+        AuthorizationError,
+        DuplicateRequestException,
+    ) as e:
         status_code = 403  # Unathorized
         response_body[RESPONSE_MSG.ERROR] = str(e)
     except (GroupNotFoundError, RoleNotFoundError, UserNotFoundError) as e:

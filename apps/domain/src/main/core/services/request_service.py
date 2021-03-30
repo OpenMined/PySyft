@@ -63,6 +63,7 @@ from ..exceptions import (
     InvalidParameterValueError,
 )
 from ..database.utils import model_to_json
+from ..datasets.dataset_ops import update_dataset_metadata
 
 
 def create_request_msg(
@@ -75,6 +76,7 @@ def create_request_msg(
     object_id = msg.content.get("object_id", None)
     reason = msg.content.get("reason", None)
     request_type = msg.content.get("request_type", None)
+    object_type = msg.content.get("object_type", "storable object")
 
     users = node.users
 
@@ -84,6 +86,18 @@ def create_request_msg(
         )
     else:
         current_user = users.first(id=current_user_id)
+
+    # since we reject/accept requests based on the ID, we don't want there to be
+    # multiple requests with the same ID because this could cause security problems.
+    _duplicate_request = node.data_requests.contain(
+        object_id=object_id,
+        verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8"),
+    )
+
+    if _duplicate_request:
+        raise DuplicateRequestException(
+            "You have already requested {}".format(msg.content["object_id"])
+        )
 
     # Check if object_id/reason/request_type fields are empty
     missing_paramaters = not object_id or not reason or not request_type
@@ -100,12 +114,17 @@ def create_request_msg(
         )
 
     requests = node.data_requests
+    object_uid = UID.from_string(object_id)
+
     request_obj = requests.create_request(
         user_id=current_user.id,
         user_name=current_user.email,
         object_id=object_id,
         reason=reason,
         request_type=request_type,
+        verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8"),
+        object_type=object_type,
+        tags=node.store[object_uid]._tags,
     )
     request_json = model_to_json(request_obj)
 
@@ -231,9 +250,8 @@ def update_request_msg(
                 "verify_key": verify_key.encode(encoder=HexEncoder).decode("utf-8"),
                 "request_id": request_id,
             }
-            storage.update_dataset_metadata(
-                key=object_id, read_permissions=read_permission
-            )
+
+            update_dataset_metadata(key=object_id, read_permissions=read_permission)
 
         # TODO:
         # 1 - The logic to change a user privacy budget needs to be implemented,

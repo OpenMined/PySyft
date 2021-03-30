@@ -115,6 +115,24 @@ def update_dataset(key: str, df_json: dict) -> dict:
     return _json
 
 
+def update_dataset_metadata(key: str, **kwargs) -> None:
+    json_obj = db.session.query(JsonObject).get(key)
+
+    if json_obj is None:
+        return
+
+    _json = deepcopy(json_obj.binary)
+
+    for att, value in kwargs.items():
+        if att not in _json:
+            _json[att] = {value["verify_key"]: value["request_id"]}
+        else:
+            _json[att][value["verify_key"]] = value["request_id"]
+
+    setattr(json_obj, "binary", _json)
+    db.session.commit()
+
+
 def delete_dataset(key: str) -> None:
     storage = DiskObjectStore(db)
     ids = db.session.query(DatasetGroup.bin_object).filter_by(dataset=key).all()

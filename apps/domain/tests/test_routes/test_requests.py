@@ -5,6 +5,8 @@ import pytest
 from flask import current_app as app
 
 from src.main.core.database import *
+from src.main.core.datasets.dataset_ops import create_dataset
+from src.main.core.database.store_disk import DiskObjectStore
 import time
 
 owner_role = ("Owner", True, True, True, True, True, True, True)
@@ -17,6 +19,29 @@ user1 = (
     1,
 )
 
+tensor1 = {
+    "content": "1, 2, 3, 4\n10, 20, 30, 40",
+    "manifest": "Suspendisse et fermentum lectus",
+    "description": "Dummy tensor",
+    "tags": ["dummy", "tensor"],
+}
+
+tensor2 = {
+    "content": "-1, -2, -3, -4,\n-100, -200, -300, -400",
+    "manifest": "Suspendisse et fermentum lectus",
+    "description": "Negative Dummy tensor",
+    "tags": ["negative", "dummy", "tensor"],
+}
+
+dataset = {
+    "name": "Dummy Dataset",
+    "description": "Neque porro quisquam",
+    "manifest": "Sed vehicula mauris non turpis sollicitudin congue.",
+    "tags": ["#hashtag", "#dummy", "#original"],
+    "created_at": "05/12/2018",
+    "tensors": {"train": tensor1.copy(), "test": tensor2.copy()},
+}
+
 
 @pytest.fixture
 def cleanup(database):
@@ -27,12 +52,16 @@ def cleanup(database):
         database.session.query(Group).delete()
         database.session.query(UserGroup).delete()
         database.session.query(Request).delete()
+        database.session.query(DatasetGroup).delete()
+        database.session.query(BinObject).delete()
+        database.session.query(JsonObject).delete()
+        database.session.query(StorageMetadata).delete()
+
         database.session.commit()
     except:
         database.session.rollback()
 
 
-@pytest.mark.skip(reason="This test need to be updated!")
 def test_create_request(client, database, cleanup):
     new_role = create_role(*owner_role)
     database.session.add(new_role)
@@ -46,7 +75,10 @@ def test_create_request(client, database, cleanup):
         "token": token.decode("UTF-8"),
     }
 
-    object_id = "61612325"
+    storage = DiskObjectStore(database)
+    dataset_json = create_dataset(dataset)
+
+    object_id = dataset_json["tensors"]["train"]["id"]
     reason = "sample reason"
     request_type = "permissions"
 
@@ -62,12 +94,63 @@ def test_create_request(client, database, cleanup):
     )
 
     response = result.get_json()
+
     assert result.status_code == 200
-    assert response["id"] == 1
     assert response["object_id"] == object_id
     assert response["reason"] == reason
     assert response["request_type"] == request_type
     assert response["status"] == "pending"
+
+
+def test_create_duplicate_fail(client, database, cleanup):
+    new_role = create_role(*owner_role)
+    database.session.add(new_role)
+    new_user = create_user(*user1)
+    database.session.add(new_user)
+
+    database.session.commit()
+    storage = DiskObjectStore(database)
+    dataset_json = create_dataset(dataset)
+
+    token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
+    headers = {
+        "token": token.decode("UTF-8"),
+    }
+
+    object_id = dataset_json["tensors"]["train"]["id"]
+    reason = "sample reason"
+    request_type = "permissions"
+
+    result1 = client.post(
+        "/dcfl/requests",
+        json={
+            "object_id": object_id,
+            "reason": reason,
+            "request_type": request_type,
+        },
+        headers=headers,
+    )
+
+    result1 = client.get(
+        "/dcfl/requests", headers=headers, content_type="application/json"
+    )
+
+    result2 = client.post(
+        "/dcfl/requests",
+        json={
+            "object_id": object_id,
+            "reason": reason,
+            "request_type": request_type,
+        },
+        headers=headers,
+    )
+
+    assert result1.status_code == 200
+    assert object_id in [el["object_id"] for el in result1.get_json()]
+    assert reason in [el["reason"] for el in result1.get_json()]
+    assert request_type in [el["request_type"] for el in result1.get_json()]
+
+    assert result2.status_code == 403
 
 
 def test_get_specific_request(client, database, cleanup):
@@ -77,13 +160,15 @@ def test_get_specific_request(client, database, cleanup):
     database.session.add(new_user)
 
     database.session.commit()
+    storage = DiskObjectStore(database)
+    dataset_json = create_dataset(dataset)
 
     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
     headers = {
         "token": token.decode("UTF-8"),
     }
 
-    object_id = "61612325"
+    object_id = dataset_json["tensors"]["train"]["id"]
     reason = "this is a sample reason"
     request_type = "budget"
 
@@ -104,15 +189,14 @@ def test_get_specific_request(client, database, cleanup):
         headers=headers,
         content_type="application/json",
     )
-    response = result.get_json()
 
     assert create.status_code == 200
     assert result.status_code == 200
-    assert response["id"] == request_id
-    assert response["object_id"] == object_id
-    assert response["reason"] == reason
-    assert response["request_type"] == request_type
-    assert response["status"] == "pending"
+    assert result.get_json()["id"] == request_id
+    assert result.get_json()["object_id"] == object_id
+    assert result.get_json()["reason"] == reason
+    assert result.get_json()["request_type"] == request_type
+    assert result.get_json()["status"] == "pending"
 
 
 def test_get_all_requests(client, database, cleanup):
@@ -122,13 +206,15 @@ def test_get_all_requests(client, database, cleanup):
     database.session.add(new_user)
 
     database.session.commit()
+    storage = DiskObjectStore(database)
+    dataset_json = create_dataset(dataset)
 
     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
     headers = {
         "token": token.decode("UTF-8"),
     }
 
-    object_id = "61612325"
+    object_id = dataset_json["tensors"]["train"]["id"]
     reason = "sample reason"
     request_type = "permissions"
 
@@ -142,10 +228,6 @@ def test_get_all_requests(client, database, cleanup):
         headers=headers,
     )
 
-    object_id = "61612325"
-    reason = "sample reason"
-    request_type = "permissions"
-
     result = client.get(
         "/dcfl/requests", headers=headers, content_type="application/json"
     )
@@ -157,7 +239,6 @@ def test_get_all_requests(client, database, cleanup):
     assert request_type in [el["request_type"] for el in response]
 
 
-@pytest.mark.skip(reason="Should be made in integration tests")
 def test_update_request(client, database, cleanup):
     new_role = create_role(*owner_role)
     database.session.add(new_role)
@@ -165,13 +246,15 @@ def test_update_request(client, database, cleanup):
     database.session.add(new_user)
 
     database.session.commit()
+    storage = DiskObjectStore(database)
+    dataset_json = create_dataset(dataset)
 
     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
     headers = {
         "token": token.decode("UTF-8"),
     }
 
-    object_id = "61612325"
+    object_id = dataset_json["tensors"]["train"]["id"]
     reason = "this is a sample reason"
     request_type = "budget"
 
@@ -186,7 +269,7 @@ def test_update_request(client, database, cleanup):
     )
 
     status = "accepted"
-    request_id = "1"
+    request_id = create.get_json()["id"]
 
     client.put(
         "/dcfl/requests/" + request_id,
@@ -203,11 +286,10 @@ def test_update_request(client, database, cleanup):
 
     response = result.get_json()
     assert result.status_code == 200
-    assert response["id"] == int(request_id)
-    # assert response["status"] == "accepted"
+    assert response["id"] == request_id
+    assert response["status"] == "accepted"
 
 
-@pytest.mark.skip(reason="Should be made in integration tests")
 def test_delete_request(client, database, cleanup):
     new_role = create_role(*owner_role)
     database.session.add(new_role)
@@ -215,13 +297,15 @@ def test_delete_request(client, database, cleanup):
     database.session.add(new_user)
 
     database.session.commit()
+    storage = DiskObjectStore(database)
+    dataset_json = create_dataset(dataset)
 
     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
     headers = {
         "token": token.decode("UTF-8"),
     }
 
-    object_id = "61612325"
+    object_id = dataset_json["tensors"]["train"]["id"]
     reason = "this is a sample reason"
     request_type = "budget"
 
@@ -235,7 +319,7 @@ def test_delete_request(client, database, cleanup):
         headers=headers,
     )
 
-    request_id = "1"
+    request_id = create.get_json()["id"]
 
     result = client.delete(
         "/dcfl/requests/" + request_id,
