@@ -79,11 +79,12 @@ class GridWorker(Domain):
             db_path=db_path,
         )
 
+        """
         self.domain_client = connect(
             url=domain_url,  # Domain Address
             conn_type=GridHTTPConnection,  # HTTP Connection Protocol
-            client_type=DomainClient,
         )
+        """
         self.immediate_services_with_reply.append(TransferObjectService)
         self.immediate_services_without_reply.append(SaveObjectService)
 
