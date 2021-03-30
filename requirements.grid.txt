@@ -5,7 +5,6 @@ flask_migrate
 flask_sockets
 flask_sqlalchemy
 PyInquirer
-PyJWT==1.7.1
 pytest
 pytest-xprocess
 requests_toolbelt

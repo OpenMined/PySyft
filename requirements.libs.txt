@@ -9,3 +9,4 @@ python-dp
 pytorch-lightning @ git+https://github.com/tudorcebere/pytorch-lightning@tudor-om-v0
 sympc @ git+https://github.com/OpenMined/SyMPC@main
 tenseal
+scikit-learn
