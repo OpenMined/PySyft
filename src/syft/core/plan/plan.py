@@ -46,6 +46,7 @@ class Plan(Serializable):
         actions: Union[List[Action], None] = None,
         inputs: Union[Dict[str, Pointer], None] = None,
         outputs: Union[Pointer, List[Pointer], None] = None,
+        i2o_map: Union[Dict[str, int], None] = None,
     ):
         """
         Initialize the Plan with actions, inputs and outputs
@@ -53,6 +54,7 @@ class Plan(Serializable):
         self.actions: List[Action] = listify(actions)
         self.inputs: Dict[str, Pointer] = inputs if inputs is not None else dict()
         self.outputs: List[Pointer] = listify(outputs)
+        self.i2o_map: Dict[str, int] = i2o_map if i2o_map is not None else dict()
 
     def __call__(
         self, node: AbstractNode, verify_key: VerifyKey, **kwargs: Dict[str, Any]
@@ -93,6 +95,9 @@ class Plan(Serializable):
 
         for a in self.actions:
             a.execute_action(node, verify_key)
+
+        for k, v in self.i2o_map.items():
+            self.outputs[v] = self.inputs[k]
 
         if len(self.outputs):
             resolved_outputs = []
@@ -152,8 +157,11 @@ class Plan(Serializable):
         ]
         inputs_pb = {k: v._object2proto() for k, v in self.inputs.items()}
         outputs_pb = [out._object2proto() for out in self.outputs]
+        i2o_map_pb = self.i2o_map
 
-        return Plan_PB(actions=actions_pb, inputs=inputs_pb, outputs=outputs_pb)
+        return Plan_PB(
+            actions=actions_pb, inputs=inputs_pb, outputs=outputs_pb, i2o_map=i2o_map_pb
+        )
 
     @staticmethod
     def _proto2object(proto: Plan_PB) -> "Plan":
@@ -184,5 +192,6 @@ class Plan(Serializable):
         outputs = [
             Pointer._proto2object(pointer_proto) for pointer_proto in proto.outputs
         ]
+        i2o_map = proto.i2o_map
 
-        return Plan(actions=actions, inputs=inputs, outputs=outputs)
+        return Plan(actions=actions, inputs=inputs, outputs=outputs, i2o_map=i2o_map)
