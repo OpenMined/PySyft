@@ -123,7 +123,7 @@ class Module:
         # TODO: fix this properly
         if "torch.nn" in full_name_with_qualname(klass=type(value)):
             modules = self.__dict__.get("_modules")
-            if modules is not None:
+            if modules is not None and name in modules:
                 modules[name] = value
 
             # attach all the sub modules to a real module so that we can have a
