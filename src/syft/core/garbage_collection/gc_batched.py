@@ -6,10 +6,10 @@ from typing import List
 
 # syft relative
 from ..common.uid import UID
-from ..node.abstract.node import AbstractNodeClient
 from ..node.common.action.garbage_collect_batched_action import (
     GarbageCollectBatchedAction,
 )
+from ..node.common.client import Client
 from ..pointer.pointer import Pointer
 from .gc_strategy import GCStrategy
 
@@ -24,7 +24,7 @@ class GCBatched(GCStrategy):
         "count_total",
     ]
 
-    client_to_obj_ids: Dict[AbstractNodeClient, List[UID]]
+    client_to_obj_ids: Dict[Client, List[UID]]
     threshold_client: int
     threshold_total: int
     count_total: int
@@ -57,7 +57,7 @@ class GCBatched(GCStrategy):
                 ids_at_location=ids_at_location, address=client.address
             )
 
-            client.send_immediate_msg_without_reply(msg)
+            client.send_eventual_msg_without_reply(msg)
 
         self.count_total = 0
         self.client_to_obj_ids.clear()
