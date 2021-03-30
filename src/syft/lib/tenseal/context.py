@@ -37,7 +37,7 @@ def context_proto2object(proto: VendorBytes_PB) -> ts.Context:
             log = f"Warning {lib_version} > local imported version {ts.__version__}"
             info(log)
 
-    return ts.context_from(proto.content, n_threads=1)
+    return ts.context_from(proto.content)
 
 
 GenerateWrapper(
