@@ -18,12 +18,9 @@ def test_serde() -> None:
     assert deserialized == syft_bool
 
 
-def test_send() -> None:
-    alice = sy.VirtualMachine(name="alice")
-    alice_client = alice.get_client()
-
+def test_send(client: sy.VirtualMachineClient) -> None:
     syft_bool = Bool(5)
-    ptr = syft_bool.send(alice_client)
+    ptr = syft_bool.send(client)
     # Check pointer type
     assert ptr.__class__.__name__ == "BoolPointer"
 

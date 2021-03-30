@@ -20,15 +20,14 @@ from syft.grid.messages.association_messages import SendAssociationRequestMessag
 from syft.grid.messages.association_messages import SendAssociationRequestResponse
 
 
-def test_association_request_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_association_request_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     request_content = {"domain-name": "My-Domain", "domain-address": "http://url:5000"}
     msg = SendAssociationRequestMessage(
         address=target,
         content=request_content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)
@@ -59,15 +58,14 @@ def test_association_request_response_serde() -> None:
     assert msg == msg2
 
 
-def test_receive_request_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_receive_request_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     request_content: Dict[Any, Any] = {}
     msg = ReceiveAssociationRequestMessage(
         address=target,
         content=request_content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)
@@ -98,15 +96,14 @@ def test_receive_request_response_serde() -> None:
     assert msg == msg2
 
 
-def test_respond_association_request_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_respond_association_request_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     content = {"association_request_id": "87564178", "status": "accept"}
     msg = RespondAssociationRequestMessage(
         address=target,
         content=content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)
@@ -137,15 +134,14 @@ def test_respond_association_request_response_serde() -> None:
     assert msg == msg2
 
 
-def test_delete_association_request_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_delete_association_request_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     content = {"association_request_id": "21656565"}
     msg = DeleteAssociationRequestMessage(
         address=target,
         content=content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)
@@ -176,15 +172,14 @@ def test_delete_association_request_response_serde() -> None:
     assert msg == msg2
 
 
-def test_get_association_request_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_get_association_request_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     content = {"association_request_id": "87564178"}
     msg = GetAssociationRequestMessage(
         address=target,
         content=content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)
@@ -220,15 +215,14 @@ def test_get_association_request_response_serde() -> None:
     assert msg == msg2
 
 
-def test_get_all_association_request_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_get_all_association_request_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     content: Dict[Any, Any] = {}
     msg = GetAssociationRequestsMessage(
         address=target,
         content=content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)
