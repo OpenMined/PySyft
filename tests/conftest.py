@@ -18,6 +18,7 @@ import _pytest
 import pytest
 
 # syft absolute
+import syft as sy
 from syft import logger
 from syft.lib import VendorLibraryImportException
 from syft.lib import _load_lib
@@ -137,3 +138,23 @@ def pytest_collection_modifyitems(
                 continue
             # fast is the default catch all
             item.add_marker(fast_tests)
+
+
+@pytest.fixture(scope="session")
+def node() -> sy.VirtualMachine:
+    return sy.VirtualMachine(name="Bob")
+
+
+@pytest.fixture(autouse=True)
+def node_store(node: sy.VirtualMachine) -> None:
+    node.store.clear()
+
+
+@pytest.fixture(scope="session")
+def client(node: sy.VirtualMachine) -> sy.VirtualMachineClient:
+    return node.get_client()
+
+
+@pytest.fixture(scope="session")
+def root_client(node: sy.VirtualMachine) -> sy.VirtualMachineClient:
+    return node.get_root_client()
