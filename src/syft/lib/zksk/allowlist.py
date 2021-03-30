@@ -2,11 +2,14 @@
 from typing import Dict
 from typing import Union
 
+# from ..misc.union import UnionGenerator
+
 allowlist: Dict[str, Union[str, Dict[str, str]]] = {}  # (path: str, return_type:type)
 
 allowlist["zksk.expr.Secret"] = "zksk.expr.Secret"
 allowlist["zksk.Secret"] = "zksk.expr.Secret"
-allowlist["zksk.utils.make_generators"] = "petlib.ec.EcPt"
+allowlist["zksk.utils.make_generators"] = "syft.lib.python.List"
+
 allowlist["zksk.primitives.dlrep.DLRep"] = "zksk.primitives.dlrep.DLRep"
 allowlist["zksk.DLRep"] = "zksk.primitives.dlrep.DLRep"
 
