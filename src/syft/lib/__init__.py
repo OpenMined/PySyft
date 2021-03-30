@@ -147,7 +147,7 @@ def _load_lib(*, lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
 
 
 def load(
-    *libs: TypeUnion[TypeList, TypeTuple, TypeSet, str],
+    *libs: TypeUnion[TypeList[str], TypeTuple[str], TypeSet[str], str],
     options: TypeDict[str, TypeAny] = {},
     **kwargs: str,
 ) -> None:
