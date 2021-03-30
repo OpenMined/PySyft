@@ -33,6 +33,8 @@ from ...common.message import SignedImmediateSyftMessageWithoutReply
 from ...common.message import SyftMessage
 from ...common.serde.deserialize import _deserialize
 from ...common.uid import UID
+from ...garbage_collection import GarbageCollection
+from ...garbage_collection import gc_get_default_strategy
 from ...io.location import Location
 from ...io.location import SpecificLocation
 from ...io.route import Route
@@ -70,6 +72,9 @@ class Client(AbstractNodeClient):
 
         self.routes = routes
         self.default_route_index = 0
+
+        gc_strategy = gc_get_default_strategy()
+        self.gc = GarbageCollection(gc_strategy())
 
         # create a signing key if one isn't provided
         if signing_key is None:
@@ -361,6 +366,9 @@ class Client(AbstractNodeClient):
         keys = f"🔑 {verify}"
 
         return keys
+
+    def __hash__(self) -> Any:
+        return hash(self.id)
 
 
 class StoreClient:
