@@ -57,14 +57,14 @@ def assert_serde(y):  # type: ignore
     assert_eq(y, de)
 
 
-alice = sy.VirtualMachine(name="alice")
-alice_client = alice.get_client()
-
-
 @pytest.mark.parametrize("op_name, ten, _arg", parameters)
-def test_returntypes(op_name: str, ten: torch.Tensor, _arg: Any) -> None:
-    alice.store.clear()
-
+def test_returntypes(
+    op_name: str,
+    ten: torch.Tensor,
+    _arg: Any,
+    node: sy.VirtualMachine,
+    client: sy.VirtualMachineClient,
+) -> None:
     # serde y=ten.op(_arg)
     op = getattr(ten, op_name)
     if _arg is not None:
@@ -84,7 +84,7 @@ def test_returntypes(op_name: str, ten: torch.Tensor, _arg: Any) -> None:
     assert_serde(y)  # type: ignore
 
     # ptr.op(_arg).get()
-    ptr = ten.send(alice_client)
+    ptr = ten.send(client)
     op = getattr(ptr, op_name)
     if _arg is not None:
         y_ptr = op(_arg)
@@ -94,7 +94,7 @@ def test_returntypes(op_name: str, ten: torch.Tensor, _arg: Any) -> None:
     assert_eq(y, y_get)  # type: ignore
 
     # alice_client.torch.Tensor.op(ptr, _arg).get()
-    op = getattr(alice_client.torch.Tensor, op_name)
+    op = getattr(client.torch.Tensor, op_name)
     if _arg is not None:
         y_ptr = op(ptr, _arg)
     else:

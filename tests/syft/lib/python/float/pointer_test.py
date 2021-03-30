@@ -7,14 +7,12 @@ import pytest
 # syft absolute
 import syft as sy
 
-alice = sy.VirtualMachine(name="alice")
-alice_client = alice.get_root_client()
-remote_python = alice_client.syft.lib.python
 
-
-def get_permission(obj: Any) -> None:
-    remote_obj = alice.store[obj.id_at_location]
-    remote_obj.read_permissions[alice_client.verify_key] = obj.id_at_location
+def get_permission(
+    obj: Any, node: sy.VirtualMachine, client: sy.VirtualMachineClient
+) -> None:
+    remote_obj = node.store[obj.id_at_location]
+    remote_obj.read_permissions[client.verify_key] = obj.id_at_location
 
 
 inputs = {
@@ -50,26 +48,19 @@ inputs = {
 
 properties = ["denominator", "numerator", "imag", "real"]
 
-objects = [
-    (0.5, sy.lib.python.Float(0.5), remote_python.Float(0.5)),
-    (42.5, sy.lib.python.Float(42.5), remote_python.Float(42.5)),
-    (
-        2 ** 10 + 0.5,
-        sy.lib.python.Float(2 ** 10 + 0.5),
-        remote_python.Float(2 ** 10 + 0.5),
-    ),
-    (
-        -(2 ** 10 + 0.5),
-        sy.lib.python.Float(-(2 ** 10 + 0.5)),
-        remote_python.Float(-(2 ** 10 + 0.5)),
-    ),
-]
+objects = [0.5, 42.5, 2 ** 10 + 0.5, -(2 ** 10 + 0.5)]
 
 
-@pytest.mark.parametrize("test_objects", objects)
+@pytest.mark.parametrize("test_object", objects)
 @pytest.mark.parametrize("func", inputs.keys())
-def test_pointer_objectives(test_objects, func):
-    py_obj, sy_obj, remote_sy_obj = test_objects
+def test_pointer_objectives(
+    test_object, func, node: sy.VirtualMachine, client: sy.VirtualMachineClient
+):
+    py_obj, sy_obj, remote_sy_obj = (
+        test_object,
+        sy.lib.python.Float(test_object),
+        client.syft.lib.python.Float(test_object),
+    )
 
     if not hasattr(py_obj, func):
         return
@@ -93,7 +84,7 @@ def test_pointer_objectives(test_objects, func):
 
         try:
             remote_sy_res = remote_sy_method(*possible_input)
-            get_permission(remote_sy_res)
+            get_permission(remote_sy_res, node, client)
             remote_sy_res = remote_sy_res.get()
         except Exception as remote_sy_e:
             remote_sy_res = str(remote_sy_e)
