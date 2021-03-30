@@ -29,7 +29,3 @@ class GCSimple(GCStrategy):
 
         # Send the message
         pointer.client.send_eventual_msg_without_reply(msg=msg)
-
-    def force_gc(self) -> None:
-        """Nothing to do in this strategy since we send the delete message immediately."""
-        pass

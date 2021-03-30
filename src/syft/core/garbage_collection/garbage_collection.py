@@ -10,14 +10,15 @@ class GarbageCollection:
         self._gc_strategy = gc_strategy
 
     def apply(self, pointer: Pointer) -> None:
-        """ Apply the GCStrategy on the """
+        """Apply the GCStrategy on the pointer."""
         self._gc_strategy.reap(pointer)
 
     @property
     def gc_strategy(self) -> GCStrategy:
+        """Get the GCStrategy."""
         return self._gc_strategy
 
     @gc_strategy.setter
     def gc_strategy(self, strategy: GCStrategy) -> None:
-        self._gc_strategy.force_gc()
+        """Set the GCStrategy."""
         self._gc_strategy = strategy

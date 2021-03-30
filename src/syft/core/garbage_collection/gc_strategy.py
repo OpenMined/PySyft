@@ -17,10 +17,3 @@ class GCStrategy(ABC):
         It should be implemented in the GCStrategy that extends this class
         """
         pass
-
-    @abstractmethod
-    def force_gc(self) -> None:
-        """What happens when someone calls force_gc.
-        It should be implemented in the GCStrategy that extends this class
-        """
-        pass
