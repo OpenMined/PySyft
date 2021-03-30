@@ -10,10 +10,11 @@ flake8-kwarger @ git+https://github.com/madhavajay/flake8-kwarger
 isort
 nbconvert
 nbformat
-pyscaffold[all]
 pytest
 pytest-asyncio
 pytest-benchmark
 pytest-cov
 pytest-custom_exit_code
+pytest-sugar
 pytest-xdist[psutil]
+pytest-xprocess

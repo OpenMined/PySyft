@@ -26,6 +26,8 @@ def version_supported(support_dict: Union[str, Dict[str, str]]) -> bool:
     if isinstance(support_dict, str):
         return True
     else:
+        if "min_version" not in support_dict.keys():
+            return True
         return TORCHVISION_VERSION >= version.parse(support_dict["min_version"])
 
 

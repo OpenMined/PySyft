@@ -41,3 +41,6 @@ class Any:
 
     def __rsub__(self, other: TypeAny) -> SyPrimitiveRet:
         return other - self
+
+    def __len__(self) -> SyPrimitiveRet:
+        return self.__len__()

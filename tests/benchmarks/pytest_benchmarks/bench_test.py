@@ -68,20 +68,26 @@ def test_list_serde(list_size: int, benchmark: Any) -> None:
 
 @pytest.mark.benchmark
 @pytest.mark.parametrize("byte_size", [10 * KB, 100 * KB, MB, 10 * MB])
-def test_duet_string_local(byte_size: int, benchmark: Any) -> None:
+def test_duet_string_local(
+    byte_size: int, benchmark: Any, root_client: sy.VirtualMachineClient
+) -> None:
     data = "a" * byte_size
-    duet = sy.VirtualMachine().get_root_client()
 
-    benchmark.pedantic(send_get_string_local, args=(data, duet), rounds=3, iterations=3)
+    benchmark.pedantic(
+        send_get_string_local, args=(data, root_client), rounds=3, iterations=3
+    )
 
 
 @pytest.mark.benchmark
 @pytest.mark.parametrize("list_size", [10, 100, 1000])
-def test_duet_list_local(list_size: int, benchmark: Any) -> None:
+def test_duet_list_local(
+    list_size: int, benchmark: Any, root_client: sy.VirtualMachineClient
+) -> None:
     data = [LIST_TEMPLATE] * list_size
-    duet = sy.VirtualMachine().get_root_client()
 
-    benchmark.pedantic(send_get_list_local, args=(data, duet), rounds=3, iterations=3)
+    benchmark.pedantic(
+        send_get_list_local, args=(data, root_client), rounds=3, iterations=3
+    )
 
 
 @pytest.mark.benchmark

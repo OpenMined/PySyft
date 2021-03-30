@@ -113,6 +113,7 @@ from ..node.common.action.garbage_collect_object_action import (
     GarbageCollectObjectAction,
 )
 from ..node.common.action.get_object_action import GetObjectAction
+from ..node.common.service.get_repr_service import GetReprMessage
 from ..node.common.service.obj_search_permission_service import (
     ObjectSearchPermissionUpdateMessage,
 )
@@ -154,6 +155,10 @@ class Pointer(AbstractPointer):
             description=description,
         )
         self.object_type = object_type
+        # _exhausted becomes True in get() call
+        # when delete_obj is True and network call
+        # has already been made
+        self._exhausted = False
 
     def _get(self, delete_obj: bool = True, verbose: bool = False) -> StorableObject:
         """Method to download a remote object from a pointer object if you have the right
@@ -202,6 +207,45 @@ class Pointer(AbstractPointer):
             verbose=verbose,
         )
 
+    def print(self) -> "Pointer":
+        obj = None
+        try:
+            obj_msg = GetReprMessage(
+                id_at_location=self.id_at_location,
+                address=self.client.address,
+                reply_to=self.client.address,
+            )
+
+            obj = self.client.send_immediate_msg_with_reply(msg=obj_msg).repr
+        except Exception as e:
+            if "You do not have permission to .get()" in str(
+                e
+            ) or "UnknownPrivateException" in str(e):
+                # syft relative
+                from ..node.domain.service import RequestStatus
+
+                response_status = self.request(
+                    reason="Calling remote print",
+                    block=True,
+                    timeout_secs=3,
+                )
+                if (
+                    response_status is not None
+                    and response_status == RequestStatus.Accepted
+                ):
+                    return self.print()
+
+        # TODO: Create a remote print interface for objects which displays them in a
+        # nice way, we could also even buffer this between chained ops until we return
+        # so that we can print once and display a nice list of data and ops
+        # issue: https://github.com/OpenMined/PySyft/issues/5167
+        if obj is not None:
+            print(obj)
+        else:
+            print(f"No permission to print() {self}")
+
+        return self
+
     def get(
         self,
         request_block: bool = False,
@@ -219,8 +263,13 @@ class Pointer(AbstractPointer):
         # syft relative
         from ..node.domain.service import RequestStatus
 
+        if self._exhausted:
+            raise ReferenceError(
+                "Object has already been deleted. This pointer is exhausted"
+            )
+
         if not request_block:
-            return self._get(delete_obj=delete_obj, verbose=verbose)
+            result = self._get(delete_obj=delete_obj, verbose=verbose)
         else:
             response_status = self.request(
                 reason=reason,
@@ -232,9 +281,15 @@ class Pointer(AbstractPointer):
                 response_status is not None
                 and response_status == RequestStatus.Accepted
             ):
-                return self._get(delete_obj=delete_obj, verbose=verbose)
+                result = self._get(delete_obj=delete_obj, verbose=verbose)
+            else:
+                return None
 
-        return None
+        if result is not None and delete_obj:
+            self.gc_enabled = False
+            self._exhausted = True
+
+        return result
 
     def _object2proto(self) -> Pointer_PB:
         """Returns a protobuf serialization of self.
@@ -473,7 +528,7 @@ class Pointer(AbstractPointer):
         searchable: Optional[bool] = None,
     ) -> None:
         """Make the object pointed at pointable or not for other people. If
-        target_verify_key is not specified, the searchability for the VerifyAll group
+        target_verify_key is not specified, the searchability for the VERIFYALL group
         will be toggled.
 
         :param pointable: If the target object should be made pointable or not.
@@ -529,7 +584,6 @@ class Pointer(AbstractPointer):
         if (_client_type == Address) or issubclass(_client_type, AbstractNode):
             # it is a serialized pointer that we receive from another client do nothing
             return
-
         if self.gc_enabled:
             # Create the delete message
             msg = GarbageCollectObjectAction(

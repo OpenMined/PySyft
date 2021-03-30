@@ -15,7 +15,7 @@ import warnings
 from .. import ast
 from .. import lib
 from ..ast.callable import Callable
-from ..core.common.group import VerifyAll
+from ..core.common.group import VERIFYALL
 from ..core.common.uid import UID
 from ..core.node.common.action.get_or_set_property_action import GetOrSetPropertyAction
 from ..core.node.common.action.get_or_set_property_action import PropertyActions
@@ -232,6 +232,12 @@ def wrap_iterator(attrs: Dict[str, Union[str, CallableT, property]]) -> None:
 
     attr_name = "__iter__"
     iter_target = attrs[attr_name]
+
+    # skip if __iter__ has already been wrapped
+    qual_name = getattr(iter_target, "__qualname__", None)
+    if qual_name and "wrap_iter" in qual_name:
+        return
+
     if not callable(iter_target):
         traceback_and_raise(AttributeError("Can't wrap a non callable iter attribute"))
     else:
@@ -393,8 +399,12 @@ class Class(Callable):
             obj_description = getattr(self, "description", "")
             description = description if description else obj_description
 
-            attach_tags(self, tags)
-            attach_description(self, description)
+            # TODO: Allow Classes to opt out in the AST like Pandas where the properties
+            # would break their dict attr usage
+            # Issue: https://github.com/OpenMined/PySyft/issues/5322
+            if outer_self.pointer_name not in {"DataFramePointer", "SeriesPointer"}:
+                attach_tags(self, tags)
+                attach_description(self, description)
 
             id_at_location = UID()
 
@@ -419,7 +429,7 @@ class Class(Callable):
                 data=self,
                 tags=tags,
                 description=description,
-                search_permissions={VerifyAll(): None} if pointable else {},
+                search_permissions={VERIFYALL: None} if pointable else {},
             )
             obj_msg = SaveObjectAction(obj=storable, address=client.address)
 
@@ -525,6 +535,9 @@ class Class(Callable):
     def __getattr__(self, item: str) -> Any:
         attrs = super().__getattribute__("attrs")
         if item not in attrs:
+            if item == "__name__":
+                # return the pointer name if __name__ is missing
+                return self.pointer_name
             traceback_and_raise(
                 KeyError(
                     f"__getattr__ failed, {item} is not present on the "
