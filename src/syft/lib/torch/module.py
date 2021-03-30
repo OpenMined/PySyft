@@ -15,12 +15,19 @@ from typing import Union
 # third party
 import torch
 
+# syft absolute
+import syft as sy
+
 # syft relative
+from ...generate_wrapper import GenerateWrapper
+
 # from ...core.pointer.pointer import Pointer
 from ...lib.util import full_name_with_qualname
 from ...logger import critical
 from ...logger import info
 from ...logger import traceback_and_raise
+from ...proto.lib.torch.module_pb2 import Module as Module_PB
+from ..python.collections import OrderedDict as SyOrderedDict
 
 # from ...core.node.common.service.auth import AuthorizationException
 
@@ -398,3 +405,56 @@ class Module:
                     if hasattr(v, "sum"):
                         s = v.sum().item()
                         info(f"  Layer {n} sum({k}): {s}")
+
+
+def object2proto(obj: torch.nn.Module, is_child: bool = False) -> Module_PB:
+    proto = Module_PB()
+    if "torch.nn." in type(obj).__module__:
+        proto.module_type = type(obj).__name__
+    else:
+        proto.module_type = f"_USER_DEFINED_MODULE_{type(obj).__name__}"
+
+    proto.module_repr = obj.extra_repr()
+
+    if not is_child:
+        proto.state_dict.CopyFrom(sy.serialize(SyOrderedDict(obj.state_dict())))
+
+    for n, m in obj.named_children():
+        child_proto = object2proto(m, is_child=True)
+        child_proto.module_name = n
+        proto.children.append(child_proto)
+
+    return proto
+
+
+def proto2object(proto: Module_PB) -> torch.nn.Module:
+    is_userdefined = proto.module_type.startswith("_USER_DEFINED_MODULE_")
+
+    if is_userdefined:
+        obj_type = type(
+            proto.module_type.replace("_USER_DEFINED_MODULE_", ""),
+            (torch.nn.Module,),
+            {},
+        )
+    else:
+        obj_type = getattr(torch.nn, proto.module_type)
+
+    args, kwargs = repr_to_kwargs(repr_str=proto.module_repr)
+    obj = obj_type(*args, **kwargs)
+
+    for child_proto in proto.children:
+        obj.add_module(child_proto.module_name, sy.deserialize(child_proto))
+
+    if proto.state_dict.ByteSize() > 0:
+        obj.load_state_dict(sy.deserialize(proto.state_dict))
+
+    return obj
+
+
+GenerateWrapper(
+    wrapped_type=torch.nn.Module,
+    import_path="torch.nn.Module",
+    protobuf_scheme=Module_PB,
+    type_object2proto=object2proto,
+    type_proto2object=proto2object,
+)

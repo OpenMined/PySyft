@@ -12,8 +12,7 @@ from syft.grid.messages.setup_messages import GetSetUpMessage
 from syft.grid.messages.setup_messages import GetSetUpResponse
 
 
-def test_create_initial_setup_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_create_initial_setup_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     request_content = {
@@ -26,7 +25,7 @@ def test_create_initial_setup_message_serde() -> None:
     msg = CreateInitialSetUpMessage(
         address=target,
         content=request_content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)
@@ -57,15 +56,14 @@ def test_create_initial_setup_response_serde() -> None:
     assert msg == msg2
 
 
-def test_get_initial_setup_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_get_initial_setup_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     request_content: Dict[Any, Any] = {}
     msg = GetSetUpMessage(
         address=target,
         content=request_content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)

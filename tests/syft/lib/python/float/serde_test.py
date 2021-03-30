@@ -18,12 +18,9 @@ def test_serde() -> None:
     assert deserialized == syft_float
 
 
-def test_send() -> None:
-    alice = sy.VirtualMachine(name="alice")
-    alice_client = alice.get_client()
-
+def test_send(client: sy.VirtualMachineClient) -> None:
     syft_float = Float(5)
-    ptr = syft_float.send(alice_client)
+    ptr = syft_float.send(client)
     # Check pointer type
     assert ptr.__class__.__name__ == "FloatPointer"
 
