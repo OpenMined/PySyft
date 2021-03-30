@@ -98,8 +98,21 @@ def get_instance_type(region):
         style=styles.second,
     )["instanceCategory"]
 
-    filter = instance_type_filters[instance_category]
-    instances = get_all_instance_types_by_filter(client, filter)
+    # Get all instances in specific category
+    response = client.describe_instance_types(
+        Filters=instance_type_filters[instance_category]
+    )
+    instances = response["InstanceTypes"]
+
+    while "NextToken" in response.keys():
+        response = client.describe_instance_types(
+            Filters=instance_type_filters[instance_category],
+            NextToken=response["NextToken"],
+        )
+        instances += response["InstanceTypes"]
+
+    # filter = instance_type_filters[instance_category]
+    # instances = get_all_instance_types_by_filter(client, filter)
 
     if len(instances) == 0:
         raise Exception(
