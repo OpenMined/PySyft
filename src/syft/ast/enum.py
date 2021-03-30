@@ -24,9 +24,9 @@ class EnumAttribute(ast.attribute.Attribute):
         """Base constructor for Enum Attribute.
 
         Args:
-            parent: The parent node is needed when solving `EnumAttributes`, as there's no getter functions on them or a reliable way to get them without traversing full AST each time.
+            parent: The parent node is needed when solving `EnumAttributes`.
             path_and_name: The path for the current node, e.g. `syft.lib.python.List`.
-            return_type_name: The return type name of the given action as a string with its full path.
+            return_type_name: The return type name of given action as a string with its full path.
             client: The client for which all computation is being executed.
         """
         super().__init__(

@@ -126,10 +126,10 @@ class Callable(ast.attribute.Attribute):
         framework_reference: Optional[ModuleType] = None,
         is_static: bool = False,
     ) -> None:
-        """The add_path method adds new nodes in the AST based on the type of the current node and the type of the object to be added.
+        """The add_path adds new nodes in AST based on type of current node and type of object to be added.
 
         Args:
-            path: The path for the node in the AST to be added, e.g. `syft.lib.python.List` or ["syft", "lib", "python", "List].
+            path: The node path added in AST, e.g. `syft.lib.python.List` or ["syft", "lib", "python", "List].
             index: The associated position in the path for the current node.
             return_type_name: The return type name of the given action as a string with its full path.
             framework_reference: The Python framework in which we can solve the same path to obtain the Python object.

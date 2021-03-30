@@ -55,7 +55,7 @@ class Globals(Module):
         """Execute the given node object reference with the framework paths in global space.
 
         Args:
-            path: The path for the node in the module to execute, e.g. `syft.lib.python.List` or ["syft", "lib", "python", "List"].
+            path: The node path in module to execute, e.g. `syft.lib.python.List` or ["syft", "lib", "python", "List"].
             index : The associated position in the path for the current node.
             obj_type: The type of the object to be called, whose path is resolved from `lookup_cache`.
 
@@ -86,7 +86,7 @@ class Globals(Module):
         """Adds new nodes in the AST based on the type of the current node and the type of the object to be added.
 
         Args:
-            path: The path for the node in the AST to be added, e.g. `syft.lib.python.List` or ["syft", "lib", "python", "List"].
+            path: The node path added in the AST, e.g. `syft.lib.python.List` or ["syft", "lib", "python", "List"].
             index: The associated position in the path for the current node.
             framework_reference: The python framework in which we can resolve the same path to obtain the Python object.
             return_type_name: The return type name of given action as a string with it's full path.

@@ -3,7 +3,7 @@
         <g id="backgrounds" transform="matrix(1.32789,0,0,1,-22.3892,0)">
             <rect x="0" y="0" width="71" height="20" style="fill:rgb(85,85,85);"/>
         </g>
-        <rect x="71" y="0" width="47" height="20" data-interrogate="color" style="fill:#e05d44"/>
+        <rect x="71" y="0" width="47" height="20" data-interrogate="color" style="fill:#4c1"/>
         <g transform="matrix(1.19746,0,0,1,-22.3744,-4.85723e-16)">
             <rect x="0" y="0" width="118" height="20" style="fill:url(#_Linear1);"/>
         </g>
@@ -11,8 +11,8 @@
     <g fill="#fff" text-anchor="middle" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-size="110">
         <text x="590" y="150" fill="#010101" fill-opacity=".3" transform="scale(.1)" textLength="610">interrogate</text>
         <text x="590" y="140" transform="scale(.1)" textLength="610">interrogate</text>
-        <text x="1160" y="150" fill="#010101" fill-opacity=".3" transform="scale(.1)" textLength="370" data-interrogate="result">20.0%</text>
-        <text x="1160" y="140" transform="scale(.1)" textLength="370" data-interrogate="result">20.0%</text>
+        <text x="1160" y="150" fill="#010101" fill-opacity=".3" transform="scale(.1)" textLength="370" data-interrogate="result">100.0%</text>
+        <text x="1160" y="140" transform="scale(.1)" textLength="370" data-interrogate="result">100.0%</text>
     </g>
     <g id="logo-shadow" serif:id="logo shadow" transform="matrix(0.854876,0,0,0.854876,-6.73514,1.732)">
         <g transform="matrix(0.299012,0,0,0.299012,9.70229,-6.68582)">

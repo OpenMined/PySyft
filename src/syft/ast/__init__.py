@@ -1,4 +1,6 @@
-"""Syft's AST submodule is responsible for remote call executions. Basically, an AST is a tree that maps function calls to their exact path and knows what to do with that node in the tree.
+"""Syft's AST submodule is responsible for remote call executions.
+   An AST is a tree that maps function calls to their exact path,
+   and knows what to do with that node in tree.
 
  Example: Suppose we want to append an object to a List. This means that we need to
  know where we could find the `append` method, so we need to know the following chain:
@@ -36,7 +38,8 @@ and attributes on a `Pointer` and the return type of the performed action.
 The existing types of nodes are:
 * a `Globals`, which is the entry point of an execution, from which point on we can only access Modules.
 
-* a `Callable`, which can be a node for a method, a static method, a function, or a constructor. This node can no longer have any attributes.
+* a `Callable`, which can be a node for a method, a static method, a function, or a constructor.
+This node can no longer have any attributes.
 
 * a `Class`, which is a node that represents a Python Class. This node can contain methods - Callable,
 static methods - Callable, class methods - Callable, slot attributes - StaticAttribute, properties - Property,
