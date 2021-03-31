@@ -4,7 +4,6 @@ from typing import Callable
 from typing import Dict as TypeDict
 from typing import List as ListType
 from typing import Optional
-from typing import Tuple as TupleType
 
 # syft relative
 from ..federated import JSONDict
@@ -22,9 +21,7 @@ class EventEmitter:
             self.listeners[event_name] = []
         self.listeners[event_name].append(fn)
 
-    def trigger(
-        self, event_name: str, *args: TupleType[TypeAny, ...], **kwargs: TypeAny
-    ) -> None:
+    def trigger(self, event_name: str, *args: TypeAny, **kwargs: TypeAny) -> None:
         if event_name in self.listeners:
             for fn in self.listeners[event_name]:
                 fn(*args, **kwargs)
@@ -96,16 +93,17 @@ class FLJob(EventEmitter):
 
             if cycle_params["status"] == ModelCentricFLWorker.CYCLE_STATUS_ACCEPTED:
                 self._init_cycle(cycle_params)
-                self.trigger(self.EVENT_ACCEPTED, (self,))
+                self.trigger(self.EVENT_ACCEPTED, self)
             elif cycle_params["status"] == ModelCentricFLWorker.CYCLE_STATUS_REJECTED:
                 timeout = cycle_params.get("timeout")
                 if timeout is not None:
                     timeout = timeout(int)
-                self.trigger(self.EVENT_REJECTED, (self, timeout))
+                self.trigger(self.EVENT_REJECTED, self, timeout)
         except GridError as e:
             self.trigger(
                 self.EVENT_ERROR,
-                (self, f"Grid communication error: {e.error}"),
+                self,
+                f"Grid communication error: {e.error}",
             )
 
     def report(self, updated_model_params: ListType) -> JSONDict:
