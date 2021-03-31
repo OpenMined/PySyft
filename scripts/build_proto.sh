@@ -10,7 +10,7 @@ if [ $? -ne 0 ]; then
 fi
 
 rm -rf "${CLEAN}"
-find ${PROTO_IN} -name "*.proto" -print0 | xargs -0 protoc --python_out=${PYTHON_OUT}
+find ${PROTO_IN} -name "*.proto" -print0 | xargs -0 protoc --python_out=${PYTHON_OUT} --experimental_allow_proto3_optional
 
 # no easy way to do -i replace on both MacOS and Linux
 # https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
