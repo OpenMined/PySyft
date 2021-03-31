@@ -9,8 +9,6 @@ from flask_sockets import Sockets
 from main import ws
 
 
-from .sleepy_until_configured import SleepyUntilConfigured
-
 # Threads
 from ..utils.executor import executor
 
@@ -134,12 +132,9 @@ def create_domain_app(app, args, testing=False):
 
     # Set SQLAlchemy configs
     set_database_config(app, test_config=test_config)
-    app.app_context().push()
-    db.create_all()
+    s = app.app_context().push()
 
-    # Register global middlewares
-    # Always after context is pushed
-    app.wsgi_app = SleepyUntilConfigured(app, app.wsgi_app)
+    db.create_all()
 
     if not testing:
         if len(db.session.query(Role).all()) == 0:
@@ -159,5 +154,4 @@ def create_domain_app(app, args, testing=False):
     app.config["EXECUTOR_PROPAGATE_EXCEPTIONS"] = True
     app.config["EXECUTOR_TYPE"] = "thread"
     executor.init_app(app)
-
     return app
