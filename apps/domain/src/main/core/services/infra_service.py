@@ -181,7 +181,6 @@ def get_worker_msg(
             worker = node.environments.first(id=int(worker_id))
 
             try:
-                response = requests.get("http://" + worker.address + ":5001")
                 worker_client = connect(
                     url="http://" + worker.address,
                     conn_type=GridHTTPConnection,  # HTTP Connection Protocol
@@ -196,16 +195,10 @@ def get_worker_msg(
 
                 node.in_memory_client_registry[worker_client.domain_id] = worker_client
             except Exception as e:
-                print("Exception type: ", type(e))
                 return GetWorkerResponse(
                     address=msg.reply_to,
                     status_code=500,
-                    content={
-                        "error": str(e),
-                        "error_type": type(e),
-                        "response": response.text,
-                        "address": "http://" + worker.address + ":5001",
-                    },
+                    content={"error": str(e)},
                 )
             _msg = model_to_json(node.environments.first(id=int(worker_id)))
         else:
