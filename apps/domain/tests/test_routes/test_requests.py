@@ -83,7 +83,7 @@ def test_create_request(client, database, cleanup):
     request_type = "permissions"
 
     result = client.post(
-        "/dcfl/requests",
+        "/data-centric/requests",
         json={
             "object_id": object_id,
             "reason": reason,
@@ -122,7 +122,7 @@ def test_create_duplicate_fail(client, database, cleanup):
     request_type = "permissions"
 
     result1 = client.post(
-        "/dcfl/requests",
+        "/data-centric/requests",
         json={
             "object_id": object_id,
             "reason": reason,
@@ -132,11 +132,11 @@ def test_create_duplicate_fail(client, database, cleanup):
     )
 
     result1 = client.get(
-        "/dcfl/requests", headers=headers, content_type="application/json"
+        "/data-centric/requests", headers=headers, content_type="application/json"
     )
 
     result2 = client.post(
-        "/dcfl/requests",
+        "/data-centric/requests",
         json={
             "object_id": object_id,
             "reason": reason,
@@ -173,7 +173,7 @@ def test_get_specific_request(client, database, cleanup):
     request_type = "budget"
 
     create = client.post(
-        "/dcfl/requests",
+        "/data-centric/requests",
         json={
             "object_id": object_id,
             "reason": reason,
@@ -185,7 +185,7 @@ def test_get_specific_request(client, database, cleanup):
     request_id = create.get_json()["id"]
 
     result = client.get(
-        "/dcfl/requests/" + str(request_id),
+        "/data-centric/requests/" + str(request_id),
         headers=headers,
         content_type="application/json",
     )
@@ -219,7 +219,7 @@ def test_get_all_requests(client, database, cleanup):
     request_type = "permissions"
 
     create = client.post(
-        "/dcfl/requests",
+        "/data-centric/requests",
         json={
             "object_id": object_id,
             "reason": reason,
@@ -229,7 +229,7 @@ def test_get_all_requests(client, database, cleanup):
     )
 
     result = client.get(
-        "/dcfl/requests", headers=headers, content_type="application/json"
+        "/data-centric/requests", headers=headers, content_type="application/json"
     )
 
     response = result.get_json()
@@ -259,7 +259,7 @@ def test_update_request(client, database, cleanup):
     request_type = "budget"
 
     create = client.post(
-        "/dcfl/requests",
+        "/data-centric/requests",
         json={
             "object_id": object_id,
             "reason": reason,
@@ -272,14 +272,14 @@ def test_update_request(client, database, cleanup):
     request_id = create.get_json()["id"]
 
     client.put(
-        "/dcfl/requests/" + request_id,
+        "/data-centric/requests/" + request_id,
         json={"status": status},
         headers=headers,
         content_type="application/json",
     )
 
     result = client.get(
-        "/dcfl/requests/" + request_id,
+        "/data-centric/requests/" + request_id,
         headers=headers,
         content_type="application/json",
     )
@@ -310,7 +310,7 @@ def test_delete_request(client, database, cleanup):
     request_type = "budget"
 
     create = client.post(
-        "/dcfl/requests",
+        "/data-centric/requests",
         json={
             "object_id": object_id,
             "reason": reason,
@@ -322,7 +322,7 @@ def test_delete_request(client, database, cleanup):
     request_id = create.get_json()["id"]
 
     result = client.delete(
-        "/dcfl/requests/" + request_id,
+        "/data-centric/requests/" + request_id,
         headers=headers,
         content_type="application/json",
     )

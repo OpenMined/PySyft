@@ -155,7 +155,7 @@ def test_create_dataset(client, database, cleanup):
     }
 
     result = client.post(
-        "/dcfl/datasets",
+        "/data-centric/datasets",
         headers=headers,
         data=dumps(payload),
         content_type="multipart/form-data",
@@ -213,7 +213,7 @@ def test_get_all_datasets_metadata(client, database, cleanup):
         "token": token.decode("UTF-8"),
     }
     result = client.get(
-        "/dcfl/datasets", headers=headers, content_type="application/json"
+        "/data-centric/datasets", headers=headers, content_type="application/json"
     )
 
     assert result.status_code == 200
@@ -247,7 +247,7 @@ def test_get_specific_dataset_metadata(client, database, cleanup):
         "token": token.decode("UTF-8"),
     }
     result = client.get(
-        "/dcfl/datasets/{}".format(df_metadata["id"]),
+        "/data-centric/datasets/{}".format(df_metadata["id"]),
         headers=headers,
         content_type="application/json",
     )
@@ -296,7 +296,7 @@ def test_update_dataset(client, database, cleanup):
     assert database.session.query(JsonObject).get(df_json1["id"]).binary == df_json1
 
     result = client.put(
-        "/dcfl/datasets/{}".format(df_json1["id"]),
+        "/data-centric/datasets/{}".format(df_json1["id"]),
         data=dumps(new_dataset),
         headers=headers,
         content_type="application/json",
@@ -365,7 +365,7 @@ def test_delete_dataset(client, database, cleanup):
     assert database.session.query(JsonObject).get(_id).binary["tags"] == dataset["tags"]
 
     result = client.delete(
-        "/dcfl/datasets/{}".format(_id),
+        "/data-centric/datasets/{}".format(_id),
         headers=headers,
         content_type="application/json",
     )

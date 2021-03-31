@@ -77,7 +77,7 @@ def test_get_all_tensors(client, database, cleanup):
     description = "First tensor description"
 
     result = client.post(
-        "/dcfl/tensors",
+        "/data-centric/tensors",
         json={
             "tensor": [1, 2, 3, 4, 5, 6],
             "description": description,
@@ -93,7 +93,7 @@ def test_get_all_tensors(client, database, cleanup):
     description = "Second tensor description"
 
     result = client.post(
-        "/dcfl/tensors",
+        "/data-centric/tensors",
         json={
             "tensor": [1, 2, 3, 4, 5, 6],
             "description": description,
@@ -105,7 +105,7 @@ def test_get_all_tensors(client, database, cleanup):
     tensor_id = result.get_json()["tensor_id"]
 
     # Test Get tensors request
-    result = client.get("/dcfl/tensors", headers=headers)
+    result = client.get("/data-centric/tensors", headers=headers)
 
     assert result.status_code == 200
     assert len(result.get_json()["tensors"]) == 2
@@ -125,7 +125,7 @@ def test_create_tensor(client, database, cleanup):
     }
 
     result = client.post(
-        "/dcfl/tensors",
+        "/data-centric/tensors",
         json={
             "tensor": [1, 2, 3, 4, 5, 6, 7, 8],
             "description": "A tensor sample",
@@ -156,7 +156,7 @@ def test_get_specific_tensor(client, database, cleanup):
     description = "Get tensor test"
 
     result = client.post(
-        "/dcfl/tensors",
+        "/data-centric/tensors",
         json={
             "tensor": [1, 2, 3, 4, 5, 6],
             "description": description,
@@ -167,7 +167,7 @@ def test_get_specific_tensor(client, database, cleanup):
     )
     tensor_id = result.get_json()["tensor_id"]
 
-    result = client.get("/dcfl/tensors/" + tensor_id, headers=headers)
+    result = client.get("/data-centric/tensors/" + tensor_id, headers=headers)
     assert result.status_code == 200
     tensor = result.get_json()["tensor"]
     assert tensor["tags"] == tags
@@ -192,7 +192,7 @@ def test_update_tensor(client, database, cleanup):
     description = "Get tensor test"
 
     result = client.post(
-        "/dcfl/tensors",
+        "/data-centric/tensors",
         json={
             "tensor": [1, 2, 3, 4, 5, 6],
             "description": description,
@@ -204,7 +204,7 @@ def test_update_tensor(client, database, cleanup):
     tensor_id = result.get_json()["tensor_id"]
 
     # Assert registered tensor metadata
-    result = client.get("/dcfl/tensors/" + tensor_id, headers=headers)
+    result = client.get("/data-centric/tensors/" + tensor_id, headers=headers)
     assert result.status_code == 200
     tensor = result.get_json()["tensor"]
     assert tensor["tags"] == tags
@@ -216,7 +216,7 @@ def test_update_tensor(client, database, cleanup):
 
     # Update an existent tensor
     result = client.put(
-        "/dcfl/tensors/" + tensor_id,
+        "/data-centric/tensors/" + tensor_id,
         json={
             "tensor": [1, 2, 5, 6],
             "description": modified_description,
@@ -229,7 +229,7 @@ def test_update_tensor(client, database, cleanup):
     assert result.get_json()["msg"] == "Tensor modified succesfully!"
 
     # Assert updated tensor metadata
-    result = client.get("/dcfl/tensors/" + tensor_id, headers=headers)
+    result = client.get("/data-centric/tensors/" + tensor_id, headers=headers)
     assert result.status_code == 200
     tensor = result.get_json()["tensor"]
     assert tensor["tags"] == modified_tags
@@ -254,7 +254,7 @@ def test_delete_tensor(client, database, cleanup):
     description = "Get tensor test"
 
     result = client.post(
-        "/dcfl/tensors",
+        "/data-centric/tensors",
         json={
             "tensor": [1, 2, 3, 4, 5, 6],
             "description": description,
@@ -266,7 +266,7 @@ def test_delete_tensor(client, database, cleanup):
 
     tensor_id = result.get_json()["tensor_id"]
 
-    result = client.delete("/dcfl/tensors/" + tensor_id, headers=headers)
+    result = client.delete("/data-centric/tensors/" + tensor_id, headers=headers)
 
     assert result.status_code == 200
     assert result.get_json() == {"msg": "Tensor deleted successfully!"}

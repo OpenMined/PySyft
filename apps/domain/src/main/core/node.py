@@ -102,6 +102,7 @@ def create_network_app(app, args, testing=False):
 
 def create_domain_app(app, args, testing=False):
     test_config = None
+
     if args.start_local_db:
         test_config = {"SQLALCHEMY_DATABASE_URI": "sqlite:///nodedatabase.db"}
 
@@ -114,7 +115,7 @@ def create_domain_app(app, args, testing=False):
     app.register_blueprint(users_blueprint, url_prefix=r"/users")
     app.register_blueprint(setup_blueprint, url_prefix=r"/setup/")
     app.register_blueprint(groups_blueprint, url_prefix=r"/groups")
-    app.register_blueprint(dcfl_blueprint, url_prefix=r"/dcfl/")
+    app.register_blueprint(dcfl_blueprint, url_prefix=r"/data-centric/")
     app.register_blueprint(mcfl_blueprint, url_prefix=r"/model-centric/")
     app.register_blueprint(root_blueprint, url_prefix=r"/")
     app.register_blueprint(
