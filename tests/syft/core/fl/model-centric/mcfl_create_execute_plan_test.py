@@ -52,7 +52,7 @@ def pygrid_domain(xprocess: Any) -> Generator:
         # command to start process
         pygrid_path = f"{here}/../../../../../pygrid"
         domain_path = os.path.abspath(f"{pygrid_path}/apps/domain")
-        database_file = f"{domain_path}/src/datadomain.db"
+        database_file = f"{domain_path}/src/nodedatabase.db"
         if os.path.exists(database_file):
             os.unlink(database_file)
         args = [
@@ -369,7 +369,6 @@ def execute_plan() -> float:
     # Called when client is accepted into FL cycle
     def on_accepted(job: FLJob) -> None:
         print(f"Accepted into {job} cycle {len(cycles_log) + 1}.")
-
         cycle_params = job.client_config
         batch_size, max_updates = (
             cycle_params["batch_size"],
