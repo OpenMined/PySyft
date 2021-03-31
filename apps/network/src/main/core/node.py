@@ -64,7 +64,7 @@ def create_network_app(app, args, testing=False):
     # Here you should add all the blueprints related to WebSocket routes.
     # sockets.register_blueprint()
 
-    from .database import db, set_database_config, seed_db, User, Role
+    from .database import db, set_database_config, seed_network_db, User, Role
 
     global node
     node = GridNetwork(name=args.name)
@@ -77,7 +77,7 @@ def create_network_app(app, args, testing=False):
 
     if not testing:
         if len(db.session.query(Role).all()) == 0:
-            seed_db()
+            seed_network_db()
 
         role = db.session.query(Role.id).filter_by(name="Owner").first()
         user = User.query.filter_by(role=role.id).first()
