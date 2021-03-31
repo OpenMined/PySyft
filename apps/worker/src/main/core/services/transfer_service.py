@@ -112,7 +112,7 @@ class SaveObjectService(ImmediateNodeServiceWithoutReply):
         except Exception:
             raise Exception("Object Not Found!")
 
-        executor.submit(_domain_addr, send_obj, _obj, node)
+        executor.submit(send_obj, _domain_addr, _obj, node)
 
     @staticmethod
     def message_handler_types() -> List[Type[ImmediateSyftMessageWithReply]]:
