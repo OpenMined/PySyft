@@ -1,0 +1,127 @@
+syntax = "proto3";
+
+package syft.grid.messages;
+
+import "proto/core/common/common_object.proto";
+import "proto/core/io/address.proto";
+
+
+message GridRequestMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+  enum MessageType {
+    ASSOCIATION_SEND = 1;
+    ASSOCIATION_RECEIVE = 2;
+    ASSOCIATION_RESPOND = 3;
+    ASSOCIATION_GET = 4;
+    ASSOCIATION_DELETE = 5;
+    DATASET_CREATE = 6;
+    DATASET_GET = 7;
+    DATASET_GET_INFO = 8;
+    DATASET_GET_ALL = 9;
+    DATASET_SEARCH = 10;
+    DATASET_UPDATE = 11;
+    DATASET_DELETE = 12;
+    GROUP_CREATE = 13;
+    GROUP_GET = 14;
+    GROUP_GET_ALL = 15;
+    GROUP_UPDATE = 16;
+    GROUP_DELETE = 17;
+    WORKER_CREATE = 18;
+    WORKER_CHECK_DEPLOYMENT = 19;
+    WORKER_GET = 20;
+    WORKER_GET_ALL = 21;
+    WORKER_UPDATE = 22;
+    WORKER_DELETE = 23;
+    NETWORK_SEARCH = 24;
+    REQUEST_CREATE = 25;
+    REQUEST_GET = 26;
+    REQUEST_GET_ALL = 27;
+    REQUEST_UPDATE = 28;
+    REQUEST_DELETE = 29;
+    ROLE_CREATE = 30;
+    ROLE_GET = 31;
+    ROLE_GET_ALL = 32;
+    ROLE_SEARCH = 33;
+    ROLE_UPDATE = 34;
+    ROLE_DELETE = 35;
+    SETUP_INITIAL_CREATE = 36;
+    SETUP_GET = 37;
+    TENSOR_CREATE = 38;
+    TENSOR_GET = 39;
+    TENSOR_GET_ALL = 40;
+    TENSOR_UPDATE = 41;
+    TENSOR_DELETE = 42;
+    TRANSFER_LOAD = 43;
+    TRANSFER_SAVE = 44;
+    USER_CREATE = 45;
+    USER_GET = 46;
+    USER_GET_ALL = 47;
+    USER_SEARCH = 48;
+    USER_UPDATE = 49;
+    USER_DELETE = 50;
+  }
+  MessageType message_type = 5;
+}
+
+message GridResponseMessage {
+  syft.core.common.UID msg_id = 1;
+  int32 status_code = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+  enum MessageType {
+    ASSOCIATION_SEND = 1;
+    ASSOCIATION_RECEIVE = 2;
+    ASSOCIATION_RESPOND = 3;
+    ASSOCIATION_GET = 4;
+    ASSOCIATION_DELETE = 5;
+    DATASET_CREATE = 6;
+    DATASET_GET = 7;
+    DATASET_GET_INFO = 8;
+    DATASET_GET_ALL = 9;
+    DATASET_SEARCH = 10;
+    DATASET_UPDATE = 11;
+    DATASET_DELETE = 12;
+    GROUP_CREATE = 13;
+    GROUP_GET = 14;
+    GROUP_GET_ALL = 15;
+    GROUP_UPDATE = 16;
+    GROUP_DELETE = 17;
+    WORKER_CREATE = 18;
+    WORKER_CHECK_DEPLOYMENT = 19;
+    WORKER_GET = 20;
+    WORKER_GET_ALL = 21;
+    WORKER_UPDATE = 22;
+    WORKER_DELETE = 23;
+    NETWORK_SEARCH = 24;
+    REQUEST_CREATE = 25;
+    REQUEST_GET = 26;
+    REQUEST_GET_ALL = 27;
+    REQUEST_UPDATE = 28;
+    REQUEST_DELETE = 29;
+    ROLE_CREATE = 30;
+    ROLE_GET = 31;
+    ROLE_GET_ALL = 32;
+    ROLE_SEARCH = 33;
+    ROLE_UPDATE = 34;
+    ROLE_DELETE = 35;
+    SETUP_INITIAL_CREATE = 36;
+    SETUP_GET = 37;
+    TENSOR_CREATE = 38;
+    TENSOR_GET = 39;
+    TENSOR_GET_ALL = 40;
+    TENSOR_UPDATE = 41;
+    TENSOR_DELETE = 42;
+    TRANSFER_LOAD = 43;
+    TRANSFER_SAVE = 44;
+    USER_CREATE = 45;
+    USER_GET = 46;
+    USER_GET_ALL = 47;
+    USER_SEARCH = 48;
+    USER_UPDATE = 49;
+    USER_DELETE = 50;
+  }
+  MessageType message_type = 5;
+}
