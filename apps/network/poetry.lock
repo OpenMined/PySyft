@@ -1026,14 +1026,6 @@ python-versions = "*"
 protobuf = ">=3.12.2"
 
 [[package]]
-name = "tenseal"
-version = "0.4.0a1"
-description = "A Library for Homomorphic Encryption Operations on Tensors"
-category = "main"
-optional = false
-python-versions = "*"
-
-[[package]]
 name = "terrascript"
 version = "0.9.0"
 description = "Python module for creating Terraform configurations"
@@ -2095,20 +2087,6 @@ syft = []
 syft-proto = [
     {file = "syft-proto-0.5.3.tar.gz", hash = "sha256:077550d66cb5013cd0ebec2e08622259816b09006b92a7c68406f446d8266477"},
     {file = "syft_proto-0.5.3-py3-none-any.whl", hash = "sha256:2e5ad6e2daad627924c7c852103057cef306268711692c03f728bac383d13aa3"},
-]
-tenseal = [
-    {file = "tenseal-0.4.0a1-cp36-cp36m-macosx_10_15_x86_64.whl", hash = "sha256:0123ffd5fd9a4fa496f9644f701ad6cf2e7aaee882aa76e911901482438e53b9"},
-    {file = "tenseal-0.4.0a1-cp36-cp36m-manylinux2014_x86_64.whl", hash = "sha256:b3f395dd858eeb987fabdba47e9508531f10517d23d9b5990f1c6749dcb992f5"},
-    {file = "tenseal-0.4.0a1-cp36-cp36m-win_amd64.whl", hash = "sha256:ae30578cd7847c5ee9088eb9986071f2f73a05c44a24d87910926b796d16f8bd"},
-    {file = "tenseal-0.4.0a1-cp37-cp37m-macosx_10_15_x86_64.whl", hash = "sha256:50c470cf8935fce538ed77cfed6d0f6e3393ee6ec3d6921cdb3319c927f16016"},
-    {file = "tenseal-0.4.0a1-cp37-cp37m-manylinux2014_x86_64.whl", hash = "sha256:c1f76a63eb4f450e976ee9592f49418403d23066a25fd8f6c25b9c5f80566d24"},
-    {file = "tenseal-0.4.0a1-cp37-cp37m-win_amd64.whl", hash = "sha256:154807ec6e730fdb14527e434e3de2661f45f3b89181ab87a3a6b76f43b2f44f"},
-    {file = "tenseal-0.4.0a1-cp38-cp38-macosx_10_15_x86_64.whl", hash = "sha256:a29e0776ba850f71fd7d392778d6af53c25dc35d4593ed62e1b17f70d30f8774"},
-    {file = "tenseal-0.4.0a1-cp38-cp38-manylinux2014_x86_64.whl", hash = "sha256:f894faa54b1725980a129e17a46e824d13122de79b03e41ddee29c43a145649f"},
-    {file = "tenseal-0.4.0a1-cp38-cp38-win_amd64.whl", hash = "sha256:2b94be432ad40f5aed6a1bf09b59cdea38d34c7de7e62b3c8f6409c2f55c4ac3"},
-    {file = "tenseal-0.4.0a1-cp39-cp39-macosx_10_15_x86_64.whl", hash = "sha256:d2c5d7866d1a38fc353ee6f73334da4398a4e8212453073ea80998c3e64e79b7"},
-    {file = "tenseal-0.4.0a1-cp39-cp39-manylinux2014_x86_64.whl", hash = "sha256:e2bad67243ce62a8175bf00cea0921359c19ecdf19d31467c65cfeaae196a667"},
-    {file = "tenseal-0.4.0a1-cp39-cp39-win_amd64.whl", hash = "sha256:1659aa29b108ffcdb2e47beee4c18cf674985ba6dd1ba52b5e74f39205a9c0fc"},
 ]
 terrascript = [
     {file = "terrascript-0.9.0-py2.py3-none-any.whl", hash = "sha256:1b823ab06b295143f6a1a32c2b6e68b2f63272b9f70e7b66676aa1929dc38552"},

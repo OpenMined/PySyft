@@ -9,6 +9,7 @@ from flask import current_app as app
 import torch as th
 import pytest
 import jwt
+import os
 
 from src.main.core.database.store_disk import (
     DiskObjectStore,
@@ -141,9 +142,10 @@ def test_create_dataset(client, database, cleanup):
         "token": token.decode("UTF-8"),
     }
 
-    file1 = open("tests/test_routes/mtcars_train.csv", "rb")
+    folder = os.path.dirname(__file__)
+    file1 = open(f"{folder}/mtcars_train.csv", "rb")
     file1 = file1.read().decode("utf-8")
-    file2 = open("tests/test_routes/mtcars_test.csv", "rb")
+    file2 = open(f"{folder}/mtcars_test.csv", "rb")
     file2 = file2.read().decode("utf-8")
 
     payload = {

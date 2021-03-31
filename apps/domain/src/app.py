@@ -16,7 +16,6 @@ import os
 
 # Extended Python imports
 from flask import Flask
-from flask_sockets import Sockets
 
 from geventwebsocket.websocket import Header
 from nacl.signing import SigningKey
@@ -76,9 +75,6 @@ def create_app(
     app = Flask(__name__)
 
     app.config.from_object("config")
-
-    # Bind websocket in Flask app instance
-    # sockets = Sockets(app)
 
     # Create Domain APP
     app = create_domain_app(app=app, args=args, testing=testing)

@@ -17,6 +17,13 @@ class MSG_FIELD:
     PASSWORD_FIELD = "password"
 
 
+class MODEL_CENTRIC_FL_EVENTS(object):
+    HOST_FL_TRAINING = "model-centric/host-training"
+    REPORT = "model-centric/report"
+    AUTHENTICATE = "model-centric/authenticate"
+    CYCLE_REQUEST = "model-centric/cycle-request"
+
+
 class USER_EVENTS(object):
     GET_ALL_USERS = "list-users"
     GET_SPECIFIC_USER = "list-user"
@@ -49,3 +56,21 @@ class GROUP_EVENTS(object):
 class RESPONSE_MSG(object):
     ERROR = "error"
     SUCCESS = "success"
+
+
+class CYCLE(object):
+    STATUS = "status"
+    KEY = "request_key"
+    PING = "ping"
+    DOWNLOAD = "download"
+    UPLOAD = "upload"
+    VERSION = "version"
+    PLANS = "plans"
+    PROTOCOLS = "protocols"
+    CLIENT_CONFIG = "client_config"
+    SERVER_CONFIG = "server_config"
+    TIMEOUT = "timeout"
+    DIFF = "diff"
+    AVG_PLAN = "averaging_plan"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"

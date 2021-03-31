@@ -57,7 +57,6 @@ parser.add_argument(
 
 parser.set_defaults(use_test_config=False)
 
-
 if __name__ == "__main__":
     args = parser.parse_args()
 

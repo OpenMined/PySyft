@@ -47,10 +47,6 @@ from threading import Thread
 
 import syft as sy
 
-# import tenseal as ts
-
-# sy.load_lib("tenseal")
-
 
 class GridDomain(Domain):
     def __init__(

@@ -35,6 +35,18 @@ class DatabaseManager:
         objects = self.db.session.query(self._schema).filter_by(**kwargs).first()
         return objects
 
+    def last(self, **kwargs):
+        """Query and return the last occurrence.
+
+        Args:
+            parameters: List of parameters used to filter.
+        Return:
+            obj: Last object instance.
+        """
+
+        obj = self.db.session.query(self._schema).filter_by(**kwargs).all()[-1]
+        return obj
+
     def all(self) -> List[BaseModel]:
         return list(self.db.session.query(self._schema).all())
 
