@@ -174,7 +174,7 @@ You can pass the arguments or use environment variables to set the network confi
 
 ## Deployment & CLI
 
-Please check the instruction for deployment and CLI here: [deployment.md](deployment.md)
+[Please check the instruction for deployment and CLI here.](deployment.md)
 
 
 ## Contributing
