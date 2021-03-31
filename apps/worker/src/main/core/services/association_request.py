@@ -339,12 +339,9 @@ class AssociationRequestService(ImmediateNodeServiceWithReply):
         GetAssociationRequestResponse,
         DeleteAssociationRequestResponse,
     ]:
-        try:
-            return AssociationRequestService.msg_handler_map[type(msg)](
-                msg=msg, node=node, verify_key=verify_key
-            )
-        except Exception as e:
-            print("\n\n\n My Exception: ", str(e), "\n\n\n")
+        return AssociationRequestService.msg_handler_map[type(msg)](
+            msg=msg, node=node, verify_key=verify_key
+        )
 
     @staticmethod
     def message_handler_types() -> List[Type[ImmediateSyftMessageWithReply]]:

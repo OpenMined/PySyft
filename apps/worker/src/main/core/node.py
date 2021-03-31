@@ -37,7 +37,7 @@ def create_worker_app(app, args):
     # sockets.register_blueprint()
 
     global node
-    node = GridWorker(name=args.name, domain_url=args.domain_address)
+    node = GridWorker(name=args.name)
 
     app.config["EXECUTOR_PROPAGATE_EXCEPTIONS"] = True
     app.config["EXECUTOR_TYPE"] = "thread"

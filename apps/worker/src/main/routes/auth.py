@@ -84,7 +84,6 @@ def error_handler(f, *args, **kwargs):
         status_code = 400  # Bad Request
         response_body[RESPONSE_MSG.ERROR] = str(e)
     except Exception as e:
-        print(type(e), str(e))
         status_code = 500  # Internal Server Error
         response_body[RESPONSE_MSG.ERROR] = str(e)
 

@@ -223,7 +223,6 @@ def update_user_msg(
         _valid_groups = (
             len(list(filter(lambda x: node.groups.first(id=x), _groups))) > 0
         )
-        print(_valid_groups)
         # If all premises were respected
         if _allowed and _valid_groups:
             node.groups.update_user_association(user_id=_user_id, groups=_groups)
@@ -373,11 +372,6 @@ def search_users_msg(
         try:
             users = node.users.query(**user_parameters)
             if _group:
-                for user in users:
-                    if node.groups.contain_association(user=user.id, group=_group):
-                        print("Existe!")
-                    else:
-                        print("Nao Existe!")
                 filtered_users = filter(
                     lambda x: node.groups.contain_association(user=x.id, group=_group),
                     users,

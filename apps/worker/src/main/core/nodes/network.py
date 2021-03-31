@@ -88,10 +88,6 @@ class GridNetwork(Domain):
         self.immediate_services_with_reply.append(BroadcastSearchService)
         self._register_services()
 
-        self.__handlers_flag = True
-        # thread = Thread(target=self.thread_run_handlers)
-        # thread.start()
-
     def login(self, email: str, password: str) -> Dict:
         user = self.users.login(email=email, password=password)
         token = jwt.encode({"id": user.id}, app.config["SECRET_KEY"])
@@ -157,26 +153,3 @@ class GridNetwork(Domain):
                 + f"{self.key_emoji(key=self.signing_key.verify_key)}"  # type: ignore
             )
         return res_msg
-
-    def thread_run_handlers(self) -> None:
-        while self.__handlers_flag:
-            sleep(0.1)
-            try:
-                self.clean_up_handlers()
-                self.clean_up_requests()
-                if len(self.request_handlers) > 0:
-                    for request in self.requests:
-                        # check if we have previously already handled this in an earlier iter
-                        if request.id not in self.handled_requests:
-                            for handler in self.request_handlers:
-                                handled = self.check_handler(
-                                    handler=handler, request=request
-                                )
-                                if handled:
-                                    # we handled the request so we can exit the loop
-                                    break
-            except Exception as excp2:
-                print(str(excp2))
-
-    def close(self):
-        self.__handlers_flag = False
