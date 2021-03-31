@@ -11,6 +11,7 @@ from nacl.signing import VerifyKey
 import syft as sy
 
 # syft relative
+from ..common.serde import Serializable
 from ...proto.core.plan.plan_pointer_pb2 import PlanPointer as PlanPointer_PB
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import bind_protobuf
@@ -19,7 +20,7 @@ from ..common.uid import UID
 
 
 @bind_protobuf
-class PlanPointer():
+class PlanPointer(Serializable):
 
     def __init__(
         self,

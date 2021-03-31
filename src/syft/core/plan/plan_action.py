@@ -13,6 +13,7 @@ from nacl.signing import VerifyKey
 import syft as sy
 # from syft.core.node.common.action.run_class_method_action import RunClassMethodAction
 # syft relative
+from ..common.serde import Serializable
 from ...proto.core.plan.plan_action_pb2 import PlanAction as PlanAction_pb
 from .plan_run_class_method_action import PlanRunClassMethodAction
 from ..common.serde.serializable import bind_protobuf
@@ -21,7 +22,7 @@ from .plan_pointer import PlanPointer
 
 
 @bind_protobuf
-class PlanAction():
+class PlanAction(Serializable):
     """
     When executing a RunClassMethodAction, a :class:`Node` will run a method defined
     by the action's path attribute on the object pointed at by _self and keep the returned

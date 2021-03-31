@@ -13,6 +13,7 @@ from nacl.signing import VerifyKey
 import syft as sy
 # from syft.core.node.common.action.run_class_method_action import RunClassMethodAction
 # syft relative
+from ..common.serde import Serializable
 from ...proto.core.node.common.action.plan_run_class_method_pb2 import PlanRunClassMethodAction as PlanRunClassMethodAction_PB
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import bind_protobuf
@@ -21,7 +22,7 @@ from .plan_pointer import PlanPointer
 
 
 @bind_protobuf
-class PlanRunClassMethodAction():
+class PlanRunClassMethodAction(Serializable):
     """
     When executing a RunClassMethodAction, a :class:`Node` will run a method defined
     by the action's path attribute on the object pointed at by _self and keep the returned
@@ -116,16 +117,3 @@ class PlanRunClassMethodAction():
         """
 
         return PlanRunClassMethodAction_PB
-
-    def remap_input(self, current_input: Any, new_input: Any) -> None:
-        """Redefines some of the arguments, and possibly the _self of the function"""
-        if self._self.id_at_location == current_input.id_at_location:
-            self._self = new_input
-
-        for i, arg in enumerate(self.args):
-            if arg.id_at_location == current_input.id_at_location:
-                self.args[i] = new_input
-
-        for k, v in self.kwargs.items():
-            if v.id_at_location == current_input.id_at_location:
-                self.kwargs[k] = new_input
