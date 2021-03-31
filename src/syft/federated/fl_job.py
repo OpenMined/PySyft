@@ -88,7 +88,7 @@ class FLJob(EventEmitter):
                 model_version=self.model_version,
                 speed_info=speed_info,
             )
-            print("cycle_request_response", cycle_request_response)
+
             cycle_params = cycle_request_response["data"]
 
             if cycle_params["status"] == ModelCentricFLWorker.CYCLE_STATUS_ACCEPTED:
