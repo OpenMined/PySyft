@@ -33,9 +33,9 @@ import traceback
 from ...utils.executor import executor
 
 
-def send_obj(obj, node):
+def send_obj(address, obj, node):
     client = connect(
-        url=node.sender_address, conn_type=GridHTTPConnection  # Domain Address
+        url=address, conn_type=GridHTTPConnection  # Domain Address
     )  # HTTP Connection Protocol
     y_s = obj.data.send(
         client, pointable=True, tags=obj.tags, description=obj.description
@@ -103,6 +103,7 @@ class SaveObjectService(ImmediateNodeServiceWithoutReply):
         verify_key: VerifyKey,
     ) -> None:
         _obj_id = msg.content.get("uid", None)
+        _domain_addr = msg.content.get("domain_address", None)
 
         _syft_id = UID.from_string(value=_obj_id)
 
@@ -111,7 +112,7 @@ class SaveObjectService(ImmediateNodeServiceWithoutReply):
         except Exception:
             raise Exception("Object Not Found!")
 
-        executor.submit(send_obj, _obj, node)
+        executor.submit(_domain_addr, send_obj, _obj, node)
 
     @staticmethod
     def message_handler_types() -> List[Type[ImmediateSyftMessageWithReply]]:
