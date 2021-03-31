@@ -23,7 +23,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
     serialized_pb=b'\n\x1fproto/lib/torch/parameter.proto\x12\x0esyft.lib.torch\x1a\x1cproto/lib/torch/tensor.proto"\xae\x01\n\x0eParameterProto\x12*\n\x06tensor\x18\x01 \x01(\x0b\x32\x1a.syft.lib.torch.TensorData\x12\x15\n\rrequires_grad\x18\x02 \x01(\x08\x12(\n\x04grad\x18\x03 \x01(\x0b\x32\x1a.syft.lib.torch.TensorData\x12/\n\x0bgrad_sample\x18\x04 \x01(\x0b\x32\x1a.syft.lib.torch.TensorDatab\x06proto3',
-    dependencies=[proto_dot_lib_dot_torch_dot_tensor__pb2.DESCRIPTOR,],
+    dependencies=[
+        proto_dot_lib_dot_torch_dot_tensor__pb2.DESCRIPTOR,
+    ],
 )
 
 
