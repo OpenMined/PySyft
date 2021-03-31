@@ -139,26 +139,3 @@ class GridWorker(Domain):
                 + f"{self.key_emoji(key=self.signing_key.verify_key)}"  # type: ignore
             )
         return res_msg
-
-    def thread_run_handlers(self) -> None:
-        while self.__handlers_flag:
-            sleep(0.1)
-            try:
-                self.clean_up_handlers()
-                self.clean_up_requests()
-                if len(self.request_handlers) > 0:
-                    for request in self.requests:
-                        # check if we have previously already handled this in an earlier iter
-                        if request.id not in self.handled_requests:
-                            for handler in self.request_handlers:
-                                handled = self.check_handler(
-                                    handler=handler, request=request
-                                )
-                                if handled:
-                                    # we handled the request so we can exit the loop
-                                    break
-            except Exception as excp2:
-                print(str(excp2))
-
-    def close(self):
-        self.__handlers_flag = False

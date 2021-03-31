@@ -85,8 +85,6 @@ class GCP(Provider):
         name = self.config.app.name
         images = vars(self.config.gcp.images)
         image_type = self.config.gcp.image_type
-        # print(images)
-        # print(image_type)
         image = terrascript.data.google_compute_image(
             f"{name}-{image_type}",
             project=images[image_type][0],

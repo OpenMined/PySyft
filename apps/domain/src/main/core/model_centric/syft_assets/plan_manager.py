@@ -27,7 +27,6 @@ class PlanManager(DatabaseManager):
                 try:
                     plans_converted[idx] = plan_ser
                 except Exception as e:
-                    print(f"PlanInvalidError {e}")
                     raise PlanInvalidError()
 
             # Register new Plans into the database

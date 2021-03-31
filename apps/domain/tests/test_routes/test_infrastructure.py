@@ -58,6 +58,3 @@ def cleanup(database):
         database.session.commit()
     except:
         database.session.rollback()
-
-
-
