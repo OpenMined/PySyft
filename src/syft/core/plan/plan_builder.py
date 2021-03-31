@@ -30,6 +30,16 @@ def build_plan_inputs(forward_func: Callable) -> Dict[str, Pointer]:
     return res
 
 
+def map_in2out(inputs: dict, outputs: tuple) -> dict:
+    in2out_map = {}
+    for k, v in inputs.items():
+        input_id_at_location = v.id_at_location
+        for i, o in enumerate(outputs):
+            if o.id_at_location == input_id_at_location:
+                in2out_map[k] = i
+    return in2out_map
+
+
 def make_plan(func: Callable) -> Plan:
     inputs = build_plan_inputs(func)
     vm = PLAN_BUILDER_VM
@@ -37,7 +47,13 @@ def make_plan(func: Callable) -> Plan:
     vm.record_actions()
     res = func(**inputs)
     vm.stop_recording()
-    plan = Plan(actions=vm.recorded_actions, inputs=inputs, outputs=res, code=code)
+    plan = Plan(
+        actions=vm.recorded_actions,
+        inputs=inputs,
+        outputs=res,
+        i2o_map=map_in2out(inputs, res),
+        code=code,
+    )
     # cleanup
     vm.recorded_actions = []
     return plan

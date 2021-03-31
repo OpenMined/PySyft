@@ -19,6 +19,7 @@ import torch
 import syft as sy
 
 # syft relative
+from ...core.pointer.pointer import Pointer
 from ...generate_wrapper import GenerateWrapper
 
 # from ...core.pointer.pointer import Pointer
@@ -456,3 +457,28 @@ GenerateWrapper(
     type_object2proto=object2proto,
     type_proto2object=proto2object,
 )
+
+
+class ModelExecutor:
+    def __init__(self, model: torch.nn.Module):
+        self.model_forward = model.forward
+        self.children_names = [k for k, _ in model.named_children()]
+
+    def __call__(
+        self, model: torch.nn.Module, x: torch.Tensor
+    ) -> Union[torch.Tensor, Pointer]:
+        if isinstance(model, Pointer):
+            for name in self.children_names:
+                ModelExecutor.set_pointer_attr(model, name)
+        return self.model_forward(model, x)
+
+    @staticmethod
+    def set_pointer_attr(model: torch.nn.Module, attr_name: str) -> None:
+        if not hasattr(model, attr_name):
+            attr_ptr = type(model)(
+                client=model.client,
+                id_at_location=model.id_at_location,
+                object_type=model.object_type,
+            )
+            attr_ptr.attribute_name = attr_name
+            setattr(model, attr_name, attr_ptr)
