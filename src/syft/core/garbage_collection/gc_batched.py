@@ -1,7 +1,4 @@
 """A simple garbage collection heuritics."""
-# future
-from __future__ import annotations
-
 # stdlib
 from collections import defaultdict
 from typing import Dict
@@ -29,7 +26,7 @@ class GCBatched(GCStrategy):
         "threshold",
     ]
 
-    client_to_obj_ids: Dict[Client, List[UID]]
+    client_to_obj_ids: Dict["Client", List[UID]]
     threshold: int
 
     def __init__(self, threshold: int = 10) -> None:
