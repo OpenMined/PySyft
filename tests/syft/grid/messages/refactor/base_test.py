@@ -4,9 +4,6 @@ from syft import serialize
 from syft.core.io.address import Address
 
 def actual_test(msg, target):
-    if msg == None:
-        pytest.skip("Test Not Needed")
-
     blob = sy.serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
