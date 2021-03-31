@@ -9,7 +9,7 @@ import syft as sy
 
 
 @pytest.mark.vendor(lib="numpy")
-def test_remote_numpy_array() -> None:
+def test_remote_numpy_array(root_client: sy.VirtualMachineClient) -> None:
     # third party
     import numpy as np
 
@@ -44,11 +44,8 @@ def test_remote_numpy_array() -> None:
 
         test_arrays.append(np.array([lower, mid, upper], dtype=dtype))
 
-    vm = sy.VirtualMachine()
-    client = vm.get_root_client()
-
     for test_array in test_arrays:
-        remote_array = test_array.send(client)
+        remote_array = test_array.send(root_client)
         received_array = remote_array.get()
 
         assert all(test_array == received_array)

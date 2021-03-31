@@ -16,12 +16,6 @@ from syft.core.common.serde.serializable import bind_protobuf
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
 from syft.proto.grid.messages.infra_messages_pb2 import (
-    CheckWorkerDeploymentMessage as CheckWorkerDeploymentMessage_PB,
-)
-from syft.proto.grid.messages.infra_messages_pb2 import (
-    CheckWorkerDeploymentResponse as CheckWorkerDeploymentResponse_PB,
-)
-from syft.proto.grid.messages.infra_messages_pb2 import (
     CreateWorkerMessage as CreateWorkerMessage_PB,
 )
 from syft.proto.grid.messages.infra_messages_pb2 import (
@@ -32,6 +26,12 @@ from syft.proto.grid.messages.infra_messages_pb2 import (
 )
 from syft.proto.grid.messages.infra_messages_pb2 import (
     DeleteWorkerResponse as DeleteWorkerResponse_PB,
+)
+from syft.proto.grid.messages.infra_messages_pb2 import (
+    GetWorkerInstanceTypesMessage as GetWorkerInstanceTypesMessage_PB,
+)
+from syft.proto.grid.messages.infra_messages_pb2 import (
+    GetWorkerInstanceTypesResponse as GetWorkerInstanceTypesResponse_PB,
 )
 from syft.proto.grid.messages.infra_messages_pb2 import (
     GetWorkerMessage as GetWorkerMessage_PB,
@@ -198,7 +198,7 @@ class CreateWorkerResponse(ImmediateSyftMessageWithoutReply):
 
 @bind_protobuf
 @final
-class CheckWorkerDeploymentMessage(ImmediateSyftMessageWithReply):
+class GetWorkerInstanceTypesMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
         address: Address,
@@ -209,19 +209,19 @@ class CheckWorkerDeploymentMessage(ImmediateSyftMessageWithReply):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.content = content
 
-    def _object2proto(self) -> CheckWorkerDeploymentMessage_PB:
+    def _object2proto(self) -> GetWorkerInstanceTypesMessage_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
         this method transforms the current object into the corresponding
         Protobuf object so that it can be further serialized.
         :return: returns a protobuf object
-        :rtype: CheckWorkerDeploymentMessage_PB
+        :rtype: GetWorkerInstanceTypesMessage_PB
         .. note::
             This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
-        return CheckWorkerDeploymentMessage_PB(
+        return GetWorkerInstanceTypesMessage_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
             content=json.dumps(self.content),
@@ -230,19 +230,19 @@ class CheckWorkerDeploymentMessage(ImmediateSyftMessageWithReply):
 
     @staticmethod
     def _proto2object(
-        proto: CheckWorkerDeploymentMessage_PB,
-    ) -> "CheckWorkerDeploymentMessage":
-        """Creates a CheckWorkerDeploymentMessage from a protobuf
+        proto: GetWorkerInstanceTypesMessage_PB,
+    ) -> "GetWorkerInstanceTypesMessage":
+        """Creates a GetWorkerInstanceTypesMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
         :return: returns an instance of SignalingOfferMessage
-        :rtype: CheckWorkerDeploymentMessage
+        :rtype: GetWorkerInstanceTypesMessage
         .. note::
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
 
-        return CheckWorkerDeploymentMessage(
+        return GetWorkerInstanceTypesMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             content=json.loads(proto.content),
@@ -264,12 +264,12 @@ class CheckWorkerDeploymentMessage(ImmediateSyftMessageWithReply):
         :rtype: GeneratedProtocolMessageType
         """
 
-        return CheckWorkerDeploymentMessage_PB
+        return GetWorkerInstanceTypesMessage_PB
 
 
 @bind_protobuf
 @final
-class CheckWorkerDeploymentResponse(ImmediateSyftMessageWithoutReply):
+class GetWorkerInstanceTypesResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
@@ -281,7 +281,7 @@ class CheckWorkerDeploymentResponse(ImmediateSyftMessageWithoutReply):
         self.status_code = status_code
         self.content = content
 
-    def _object2proto(self) -> CheckWorkerDeploymentResponse_PB:
+    def _object2proto(self) -> GetWorkerInstanceTypesResponse_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
         this method transforms the current object into the corresponding
@@ -293,7 +293,7 @@ class CheckWorkerDeploymentResponse(ImmediateSyftMessageWithoutReply):
             the other public serialization methods if you wish to serialize an
             object.
         """
-        return CheckWorkerDeploymentResponse_PB(
+        return GetWorkerInstanceTypesResponse_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
             status_code=self.status_code,
@@ -302,8 +302,8 @@ class CheckWorkerDeploymentResponse(ImmediateSyftMessageWithoutReply):
 
     @staticmethod
     def _proto2object(
-        proto: CheckWorkerDeploymentResponse_PB,
-    ) -> "CheckWorkerDeploymentResponse":
+        proto: GetWorkerInstanceTypesResponse_PB,
+    ) -> "GetWorkerInstanceTypesResponse":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -314,7 +314,7 @@ class CheckWorkerDeploymentResponse(ImmediateSyftMessageWithoutReply):
             if you wish to deserialize an object.
         """
 
-        return CheckWorkerDeploymentResponse(
+        return GetWorkerInstanceTypesResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             status_code=proto.status_code,
@@ -336,7 +336,7 @@ class CheckWorkerDeploymentResponse(ImmediateSyftMessageWithoutReply):
         :rtype: GeneratedProtocolMessageType
         """
 
-        return CheckWorkerDeploymentResponse_PB
+        return GetWorkerInstanceTypesResponse_PB
 
 
 @bind_protobuf

@@ -3,6 +3,9 @@ from typing import Any
 from typing import Callable
 from typing import Type
 
+# third party
+from pandas import DataFrame
+
 # syft relative
 from ....core.common.serde.deserialize import _deserialize
 from ....core.node.common.client import Client
@@ -10,6 +13,7 @@ from ....core.pointer.pointer import Pointer
 from ....proto.core.io.address_pb2 import Address as Address_PB
 from ...messages.infra_messages import CreateWorkerMessage
 from ...messages.infra_messages import DeleteWorkerMessage
+from ...messages.infra_messages import GetWorkerInstanceTypesMessage
 from ...messages.infra_messages import GetWorkerMessage
 from ...messages.infra_messages import GetWorkersMessage
 from ...messages.infra_messages import UpdateWorkerMessage
@@ -33,6 +37,12 @@ class WorkerRequestAPI(GridRequestAPI):
 
         self.domain_client = domain_client
 
+    def instance_type(self, pandas: bool = False) -> Any:
+        result = self.__send(grid_msg=GetWorkerInstanceTypesMessage)
+        if pandas:
+            result = DataFrame(result)
+        return result
+
     def __getitem__(self, key: int) -> object:
         return self.get(worker_id=key)
 
@@ -41,13 +51,13 @@ class WorkerRequestAPI(GridRequestAPI):
 
     def to_obj(self, result: Any) -> Any:
         _raw_worker = super().to_obj(result)
-        _raw_addr = _raw_worker.address.encode("ISO-8859-1")
+        _raw_addr = _raw_worker.syft_address.encode("ISO-8859-1")
 
         addr_pb = Address_PB()
         addr_pb.ParseFromString(_raw_addr)
 
-        _worker_obj = self.domain_client.__class__(
-            credentials={},  # type: ignore
+        _worker_obj = self.domain_client.__class__(  # type: ignore
+            credentials={},
             url=self.domain_client.conn.base_url,  # type: ignore
             conn_type=self.domain_client.conn.__class__,  # type: ignore
             client_type=self.domain_client.client_type,  # type: ignore

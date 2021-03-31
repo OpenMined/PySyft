@@ -17,8 +17,7 @@ from syft.grid.messages.request_messages import UpdateRequestMessage
 from syft.grid.messages.request_messages import UpdateRequestResponse
 
 
-def test_create_data_request_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_create_data_request_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     request_content = {
@@ -29,7 +28,7 @@ def test_create_data_request_message_serde() -> None:
     msg = CreateRequestMessage(
         address=target,
         content=request_content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = sy.serialize(msg)
@@ -60,15 +59,14 @@ def test_create_data_request_response_serde() -> None:
     assert msg == msg2
 
 
-def test_delete_data_request_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_delete_data_request_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     request_content = {"request_id": "f2a6as5d16fasd"}
     msg = DeleteRequestMessage(
         address=target,
         content=request_content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = sy.serialize(msg)
@@ -99,8 +97,7 @@ def test_delete_data_request_response_serde() -> None:
     assert msg == msg2
 
 
-def test_update_data_request_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_update_data_request_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     content = {
@@ -112,7 +109,7 @@ def test_update_data_request_message_serde() -> None:
     msg = UpdateRequestMessage(
         address=target,
         content=content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = sy.serialize(msg)
@@ -143,15 +140,14 @@ def test_update_data_request_response_serde() -> None:
     assert msg == msg2
 
 
-def test_get_data_request_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_get_data_request_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     content = {"request_id": "eqw9e4a5d846"}
     msg = GetRequestMessage(
         address=target,
         content=content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = sy.serialize(msg)
@@ -188,15 +184,14 @@ def test_get_data_request_response_serde() -> None:
     assert msg == msg2
 
 
-def test_get_all_data_requests_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_get_all_data_requests_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     content: Dict[Any, Any] = {}
     msg = GetRequestsMessage(
         address=target,
         content=content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = sy.serialize(msg)
