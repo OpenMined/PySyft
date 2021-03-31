@@ -35,6 +35,7 @@ from ..node.common.action.common import Action
 from ..node.common.util import listify
 from ..pointer.pointer import Pointer
 from .plan_pointer import PlanPointer
+from .plan_action import PlanAction
 from .plan_run_class_method_action import PlanRunClassMethodAction
 from ..store.storeable_object import StorableObject
 
@@ -185,6 +186,58 @@ class Plan(Serializable):
 
         return Plan_PB
 
+    def strip(self):
+
+        self._seq = dict()
+
+        def get_pointer_from_seq(v):
+            id_at_location = v.id_at_location
+            if id_at_location in self._seq.keys():
+                if not isinstance(self._seq[id_at_location], PlanPointer):
+                    self._seq[id_at_location] = PlanPointer(v, self._seq[id_at_location])
+                return self._seq[id_at_location]
+            else:
+                raise Exception
+
+        self._stripped_inputs = dict()
+        for index, k in enumerate(self.inputs):
+            v = self.inputs[k]
+            self._seq[v.id_at_location] = PlanPointer(v, 'inp' + str(index))
+            self._stripped_inputs[k] = self._seq[v.id_at_location]
+
+        self._stripped_outputs = list()
+        for index, out in enumerate(self.outputs):
+            self._seq[out.id_at_location] = PlanPointer(out, 'out' + str(index))
+            self._stripped_outputs.append(self._seq[out.id_at_location])
+
+        self._plan_actions = list()
+
+        interIndex = 0
+        for action in self.actions:
+            tmpArgs = list()
+            tmpKwargs = dict()
+            for arg in action.args:
+                tmpArgs.append(get_pointer_from_seq(arg))
+            for k, v in action.kwargs.items():
+                tmpKwargs[k] = get_pointer_from_seq(v)
+
+            _self = get_pointer_from_seq(action._self)
+
+            if action.id_at_location not in self._seq.keys():
+                self._seq[action.id_at_location] = 'inter' + str(interIndex)
+                seq_id = 'inter' + str(interIndex)
+                interIndex += 1
+            else:
+                seq_id = self._seq[action.id_at_location].seq_id
+
+            self._plan_actions.append(
+                PlanAction(
+                    obj_type=".".join([action.__module__, action.__class__.__name__]),
+                    action=PlanRunClassMethodAction(
+                        action.path, seq_id, _self, tmpArgs, tmpKwargs)._object2proto(),
+                )
+            )
+
     def _object2proto(self) -> Plan_PB:
         """Returns a protobuf serialization of self.
 
@@ -201,59 +254,15 @@ class Plan(Serializable):
             object.
         """
 
-        seq = dict()
-
-        def get_pointer_from_seq(v):
-            id_at_location = v.id_at_location
-            if id_at_location in seq.keys():
-                if not isinstance(seq[id_at_location], PlanPointer):
-                    seq[id_at_location] = PlanPointer(v, seq[id_at_location])
-                return seq[id_at_location]
-            else:
-                raise Exception
-
-        inputs_pb = dict()
-        for index, k in enumerate(self.inputs):
-            v = self.inputs[k]
-            seq[v.id_at_location] = PlanPointer(v, 'inp' + str(index))
-            inputs_pb[k] = seq[v.id_at_location]._object2proto()
-
-        outputs_pb = list()
-        for index, out in enumerate(self.outputs):
-            seq[out.id_at_location] = PlanPointer(out, 'out' + str(index))
-            outputs_pb.append(seq[out.id_at_location]._object2proto())
-
-        planActions_pb = list()
-
-        interIndex = 0
-        for action in self.actions:
-            tmpArgs = list()
-            tmpKwargs = dict()
-            for arg in action.args:
-                tmpArgs.append(get_pointer_from_seq(arg))
-            for k, v in action.kwargs.items():
-                tmpKwargs[k] = get_pointer_from_seq(v)
-
-            _self = get_pointer_from_seq(action._self)
-
-            if action.id_at_location not in seq.keys():
-                seq[action.id_at_location] = 'inter' + str(interIndex)
-                seq_id = 'inter' + str(interIndex)
-                interIndex += 1
-            else:
-                seq_id = seq[action.id_at_location].seq_id
-
-            planActions_pb.append(
-                PlanAction_pb(
-                    obj_type=".".join([action.__module__, action.__class__.__name__]),
-                    plan_run_class_method_action=PlanRunClassMethodAction(
-                        action.path, seq_id, _self, tmpArgs, tmpKwargs)._object2proto(),
-                )
-            )
-
         def camel_to_snake(s: str) -> str:
             """Convert CamelCase classes to snake case for matching protobuf names"""
             return CAMEL_TO_SNAKE_PAT.sub("_", s).lower()
+
+        self.strip()
+
+        inputs_pb = {k: v._object2proto() for k, v in self._stripped_inputs.items()}
+        outputs_pb = [out._object2proto() for out in self._stripped_outputs]
+        planActions_pb = [action._object2proto() for action in self._plan_actions]
 
         return Plan_PB(actions=planActions_pb, inputs=inputs_pb, outputs=outputs_pb)
 
