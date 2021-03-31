@@ -188,8 +188,10 @@ class Plan(Serializable):
 
     def strip(self):
 
+        # PlanPointer dict for inputs, outputs and intermediate variables (id_at_location -> PlanPointer)
         self._seq = dict()
 
+        # Extract PlanPointer from _seq (if only string_id, create PlanPointer)
         def get_pointer_from_seq(v):
             id_at_location = v.id_at_location
             if id_at_location in self._seq.keys():
@@ -199,30 +201,39 @@ class Plan(Serializable):
             else:
                 raise Exception
 
+        # Create PlanPointer (stripped Pointer) for each input, (seq_id = inp1, inp2 ... )
         self._stripped_inputs = dict()
         for index, k in enumerate(self.inputs):
             v = self.inputs[k]
             self._seq[v.id_at_location] = PlanPointer(v, 'inp' + str(index))
             self._stripped_inputs[k] = self._seq[v.id_at_location]
 
+        # Create PlanPointer (stripped Pointer) for each output, (seq_id = out1, out2 ... )
         self._stripped_outputs = list()
         for index, out in enumerate(self.outputs):
             self._seq[out.id_at_location] = PlanPointer(out, 'out' + str(index))
             self._stripped_outputs.append(self._seq[out.id_at_location])
 
+        # Stripped Actions -> PlanActions
         self._plan_actions = list()
 
         interIndex = 0
         for action in self.actions:
+
+            # Get name
             tmpArgs = list()
             tmpKwargs = dict()
+
+            # Expected: arg and kwargs are already created pointers (i.e. sequential actions)
             for arg in action.args:
                 tmpArgs.append(get_pointer_from_seq(arg))
             for k, v in action.kwargs.items():
                 tmpKwargs[k] = get_pointer_from_seq(v)
 
+            # PlanPointer of Pointer whose fn is called
             _self = get_pointer_from_seq(action._self)
 
+            # If intermediate variable is used, create the PlanPointer for it
             if action.id_at_location not in self._seq.keys():
                 self._seq[action.id_at_location] = 'inter' + str(interIndex)
                 seq_id = 'inter' + str(interIndex)
@@ -258,6 +269,7 @@ class Plan(Serializable):
             """Convert CamelCase classes to snake case for matching protobuf names"""
             return CAMEL_TO_SNAKE_PAT.sub("_", s).lower()
 
+        # Strip the plan object (remove all UIDs, Addresses etc.)
         self.strip()
 
         inputs_pb = {k: v._object2proto() for k, v in self._stripped_inputs.items()}
