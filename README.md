@@ -62,7 +62,7 @@ Many times you will wat to use a Network to allow multiple Domains to be connect
 
 ![Network-based DCFL](assets/DCFL-network.png)
 
-## Getting started
+## Local Setup
 
 Currently, we suggest two ways to run PyGrid locally: Docker and manually running from source. With Docker, we can organize all the services we'd like to use and then boot them all in one command. With manually running from source, we have to run them as separate tasks.
 
@@ -174,7 +174,7 @@ You can pass the arguments or use environment variables to set the network confi
 
 ## Deployment & CLI
 
-Please check the instruction for deployment and CLI here: [deployment.md](deployment.md)
+[Please check the instruction for deployment and CLI here.](deployment.md)
 
 
 ## Contributing
