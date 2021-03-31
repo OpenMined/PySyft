@@ -18,8 +18,7 @@ from syft.grid.messages.group_messages import UpdateGroupMessage
 from syft.grid.messages.group_messages import UpdateGroupResponse
 
 
-def test_create_group_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_create_group_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     request_content = {
@@ -34,7 +33,7 @@ def test_create_group_message_serde() -> None:
     msg = CreateGroupMessage(
         address=target,
         content=request_content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)
@@ -65,15 +64,14 @@ def test_create_group_response_serde() -> None:
     assert msg == msg2
 
 
-def test_delete_group_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_delete_group_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     request_content = {"group_id": "f2a6as5d16fasd"}
     msg = DeleteGroupMessage(
         address=target,
         content=request_content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)
@@ -104,8 +102,7 @@ def test_delete_group_response_serde() -> None:
     assert msg == msg2
 
 
-def test_update_group_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_update_group_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     content = {
@@ -121,7 +118,7 @@ def test_update_group_message_serde() -> None:
     msg = UpdateGroupMessage(
         address=target,
         content=content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)
@@ -152,15 +149,14 @@ def test_update_group_response_serde() -> None:
     assert msg == msg2
 
 
-def test_get_group_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_get_group_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     content = {"group-id": "eqw9e4a5d846"}
     msg = GetGroupMessage(
         address=target,
         content=content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)
@@ -201,15 +197,14 @@ def test_get_group_response_serde() -> None:
     assert msg == msg2
 
 
-def test_get_all_groups_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_get_all_groups_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     content: Dict[Any, Any] = {}
     msg = GetGroupsMessage(
         address=target,
         content=content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)
