@@ -24,7 +24,8 @@ class PlanTorchscript(Serializable):
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """Return the type of protobuf object which stores a class of this type
+        """
+        Return the type of protobuf object which stores a class of this type
 
         As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
@@ -35,8 +36,8 @@ class PlanTorchscript(Serializable):
         it takes whatever type is returned from this method and adds an attribute to it
         with the type of this class attached to it. See the MetaSerializable class for details.
 
-        :return: the type of protobuf object which corresponds to this class.
-        :rtype: GeneratedProtocolMessageType
+        Returns:
+            The type of protobuf object which corresponds to this class.
 
         """
         return Plan_PB
@@ -48,19 +49,16 @@ class PlanTorchscript(Serializable):
             traceback_and_raise("No torchscript")
 
     def _object2proto(self) -> Plan_PB:
-        """Returns a protobuf serialization of self.
+        """
+        Returns a protobuf serialization of self.
 
         As a requirement of all objects which inherit from Serializable,
         this method transforms the current object into the corresponding
         Protobuf object so that it can be further serialized.
 
-        :return: returns a protobuf object
-        :rtype: ObjectWithID_PB
+        Returns:
+            The protobuf representation of self.
 
-        .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
-            the other public serialization methods if you wish to serialize an
-            object.
         """
         bin = self.torchscript.save_to_buffer() if self.torchscript else None
         return Plan_PB(torchscript=bin)
@@ -72,12 +70,8 @@ class PlanTorchscript(Serializable):
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
 
-        :return: returns an instance of Plan
-        :rtype: Plan
-
-        .. note::
-            This method is purely an internal method. Please use syft.deserialize()
-            if you wish to deserialize an object.
+        Returns:
+           A Plan representation from the associated protobuf message.
         """
         if proto.torchscript:
             bin = io.BytesIO(proto.torchscript)

@@ -25,9 +25,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
     serialized_pb=b'\n\x1cproto/lib/python/slice.proto\x12\x0fsyft.lib.python\x1a%proto/core/common/common_object.proto"\xee\x01\n\x05Slice\x12\x12\n\x05start\x18\x01 \x01(\x03H\x00\x88\x01\x01\x12\x11\n\x04stop\x18\x02 \x01(\x03H\x01\x88\x01\x01\x12\x11\n\x04step\x18\x03 \x01(\x03H\x02\x88\x01\x01\x12\x16\n\thas_start\x18\x04 \x01(\x08H\x03\x88\x01\x01\x12\x15\n\x08has_stop\x18\x05 \x01(\x08H\x04\x88\x01\x01\x12\x15\n\x08has_step\x18\x06 \x01(\x08H\x05\x88\x01\x01\x12!\n\x02id\x18\x07 \x01(\x0b\x32\x15.syft.core.common.UIDB\x08\n\x06_startB\x07\n\x05_stopB\x07\n\x05_stepB\x0c\n\n_has_startB\x0b\n\t_has_stopB\x0b\n\t_has_stepb\x06proto3',
-    dependencies=[
-        proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
-    ],
+    dependencies=[proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,],
 )
 
 
