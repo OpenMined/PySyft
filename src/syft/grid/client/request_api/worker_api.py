@@ -3,6 +3,9 @@ from typing import Any
 from typing import Callable
 from typing import Type
 
+# third party
+from pandas import DataFrame
+
 # syft relative
 from ....core.common.serde.deserialize import _deserialize
 from ....core.node.common.client import Client
@@ -10,6 +13,7 @@ from ....core.pointer.pointer import Pointer
 from ....proto.core.io.address_pb2 import Address as Address_PB
 from ...messages.infra_messages import CreateWorkerMessage
 from ...messages.infra_messages import DeleteWorkerMessage
+from ...messages.infra_messages import GetWorkerInstanceTypesMessage
 from ...messages.infra_messages import GetWorkerMessage
 from ...messages.infra_messages import GetWorkersMessage
 from ...messages.infra_messages import UpdateWorkerMessage
@@ -32,6 +36,12 @@ class WorkerRequestAPI(GridRequestAPI):
         )
 
         self.domain_client = domain_client
+
+    def instance_type(self, pandas: bool = False) -> Any:
+        result = self.__send(grid_msg=GetWorkerInstanceTypesMessage)
+        if pandas:
+            result = DataFrame(result)
+        return result
 
     def __getitem__(self, key: int) -> object:
         return self.get(worker_id=key)
