@@ -115,3 +115,25 @@ def seed_db():
         can_upload_data=True,
     )
     db.session.add(new_role)
+
+
+def seed_network_db():
+    global db
+
+    new_role = Role(
+        name="Administrator",
+        can_edit_settings=True,
+        can_create_users=True,
+        can_edit_roles=False,
+        can_manage_infrastructure=False,
+    )
+    db.session.add(new_role)
+
+    new_role = Role(
+        name="Owner",
+        can_edit_settings=True,
+        can_create_users=True,
+        can_edit_roles=True,
+        can_manage_infrastructure=True,
+    )
+    db.session.add(new_role)
