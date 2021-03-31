@@ -18,6 +18,11 @@ class AZURE(Provider):
 
         ##TODO(amr): terrascript does not support azurem right now
         # self.tfscript += terrascript.terraform(backend=terrascript.backend("azurerm"))
+        self.tfscript += terrascript.terraform(
+            required_providers={
+                "azurerm": {"source": "hashicorp/azurerm", "version": "=2.46.0"}
+            }
+        )
         self.tfscript += azurerm(
             features={},
             subscription_id=self.config.azure.subscription_id,
@@ -27,15 +32,11 @@ class AZURE(Provider):
         )
 
         self.build_resource_group()
-        self.build_virtual_network()
-        self.build_subnets()
-        self.build_public_ip()
-
         self.build_security_groups()
-        self.build_network_interface()
+        self.build_network()
 
         self.build_instances()
-        self.build_load_balancer()
+        # self.build_load_balancer()
 
     def build_resource_group(self):
         self.resource_group = azurerm_resource_group(
@@ -45,118 +46,35 @@ class AZURE(Provider):
         )
         self.tfscript += self.resource_group
 
-    def build_virtual_network(self):
-        self.virtual_network = azurerm_virtual_network(
-            f"pygrid_virtual_network",
-            name=f"pygrid_virtual_network",
+    def build_network(self):
+        self.network = vnet(
+            f"pygrid-network",
+            source="Azure/vnet/azurerm",
             resource_group_name=self.resource_group.name,
-            location=self.resource_group.location,
             address_space=["10.0.0.0/16"],
+            subnet_prefixes=["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"],
+            subnet_names=["subnet1", "subnet2", "subnet3"],
+            nsg_ids={
+                "subnet1": var(self.network_security_group.id),
+                "subnet2": var(self.network_security_group.id),
+                "subnet3": var(self.network_security_group.id),
+            },
             tags={
                 "name": "pygrid-virtual-network",
                 "environment": "dev",
             },
+            depends_on=["azurerm_resource_group.pygrid_resource_group"],
         )
-        self.tfscript += self.virtual_network
-
-    def build_subnets(self):
-        self.azurerm_subnet = azurerm_subnet(
-            f"pygrid_subnet",
-            name=f"pygrid_subnet",
-            resource_group_name=self.resource_group.name,
-            virtual_network_name=self.virtual_network.name,
-            address_prefixes=["10.0.2.0/24"],
-        )
-        self.tfscript += self.azurerm_subnet
-
-        self.availability_set = azurerm_availability_set(
-            f"pygrid_availability_set",
-            name=f"pygrid_availability_set",
-            resource_group_name=self.resource_group.name,
-            location=self.resource_group.location,
-            platform_fault_domain_count=self.config.app.count,
-            platform_update_domain_count=self.config.app.count,
-            managed=True,
-        )
-        self.tfscript += self.availability_set
-
-    def build_public_ip(self):
-        self.public_ip = azurerm_public_ip(
-            f"pygrid_public_ip",
-            name=f"pygrid_public_ip",
-            resource_group_name=self.resource_group.name,
-            location=self.resource_group.location,
-            allocation_method="Dynamic",
-            tags={
-                "name": "pygrid-public-ip",
-                "environment": "dev",
-            },
-        )
-        self.tfscript += self.public_ip
+        self.tfscript += self.network
 
     def build_security_groups(self):
         self.network_security_group = azurerm_network_security_group(
             f"pygrid_network_security_group",
             name=f"pygrid_network_security_group",
-            resource_group_name=self.resource_group.name,
+            resource_group_name=var(
+                "azurerm_resource_group.pygrid_resource_group.name"
+            ),
             location=self.resource_group.location,
-            # security_rule=[
-            #     {
-            #         "name": "HTTPS",
-            #         "priority": 100,
-            #         "direction": "Inbound",
-            #         "access": "Allow",
-            #         "protocol": "Tcp",
-            #         "source_port_range": "443",
-            #         "destination_port_range": "443",
-            #         "source_address_prefix": "*",
-            #         "destination_address_prefix": "*",
-            #     },
-            #     {
-            #         "name": "HTTP",
-            #         "priority": 101,
-            #         "direction": "Inbound",
-            #         "access": "Allow",
-            #         "protocol": "Tcp",
-            #         "source_port_range": "80",
-            #         "destination_port_range": "80",
-            #         "source_address_prefix": "*",
-            #         "destination_address_prefix": "*",
-            #     },
-            #     {
-            #         "name": "PyGrid Domains",
-            #         "priority": 102,
-            #         "direction": "Inbound",
-            #         "access": "Allow",
-            #         "protocol": "Tcp",
-            #         "source_port_range": "5000",
-            #         "destination_port_range": "5999",
-            #         "source_address_prefix": "*",
-            #         "destination_address_prefix": "*",
-            #     },
-            #     {
-            #         "name": "PyGrid Workers",
-            #         "priority": 103,
-            #         "direction": "Inbound",
-            #         "access": "Allow",
-            #         "protocol": "Tcp",
-            #         "source_port_range": "6000",
-            #         "destination_port_range": "6999",
-            #         "source_address_prefix": "*",
-            #         "destination_address_prefix": "*",
-            #     },
-            #     {
-            #         "name": "PyGrid Networks",
-            #         "priority": 104,
-            #         "direction": "Inbound",
-            #         "access": "Allow",
-            #         "protocol": "Tcp",
-            #         "source_port_range": "7000",
-            #         "destination_port_range": "7999",
-            #         "source_address_prefix": "*",
-            #         "destination_address_prefix": "*",
-            #     },
-            # ],
             tags={
                 "name": "pygrid-security-groups",
                 "environment": "dev",
@@ -164,31 +82,33 @@ class AZURE(Provider):
         )
         self.tfscript += self.network_security_group
 
-    def build_network_interface(self):
-
-        self.network_interface = azurerm_network_interface(
-            f"pygrid_network_interface",
-            name=f"pygrid_network_interface",
-            resource_group_name=self.resource_group.name,
-            location=self.resource_group.location,
-            ip_configuration={
-                "name": "internal",
-                "subnet_id": var(self.azurerm_subnet.id),
-                "private_ip_address_allocation": "Dynamic",
-            },
-            tags={
-                "name": "pygrid-network-interface",
-                "environment": "dev",
-            },
-        )
-        self.tfscript += self.network_interface
-
-        self.ni_sec_association = azurerm_network_interface_security_group_association(
-            f"network_interface_security_group_association",
-            network_interface_id=var(self.network_interface.id),
-            network_security_group_id=var(self.network_security_group.id),
-        )
-        self.tfscript += self.ni_sec_association
+        security_rules = [
+            ("HTTPS", 100, 443, 443),
+            ("HTTP", 101, 80, 80),
+            ("PyGrid_Domains", 102, 5000, 5999),
+            ("PyGrid_Workers", 103, 6000, 6999),
+            ("PyGrid_Networks", 104, 7000, 7999),
+            ("SSH", 105, 22, 22),
+        ]
+        for name, priority, source_port, dest_port in security_rules:
+            self.tfscript += azurerm_network_security_rule(
+                name,
+                name=name,
+                priority=priority,
+                direction="Inbound",
+                access="Allow",
+                protocol="Tcp",
+                source_port_range=source_port,
+                destination_port_range=dest_port,
+                source_address_prefix="*",
+                destination_address_prefix="*",
+                resource_group_name=var(
+                    "azurerm_resource_group.pygrid_resource_group.name"
+                ),
+                network_security_group_name=var(
+                    "azurerm_network_security_group.pygrid_network_security_group.name"
+                ),
+            )
 
     def build_instances(self):
         name = self.config.app.name
@@ -197,97 +117,50 @@ class AZURE(Provider):
         for count in range(self.config.app.count):
             app = self.config.apps[count]
 
-            instance = azurerm_virtual_machine(
-                name,
-                name=name,
+            instance = linuxservers(
+                f"pygrid-{name}-instance-{count}",
+                source="Azure/compute/azurerm",
                 resource_group_name=self.resource_group.name,
-                location=self.resource_group.location,
-                network_interface_ids=[var(self.network_interface.id)],
-                availability_set_id=var(self.availability_set.id),
-                vm_size="Standard_DS1_v2",  # TODO: get this config from user
-                # TODO: get config from user
-                storage_image_reference={
-                    "publisher": "Canonical",
-                    "offer": "UbuntuServer",
-                    "sku": "18.04-LTS",
-                    "version": "latest",
-                },
-                storage_os_disk={
-                    "name": "OSDisk",
-                    "caching": "ReadWrite",
-                    "create_option": "FromImage",
-                    "managed_disk_type": "Standard_LRS",
-                },
-                os_profile={
-                    "computer_name": "hostname",
-                    "admin_username": "openmined",
-                    "admin_password": "pswd123!",
-                    "custom_data": self.write_exec_script(app, index=count),
-                },
-                os_profile_linux_config={"disable_password_authentication": False},
-                delete_os_disk_on_termination=True,
-                delete_data_disks_on_termination=True,
+                vm_os_simple="UbuntuServer",
+                public_ip_dns=[f"pygrid-{name}-instance-{count}"],
+                vnet_subnet_id=var_module(self.network, "vnet_subnets[0]"),
+                custom_data=self.write_exec_script(app, index=count),
+                admin_username="pygriduser",
+                admin_password="pswd123!",
+                depends_on=["azurerm_resource_group.pygrid_resource_group"],
             )
 
             self.tfscript += instance
+            self.tfscript += terrascript.Output(
+                f"instance_{count}_endpoint",
+                value=var_module(instance, "public_ip_address"),
+                description=f"The public IP address of #{count} instance.",
+            )
             self.instances.append(instance)
 
     def build_load_balancer(self):
-        self.load_balancer = azurerm_lb(
+        self.load_balancer = mylb(
             f"pygrid_load_balancer",
-            name=f"pygrid_load_balancer",
+            source="Azure/loadbalancer/azurerm",
             resource_group_name=self.resource_group.name,
-            location=self.resource_group.location,
-            frontend_ip_configuration={
-                "name": "lb_public_ip",
-                "public_ip_address_id": var(self.public_ip.id),
+            prefix="terraform-lb",
+            depends_on=["azurerm_resource_group.pygrid_resource_group"],
+            frontend_subnet_id=var_module(self.network, "vnet_subnets[0]"),
+            remote_port={"ssh": ["Tcp", "22"]},
+            lb_port={
+                "http": ["80", "Tcp", "80"],
+                "https": ["443", "Tcp", "443"],
+            },
+            lb_probe={
+                "http": ["Tcp", "80", ""],
+                "http2": ["Http", "1443", "/"],
             },
         )
         self.tfscript += self.load_balancer
-
-        self.lb_backend_address = azurerm_lb_backend_address_pool(
-            f"pygrid_lb_backend_address",
-            name=f"pygrid_lb_backend_address",
-            loadbalancer_id=var(self.load_balancer.id),
-        )
-        self.tfscript += self.lb_backend_address
-
-    def build_database(self):
-        """https://registry.terraform.io/providers/hashicorp/azurerm/latest/doc
-        s/resources/sql_database."""
-        self.sql_server = azurerm_sql_server(
-            f"pygrid_sql_server",
-            name=f"pygrid_sql_server",
-            resource_group_name=self.resource_group.name,
-            location=self.resource_group.location,
-            version="12.0",
-            administrator_login=self.config.credentials.db.username,
-            administrator_login_password=self.config.credentials.db.password,
-        )
-        self.tfscript += self.sql_server
-
-        self.storage_account = azurerm_storage_account(
-            f"pygrid_storage_account",
-            name=f"pygrid_storage_account",
-            resource_group_name=self.resource_group.name,
-            location=self.resource_group.location,
-            account_tier="Standard",
-            account_replication_type="LRS",
-        )
-        self.tfscript += self.storage_account
-
-        self.database = azurerm_sql_database(
-            f"pygrid-{self.config.app.name}-database",
-            name=f"pygrid-{self.config.app.name}-database",
-            resource_group_name=self.resource_group.name,
-            location=self.resource_group.location,
-            server_name=self.sql_server.name,
-            extended_auditing_policy={
-                "storage_endpoint": self.storage_account.primary_blob_endpoint,
-                "storage_account_access_key": self.storage_account.primary_access_key,
-                "storage_account_access_key_is_secondary": True,
-                "retention_in_days": 6,
-            },
+        self.tfscript += terrascript.Output(
+            f"load_balancer_dns",
+            value=var_module(self.load_balancer, "azurerm_public_ip_address"),
+            description="The DNS name of the ELB.",
         )
 
     def write_exec_script(self, app, index=0):

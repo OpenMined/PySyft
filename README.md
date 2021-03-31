@@ -172,6 +172,11 @@ You can pass the arguments or use environment variables to set the network confi
 - `DATABASE_URL` - The Network database URL
 - `SECRET_KEY` - The secret key
 
+## Deployment & CLI
+
+Please check the instruction for deployment and CLI here: [deployment.md](deployment.md)
+
+
 ## Contributing
 
 If you're interested in contributing, check out our [Contributor Guidelines](CONTRIBUTING.md).
