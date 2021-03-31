@@ -223,7 +223,6 @@ def update_user_msg(
         _valid_groups = (
             len(list(filter(lambda x: node.groups.first(id=x), _groups))) > 0
         )
-        print(_valid_groups)
         # If all premises were respected
         if _allowed and _valid_groups:
             node.groups.update_user_association(user_id=_user_id, groups=_groups)
@@ -252,17 +251,8 @@ def get_user_msg(
             verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
         ).id
 
-    _allowed = users.can_triage_requests(user_id=_current_user_id)
-
-    if _allowed:
-        user = users.first(id=_user_id)
-        _msg = model_to_json(user)
-        _msg["groups"] = [
-            node.groups.first(id=group).name
-            for group in node.groups.get_groups(user_id=_user_id)
-        ]
-    else:
-        raise AuthorizationError("You're not allowed to get User information!")
+    user = users.first(id=_user_id)
+    _msg = model_to_json(user)
 
     return GetUserResponse(
         address=msg.reply_to,
@@ -289,20 +279,11 @@ def get_all_users_msg(
             verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
         ).id
 
-    _allowed = users.can_triage_requests(user_id=_current_user_id)
-
-    if _allowed:
-        users = users.all()
-        _msg = []
-        for user in users:
-            _user_json = model_to_json(user)
-            _user_json["groups"] = [
-                node.groups.first(id=group).name
-                for group in node.groups.get_groups(user_id=user.id)
-            ]
-            _msg.append(_user_json)
-    else:
-        raise AuthorizationError("You're not allowed to get User information!")
+    users = users.all()
+    _msg = []
+    for user in users:
+        _user_json = model_to_json(user)
+        _msg.append(_user_json)
 
     return GetUsersResponse(
         address=msg.reply_to,
@@ -361,34 +342,16 @@ def search_users_msg(
         "email": msg.content.get("email", None),
         "role": msg.content.get("role", None),
     }
-    _group = msg.content.get("group", None)
 
     filter_parameters = lambda key: user_parameters[key]
     filtered_parameters = filter(filter_parameters, user_parameters.keys())
     user_parameters = {key: user_parameters[key] for key in filtered_parameters}
 
-    _allowed = users.can_triage_requests(user_id=_current_user_id)
-
-    if _allowed:
-        try:
-            users = node.users.query(**user_parameters)
-            if _group:
-                for user in users:
-                    if node.groups.contain_association(user=user.id, group=_group):
-                        print("Existe!")
-                    else:
-                        print("Nao Existe!")
-                filtered_users = filter(
-                    lambda x: node.groups.contain_association(user=x.id, group=_group),
-                    users,
-                )
-                _msg = [model_to_json(user) for user in filtered_users]
-            else:
-                _msg = [model_to_json(user) for user in users]
-        except UserNotFoundError:
-            _msg = {}
-    else:
-        raise AuthorizationError("You're not allowed to get User information!")
+    try:
+        users = node.users.query(**user_parameters)
+        _msg = [model_to_json(user) for user in users]
+    except UserNotFoundError:
+        _msg = {}
 
     return SearchUsersResponse(
         address=msg.reply_to,

@@ -136,4 +136,5 @@ def seed_network_db():
         can_edit_roles=True,
         can_manage_infrastructure=True,
     )
+
     db.session.add(new_role)

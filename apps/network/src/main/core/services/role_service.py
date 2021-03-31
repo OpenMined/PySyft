@@ -215,7 +215,6 @@ def del_role_msg(
         raise MissingRequestKeyError
 
     _allowed = node.users.can_edit_roles(user_id=_current_user_id)
-
     if _allowed:
         node.roles.delete(id=_role_id)
     else:

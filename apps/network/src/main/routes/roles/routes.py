@@ -112,7 +112,6 @@ def delete_role_route(current_user, role_id):
     status_code, response_msg = error_handler(
         route_logic, DeleteRoleMessage, current_user, content
     )
-    print("My Response: ", response_msg)
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
 
     return Response(
