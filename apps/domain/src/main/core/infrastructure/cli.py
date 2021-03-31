@@ -7,7 +7,6 @@ from types import SimpleNamespace
 from urllib.parse import urljoin
 
 import click
-import requests
 
 from .providers import AZURE, GCP, AWS_Serverfull, AWS_Serverless
 from .providers.aws import utils as aws_utils
