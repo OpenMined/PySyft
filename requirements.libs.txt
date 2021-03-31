@@ -7,6 +7,5 @@ pandas
 PIL
 python-dp
 pytorch-lightning @ git+https://github.com/tudorcebere/pytorch-lightning@tudor-om-v0
-scikit-learn
 sympc @ git+https://github.com/OpenMined/SyMPC@main
 tenseal
