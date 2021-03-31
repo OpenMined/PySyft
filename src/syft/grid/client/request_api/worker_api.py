@@ -38,8 +38,14 @@ class WorkerRequestAPI(GridRequestAPI):
         self.domain_client = domain_client
 
     def instance_type(self, pandas: bool = False) -> Any:
-        result = self.__send(grid_msg=GetWorkerInstanceTypesMessage)
+        result = self.send(grid_msg=GetWorkerInstanceTypesMessage)
         if pandas:
+            max_size = len(min(result.values()))  # Why min/max functions were switched?
+            for key in result.keys():
+                empty_cells = max_size - len(result[key])
+                while empty_cells:
+                    result[key].append("")
+                    empty_cells -= 1
             result = DataFrame(result)
         return result
 
@@ -74,7 +80,10 @@ class WorkerRequestAPI(GridRequestAPI):
         def _save(obj_ptr: Type[Pointer]) -> None:
             _content = {
                 "address": _worker_obj.address,
-                "content": {"uid": str(obj_ptr.id_at_location.value)},
+                "content": {
+                    "uid": str(obj_ptr.id_at_location.value),
+                    "domain_address": self.domain_client.conn.base_url,
+                },
             }
             signed_msg = SaveObjectMessage(**_content).sign(  # type: ignore
                 signing_key=_worker_obj.signing_key
