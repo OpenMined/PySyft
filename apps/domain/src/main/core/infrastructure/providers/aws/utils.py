@@ -72,11 +72,15 @@ def get_all_instance_types_by_filter(client, filter):
         instances += response["InstanceTypes"]
     return instances
 
+def get_all_instance_names_by_filter(client, filter):
+    instances = get_all_instance_types_by_filter(client, filter)
+    instance_names = [i['InstanceType'] for i in instances]
+    return instance_names
 
 def get_all_instance_types(region):
     client = boto3.client("ec2", region_name=region)
     instance_types = {
-        category: get_all_instance_types_by_filter(client, filter)
+        category: get_all_instance_names_by_filter(client, filter)
         for category, filter in instance_type_filters.items()
     }
     return instance_types
