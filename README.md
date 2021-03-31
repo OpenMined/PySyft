@@ -120,7 +120,7 @@ These tutorials cover how to operate common network types over the Duet API.
 The guide for contributors can be found [here](https://github.com/OpenMined/PySyft/blob/dev/CONTRIBUTING.md).
 It covers all that you need to know to start contributing code to PySyft today.
 
-Also, join the rapidly growing community of 7000+ on [Slack](http://slack.openmined.org).
+Also, join the rapidly growing community of 12000+ on [Slack](http://slack.openmined.org).
 The slack community is very friendly and great about quickly answering questions about the use and development of PySyft!
 
 ## Troubleshooting
@@ -139,7 +139,7 @@ We are very grateful for contributions to PySyft from the following organization
 
 ## Support
 
-For support in using this library, please join the **#lib_pysyft** Slack channel. [Click here to join our Slack community!](https://slack.openmined.org)
+For support in using this library, please join the **#support** Slack channel. [Click here to join our Slack community!](https://slack.openmined.org)
 
 ## Disclaimer
 

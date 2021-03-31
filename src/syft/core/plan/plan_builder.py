@@ -43,6 +43,7 @@ def map_in2out(inputs: dict, outputs: tuple) -> dict:
 def make_plan(func: Callable) -> Plan:
     inputs = build_plan_inputs(func)
     vm = PLAN_BUILDER_VM
+    code = inspect.getsource(func)
     vm.record_actions()
     res = func(**inputs)
     vm.stop_recording()
@@ -51,6 +52,7 @@ def make_plan(func: Callable) -> Plan:
         inputs=inputs,
         outputs=res,
         i2o_map=map_in2out(inputs, res),
+        code=code,
     )
     # cleanup
     vm.recorded_actions = []

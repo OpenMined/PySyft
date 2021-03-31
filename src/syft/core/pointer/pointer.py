@@ -155,6 +155,10 @@ class Pointer(AbstractPointer):
             description=description,
         )
         self.object_type = object_type
+        # _exhausted becomes True in get() call
+        # when delete_obj is True and network call
+        # has already been made
+        self._exhausted = False
 
     def _get(self, delete_obj: bool = True, verbose: bool = False) -> StorableObject:
         """Method to download a remote object from a pointer object if you have the right
@@ -259,6 +263,11 @@ class Pointer(AbstractPointer):
         # syft relative
         from ..node.domain.service import RequestStatus
 
+        if self._exhausted:
+            raise ReferenceError(
+                "Object has already been deleted. This pointer is exhausted"
+            )
+
         if not request_block:
             result = self._get(delete_obj=delete_obj, verbose=verbose)
         else:
@@ -278,6 +287,7 @@ class Pointer(AbstractPointer):
 
         if result is not None and delete_obj:
             self.gc_enabled = False
+            self._exhausted = True
 
         return result
 

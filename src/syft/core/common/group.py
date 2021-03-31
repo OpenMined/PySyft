@@ -35,11 +35,18 @@ GenerateWrapper(
 def _create_VERIFYALL() -> Any:
     @bind_protobuf
     class VerifyAll(Serializable):
+        _instance = None
+
+        def __new__(cls: Type) -> "VerifyAll":
+            if cls._instance is None:
+                cls._instance = object.__new__(cls)
+            return cls._instance
+
         def _object2proto(self) -> VerifyAllWrapper_PB:
             return VerifyAllWrapper_PB(all=Empty_PB())
 
         @staticmethod
-        def _proto2object(proto: VerifyAllWrapper_PB) -> Type:  # type: ignore
+        def _proto2object(proto: VerifyAllWrapper_PB) -> "VerifyAll":
             return VERIFYALL
 
         @staticmethod
@@ -50,3 +57,6 @@ def _create_VERIFYALL() -> Any:
 
 
 VERIFYALL = _create_VERIFYALL()
+VerifyAll = type(
+    VERIFYALL
+)  # deprecated: https://github.com/OpenMined/PySyft/issues/5396
