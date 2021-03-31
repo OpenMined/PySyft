@@ -6,11 +6,11 @@ from typing import List
 from typing import TYPE_CHECKING
 
 # syft relative
-from ..common.uid import UID
-from ..node.common.action.garbage_collect_batched_action import (
+from ...common.uid import UID
+from ...node.common.action.garbage_collect_batched_action import (
     GarbageCollectBatchedAction,
 )
-from ..pointer.pointer import Pointer
+from ..pointer import Pointer
 from .gc_strategy import GCStrategy
 
 if TYPE_CHECKING:

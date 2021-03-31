@@ -1,7 +1,7 @@
 """The GC class that would handle what happens when a pointer gets deleted."""
 
 # syft relative
-from ..pointer.pointer import Pointer
+from ..pointer import Pointer
 from .gc_strategy import GCStrategy
 
 

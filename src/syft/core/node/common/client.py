@@ -15,7 +15,6 @@ import pandas as pd
 
 # syft relative
 from .... import serialize
-from ....core.pointer.pointer import Pointer
 from ....lib import create_lib_ast
 from ....logger import critical
 from ....logger import debug
@@ -33,14 +32,15 @@ from ...common.message import SignedImmediateSyftMessageWithoutReply
 from ...common.message import SyftMessage
 from ...common.serde.deserialize import _deserialize
 from ...common.uid import UID
-from ...garbage_collection import GarbageCollection
-from ...garbage_collection import gc_get_default_strategy
 from ...io.location import Location
 from ...io.location import SpecificLocation
 from ...io.route import Route
 from ...io.route import SoloRoute
 from ...io.virtual import VirtualClientConnection
 from ...node.common.service.obj_search_service import ObjectSearchMessage
+from ...pointer.garbage_collection import GarbageCollection
+from ...pointer.garbage_collection import gc_get_default_strategy
+from ...pointer.pointer import Pointer
 from ..abstract.node import AbstractNodeClient
 from .action.exception_action import ExceptionMessage
 from .service.child_node_lifecycle_service import RegisterChildNodeMessage

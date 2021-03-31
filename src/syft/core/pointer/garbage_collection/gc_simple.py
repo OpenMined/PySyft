@@ -1,10 +1,10 @@
 """A simple garbage collection heuritics."""
 
 # syft relative
-from ..node.common.action.garbage_collect_object_action import (
+from ...node.common.action.garbage_collect_object_action import (
     GarbageCollectObjectAction,
 )
-from ..pointer.pointer import Pointer
+from ..pointer import Pointer
 from .gc_strategy import GCStrategy
 
 

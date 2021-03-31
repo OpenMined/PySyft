@@ -5,7 +5,7 @@ from abc import ABC
 from abc import abstractmethod
 
 # syft relative
-from ..pointer.pointer import Pointer
+from ..pointer import Pointer
 
 
 class GCStrategy(ABC):
