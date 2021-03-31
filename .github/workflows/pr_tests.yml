@@ -58,7 +58,7 @@ jobs:
       - name: Build Protos
         run: |
           set -e
-          pip install black isort
+          pip install black isort --default-timeout=60
           ./scripts/build_proto.sh
 
       - uses: pre-commit/action@v2.0.0
@@ -75,7 +75,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install docstr-coverage
-        run: pip install docstr-coverage
+        run: pip install docstr-coverage --default-timeout=60
 
       - name: Get base coverage
         run: |
@@ -135,15 +135,15 @@ jobs:
 
       - name: Install PyTorch
         run: |
-          pip install packaging
+          pip install packaging --default-timeout=60
           python scripts/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
           cat ./requirements.torch.txt
-          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html
+          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html --default-timeout=60
 
       - name: Install packages
         run: |
-          pip install -r requirements.dev.txt
-          pip install -e .
+          pip install -r requirements.dev.txt --default-timeout=60
+          pip install -e . --default-timeout=60
           pip list
         timeout-minutes: 20
 
@@ -169,7 +169,7 @@ jobs:
 
       - name: Run supported library tests
         run: |
-          pip install -r requirements.libs.deps.txt
+          pip install -r requirements.libs.deps.txt --default-timeout=60
           pip list
           pytest -m libs --co
           pytest -m libs -n auto -k "not tenseal" --suppress-no-test-exit-code
@@ -212,15 +212,15 @@ jobs:
 
       - name: Install PyTorch
         run: |
-          pip install packaging
+          pip install packaging --default-timeout=60
           python scripts/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
           cat ./requirements.torch.txt
-          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html
+          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html --default-timeout=60
 
       - name: Install packages
         run: |
-          pip install -r requirements.dev.txt
-          pip install -e .
+          pip install -r requirements.dev.txt --default-timeout=60
+          pip install -e . --default-timeout=60
           pip list
         timeout-minutes: 20
 
@@ -234,7 +234,7 @@ jobs:
         if: startsWith(runner.os, 'Windows') != true
         run: |
           cat requirements.libs.txt | xargs -I {} -n 1 pip install {} --no-deps --default-timeout=60 || true
-          pip install -r requirements.libs.deps.txt
+          pip install -r requirements.libs.deps.txt --default-timeout=60
 
       - name: Run notebook Duet examples
         run: |
@@ -284,19 +284,19 @@ jobs:
 
       - name: Install PyTorch
         run: |
-          pip install packaging
+          pip install packaging --default-timeout=60
           python scripts/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
           cat ./requirements.torch.txt
-          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html
+          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html --default-timeout=60
 
       - name: Test PyGrid
         continue-on-error: true
         run: |
           pip install -e . --default-timeout=60
-          pip install -r requirements.grid.txt
+          pip install -r requirements.grid.txt --default-timeout=60
           pytest ./pygrid/apps/domain/tests
-          pytest ./pygrid/apps/network/tests
-          pytest ./pygrid/apps/worker/tests
+          # pytest ./pygrid/apps/network/tests
+          # pytest ./pygrid/apps/worker/tests
 
   pygrid-integration-tests:
     needs: [python-linting]
@@ -317,7 +317,7 @@ jobs:
 
       - name: Upgrade pip
         run: |
-          pip install --upgrade --user pip
+          pip install --upgrade --user pip --default-timeout=60
 
       - name: Get pip cache dir
         id: pip-cache
@@ -340,14 +340,14 @@ jobs:
 
       - name: Install PyTorch
         run: |
-          pip install packaging
+          pip install packaging --default-timeout=60
           python scripts/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
           cat ./requirements.torch.txt
-          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html
+          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html --default-timeout=60
 
       - name: Test PyGrid
         continue-on-error: true
         run: |
           pip install -e . --default-timeout=60
-          pip install -r requirements.grid.txt
+          pip install -r requirements.grid.txt --default-timeout=60
           pytest -m grid
