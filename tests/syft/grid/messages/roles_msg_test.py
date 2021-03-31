@@ -18,8 +18,7 @@ from syft.grid.messages.role_messages import UpdateRoleMessage
 from syft.grid.messages.role_messages import UpdateRoleResponse
 
 
-def test_create_role_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_create_role_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     request_content = {
@@ -33,7 +32,7 @@ def test_create_role_message_serde() -> None:
     msg = CreateRoleMessage(
         address=target,
         content=request_content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)
@@ -64,15 +63,14 @@ def test_create_role_response_serde() -> None:
     assert msg == msg2
 
 
-def test_delete_role_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_delete_role_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     request_content = {"role_id": "f2a6as5d16fasd"}
     msg = DeleteRoleMessage(
         address=target,
         content=request_content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)
@@ -103,8 +101,7 @@ def test_delete_role_response_serde() -> None:
     assert msg == msg2
 
 
-def test_update_role_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_update_role_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     content = {
@@ -119,7 +116,7 @@ def test_update_role_message_serde() -> None:
     msg = UpdateRoleMessage(
         address=target,
         content=content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)
@@ -150,15 +147,14 @@ def test_update_role_response_serde() -> None:
     assert msg == msg2
 
 
-def test_get_role_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_get_role_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     content = {"request_id": "eqw9e4a5d846"}
     msg = GetRoleMessage(
         address=target,
         content=content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)
@@ -197,15 +193,14 @@ def test_get_role_response_serde() -> None:
     assert msg == msg2
 
 
-def test_get_all_roles_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_get_all_roles_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     content: Dict[Any, Any] = {}
     msg = GetRolesMessage(
         address=target,
         content=content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)

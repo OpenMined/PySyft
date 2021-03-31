@@ -26,9 +26,7 @@ def test_lightning() -> None:
 
     tmpdir = "./"
 
-    alice = sy.VirtualMachine(name="alice")
-    duet = alice.get_root_client()
-
+    duet = sy.VirtualMachine().get_root_client()
     sy.client_cache["duet"] = duet
 
     class BoringSyNet(sy.Module):

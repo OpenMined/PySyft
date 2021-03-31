@@ -31,8 +31,7 @@ def get_preset_nodes() -> Tuple[Node, Node, Node]:
     return om_network, bob_vm, alice_vm
 
 
-def test_signaling_offer_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_signaling_offer_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     target_id = secrets.token_hex(nbytes=16)
@@ -41,7 +40,7 @@ def test_signaling_offer_message_serde() -> None:
     msg = SignalingOfferMessage(
         address=target,
         payload="SDP",
-        host_metadata=bob_vm.get_metadata_for_client(),
+        host_metadata=node.get_metadata_for_client(),
         target_peer=target_id,
         host_peer=host_id,
     )
@@ -49,7 +48,7 @@ def test_signaling_offer_message_serde() -> None:
     blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
-    msg_metadata = bob_vm.get_metadata_for_client()
+    msg_metadata = node.get_metadata_for_client()
     msg2_metadata = msg2.host_metadata
 
     assert msg.id == msg2.id
@@ -65,8 +64,7 @@ def test_signaling_offer_message_serde() -> None:
     assert msg_metadata.id == msg2_metadata.id
 
 
-def test_signaling_answer_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_signaling_answer_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
     target_id = secrets.token_hex(nbytes=16)
     host_id = secrets.token_hex(nbytes=16)
@@ -74,11 +72,11 @@ def test_signaling_answer_message_serde() -> None:
     msg = SignalingAnswerMessage(
         address=target,
         payload="SDP",
-        host_metadata=bob_vm.get_metadata_for_client(),
+        host_metadata=node.get_metadata_for_client(),
         target_peer=target_id,
         host_peer=host_id,
     )
-    msg_metadata = bob_vm.get_metadata_for_client()
+    msg_metadata = node.get_metadata_for_client()
 
     blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
@@ -97,8 +95,7 @@ def test_signaling_answer_message_serde() -> None:
     assert msg_metadata.id == msg2_metadata.id
 
 
-def test_signaling_answer_pull_request_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_signaling_answer_pull_request_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     target_id = secrets.token_hex(nbytes=16)
@@ -108,7 +105,7 @@ def test_signaling_answer_pull_request_message_serde() -> None:
         address=target,
         target_peer=target_id,
         host_peer=host_id,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)
@@ -121,8 +118,7 @@ def test_signaling_answer_pull_request_message_serde() -> None:
     assert msg2.target_peer == target_id
 
 
-def test_signaling_offer_pull_request_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_signaling_offer_pull_request_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     target_id = secrets.token_hex(nbytes=16)
@@ -132,7 +128,7 @@ def test_signaling_offer_pull_request_message_serde() -> None:
         address=target,
         target_peer=target_id,
         host_peer=host_id,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)
