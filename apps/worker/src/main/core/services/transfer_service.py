@@ -34,8 +34,11 @@ from ...utils.executor import executor
 
 
 def send_obj(obj, node):
+    client = connect(
+        url=node.sender_address, conn_type=GridHTTPConnection  # Domain Address
+    )  # HTTP Connection Protocol
     y_s = obj.data.send(
-        node.domain_client, searchable=True, tags=obj.tags, description=obj.description
+        client, pointable=True, tags=obj.tags, description=obj.description
     )
 
 
@@ -75,7 +78,7 @@ class TransferObjectService(ImmediateNodeServiceWithReply):
 
         _obj.data.send(
             _worker_client,
-            searchable=True,
+            pointable=True,
             tags=_obj.tags,
             description=_obj.description,
         )

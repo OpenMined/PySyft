@@ -54,6 +54,9 @@ def metadata_route():
 def root_route():
     data = request.get_data()
     obj_msg = deserialize(blob=data, from_bytes=True)
+
+    get_node().sender_request = request.remote_addr
+
     if isinstance(obj_msg, SignedImmediateSyftMessageWithReply):
         reply = get_node().recv_immediate_msg_with_reply(msg=obj_msg)
         r = Response(response=_serialize(obj=reply, to_bytes=True), status=200)
