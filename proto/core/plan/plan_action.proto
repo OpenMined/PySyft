@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package syft.core.plan;
+
+import "proto/core/node/common/action/plan_run_class_method.proto";
+
+message PlanAction {
+    string obj_type = 1;
+    oneof action {
+        syft.core.node.common.action.PlanRunClassMethodAction plan_run_class_method_action = 2;
+    }
+}

@@ -130,7 +130,6 @@ class Serializable:
         """
 
         traceback_and_raise(NotImplementedError)
-        raise NotImplementedError
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:

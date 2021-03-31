@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package syft.core.node.common.action;
+
+import "proto/core/plan/plan_pointer.proto";
+
+message PlanRunClassMethodAction {
+  string path = 1;
+  syft.core.plan.PlanPointer _self = 2;
+  repeated syft.core.plan.PlanPointer args = 3;
+  map<string, syft.core.plan.PlanPointer> kwargs = 4;
+  string seq_id = 5;
+}

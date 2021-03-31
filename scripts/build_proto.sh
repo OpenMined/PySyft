@@ -17,7 +17,7 @@ find ${PROTO_IN} -name "*.proto" -print0 | xargs -0 protoc --python_out=${PYTHON
 if [ "$(uname)" == "Darwin" ]; then
     echo "Darwin"
     # note the '' for empty file on MacOS
-    find src/syft/proto -name "*_pb2.py" -print0 | xargs -0 sed -i '' 's/from \(proto.*\) import /from syft.\1 import /g'
+    find src/syft -name "*_pb2.py" -print0 | xargs -0 sed -i '' 's/from \(proto.*\) import /from syft.\1 import /g'
 else
     echo "Linux"
     find src/syft/proto -name "*_pb2.py" -print0 | xargs -0 sed -i 's/from \(proto.*\) import /from syft.\1 import /g'

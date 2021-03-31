@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package syft.core.plan;
+
+message PlanPointer {
+  string points_to_object_with_path = 1;
+  string pointer_name = 2;
+  repeated string tags = 3;
+  string description = 4;
+  string object_type = 5;
+  string seq_id = 6;
+}
