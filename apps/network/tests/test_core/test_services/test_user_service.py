@@ -143,7 +143,7 @@ def test_create_first_user_msg(database, domain, cleanup):
 
     # Check message response
     assert response.status_code == 200
-    assert database.session().query(Role).get(user.role).id == 1
+    assert database.session().query(Role).get(user.role).name == "Owner"
 
 
 def test_create_second_user(database, domain, cleanup):
@@ -166,8 +166,8 @@ def test_create_second_user(database, domain, cleanup):
     assert user.email == "owner@gmail.com"
     assert users.login(email="owner@gmail.com", password="owner123")
     assert users.role(user_id=user.id).name == "Owner"
-    assert users.role(user_id=user.id).can_create_users
-    assert users.role(user_id=user.id).can_triage_requests
+    assert users.role(user_id=user.id).can_create_users == True
+    assert users.role(user_id=user.id).can_manage_infrastructure == True
 
     # Check message response
     assert response.status_code == 200
@@ -189,7 +189,6 @@ def test_create_second_user(database, domain, cleanup):
     assert users.login(email="stduser@gmail.com", password="stduser123")
     assert users.role(user_id=user.id).name == "User"
     assert not users.role(user_id=user.id).can_create_users
-    assert not users.role(user_id=user.id).can_triage_requests
 
     # Check message response
     assert response.status_code == 200
@@ -214,7 +213,6 @@ def test_create_second_user_with_invalid_role_name(database, domain, cleanup):
     assert users.login(email="owner@gmail.com", password="owner123")
     assert users.role(user_id=user.id).name == "Owner"
     assert users.role(user_id=user.id).can_create_users
-    assert users.role(user_id=user.id).can_triage_requests
 
     # Check message response
     assert response.status_code == 200
@@ -257,7 +255,6 @@ def test_create_second_user_with_owner_role_name(database, domain, cleanup):
     assert users.login(email="owner@gmail.com", password="owner123")
     assert users.role(user_id=user.id).name == "Owner"
     assert users.role(user_id=user.id).can_create_users
-    assert users.role(user_id=user.id).can_triage_requests
 
     # Check message response
     assert response.status_code == 200
@@ -300,7 +297,6 @@ def test_create_second_user_with_role_and_permission(database, domain, cleanup):
     assert users.login(email="owner@gmail.com", password="owner123")
     assert users.role(user_id=user.id).name == "Owner"
     assert users.role(user_id=user.id).can_create_users
-    assert users.role(user_id=user.id).can_triage_requests
 
     # Check message response
     assert response.status_code == 200
@@ -326,7 +322,6 @@ def test_create_second_user_with_role_and_permission(database, domain, cleanup):
     assert users.login(email="admin_user@gmail.com", password="admin_user123")
     assert users.role(user_id=user.id).name == "Administrator"
     assert users.role(user_id=user.id).can_create_users == True
-    assert users.role(user_id=user.id).can_triage_requests == True
 
     # Check message response
     assert response.status_code == 200
@@ -346,15 +341,6 @@ def test_get_user_with_permissions(database, domain, cleanup):
     assert retrieved_user["id"] == 1
     assert retrieved_user["role"] == 1
 
-    std_user_id = users.query(email="stduser@gmail.com")[0].id
-    msg_content = {"user_id": std_user_id, "current_user": owner_user_id}
-    response = build_syft_msg(domain, GetUserMessage, msg_content, generic_key)
-    assert response.status_code == 200
-    retrieved_user = response.content
-    assert retrieved_user["email"] == "stduser@gmail.com"
-    assert retrieved_user["id"] == 2
-    assert retrieved_user["role"] == 2
-
     admin_user_id = users.query(email="admin_user@gmail.com")[0].id
     msg_content = {"user_id": admin_user_id, "current_user": owner_user_id}
     response = build_syft_msg(domain, GetUserMessage, msg_content, generic_key)
@@ -363,22 +349,6 @@ def test_get_user_with_permissions(database, domain, cleanup):
     assert retrieved_user["email"] == "admin_user@gmail.com"
     assert retrieved_user["id"] == 3
     assert retrieved_user["role"] == 3
-
-
-def test_get_user_without_permissions(database, domain, cleanup):
-    __create_roles(database)
-    users = UserManager(database)
-    __create_user_samples(domain, users)
-
-    owner_user_id = users.query(email="owner@gmail.com")[0].id
-    std_user_id = users.query(email="stduser@gmail.com")[0].id
-    msg_content = {"user_id": owner_user_id, "current_user": std_user_id}
-
-    try:
-        build_syft_msg(domain, GetUserMessage, msg_content, generic_key)
-        pytest.fail("We shouldn't execute this line!")
-    except Exception as e:
-        assert str(e) == "You're not allowed to get User information!"
 
 
 def test_get_user_with_invalid_fields(database, domain, cleanup):
@@ -412,29 +382,10 @@ def test_get_all_users_with_permission(database, domain, cleanup):
     assert retrieved_user["id"] == 1
     assert retrieved_user["role"] == 1
 
-    retrieved_user = response.content[1]
-    assert retrieved_user["email"] == "stduser@gmail.com"
-    assert retrieved_user["id"] == 2
-    assert retrieved_user["role"] == 2
-
     retrieved_user = response.content[2]
     assert retrieved_user["email"] == "admin_user@gmail.com"
     assert retrieved_user["id"] == 3
     assert retrieved_user["role"] == 3
-
-
-def test_get_all_users_without_permission(database, domain, cleanup):
-    __create_roles(database)
-    users = UserManager(database)
-    __create_user_samples(domain, users)
-
-    std_user_id = users.query(email="stduser@gmail.com")[0].id
-    msg_content = {"current_user": std_user_id}
-    try:
-        response = build_syft_msg(domain, GetUsersMessage, msg_content, generic_key)
-        pytest.fail("We shouldn't execute this line!")
-    except Exception as e:
-        assert str(e) == "You're not allowed to get User information!"
 
 
 def test_delete_user_with_permission(database, domain, cleanup):
@@ -523,19 +474,18 @@ def test_search_unique_query(database, domain, cleanup):
     assert response.status_code == 200
 
     search_result = response.content
-    print("Result: ", search_result)
     assert len(search_result) == 1
     assert search_result[0]["email"] == "stduser@gmail.com"
     assert search_result[0]["role"] == 2
 
-    msg_content = {"role": 2, "current_user": owner_user_id}
+    msg_content = {"role": 1, "current_user": owner_user_id}
     response = build_syft_msg(domain, SearchUsersMessage, msg_content, generic_key)
     assert response.status_code == 200
 
     search_result = response.content
     assert len(search_result) == 1
-    assert search_result[0]["email"] == "stduser@gmail.com"
-    assert search_result[0]["role"] == 2
+    assert search_result[0]["email"] == "owner@gmail.com"
+    assert search_result[0]["role"] == 1
 
 
 def test_search_multiple_query_parameters(database, domain, cleanup):

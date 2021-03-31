@@ -14,7 +14,7 @@ from main.core.node import GridDomain
 def app():
     args = {"start_local_db": True, "name": "OM Domain App"}
     args_obj = type("args", (object,), args)()
-    return create_app(args_obj)
+    return create_app(args_obj, testing=True)
 
 
 @pytest.fixture
