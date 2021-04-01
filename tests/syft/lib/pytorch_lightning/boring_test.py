@@ -2,13 +2,18 @@
 from typing import Any
 from typing import List
 from typing import Optional
-from typing import Union
 
 # third party
 import pytest
+import torch
 
 # syft absolute
 import syft as sy
+
+SyTensorProxyType = Any  # Union[torch.Tensor, Any]
+# cant use lib_ast during test search time
+DataLoaderPointerType = Any  # sy.lib_ast.torch.utils.data.DataLoader.pointer_type
+SyDataloaderProxyType = Any  # Union[torch.utils.data.DataLoader, DataLoaderPointerType]
 
 
 @pytest.mark.vendor(lib="pytorch_lightning")
@@ -16,13 +21,6 @@ def test_lightning() -> None:
     # third party
     from pytorch_lightning import Trainer
     from pytorch_lightning.experimental.plugins.secure.pysyft import SyLightningModule
-    import torch
-
-    # cant use lib_ast during test search time
-    TorchTensorPointerType = Any  # sy.lib_ast.torch.Tensor.pointer_type
-    DataLoaderPointerType = Any  # sy.lib_ast.torch.utils.data.DataLoader.pointer_type
-    SyTensorProxyType = Union[torch.Tensor, TorchTensorPointerType]  # type: ignore
-    SyDataloaderProxyType = Union[torch.utils.data.DataLoader, DataLoaderPointerType]  # type: ignore
 
     tmpdir = "./"
 
