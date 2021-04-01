@@ -206,7 +206,7 @@ class AZURE(Provider):
             echo "Setting environment variables"
             export CLOUD_PROVIDER={self.config.provider}
 
-            echo "Exporting Azure Credentials"
+            echo "Exporting Azure Configs"
             export location={self.config.azure.location}
             export subscription_id={self.config.azure.subscription_id}
             export client_id={self.config.azure.client_id}
