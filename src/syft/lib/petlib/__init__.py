@@ -1,48 +1,66 @@
 # stdlib
 import functools
-from typing import Any
-from typing import Dict
-from typing import Union
+from typing import Any as TypeAny
+from typing import List as TypeList
+from typing import Tuple as TypeTuple
 
 # third party
-import petlib
+import petlib as pl
+import zksk as zk  # noqa: 401 # required for pl.ec and pl.bn
 
 # syft relative
-from . import ec  # noqa: 401
+from . import bn  # noqa: 401
+from . import ecpt  # noqa: 401
+from . import ecpt_group  # noqa: 401
+from ...ast import add_classes
+from ...ast import add_methods
+from ...ast import add_modules
 from ...ast.globals import Globals
 from ..util import generic_update_ast
-from .allowlist import allowlist
 
 LIB_NAME = "petlib"
-PACKAGE_SUPPORT = {"lib": LIB_NAME}
+PACKAGE_SUPPORT = {
+    "lib": LIB_NAME,
+    "python": {"max_version": (3, 9, 99)},
+}
 
 
-def get_return_type(support_dict: Union[str, Dict[str, str]]) -> str:
-    if isinstance(support_dict, str):
-        return support_dict
-    else:
-        return support_dict["return_type"]
+def create_ast(client: TypeAny) -> Globals:
+    ast = Globals(client=client)
 
+    modules: TypeList[TypeTuple[str, TypeAny]] = [
+        ("petlib", pl),
+        ("petlib.ec", pl.ec),
+        ("petlib.bn", pl.bn),
+    ]
 
-def create_petlib_ast(client: Any = None) -> Globals:
-    ast = Globals(client)
+    classes: TypeList[TypeTuple[str, str, TypeAny]] = [
+        ("petlib.ec.EcPt", "petlib.ec.EcPt", pl.ec.EcPt),
+        ("petlib.ec.EcGroup", "petlib.ec.EcGroup", pl.ec.EcGroup),
+        ("petlib.bn.Bn", "petlib.bn.Bn", pl.bn.Bn),
+    ]
 
-    # most methods work in all versions and have a single return type
-    # for the more complicated ones we pass a dict with keys like return_type and
-    # min_version
-    for method, return_type_name_or_dict in allowlist.items():
-        return_type = get_return_type(support_dict=return_type_name_or_dict)
-        ast.add_path(
-            path=method,
-            framework_reference=petlib,
-            return_type_name=return_type,
-        )
+    methods = [
+        ("petlib.ec.EcPt.group", "petlib.ec.EcGroup"),
+        ("petlib.ec.EcPt.__copy__", "petlib.ec.EcPt"),
+        ("petlib.ec.EcPt.__add__", "petlib.ec.EcPt"),
+        ("petlib.ec.EcPt.pt_add", "petlib.ec.EcPt"),
+        ("petlib.ec.EcPt.pt_add_inplace", "petlib.ec.EcPt"),
+        ("petlib.ec.EcPt.pt_mul", "petlib.ec.EcPt"),
+        ("petlib.ec.EcPt.pt_mul_inplace", "petlib.ec.EcPt"),
+        ("petlib.ec.EcPt.__rmul__", "petlib.ec.EcPt"),
+    ]
+
+    add_modules(ast, modules)
+    add_classes(ast, classes)
+    add_methods(ast, methods)
 
     for klass in ast.classes:
         klass.create_pointer_class()
         klass.create_send_method()
         klass.create_storable_object_attr_convenience_methods()
+
     return ast
 
 
-update_ast = functools.partial(generic_update_ast, LIB_NAME, create_petlib_ast)
+update_ast = functools.partial(generic_update_ast, LIB_NAME, create_ast)

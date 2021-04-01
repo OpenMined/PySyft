@@ -1,0 +1,5 @@
+syntax = "proto3";
+
+package syft.lib.petlib;
+
+message Bn { string hex = 2; }

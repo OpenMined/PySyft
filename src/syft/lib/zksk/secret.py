@@ -1,38 +1,30 @@
-# stdlib
-
 # third party
-import petlib  # noqa: 401
-from petlib.bn import Bn
-import zksk
+import zksk as zk  # noqa: 401
 
 # syft relative
+from ...core.common.serde.deserialize import _deserialize as deserialize
+from ...core.common.serde.serialize import _serialize as serialize
 from ...generate_wrapper import GenerateWrapper
-from ...proto.util.vendor_bytes_pb2 import VendorBytes as VendorBytes_PB
+from ...proto.lib.zksk.secret_pb2 import Secret as Secret_PB
 
 
-def object2proto(obj: object) -> VendorBytes_PB:
-    proto = VendorBytes_PB()
-    proto.obj_type = obj.name  # type: ignore
-    if obj.value is not None:  # type: ignore
-        proto.content = obj.value.binary  # type: ignore # stores binary of BN
-    else:
-        proto.content = b""
+def object2proto(obj: zk.expr.Secret) -> Secret_PB:
+    proto = Secret_PB()
+    proto.name = obj.name
+    proto.value = serialize(obj.value, to_bytes=True)
     return proto
 
 
-def proto2object(proto: VendorBytes_PB) -> zksk.expr.Secret:
-    if proto.content != b"":
-        vec = zksk.expr.Secret(proto.obj_type, Bn.from_binary(proto.content))
-    else:
-        vec = zksk.expr.Secret(proto.obj_type)
-
-    return vec
+def proto2object(proto: Secret_PB) -> zk.expr.Secret:
+    return zk.expr.Secret(
+        name=proto.name, value=deserialize(proto.value, from_bytes=True)
+    )
 
 
 GenerateWrapper(
-    wrapped_type=zksk.expr.Secret,
+    wrapped_type=zk.expr.Secret,
     import_path="zksk.expr.Secret",
-    protobuf_scheme=VendorBytes_PB,
+    protobuf_scheme=Secret_PB,
     type_object2proto=object2proto,
     type_proto2object=proto2object,
 )

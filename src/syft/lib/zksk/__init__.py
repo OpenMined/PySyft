@@ -1,48 +1,65 @@
 # stdlib
 import functools
-from typing import Any
-from typing import Dict
-from typing import Union
+from typing import Any as TypeAny
+from typing import List as TypeList
+from typing import Tuple as TypeTuple
 
 # third party
-import zksk as zk
+import zksk as zk  # noqa: 401 # required for pl.ec and pl.bn
 
 # syft relative
+from . import nizk  # noqa: 401
 from . import secret  # noqa: 401
+from ...ast import add_classes
+from ...ast import add_methods
+from ...ast import add_modules
 from ...ast.globals import Globals
 from ..util import generic_update_ast
-from .allowlist import allowlist
 
 LIB_NAME = "zksk"
-PACKAGE_SUPPORT = {"lib": LIB_NAME}
+PACKAGE_SUPPORT = {
+    "lib": LIB_NAME,
+    "python": {"max_version": (3, 9, 99)},
+}
 
 
-def get_return_type(support_dict: Union[str, Dict[str, str]]) -> str:
-    if isinstance(support_dict, str):
-        return support_dict
-    else:
-        return support_dict["return_type"]
+def create_ast(client: TypeAny) -> Globals:
+    ast = Globals(client=client)
 
+    modules: TypeList[TypeTuple[str, TypeAny]] = [
+        ("zksk", zk),
+        ("zksk.utils", zk.utils),
+        ("zksk.primitives", zk.primitives),
+        ("zksk.primitives.dlrep", zk.primitives.dlrep),
+        ("zksk.expr", zk.expr),
+        ("zksk.base", zk.base),
+    ]
 
-def create_zksk_ast(client: Any = None) -> Globals:
-    ast = Globals(client)
+    classes: TypeList[TypeTuple[str, str, TypeAny]] = [
+        (
+            "zksk.primitives.dlrep.DLRep",
+            "zksk.primitives.dlrep.DLRep",
+            zk.primitives.dlrep.DLRep,
+        ),
+        ("zksk.expr.Secret", "zksk.expr.Secret", zk.expr.Secret),
+        ("zksk.expr.Expression", "zksk.expr.Expression", zk.expr.Expression),
+        ("zksk.base.NIZK", "zksk.base.NIZK", zk.base.NIZK),
+    ]
 
-    # most methods work in all versions and have a single return type
-    # for the more complicated ones we pass a dict with keys like return_type and
-    # min_version
-    for method, return_type_name_or_dict in allowlist.items():
-        return_type = get_return_type(support_dict=return_type_name_or_dict)
-        ast.add_path(
-            path=method,
-            framework_reference=zk,
-            return_type_name=return_type,
-        )
+    methods = [
+        ("zksk.utils.make_generators", "syft.lib.python.List"),
+    ]
+
+    add_modules(ast, modules)
+    add_classes(ast, classes)
+    add_methods(ast, methods)
 
     for klass in ast.classes:
         klass.create_pointer_class()
         klass.create_send_method()
         klass.create_storable_object_attr_convenience_methods()
+
     return ast
 
 
-update_ast = functools.partial(generic_update_ast, LIB_NAME, create_zksk_ast)
+update_ast = functools.partial(generic_update_ast, LIB_NAME, create_ast)
