@@ -31,6 +31,8 @@ from ..database.utils import model_to_json
 from syft.grid.client.client import connect
 from syft.grid.client.grid_connection import GridHTTPConnection
 from syft.core.node.domain.client import DomainClient
+import requests
+import json
 
 
 class BroadcastSearchService(ImmediateNodeServiceWithReply):
@@ -45,13 +47,9 @@ class BroadcastSearchService(ImmediateNodeServiceWithReply):
         associations = node.association_requests.associations()
 
         def filter_domains(url):
-            domain = connect(
-                url=url,  # Domain Address
-                conn_type=GridHTTPConnection,  # HTTP Connection Protocol
-            )
-
-            for data in domain.store:
-                if queries.issubset(set(data.tags)):
+            datasets = json.loads(requests.get(url + "/data-centric/tensors").text)
+            for dataset in datasets["tensors"]:
+                if queries.issubset(set(dataset["tags"])):
                     return True
             return False
 
