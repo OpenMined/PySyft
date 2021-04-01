@@ -8,7 +8,6 @@ from pandas import DataFrame
 
 # syft relative
 from ....core.common.serde.deserialize import _deserialize
-from ....core.node.common.client import Client
 from ....core.pointer.pointer import Pointer
 from ....proto.core.io.address_pb2 import Address as Address_PB
 from ...messages.infra_messages import CreateWorkerMessage
@@ -24,7 +23,7 @@ from .request_api import GridRequestAPI
 class WorkerRequestAPI(GridRequestAPI):
     response_key = "worker"
 
-    def __init__(self, send: Callable, domain_client: Client):
+    def __init__(self, send: Callable, domain_client: Any):
         super().__init__(
             create_msg=CreateWorkerMessage,
             get_msg=GetWorkerMessage,
@@ -62,14 +61,14 @@ class WorkerRequestAPI(GridRequestAPI):
         addr_pb = Address_PB()
         addr_pb.ParseFromString(_raw_addr)
 
-        _worker_obj = self.domain_client.__class__(  # type: ignore
+        _worker_obj = self.domain_client.__class__(
             credentials={},
-            url=self.domain_client.conn.base_url,  # type: ignore
-            conn_type=self.domain_client.conn.__class__,  # type: ignore
-            client_type=self.domain_client.client_type,  # type: ignore
+            url=self.domain_client.conn.base_url,
+            conn_type=self.domain_client.conn.__class__,
+            client_type=self.domain_client.client_type,
         )
-        _worker_obj.proxy_address = _deserialize(blob=addr_pb)  # type: ignore
-        _worker_obj.domain = _worker_obj.proxy_address.domain  # type: ignore
+        _worker_obj.proxy_address = _deserialize(blob=addr_pb)
+        _worker_obj.domain = _worker_obj.proxy_address.domain
 
         for key, value in result.items():
             try:
@@ -85,10 +84,10 @@ class WorkerRequestAPI(GridRequestAPI):
                     "domain_address": self.domain_client.conn.base_url,
                 },
             }
-            signed_msg = SaveObjectMessage(**_content).sign(  # type: ignore
+            signed_msg = SaveObjectMessage(**_content).sign(
                 signing_key=_worker_obj.signing_key
             )
             _worker_obj.send_immediate_msg_without_reply(msg=signed_msg)
 
-        _worker_obj.save = _save  # type: ignore
+        _worker_obj.save = _save
         return _worker_obj
