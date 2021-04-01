@@ -60,15 +60,14 @@ def get_tensor(current_user, tensor_id):
 
 
 @dcfl_route.route("/tensors", methods=["GET"])
-@token_required
-def get_all_tensors(current_user):
+def get_all_tensors():
     # Get request body
     content = request.get_json()
     if not content:
         content = {}
 
     status_code, response_msg = error_handler(
-        route_logic, GetTensorsMessage, current_user, content
+        route_logic, GetTensorsMessage, None, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
