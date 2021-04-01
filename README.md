@@ -88,8 +88,9 @@ Note that you're not restricted to running 4 nodes and a network. You could inst
 
 The latest PyGrid Network and Node images are also available on the Docker Hub.
 
+- [PyGrid Domain - `openmined/grid-domain`](https://hub.docker.com/repository/docker/openmined/grid-domain)
+- [PyGrid Worker - `openmined/grid-worker`](https://hub.docker.com/repository/docker/openmined/grid-worker)
 - [PyGrid Network - `openmined/grid-network`](https://hub.docker.com/repository/docker/openmined/grid-network)
-- [PyGrid Node - `openmined/grid-node`](https://hub.docker.com/repository/docker/openmined/grid-node)
 
 To setup and start the PyGrid platform you just need start the docker-compose process.
 
@@ -104,7 +105,13 @@ This will download the latest Openmined Docker images and start a grid platform 
 If you want to build your own custom images, you may do so using the following command for the Node:
 
 ```
-docker build ./apps/node --file ./apps/node/Dockerfile --tag openmined/grid-node:mybuildname
+docker build ./apps/domain --file ./apps/domain/Dockerfile --tag openmined/grid-domain:mybuildname
+```
+
+Or for the Worker:
+
+```
+docker build ./apps/worker --file ./apps/worker/Dockerfile --tag openmined/grid-worker:mybuildname
 ```
 
 Or for the Network:
@@ -183,7 +190,7 @@ If you're interested in contributing, check out our [Contributor Guidelines](CON
 
 ## Support
 
-For support in using this library, please join the **#lib_pygrid** Slack channel. If you’d like to follow along with any code changes to the library, please join the **#code_pygrid** Slack channel. [Click here to join our Slack community!](https://slack.openmined.org)
+For support in using this library, please join the **#support** Slack channel. [Click here to join our Slack community!](https://slack.openmined.org)
 
 ## License
 
