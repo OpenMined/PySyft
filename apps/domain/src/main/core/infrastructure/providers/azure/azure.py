@@ -23,6 +23,7 @@ class AZURE(Provider):
         )
         super().__init__(config.root_dir, "azure")
         self.config = config
+        self.name = self.config.app.name + str(vars(config.app).get("id", ""))
 
         ##TODO(amr): terrascript does not support azurem right now
         # self.tfscript += terrascript.terraform(backend=terrascript.backend("azurerm"))
@@ -124,7 +125,7 @@ class AZURE(Provider):
             )
 
     def build_instances(self):
-        name = self.config.app.name
+        name = self.name
 
         self.instances = []
         for count in range(self.config.app.count):

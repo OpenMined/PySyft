@@ -23,6 +23,7 @@ class GCP(Provider):
         super().__init__(config.root_dir, "gcp")
 
         self.config = config
+        self.name = self.config.app.name + str(vars(config.app).get("id", ""))
 
         self.tfscript += terrascript.provider.google(
             project=self.config.gcp.project_id,
@@ -43,7 +44,7 @@ class GCP(Provider):
             self.build_instances()
 
     def build(self) -> bool:
-        app = self.config.app.name
+        app = self.name
         self.vpc = Module(
             "pygrid-vpc",
             source="terraform-google-modules/network/google",
@@ -89,7 +90,7 @@ class GCP(Provider):
         self.tfscript += self.firewall
 
     def build_ip_address(self):
-        app = self.config.app.name
+        app = self.name
         self.pygrid_ip = terrascript.resource.google_compute_address(
             f"pygrid-{app}", name=f"pygrid-{app}"
         )
@@ -100,7 +101,7 @@ class GCP(Provider):
         )
 
     def build_instances(self):
-        name = self.config.app.name
+        name = self.name
 
         self.instances = []
         for count in range(self.config.app.count):
