@@ -18,7 +18,7 @@ from .....proto.core.node.common.service.get_repr_service_pb2 import (
     GetReprReplyMessage as GetReprReplyMessage_PB,
 )
 from .....util import traceback_and_raise
-from ....common.group import VerifyAll
+from ....common.group import VERIFYALL
 from ....common.message import ImmediateSyftMessageWithReply
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
@@ -110,7 +110,7 @@ class GetReprService(ImmediateNodeServiceWithReply):
 
         obj = node.store[msg.id_at_location]
         contains_all_in_permissions = any(
-            key is VerifyAll for key in obj.read_permissions.keys()
+            key is VERIFYALL for key in obj.read_permissions.keys()
         )
 
         if not (

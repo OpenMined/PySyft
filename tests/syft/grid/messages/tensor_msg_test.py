@@ -18,8 +18,7 @@ from syft.grid.messages.tensor_messages import UpdateTensorMessage
 from syft.grid.messages.tensor_messages import UpdateTensorResponse
 
 
-def test_create_tensor_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_create_tensor_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     request_content = {
@@ -31,7 +30,7 @@ def test_create_tensor_message_serde() -> None:
     msg = CreateTensorMessage(
         address=target,
         content=request_content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)
@@ -62,15 +61,14 @@ def test_create_tensor_response_serde() -> None:
     assert msg == msg2
 
 
-def test_delete_tensor_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_delete_tensor_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     request_content = {"tensor_id": "f2a6as5d16fasd"}
     msg = DeleteTensorMessage(
         address=target,
         content=request_content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)
@@ -101,8 +99,7 @@ def test_delete_tensor_response_serde() -> None:
     assert msg == msg2
 
 
-def test_update_tensor_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_update_tensor_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     content = {
@@ -115,7 +112,7 @@ def test_update_tensor_message_serde() -> None:
     msg = UpdateTensorMessage(
         address=target,
         content=content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)
@@ -146,15 +143,14 @@ def test_update_tensor_response_serde() -> None:
     assert msg == msg2
 
 
-def test_get_tensor_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_get_tensor_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     content = {"tensor_id": "eqw9e4a5d846"}
     msg = GetTensorMessage(
         address=target,
         content=content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)
@@ -189,15 +185,14 @@ def test_get_tensor_response_serde() -> None:
     assert msg == msg2
 
 
-def test_get_all_tensors_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
+def test_get_all_tensors_message_serde(node: sy.VirtualMachine) -> None:
     target = Address(name="Alice")
 
     content: Dict[Any, Any] = {}
     msg = GetTensorsMessage(
         address=target,
         content=content,
-        reply_to=bob_vm.address,
+        reply_to=node.address,
     )
 
     blob = serialize(msg)

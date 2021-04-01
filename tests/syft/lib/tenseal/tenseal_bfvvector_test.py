@@ -20,18 +20,15 @@ def context() -> Any:
     return context
 
 
-@pytest.fixture(scope="function")
-def duet() -> Any:
-    return sy.VirtualMachine().get_root_client()
-
-
 @pytest.mark.vendor(lib="tenseal")
-def test_tenseal_bfvvector_sanity(context: Any, duet: sy.VirtualMachine) -> None:
+def test_tenseal_bfvvector_sanity(
+    context: Any, root_client: sy.VirtualMachineClient
+) -> None:
     v1 = [0, 1, 2, 3, 4]
     enc_v1 = ts.bfv_vector(context, v1)
 
-    ctx_ptr = context.send(duet, pointable=True)
-    enc_v1_ptr = enc_v1.send(duet, pointable=True)
+    ctx_ptr = context.send(root_client, pointable=True)
+    enc_v1_ptr = enc_v1.send(root_client, pointable=True)
 
     enc_v1_ptr.link_context(ctx_ptr)
 
@@ -40,7 +37,9 @@ def test_tenseal_bfvvector_sanity(context: Any, duet: sy.VirtualMachine) -> None
 
 
 @pytest.mark.vendor(lib="tenseal")
-def test_tenseal_bfvvector_add(context: Any, duet: sy.VirtualMachine) -> None:
+def test_tenseal_bfvvector_add(
+    context: Any, root_client: sy.VirtualMachineClient
+) -> None:
     v1 = [0, 1, 2, 3, 4]
     v2 = [4, 3, 2, 1, 0]
     expected = [v1 + v2 for v1, v2 in zip(v1, v2)]
@@ -48,9 +47,9 @@ def test_tenseal_bfvvector_add(context: Any, duet: sy.VirtualMachine) -> None:
     enc_v1 = ts.bfv_vector(context, v1)
     enc_v2 = ts.bfv_vector(context, v2)
 
-    ctx_ptr = context.send(duet, pointable=True)
-    enc_v1_ptr = enc_v1.send(duet, pointable=True)
-    enc_v2_ptr = enc_v2.send(duet, pointable=True)
+    ctx_ptr = context.send(root_client, pointable=True)
+    enc_v1_ptr = enc_v1.send(root_client, pointable=True)
+    enc_v2_ptr = enc_v2.send(root_client, pointable=True)
 
     enc_v1_ptr.link_context(ctx_ptr)
     enc_v2_ptr.link_context(ctx_ptr)
@@ -69,7 +68,9 @@ def test_tenseal_bfvvector_add(context: Any, duet: sy.VirtualMachine) -> None:
 
 
 @pytest.mark.vendor(lib="tenseal")
-def test_tenseal_bfvvector_sub(context: Any, duet: sy.VirtualMachine) -> None:
+def test_tenseal_bfvvector_sub(
+    context: Any, root_client: sy.VirtualMachineClient
+) -> None:
     v1 = [0, 1, 2, 3, 4]
     v2 = [4, 3, 2, 1, 0]
     expected = [v1 - v2 for v1, v2 in zip(v1, v2)]
@@ -77,9 +78,9 @@ def test_tenseal_bfvvector_sub(context: Any, duet: sy.VirtualMachine) -> None:
     enc_v1 = ts.bfv_vector(context, v1)
     enc_v2 = ts.bfv_vector(context, v2)
 
-    ctx_ptr = context.send(duet, pointable=True)
-    enc_v1_ptr = enc_v1.send(duet, pointable=True)
-    enc_v2_ptr = enc_v2.send(duet, pointable=True)
+    ctx_ptr = context.send(root_client, pointable=True)
+    enc_v1_ptr = enc_v1.send(root_client, pointable=True)
+    enc_v2_ptr = enc_v2.send(root_client, pointable=True)
 
     enc_v1_ptr.link_context(ctx_ptr)
     enc_v2_ptr.link_context(ctx_ptr)
@@ -98,7 +99,9 @@ def test_tenseal_bfvvector_sub(context: Any, duet: sy.VirtualMachine) -> None:
 
 
 @pytest.mark.vendor(lib="tenseal")
-def test_tenseal_bfvvector_mul(context: Any, duet: sy.VirtualMachine) -> None:
+def test_tenseal_bfvvector_mul(
+    context: Any, root_client: sy.VirtualMachineClient
+) -> None:
     v1 = [0, 1, 2, 3, 4]
     v2 = [4, 3, 2, 1, 0]
     expected = [v1 * v2 for v1, v2 in zip(v1, v2)]
@@ -106,9 +109,9 @@ def test_tenseal_bfvvector_mul(context: Any, duet: sy.VirtualMachine) -> None:
     enc_v1 = ts.bfv_vector(context, v1)
     enc_v2 = ts.bfv_vector(context, v2)
 
-    ctx_ptr = context.send(duet, pointable=True)
-    enc_v1_ptr = enc_v1.send(duet, pointable=True)
-    enc_v2_ptr = enc_v2.send(duet, pointable=True)
+    ctx_ptr = context.send(root_client, pointable=True)
+    enc_v1_ptr = enc_v1.send(root_client, pointable=True)
+    enc_v2_ptr = enc_v2.send(root_client, pointable=True)
 
     enc_v1_ptr.link_context(ctx_ptr)
     enc_v2_ptr.link_context(ctx_ptr)
@@ -127,15 +130,17 @@ def test_tenseal_bfvvector_mul(context: Any, duet: sy.VirtualMachine) -> None:
 
 
 @pytest.mark.vendor(lib="tenseal")
-def test_tenseal_bfvvector_iadd(context: Any, duet: sy.VirtualMachine) -> None:
+def test_tenseal_bfvvector_iadd(
+    context: Any, root_client: sy.VirtualMachineClient
+) -> None:
     v1 = [0, 1, 2, 3, 4]
     v2 = [4, 3, 2, 1, 0]
     expected = [v1 + v2 for v1, v2 in zip(v1, v2)]
 
     enc_v1 = ts.bfv_vector(context, v1)
 
-    ctx_ptr = context.send(duet, pointable=True)
-    enc_v1_ptr = enc_v1.send(duet, pointable=True)
+    ctx_ptr = context.send(root_client, pointable=True)
+    enc_v1_ptr = enc_v1.send(root_client, pointable=True)
 
     enc_v1_ptr.link_context(ctx_ptr)
 
@@ -159,15 +164,17 @@ def test_tenseal_bfvvector_iadd(context: Any, duet: sy.VirtualMachine) -> None:
 
 
 @pytest.mark.vendor(lib="tenseal")
-def test_tenseal_bfvvector_isub(context: Any, duet: sy.VirtualMachine) -> None:
+def test_tenseal_bfvvector_isub(
+    context: Any, root_client: sy.VirtualMachineClient
+) -> None:
     v1 = [0, 1, 2, 3, 4]
     v2 = [4, 3, 2, 1, 0]
     expected = [v1 - v2 for v1, v2 in zip(v1, v2)]
 
     enc_v1 = ts.bfv_vector(context, v1)
 
-    ctx_ptr = context.send(duet, pointable=True)
-    enc_v1_ptr = enc_v1.send(duet, pointable=True)
+    ctx_ptr = context.send(root_client, pointable=True)
+    enc_v1_ptr = enc_v1.send(root_client, pointable=True)
 
     enc_v1_ptr.link_context(ctx_ptr)
 
@@ -179,15 +186,17 @@ def test_tenseal_bfvvector_isub(context: Any, duet: sy.VirtualMachine) -> None:
 
 
 @pytest.mark.vendor(lib="tenseal")
-def test_tenseal_bfvvector_imul(context: Any, duet: sy.VirtualMachine) -> None:
+def test_tenseal_bfvvector_imul(
+    context: Any, root_client: sy.VirtualMachineClient
+) -> None:
     v1 = [0, 1, 2, 3, 4]
     v2 = [4, 3, 2, 1, 0]
     expected = [v1 * v2 for v1, v2 in zip(v1, v2)]
 
     enc_v1 = ts.bfv_vector(context, v1)
 
-    ctx_ptr = context.send(duet, pointable=True)
-    enc_v1_ptr = enc_v1.send(duet, pointable=True)
+    ctx_ptr = context.send(root_client, pointable=True)
+    enc_v1_ptr = enc_v1.send(root_client, pointable=True)
 
     enc_v1_ptr.link_context(ctx_ptr)
 

@@ -394,9 +394,6 @@ for op in BASIC_OPS:
 #     end_offset = start_offset + chunk_size
 #     TEST_DATA = TEST_DATA[start_offset:end_offset]
 
-alice = sy.VirtualMachine(name="alice")
-alice_client = alice.get_client()
-
 
 @pytest.mark.torch
 @pytest.mark.parametrize(
@@ -411,6 +408,7 @@ def test_all_allowlisted_tensor_methods(
     is_property: bool,
     return_type: str,
     deterministic: bool,
+    client: sy.VirtualMachineClient,
 ) -> None:
 
     support_data = {}
@@ -430,9 +428,6 @@ def test_all_allowlisted_tensor_methods(
     }
 
     try:
-        # Step 1: Clear store
-        alice.store.clear()
-
         # Step 2: Decide which type we're testing
         t_type = TORCH_STR_DTYPE[tensor_type]
 
@@ -562,7 +557,7 @@ def test_all_allowlisted_tensor_methods(
 
         # Step 6: Send our target tensor to alice.
         # NOTE: send the copy we haven't mutated
-        xp = self_tensor_copy.send(alice_client)
+        xp = self_tensor_copy.send(client)
 
         # if op_name=="grad", we need to do more operations first
         if op_name == "grad":
@@ -572,13 +567,12 @@ def test_all_allowlisted_tensor_methods(
         if len(args) > 0 and not is_property:
             if isinstance(args, dict):
                 argsp = [
-                    arg.send(alice_client) if hasattr(arg, "send") else arg
+                    arg.send(client) if hasattr(arg, "send") else arg
                     for arg in args.values()
                 ]
             else:
                 argsp = [
-                    arg.send(alice_client) if hasattr(arg, "send") else arg
-                    for arg in args
+                    arg.send(client) if hasattr(arg, "send") else arg for arg in args
                 ]
 
         # Step 7: get the method on the pointer to alice we want to test
