@@ -13,6 +13,14 @@ class AZURE(Provider):
     """Azure Cloud Provider."""
 
     def __init__(self, config: SimpleNamespace) -> None:
+        config.root_dir = os.path.join(
+            str(Path.home()),
+            ".pygrid",
+            "apps",
+            str(config.provider),
+            str(config.app.name),
+            str(vars(config.app).get("id", "")),
+        )
         super().__init__(config.root_dir, "azure")
         self.config = config
 
