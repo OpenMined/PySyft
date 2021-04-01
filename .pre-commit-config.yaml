@@ -18,3 +18,17 @@ repos:
     rev: v1.1.0
     hooks:
       - id: python-use-type-annotations
+
+  - repo: https://github.com/aflc/pre-commit-jupyter
+    rev: v1.0.0
+    hooks:
+      - id: jupyter-notebook-cleanup
+        args:
+          - --remove-kernel-metadata
+          - --pin-patterns
+          - "[pin];[donotremove]"
+
+  - repo: https://github.com/pre-commit/mirrors-isort
+    rev: 'v5.4.2'  # Use the revision sha / tag you want to point at
+    hooks:
+      - id: isort

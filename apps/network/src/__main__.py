@@ -1,35 +1,46 @@
-#!/bin/env python
+"""
+Note:
 
-"""Run webserver."""
+This file should be used only for development purposes.
+Use the Flask built-in web server isn't suitable for production.
+For production, we need to put it behind real web server able to communicate
+with Flask through a WSGI protocol.
+A common choice for that is Gunicorn.
+"""
 
+from app import create_app
+from gevent import pywsgi
+from geventwebsocket.handler import WebSocketHandler
 import argparse
 import os
+import json
 
-from . import create_app, raise_grid
+parser = argparse.ArgumentParser(description="Run PyGrid application.")
 
-parser = argparse.ArgumentParser(description="Run GridNetwork application.")
-parser._action_groups.pop()
 
-required = parser.add_argument_group("required arguments")
-optional = parser.add_argument_group("optional arguments")
-
-required.add_argument(
+parser.add_argument(
     "--port",
     "-p",
     type=int,
-    help="Port number of the socket.io server, e.g. --port=8777. Default is os.environ.get('GRIDNETWORK_WS_PORT', None).",
-    default=os.environ.get("GRIDNETWORK_WS_PORT", None),
-    required=True,
+    help="Port number of the socket server, e.g. --port=5000. Default is os.environ.get('GRID_NODE_PORT', 5000).",
+    default=os.environ.get("GRID_NODE_PORT", 5000),
 )
 
-optional.add_argument(
+parser.add_argument(
     "--host",
     type=str,
-    help="GridNerwork host, e.g. --host=0.0.0.0. Default is os.environ.get('GRIDNETWORK_WS_HOST','http://0.0.0.0').",
-    default=os.environ.get("GRIDNETWORK_WS_HOST", "0.0.0.0"),
+    help="Grid node host, e.g. --host=0.0.0.0. Default is os.environ.get('GRID_NODE_HOST','0.0.0.0').",
+    default=os.environ.get("GRID_NODE_HOST", "0.0.0.0"),
 )
 
-optional.add_argument(
+parser.add_argument(
+    "--name",
+    type=str,
+    help="Grid node name, e.g. --name=OpenMined. Default is os.environ.get('GRID_NODE_NAME','OpenMined').",
+    default=os.environ.get("GRID_NODE_NAME", "OpenMined"),
+)
+
+parser.add_argument(
     "--start_local_db",
     dest="start_local_db",
     action="store_true",
@@ -38,14 +49,14 @@ optional.add_argument(
 
 parser.set_defaults(use_test_config=False)
 
+
 if __name__ == "__main__":
     args = parser.parse_args()
-    db_config = None
 
-    if args.start_local_db:
-        db_path = "sqlite:///databaseGridNetwork.db"
-        db_config = {"SQLALCHEMY_DATABASE_URI": db_path}
+    app = create_app(args)
+    _address = "http://{}:{}".format(args.host, args.port)
 
-    app, server = raise_grid(host=args.host, port=args.port, db_config=db_config)
-else:
-    app = create_app()
+    server = pywsgi.WSGIServer(
+        (args.host, args.port), app, handler_class=WebSocketHandler
+    )
+    server.serve_forever()

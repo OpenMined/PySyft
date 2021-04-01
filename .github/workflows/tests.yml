@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - dev
+      - pygrid_0.4.0
   pull_request:
     types: [opened, synchronize, reopened]
 
@@ -14,7 +15,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: [3.7]
+        python-version: [3.8]
 
     steps:
       - uses: actions/checkout@v1
@@ -26,17 +27,17 @@ jobs:
       - name: Install Poetry
         run: |
           pip install --upgrade pip
-          pip install poetry==1.0
+          pip install poetry==1.1.2
 
-      - name: Test Grid Node
+      - name: Test Grid Domain
         run: |
-          cd ./apps/node/
+          cd ./apps/domain/
 
           # Install dependencies
           poetry install
 
           # Run black
-          poetry run black --check --verbose --exclude src/syft .
+          poetry run black --check --verbose .
 
           # Run docformatter
           poetry run docformatter --check --recursive .
@@ -78,7 +79,7 @@ jobs:
 
       - name: Run Integration Tests
         run: |
-          cd ./apps/node/
+          cd ./apps/domain/
 
           # Run Integration tests
-          poetry run coverage run -m pytest -v ../../tests
+          # poetry run coverage run -m pytest -v ../../tests
