@@ -45,7 +45,7 @@
     "torchvision.transforms.Resize": "(size = 15)",
     "torchvision.transforms.Scale": "(10)",
     "torchvision.transforms.TenCrop": "(10)",
-    "torchvision.transforms.functional.adjust_brightness": "(tens, 0.5)",
+    "torchvision.transforms.functional.adjust_brightness": "(pil_img, 0.5)",
     "torchvision.transforms.functional.adjust_contrast": "(pil_img, 0.5)",
     "torchvision.transforms.functional.adjust_gamma": "(pil_img, 1, 0.5)",
     "torchvision.transforms.functional.adjust_hue": "(pil_img, 0)",

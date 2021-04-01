@@ -24,14 +24,14 @@ TORCHVISION_VERSION = version.parse(tv.__version__)
 def pil_img() -> PIL.Image.Image:
     img_file = '../../../../docs/img/logo.png'
     if path.isfile(img_file):
-        return PIL.Image.open(img_file)
+        return PIL.Image.open(img_file).convert('RGB')
     else:
         raise Exception('Image file not found for loading tests.')
 
 
 @pytest.fixture(scope="function")
 def tens(pil_img) -> torch.Tensor:
-    return tv.transforms.functional.to_tensor(pil_img)
+    return tv.transforms.functional.to_tensor(pil_img).type(torch.uint8)
 
 
 @pytest.fixture(scope="function")
@@ -98,4 +98,5 @@ def test_allowlist(alice: sy.VirtualMachine, tens: torch.Tensor, pil_img: PIL.Im
         elif item in TEST_PARAMS.keys() and version_supported(
             support_dict=allowlist[item]
         ):
+            print(item + TEST_PARAMS[item])
             exec(item + TEST_PARAMS[item])
