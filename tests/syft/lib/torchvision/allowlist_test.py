@@ -28,7 +28,7 @@ def pil_img() -> PIL.Image.Image:
 
 
 @pytest.fixture(scope="function")
-def tens(pil_img) -> torch.Tensor:
+def tens(pil_img: PIL.Image.Image) -> torch.Tensor:
     return tv.transforms.functional.to_tensor(pil_img).type(torch.uint8)
 
 
