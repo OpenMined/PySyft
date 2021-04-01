@@ -163,7 +163,7 @@ class GCP(Provider):
 
             echo "Exporting GCP Configs"
             export project_id={self.config.gcp.project_id},
-            export region={self.config.gcp.region},
+            export REGION={self.config.gcp.region},
             export zone={self.config.gcp.zone},
             export machine_type={self.config.gcp.machine_type},
 

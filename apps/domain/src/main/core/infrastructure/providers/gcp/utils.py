@@ -65,6 +65,21 @@ class GCloud:
         return images
 
 
+def get_all_instance_types(zone=None):
+    proc = subprocess.Popen(
+        f'gcloud compute machine-types list --filter="ZONE:( {zone} )" --format="value(NAME)"',
+        shell=True,
+        stdout=subprocess.PIPE,
+        universal_newlines=True,
+    )
+    machines = proc.stdout.read().split()
+    # machines = [
+    #     f"Machine Name: {machines[i]} | CPUs: {machines[i + 1]} | Memory: {machines[i + 2]}"
+    #     for i in range(0, len(machines), 3)
+    # ]
+    return {"all_instances": machines}
+
+
 def get_gcp_config() -> Config:
     """Getting the configration required for deployment on GCP.
 
