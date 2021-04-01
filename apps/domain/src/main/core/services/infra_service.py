@@ -118,11 +118,17 @@ def create_worker_msg(
                 instance_type=Config(InstanceType=instance_type),
             ),
             azure=Config(
-                location=os.environ["location"],
-                subscription_id=os.environ["subscription_id"],
-                client_id=os.environ["client_id"],
-                client_secret=os.environ["client_secret"],
-                tenant_id=os.environ["tenant_id"],
+                location=os.getenv("location", None),
+                subscription_id=os.getenv("subscription_id", None),
+                client_id=os.getenv("client_id", None),
+                client_secret=os.getenv("client_secret", None),
+                tenant_id=os.getenv("tenant_id", None),
+            ),
+            gcp=Config(
+                project_id=os.getenv("project_id", None),
+                region=os.getenv("region", None),
+                zone=os.getenv("zone", None),
+                machine_type=os.getenv("machine_type", None),
             ),
         )
 
