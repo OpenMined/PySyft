@@ -1,18 +1,21 @@
-import pytest
+# stdlib
 import importlib
 
+# third party
+import pytest
+
+# syft absolute
 import syft as sy
 from syft import serialize
 from syft.core.io.address import Address
-
 from syft.grid.messages import association_messages
 from syft.grid.messages import dataset_messages
 from syft.grid.messages import group_messages
 from syft.grid.messages import infra_messages
+from syft.grid.messages import request_messages
 from syft.grid.messages import role_messages
 from syft.grid.messages import setup_messages
 from syft.grid.messages import tensor_messages
-from syft.grid.messages import request_messages 
 
 messages = {
     # association_messages
@@ -69,10 +72,12 @@ messages = {
     },
     "SendAssociationRequest": {
         "module": association_messages,
-        "request_content": {"domain-name": "My-Domain", "domain-address": "http://url:5000"},
+        "request_content": {
+            "domain-name": "My-Domain",
+            "domain-address": "http://url:5000",
+        },
         "response_content": {"msg": "Association Request Accepted status_codefully!"},
     },
-
     # dataset_messages
     "CreateDataset": {
         "module": dataset_messages,
@@ -109,7 +114,12 @@ messages = {
         "response_content": {
             "workers": {
                 "626sadaf631": {
-                    "dataset": ["<tensor_id>", "<tensor_id>", "<tensor_id>", "<tensor_id>"],
+                    "dataset": [
+                        "<tensor_id>",
+                        "<tensor_id>",
+                        "<tensor_id>",
+                        "<tensor_id>",
+                    ],
                     "description": "Dataset Description",
                     "tags": ["#x", "#data-sample"],
                     "pointable": True,
@@ -117,7 +127,12 @@ messages = {
                     "write-permission": ["user-id1", "user-id5", "user-id9"],
                 },
                 "a84ew64wq6e": {
-                    "dataset": ["<tensor_id>", "<tensor_id>", "<tensor_id>", "<tensor_id>"],
+                    "dataset": [
+                        "<tensor_id>",
+                        "<tensor_id>",
+                        "<tensor_id>",
+                        "<tensor_id>",
+                    ],
                     "description": "Dataset Description",
                     "tags": ["#x", "#data-sample"],
                     "pointable": False,
@@ -139,7 +154,6 @@ messages = {
         },
         "response_content": {"msg": "Dataset updated successfully!"},
     },
-
     # group_messages
     "CreateGroup": {
         "module": group_messages,
@@ -177,7 +191,7 @@ messages = {
         "module": group_messages,
         "request_content": {},
         "response_content": {
-        "groups": {
+            "groups": {
                 "626sadaf631": {
                     "group-name": "Heart diseases group",
                     "members": ["user-id1", "user-id2", "user-id3"],
@@ -201,7 +215,7 @@ messages = {
     },
     "UpdateGroup": {
         "module": group_messages,
-        "request_content":  {
+        "request_content": {
             "group-id": "eqw9e4a5d846",
             "group-name": "Brain diseases group",
             "members": ["user-id1", "user-id2", "user-id3"],
@@ -213,7 +227,6 @@ messages = {
         },
         "response_content": {"msg": "Group updated successfully!"},
     },
-
     # infra_messages
     "CreateWorker": {
         "module": infra_messages,
@@ -234,7 +247,7 @@ messages = {
     },
     "GetWorker": {
         "module": infra_messages,
-        "request_content": {"worker-id": "eqw9e4a5d846"} ,
+        "request_content": {"worker-id": "eqw9e4a5d846"},
         "response_content": {
             "worker-id": "eqw9e4a5d846",
             "environment-name": "Heart Diseases Environment",
@@ -274,7 +287,6 @@ messages = {
         },
         "response_content": {"msg": "Worker Environment updated successfully!"},
     },
-
     # role_messages
     "CreateRole": {
         "module": role_messages,
@@ -342,7 +354,6 @@ messages = {
         },
         "response_content": {"msg": "Role has been updated successfully!"},
     },
-
     # setup_messages
     "CreateInitialSetUp": {
         "module": setup_messages,
@@ -350,10 +361,13 @@ messages = {
             "settings": {
                 "cloud-admin-token": "d84we35ad3a1d59a84sd9",
                 "cloud-credentials": "<cloud-credentials.pem>",
-                "infra": {"autoscaling": True, "triggers": {"memory": "50", "vCPU": "80"}},
+                "infra": {
+                    "autoscaling": True,
+                    "triggers": {"memory": "50", "vCPU": "80"},
+                },
             }
         },
-        "response_content": {"msg": "Initial setup registered successfully!"}, 
+        "response_content": {"msg": "Initial setup registered successfully!"},
     },
     "GetSetUp": {
         "module": setup_messages,
@@ -362,11 +376,13 @@ messages = {
             "settings": {
                 "cloud-admin-token": "d84we35ad3a1d59a84sd9",
                 "cloud-credentials": "<cloud-credentials.pem>",
-                "infra": {"autoscaling": True, "triggers": {"memory": "50", "vCPU": "80"}},
+                "infra": {
+                    "autoscaling": True,
+                    "triggers": {"memory": "50", "vCPU": "80"},
+                },
             }
         },
     },
-
     # tensor_messages
     "CreateTensor": {
         "module": tensor_messages,
@@ -422,7 +438,6 @@ messages = {
         },
         "response_content": {"msg": "Tensor updated successfully!"},
     },
-
     # request_messages
     "CreateRequest": {
         "module": request_messages,
@@ -492,7 +507,9 @@ def test_message(message_name, node: sy.VirtualMachine) -> None:
     message_integrity_test(msg, target)
 
     if response_content == None:
-        pytest.skip("{request} does not have a response added to the test configuration")
+        pytest.skip(
+            "{request} does not have a response added to the test configuration"
+        )
 
     res_func = getattr(lib, message_name + "Response")
     msg = res_func(content=response_content, address=target, status_code=200)
