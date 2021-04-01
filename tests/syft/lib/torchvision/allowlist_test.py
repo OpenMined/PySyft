@@ -6,27 +6,26 @@ from typing import Dict
 from typing import Union
 
 # third party
+import PIL
 from packaging import version
 import pytest
 import torch
 import torchvision as tv
-import PIL
 
 # syft absolute
 import syft as sy
 from syft.lib.torchvision.allowlist import allowlist
-
 
 TORCHVISION_VERSION = version.parse(tv.__version__)
 
 
 @pytest.fixture(scope="function")
 def pil_img() -> PIL.Image.Image:
-    img_file = '../../../../docs/img/logo.png'
+    img_file = "../../../../docs/img/logo.png"
     if path.isfile(img_file):
-        return PIL.Image.open(img_file).convert('RGB')
+        return PIL.Image.open(img_file).convert("RGB")
     else:
-        raise Exception('Image file not found for loading tests.')
+        raise Exception("Image file not found for loading tests.")
 
 
 @pytest.fixture(scope="function")
@@ -48,13 +47,14 @@ def version_supported(support_dict: Union[str, Dict[str, str]]) -> bool:
         return TORCHVISION_VERSION >= version.parse(support_dict["min_version"])
 
 
-def test_allowlist(alice: sy.VirtualMachine, tens: torch.Tensor, pil_img: PIL.Image.Image) -> None:
+def test_allowlist(
+    alice: sy.VirtualMachine, tens: torch.Tensor, pil_img: PIL.Image.Image
+) -> None:
     # Required for testing on torchvision==1.6.0
-    sy.load('PIL')
+    sy.load("PIL")
     alice_client = alice.get_root_client()
     torchvision = alice_client.torchvision
     torch = alice_client.torch
-    PIL = alice_client.PIL
     try:
         tx = torch.rand(4)
         tx = tx * 2
