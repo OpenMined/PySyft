@@ -23,8 +23,16 @@ class GCP(Provider):
         )
         click.echo("Initializing GCP Provider")
 
-        self.build()
-        self.build_instances()
+        self.worker = config.app.name == "worker"
+
+        if self.worker:
+            # self.build()
+            self.build_ip_address()
+            self.build_instances()
+        else:
+            self.build()
+            self.build_ip_address()
+            self.build_instances()
 
     def build(self) -> bool:
         app = self.config.app.name
@@ -72,6 +80,8 @@ class GCP(Provider):
         )
         self.tfscript += self.firewall
 
+    def build_ip_address(self):
+        app = self.config.app.name
         self.pygrid_ip = terrascript.resource.google_compute_address(
             f"pygrid-{app}", name=f"pygrid-{app}"
         )
@@ -83,16 +93,6 @@ class GCP(Provider):
 
     def build_instances(self):
         name = self.config.app.name
-        images = vars(self.config.gcp.images)
-        image_type = self.config.gcp.image_type
-        # print(images)
-        # print(image_type)
-        image = terrascript.data.google_compute_image(
-            f"{name}-{image_type}",
-            project=images[image_type][0],
-            family=images[image_type][1],
-        )
-        # self.tfscript += image
 
         self.instances = []
         for count in range(self.config.app.count):
@@ -103,24 +103,24 @@ class GCP(Provider):
                 name=name,
                 machine_type=self.config.gcp.machine_type,
                 zone=self.config.gcp.zone,
-                # boot_disk={"initialize_params": {"image": var(image.self_link)}},
                 boot_disk={
-                    "initialize_params": {
-                        "image": f"{images[image_type][0]}/{images[image_type][1]}"
-                    }
+                    "initialize_params": {"image": "ubuntu-os-cloud/ubuntu-1804-lts"}
                 },
                 network_interface={
                     "network": "default",
                     "access_config": {"nat_ip": var(self.pygrid_ip.address)},
                 },
-                metadata_startup_script=self.write_exec_script(app, index=count),
+                metadata_startup_script=self.write_domain_exec_script(app, index=count)
+                if not self.worker
+                else self.write_worker_exec_script(app),
             )
 
             self.tfscript += instance
             self.instances.append(instance)
 
-    def write_exec_script(self, app, index=0):
+    def write_domain_exec_script(self, app, index=0):
         ##TODO(amr): remove `git checkout pygrid_0.3.0` after merge
+        branch = "pygrid_0.4.0"
 
         # exec_script = "#cloud-boothook\n#!/bin/bash\n"
         exec_script = "#!/bin/bash\n"
@@ -129,7 +129,6 @@ class GCP(Provider):
             ## For debugging
             # redirect stdout/stderr to a file
             exec &> logs.out
-
             echo 'Simple Web Server for testing the deployment'
             sudo apt update -y
             sudo apt install apache2 -y
@@ -150,13 +149,27 @@ class GCP(Provider):
             pip install poetry
 
             echo 'Install GCC'
+            sudo apt-get install zip unzip -y
             sudo apt-get install python3-dev -y
             sudo apt-get install libevent-dev -y
             sudo apt-get install gcc -y
 
+            curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+            sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" -y
+            sudo apt-get update -y && sudo apt-get install terraform -y
+
+            echo "Setting environment variables"
+            export CLOUD_PROVIDER={self.config.provider}
+
+            echo "Exporting GCP Configs"
+            export project_id={self.config.gcp.project_id},
+            export region={self.config.gcp.region},
+            export zone={self.config.gcp.zone},
+            export machine_type={self.config.gcp.machine_type},
+
             echo 'Cloning PyGrid'
             git clone https://github.com/OpenMined/PyGrid && cd /PyGrid/
-            git checkout pygrid_0.4.0
+            git checkout {branch}
 
             cd /PyGrid/apps/{self.config.app.name}
 
@@ -166,7 +179,46 @@ class GCP(Provider):
             ## TODO(amr): remove this after poetry updates
             pip install pymysql
 
-            nohup ./run.sh --port {app.port}  --start_local_db
-        """
+            nohup ./run.sh --port {app.port}  --host 0.0.0.0 --start_local_db
+            """
+        )
+        return exec_script
+
+    def write_worker_exec_script(self, app):
+        branch = "pygrid_0.4.0"
+        exec_script = "#!/bin/bash\n"
+        exec_script += textwrap.dedent(
+            f"""
+            exec &> logs.out
+            sudo apt update -y
+
+            echo 'Setup Miniconda environment'
+            sudo wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+            sudo bash miniconda.sh -b -p miniconda
+            sudo rm miniconda.sh
+            export PATH=/miniconda/bin:$PATH > ~/.bashrc
+            conda init bash
+            source ~/.bashrc
+            conda create -y -n pygrid python=3.7
+            conda activate pygrid
+
+            echo 'Install poetry...'
+            pip install poetry
+
+            echo 'Install GCC'
+            sudo apt-get install zip unzip -y
+            sudo apt-get install python3-dev -y
+            sudo apt-get install libevent-dev -y
+            sudo apt-get install gcc -y
+
+            echo 'Cloning PyGrid'
+            git clone https://github.com/OpenMined/PyGrid && cd /PyGrid/
+            git checkout {branch}
+
+            cd /PyGrid/apps/worker
+            echo 'Installing worker Dependencies'
+            poetry install
+            nohup ./run.sh --port {app.port}  --host 0.0.0.0
+            """
         )
         return exec_script
