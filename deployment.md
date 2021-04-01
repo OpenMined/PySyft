@@ -58,15 +58,15 @@ gcloud auth application-default login
 You need these keys
 
 ```shell
-application_id = "APPLICATION_ID"
-subscription_id = "SUBSCRIPTION_ID"
-tenant_id = "TENANT_ID"
-key = "KEY"
+subscription_id = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+client_id = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+client_secret = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+tenant_id = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ```
 
 and provide them to PyGrid CLI as AZURE credentials
 
-
+- [Creating a Service Principal to get the client_id, client_secret, and tenant_id fields](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/guides/service_principal_client_secret#creating-a-service-principal)
 - [Instructions for finding values for subscription_id](https://blogs.msdn.microsoft.com/mschray/2015/05/13/getting-your-azure-guid-subscription-id/)
 - [Instructions for finding values for tenant_id, application_id, and key](https://docs.microsoft.com/en-ca/azure/active-directory/develop/howto-create-service-principal-portal)
 
