@@ -88,7 +88,7 @@ class GCP(Provider):
         self.tfscript += self.pygrid_ip
 
         self.tfscript += terrascript.output(
-            f"pygrid-{app}-ip", value=var(self.pygrid_ip.address)
+            f"instance_0_endpoint", value=var(self.pygrid_ip.address)
         )
 
     def build_instances(self):
