@@ -23,8 +23,16 @@ class GCP(Provider):
         )
         click.echo("Initializing GCP Provider")
 
-        self.build()
-        self.build_instances()
+        self.worker = config.app.name == "worker"
+
+        if self.worker:
+            # self.build()
+            self.build_ip_address()
+            self.build_instances()
+        else:
+            self.build()
+            self.build_ip_address()
+            self.build_instances()
 
     def build(self) -> bool:
         app = self.config.app.name
@@ -72,6 +80,8 @@ class GCP(Provider):
         )
         self.tfscript += self.firewall
 
+    def build_ip_address(self):
+        app = self.config.app.name
         self.pygrid_ip = terrascript.resource.google_compute_address(
             f"pygrid-{app}", name=f"pygrid-{app}"
         )
@@ -100,13 +110,15 @@ class GCP(Provider):
                     "network": "default",
                     "access_config": {"nat_ip": var(self.pygrid_ip.address)},
                 },
-                metadata_startup_script=self.write_exec_script(app, index=count),
+                metadata_startup_script=self.write_domain_exec_script(app, index=count)
+                if not self.worker
+                else self.write_worker_exec_script(app),
             )
 
             self.tfscript += instance
             self.instances.append(instance)
 
-    def write_exec_script(self, app, index=0):
+    def write_domain_exec_script(self, app, index=0):
         ##TODO(amr): remove `git checkout pygrid_0.3.0` after merge
         branch = "pygrid_0.4.0"
 
@@ -168,6 +180,45 @@ class GCP(Provider):
             pip install pymysql
 
             nohup ./run.sh --port {app.port}  --host 0.0.0.0 --start_local_db
+            """
+        )
+        return exec_script
+
+    def write_worker_exec_script(self, app):
+        branch = "pygrid_0.4.0"
+        exec_script = "#!/bin/bash\n"
+        exec_script += textwrap.dedent(
+            f"""
+            exec &> logs.out
+            sudo apt update -y
+
+            echo 'Setup Miniconda environment'
+            sudo wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+            sudo bash miniconda.sh -b -p miniconda
+            sudo rm miniconda.sh
+            export PATH=/miniconda/bin:$PATH > ~/.bashrc
+            conda init bash
+            source ~/.bashrc
+            conda create -y -n pygrid python=3.7
+            conda activate pygrid
+
+            echo 'Install poetry...'
+            pip install poetry
+
+            echo 'Install GCC'
+            sudo apt-get install zip unzip -y
+            sudo apt-get install python3-dev -y
+            sudo apt-get install libevent-dev -y
+            sudo apt-get install gcc -y
+
+            echo 'Cloning PyGrid'
+            git clone https://github.com/OpenMined/PyGrid && cd /PyGrid/
+            git checkout {branch}
+
+            cd /PyGrid/apps/worker
+            echo 'Installing worker Dependencies'
+            poetry install
+            nohup ./run.sh --port {app.port}  --host 0.0.0.0
             """
         )
         return exec_script

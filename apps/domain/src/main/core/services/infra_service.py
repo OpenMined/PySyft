@@ -111,10 +111,10 @@ def create_worker_msg(
             apps=[Config(name="worker", count=1, port=_worker_port)],
             serverless=False,
             websockets=False,
-            provider=os.environ["CLOUD_PROVIDER"],
+            provider=os.getenv("CLOUD_PROVIDER", "AWS"),
             ##TODO(amr): encapsulate each cloud provider to config to aws, azure, gcp
             vpc=Config(
-                region=os.environ["REGION"],
+                region=os.getenv("REGION", None),
                 instance_type=Config(InstanceType=instance_type),
             ),
             azure=Config(
