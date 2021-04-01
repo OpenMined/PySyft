@@ -62,49 +62,6 @@ def test_pointer_objectives(
     if not hasattr(py_obj, func):
         return
 
-    # py_method = getattr(py_obj, func)
-    #
-    # if func == "get":
-    #     func = "dict_get"
-    #
-    # # sy_method = getattr(sy_obj, func)
-    #
-    # if func == "__len__":
-    #     func = "len"
-
-    # remote_sy_method = getattr(remote_sy_obj, func)
-
     for possible_input in possible_inputs:
         pointer_objectives(test_obj, func, node,
                            client, possible_input, "OD")
-        # try:
-        #     py_res = py_method(*possible_input)
-        # except Exception as py_e:
-        #     py_res = str(py_e)
-        #
-        # try:
-        #     sy_res = sy_method(*possible_input)
-        # except Exception as sy_e:
-        #     sy_res = str(sy_e)
-        #
-        # try:
-        #     remote_sy_res = remote_sy_method(*possible_input)
-        #     get_permission(remote_sy_res, node, client)
-        #     remote_sy_res = remote_sy_res.get()
-        # except Exception as remote_sy_e:
-        #     remote_sy_res = str(remote_sy_e)
-        #
-        # if isinstance(py_res, float):
-        #     py_res = int(py_res * 1000) / 1000
-        #     sy_res = int(sy_res * 1000) / 1000
-        #     remote_sy_res = int(remote_sy_res * 1000) / 1000
-        #
-        # if func in ["items", "values", "keys"]:
-        #     py_res = list(py_res)
-        #     sy_res = list(sy_res)
-        #
-        # assert py_res == sy_res
-        #
-        # # TODO: support `.get` for IteratorPointer objects
-        # if func not in ("items", "keys", "values"):
-        #     assert sy_res == remote_sy_res
