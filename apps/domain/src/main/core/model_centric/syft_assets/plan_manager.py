@@ -21,21 +21,24 @@ class PlanManager(DatabaseManager):
 
     def register(self, process, plans: dict, avg_plan: bool):
         if not avg_plan:
-            # Convert client plans to specific formats
-            plans_converted = {}
-            for idx, plan_ser in plans.items():
-                try:
-                    plans_converted[idx] = plan_ser
-                except Exception as e:
-                    raise PlanInvalidError()
+            # Store specific plan types in proper fields in DB
+            plans_types = {}
+            for idx_type, plan in plans.items():
+                type = "syft"
+                idx = idx_type
+                if ":" in idx_type:
+                    idx, type = idx_type.split(":", 2)
+                if idx not in plans_types:
+                    plans_types[idx] = {}
+                plans_types[idx][type] = plan
 
             # Register new Plans into the database
-            for key, plan in plans_converted.items():
+            for key, plans in plans_types.items():
                 super().register(
                     name=key,
-                    value=plan,
-                    value_ts=None,
-                    value_tfjs=None,
+                    value=plans.get("syft", None),
+                    value_ts=plans.get("ts", None),
+                    value_tfjs=plans.get("tfjs", None),
                     plan_flprocess=process,
                 )
         else:
@@ -85,7 +88,7 @@ class PlanManager(DatabaseManager):
         super().delete(**kwargs)
 
     @staticmethod
-    def deserialize_plan(bin: bin) -> "sy.Plan":
+    def deserialize_plan(bin: bytes) -> "sy.Plan":
         """Deserialize a Plan."""
         pb = PlanPB()
         pb.ParseFromString(bin)
