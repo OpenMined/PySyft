@@ -31,12 +31,17 @@ class AZURE(Provider):
             tenant_id=self.config.azure.tenant_id,
         )
 
-        self.build_resource_group()
-        self.build_security_groups()
-        self.build_network()
+        self.worker = config.app.name == "worker"
 
-        self.build_instances()
-        # self.build_load_balancer()
+        if self.worker:
+            self.build_resource_group()
+            self.build_instances()
+        else:
+            self.build_resource_group()
+            self.build_security_groups()
+            self.build_network()
+
+            self.build_instances()
 
     def build_resource_group(self):
         self.resource_group = azurerm_resource_group(
@@ -124,7 +129,9 @@ class AZURE(Provider):
                 vm_os_simple="UbuntuServer",
                 public_ip_dns=[f"pygrid-{name}-instance-{count}"],
                 vnet_subnet_id=var_module(self.network, "vnet_subnets[0]"),
-                custom_data=self.write_exec_script(app, index=count),
+                custom_data=self.write_domain_exec_script(app, index=count)
+                if not self.worker
+                else self.write_worker_exec_script(app),
                 admin_username="pygriduser",
                 admin_password="pswd123!",
                 depends_on=["azurerm_resource_group.pygrid_resource_group"],
@@ -163,7 +170,7 @@ class AZURE(Provider):
             description="The DNS name of the ELB.",
         )
 
-    def write_exec_script(self, app, index=0):
+    def write_domain_exec_script(self, app, index=0):
         ##TODO(amr): remove `git checkout pygrid_0.3.0` after merge
         branch = "pygrid_0.4.0"
 
@@ -226,6 +233,45 @@ class AZURE(Provider):
             pip install pymysql
 
             nohup ./run.sh --port {app.port}  --host 0.0.0.0 --start_local_db
+            """
+        )
+        return exec_script
+
+    def write_worker_exec_script(self, app):
+        branch = "pygrid_0.4.0"
+        exec_script = "#!/bin/bash\n"
+        exec_script += textwrap.dedent(
+            f"""
+            exec &> logs.out
+            sudo apt update -y
+
+            echo 'Setup Miniconda environment'
+            sudo wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+            sudo bash miniconda.sh -b -p miniconda
+            sudo rm miniconda.sh
+            export PATH=/miniconda/bin:$PATH > ~/.bashrc
+            conda init bash
+            source ~/.bashrc
+            conda create -y -n pygrid python=3.7
+            conda activate pygrid
+
+            echo 'Install poetry...'
+            pip install poetry
+
+            echo 'Install GCC'
+            sudo apt-get install zip unzip -y
+            sudo apt-get install python3-dev -y
+            sudo apt-get install libevent-dev -y
+            sudo apt-get install gcc -y
+
+            echo 'Cloning PyGrid'
+            git clone https://github.com/OpenMined/PyGrid && cd /PyGrid/
+            git checkout {branch}
+
+            cd /PyGrid/apps/worker
+            echo 'Installing worker Dependencies'
+            poetry install
+            nohup ./run.sh --port {app.port}  --host 0.0.0.0
             """
         )
         return exec_script
