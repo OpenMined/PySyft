@@ -1,7 +1,6 @@
 # syft absolute
 import syft as sy
 from syft.lib.python.float import Float
-from syft.lib.python.float import FloatWrapper
 from syft.proto.lib.python.float_pb2 import Float as Float_PB
 
 
@@ -19,20 +18,12 @@ def test_serde() -> None:
     assert deserialized == syft_float
 
 
-def test_send() -> None:
-    alice = sy.VirtualMachine(name="alice")
-    alice_client = alice.get_client()
-
+def test_send(client: sy.VirtualMachineClient) -> None:
     syft_float = Float(5)
-    ptr = syft_float.send(alice_client)
+    ptr = syft_float.send(client)
     # Check pointer type
     assert ptr.__class__.__name__ == "FloatPointer"
 
     # Check that we can get back the object
     res = ptr.get()
     assert res == syft_float
-
-
-def test_protobuf():
-    assert Float.get_protobuf_schema()
-    assert FloatWrapper.get_wrapped_type() is Float

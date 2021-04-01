@@ -6,33 +6,62 @@ import argparse
 from math import log10
 
 # third party
-from data import get_test_set
-from data import get_training_set
 from model import Net
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 
+from data import get_test_set  # isort:skip
+from data import get_training_set  # isort:skip
+
 # Training settings
 parser = argparse.ArgumentParser(description="PyTorch Super Res Example")
 parser.add_argument(
-    "--upscale_factor", type=int, required=True, help="super resolution upscale factor"
-)
-parser.add_argument("--batchSize", type=int, default=64, help="training batch size")
-parser.add_argument("--testBatchSize", type=int, default=10, help="testing batch size")
-parser.add_argument(
-    "--nEpochs", type=int, default=2, help="number of epochs to train for"
+    "--upscale-factor",
+    type=int,
+    required=True,
+    help="super resolution upscale factor[REQUIRED]"
 )
 parser.add_argument(
-    "--lr", type=float, default=0.01, help="Learning Rate. Default=0.01"
+    "--batch-size",
+    type=int,
+    default=64,
+    help="training batch size; default: 64"
 )
-parser.add_argument("--cuda", action="store_true", help="use cuda?")
 parser.add_argument(
-    "--threads", type=int, default=4, help="number of threads for data loader to use"
+    "--test-batch-size",
+    type=int,
+    default=10,
+    help="testing batch size; default: 10"
 )
 parser.add_argument(
-    "--seed", type=int, default=123, help="random seed to use. Default=123"
+    "--epochs",
+    type=int,
+    default=2,
+    help="number of epochs to train; default: 2"
+)
+parser.add_argument(
+    "--lr",
+    type=float,
+    default=0.01,
+    help="Learning Rate; default: 0.01"
+)
+parser.add_argument(
+    "--cuda",
+    action="store_true",
+    help="use cuda?")
+parser.add_argument(
+    "--threads",
+    type=int,
+    default=4,
+    help="number of threads for data loader to use; default: 4"
+)
+parser.add_argument(
+    "--seed",
+    type=int,
+    default=123,
+    help="random seed to use; default:123"
 )
 opt = parser.parse_args()
 
@@ -49,12 +78,12 @@ print("===> Loading datasets")
 train_set = get_training_set(opt.upscale_factor)
 test_set = get_test_set(opt.upscale_factor)
 training_data_loader = DataLoader(
-    dataset=train_set, num_workers=opt.threads, batch_size=opt.batchSize, shuffle=True
+    dataset=train_set, num_workers=opt.threads, batch_size=opt.batch_size, shuffle=True
 )
 testing_data_loader = DataLoader(
     dataset=test_set,
     num_workers=opt.threads,
-    batch_size=opt.testBatchSize,
+    batch_size=opt.test_batch_size,
     shuffle=False,
 )
 
@@ -108,7 +137,7 @@ def checkpoint(epoch):
     print(f"Checkpoint saved to {model_out_path}")
 
 
-for epoch in range(1, opt.nEpochs + 1):
+for epoch in range(1, opt.epochs + 1):
     train(epoch)
     test()
     checkpoint(epoch)

@@ -12,19 +12,24 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from ..... import lib
-from .....decorators.syft_decorator_impl import syft_decorator
+from ..... import serialize
+from .....logger import traceback_and_raise
 from .....proto.core.node.common.action.run_function_or_constructor_pb2 import (
     RunFunctionOrConstructorAction as RunFunctionOrConstructorAction_PB,
 )
+from .....util import inherit_tags
 from ....common.serde.deserialize import _deserialize
+from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
 from ....pointer.pointer import Pointer
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
+from ..util import listify
 from .common import ImmediateActionWithoutReply
 
 
+@bind_protobuf
 class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
     """
     When executing a RunFunctionOrConstructorAction, a :class:`Node` will run
@@ -47,15 +52,14 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         id_at_location: UID,
         address: Address,
         msg_id: Optional[UID] = None,
+        is_static: Optional[bool] = False,
     ):
         super().__init__(address=address, msg_id=msg_id)
         self.path = path
-        self.args = args
+        self.args = listify(args)  # args need to be editable for plans
         self.kwargs = kwargs
-
-        # TODO: eliminate this explicit parameter and just set the object
-        #  id on the object directly
         self.id_at_location = id_at_location
+        self.is_static = is_static
 
     @staticmethod
     def intersect_keys(
@@ -68,42 +72,49 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         # into a new one
         if left is None:
             return right
-        intersection = set(left.keys()).intersection(right.keys())
+        intersection = left.keys() & right.keys()
         # left and right have the same keys
         return {k: left[k] for k in intersection}
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
-
         result_read_permissions: Union[None, Dict[VerifyKey, UID]] = None
 
         resolved_args = list()
+        tag_args = []
         for arg in self.args:
             if not isinstance(arg, Pointer):
-                raise ValueError(
-                    f"args attribute of RunFunctionOrConstructorAction should only contain Pointers. "
-                    f"Got {arg} of type {type(arg)}"
+                traceback_and_raise(
+                    ValueError(
+                        f"args attribute of RunFunctionOrConstructorAction should only contain Pointers. "
+                        f"Got {arg} of type {type(arg)}"
+                    )
                 )
 
-            r_arg = node.store.get_object(key=arg.id_at_location)
+            r_arg = node.store[arg.id_at_location]
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
             resolved_args.append(r_arg.data)
+            tag_args.append(r_arg)
 
         resolved_kwargs = {}
+        tag_kwargs = {}
         for arg_name, arg in self.kwargs.items():
             if not isinstance(arg, Pointer):
-                raise ValueError(
-                    f"kwargs attribute of RunFunctionOrConstructorAction should only contain Pointers. "
-                    f"Got {arg} of type {type(arg)}"
+                traceback_and_raise(
+                    ValueError(
+                        f"kwargs attribute of RunFunctionOrConstructorAction should only contain Pointers. "
+                        f"Got {arg} of type {type(arg)}"
+                    )
                 )
 
-            r_arg = node.store.get_object(key=arg.id_at_location)
+            r_arg = node.store[arg.id_at_location]
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
             resolved_kwargs[arg_name] = r_arg.data
+            tag_kwargs[arg_name] = r_arg
 
         # upcast our args in case the method only accepts the original types
         (
@@ -114,11 +125,6 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         # execute the method with the newly upcasted args and kwargs
         result = method(*upcasted_args, **upcasted_kwargs)
 
-        # TODO: replace with proper tuple support
-        if type(result) is tuple:
-            # convert to list until we support tuples
-            result = list(result)
-
         # to avoid circular imports
         if lib.python.primitive_factory.isprimitive(value=result):
             # Wrap in a SyPrimitive
@@ -126,11 +132,8 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
                 value=result, id=self.id_at_location
             )
         else:
-            # TODO: overload all methods to incorporate this automatically
             if hasattr(result, "id"):
                 result._id = self.id_at_location
-            # else:
-            # TODO: Solve this problem where its an issue
 
         # If we have no permission (None or {}) we add some default permissions based on a permission list
         if result_read_permissions is None:
@@ -143,9 +146,22 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
                 read_permissions=result_read_permissions,
             )
 
+        inherit_tags(
+            attr_path_and_name=self.path,
+            result=result,
+            self_obj=None,
+            args=tag_args,
+            kwargs=tag_kwargs,
+        )
+
         node.store[self.id_at_location] = result
 
-    @syft_decorator(typechecking=True)
+    def __repr__(self) -> str:
+        method_name = self.path.split(".")[-1]
+        arg_names = ",".join([a.class_name for a in self.args])
+        kwargs_names = ",".join([f"{k}={v.class_name}" for k, v in self.kwargs.items()])
+        return f"RunClassMethodAction {method_name}({arg_names}, {kwargs_names})"
+
     def _object2proto(self) -> RunFunctionOrConstructorAction_PB:
         """Returns a protobuf serialization of self.
 
@@ -157,17 +173,17 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         :rtype: RunFunctionOrConstructorAction_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return RunFunctionOrConstructorAction_PB(
             path=self.path,
-            args=[x.serialize() for x in self.args],
-            kwargs={k: v.serialize() for k, v in self.kwargs.items()},
-            id_at_location=self.id_at_location.serialize(),
-            address=self.address.serialize(),
-            msg_id=self.id.serialize(),
+            args=[serialize(x) for x in self.args],
+            kwargs={k: serialize(v) for k, v in self.kwargs.items()},
+            id_at_location=serialize(self.id_at_location),
+            address=serialize(self.address),
+            msg_id=serialize(self.id),
         )
 
     @staticmethod
@@ -215,3 +231,13 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         """
 
         return RunFunctionOrConstructorAction_PB
+
+    def remap_input(self, current_input: Any, new_input: Any) -> None:
+        """Redefines some of the arguments of the function"""
+        for i, arg in enumerate(self.args):
+            if arg.id_at_location == current_input.id_at_location:
+                self.args[i] = new_input
+
+        for k, v in self.kwargs.items():
+            if v.id_at_location == current_input.id_at_location:
+                self.kwargs[k] = new_input

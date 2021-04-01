@@ -17,9 +17,6 @@ _sym_db = _symbol_database.Default()
 from syft.proto.core.common import (
     common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
 )
-from syft.proto.core.store import (
-    store_object_pb2 as proto_dot_core_dot_store_dot_store__object__pb2,
-)
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/lib/python/dict.proto",
@@ -27,10 +24,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x1bproto/lib/python/dict.proto\x12\x0fsyft.lib.python\x1a%proto/core/common/common_object.proto\x1a#proto/core/store/store_object.proto"G\n\x04\x44ict\x12\x0c\n\x04keys\x18\x01 \x03(\x0c\x12\x0e\n\x06values\x18\x02 \x03(\x0c\x12!\n\x02id\x18\x03 \x01(\x0b\x32\x15.syft.core.common.UIDb\x06proto3',
+    serialized_pb=b'\n\x1bproto/lib/python/dict.proto\x12\x0fsyft.lib.python\x1a%proto/core/common/common_object.proto"G\n\x04\x44ict\x12\x0c\n\x04keys\x18\x01 \x03(\x0c\x12\x0e\n\x06values\x18\x02 \x03(\x0c\x12!\n\x02id\x18\x03 \x01(\x0b\x32\x15.syft.core.common.UIDb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
-        proto_dot_core_dot_store_dot_store__object__pb2.DESCRIPTOR,
     ],
 )
 
@@ -109,8 +105,8 @@ _DICT = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=124,
-    serialized_end=195,
+    serialized_start=87,
+    serialized_end=158,
 )
 
 _DICT.fields_by_name[

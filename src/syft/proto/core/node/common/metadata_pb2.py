@@ -18,7 +18,6 @@ from syft.proto.core.common import (
     common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
 )
 from syft.proto.core.io import location_pb2 as proto_dot_core_dot_io_dot_location__pb2
-from syft.proto.core.io import route_pb2 as proto_dot_core_dot_io_dot_route__pb2
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/core/node/common/metadata.proto",
@@ -26,11 +25,10 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n%proto/core/node/common/metadata.proto\x12\x15syft.core.node.common\x1a%proto/core/common/common_object.proto\x1a\x1cproto/core/io/location.proto\x1a\x19proto/core/io/route.proto"i\n\x08Metadata\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0c\n\x04name\x18\x02 \x01(\t\x12,\n\x04node\x18\x03 \x01(\x0b\x32\x1e.syft.core.io.SpecificLocationb\x06proto3',
+    serialized_pb=b'\n%proto/core/node/common/metadata.proto\x12\x15syft.core.node.common\x1a%proto/core/common/common_object.proto\x1a\x1cproto/core/io/location.proto"i\n\x08Metadata\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0c\n\x04name\x18\x02 \x01(\t\x12,\n\x04node\x18\x03 \x01(\x0b\x32\x1e.syft.core.io.SpecificLocationb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_location__pb2.DESCRIPTOR,
-        proto_dot_core_dot_io_dot_route__pb2.DESCRIPTOR,
     ],
 )
 
@@ -109,8 +107,8 @@ _METADATA = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=160,
-    serialized_end=265,
+    serialized_start=133,
+    serialized_end=238,
 )
 
 _METADATA.fields_by_name[

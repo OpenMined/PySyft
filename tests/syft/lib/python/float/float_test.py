@@ -1,6 +1,13 @@
+"""
+Tests copied from cpython test suite:
+https://github.com/python/cpython/blob/3.9/Lib/test/test_float.py
+"""
+
 # stdlib
+from math import copysign
 from math import isinf
 from math import isnan
+from math import ldexp
 import operator
 import random
 import sys
@@ -109,7 +116,7 @@ class F:
         return OtherFloatSubclass(42.0)
 
 
-def test_float() -> None:
+def test_Float():
     assert Float(3.14) == 3.14
     assert Float(314) == 314.0
     assert Float("  3.14  ") == 3.14
@@ -140,7 +147,7 @@ def test_float() -> None:
 
     with pytest.raises(TypeError):
         Float({})
-
+    # assertRaisesRegex(TypeError, "not 'dict'", Float, {})
     # Lone surrogate
     with pytest.raises(ValueError):
         Float("\uD8F0")
@@ -163,20 +170,18 @@ def test_float() -> None:
         Float("\u3053\u3093\u306b\u3061\u306f")
 
 
-def test_underscores() -> None:
+def test_underscores():
     for lit in VALID_UNDERSCORE_LITERALS:
         if not any(ch in lit for ch in "jJxXoObB"):
             assert Float(lit) == eval(lit)
             # TODO this should work!!!
-            # assert Float(lit), Float(lit.replace("_", ""))
-
+            assert Float(lit) == Float(lit.replace("_", ""))
     for lit in INVALID_UNDERSCORE_LITERALS:
         if lit in ("0_7", "09_99"):  # octals are not recognized here
             continue
         if not any(ch in lit for ch in "jJxXoObB"):
             with pytest.raises(ValueError):
                 Float(lit)
-
     # Additional test cases; nan and inf are never valid as literals,
     # only in the Float() constructor, but we don't allow underscores
     # in or around them.
@@ -195,7 +200,7 @@ def test_underscores() -> None:
         Float(b"0_.\xff9")
 
 
-def test_non_numeric_input_types() -> None:
+def test_non_numeric_input_types():
     # Test possible non-numeric types for the argument x, including
     # subclasses of the explicitly documented accepted types.
     class CustomStr(str):
@@ -230,7 +235,7 @@ def test_non_numeric_input_types() -> None:
             Float(f(b"A" * 0x10))
 
 
-def test_Float_memoryview() -> None:
+def test_Float_memoryview():
     assert Float(memoryview(b"12.3")[1:4]) == 2.3
     assert Float(memoryview(b"12.3\x00")[1:4]) == 2.3
     assert Float(memoryview(b"12.3 ")[1:4]) == 2.3
@@ -238,7 +243,7 @@ def test_Float_memoryview() -> None:
     assert Float(memoryview(b"12.34")[1:4]) == 2.3
 
 
-def test_error_message() -> None:
+def test_error_message():
     def check(s):
         with pytest.raises(ValueError):
             Float(s)
@@ -260,12 +265,10 @@ def test_error_message() -> None:
     check(b"123\xa0")
 
 
-def test_Float_with_comma() -> None:
-    # set locale to something that doesn't use '.' for the decimal point
+def test_Float_with_comma():
+    # set locale to something that doesn't use '.' for the decimal point    assert Float("  3.14  ") == 3.14
     # Float must not accept the locale specific decimal point but
     # it still has to accept the normal python syntax
-
-    assert Float("  3.14  ") == 3.14
     assert Float("+3.14  ") == 3.14
     assert Float("-3.14  ") == -3.14
     assert Float(".14  ") == 0.14
@@ -289,8 +292,8 @@ def test_Float_with_comma() -> None:
     assert Float("  25.e-1  ") == 2.5
 
 
-def test_Floatconversion() -> None:
-    # Make sure that calls to __float__() work properly
+def test_Floatconversion():
+    # Make sure that calls to __Float__() work properly
     class Foo1(object):
         def __float__(self):
             return 42.0
@@ -332,6 +335,7 @@ def test_Floatconversion() -> None:
 
     # using __index__ in init was added in python 3.8
     # https://github.com/python/cpython/commit/bdbad71b9def0b86433de12cecca022eee91bd9f
+
     if sys.version_info >= (3, 8):
 
         class MyIndex:
@@ -353,20 +357,19 @@ def test_Floatconversion() -> None:
         Float(MyInt())
 
 
-def test_keyword_args() -> None:
+def test_keyword_args():
     with pytest.raises(TypeError):
         Float(x="3.14")
 
 
-def test_is_integer() -> None:
+def test_is_integer():
     assert not Float(1.1).is_integer()
     assert Float(1.0).is_integer()
     assert not Float("nan").is_integer()
     assert not Float("inf").is_integer()
 
 
-@pytest.mark.slow
-def test_floatasratio() -> None:
+def test_Floatasratio():
     for f, ratio in [
         (0.875, (7, 8)),
         (-0.875, (-7, 8)),
@@ -389,7 +392,7 @@ def test_floatasratio() -> None:
         Float("nan").as_integer_ratio()
 
 
-def test_Float_containment() -> None:
+def test_Float_containment():
     Floats = (INF, -INF, 0.0, 1.0, NAN)
     for f in Floats:
         assert f in [f]
@@ -405,7 +408,6 @@ def test_Float_containment() -> None:
         assert (f,) == (f,)
         assert {f} == {f}
         assert {f: None} == {f: None}
-
         # identical containers
         l, t, s, d = [f], (f,), {f}, {f: None}
         assert l == l  # noqa: E741
@@ -414,7 +416,7 @@ def test_Float_containment() -> None:
         assert d == d  # noqa: E741
 
 
-def test_Float_mod() -> None:
+def test_Float_mod():
     # Check behaviour of % operator for IEEE 754 special cases.
     # In particular, check signs of zeros.
     mod = operator.mod
@@ -434,9 +436,9 @@ def test_Float_mod() -> None:
     assert mod(Float(1.0), Float(-1.0)) == -0.0
 
 
-def test_Float_pow() -> None:
+def test_Float_pow():
     # test builtin pow and ** operator for IEEE 754 special cases.
-    # Special cases taken from section F.Float(9.4).4 of the C99 specification
+    # Special cases taken from section F.9.4.4 of the C99 specification
 
     for pow_op in pow, operator.pow:
         # x**NAN is NAN for any x except 1
@@ -480,7 +482,6 @@ def test_Float_pow() -> None:
         # (+-0)**y is +-0 for y a positive odd integer
         assert pow_op(Float(-0.0), Float(1.0)) == -0.0
         assert pow_op(Float(0.0), Float(1.0)) == 0.0
-
         # (+-0)**y is 0 for y finite and positive but not an odd integer
         assert pow_op(Float(-0.0), Float(0.5)) == 0.0
         assert pow_op(Float(-0.0), Float(2.0)) == 0.0
@@ -626,18 +627,7 @@ def test_Float_pow() -> None:
         assert pow_op(Float(0.5), Float(2001.0)) == Float(0.0)
 
 
-BE_DOUBLE_INF = b"\x7f\xf0\x00\x00\x00\x00\x00\x00"
-LE_DOUBLE_INF = bytes(reversed(BE_DOUBLE_INF))
-BE_DOUBLE_NAN = b"\x7f\xf8\x00\x00\x00\x00\x00\x00"
-LE_DOUBLE_NAN = bytes(reversed(BE_DOUBLE_NAN))
-
-BE_Float_INF = b"\x7f\x80\x00\x00"
-LE_Float_INF = bytes(reversed(BE_Float_INF))
-BE_Float_NAN = b"\x7f\xc0\x00\x00"
-LE_Float_NAN = bytes(reversed(BE_Float_NAN))
-
-
-def test_short_repr() -> None:
+def test_short_repr():
     # test short Float repr introduced in Python 3.1.  One aspect
     # of this repr is that we get some degree of str -> Float ->
     # str roundtripping.  In particular, for any numeric string
@@ -688,7 +678,7 @@ def test_short_repr() -> None:
         assert repr(Float(negs)) == str(Float(negs))
 
 
-def test_inf_nan() -> None:
+def test_inf_nan():
     with pytest.raises(OverflowError):
         round(INF)
     with pytest.raises(OverflowError):
@@ -705,7 +695,7 @@ def test_inf_nan() -> None:
         round(-0.0, 1j)
 
 
-def test_large_n() -> None:
+def test_large_n():
     for n in [324, 325, 400, 2 ** 31 - 1, 2 ** 31, 2 ** 32, 2 ** 100]:
         assert round(123.456, n) == 123.456
         assert round(-123.456, n) == -123.456
@@ -718,7 +708,7 @@ def test_large_n() -> None:
     assert round(1.4e-315, 315) == 1e-315
 
 
-def test_small_n() -> None:
+def test_small_n():
     for n in [-308, -309, -400, 1 - 2 ** 31, -(2 ** 31), -(2 ** 31) - 1, -(2 ** 100)]:
         assert round(123.456, n) == 0.0
         assert round(-123.456, n) == -0.0
@@ -726,15 +716,18 @@ def test_small_n() -> None:
         assert round(1e-320, n) == 0.0
 
 
-def test_overflow() -> None:
+def test_overflow():
     with pytest.raises(OverflowError):
         round(1.6e308, -308)
     with pytest.raises(OverflowError):
         round(-1.7e308, -308)
 
 
-def test_previous_round_bugs() -> None:
+def test_previous_round_bugs():
     # particular cases that have occurred in bug reports
+    assert round(562949953421312.5, 1) == 562949953421312.5
+    assert round(56294995342131.5, 3) == 56294995342131.5
+    # round-half-even
     assert round(Float(25.0), -1) == Float(20.0)
     assert round(Float(35.0), -1) == Float(40.0)
     assert round(Float(45.0), -1) == Float(40.0)
@@ -746,13 +739,14 @@ def test_previous_round_bugs() -> None:
 
 
 @pytest.mark.slow
-def test_matches_Float_format() -> None:
+def test_matches_Float_format():
     # round should give the same results as Float formatting
     for i in range(500):
         x = i / 1000.0
         assert Float(format(x, ".0f")) == round(x, 0)
         assert Float(format(x, ".1f")) == round(x, 1)
         assert Float(format(x, ".2f")) == round(x, 2)
+        assert Float(format(x, ".3f")) == round(x, 3)
 
     for i in range(5, 5000, 10):
         x = i / 1000.0
@@ -769,7 +763,20 @@ def test_matches_Float_format() -> None:
         assert Float(format(x, ".3f")) == round(x, 3)
 
 
-def test_inf_from_str() -> None:
+def test_None_ndigits():
+    for x in round(1.23), round(1.23, None), round(1.23, ndigits=None):
+        assert x == 1
+        assert isinstance(x, int)
+    for x in round(1.78), round(1.78, None), round(1.78, ndigits=None):
+        assert x == 2
+        assert isinstance(x, int)
+
+
+# Beginning with Python 2.6 Float has cross platform compatible
+# ways to create and represent inf and nan
+
+
+def test_inf_from_str():
     assert isinf(Float("inf"))
     assert isinf(Float("+inf"))
     assert isinf(Float("-inf"))
@@ -829,7 +836,7 @@ def test_inf_from_str() -> None:
         Float("--Infinity")
 
 
-def test_inf_as_str() -> None:
+def test_inf_as_str():
     assert repr(1e300 * 1e300) == "inf"
     assert repr(-1e300 * 1e300) == "-inf"
 
@@ -837,7 +844,7 @@ def test_inf_as_str() -> None:
     assert str(-1e300 * 1e300) == "-inf"
 
 
-def test_nan_from_str() -> None:
+def test_nan_from_str():
     assert isnan(Float("nan"))
     assert isnan(Float("+nan"))
     assert isnan(Float("-nan"))
@@ -877,7 +884,7 @@ def test_nan_from_str() -> None:
         Float("--nAn")
 
 
-def test_nan_as_str() -> None:
+def test_nan_as_str():
     assert repr(1e300 * 1e300 * 0) == "nan"
     assert repr(-1e300 * 1e300 * 0) == "nan"
 
@@ -885,10 +892,46 @@ def test_nan_as_str() -> None:
     assert str(-1e300 * 1e300 * 0) == "nan"
 
 
-fromHex = float.fromhex
+def test_inf_signs():
+    assert copysign(1.0, Float("inf")) == 1.0
+    assert copysign(1.0, Float("-inf")) == -1.0
 
 
-def test_invalid_inputs() -> None:
+def test_nan_signs():
+    # When using the dtoa.c code, the sign of Float('nan') should
+    # be predictable.
+    assert copysign(1.0, Float("nan")) == 1.0
+    assert copysign(1.0, Float("-nan")) == -1.0
+
+
+fromHex = Float.fromhex
+toHex = Float.hex
+
+MAX = fromHex("0x.fffffffffffff8p+1024")  # max normal
+MIN = fromHex("0x1p-1022")  # min normal
+TINY = fromHex("0x0.0000000000001p-1022")  # min subnormal
+EPS = fromHex("0x0.0000000000001p0")  # diff between 1.0 and next Float up
+
+
+def identical(x, y):
+    # check that Floats x and y are identical, or that both
+    # are NaNs
+    if isnan(x) or isnan(y):
+        if isnan(x) == isnan(y):
+            return
+    elif x == y and (x != 0.0 or copysign(1.0, x) == copysign(1.0, y)):
+        return
+    pytest.fail(f"{x!r} not identical to {y!r}")
+
+
+def test_ends():
+    identical(MIN, ldexp(1.0, -1022))
+    identical(TINY, ldexp(1.0, -1074))
+    identical(EPS, ldexp(1.0, -52))
+    identical(MAX, 2.0 * (ldexp(1.0, 1023) - ldexp(1.0, 970)))
+
+
+def test_invalid_inputs():
     invalid_inputs = [
         "infi",  # misspelt infinities and nans
         "-Infinit",
@@ -944,8 +987,11 @@ def test_invalid_inputs() -> None:
     ]
     for x in invalid_inputs:
         try:
-            _ = fromHex(x)
+            result = fromHex(x)
         except ValueError:
             pass
         else:
-            raise Exception("Expected to work or just ValueError!")
+            pytest.fail(
+                "Expected Float.fromhex(%r) to raise ValueError; "
+                "got %r instead" % (x, result)
+            )

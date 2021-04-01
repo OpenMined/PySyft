@@ -1,6 +1,7 @@
+# flake8: noqa
 """
 Tests copied from cpython test suite:
-https://github.com/python/cpython/blob/3.8/Lib/test/test_complex.py
+https://github.com/python/cpython/blob/3.9/Lib/test/test_complex.py
 """
 
 # stdlib
@@ -307,6 +308,7 @@ class ComplexTest(unittest.TestCase):
     def test_conjugate(self):
         self.assertClose(Complex(5.3, 9.8).conjugate(), 5.3 - 9.8j)
 
+    @pytest.mark.slow
     def test_constructor(self):
         class OS:
             def __init__(self, value):

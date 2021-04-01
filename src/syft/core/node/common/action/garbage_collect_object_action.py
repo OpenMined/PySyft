@@ -3,21 +3,23 @@ from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from loguru import logger
 from nacl.signing import VerifyKey
 
 # syft relative
-from .....decorators.syft_decorator_impl import syft_decorator
+from ..... import serialize
+from .....logger import critical
 from .....proto.core.node.common.action.garbage_collect_object_pb2 import (
     GarbageCollectObjectAction as GarbageCollectObjectAction_PB,
 )
 from ....common.serde.deserialize import _deserialize
+from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
 from ...abstract.node import AbstractNode
 from .common import EventualActionWithoutReply
 
 
+@bind_protobuf
 class GarbageCollectObjectAction(EventualActionWithoutReply):
     def __init__(
         self, id_at_location: UID, address: Address, msg_id: Optional[UID] = None
@@ -29,16 +31,15 @@ class GarbageCollectObjectAction(EventualActionWithoutReply):
         try:
             node.store.delete(key=self.id_at_location)
         except Exception as e:
-            logger.critical(
+            critical(
                 "> GarbageCollectObjectAction deletion exception "
                 + f"{self.id_at_location} {e}"
             )
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> GarbageCollectObjectAction_PB:
 
-        id_pb = self.id_at_location.serialize()
-        addr = self.address.serialize()
+        id_pb = serialize(self.id_at_location)
+        addr = serialize(self.address)
 
         return GarbageCollectObjectAction_PB(
             id_at_location=id_pb,
@@ -46,7 +47,6 @@ class GarbageCollectObjectAction(EventualActionWithoutReply):
         )
 
     @staticmethod
-    @syft_decorator(typechecking=True)
     def _proto2object(
         proto: GarbageCollectObjectAction_PB,
     ) -> "GarbageCollectObjectAction":

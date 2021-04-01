@@ -1,26 +1,29 @@
+# third party
+import pytest
+
 # syft absolute
 import syft as sy
+from syft import serialize
 from syft.core.node.common.service.child_node_lifecycle_service import (
     RegisterChildNodeMessage,
 )
 
 
-def test_child_node_lifecycle_message_serde() -> None:
-    bob_vm = sy.VirtualMachine(name="Bob")
-    bob_vm_client = bob_vm.get_client()
-
-    bob_phone = sy.Device(name="Bob's iPhone")
-    bob_phone_client = bob_phone.get_client()
+@pytest.mark.slow
+def test_child_node_lifecycle_message_serde(
+    node: sy.VirtualMachine, client: sy.VirtualMachineClient
+) -> None:
+    second_client = node.get_client()
 
     # bob_phone_client.register(client=bob_vm_client)
     # generates this message
     msg = RegisterChildNodeMessage(
-        lookup_id=bob_vm_client.id,  # TODO: not sure if this is needed anymore
-        child_node_client_address=bob_vm_client.address,
-        address=bob_phone_client.address,
+        lookup_id=client.id,  # TODO: not sure if this is needed anymore
+        child_node_client_address=client.address,
+        address=second_client.address,
     )
 
-    blob = msg.serialize()
+    blob = serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id

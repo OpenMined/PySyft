@@ -8,13 +8,15 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import final
 
 # syft relative
-from .....decorators.syft_decorator_impl import syft_decorator
+from ..... import serialize
 from .....proto.core.node.common.action.exception_action_pb2 import (
     ExceptionMessage as ExceptionMessage_PB,
 )
 from .....util import get_fully_qualified_name
+from .....util import validate_type
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
+from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
 
@@ -23,6 +25,7 @@ class UnknownPrivateException(Exception):
     pass
 
 
+@bind_protobuf
 @final
 class ExceptionMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -38,7 +41,6 @@ class ExceptionMessage(ImmediateSyftMessageWithoutReply):
         self.exception_type = exception_type
         self.exception_msg = exception_msg
 
-    @syft_decorator(typechecking=True)
     def _object2proto(self) -> ExceptionMessage_PB:
         """Returns a protobuf serialization of self.
 
@@ -50,7 +52,7 @@ class ExceptionMessage(ImmediateSyftMessageWithoutReply):
         :rtype: ExceptionMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use object.serialize() or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
@@ -63,9 +65,9 @@ class ExceptionMessage(ImmediateSyftMessageWithoutReply):
         fqn = ".".join(module_parts)
 
         return ExceptionMessage_PB(
-            msg_id=self.id.serialize(),
-            address=self.address.serialize(),
-            msg_id_causing_exception=self.msg_id_causing_exception.serialize(),
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
+            msg_id_causing_exception=serialize(self.msg_id_causing_exception),
             exception_type=fqn,
             exception_msg=self.exception_msg,
         )
@@ -91,9 +93,11 @@ class ExceptionMessage(ImmediateSyftMessageWithoutReply):
         exception_type = getattr(sys.modules[".".join(module_parts)], klass)
 
         return ExceptionMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
-            msg_id_causing_exception=_deserialize(blob=proto.msg_id_causing_exception),
+            msg_id=validate_type(_deserialize(blob=proto.msg_id), UID, optional=True),
+            address=validate_type(_deserialize(blob=proto.address), Address),
+            msg_id_causing_exception=validate_type(
+                _deserialize(blob=proto.msg_id_causing_exception), UID
+            ),
             exception_type=exception_type,
             exception_msg=proto.exception_msg,
         )

@@ -18,13 +18,15 @@ from typing import TypeVar
 from typing import Union
 
 # third party
-from loguru import logger
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
 # syft relative
-from ....decorators import syft_decorator
 from ....lib import lib_ast
+from ....logger import critical
+from ....logger import debug
+from ....logger import error
+from ....logger import traceback_and_raise
 from ....util import get_subclasses
 from ...common.message import EventualSyftMessageWithoutReply
 from ...common.message import ImmediateSyftMessageWithReply
@@ -49,6 +51,7 @@ from .client import Client
 from .metadata import Metadata
 from .service.auth import AuthorizationException
 from .service.child_node_lifecycle_service import ChildNodeLifecycleService
+from .service.get_repr_service import GetReprService
 from .service.heritage_update_service import HeritageUpdateService
 from .service.msg_forwarding_service import SignedMessageWithReplyForwardingService
 from .service.msg_forwarding_service import SignedMessageWithoutReplyForwardingService
@@ -62,6 +65,7 @@ from .service.obj_search_permission_service import (
 )
 from .service.obj_search_service import ImmediateObjectSearchService
 from .service.repr_service import ReprService
+from .service.resolve_pointer_type_service import ResolvePointerTypeService
 
 # this generic type for Client bound by Client
 ClientT = TypeVar("ClientT", bound=Client)
@@ -90,7 +94,6 @@ class Node(AbstractNode):
     signing_key: Optional[SigningKey]
     verify_key: Optional[VerifyKey]
 
-    @syft_decorator(typechecking=True)
     def __init__(
         self,
         name: Optional[str] = None,
@@ -122,14 +125,14 @@ class Node(AbstractNode):
             try:
                 self.store = DiskObjectStore(db_path=db_path)
                 log = f"Opened DiskObjectStore at {db_path}."
-                logger.debug(log)
+                debug(log)
             except Exception as e:
                 log = f"Failed to open DiskObjectStore at {db_path}. {e}"
-                logger.critical(log)
+                critical(log)
         else:
             self.store = MemoryStore()
             log = "Created MemoryStore."
-            logger.debug(log)
+            debug(log)
 
         # We need to register all the services once a node is created
         # On the off chance someone forgot to do this (super unlikely)
@@ -203,6 +206,8 @@ class Node(AbstractNode):
         self.immediate_services_with_reply: List[Any] = []
         self.immediate_services_with_reply.append(ImmediateObjectActionServiceWithReply)
         self.immediate_services_with_reply.append(ImmediateObjectSearchService)
+        self.immediate_services_with_reply.append(GetReprService)
+        self.immediate_services_with_reply.append(ResolvePointerTypeService)
 
         # for services which can run at a later time and do not return a reply
         self.eventual_services_without_reply = list()
@@ -229,7 +234,6 @@ class Node(AbstractNode):
 
         # now we need to load the relevant frameworks onto the node
         self.lib_ast = lib_ast
-
         # The node needs to sign messages that it sends so that recipients know that it
         # comes from the node. In order to do that, the node needs to generate keys
         # for itself to sign and verify with.
@@ -249,6 +253,8 @@ class Node(AbstractNode):
         # PERMISSION REGISTRY:
         self.root_verify_key = self.verify_key  # TODO: CHANGE
         self.guest_verify_key_registry = set()
+        self.admin_verify_key_registry = set()
+        self.cpl_ofcr_verify_key_registry = set()
         self.in_memory_client_registry = {}
         # TODO: remove hacky signaling_msgs when SyftMessages become Storable.
         self.signaling_msgs = {}
@@ -260,16 +266,15 @@ class Node(AbstractNode):
     def icon(self) -> str:
         return "📍"
 
-    @syft_decorator(typechecking=True)
-    def get_client(self, routes: List[Route] = []) -> ClientT:
-        if not len(routes):
+    def get_client(self, routes: Optional[List[Route]] = None) -> ClientT:
+        if not routes:
             conn_client = create_virtual_connection(node=self)
             solo = SoloRoute(destination=self.target_id, connection=conn_client)
             # inject name
             setattr(solo, "name", f"Route ({self.name} <-> {self.name} Client)")
             routes = [solo]
 
-        return self.client_type(
+        return self.client_type(  # type: ignore
             name=self.name,
             routes=routes,
             network=self.network,
@@ -280,14 +285,15 @@ class Node(AbstractNode):
             verify_key=None,  # DO NOT PASS IN A VERIFY KEY!!! The client generates one.
         )
 
-    @syft_decorator(typechecking=True)
-    def get_root_client(self, routes: List[Route] = []) -> ClientT:
-        client = self.get_client(routes=routes)
+    def get_root_client(self, routes: Optional[List[Route]] = None) -> ClientT:
+        client: ClientT = self.get_client(routes=routes)
         self.root_verify_key = client.verify_key
         return client
 
     def get_metadata_for_client(self) -> Metadata:
-        return Metadata(name=self.name, id=self.id, node=self.target_id)
+        return Metadata(
+            name=self.name if self.name else "", id=self.id, node=self.target_id
+        )
 
     @property
     def known_nodes(self) -> List[Client]:
@@ -298,11 +304,11 @@ class Node(AbstractNode):
 
     @property
     def id(self) -> UID:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
     @property
     def known_child_nodes(self) -> List[Address]:
-        logger.debug(f"> {self.pprint} Getting known Children Nodes")
+        debug(f"> {self.pprint} Getting known Children Nodes")
         if self.child_type_client_type is not None:
             return [
                 client
@@ -323,14 +329,12 @@ class Node(AbstractNode):
                 )
             ]
         else:
-            logger.debug(f"> Node {self.pprint} has no children")
+            debug(f"> Node {self.pprint} has no children")
             return []
 
-    @syft_decorator(typechecking=True)
     def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
-        raise NotImplementedError
+        traceback_and_raise(NotImplementedError)
 
-    @syft_decorator(typechecking=True)
     def recv_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
@@ -338,7 +342,7 @@ class Node(AbstractNode):
         # so we need to catch them here and respond with a special exception
         # message reply
         try:
-            logger.debug(
+            debug(
                 f"> Received with Reply {msg.message.pprint} {msg.message.id} @ {self.pprint}"
             )
             # try to process message
@@ -347,7 +351,7 @@ class Node(AbstractNode):
             )
 
         except Exception as e:
-            logger.error(e)
+            error(e)
             public_exception: Exception
             if isinstance(e, AuthorizationException):
                 private_log_msg = "An AuthorizationException has been triggered"
@@ -362,10 +366,10 @@ class Node(AbstractNode):
                 private_log_msg += f" by {type(msg.message)} "
                 private_log_msg += f"from {msg.message.reply_to}"  # type: ignore
             except Exception:
-                logger.error("Unable to format the private log message")
+                error("Unable to format the private log message")
                 pass
             # show the host what the real exception is
-            logger.error(private_log_msg)
+            error(private_log_msg)
 
             # send the public exception back
             response = ExceptionMessage(
@@ -382,22 +386,21 @@ class Node(AbstractNode):
             f"> {self.pprint} Signing {res_msg.pprint} with "
             + f"{self.key_emoji(key=self.signing_key.verify_key)}"  # type: ignore
         )
-        logger.debug(output)
+        debug(output)
         return res_msg
 
-    @syft_decorator(typechecking=True)
     def recv_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
-        logger.debug(
+        debug(
             f"> Received without Reply {msg.message.pprint} {msg.message.id} @ {self.pprint}"
         )
+
+        self.process_message(msg=msg, router=self.immediate_msg_without_reply_router)
         try:
-            self.process_message(
-                msg=msg, router=self.immediate_msg_without_reply_router
-            )
+            pass
         except Exception as e:
-            logger.error(f"Exception processing {msg.message}. {e}")
+            error(f"Exception processing {msg.message}. {e}")
             # public_exception: Exception
             if isinstance(e, DuplicateRequestException):
                 private_log_msg = "An DuplicateRequestException has been triggered"
@@ -412,17 +415,17 @@ class Node(AbstractNode):
                 private_log_msg += f" by {type(msg.message)} "
                 private_log_msg += f"from {msg.message.reply_to}"  # type: ignore
             except Exception:
-                logger.error("Unable to format the private log message")
+                error("Unable to format the private log message")
                 pass
             # show the host what the real exception is
-            logger.error(private_log_msg)
+            error(private_log_msg)
 
             # we still want to raise for now due to certain exceptions we expect
             # in tests
             if not isinstance(e, DuplicateRequestException):
-                logger.error(e)
+                error(e)
                 # TODO: A lot of tests are depending on this raise which seems bad
-                raise e
+                traceback_and_raise(e)
 
             # TODO: finish code to send ExceptionMessage back
             # if isinstance(e, DuplicateRequestException):
@@ -441,7 +444,6 @@ class Node(AbstractNode):
             #     )
         return None
 
-    @syft_decorator(typechecking=True)
     def recv_eventual_msg_without_reply(
         self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
@@ -454,15 +456,15 @@ class Node(AbstractNode):
 
         self.message_counter += 1
 
-        logger.debug(f"> Processing 📨 {msg.pprint} @ {self.pprint} {msg.message}")
+        debug(f"> Processing 📨 {msg.pprint} @ {self.pprint} {msg.message}")
         if self.message_is_for_me(msg=msg):
-            logger.debug(
+            debug(
                 f"> Recipient Found {msg.pprint}{msg.address.target_emoji()} == {self.pprint}"
             )
             # Process Message here
             if not msg.is_valid:
-                logger.error(f"Message is not valid. {msg}")
-                raise Exception("Message is not valid.")
+                error(f"Message is not valid. {msg}")
+                traceback_and_raise(Exception("Message is not valid."))
 
             try:  # we use try/except here because it's marginally faster in Python
                 service = router[type(msg.message)]
@@ -472,9 +474,9 @@ class Node(AbstractNode):
                     + f"{type(msg.message)} because there is no service running to process it."
                     + f"{e}"
                 )
-                logger.error(log)
+                error(log)
                 self.ensure_services_have_been_registered_error_if_not()
-                raise KeyError(log)
+                traceback_and_raise(KeyError(log))
 
             result = service.process(
                 node=self,
@@ -484,31 +486,31 @@ class Node(AbstractNode):
             return result
 
         else:
-            logger.debug(
+            debug(
                 f"> Recipient Not Found ↪️ {msg.pprint}{msg.address.target_emoji()} != {self.pprint}"
             )
             # Forward message onwards
             if issubclass(type(msg), SignedImmediateSyftMessageWithReply):
                 return self.signed_message_with_reply_forwarding_service.process(
                     node=self,
-                    msg=msg,
+                    msg=msg,  # type: ignore
                 )
             if issubclass(type(msg), SignedImmediateSyftMessageWithoutReply):
                 return self.signed_message_without_reply_forwarding_service.process(
                     node=self,
-                    msg=msg,
+                    msg=msg,  # type: ignore
                 )
         return None
 
-    @syft_decorator(typechecking=True)
     def ensure_services_have_been_registered_error_if_not(self) -> None:
         if not self.services_registered:
-            raise Exception(
-                "Please call _register_services on node. This seems to have"
-                "been skipped for some reason."
+            traceback_and_raise(
+                Exception(
+                    "Please call _register_services on node. This seems to have"
+                    "been skipped for some reason."
+                )
             )
 
-    @syft_decorator(typechecking=True)
     def _register_services(self) -> None:
         """In this method, we set each message type to the appropriate
         service for this node. It's important to note that one message type

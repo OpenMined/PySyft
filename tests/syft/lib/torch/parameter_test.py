@@ -2,58 +2,54 @@
 import gc
 
 # third party
+import pytest
 import torch as th
 
 # syft absolute
 import syft as sy
 
 
-def test_parameter_vm_remote_operation() -> None:
-
-    alice = sy.VirtualMachine(name="alice")
-    alice_client = alice.get_client()
-
+@pytest.mark.slow
+def test_parameter_vm_remote_operation(
+    node: sy.VirtualMachine, client: sy.VirtualMachineClient
+) -> None:
     x = th.nn.Parameter(th.randn(3, 3))
 
-    xp = x.send(alice_client)
+    xp = x.send(client, pointable=False)
 
     y = xp + xp
 
-    assert len(alice.store._objects) == 2
+    assert len(node.store._objects) == 2
 
     y.get()
 
-    assert len(alice.store._objects) == 1
+    assert len(node.store._objects) == 1
 
     del xp
 
     gc.collect()
 
-    assert len(alice.store._objects) == 0
+    assert len(node.store._objects) == 0
 
 
-def test_get_copy() -> None:
-
-    alice = sy.VirtualMachine(name="alice")
-    alice_client = alice.get_client()
-
+def test_get_copy(node: sy.VirtualMachine, client: sy.VirtualMachineClient) -> None:
     x = th.nn.Parameter(th.randn(3, 3))
 
-    xp = x.send(alice_client)
+    xp = x.send(client, pointable=False)
 
     y = xp + xp
 
-    assert len(alice.store._objects) == 2
+    assert len(node.store._objects) == 2
 
     y.get_copy()
 
     # no deletion of the object
-    assert len(alice.store._objects) == 2
+    assert len(node.store._objects) == 2
 
     del xp
     gc.collect()
 
-    assert len(alice.store._objects) == 1
+    assert len(node.store._objects) == 1
 
 
 def test_parameter_serde() -> None:
@@ -61,7 +57,7 @@ def test_parameter_serde() -> None:
     # Setting grad manually to check it is passed through serialization
     param.grad = th.randn_like(param)
 
-    blob = param.serialize()
+    blob = sy.serialize(param)
 
     param2 = sy.deserialize(blob=blob)
 
@@ -84,7 +80,7 @@ def test_linear_grad_serde() -> None:
     # out.backward()
     # assert param.grad is not None
 
-    blob = param.serialize()
+    blob = sy.serialize(param)
 
     param2 = sy.deserialize(blob=blob)
 

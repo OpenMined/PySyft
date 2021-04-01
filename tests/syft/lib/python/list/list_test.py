@@ -1,7 +1,7 @@
+# flake8: noqa
 """
 Tests copied from cpython test suite:
-https://github.com/python/cpython/blob/3.8/Lib/test/list_tests.py
-"""
+https://github.com/python/cpython/blob/3.9/Lib/test/list_tests.py"""
 
 # stdlib
 from functools import cmp_to_key

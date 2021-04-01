@@ -6,7 +6,7 @@ production (that's the *actual* grid's job)."""
 # stdlib
 import binascii
 import json
-import pickle
+import pickle  # nosec
 
 # third party
 from flask import Flask
@@ -16,6 +16,7 @@ from flask import request
 from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.node.domain.domain import Domain
+from syft.logger import critical
 
 app = Flask(__name__)
 
@@ -34,7 +35,7 @@ def recv() -> str:
     hex_msg = request.get_json()["data"]
     msg = pickle.loads(binascii.unhexlify(hex_msg))  # nosec # TODO make less insecure
     reply = None
-    print(str(msg))
+    critical(str(msg))
     if isinstance(msg, ImmediateSyftMessageWithReply):
         reply = domain.recv_immediate_msg_with_reply(msg=msg)
         # QUESTION: is this expected to be a json string with the top level key data =>

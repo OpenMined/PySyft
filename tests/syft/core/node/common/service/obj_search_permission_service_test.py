@@ -24,7 +24,7 @@ def test_object_search_permissons_update_message_serde() -> None:
         address=bob_phone_client.address,
     )
 
-    blob = msg.serialize()
+    blob = sy.serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
     assert msg.id == msg2.id
@@ -52,7 +52,9 @@ def test_object_search_permissons_update_execute_add() -> None:
     )
 
     assert (
-        bob_phone.store[ptr.id_at_location].search_permissions[bob_phone.verify_key]
+        bob_phone.store[ptr.id_at_location].search_permissions[
+            bob_phone_client.verify_key
+        ]
         == msg.id
     )
 
@@ -77,6 +79,6 @@ def test_object_search_permissons_update_execute_remove() -> None:
     )
 
     assert (
-        bob_phone.verify_key
+        bob_phone_client.verify_key
         not in bob_phone.store[ptr.id_at_location].search_permissions
     )

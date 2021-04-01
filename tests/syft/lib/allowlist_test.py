@@ -28,11 +28,11 @@ import syft as sy
 from syft.core.pointer.pointer import Pointer
 from syft.lib.python import List
 from syft.lib.python import String
-from syft.lib.python import ValuesIndicesWrapper
 from syft.lib.python.primitive_factory import PrimitiveFactory
 from syft.lib.python.primitive_factory import isprimitive
 from syft.lib.python.primitive_interface import PyPrimitive
 from syft.lib.torch import allowlist
+from syft.lib.torch.return_types import types_fields
 from syft.lib.torch.tensor_util import TORCH_STR_DTYPE
 from syft.lib.util import full_name_with_qualname
 
@@ -178,8 +178,12 @@ for method, return_type_name_or_dict in allowlist.items():
         BASIC_OPS_RETURN_TYPE[method_name] = return_type
 
 # load our custom configurations
-with open(__file__.replace(".py", ".json"), "r") as f:
-    TEST_JSON = json.loads(f.read())
+try:
+    with open(__file__.replace(".py", ".json"), "r") as f:
+        TEST_JSON = json.loads(f.read())
+except Exception as e:
+    print(f"Exception {e} triggered")
+    raise e
 
 # we need a file to keep all the errors in that makes it easy to debug failures
 TARGET_PLATFORM = f"{PYTHON_VERSION}_{TORCH_VERSION}_{OS_NAME}"
@@ -196,35 +200,52 @@ SUPPORT_FILE_PATH = os.path.abspath(
 # clear the file before running the tests
 if os.path.exists(ERROR_FILE_PATH):
     # this one we can delete since we dont start writing until we are into the tests
-    os.unlink(ERROR_FILE_PATH)
+    try:
+        os.unlink(ERROR_FILE_PATH)
+    except Exception as e:
+        print(f"Exception {e} triggered")
 
 
 # we are running many works in parallel and theres a race condition with deleting this
 # file and then writing to it during the collection phase so we are going to just
-# spread out the workers and only delete if the file isnt brand new
+# spread out the workers and only delete if the file isn't brand new
 time.sleep(random.random() * 2)
 
 if os.path.exists(SUPPORT_FILE_PATH):
     # we need to write during gathering so we need to delete this carefully
-    file_stat = os.stat(SUPPORT_FILE_PATH)
-    diff = time.time() - file_stat.st_mtime
-    if diff > 0.1:
-        # only delete on the first run
-        os.unlink(SUPPORT_FILE_PATH)
+    try:
+        file_stat = os.stat(SUPPORT_FILE_PATH)
+        diff = time.time() - file_stat.st_mtime
+        if diff > 0.1:
+            # only delete on the first run
+            for retry in range(5):
+                try:
+                    os.unlink(SUPPORT_FILE_PATH)
+                    break
+                except BaseException:
+                    time.sleep(1)
+    except Exception:
+        print(f"Failed while trying to os.stat file {SUPPORT_FILE_PATH}")
 
 
 # write test debug info to make it easy to debug long running tests with large output
 def write_error_debug(debug_data: Dict[str, Any]) -> None:
     # save a file in the root project dir
-    with open(ERROR_FILE_PATH, "a+") as f:
-        f.write(f"{json.dumps(debug_data, default=str)}\n")
+    try:
+        with open(ERROR_FILE_PATH, "a+") as f:
+            f.write(f"{json.dumps(debug_data, default=str)}\n")
+    except Exception as e:
+        print(f"Exception {e} triggered")
 
 
 # write the result of support for the test for creating a comprehensive report
 def write_support_result(test_details: Dict[str, Any]) -> None:
     # save a file in the root project dir
-    with open(SUPPORT_FILE_PATH, "a+") as f:
-        f.write(f"{json.dumps(test_details, default=str)}\n")
+    try:
+        with open(SUPPORT_FILE_PATH, "a+") as f:
+            f.write(f"{json.dumps(test_details, default=str)}\n")
+    except Exception as e:
+        print(f"Exception {e} triggered")
 
 
 TEST_DATA = []
@@ -361,7 +382,20 @@ for op in BASIC_OPS:
             write_support_result(support_data)
 
 
-@pytest.mark.slow
+# if the environment variables below are set bigger than 1 we will split the TEST_DATA
+# into parts so that these can be parallelized by different test runners or containers
+# TEST_CHUNK = int(os.getenv("TEST_CHUNK", 1))
+# TEST_CHUNKS = int(os.getenv("TEST_CHUNKS", 1))
+
+# # chunk the tests
+# if TEST_CHUNKS > 1:
+#     chunk_size = math.ceil(len(TEST_DATA) / TEST_CHUNKS)
+#     start_offset = (TEST_CHUNK - 1) * chunk_size
+#     end_offset = start_offset + chunk_size
+#     TEST_DATA = TEST_DATA[start_offset:end_offset]
+
+
+@pytest.mark.torch
 @pytest.mark.parametrize(
     "tensor_type, op_name, self_tensor, _args, is_property, return_type, deterministic",
     TEST_DATA,
@@ -374,6 +408,7 @@ def test_all_allowlisted_tensor_methods(
     is_property: bool,
     return_type: str,
     deterministic: bool,
+    client: sy.VirtualMachineClient,
 ) -> None:
 
     support_data = {}
@@ -393,17 +428,13 @@ def test_all_allowlisted_tensor_methods(
     }
 
     try:
-        # Step 1: Create the alice client
-        alice = sy.VirtualMachine(name="alice")
-        alice_client = alice.get_client()
-
         # Step 2: Decide which type we're testing
         t_type = TORCH_STR_DTYPE[tensor_type]
 
         # Step 3: Create the object we're going to call a method on
         # NOTE: we need a second copy because some methods mutate tensor before we send
         requires_grad = False
-        if op_name in ["backward", "retain_grad"]:
+        if op_name in ["backward", "retain_grad", "grad"]:
             requires_grad = True
         self_tensor, self_tensor_copy = (
             th.tensor(self_tensor, dtype=t_type, requires_grad=requires_grad),
@@ -475,6 +506,9 @@ def test_all_allowlisted_tensor_methods(
             raise Exception(err)
 
         # Step 4: Get the method we're going to call
+        # if op_name=="grad", we need to do more operations first
+        if op_name == "grad":
+            self_tensor.sum().backward()  # type: ignore
         target_op_method = getattr(self_tensor, op_name)
 
         # Step 5: Test to see whether this method and arguments combination is valid
@@ -523,18 +557,22 @@ def test_all_allowlisted_tensor_methods(
 
         # Step 6: Send our target tensor to alice.
         # NOTE: send the copy we haven't mutated
-        xp = self_tensor_copy.send(alice_client)
+        xp = self_tensor_copy.send(client)
+
+        # if op_name=="grad", we need to do more operations first
+        if op_name == "grad":
+            xp.sum().backward()
+
         argsp: ListType[Any] = []
         if len(args) > 0 and not is_property:
             if isinstance(args, dict):
                 argsp = [
-                    arg.send(alice_client) if hasattr(arg, "send") else arg
+                    arg.send(client) if hasattr(arg, "send") else arg
                     for arg in args.values()
                 ]
             else:
                 argsp = [
-                    arg.send(alice_client) if hasattr(arg, "send") else arg
-                    for arg in args
+                    arg.send(client) if hasattr(arg, "send") else arg for arg in args
                 ]
 
         # Step 7: get the method on the pointer to alice we want to test
@@ -554,6 +592,7 @@ def test_all_allowlisted_tensor_methods(
         assert isinstance(result, Pointer)
 
         # Step 11: Get the result
+        result_pointer_type = type(result)
         local_result = result.get()
 
         debug_data["local_result"] = local_result
@@ -563,19 +602,13 @@ def test_all_allowlisted_tensor_methods(
         try:
             target_fqn = full_name_with_qualname(klass=type(target_result))
             if target_fqn.startswith("torch.return_types."):
-                local_fqn = full_name_with_qualname(klass=type(local_result))
-                keys = ValuesIndicesWrapper.get_keys(klass_name=local_fqn)
-                # temporary work around while ValuesIndicesWrapper has storable attrs
-                for key in keys:
+                fields = types_fields[type(local_result)]
+                for field in fields:
                     assert compare_tensors(
-                        left=getattr(local_result, key, None),
-                        right=getattr(target_result, key, None),
+                        left=getattr(local_result, field, None),
+                        right=getattr(target_result, field, None),
                     )
-                # finish the check for now
-                return
-
-            # only do single value comparisons, do lists, tuples etc below in the else
-            if (
+            elif (
                 issubclass(type(local_result), (str, String))
                 or not hasattr(target_result, "__len__")
                 and (
@@ -583,6 +616,7 @@ def test_all_allowlisted_tensor_methods(
                     or issubclass(type(local_result), PyPrimitive)
                 )
             ):
+                # only do single value comparisons, do lists, tuples etc below in the else
                 # check that it matches functionally
                 if deterministic:
                     if issubclass(type(target_result), float):
@@ -641,8 +675,10 @@ def test_all_allowlisted_tensor_methods(
             # TODO: Fix this workaround for types that sometimes return Tensor tuples
             # we are getting back more than 1 return type so we need to fake it until
             # we add Union to the return types
-            if hasattr(local_result, "__len__") and not issubclass(
-                type(local_result), (th.Tensor, str, String)
+            if (
+                hasattr(local_result, "__len__")
+                and not issubclass(type(local_result), (th.Tensor, str, String))
+                and not target_fqn.startswith("torch.return_types.")
             ):
                 if issubclass(type(local_result), (list, List)) and issubclass(
                     type(target_result), (list, List)
@@ -670,8 +706,16 @@ def test_all_allowlisted_tensor_methods(
 
             # make sure the return type matches the specified allowlist return type
             if not issubclass(type(local_result), th.Tensor):
-                local_type = full_name_with_qualname(
-                    klass=type(PrimitiveFactory.generate_primitive(value=local_result))
+                if target_fqn.startswith("torch.return_types."):
+                    local_type = full_name_with_qualname(klass=type(local_result))
+                else:
+                    local_type = full_name_with_qualname(
+                        klass=type(
+                            PrimitiveFactory.generate_primitive(value=local_result)
+                        )
+                    )
+                full_result_pointer_type = full_name_with_qualname(
+                    klass=result_pointer_type
                 )
                 python_types = "syft.lib.python"
                 if local_type.startswith(python_types) and return_type.startswith(
@@ -680,7 +724,13 @@ def test_all_allowlisted_tensor_methods(
                     # python types seem to resolve as both int.Int and .Int causing issues
                     # in the match
                     assert local_type.split(".")[-1] == return_type.split(".")[-1]
-
+                elif full_result_pointer_type.endswith("UnionPointer"):
+                    union_part = local_type.rsplit(".", 1)[-1]
+                    # check the returned value is part of the original expected Union
+                    # Bool in syft.proxy.syft.lib.misc.union.BoolFloatIntUnionPointer
+                    assert union_part in full_result_pointer_type
+                    # check the result pointer type matches the expected test Union
+                    assert full_result_pointer_type == return_type
                 else:
                     assert local_type == return_type
 

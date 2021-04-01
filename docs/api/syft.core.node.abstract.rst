@@ -16,4 +16,3 @@ syft.core.node.abstract.node module
    :members:
    :undoc-members:
    :show-inheritance:
-

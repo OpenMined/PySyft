@@ -17,6 +17,14 @@ syft.core.node.common.action.common module
    :undoc-members:
    :show-inheritance:
 
+syft.core.node.common.action.exception\_action module
+-----------------------------------------------------
+
+.. automodule:: syft.core.node.common.action.exception_action
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 syft.core.node.common.action.function\_or\_constructor\_action module
 ---------------------------------------------------------------------
 
@@ -56,4 +64,3 @@ syft.core.node.common.action.save\_object\_action module
    :members:
    :undoc-members:
    :show-inheritance:
-
