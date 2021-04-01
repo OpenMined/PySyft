@@ -3,23 +3,24 @@ from collections import OrderedDict
 from typing import Any
 from typing import Dict as TypeDict
 from typing import List as TypeList
+from typing import Optional
 
 # third party
 import torch as th
 
-# syft absolute
-from syft.core.plan import Plan
-from syft.core.plan.plan_builder import PLAN_BUILDER_VM
-from syft.core.plan.plan_builder import ROOT_CLIENT
-from syft.lib.python.collections import OrderedDict as SyOrderedDict
-from syft.lib.python.dict import Dict
-from syft.lib.python.list import List
-from syft.lib.python.primitive_interface import PyPrimitive
-from syft.logger import traceback_and_raise
-from syft.util import obj2pointer_type
-
 # syft relative
+from .....core.node.common.client import Client
+from .....core.store import ObjectStore
+from .....lib.python.collections import OrderedDict as SyOrderedDict
+from .....lib.python.dict import Dict
+from .....lib.python.list import List
+from .....lib.python.primitive_interface import PyPrimitive
+from .....logger import traceback_and_raise
+from .....util import obj2pointer_type
+from ....plan.plan_builder import PLAN_BUILDER_VM
+from ....plan.plan_builder import ROOT_CLIENT
 from ....pointer.pointer import Pointer
+from ...plan import Plan
 from .plan import PlanTorchscript
 
 __LIST_TYPE = (list, List)
@@ -34,7 +35,9 @@ def is_dict(*args: TypeList[Any]) -> bool:
     return all([isinstance(arg, __DICT_TYPE) for arg in args])
 
 
-def get_pointer_to_data_in_store(store, value: Any, client):
+def get_pointer_to_data_in_store(
+    store: ObjectStore, value: Any, client: Client
+) -> Optional[Any]:
     for obj in store.values():
         store_value: Any = obj.data
         if is_list(value, store_value):
@@ -98,7 +101,7 @@ def translate(plan: Plan) -> PlanTorchscript:
                 kwarg_ptrs[name] = ptr
 
             # Execute Plan in the same VM where it was built!
-            res = plan(PLAN_BUILDER_VM, PLAN_BUILDER_VM.verify_key, **kwarg_ptrs)
+            res = plan(PLAN_BUILDER_VM, PLAN_BUILDER_VM.verify_key, **kwarg_ptrs)  # type: ignore
             return res
 
     # Builder VM holds inputs in the store, retrieve actual arg values from there

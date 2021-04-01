@@ -16,6 +16,7 @@ from syft_proto.execution.v1.plan_pb2 import Plan as PlanTorchscriptPB
 from ..core.plan import Plan
 from ..core.plan.translation.torchscript.plan import PlanTorchscript
 from ..federated.model_centric_fl_base import ModelCentricFLBase
+from ..lib.python.list import List
 from ..proto.core.plan.plan_pb2 import Plan as PlanPB
 from .model_serialization import deserialize_model_params
 from .model_serialization import wrap_model_params
@@ -85,7 +86,7 @@ class ModelCentricFLWorker(ModelCentricFLBase):
             return avg_speed
 
     def _get_download_speed(self, worker_id: str, random_id: int) -> float:
-        params: TypeDict[str, Union[str, int]] = {
+        params: TypeDict[str, Union[int, str]] = {
             "worker_id": worker_id,
             "random": random_id,
         }
@@ -149,21 +150,21 @@ class ModelCentricFLWorker(ModelCentricFLBase):
         return self._send_msg(message)
 
     def get_model(self, worker_id: str, request_key: str, model_id: int) -> TypeList:
-        params = {
+        params_dict = {
             "worker_id": worker_id,
             "request_key": request_key,
             "model_id": model_id,
         }
         serialized_model = self._send_http_req(
-            "GET", "/model-centric/get-model", params
+            "GET", "/model-centric/get-model", params_dict
         )
         # TODO migrate to syft-core protobufs
-        params = deserialize_model_params(serialized_model)
+        params: List = deserialize_model_params(serialized_model)
         return params.upcast()
 
     def get_plan(
         self, worker_id: str, request_key: str, plan_id: int, receive_operations_as: str
-    ) -> Plan:
+    ) -> Union[PlanTorchscript, Plan]:
         params = {
             "worker_id": worker_id,
             "request_key": request_key,

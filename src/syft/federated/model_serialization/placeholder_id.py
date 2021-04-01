@@ -1,11 +1,12 @@
+# stdlib
+from typing import Union
+
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from syft_proto.execution.v1.placeholder_id_pb2 import PlaceholderId as PlaceholderIdPB
 
-# syft absolute
-from syft.core.common.object import Serializable
-
 # syft relative
+from ...core.common.object import Serializable
 from .common import get_protobuf_id
 from .common import set_protobuf_id
 
@@ -15,7 +16,7 @@ class PlaceholderId(Serializable):
     Represents Syft Plan translated to TorchScript
     """
 
-    def __init__(self, value):
+    def __init__(self, value: Union[int, str]):
         super().__init__()
         self.value = value
 

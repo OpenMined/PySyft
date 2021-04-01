@@ -5,10 +5,12 @@ import json
 import os
 import time
 from typing import Any
+from typing import Dict as TypeDict
 from typing import Generator
 from typing import List as TypeList
 from typing import Optional
 from typing import Tuple as TypeTuple
+from typing import Union as TypeUnion
 
 # third party
 import jwt
@@ -26,6 +28,7 @@ from xprocess import ProcessStarter
 import syft as sy
 from syft import deserialize
 from syft import serialize
+from syft.core.plan import Plan
 from syft.core.plan.plan_builder import PLAN_BUILDER_VM
 from syft.core.plan.plan_builder import ROOT_CLIENT
 from syft.core.plan.plan_builder import make_plan
@@ -105,7 +108,7 @@ def test_create_and_execute_plan_autograd(pygrid_domain: Any) -> None:
 
     assert model_param_type_size == matches
 
-    train_with_hosted_training_plan(fl_name, {}, plan_params_output_idx)
+    train_with_hosted_training_plan(fl_name, OrderedDict(), plan_params_output_idx)
     accuracy = check_resulting_model(fl_name, model)
 
     print(f"Model Centric Federated Learning Complete. Accuracy {accuracy:.2F}")
@@ -114,7 +117,7 @@ def test_create_and_execute_plan_autograd(pygrid_domain: Any) -> None:
 
 @pytest.mark.grid
 @pytest.mark.parametrize("plan_type", ["list", "torchscript"])
-def test_create_and_execute_plan_mobile(pygrid_domain: Any, plan_type) -> None:
+def test_create_and_execute_plan_mobile(pygrid_domain: Any, plan_type: str) -> None:
     fl_name = "mnist_mobile"
     plan, plan_ts, model = create_plan_mobile()
 
@@ -202,18 +205,18 @@ class MLPNoAutograd(sy.Module):
     Simple model with method for loss and hand-written backprop.
     """
 
-    def __init__(self, torch_ref=th):  # type: ignore
+    def __init__(self, torch_ref: Any = th) -> None:
         super(MLPNoAutograd, self).__init__(torch_ref=torch_ref)
         self.fc1 = torch_ref.nn.Linear(784, 100)
         self.relu = torch_ref.nn.ReLU()
         self.fc2 = torch_ref.nn.Linear(100, 10)
 
-    def forward(self, x):  # type: ignore
+    def forward(self, x: Any) -> Any:
         self.z1 = self.fc1(x)
         self.a1 = self.relu(self.z1)
         return self.fc2(self.a1)
 
-    def backward(self, X, error):  # type: ignore
+    def backward(self, X: Any, error: Any) -> TypeTuple[Any, ...]:
         z1_grad = (error @ self.fc2.state_dict()["weight"]) * (self.a1 > 0).float()
         fc1_weight_grad = z1_grad.t() @ X
         fc1_bias_grad = z1_grad.sum(0)
@@ -221,13 +224,15 @@ class MLPNoAutograd(sy.Module):
         fc2_bias_grad = error.sum(0)
         return fc1_weight_grad, fc1_bias_grad, fc2_weight_grad, fc2_bias_grad
 
-    def softmax_cross_entropy_with_logits(self, logits, target, batch_size):  # type: ignore
+    def softmax_cross_entropy_with_logits(
+        self, logits: Any, target: Any, batch_size: int
+    ) -> TypeTuple[Any, ...]:
         probs = self.torch_ref.softmax(logits, dim=1)
         loss = -(target * self.torch_ref.log(probs)).mean()
         loss_grad = (probs - target) / batch_size
         return loss, loss_grad
 
-    def accuracy(self, logits, targets, batch_size):  # type: ignore
+    def accuracy(self, logits: Any, targets: Any, batch_size: int) -> Any:
         pred = self.torch_ref.argmax(logits, dim=1)
         targets_idx = self.torch_ref.argmax(targets, dim=1)
         acc = pred.eq(targets_idx).sum().float() / batch_size
@@ -245,7 +250,7 @@ public_key = read_file(f"{here}/example_rsa.pub").strip()
 auth_token = jwt.encode({}, private_key, algorithm="RS256").decode("ascii")
 
 
-def create_plan_autograd() -> TypeList[TypeTuple[type, th.Size]]:
+def create_plan_autograd() -> TypeTuple[Plan, SyModule]:
     local_model = MLPAutograd(th)
 
     @make_plan
@@ -331,7 +336,7 @@ def create_plan_mobile() -> Any:
     return training_plan, ts_plan, local_model
 
 
-def host_to_grid(plans, model, name):
+def host_to_grid(plans: TypeDict, model: SyModule, name: str) -> None:
     @make_plan
     def avg_plan(  # type: ignore
         avg=List(model.parameters()),
@@ -389,8 +394,12 @@ def host_to_grid(plans, model, name):
 
 
 def sanity_check_hosted_plan(
-    name, model, plan_inputs, plan_output_params_idx, plan_type="list"
-):
+    name: str,
+    model: SyModule,
+    plan_inputs: OrderedDict,
+    plan_output_params_idx: TypeList[int],
+    plan_type: str = "list",
+) -> TypeList[TypeTuple[type, th.Size]]:
     grid_address = f"localhost:{DOMAIN_PORT}"
     # Authenticate for cycle
 
@@ -447,7 +456,13 @@ def sanity_check_hosted_plan(
     # Model
     model_params_downloaded = get_model(grid_address, worker_id, request_key, model_id)
 
-    def get_plan(grid_address, worker_id, request_key, plan_id, plan_type):
+    def get_plan(
+        grid_address: str,
+        worker_id: int,
+        request_key: str,
+        plan_id: int,
+        plan_type: str,
+    ) -> TypeUnion[PlanTorchscript, Plan]:
         req = requests.get(
             (
                 f"http://{grid_address}/model-centric/get-plan?worker_id={worker_id}&"
@@ -511,7 +526,10 @@ def sanity_check_hosted_plan(
 
 
 def train_with_hosted_training_plan(
-    name: str, plan_inputs, plan_output_params_idx, plan_type="list"
+    name: str,
+    plan_inputs: OrderedDict,
+    plan_output_params_idx: TypeList[int],
+    plan_type: str = "list",
 ) -> None:
     # PyGrid Node address
     gridAddress = f"ws://localhost:{DOMAIN_PORT}"
@@ -627,7 +645,7 @@ def train_with_hosted_training_plan(
         time.sleep(1)
 
 
-def check_resulting_model(name, model):
+def check_resulting_model(name: str, model: SyModule) -> float:
     # Download trained model
     grid_address = f"localhost:{DOMAIN_PORT}"
     grid = ModelCentricFLClient(address=grid_address, secure=False)

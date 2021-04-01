@@ -1,3 +1,7 @@
+# stdlib
+from typing import Any
+from typing import Union
+
 # third party
 from syft_proto.types.torch.v1.tensor_data_pb2 import TensorData as TensorData_PB
 from syft_proto.types.torch.v1.tensor_pb2 import TorchTensor as TorchTensor_PB
@@ -25,14 +29,14 @@ TORCH_DTYPE_STR = {
 TORCH_STR_DTYPE = {name: cls for cls, name in TORCH_DTYPE_STR.items()}
 
 
-def set_protobuf_id(field, id):
+def set_protobuf_id(field: Any, id: Union[int, str]) -> None:
     if isinstance(id, str):
         field.id_str = id
     else:
         field.id_int = id
 
 
-def get_protobuf_id(field):
+def get_protobuf_id(field: Any) -> Union[int, str]:
     return getattr(field, field.WhichOneof("id"))
 
 

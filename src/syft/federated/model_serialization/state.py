@@ -6,10 +6,8 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from syft_proto.execution.v1.state_pb2 import State as StatePB
 from syft_proto.execution.v1.state_tensor_pb2 import StateTensor as StateTensorPB
 
-# syft absolute
-from syft.core.common.object import Serializable
-
 # syft relative
+from ...core.common.object import Serializable
 from ...core.common.serde.serialize import _serialize as serialize
 from .common import deserialize_tensor
 from .common import serialize_tensor
@@ -23,8 +21,8 @@ class State(Serializable):
     sure they are provided to remote workers who are sent the Plan.
     """
 
-    def __init__(self, state_placeholders=None):
-        self.state_placeholders = state_placeholders or []
+    def __init__(self, state_placeholders: List[PlaceHolder] = []) -> None:
+        self.state_placeholders = state_placeholders
 
     def tensors(self) -> List:
         """

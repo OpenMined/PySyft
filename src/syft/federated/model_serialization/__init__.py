@@ -21,7 +21,7 @@ def wrap_model_params(parameters: Union[List, TypeList]) -> State:
     return state
 
 
-def deserialize_model_params(proto: bin) -> List:
+def deserialize_model_params(proto: bytes) -> List:
     """
     Deserializes binary string (State protobuf) to List of tensors.
     """

@@ -1,11 +1,16 @@
+# stdlib
+from typing import Optional
+from typing import Set
+from typing import Tuple
+from typing import Union
+
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from syft_proto.execution.v1.placeholder_pb2 import Placeholder as PlaceholderPB
-
-# syft absolute
-from syft.core.common.object import Serializable
+import torch as th
 
 # syft relative
+from ...core.common.object import Serializable
 from .common import get_protobuf_id
 from .common import set_protobuf_id
 from .placeholder_id import PlaceholderId
@@ -14,11 +19,11 @@ from .placeholder_id import PlaceholderId
 class PlaceHolder(Serializable):
     def __init__(
         self,
-        id=None,
-        tags: set = None,
-        description: str = None,
-        shape=None,
-        expected_dtype=None,
+        id: Union[int, str],
+        tags: Set = set(),
+        description: Optional[str] = None,
+        shape: Optional[Union[th.Size, Tuple[int]]] = None,
+        expected_dtype: Optional[th.dtype] = None,
     ):
         """A PlaceHolder acts as a tensor but does nothing special. It can get
         "instantiated" when a real tensor is appended as a child attribute. It
@@ -34,9 +39,11 @@ class PlaceHolder(Serializable):
         self.id = PlaceholderId(id)
         self.tags = tags
         self.description = description
-        self.expected_shape = tuple(shape) if shape is not None else None
+        self.expected_shape: Optional[Tuple] = (
+            tuple(shape) if shape is not None else None
+        )
         self.expected_dtype = expected_dtype
-        self.child = None
+        self.child: Optional[Union[th.Tensor, th.nn.Parameter, "PlaceHolder"]] = None
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
@@ -101,7 +108,7 @@ class PlaceHolder(Serializable):
         """
 
         tensor_id = get_protobuf_id(proto.id)
-        tags = set(proto.tags) if proto.tags else None
+        tags = set(proto.tags) if proto.tags else set()
 
         description = None
         if bool(proto.description):
@@ -113,7 +120,7 @@ class PlaceHolder(Serializable):
             id=tensor_id, tags=tags, description=description, shape=expected_shape
         )
 
-    def instantiate(self, tensor):
+    def instantiate(self, tensor: Union[th.Tensor, th.nn.Parameter]) -> "PlaceHolder":
         """
         Add a tensor as a child attribute. All operations on the placeholder will be also
         executed on this child tensor.
@@ -125,10 +132,12 @@ class PlaceHolder(Serializable):
         else:
             self.child = tensor
 
-        if hasattr(self.child, "shape"):
-            self.expected_shape = tuple(self.child.shape)
+        shape = getattr(self.child, "shape", None)
+        if shape is not None:
+            self.expected_shape = tuple(shape)
 
-        if hasattr(self.child, "dtype"):
-            self.expected_dtype = self.child.dtype
+        dtype = getattr(self.child, "dtype", None)
+        if dtype is not None:
+            self.expected_dtype = dtype
 
         return self
