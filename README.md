@@ -10,7 +10,7 @@
 
 <div align="center">
 
-<a href=""><img src="https://github.com/OpenMined/PySyft/workflows/Tests/badge.svg?branch=master" /></a> <a href=""><img src="https://github.com/OpenMined/PySyft/workflows/Tutorials/badge.svg" /></a> <a href="https://openmined.slack.com/messages/lib_pysyft"><img src="https://img.shields.io/badge/chat-on%20slack-7A5979.svg" /></a> <a href="https://mybinder.org/v2/gh/OpenMined/PySyft/master"><img src="https://mybinder.org/badge.svg" /></a> <a href="http://colab.research.google.com/github/OpenMined/PySyft/blob/master"><img src="https://colab.research.google.com/assets/colab-badge.svg" /></a>
+<a href=""><img src="https://github.com/OpenMined/PySyft/workflows/Merge%20Tests/badge.svg?branch=dev" /></a> <a href=""><img src="https://github.com/OpenMined/PySyft/workflows/Tutorials/badge.svg" /></a> <a href="https://openmined.slack.com/messages/support"><img src="https://img.shields.io/badge/chat-on%20slack-7A5979.svg" /></a> <a href="https://mybinder.org/v2/gh/OpenMined/PySyft/master"><img src="https://mybinder.org/badge.svg" /></a> <a href="http://colab.research.google.com/github/OpenMined/PySyft/blob/master"><img src="https://colab.research.google.com/assets/colab-badge.svg" /></a>
 <br /><br />
 
 </div>
@@ -25,7 +25,7 @@ and [Homomorphic Encryption (HE)](https://en.wikipedia.org/wiki/Homomorphic_encr
 within the main Deep Learning frameworks like PyTorch and TensorFlow. Join the movement on
 [Slack](http://slack.openmined.org/).
 
-## FAQ 0.2.x ➡️ 0.3.x
+## FAQ 0.2.x ➡️ 0.3.x+
 
 We have compiled a list of [FAQs](docs/FAQ_0.2.x.md) relating to the change from 0.2.x to 0.3.x+ [here](docs/FAQ_0.2.x.md).
 
@@ -108,10 +108,10 @@ Then update your duet notebooks to use the new `network_url=http://localhost:500
 
 ## Try out the Tutorials
 
-A comprehensive list of Duet Examples can be found
-[here](https://github.com/OpenMined/PySyft/tree/master/examples/duet)
+A comprehensive list of Examples can be found
+[here](https://github.com/OpenMined/PySyft/tree/master/examples)
 
-These tutorials cover how to operate common network types over the Duet API.
+These tutorials cover a variety of python libraries for data science, machine learning, deep learning and PET / PPML.
 
 ## High-level Architecture
 
@@ -125,17 +125,17 @@ The slack community is very friendly and great about quickly answering questions
 
 ## Troubleshooting
 
-The latest version of PySyft is 0.3.0 however this software is still Beta. If you find
+The latest version of PySyft is still Beta. If you find
 a bug please file it in the GitHub issues.
 
 ## Organizational Contributions
 
 We are very grateful for contributions to PySyft from the following organizations!
 
-| | | |
-|-|-|-|
-[<img src="https://github.com/udacity/private-ai/blob/master/udacity-logo-vert-white.png?raw=true" alt="Udacity" width="160"/>](https://udacity.com/) | [<img src="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/organizations/comind.png" alt="coMind" width="160" />](https://github.com/coMindOrg/federated-averaging-tutorials) | [<img src="https://i.ibb.co/vYwcG9N/arkhn-logo.png" alt="Arkhn" width="160" />](http://ark.hn) | [<img src="https://raw.githubusercontent.com/dropoutlabs/files/master/dropout-labs-logo-white-2500.png" alt="Dropout Labs" width="160"/>](https://dropoutlabs.com/)
-[<img src="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/organizations/genbu.png" alt="GENBU AI" width="160"/>](https://genbu.ai/) | [<img src="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/organizations/bitdefender.png" alt="Bitdefender" width="160"/>](https://www.bitdefender.com/)
+|                                                                                                                                                       |                                                                                                                                                                                               |                                                                                                |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [<img src="https://github.com/udacity/private-ai/blob/master/udacity-logo-vert-white.png?raw=true" alt="Udacity" width="160"/>](https://udacity.com/) | [<img src="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/organizations/comind.png" alt="coMind" width="160" />](https://github.com/coMindOrg/federated-averaging-tutorials) | [<img src="https://i.ibb.co/vYwcG9N/arkhn-logo.png" alt="Arkhn" width="160" />](http://ark.hn) | [<img src="https://raw.githubusercontent.com/dropoutlabs/files/master/dropout-labs-logo-white-2500.png" alt="Dropout Labs" width="160"/>](https://dropoutlabs.com/) |
+| [<img src="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/organizations/genbu.png" alt="GENBU AI" width="160"/>](https://genbu.ai/)  | [<img src="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/organizations/bitdefender.png" alt="Bitdefender" width="160"/>](https://www.bitdefender.com/)                      |
 
 ## Support
 
