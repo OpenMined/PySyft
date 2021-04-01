@@ -46,6 +46,9 @@ from flask import current_app as app
 from threading import Thread
 
 import syft as sy
+import tenseal as ts
+
+sy.load("tenseal")
 
 
 class GridDomain(Domain):
