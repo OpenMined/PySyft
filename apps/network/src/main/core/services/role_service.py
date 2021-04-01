@@ -42,13 +42,10 @@ def create_role_msg(
     verify_key: VerifyKey,
 ) -> CreateRoleResponse:
     _name = msg.content.get("name", None)
-    _can_triage_requests = msg.content.get("can_triage_requests", False)
     _can_edit_settings = msg.content.get("can_edit_settings", False)
     _can_create_users = msg.content.get("can_create_users", False)
-    _can_create_groups = msg.content.get("can_create_groups", False)
     _can_edit_roles = msg.content.get("can_edit_roles", False)
     _can_manage_infrastructure = msg.content.get("can_manage_infrastructure", False)
-    _can_upload_data = msg.content.get("can_upload_data", False)
     _current_user_id = msg.content.get("current_user", False)
 
     users = node.users
@@ -75,13 +72,10 @@ def create_role_msg(
     if __allowed:
         node.roles.register(
             name=_name,
-            can_triage_requests=_can_triage_requests,
             can_edit_settings=_can_edit_settings,
             can_create_users=_can_create_users,
-            can_create_groups=_can_create_groups,
             can_edit_roles=_can_edit_roles,
             can_manage_infrastructure=_can_manage_infrastructure,
-            can_upload_data=_can_upload_data,
         )
     else:
         raise AuthorizationError("You're not allowed to create a new Role!")
@@ -108,13 +102,10 @@ def update_role_msg(
 
     params = {
         "name": msg.content.get("name", ""),
-        "can_triage_requests": msg.content.get("can_triage_requests", None),
         "can_edit_settings": msg.content.get("can_edit_settings", None),
         "can_create_users": msg.content.get("can_create_users", None),
-        "can_create_groups": msg.content.get("can_create_groups", None),
         "can_edit_roles": msg.content.get("can_edit_roles", None),
         "can_manage_infrastructure": msg.content.get("can_manage_infrastructure", None),
-        "can_upload_data": msg.content.get("can_upload_data", None),
     }
 
     filter_parameters = lambda key: (params[key] != None)
@@ -153,7 +144,7 @@ def get_role_msg(
             verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
         ).id
 
-    _allowed = users.can_triage_requests(user_id=_current_user_id)
+    _allowed = users.can_edit_settings(user_id=_current_user_id)
 
     if _allowed:
         role = node.roles.first(id=_role_id)
@@ -185,8 +176,7 @@ def get_all_roles_msg(
             verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
         ).id
 
-    _allowed = users.can_triage_requests(user_id=_current_user_id)
-
+    _allowed = users.can_edit_settings(user_id=_current_user_id)
     if _allowed:
         roles = node.roles.all()
         _msg = [model_to_json(role) for role in roles]
@@ -214,7 +204,7 @@ def del_role_msg(
     if not _role_id:
         raise MissingRequestKeyError
 
-    _allowed = node.users.can_edit_roles(user_id=_current_user_id)
+    _allowed = node.users.can_edit_settings(user_id=_current_user_id)
     if _allowed:
         node.roles.delete(id=_role_id)
     else:
