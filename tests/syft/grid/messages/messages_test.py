@@ -1,12 +1,8 @@
-# stdlib
-import importlib
-
 # third party
 import pytest
 
 # syft absolute
 import syft as sy
-from syft import serialize
 from syft.core.io.address import Address
 from syft.grid.messages import association_messages
 from syft.grid.messages import dataset_messages
@@ -495,7 +491,7 @@ messages = {
 
 
 @pytest.mark.parametrize("message_name", messages.keys())
-def test_message(message_name, node: sy.VirtualMachine) -> None:
+def test_message(message_name: str, node: sy.VirtualMachine) -> None:
     content = messages[message_name]
     lib = content["module"]
     request_content = content["request_content"]
@@ -506,7 +502,7 @@ def test_message(message_name, node: sy.VirtualMachine) -> None:
     msg = msg_func(content=request_content, address=target, reply_to=target.address)
     message_integrity_test(msg, target)
 
-    if response_content == None:
+    if response_content is None:
         pytest.skip(
             "{request} does not have a response added to the test configuration"
         )
@@ -516,7 +512,7 @@ def test_message(message_name, node: sy.VirtualMachine) -> None:
     message_integrity_test(msg, target)
 
 
-def message_integrity_test(msg, target):
+def message_integrity_test(msg: sy.Serializable, target: Address) -> None:
     blob = sy.serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
