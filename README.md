@@ -1,6 +1,6 @@
 ![PyGrid logo](https://raw.githubusercontent.com/OpenMined/design-assets/master/logos/PyGrid/horizontal-primary-trans.png)
 
-[![Run Tests](https://github.com/OpenMined/PyGrid/workflows/Run%20tests/badge.svg)](https://github.com/OpenMined/PyGrid/actions?query=workflow%3A%22Run+tests%22) [![Docker build](https://github.com/OpenMined/PyGrid/workflows/Docker%20build/badge.svg)](https://github.com/OpenMined/PyGrid/actions?query=workflow%3A%22Docker+build%22)
+[![Tests](https://github.com/OpenMined/PyGrid/workflows/Run%20tests/badge.svg)](https://github.com/OpenMined/PyGrid/actions?query=workflow%3A%22Run+tests%22)
 
 PyGrid is a peer-to-peer network of data owners and data scientists who can collectively train AI models using [PySyft](https://github.com/OpenMined/PySyft/). PyGrid is also the central server for conducting both model-centric and data-centric federated learning.
 
