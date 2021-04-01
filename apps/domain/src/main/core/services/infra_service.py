@@ -57,8 +57,16 @@ import requests
 # 1. allow admin to get all workers deployed by a specific user
 # 2. allow admin to get all workers deployed by all users
 
-SUPPORTED_PROVIDERS = ["aws"]  # todo: add azure and gcp after testing worker deployment
-PROVIDER_UTILS = {"aws": aws_utils}
+SUPPORTED_PROVIDERS = [
+    "aws",
+    "azure",
+    "gcp",
+]  # todo: add azure and gcp after testing worker deployment
+PROVIDER_UTILS = {
+    "aws": aws_utils,
+    "azure": azure_utils,
+    "gcp": gcp_utils,
+}
 
 
 def get_worker_instance_types_msg(
@@ -77,7 +85,14 @@ def get_worker_instance_types_msg(
         # But to deploy other instance types, example those which are costly, they would need to ask permission
         # This servide would then return only those instance types which the users has the permission to deploy
 
-        _msg = PROVIDER_UTILS[provider].get_all_instance_types(region)
+        if provider == "aws":
+            _msg = PROVIDER_UTILS[provider].get_all_instance_types(region)
+        elif provider == "gcp":
+            zone = os.environ.get("ZONE", None)
+            _msg = PROVIDER_UTILS[provider].get_all_instance_types(zone=zone)
+        elif provider == "azure":
+            location = os.environ.get("location", None)
+            _msg = PROVIDER_UTILS[provider].get_all_instance_types(location=location)
 
         return GetWorkerInstanceTypesResponse(
             address=msg.reply_to, status_code=200, content=_msg
