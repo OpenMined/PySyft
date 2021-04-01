@@ -44,17 +44,14 @@ def worker_cycle_request():
 
     try:
         body = json.loads(request.data)
-        response_body = cycle_request({MSG_FIELD.DATA: body}, None)
+        result = cycle_request({MSG_FIELD.DATA: body}, None)
+        response_body = result.get(MSG_FIELD.DATA)
     except (PyGridError, json.decoder.JSONDecodeError) as e:
         status_code = 400  # Bad Request
         response_body[RESPONSE_MSG.ERROR] = str(e)
     except Exception as e:
         status_code = 500  # Internal Server Error
         response_body[RESPONSE_MSG.ERROR] = str(e)
-
-    if isinstance(response_body, str):
-        # Consider just data field as a response
-        response_body = json.loads(response_body)[MSG_FIELD.DATA]
 
     response_body = json.dumps(response_body)
     return Response(response_body, status=status_code, mimetype="application/json")
@@ -108,17 +105,14 @@ def report_diff():
 
     try:
         body = json.loads(request.data)
-        response_body = report({MSG_FIELD.DATA: body}, None)
+        result = report({MSG_FIELD.DATA: body}, None)
+        response_body = result.get(MSG_FIELD.DATA)
     except (PyGridError, json.decoder.JSONDecodeError) as e:
         status_code = 400  # Bad Request
         response_body[RESPONSE_MSG.ERROR] = str(e)
     except Exception as e:
         status_code = 500  # Internal Server Error
         response_body[RESPONSE_MSG.ERROR] = str(e)
-
-    if isinstance(response_body, str):
-        # Consider just data field as a response
-        response_body = json.loads(response_body)[MSG_FIELD.DATA]
 
     response_body = json.dumps(response_body)
     return Response(response_body, status=status_code, mimetype="application/json")
