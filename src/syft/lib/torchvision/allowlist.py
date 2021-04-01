@@ -129,7 +129,6 @@ allowlist[
 allowlist["torchvision.transforms.CenterCrop"] = "torchvision.transforms.CenterCrop"
 allowlist["torchvision.transforms.ColorJitter"] = "torchvision.transforms.ColorJitter"
 
-# This is an interesting case, for some versions p = 0.2 is needed, for others its not
 
 allowlist["torchvision.transforms.FiveCrop"] = "torchvision.transforms.FiveCrop"
 
@@ -138,7 +137,6 @@ allowlist["torchvision.transforms.Grayscale"] = "torchvision.transforms.Grayscal
 allowlist["torchvision.transforms.Pad"] = "torchvision.transforms.Pad"
 allowlist["torchvision.transforms.RandomAffine"] = "torchvision.transforms.RandomAffine"
 
-# transforms error
 allowlist["torchvision.transforms.RandomApply"] = "torchvision.transforms.RandomApply"
 
 allowlist["torchvision.transforms.RandomCrop"] = "torchvision.transforms.RandomCrop"
@@ -237,8 +235,7 @@ allowlist["torchvision.transforms.functional.pad"] = {
 }
 allowlist["torchvision.transforms.functional.perspective"] = "torch.Tensor"
 
-# Converts PIL to tensor, currently not supported
-# allowlist["torchvision.transforms.functional.pil_to_tensor"] = "torch.Tensor"
+allowlist["torchvision.transforms.functional.pil_to_tensor"] = "torch.Tensor"
 allowlist["torchvision.transforms.functional.posterize"] = {
     "return_type": "torch.Tensor",
     "min_version": "0.9.0",

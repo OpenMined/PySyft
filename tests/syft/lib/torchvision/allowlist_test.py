@@ -10,24 +10,28 @@ from packaging import version
 import pytest
 import torch
 import torchvision as tv
+import PIL
 
 # syft absolute
 import syft as sy
 from syft.lib.torchvision.allowlist import allowlist
 
-fileName = "imageTensor.pt"
 
 TORCHVISION_VERSION = version.parse(tv.__version__)
 
 
 @pytest.fixture(scope="function")
-def tens() -> torch.Tensor:
-    if path.isfile("imageTensor.pt"):
-        return torch.load("imageTensor.pt")
+def pil_img() -> PIL.Image.Image:
+    img_file = '../../../../docs/img/logo.png'
+    if path.isfile(img_file):
+        return PIL.Image.open(img_file)
     else:
-        cwd = os.getcwd()
-        path_file = cwd + "/tests/syft/lib/torchvision/" + fileName
-        return torch.load(path_file)
+        raise Exception('Image file not found for loading tests.')
+
+
+@pytest.fixture(scope="function")
+def tens(pil_img) -> torch.Tensor:
+    return tv.transforms.functional.to_tensor(pil_img)
 
 
 @pytest.fixture(scope="function")
@@ -44,12 +48,13 @@ def version_supported(support_dict: Union[str, Dict[str, str]]) -> bool:
         return TORCHVISION_VERSION >= version.parse(support_dict["min_version"])
 
 
-# Tests would fail for TorchVision < 0.8.0 due to `Tensor` image input not supported for
-# some `transforms.functional` methods
-def test_allowlist(alice: sy.VirtualMachine, tens: torch.Tensor) -> None:
+def test_allowlist(alice: sy.VirtualMachine, tens: torch.Tensor, pil_img: PIL.Image.Image) -> None:
+    # Required for testing on torchvision==1.6.0
+    sy.load('PIL')
     alice_client = alice.get_root_client()
     torchvision = alice_client.torchvision
     torch = alice_client.torch
+    PIL = alice_client.PIL
     try:
         tx = torch.rand(4)
         tx = tx * 2
