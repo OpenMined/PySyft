@@ -33,13 +33,6 @@ parser.add_argument(
     default=os.environ.get("GRID_NODE_HOST", "0.0.0.0"),
 )
 
-parser.add_argument(
-    "--domain_address",
-    type=str,
-    help="Grid Domain Address, e.g. --host=0.0.0.0:5000. Default is os.environ.get('GRID_DOMAIN_ADDRESS','0.0.0.0:5000').",
-    default=os.environ.get("GRID_DOMAIN_ADDRESS", "0.0.0.0:5000"),
-)
-
 
 parser.add_argument(
     "--name",
@@ -68,13 +61,3 @@ if __name__ == "__main__":
         (args.host, args.port), app, handler_class=WebSocketHandler
     )
     server.serve_forever()
-else:
-    args = {
-        "port": os.environ.get("GRID_NODE_PORT", 5000),
-        "host": os.environ.get("GRID_NODE_HOST", "0.0.0.0"),
-        "domain_address": os.environ.get("GRID_DOMAIN_ADDRESS", "0.0.0.0:5000"),
-        "name": os.environ.get("GRID_NODE_NAME", "OpenMined"),
-        "start_local_db": os.environ.get("LOCAL_DATABASE", False),
-    }
-    args_obj = type("args", (object,), args)()
-    app = create_app(args=args_obj)
