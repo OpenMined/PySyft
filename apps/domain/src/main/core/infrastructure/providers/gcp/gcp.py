@@ -85,12 +85,14 @@ class GCP(Provider):
         name = self.config.app.name
         images = vars(self.config.gcp.images)
         image_type = self.config.gcp.image_type
+        # print(images)
+        # print(image_type)
         image = terrascript.data.google_compute_image(
             f"{name}-{image_type}",
             project=images[image_type][0],
             family=images[image_type][1],
         )
-        self.tfscript += image
+        # self.tfscript += image
 
         self.instances = []
         for count in range(self.config.app.count):
@@ -101,7 +103,12 @@ class GCP(Provider):
                 name=name,
                 machine_type=self.config.gcp.machine_type,
                 zone=self.config.gcp.zone,
-                boot_disk={"initialize_params": {"image": var(image.self_link)}},
+                # boot_disk={"initialize_params": {"image": var(image.self_link)}},
+                boot_disk={
+                    "initialize_params": {
+                        "image": f"{images[image_type][0]}/{images[image_type][1]}"
+                    }
+                },
                 network_interface={
                     "network": "default",
                     "access_config": {"nat_ip": var(self.pygrid_ip.address)},
