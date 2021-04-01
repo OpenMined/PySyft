@@ -165,6 +165,7 @@ class AZURE(Provider):
 
     def write_exec_script(self, app, index=0):
         ##TODO(amr): remove `git checkout pygrid_0.3.0` after merge
+        branch = "pygrid_0.4.0"
 
         # exec_script = "#cloud-boothook\n#!/bin/bash\n"
         exec_script = "#!/bin/bash\n"
@@ -173,7 +174,6 @@ class AZURE(Provider):
             ## For debugging
             # redirect stdout/stderr to a file
             exec &> logs.out
-
             echo 'Simple Web Server for testing the deployment'
             sudo apt update -y
             sudo apt install apache2 -y
@@ -194,13 +194,28 @@ class AZURE(Provider):
             pip install poetry
 
             echo 'Install GCC'
+            sudo apt-get install zip unzip -y
             sudo apt-get install python3-dev -y
             sudo apt-get install libevent-dev -y
             sudo apt-get install gcc -y
 
+            curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+            sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" -y
+            sudo apt-get update -y && sudo apt-get install terraform -y
+
+            echo "Setting environment variables"
+            export CLOUD_PROVIDER={self.config.provider}
+
+            echo "Exporting Azure Credentials"
+            export location={self.config.azure.location}
+            export subscription_id={self.config.azure.subscription_id}
+            export client_id={self.config.azure.client_id}
+            export client_secret={self.config.azure.client_secret}
+            export tenant_id={self.config.azure.tenant_id}
+
             echo 'Cloning PyGrid'
             git clone https://github.com/OpenMined/PyGrid && cd /PyGrid/
-            git checkout pygrid_0.4.0
+            git checkout {branch}
 
             cd /PyGrid/apps/{self.config.app.name}
 
@@ -210,7 +225,7 @@ class AZURE(Provider):
             ## TODO(amr): remove this after poetry updates
             pip install pymysql
 
-            nohup ./run.sh --port {app.port} --start_local_db
-        """
+            nohup ./run.sh --port {app.port}  --host 0.0.0.0 --start_local_db
+            """
         )
         return exec_script
