@@ -7,8 +7,10 @@
 """
 
 # stdlib
+import logging
 from typing import Any as TypeAny
 from typing import Dict as TypeDict
+from typing import Generator
 from typing import List as TypeList
 
 # third party
@@ -16,12 +18,24 @@ import _pytest
 import pytest
 
 # syft absolute
+import syft as sy
 from syft import logger
 from syft.lib import VendorLibraryImportException
 from syft.lib import _load_lib
 from syft.lib import vendor_requirements_available
 
 logger.remove()
+
+
+@pytest.fixture
+def caplog(caplog: _pytest.logging.LogCaptureFixture) -> Generator:
+    class PropogateHandler(logging.Handler):
+        def emit(self, record: logging.LogRecord) -> None:
+            logging.getLogger(record.name).handle(record)
+
+    logger.add(PropogateHandler())
+    yield caplog
+    logger.remove()
 
 
 def pytest_addoption(parser: _pytest.config.argparsing.Parser) -> None:
@@ -124,3 +138,23 @@ def pytest_collection_modifyitems(
                 continue
             # fast is the default catch all
             item.add_marker(fast_tests)
+
+
+@pytest.fixture(scope="session")
+def node() -> sy.VirtualMachine:
+    return sy.VirtualMachine(name="Bob")
+
+
+@pytest.fixture(autouse=True)
+def node_store(node: sy.VirtualMachine) -> None:
+    node.store.clear()
+
+
+@pytest.fixture(scope="session")
+def client(node: sy.VirtualMachine) -> sy.VirtualMachineClient:
+    return node.get_client()
+
+
+@pytest.fixture(scope="session")
+def root_client(node: sy.VirtualMachine) -> sy.VirtualMachineClient:
+    return node.get_root_client()

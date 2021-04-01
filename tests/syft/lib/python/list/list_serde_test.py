@@ -25,15 +25,12 @@ def test_list_serde() -> None:
         assert (deserialized_el == original_el).all()
 
 
-def test_list_send() -> None:
-    alice = sy.VirtualMachine(name="alice")
-    alice_client = alice.get_client()
-
+def test_list_send(client: sy.VirtualMachineClient) -> None:
     t1 = th.tensor([1, 2])
     t2 = th.tensor([1, 3])
 
     syft_list = List([t1, t2])
-    ptr = syft_list.send(alice_client)
+    ptr = syft_list.send(client)
     # Check pointer type
     assert ptr.__class__.__name__ == "ListPointer"
 

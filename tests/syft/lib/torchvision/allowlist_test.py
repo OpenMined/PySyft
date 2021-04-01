@@ -1,7 +1,6 @@
 # stdlib
 import json
 from os import path
-import os.path
 from typing import Dict
 from typing import Union
 
@@ -33,11 +32,6 @@ def tens(pil_img) -> torch.Tensor:
     return tv.transforms.functional.to_tensor(pil_img).type(torch.uint8)
 
 
-@pytest.fixture(scope="function")
-def alice() -> sy.VirtualMachine:
-    return sy.VirtualMachine(name="alice")
-
-
 def version_supported(support_dict: Union[str, Dict[str, str]]) -> bool:
     if isinstance(support_dict, str):
         return True
@@ -48,13 +42,12 @@ def version_supported(support_dict: Union[str, Dict[str, str]]) -> bool:
 
 
 def test_allowlist(
-    alice: sy.VirtualMachine, tens: torch.Tensor, pil_img: PIL.Image.Image
+    root_client: sy.VirtualMachineClient, tens: torch.Tensor, pil_img: PIL.Image.Image
 ) -> None:
     # Required for testing on torchvision==1.6.0
     sy.load("PIL")
-    alice_client = alice.get_root_client()
-    torchvision = alice_client.torchvision
-    torch = alice_client.torch
+    torchvision = root_client.torchvision
+    torch = root_client.torch
     try:
         tx = torch.rand(4)
         tx = tx * 2
