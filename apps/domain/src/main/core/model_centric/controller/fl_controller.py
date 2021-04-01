@@ -186,7 +186,7 @@ class FLController:
         """
         return hashlib.sha256(primary_key.encode()).hexdigest()
 
-    def submit_diff(self, worker_id: str, request_key: str, diff: bin):
+    def submit_diff(self, worker_id: str, request_key: str, diff: bytes):
         """Submit worker model diff to the assigned cycle.
 
         Args:

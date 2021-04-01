@@ -3,7 +3,10 @@
 import syft as sy
 from syft import deserialize, serialize
 from syft.lib.python.list import List
-from syft.proto.lib.python.list_pb2 import List as ListPB
+from syft.federated.model_serialization import (
+    wrap_model_params,
+    deserialize_model_params,
+)
 
 from ...exceptions import ModelNotFoundError
 from ...manager.database_manager import DatabaseManager
@@ -45,7 +48,7 @@ class ModelManager(DatabaseManager):
 
         return _model_obj
 
-    def save(self, model_id: int, data: bin):
+    def save(self, model_id: int, data: bytes):
         """Create a new model checkpoint.
 
         Args:
@@ -97,15 +100,13 @@ class ModelManager(DatabaseManager):
     @staticmethod
     def serialize_model_params(params):
         """Serializes list of tensors into State/protobuf."""
-        pb = serialize(List(params))
+        pb = serialize(wrap_model_params(params))
         serialized_params = pb.SerializeToString()
         return serialized_params
 
     @staticmethod
-    def unserialize_model_params(bin: bin):
+    def unserialize_model_params(bin: bytes):
         """Unserializes model or checkpoint or diff stored in db to list of
         tensors."""
-        state = ListPB()
-        state.ParseFromString(bin)
-        params = deserialize(state)
+        params = deserialize_model_params(bin)
         return params
