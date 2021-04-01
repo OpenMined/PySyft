@@ -15,7 +15,7 @@ from .gc_strategy import GCStrategy
 
 if TYPE_CHECKING:
     # syft relative
-    from ..node.common.client import Client
+    from ...node.common.client import Client
 
 
 class GCBatched(GCStrategy):
