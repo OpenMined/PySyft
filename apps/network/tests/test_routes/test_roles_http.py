@@ -315,7 +315,7 @@ def test_get_role_success(client, database, cleanup):
         "can_create_users": False,
         "can_edit_roles": False,
         "can_manage_infrastructure": False,
-        'id': 1
+        "id": 1,
     }
 
 

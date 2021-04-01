@@ -8,7 +8,6 @@ user_role = ("User", False, False, False, False)
 admin_role = ("Administrator", True, True, False, False)
 
 
-
 @pytest.fixture
 def cleanup(database):
     yield

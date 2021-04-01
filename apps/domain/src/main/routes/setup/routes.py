@@ -10,6 +10,8 @@ from syft.grid.messages.setup_messages import (
 from ..auth import error_handler, token_required, optional_token
 from ...core.task_handler import route_logic
 
+from main.core.node import get_node
+
 
 @setup_route.route("/", methods=["POST"])
 @optional_token
@@ -50,4 +52,13 @@ def get_setup(current_user):
         json.dumps(response),
         status=status_code,
         mimetype="application/json",
+    )
+
+
+@setup_route.route("/status", methods=["GET"])
+def get_status():
+    response = {"node_name": get_node().name, "init": len(get_node().users) > 0}
+
+    return Response(
+        json.dumps(response), status=status_code, mimetype="application/json"
     )

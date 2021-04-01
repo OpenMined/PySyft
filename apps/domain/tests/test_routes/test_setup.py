@@ -51,6 +51,7 @@ def cleanup(database):
         database.session.query(Role).delete()
         database.session.query(Group).delete()
         database.session.query(UserGroup).delete()
+        database.session.query(SetupConfig).delete()
         database.session.commit()
     except:
         database.session.rollback()
@@ -64,7 +65,7 @@ def test_initial_setup(client, database, cleanup):
     result = client.post(
         "/setup/",
         json={
-            "email": "ionesio@email.com",
+            "email": "owner@email.com",
             "password": "testing",
             "node_name": "OpenMined Node",
         },
@@ -76,23 +77,24 @@ def test_initial_setup(client, database, cleanup):
 def test_get_setup(client, database, cleanup):
     new_role = create_role(*owner_role)
     database.session.add(new_role)
-    new_user = create_user(*user1)
-    database.session.add(new_user)
 
     database.session.commit()
+
+    result = client.post(
+        "/setup/",
+        json={
+            "email": "owner@email.com",
+            "password": "testing",
+            "node_name": "OpenMined Node",
+        },
+    )
+    # assert result.status_code == 200
+    assert result.get_json() == {"msg": "Running initial setup!"}
 
     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
     headers = {
         "token": token.decode("UTF-8"),
     }
-    client.post(
-        "/setup/",
-        json={
-            "email": "ionesio@email.com",
-            "password": "testing",
-            "node_name": "OpenMined Node",
-        },
-    )
 
     result = client.get(
         "/setup/",

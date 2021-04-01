@@ -28,6 +28,7 @@ from ..exceptions import (
     MissingRequestKeyError,
     InvalidParameterValueError,
     AuthorizationError,
+    OwnerAlreadyExistsError,
 )
 from ..database.setup.setup import SetupConfig
 from ..database.utils import model_to_json
@@ -39,6 +40,10 @@ from ...core.infrastructure import Config, Provider, AWS_Serverfull, AWS_Serverl
 def create_initial_setup(
     msg: CreateInitialSetUpMessage, node: AbstractNode, verify_key: VerifyKey
 ) -> CreateInitialSetUpResponse:
+    # Should not run if Domain has an owner
+    if len(node.users):
+        raise OwnerAlreadyExistsError
+
     _email = msg.content.get("email", None)
     _password = msg.content.get("password", None)
 

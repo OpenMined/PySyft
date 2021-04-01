@@ -111,7 +111,7 @@ class UserManager(DatabaseManager):
 
     def can_create_groups(self, user_id: str) -> bool:
         return self.role(user_id=user_id).can_create_groups
-    
+
     def can_edit_settings(self, user_id: str) -> bool:
         return self.role(user_id=user_id).can_edit_settings
 
