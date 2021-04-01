@@ -45,9 +45,9 @@ The [PyGrid library](https://github.com/OpenMined/PyGrid) serves as an API for t
 
 However, the Syft ecosystem only focuses on consistent object serialization/deserialization, core abstractions, and algorithm design/execution across these languages. These libraries alone will not connect you with data in the real world. The Syft ecosystem is supported by the Grid ecosystem, which focuses on the deployment, scalability, and other additional concerns around running real-world systems to compute over and process data (such as data compliance web applications).
 
-PySyft is the library that defines objects, abstractions, and algorithms.
-[PyGrid](https://github.com/OpenMined/PyGrid) is the platform which lets you deploy them within a real institution.
-[PyGrid Admin](https://github.com/OpenMined/pygrid-admin) is a UI which allows a data owner to manage their PyGrid deployment.
+- PySyft is the library that defines objects, abstractions, and algorithms.
+- [PyGrid](https://github.com/OpenMined/PyGrid) is the platform which lets you deploy them within a real institution.
+- [PyGrid Admin](https://github.com/OpenMined/pygrid-admin) is a UI which allows a data owner to manage their PyGrid deployment.
 
 A more detailed explanation of PySyft can be found in the
 [white paper on Arxiv](https://arxiv.org/abs/1811.04017).
@@ -102,7 +102,7 @@ Coming soon! Until then, please view the Examples below.
 
 ## Examples
 
-A comprehensive list of examples can be found [here](https://github.com/OpenMined/PySyft/tree/master/examples)
+A comprehensive list of examples can be found [here](https://github.com/OpenMined/PySyft/tree/master/examples).
 
 These tutorials cover a variety of Python libraries for data science and machine learning.
 
@@ -116,7 +116,7 @@ $ jupyter notebook
 
 <a href="https://github.com/OpenMined/PySyft/tree/master/examples/duet"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/master/docs/img/logo_duet.png" alt="PySyft" width="350"></a>
 
-Duet is the latest part of the Syft family and is designed to provide you with a seamless experience, creating machine learning models in tools you are already familiar with, like Jupyter notebooks and the PyTorch API; while allowing training over a remote session, on data you cannot see, anywhere in the world 🌏.
+Duet is a peer-to-peer tool within PySyft that provides a research-friendly API for a Data Owner to privately expose their data, while a Data Scientist can access or manipulate the data on the owner's side through a zero-knowledge access control mechanism. It's designed to lower the barrier between research and privacy-preserving mechanisms, so that scientific progress can be made on data that is currently inaccessible or tightly controlled. **The main benefit of using Duet is that allows you to get started using PySyft, without needing to manage a full PyGrid deployment. It is the simplest path to using Syft, without needing to install anything (except Syft 😉).**
 
 You can find all [Duet examples](https://github.com/OpenMined/PySyft/tree/master/examples/duet) in the `examples/duet` folder.
 
