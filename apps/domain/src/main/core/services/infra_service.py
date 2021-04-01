@@ -41,6 +41,8 @@ from syft.proto.core.io.address_pb2 import Address as Address_PB
 from ...core.database.environment.environment import states
 from ...core.infrastructure import (
     AWS_Serverfull,
+    AZURE,
+    GCP,
     Config,
     Provider,
     aws_utils,
@@ -110,9 +112,17 @@ def create_worker_msg(
             serverless=False,
             websockets=False,
             provider=os.environ["CLOUD_PROVIDER"],
+            ##TODO(amr): encapsulate each cloud provider to config to aws, azure, gcp
             vpc=Config(
                 region=os.environ["REGION"],
                 instance_type=Config(InstanceType=instance_type),
+            ),
+            azure=Config(
+                location=os.environ["location"],
+                subscription_id=os.environ["subscription_id"],
+                client_id=os.environ["client_id"],
+                client_secret=os.environ["client_secret"],
+                tenant_id=os.environ["tenant_id"],
             ),
         )
 
@@ -122,9 +132,9 @@ def create_worker_msg(
         if config.provider == "aws":
             deployment = AWS_Serverfull(config=config)
         elif config.provider == "azure":
-            pass
+            deployment = AZURE(config=config)
         elif config.provider == "gcp":
-            pass
+            deployment = GCP(config=config)
 
         if deployment.validate():
             deployed, output = deployment.deploy()  # Deploy
