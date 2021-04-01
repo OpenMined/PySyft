@@ -138,12 +138,13 @@ def create_worker_msg(
                 client_id=os.getenv("client_id", None),
                 client_secret=os.getenv("client_secret", None),
                 tenant_id=os.getenv("tenant_id", None),
+                vm_size=instance_type,
             ),
             gcp=Config(
                 project_id=os.getenv("project_id", None),
                 region=os.getenv("region", None),
                 zone=os.getenv("zone", None),
-                machine_type=os.getenv("machine_type", None),
+                machine_type=instance_type,
             ),
         )
 
@@ -163,14 +164,24 @@ def create_worker_msg(
                 env_parameters = {
                     "id": config.app.id,
                     "provider": config.provider,
-                    "region": config.vpc.region,
-                    "instance_type": config.vpc.instance_type.InstanceType,
                     "created_at": datetime.now(),
                     "state": states["success"],
                     "address": output["instance_0_endpoint"]["value"][0]
                     + ":"
                     + str(_worker_port),
                 }
+                if config.provider == "aws":
+                    env_parameters["region"] = config.vpc.region
+                    env_parameters[
+                        "instance_type"
+                    ] = config.vpc.instance_type.InstanceType
+                elif config.provider == "azure":
+                    env_parameters["region"] = config.azure.location
+                    env_parameters["instance_type"] = config.azure.vm_size
+                elif config.provider == "gcp":
+                    env_parameters["region"] = config.gcp.region
+                    env_parameters["instance_type"] = config.gcp.machine_type
+
                 new_env = node.environments.register(**env_parameters)
                 node.environments.association(
                     user_id=_current_user_id, env_id=new_env.id

@@ -127,6 +127,7 @@ class AZURE(Provider):
                 source="Azure/compute/azurerm",
                 resource_group_name=self.resource_group.name,
                 vm_os_simple="UbuntuServer",
+                vm_size=self.config.azure.vm_size,
                 public_ip_dns=[f"pygrid-{name}-instance-{count}"],
                 vnet_subnet_id=var_module(self.network, "vnet_subnets[0]"),
                 custom_data=self.write_domain_exec_script(app, index=count)
