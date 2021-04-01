@@ -334,8 +334,8 @@ jobs:
 
       - uses: actions/checkout@v2
         with:
-          repository: "OpenMined/PyGrid"
-          ref: "pygrid_0.4.0"
+          repository: "vvmnnnkv/PyGrid"
+          ref: "mcfl-legacy-model-serialization"
           path: "pygrid"
 
       - name: Install PyTorch
