@@ -4,8 +4,9 @@ from src.main.core.exceptions import InvalidCredentialsError
 import pytest
 from bcrypt import checkpw
 
-user_role = ("User", False, False, False, False, False, False, False)
-admin_role = ("Administrator", True, True, True, True, False, False, True)
+user_role = ("User", False, False, False, False)
+admin_role = ("Administrator", True, True, False, False)
+
 
 
 @pytest.fixture

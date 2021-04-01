@@ -8,22 +8,20 @@ from src.main.core.database import Role, User, create_role, create_user, model_t
 
 payload = {
     "name": "mario mario",
-    "can_triage_requests": False,
     "can_edit_settings": False,
     "can_create_users": True,
-    "can_create_groups": True,
     "can_edit_roles": False,
     "can_manage_infrastructure": False,
-    "can_upload_data": False,
 }
 
 JSON_DECODE_ERR_MSG = (
     "Expecting property name enclosed in " "double quotes: line 1 column 2 (char 1)"
 )
-owner_role = ("Owner", True, True, True, True, True, True, True)
-admin_role = ("Administrator", True, True, True, True, False, False, True)
-user_role = ("User", False, False, False, False, False, False, False)
-officer_role = ("Compliance Officer", True, False, False, False, False, False, False)
+owner_role = ("Owner", True, True, True, True)
+user_role = ("User", False, False, False, False)
+admin_role = ("Administrator", True, True, False, False)
+officer_role = ("Compliance Officer", True, False, False, False)
+
 user_1 = (
     "tech@gibberish.com",
     "BDEB6E8EE39B6C70835993486C9E65DC",
@@ -217,24 +215,18 @@ def test_get_all_roles_success(client, database, cleanup):
     # assert result.status_code == 200
     assert result.get_json() == [
         {
-            "can_create_groups": True,
             "can_create_users": True,
             "can_edit_roles": True,
             "can_edit_settings": True,
             "can_manage_infrastructure": True,
-            "can_triage_requests": True,
-            "can_upload_data": True,
             "id": 1,
             "name": "Owner",
         },
         {
-            "can_create_groups": True,
             "can_create_users": True,
             "can_edit_roles": False,
             "can_edit_settings": True,
             "can_manage_infrastructure": False,
-            "can_triage_requests": True,
-            "can_upload_data": True,
             "id": 2,
             "name": "Administrator",
         },
@@ -318,15 +310,12 @@ def test_get_role_success(client, database, cleanup):
 
     assert result.status_code == 200
     assert result.get_json() == {
-        "id": 1,
         "name": "User",
-        "can_triage_requests": False,
         "can_edit_settings": False,
         "can_create_users": False,
-        "can_create_groups": False,
         "can_edit_roles": False,
         "can_manage_infrastructure": False,
-        "can_upload_data": False,
+        'id': 1
     }
 
 

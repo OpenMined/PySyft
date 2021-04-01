@@ -23,9 +23,9 @@ from syft.grid.messages.user_messages import (
     UpdateUserMessage,
 )
 
-owner = ("Owner", True, True, True, True, True, True, True)
-user = ("User", False, False, False, False, False, False, False)
-admin = ("Administrator", True, True, True, True, False, False, True)
+owner = ("Owner", True, True, True, True)
+user = ("User", False, False, False, False)
+admin = ("Administrator", True, True, False, False)
 
 # generate a signing key
 generic_key = SigningKey.generate()
