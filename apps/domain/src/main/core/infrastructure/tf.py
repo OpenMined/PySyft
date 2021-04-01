@@ -23,22 +23,24 @@ class Terraform:
             json.dump(tfscript, tfjson, indent=2, sort_keys=False)
 
     def init(self):
-        return subprocess.run(
-            f"terraform init",
-            shell=True,
-            cwd=self.dir,
-            check=True,
-        )
-        # plugin_dir = os.path.dirname(self.dir)
-        # if self.install_plugins(plugin_dir):
-        #     return subprocess.run(
-        #         f"terraform init -plugin-dir={plugin_dir}",
-        #         shell=True,
-        #         cwd=self.dir,
-        #         check=True,
-        #     )
-        # else:
-        #     return False
+        if self.provider == "aws":
+            plugin_dir = os.path.dirname(self.dir)
+            if self.install_plugins(plugin_dir):
+                return subprocess.run(
+                    f"terraform init -plugin-dir={plugin_dir}",
+                    shell=True,
+                    cwd=self.dir,
+                    check=True,
+                )
+            else:
+                return False
+        else:
+            return subprocess.run(
+                f"terraform init",
+                shell=True,
+                cwd=self.dir,
+                check=True,
+            )
 
     def validate(self):
         return subprocess.run(
