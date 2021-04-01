@@ -4,6 +4,8 @@
 
 PyGrid is a peer-to-peer network of data owners and data scientists who can collectively train AI models using [PySyft](https://github.com/OpenMined/PySyft/). PyGrid is also the central server for conducting both model-centric and data-centric federated learning.
 
+You may control PyGrid via our user-interface, [PyGrid Admin](https://github.com/OpenMined/pygrid-admin).
+
 ## Architecture
 
 PyGrid platform is composed by three different components.
