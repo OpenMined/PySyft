@@ -16,6 +16,7 @@ import os
 
 # Extended Python imports
 from flask import Flask
+from flask_cors import CORS
 
 from geventwebsocket.websocket import Header
 from nacl.signing import SigningKey
@@ -78,6 +79,7 @@ def create_app(
 
     # Create Domain APP
     app = create_domain_app(app=app, args=args, testing=testing)
+    CORS(app)
 
     app.debug = debug
     app.config["SECRET_KEY"] = secret_key
