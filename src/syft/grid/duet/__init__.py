@@ -13,9 +13,6 @@ import requests
 from ...core.common.environment import is_jupyter
 from ...core.node.common.client import Client
 from ...core.node.domain.domain import Domain
-from ...logger import error
-from ...logger import info
-from ...logger import traceback_and_raise
 from .bcolors import bcolors
 from .exchange_ids import DuetCredentialExchanger
 from .exchange_ids import OpenGridTokenFileExchanger
@@ -28,6 +25,16 @@ if is_jupyter:
     # third party
     from IPython.core.display import Image
     from IPython.core.display import display
+
+    # syft relative
+    from ...widget_logger import error
+    from ...widget_logger import info
+    from ...widget_logger import traceback_and_raise
+else:
+    # syft relative
+    from ...logger import error
+    from ...logger import info
+    from ...logger import traceback_and_raise
 
 
 ADDR_REPOSITORY = (
@@ -227,6 +234,7 @@ def launch_duet(
     out_duet: Client = my_domain.get_root_client()
 
     if logging:
+        print("Begin Logging")
         begin_duet_logger(my_domain=my_domain)
     info(print=True)
 

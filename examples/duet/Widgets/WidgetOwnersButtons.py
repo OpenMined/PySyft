@@ -5,9 +5,12 @@ from ipywidgets import fixed
 from ipywidgets import interact
 from ipywidgets import interact_manual
 from ipywidgets import interactive
+from loguru import logger
 
 # syft absolute
 import syft as sy
+
+DUET = None
 
 duetLaunchButton = widgets.Button(
     description='Launch Duet',
@@ -36,23 +39,27 @@ viewPeers = widgets.Button(
     icon='fa-eye' # (FontAwesome names without the `fa-` prefix)
 )
 
+dashboardDuetLogger = widgets.Output(
+    layout={
+        "border": "1px solid black",
+        "display": "flex",
+        "flex_flow": "column",
+        "align_items": "stretch",
+    }
+)
 
-dashboardLogger = widgets.Output(layout={'border': '1px solid black' , 'display' : 'flex' , 'flex_flow' : 'column' , 'align_items' : 'stretch' })
-
-duet = None
 def on_launch_duet_button(b):
-    with dashboardLogger:
-        global duet
-        duet = sy.launch_duet()
+    dashboardDuetLogger.clear_output()
+    with dashboardDuetLogger :
+        DUET = sy.launch_duet()
 
 def on_launch_duet_button_loopback(b):
-    with dashboardLogger:
-        global duet
-        duet = sy.launch_duet(loopback=True)
-
-
+    dashboardDuetLogger.clear_output()
+    with dashboardDuetLogger:
+        DUET = sy.launch_duet(loopback=True)
 
 duetLaunchButton.on_click(on_launch_duet_button)
 duetLaunchButtonLoopback.on_click(on_launch_duet_button_loopback)
 
+dashboardLogger = widgets.Output(layout={'border': '1px solid black' , 'display' : 'flex' , 'flex_flow' : 'column' , 'align_items' : 'stretch' })
 dashboard = widgets.HBox([duetLaunchButton, duetLaunchButtonLoopback, viewPeers])
