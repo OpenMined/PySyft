@@ -260,6 +260,34 @@ inputs_int: Dict[str, List] = {
     "conjugate": [[]],
 }
 
+inputs_list: Dict[str, List] = {
+    "__add__": [[[1, 2, 3]], [[1, 2.5, True]]],
+    "__contains__": [[41], [-1], [None], ["test"]],
+    "__eq__": [[[41, 15, 3, 80]], [[True]]],
+    "__ge__": [[[41, 15, 3, 80]], [[True]]],
+    "__getitem__": [[1], [2], [3]],
+    "__gt__": [[[41, 15, 3, 80]], [[True]]],
+    "__iadd__": [[[1, 2, 3]], [[1, 2.5, True]]],
+    "__imul__": [[1], [3], [5]],
+    "__le__": [[[41, 15, 3, 80]], [[True]]],
+    "__len__": [[]],
+    "__lt__": [[[41, 15, 3, 80]], [[True]]],
+    "__mul__": [[1], [3], [5]],
+    "__ne__": [[[41, 15, 3, 80]], [[True]]],
+    "__rmul__": [[1], [3], [5]],
+    "__setitem__": [[0, 2], [1, 5]],
+    "append": [[1], [2], [3]],
+    "clear": [[]],
+    "copy": [[]],
+    "count": [[1], [2]],
+    "extend": [[[1, 2, 3]], [[4, 5, 6]]],
+    "index": [[0], [1], [5]],
+    "insert": [[0, "a"], [3, "b"]],
+    "pop": [[0], [3]],
+    "remove": [[1], [42]],
+    "reverse": [[]],
+    "sort": [[]],
+}
 
 test_dict: Dict[str, Dict[str, Any]] = {
     "float": {
@@ -321,14 +349,31 @@ test_dict: Dict[str, Dict[str, Any]] = {
             list(zip(range(100), range(100))),
         ],
     },
+    "list": {
+        "inputs": inputs_list,
+        "construct": (
+            list,
+            sy.lib.python.List,
+            lambda client: client.syft.lib.python.List,
+        ),
+        "objects": [lambda: ([41, 15, 3, 80],), lambda: (list(range(2 ** 5)),)],
+    },
 }
 parameters = []
 for py_type in test_dict.keys():
-    parameters += [
-        [py_type, test_object, func]
-        for test_object in test_dict[py_type]["objects"]
-        for func in test_dict[py_type]["inputs"].keys()
-    ]
+    if py_type in ["list"]:
+        parameters += [
+            # test_object in list are lambda func
+            [py_type, test_object_fn(), func]
+            for test_object_fn in test_dict[py_type]["objects"]
+            for func in test_dict[py_type]["inputs"].keys()
+        ]
+    else:
+        parameters += [
+            [py_type, test_object, func]
+            for test_object in test_dict[py_type]["objects"]
+            for func in test_dict[py_type]["inputs"].keys()
+        ]
 
 
 @pytest.mark.parametrize("py_type,test_object,func", parameters)
@@ -446,3 +491,47 @@ def test_pointer_properties(
 
     assert py_res == sy_res
     assert sy_res == remote_sy_res
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("test_object_fn", test_dict["list"]["objects"])
+def test_iterator(test_object_fn, client: sy.VirtualMachineClient):
+    py_obj = test_object_fn()
+    sy_obj, remote_sy_obj = sy.lib.python.List(py_obj), client.syft.lib.python.List(
+        py_obj
+    )
+
+    py_iter = iter(py_obj)
+    sy_iter = iter(sy_obj)
+
+    remote_sy_obj.set_request_config({})
+    rsy_iter = iter(remote_sy_obj)
+
+    for i in range(len(py_obj)):
+        py_elem = next(py_iter)
+        sy_elem = next(sy_iter)
+        rsy_elem = next(rsy_iter)
+
+        assert py_elem == sy_elem
+        assert sy_elem == rsy_elem.get()
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("test_object_fn", test_dict["list"]["objects"])
+def test_reversed_iterator(test_object_fn, client):
+    py_obj = test_object_fn()
+    sy_obj, remote_sy_obj = sy.lib.python.List(py_obj), client.syft.lib.python.List(
+        py_obj
+    )
+
+    py_iter = reversed(py_obj)
+    sy_iter = reversed(sy_obj)
+    rsy_iter = reversed(remote_sy_obj)
+
+    for i in range(len(py_obj)):
+        py_elem = next(py_iter)
+        sy_elem = next(sy_iter)
+        rsy_elem = next(rsy_iter)
+
+        assert py_elem == sy_elem
+        assert sy_elem == rsy_elem.get()
