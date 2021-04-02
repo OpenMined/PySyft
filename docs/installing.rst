@@ -2,8 +2,8 @@
 Install PySyft
 **************
 
-This page shows how to install Syft version 0.3.0. As this software is currently in
-alpha, there are changes happening every day. Thus, the best way to install PySyft is
+This page shows how to install Syft. As this software is currently in
+beta, there are changes happening every day. Thus, the best way to install PySyft is
 to build it from source. Each of the tutorials below describe how to build PySyft from
 source within each respective operating system.
 
