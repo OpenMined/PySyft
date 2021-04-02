@@ -1,6 +1,6 @@
 """A simple garbage collection heuritics."""
-# stdlib
-from typing import final
+# third party
+from typing_extensions import final
 
 # syft relative
 from ...node.common.action.garbage_collect_object_action import (

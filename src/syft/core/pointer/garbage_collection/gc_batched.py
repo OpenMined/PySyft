@@ -3,7 +3,9 @@
 from typing import List
 from typing import Optional
 from typing import TYPE_CHECKING
-from typing import final
+
+# third party
+from typing_extensions import final
 
 # syft relative
 from ...common.uid import UID
