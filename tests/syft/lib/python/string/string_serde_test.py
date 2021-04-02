@@ -1,5 +1,5 @@
 # syft absolute
-import syft
+import syft as sy
 from syft.lib.python.string import String
 from syft.proto.lib.python.string_pb2 import String as String_PB
 
@@ -17,12 +17,9 @@ def test_string_serde() -> None:
     assert deserialized.id == syft_string.id
 
 
-def test_string_send() -> None:
-    alice = syft.VirtualMachine(name="alice")
-    alice_client = alice.get_client()
-
+def test_string_send(client: sy.VirtualMachineClient) -> None:
     syft_string = String("Hello OpenMined!")
-    ptr = syft_string.send(alice_client)
+    ptr = syft_string.send(client)
 
     # Check pointer type
     assert ptr.__class__.__name__ == "StringPointer"

@@ -43,11 +43,6 @@ class SyNetEmpty(sy.Module):
 
 
 @pytest.fixture(scope="function")
-def alice() -> sy.VirtualMachine:
-    return sy.VirtualMachine(name="alice")
-
-
-@pytest.fixture(scope="function")
 def model() -> SyNet:
     return SyNet()
 
@@ -74,13 +69,11 @@ def test_repr_to_kwargs() -> None:
     )
 
 
-def test_module_setup(alice: sy.VirtualMachine, model: SyNet) -> None:
-    alice_client = alice.get_root_client()
-
+def test_module_setup(root_client: sy.VirtualMachineClient, model: SyNet) -> None:
     remote = copy.copy(model)
-    remote.setup(torch_ref=alice_client.torch)
+    remote.setup(torch_ref=root_client.torch)
     assert remote.is_local is False
-    assert remote.torch_ref == alice_client.torch
+    assert remote.torch_ref == root_client.torch
     assert remote.training is False
 
     remote.setup(torch_ref=torch)
@@ -106,8 +99,8 @@ def test_module_modules_empty(modelEmpty: SyNetEmpty) -> None:
 
 
 @pytest.mark.slow
-def test_module_parameteres(alice: sy.VirtualMachine, model: SyNet) -> None:
-    model_ptr = model.send(alice.get_root_client())
+def test_module_parameteres(root_client: sy.VirtualMachineClient, model: SyNet) -> None:
+    model_ptr = model.send(root_client)
 
     assert len(model_ptr.parameters().get()) == 2
     assert model_ptr.parameters().get()[0].shape == torch.Size([OUT_DIM, IN_DIM])
@@ -176,7 +169,6 @@ def test_module_load_save(model: SyNet) -> None:
 
 
 def test_module_gradient_sanity(
-    alice: sy.VirtualMachine,
     model: SyNet,
     dataloader: Tuple[torch.Tensor, torch.Tensor],
 ) -> None:
@@ -192,20 +184,18 @@ def test_module_gradient_sanity(
 
 @pytest.mark.slow
 def test_module_send_get(
-    alice: sy.VirtualMachine,
+    root_client: sy.VirtualMachineClient,
     model: SyNet,
     dataloader: Tuple[torch.Tensor, torch.Tensor],
 ) -> None:
-    alice_client = alice.get_root_client()
-
     data, labels = dataloader
 
-    model_ptr = model.send(alice_client)
-    data_ptr = data.send(alice_client)
-    labels_ptr = labels.send(alice_client)
+    model_ptr = model.send(root_client)
+    data_ptr = data.send(root_client)
+    labels_ptr = labels.send(root_client)
 
     results_ptr = model_ptr(data_ptr)
-    remote_loss_func = alice_client.torch.nn.L1Loss()
+    remote_loss_func = root_client.torch.nn.L1Loss()
     remote_loss = remote_loss_func(results_ptr, labels_ptr)
     remote_loss.backward()
 
@@ -226,13 +216,12 @@ def test_module_send_get(
     assert model.get() is None
 
     model.is_local = False
-    assert model.send(alice_client) is None
+    assert model.send(root_client) is None
 
 
 @pytest.mark.slow
-def test_debug_sum_layers(alice: sy.VirtualMachine, model: SyNet) -> None:
+def test_debug_sum_layers(root_client: sy.VirtualMachineClient, model: SyNet) -> None:
     assert model.debug_sum_layers() is None
-    alice_client = alice.get_root_client()
-    model_ptr = model.send(alice_client)
+    model_ptr = model.send(root_client)
 
     assert model_ptr.debug_sum_layers() is None

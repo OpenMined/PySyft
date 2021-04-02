@@ -7,21 +7,13 @@ import pytest
 # syft absolute
 import syft as sy
 
-alice = sy.VirtualMachine(name="alice")
-alice_client = alice.get_root_client()
-remote_python = alice_client.syft.lib.python
 
+def get_permission(
+    obj: Any, node: sy.VirtualMachine, client: sy.VirtualMachineClient
+) -> None:
+    remote_obj = node.store[obj.id_at_location]
+    remote_obj.read_permissions[client.verify_key] = obj.id_at_location
 
-def get_permission(obj: Any) -> None:
-    remote_obj = alice.store[obj.id_at_location]
-    remote_obj.read_permissions[alice_client.verify_key] = obj.id_at_location
-
-
-sy_true = sy.lib.python.Bool(True)
-sy_false = sy.lib.python.Bool(False)
-
-sy_true_ptr = remote_python.Bool(True)
-sy_false_ptr = remote_python.Bool(False)
 
 inputs = {
     "__abs__": [[]],
@@ -71,13 +63,19 @@ inputs = {
 }
 
 properties = ["denominator", "numerator", "imag", "real"]
-objects = [(True, sy_true, sy_true_ptr), (False, sy_false, sy_false_ptr)]
+objects = [True, False]
 
 
-@pytest.mark.parametrize("test_objects", objects)
+@pytest.mark.parametrize("test_object", objects)
 @pytest.mark.parametrize("func", inputs.keys())
-def test_pointer_objectives(test_objects, func):
-    py_obj, sy_obj, remote_sy_obj = test_objects
+def test_pointer_objectives(
+    test_object, func, node: sy.VirtualMachine, client: sy.VirtualMachineClient
+):
+    py_obj, sy_obj, remote_sy_obj = (
+        test_object,
+        sy.lib.python.Bool(test_object),
+        client.syft.lib.python.Bool(test_object),
+    )
 
     if not hasattr(py_obj, func):
         return
@@ -101,7 +99,7 @@ def test_pointer_objectives(test_objects, func):
 
         try:
             remote_sy_res = remote_sy_method(*possible_input)
-            get_permission(remote_sy_res)
+            get_permission(remote_sy_res, node, client)
             remote_sy_res = remote_sy_res.get()
         except Exception as remote_sy_e:
             remote_sy_res = str(remote_sy_e)
@@ -115,12 +113,16 @@ def test_pointer_objectives(test_objects, func):
         assert sy_res == remote_sy_res
 
 
-@pytest.mark.parametrize(
-    "test_objects", [(True, sy_true, sy_true_ptr), (False, sy_false, sy_false_ptr)]
-)
+@pytest.mark.parametrize("test_object", [True, False])
 @pytest.mark.parametrize("property", properties)
-def test_pointer_properties(test_objects, property):
-    py_obj, sy_obj, remote_sy_obj = test_objects
+def test_pointer_properties(
+    test_object, property, node: sy.VirtualMachine, client: sy.VirtualMachineClient
+):
+    py_obj, sy_obj, remote_sy_obj = (
+        test_object,
+        sy.lib.python.Bool(test_object),
+        client.syft.lib.python.Bool(test_object),
+    )
 
     # TODO add support for proper properties
 
@@ -136,7 +138,7 @@ def test_pointer_properties(test_objects, property):
 
     try:
         remote_sy_res = getattr(remote_sy_obj, property)()
-        get_permission(remote_sy_res)
+        get_permission(remote_sy_res, node, client)
         remote_sy_res = remote_sy_res.get()
     except Exception as remote_sy_e:
         remote_sy_res = str(remote_sy_e)
