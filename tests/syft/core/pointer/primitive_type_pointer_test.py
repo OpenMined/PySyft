@@ -1,6 +1,8 @@
 # stdlib
 from collections import OrderedDict
 from typing import Any
+from typing import Dict
+from typing import List
 
 # third party
 import pytest
@@ -16,7 +18,7 @@ def get_permission(
     remote_obj.read_permissions[client.verify_key] = obj.id_at_location
 
 
-inputs_float = {
+inputs_float: Dict[str, List] = {
     "__abs__": [[]],
     "__add__": [[0], [42], [2 ** 10], [-(2 ** 10)]],
     "__divmod__": [[0], [42], [2 ** 10], [-(2 ** 10)]],
@@ -47,7 +49,7 @@ inputs_float = {
     "conjugate": [[]],
 }
 
-inputs_string = {
+inputs_string: Dict[str, List] = {
     "__add__": [["str_1"], [""]],
     "__contains__": [[""], ["tu"], ["AND"], ["\t"]],
     "__eq__:": [["george"], ["test"]],
@@ -103,7 +105,7 @@ inputs_string = {
     "zfill": [[5], [10]],
 }
 
-inputs_bool = {
+inputs_bool: Dict[str, List] = {
     "__abs__": [[]],
     "__add__": [[True], [False], [42]],
     "__and__": [[True], [False]],
@@ -150,7 +152,7 @@ inputs_bool = {
     "conjugate": [[]],
 }
 
-inputs_set = {
+inputs_set: Dict[str, List] = {
     "__and__": [],
     "__eq__": [[{42, 24}], [set(range(10))], [set(range(25))]],
     "__ge__": [[{42, 24}], [set(range(10))], [set(range(25))]],
@@ -183,7 +185,7 @@ inputs_set = {
     "update": [[{42, 24}], [set(range(10))], [set(range(25))]],
 }
 
-inputs_ordered_dict = {
+inputs_ordered_dict: Dict[str, List] = {
     "__contains__": [["1"], ["2"], [1], [2]],
     "__delitem__": [["1"], [1], [10], ["10"], [500], [{1: 1}]],
     "__eq__": [
@@ -211,7 +213,7 @@ inputs_ordered_dict = {
     "values": [[]],
 }
 
-inputs_int = {
+inputs_int: Dict[str, List] = {
     "__abs__": [[]],
     "__add__": [[0], [42], [2 ** 10], [-(2 ** 10)]],
     "__and__": [[0], [42], [2 ** 10], [-(2 ** 10)]],
@@ -259,7 +261,7 @@ inputs_int = {
 }
 
 
-test_dict = {
+test_dict: Dict[str, Dict[str, Any]] = {
     "float": {
         "inputs": inputs_float,
         "construct": (
