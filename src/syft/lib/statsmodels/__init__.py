@@ -10,10 +10,12 @@ import statsmodels.api as sm
 
 # syft relative
 from . import family  # noqa: 401
+from . import results  # noqa: 401
 from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
+from ..misc.union import UnionGenerator
 from ..util import generic_update_ast
 
 LIB_NAME = "statsmodels"
@@ -96,12 +98,24 @@ def create_ast(client: TypeAny = None) -> Globals:
 
     methods = [
         (
+            "statsmodels.api.add_constant",
+            "pandas.DataFrame"
+        ),
+        (
             "statsmodels.genmod.generalized_linear_model.GLM.fit",
             "statsmodels.genmod.generalized_linear_model.GLMResultsWrapper",
         ),
         (
             "statsmodels.genmod.generalized_linear_model.GLMResults.summary",
             "statsmodels.iolib.summary.Summary",
+        ),
+        (
+            "statsmodels.genmod.generalized_linear_model.GLMResultsWrapper.cov_params",
+            "pandas.DataFrame"
+        ),
+        (
+            "statsmodels.genmod.generalized_linear_model.GLMResultsWrapper.conf_int",
+            "pandas.DataFrame"
         ),
         ("statsmodels.iolib.summary.Summary.as_csv", "syft.lib.python.String"),
         ("statsmodels.iolib.summary.Summary.as_html", "syft.lib.python.String"),
