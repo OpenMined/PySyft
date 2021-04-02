@@ -1,4 +1,6 @@
 """A simple garbage collection heuritics."""
+# stdlib
+from typing import final
 
 # syft relative
 from ...node.common.action.garbage_collect_object_action import (
@@ -8,6 +10,7 @@ from ..pointer import Pointer
 from .gc_strategy import GCStrategy
 
 
+@final
 class GCSimple(GCStrategy):
     """The GCSimple Strategy."""
 

@@ -1,9 +1,9 @@
 """A simple garbage collection heuritics."""
 # stdlib
-from collections import defaultdict
-from typing import Dict
 from typing import List
+from typing import Optional
 from typing import TYPE_CHECKING
+from typing import final
 
 # syft relative
 from ...common.uid import UID
@@ -15,18 +15,21 @@ from .gc_strategy import GCStrategy
 
 if TYPE_CHECKING:
     # syft relative
-    from ..node.common.client import Client
+    from ...node.common.client import Client
 
 
+@final
 class GCBatched(GCStrategy):
     """The GCBatched Strategy."""
 
     __slots__ = [
-        "client_to_obj_ids",
+        "obj_ids",
         "threshold",
+        "client",
     ]
 
-    client_to_obj_ids: Dict["Client", List[UID]]
+    client: Optional["Client"]
+    obj_ids: List[UID]
     threshold: int
 
     def __init__(self, threshold: int = 10) -> None:
@@ -39,8 +42,9 @@ class GCBatched(GCStrategy):
         Return:
             None
         """
-        self.client_to_obj_ids = defaultdict(list)
+        self.obj_ids = []
         self.threshold = threshold
+        self.client = None
 
     def reap(self, pointer: Pointer) -> None:
         """
@@ -53,27 +57,30 @@ class GCBatched(GCStrategy):
             None
         """
 
-        client_objs = self.client_to_obj_ids[pointer.client]
-        client_objs.append(pointer.id_at_location)
+        self.obj_ids.append(pointer.id_at_location)
 
-        nr_objs_client = len(client_objs)
+        nr_objs_client = len(self.obj_ids)
 
         if nr_objs_client >= self.threshold:
             # Check the local threshold for the items that are kept for a client
             msg = GarbageCollectBatchedAction(
-                ids_at_location=client_objs, address=pointer.client.address
+                ids_at_location=self.obj_ids, address=pointer.client.address
             )
 
             pointer.client.send_eventual_msg_without_reply(msg)
-            self.client_to_obj_ids.pop(pointer.client)
+            self.obj_ids = []
+
+        self.client = pointer.client
 
     def __del__(self) -> None:
         """Send a GarbageCollectBatchedAction to all the clients that are cached such
         that they delete all the items that should be deleted.
         """
-        for client, ids_at_location in self.client_to_obj_ids.items():
-            msg = GarbageCollectBatchedAction(
-                ids_at_location=ids_at_location, address=client.address
-            )
+        if self.client is None:
+            return
 
-            client.send_eventual_msg_without_reply(msg)
+        msg = GarbageCollectBatchedAction(
+            ids_at_location=self.obj_ids, address=self.client.address
+        )
+
+        self.client.send_eventual_msg_without_reply(msg)

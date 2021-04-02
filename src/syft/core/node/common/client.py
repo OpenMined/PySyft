@@ -73,8 +73,8 @@ class Client(AbstractNodeClient):
         self.routes = routes
         self.default_route_index = 0
 
-        gc_strategy = gc_get_default_strategy()
-        self.gc = GarbageCollection(gc_strategy)
+        gc_strategy_name = gc_get_default_strategy()
+        self.gc = GarbageCollection(gc_strategy_name)
 
         # create a signing key if one isn't provided
         if signing_key is None:

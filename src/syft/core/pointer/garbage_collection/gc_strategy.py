@@ -1,8 +1,11 @@
 """The strategy that all GC Heuristics should implement."""
-
 # stdlib
 from abc import ABC
 from abc import abstractmethod
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Type
 
 # syft relative
 from ..pointer import Pointer
@@ -10,6 +13,23 @@ from ..pointer import Pointer
 
 class GCStrategy(ABC):
     """The Strategy that all GC Heuristics should inherit."""
+
+    REGISTERED_GC_STRATEGIES: Dict[str, Type["GCStrategy"]] = {}
+
+    def __init__(self, *args: List[Any], **kwargs: Dict[Any, Any]) -> None:
+        pass
+
+    @staticmethod
+    def register(cls: Type["GCStrategy"]) -> None:
+        gc_strategy_name = cls.__name__.lower()
+        if gc_strategy_name in GCStrategy.REGISTERED_GC_STRATEGIES:
+            raise ValueError(f"{gc_strategy_name} already registered!")
+
+        GCStrategy.REGISTERED_GC_STRATEGIES[gc_strategy_name] = cls
+
+    def __init_subclass__(cls: Type["GCStrategy"]) -> None:
+        super().__init_subclass__()
+        GCStrategy.register(cls)
 
     @abstractmethod
     def reap(self, pointer: Pointer) -> None:

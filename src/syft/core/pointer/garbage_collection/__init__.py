@@ -5,16 +5,18 @@ from .gc_batched import GCBatched
 from .gc_simple import GCSimple
 from .gc_strategy import GCStrategy
 
-__GC_DEFAULT_STRATEGY: GCStrategy = GCSimple()
+__GC_DEFAULT_STRATEGY: str = "gcsimple"
 
 
-def gc_get_default_strategy() -> GCStrategy:
+def gc_get_default_strategy() -> str:
     return __GC_DEFAULT_STRATEGY
 
 
-def gc_set_default_strategy(gc_strategy: GCStrategy) -> None:
+def gc_set_default_strategy(gc_strategy_name: str) -> None:
     global __GC_DEFAULT_STRATEGY
-    __GC_DEFAULT_STRATEGY = gc_strategy
+    if gc_strategy_name not in GCStrategy.REGISTERED_GC_STRATEGIES:
+        raise ValueError(f"{gc_strategy_name} not registered!")
+    __GC_DEFAULT_STRATEGY = gc_strategy_name
 
 
 __all__ = [

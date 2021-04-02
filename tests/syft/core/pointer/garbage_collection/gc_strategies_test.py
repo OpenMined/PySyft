@@ -5,12 +5,12 @@ import torch
 import syft as sy
 from syft.core.pointer.garbage_collection import GCBatched
 from syft.core.pointer.garbage_collection import GCSimple
+from syft.core.pointer.garbage_collection import GarbageCollection
 from syft.core.pointer.garbage_collection import gc_get_default_strategy
 from syft.core.pointer.garbage_collection import gc_set_default_strategy
 
 
 def test_gc_simple_strategy(node: sy.VirtualMachine) -> None:
-
     client = node.get_client()
 
     x = torch.tensor([1, 2, 3, 4])
@@ -23,7 +23,7 @@ def test_gc_simple_strategy(node: sy.VirtualMachine) -> None:
     assert len(node.store) == 0
 
 
-def test_gc_batched_strategy_per_client(node: sy.VirtualMachine) -> None:
+def test_gc_batched_strategy_setter(node: sy.VirtualMachine) -> None:
 
     client = node.get_client()
     client.gc.gc_strategy = GCBatched(threshold=10)
@@ -40,9 +40,25 @@ def test_gc_batched_strategy_per_client(node: sy.VirtualMachine) -> None:
     assert len(node.store) == 0
 
 
+def test_gc_batched_strategy_gc_constructor(node: sy.VirtualMachine) -> None:
+    client = node.get_client()
+    client.gc = GarbageCollection("gcbatched", 5)
+
+    x = torch.tensor([1, 2, 3, 4])
+
+    for _ in range(4):
+        x.send(client, pointable=False)
+
+    assert len(node.store) == 4
+
+    x.send(client, pointable=False)
+
+    assert len(node.store) == 0
+
+
 def test_gc_change_default_gc_strategy(node: sy.VirtualMachine) -> None:
     gc_prev_strategy = gc_get_default_strategy()
-    gc_set_default_strategy(GCBatched())
+    gc_set_default_strategy("gcbatched")
 
     client = node.get_client()
 
