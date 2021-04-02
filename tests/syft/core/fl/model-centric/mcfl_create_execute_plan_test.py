@@ -135,8 +135,8 @@ def test_create_and_execute_plan_mobile(pygrid_domain: Any, plan_type: str) -> N
             "ys": th.nn.functional.one_hot(
                 th.randint(0, classes_num, [bs]), classes_num
             ),
-            "lr": th.tensor([0.1]),
             "batch_size": th.tensor([bs]),
+            "lr": th.tensor([0.1]),
         }
     )
     plan_output_params_idx = [2, 3, 4, 5]
@@ -298,8 +298,8 @@ def create_plan_mobile() -> Any:
     def training_plan(  # type: ignore
         xs=th.randn(bs, 28 * 28),
         ys=th.nn.functional.one_hot(th.randint(0, classes_num, [bs]), classes_num),
-        lr=th.tensor([0.1]),
         batch_size=th.tensor([bs]),
+        lr=th.tensor([0.1]),
         params=model_params_zeros,
     ):
         # send the model to plan builder (but not its default params)
