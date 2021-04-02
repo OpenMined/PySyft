@@ -10,7 +10,7 @@ pytest
 pytest-xprocess
 requests_toolbelt
 scipy
-sqlalchemy>=1.3,<1.4
+sqlalchemy>=1.4
 sqlalchemy_mixins
 sqlalchemy_utils
 tenseal
