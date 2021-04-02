@@ -1,15 +1,15 @@
 # third party
 import requests
 
-# syft absolute
-from syft import serialize
-from syft.core.common.message import SignedEventualSyftMessageWithoutReply
-from syft.core.common.message import SignedImmediateSyftMessageWithReply
-from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
-from syft.core.common.message import SyftMessage
-from syft.core.common.serde.deserialize import _deserialize
-from syft.core.io.connection import ClientConnection
-from syft.proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
+# syft relative
+from ...core.common.message import SignedEventualSyftMessageWithoutReply
+from ...core.common.message import SignedImmediateSyftMessageWithReply
+from ...core.common.message import SignedImmediateSyftMessageWithoutReply
+from ...core.common.message import SyftMessage
+from ...core.common.serde.deserialize import _deserialize
+from ...core.common.serde.serialize import _serialize
+from ...core.io.connection import ClientConnection
+from ...proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
 
 
 class HTTPConnection(ClientConnection):
@@ -76,9 +76,10 @@ class HTTPConnection(ClientConnection):
         """
 
         # Perform HTTP request using base_url as a root address
+        data_bytes: bytes = _serialize(msg, to_bytes=True)  # type: ignore
         r = requests.post(
             url=self.base_url,
-            data=serialize(msg, to_bytes=True),
+            data=data_bytes,
             headers={"Content-Type": "application/octet-stream"},
         )
 
