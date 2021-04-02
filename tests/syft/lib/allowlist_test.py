@@ -59,7 +59,7 @@ has_cuda = th.cuda.is_available()
 #
 # We then check to see if a explicit configuration is set for the attribute path in
 # allowlist_test.json and if so we use the configuration from there.
-# To keep the custom definitions DRY we use a concept called "profiles" which are just
+# io keep the custom definitions DRY we use a concept called "profiles" which are just
 # a key lookup in the main JSON tree. Many configuration options also support the
 # concept of a key lookup for example you will see lots of "all" which is used to map
 # to a whole pre-defined set of supported data types, or inputs. By utilising this
@@ -104,6 +104,7 @@ def check_skip(
         "data_types": combination[0],
         "tensors": combination[2],
         "inputs": combination[3],
+        "cuda": combination[7],
     }
 
     # we will assume the skip rule applies and try to prove it doesn't by finding a
@@ -281,10 +282,9 @@ for op in BASIC_OPS:
         if "skip" in meta:
             skip += meta["skip"]
 
-        # ignore all rules
         # grab not_available rules
-        # if "not_available" in meta:
-        #    not_available += meta["not_available"]
+        if "not_available" in meta:
+            not_available += meta["not_available"]
 
         if "deterministic" in meta:
             deterministic = meta["deterministic"]
@@ -336,7 +336,7 @@ for op in BASIC_OPS:
             [is_property],
             [return_type],
             [deterministic],
-            [False, True],
+            [False, True],  # cpu,cuda
         )
     )
 
@@ -359,6 +359,15 @@ for op in BASIC_OPS:
 
         # not available are features we cant or wont test because they arent supported
         for na_rule in not_available:
+            # to be compatible with the old rules
+            if "reason" in na_rule:
+                if "no_cpu" == na_rule["reason"]:
+                    na_rule["cuda"] = False
+                elif "no_cuda" == na_rule["reason"]:
+                    na_rule["cuda"] = True
+            elif "cuda" not in na_rule:
+                na_rule["cuda"] = False
+
             if check_skip(
                 combination=list(combination),
                 skip_rule=na_rule,
@@ -366,7 +375,6 @@ for op in BASIC_OPS:
             ):
                 # we use str(combination) so that we can hash the entire combination
                 not_available_combinations.add(str(combination))
-
     for combination in combinations:
         # we need to record the support for this combination, the key will be unique
         # and easy to match multiple entries of the same combination
@@ -374,6 +382,8 @@ for op in BASIC_OPS:
         support_data["tensor_type"] = combination[0]
         support_data["op_name"] = combination[1]
         support_data["cuda"] = combination[7]
+        support_data["inputs"] = combination[3]
+        support_data["tensors"] = combination[2]
 
         # we use str so that we can hash the entire combination with nested lists
         if (
@@ -427,6 +437,8 @@ def test_all_allowlisted_tensor_methods(
     support_data["tensor_type"] = tensor_type
     support_data["op_name"] = op_name
     support_data["cuda"] = cuda
+    support_data["inputs"] = _args
+    support_data["tensors"] = self_tensor
 
     # this is used in bulk error reporting
     debug_data: Dict[str, Any] = {}
@@ -453,63 +465,70 @@ def test_all_allowlisted_tensor_methods(
         requires_grad = False
         if op_name in ["backward", "retain_grad", "grad"]:
             requires_grad = True
-        if len(self_tensor) == 3 and self_tensor[0] == "@torch_method":
-            # for "tensor_sparse" and "tensor_quantize"
-            # third party
-            import torch
+        try:
+            if len(self_tensor) == 3 and self_tensor[0] == "@torch_method":
+                # for "tensor_sparse" and "tensor_quantize"
+                # third party
+                import torch
 
-            method = getattr(torch, self_tensor[1])
+                method = getattr(torch, self_tensor[1])
 
-            def gen_tensor(method, argslist: ListType) -> torch.Tensor:
-                for i in range(len(argslist)):
-                    if (
-                        isinstance(argslist[i], list)
-                        and len(argslist[i]) == 3
-                        and argslist[i][0] == "@torch_method"
-                    ):
-                        argmethod = getattr(torch, argslist[i][1])
-                        arg = gen_tensor(argmethod, *argslist[i][2:])
-                        argslist[i] = arg
-                # for torch.quantize_per_tensor, it has a dtype that is specified directly in allowlist_test.json
-                dt_in_arg = False
-                for i in range(len(argslist)):
-                    if isinstance(argslist[i], str):
-                        dt_in_arg = True
-                        if argslist[i] == "@torch.qint8":
-                            argslist[i] = torch.qint8
-                        elif argslist[i] == "@torch.quint8":
-                            argslist[i] = torch.quint8
-                        elif argslist[i] == "@torch.qint32":
-                            argslist[i] == torch.qint32
-                        else:
-                            raise Exception("unsupported dtype")
-                        break
-                if dt_in_arg:
-                    ten = method(*argslist)
-                else:
-                    ten = method(*argslist, dtype=t_type)
+                def gen_tensor(method, argslist: ListType) -> torch.Tensor:
+                    for i in range(len(argslist)):
+                        if (
+                            isinstance(argslist[i], list)
+                            and len(argslist[i]) == 3
+                            and argslist[i][0] == "@torch_method"
+                        ):
+                            argmethod = getattr(torch, argslist[i][1])
+                            arg = gen_tensor(argmethod, *argslist[i][2:])
+                            argslist[i] = arg
+                    # for torch.quantize_per_tensor, it has a dtype that is specified directly in allowlist_test.json
+                    dt_in_arg = False
+                    for i in range(len(argslist)):
+                        if isinstance(argslist[i], str):
+                            dt_in_arg = True
+                            if argslist[i] == "@torch.qint8":
+                                argslist[i] = torch.qint8
+                            elif argslist[i] == "@torch.quint8":
+                                argslist[i] = torch.quint8
+                            elif argslist[i] == "@torch.qint32":
+                                argslist[i] = torch.qint32
+                            else:
+                                raise Exception("unsupported dtype")
+                            break
+                    if dt_in_arg:
+                        ten = method(*argslist)
+                    else:
+                        ten = method(*argslist, dtype=t_type)
 
-                if cuda:
-                    ten = ten.cuda()
-                return ten
+                    if cuda:
+                        ten = ten.cuda()
+                    return ten
 
-            self_tensor, self_tensor_copy = (
-                gen_tensor(method, self_tensor[2][:]),
-                gen_tensor(method, self_tensor[2][:]),
+                self_tensor, self_tensor_copy = (
+                    gen_tensor(method, self_tensor[2][:]),
+                    gen_tensor(method, self_tensor[2][:]),
+                )
+            else:
+                self_tensor, self_tensor_copy = (
+                    th.tensor(self_tensor, dtype=t_type, requires_grad=requires_grad)
+                    if not cuda
+                    else th.tensor(
+                        self_tensor, dtype=t_type, requires_grad=requires_grad
+                    ).cuda(),
+                    th.tensor(self_tensor, dtype=t_type, requires_grad=requires_grad)
+                    if not cuda
+                    else th.tensor(
+                        self_tensor, dtype=t_type, requires_grad=requires_grad
+                    ).cuda(),
+                )
+        except Exception as e:
+            error = (
+                "Exception in allowlist suite. If this is an expected exception, update"
             )
-        else:
-            self_tensor, self_tensor_copy = (
-                th.tensor(self_tensor, dtype=t_type, requires_grad=requires_grad)
-                if not cuda
-                else th.tensor(
-                    self_tensor, dtype=t_type, requires_grad=requires_grad
-                ).cuda(),
-                th.tensor(self_tensor, dtype=t_type, requires_grad=requires_grad)
-                if not cuda
-                else th.tensor(
-                    self_tensor, dtype=t_type, requires_grad=requires_grad
-                ).cuda(),
-            )
+            error += " the .json file to prevent this test combination."
+            raise Exception(str(e) + "[torch]")
 
         # we dont have .id's by default anymore
         # self_tensor_copy.id = self_tensor.id  # type: ignore
@@ -633,6 +652,12 @@ def test_all_allowlisted_tensor_methods(
 
             debug_data["target_result"] = target_result
             debug_data["target_result_type"] = type(target_result)
+
+            if (
+                isinstance(target_result, object)
+                and "NotImplementedType" == target_result.__class__.__name__
+            ):
+                raise Exception("NotImplementedType")
 
         except Exception as e:
             error = (
