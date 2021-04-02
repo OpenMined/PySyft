@@ -461,24 +461,66 @@ GenerateWrapper(
 
 class ModelExecutor:
     def __init__(self, model: torch.nn.Module):
+        """
+        This class is meant to be used to execute forward computation of a user defined pytorch model.
+        To work with this class, you must define the forward method of your model in the following
+        style:
+        ```python
+        @staticmethod
+        def forward(model, x):
+            x = model.fc1(x)
+            x = model.fc2(x)
+            ...
+            return x
+        ```
+        which is:
+        - a staticmethod
+        - takes two arguments, the first is an instance of your defined model class, and the second is
+        input data
+        - call each child module in a way like `model.fc1(x)`
+        """
         self.model_forward = model.forward
         self.children_names = [k for k, _ in model.named_children()]
 
     def __call__(
         self, model: torch.nn.Module, x: torch.Tensor
     ) -> Union[torch.Tensor, Pointer]:
+        """
+        Call a ModelExecutor object on a user defined model and an input data, will execute the forward
+        computatioin of the model with the data.
+        The passed in model can be a local model, or a pointer to a remote model. The local or remote model
+        must be of the same type/class as the model passed in when this ModelExecutor object is initialized.
+        If a local model is passed in, this method just call the static forward method of the model on the
+        passed in data.
+        If a pointer to a remote model is passed in, this method will first call `set_pointer_attr` method,
+        then call the static forward method of the model on the passed in data.
+        What the `set_pointer_attr` method does is to attach to the pointer to the remote model a new
+        attribute according to each child module the model has. These new attached attributes are also
+        pointers, pointing to each child module of the remote model.
+        """
         if isinstance(model, Pointer):
             for name in self.children_names:
                 ModelExecutor.set_pointer_attr(model, name)
         return self.model_forward(model, x)
 
     @staticmethod
-    def set_pointer_attr(model: torch.nn.Module, attr_name: str) -> None:
-        if not hasattr(model, attr_name):
-            attr_ptr = type(model)(
-                client=model.client,
-                id_at_location=model.id_at_location,
-                object_type=model.object_type,
+    def set_pointer_attr(model_pointer: Pointer, attr_name: str) -> None:
+        """
+        This method attach a new attribute to the passed in model_pointer, which is a pointer pointing to a
+        remote model.
+        The passed in `attr_name` argument should be the name of a child module of the remote model.
+        This method will create a new Pointer object same as the model_pointer, then give it a new attribute
+        called `attribute_name`, which has value as the passed in `attr_name`. The `attribute_name` attribute
+        will allow us to access the child module of the remote model.
+        Then, this new created Pointer object is attached to model_pointer, as a new attribute has a name the
+        same as `attr_name`.
+        After this, we can access the child module of the remote model in a way like `model_pointer.fc1`.
+        """
+        if not hasattr(model_pointer, attr_name):
+            attr_ptr = type(model_pointer)(
+                client=model_pointer.client,
+                id_at_location=model_pointer.id_at_location,
+                object_type=model_pointer.object_type,
             )
-            attr_ptr.attribute_name = attr_name
-            setattr(model, attr_name, attr_ptr)
+            setattr(attr_ptr, "attribute_name", attr_name)
+            setattr(model_pointer, attr_name, attr_ptr)
