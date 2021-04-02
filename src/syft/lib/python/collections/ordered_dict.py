@@ -188,3 +188,7 @@ class OrderedDict(PyOrderedDict, PyPrimitive):
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return OrderedDict_PB
+
+    def upcast(self) -> PyOrderedDict:
+        # recursively upcast
+        return OrderedDict((k, upcast(v)) for k, v in self.items())
