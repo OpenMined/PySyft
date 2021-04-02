@@ -38,9 +38,8 @@ class GCBatched(GCStrategy):
         """Construct the GCBatched Strategy.
 
         Args:
-            threshold_client (int): the threshold after which a message
-                would be sent to a client to delete all the objects
-                that were recorded for them
+            threshold (int): the threshold after which a message
+                would be sent to delete all the objects that were cached
         Return:
             None
         """
@@ -50,10 +49,13 @@ class GCBatched(GCStrategy):
 
     def reap(self, pointer: Pointer) -> None:
         """
-        Send a simple message to delete the remote object.
+        Check if we passed the threshold of objects that we should cache.
+        If yes, then send a message to delete the objects.
+        If no, cache the object id to be deleted when there are more ids
+        collected.
 
         Args:
-            pointer (Pointer): Pointe that should get deleted
+            pointer (Pointer): Pointer to the object that should get deleted
 
         Return:
             None
@@ -75,8 +77,8 @@ class GCBatched(GCStrategy):
         self.client = pointer.client
 
     def __del__(self) -> None:
-        """Send a GarbageCollectBatchedAction to all the clients that are cached such
-        that they delete all the items that should be deleted.
+        """Send a GarbageCollectBatchedAction to the client such that all the
+        objects that are cached to be deleted would be deleted.
         """
         if self.client is None:
             return

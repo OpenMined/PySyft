@@ -16,10 +16,11 @@ class GCSimple(GCStrategy):
 
     def reap(self, pointer: Pointer) -> None:
         """
-        Send a simple message to delete the remote object.
+        Send a message to delete the remote object.
 
         Args:
-            pointer (Pointer): Pointe that should get deleted
+            pointer (Pointer): Pointer that indicates to an object
+                        that should get deleted
 
         Return:
             None
