@@ -1,3 +1,4 @@
+# %load PySyft/scripts/autofix_allowlist_test.py
 # stdlib
 import glob
 import json
@@ -13,6 +14,7 @@ import jsonlines
 import torch
 
 torch_version = torch.__version__
+has_cuda = torch.cuda.is_available()
 # --------------------------------------
 # add exception and it's handler
 # --------------------------------------
@@ -25,64 +27,31 @@ def fix_exception_pattern_1(not_available: list, **kwargs: Any) -> None:
         not_available.append(ele)
 
 
-exception_pattern_2 = re.compile(
-    "convert"
-    + "|implement"
-    + "|support"
-    + "|must be Tensor"
-    + "|gradients"
-    + "|'CPU' backend"
-    + "|xpected"
-    + "|can't be cast to the desired output type"
-    + "|Can only calculate the mean of floating types"
-    + "|input tensor"
+# inappropriate _arg("inputs" in allowlist_test.json)
+exception_pattern_args = re.compile(
+    "argument '\w+.*\(position 1\) must be \w+, not \w+.*\[torch\]"
 )
 
 
-def fix_exception_pattern_2(
-    not_available: list, tensor_type: str, **kwargs: None
+def fix_exception_pattern_args(
+    not_available: list, inputs: Any, **kwargs: None
 ) -> None:
     def get_ele_index() -> int:
-        keys = {"data_types", "lte_version", "gte_version"}
+
+        keys = {"inputs", "lte_version", "gte_version", "reason"}
         i = -1
         for i, ele in enumerate(not_available):
             if (
                 set(ele) == keys
                 and ele["lte_version"] == torch_version
                 and ele["gte_version"] == torch_version
-            ):
-                return i
-        not_available.append(
-            {
-                "data_types": [],
-                "lte_version": torch_version,
-                "gte_version": torch_version,
-            }
-        )
-        return i + 1
-
-    i = get_ele_index()
-    if tensor_type not in not_available[i]["data_types"]:
-        not_available[i]["data_types"].append(tensor_type)
-
-
-exception_pattern_3 = re.compile("argument")
-
-
-def fix_exception_pattern_3(not_available: list, inputs: Any, **kwargs: None) -> None:
-    def get_ele_index() -> int:
-        keys = {"inputs", "lte_version", "gte_version"}
-        i = -1
-        for i, ele in enumerate(not_available):
-            if (
-                set(ele) == keys
-                and ele["lte_version"] == torch_version
-                and ele["gte_version"] == torch_version
+                and ele["reason"] == "bad_input"
             ):
                 return i
         not_available.append(
             {
                 "inputs": [],
+                "reason": "bad_input",
                 "lte_version": torch_version,
                 "gte_version": torch_version,
             }
@@ -94,11 +63,83 @@ def fix_exception_pattern_3(not_available: list, inputs: Any, **kwargs: None) ->
         not_available[i]["inputs"].append(inputs)
 
 
+# exceptions thrown by torch, tagged by allowlist_test.py as "[torch]"
+exception_pattern_2 = re.compile("\[torch\]")
+
+
+def fix_exception_pattern_2(
+    not_available: list, tensor_type: str, inputs: Any, cuda: bool, **kwargs: None
+) -> None:
+    def get_ele_index() -> int:
+        keys = {"data_types", "lte_version", "gte_version", "cuda"}
+        i = -1
+        for i, ele in enumerate(not_available):
+            if (
+                set(ele) == keys
+                and ele["lte_version"] == torch_version
+                and ele["gte_version"] == torch_version
+                and ele["cuda"] == cuda
+            ):
+                return i
+        not_available.append(
+            {
+                "data_types": [],
+                "cuda": cuda,
+                "lte_version": torch_version,
+                "gte_version": torch_version,
+            }
+        )
+        return i + 1
+
+    i = get_ele_index()
+    if tensor_type not in not_available[i]["data_types"]:
+        not_available[i]["data_types"].append(tensor_type)
+
+
+# exceptions thrown by syft
+# if something new that's not mentioned here happens, "A failure can't be handled..." appears
+exception_pattern_syft = re.compile(
+    "reshape is not implemented for sparse tensors"
+    + "|aten::empty_strided"
+    + "|If you are using DistributedDataParallel \(DDP\) for training"
+)
+
+
+def fix_exception_pattern_syft(
+    not_available: list, inputs: Any, cuda: bool, **kwargs: None
+) -> None:
+    def get_ele_index() -> int:
+        keys = {"lte_version", "gte_version", "cuda", "reason"}
+        i = -1
+        for i, ele in enumerate(not_available):
+            if (
+                set(ele) == keys
+                and ele["lte_version"] == torch_version
+                and ele["gte_version"] == torch_version
+                and ele["cuda"] == cuda
+                and ele["reason"] == "not_supported_syft"
+            ):
+                return i
+        not_available.append(
+            {
+                "cuda": cuda,
+                "reason": "not_supported_syft",
+                "lte_version": torch_version,
+                "gte_version": torch_version,
+            }
+        )
+        return i + 1
+
+    i = get_ele_index()
+    # if inputs not in not_available[i]["inputs"]:
+    #    not_available[i]["inputs"].append(inputs)
+
+
 exception_fix = []
 exception_fix.append((exception_pattern_1, fix_exception_pattern_1))
+exception_fix.append((exception_pattern_args, fix_exception_pattern_args))  # type: ignore
 exception_fix.append((exception_pattern_2, fix_exception_pattern_2))  # type: ignore
-exception_fix.append((exception_pattern_3, fix_exception_pattern_3))  # type: ignore
-
+exception_fix.append((exception_pattern_syft, fix_exception_pattern_syft))
 
 # ------------------------------
 # some helper function
@@ -123,6 +164,56 @@ shutil.copyfile(
     f"{root_dir}/tests/syft/lib/allowlist_test.json.bak",
 )
 
+# temporarily clean up the "skip" and "not_available" rule,
+with open(f"{root_dir}/tests/syft/lib/allowlist_test.json", "r") as f:
+    allowlist_test = json.load(f)
+skip_no_cuda_exists = False
+for op in allowlist_test["tests"]["torch.Tensor"].keys():
+    if "skip" in allowlist_test["tests"]["torch.Tensor"][op]:
+        for s in allowlist_test["tests"]["torch.Tensor"][op]["skip"]:
+            # just reminds users that it has not been tested under CUDA
+            if s["reason"] == "skip_no_cuda":
+                skip_no_cuda_exists = True
+                if has_cuda:
+                    allowlist_test["tests"]["torch.Tensor"][op]["skip"].remove(s)
+
+            elif s["reason"] != "untested":
+                # "input_quant" etc.
+                allowlist_test["tests"]["torch.Tensor"][op]["skip"].remove(s)
+
+            else:
+                print(allowlist_test["tests"]["torch.Tensor"][op]["skip"])
+                # os.exit()
+
+    else:
+        allowlist_test["tests"]["torch.Tensor"][op]["skip"] = []
+
+    if not skip_no_cuda_exists and not has_cuda:
+        allowlist_test["tests"]["torch.Tensor"][op]["skip"] += [
+            {
+                "lte_version": torch_version,
+                "gte_version": torch_version,
+                "reason": "skip_no_cuda",
+            }
+        ]
+
+    if "not_available" in allowlist_test["tests"]["torch.Tensor"][op]:
+        for s in allowlist_test["tests"]["torch.Tensor"][op]["not_available"]:
+            # keep "added_feature" "deprecated", remove the rest
+            if "reason" in s and s["reason"] in ["added_feature", "deprecated"]:
+                continue
+            # these are test results for non-current torch versions.
+            if (
+                "lte_version" in s
+                and "gte_version" in s
+                and s["lte_version"] != torch_version
+            ):
+                continue
+            allowlist_test["tests"]["torch.Tensor"][op]["not_available"].remove(s)
+    # print(op, allowlist_test['tests']['torch.Tensor'][op])
+
+with open(f"{root_dir}/tests/syft/lib/allowlist_test.json", "w") as f:
+    json.dump(allowlist_test, f, indent=2)
 
 # -------------------------------
 # loop:
@@ -139,6 +230,7 @@ while continue_loop:
     # run slow test
     print("Running slow test ...This may take a while.")
     os.system("pytest -m torch -n auto -p no:benchmark")
+    os.system("pytest -m torch -p no:benchmark")
     print("Slow test done.")
     print()
 
@@ -211,6 +303,7 @@ while continue_loop:
             tensor_type = err["input"]["tensor_type"]
             inputs = err["input"]["_args"]
             exception = err["exception"]
+            cuda = err["input"]["cuda"]
 
             # get the not_available list for this operator
             not_available = []
@@ -227,6 +320,7 @@ while continue_loop:
                         not_available=not_available,
                         tensor_type=tensor_type,
                         inputs=inputs,
+                        cuda=cuda,
                     )
                     matched = True
             # we suppose to handle all kinds of error, if there is an error we don't handle, raise an exception
