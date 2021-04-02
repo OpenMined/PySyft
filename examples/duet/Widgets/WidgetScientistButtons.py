@@ -100,15 +100,6 @@ def support_openmined(b):
     with dashboardDuetLogger:
         print(sy.grid.duet.generate_donation_msg(name="Openmined"))
 
-duetJoinButton.on_click(on_join_duet_button)
-duetJoinButtonWithLoopback.on_click(on_join_duet_loopback_button)
-viewDuetStore.on_click(view_store_button)
-viewPeers.on_click(view_peers)
-supportOpenMinedButton.on_click(support_openmined)
-
-dashboardDuetLogger = widgets.Output(layout={'border': '1px solid black'})
-storeLogger = widgets.Output(layout={'border': '1px solid black'})
-
 line1 = widgets.HBox([duetJoinButton, duetJoinButtonWithLoopback, viewPeers])
 line2 = widgets.HBox([viewDuetStore, disconnectDuetButton, supportOpenMinedButton])
 dashboard = widgets.VBox([line1,line2])

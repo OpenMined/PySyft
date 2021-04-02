@@ -48,18 +48,5 @@ dashboardDuetLogger = widgets.Output(
     }
 )
 
-def on_launch_duet_button(b):
-    dashboardDuetLogger.clear_output()
-    with dashboardDuetLogger :
-        DUET = sy.launch_duet()
-
-def on_launch_duet_button_loopback(b):
-    dashboardDuetLogger.clear_output()
-    with dashboardDuetLogger:
-        DUET = sy.launch_duet(loopback=True)
-
-duetLaunchButton.on_click(on_launch_duet_button)
-duetLaunchButtonLoopback.on_click(on_launch_duet_button_loopback)
-
 dashboardLogger = widgets.Output(layout={'border': '1px solid black' , 'display' : 'flex' , 'flex_flow' : 'column' , 'align_items' : 'stretch' })
 dashboard = widgets.HBox([duetLaunchButton, duetLaunchButtonLoopback, viewPeers])
