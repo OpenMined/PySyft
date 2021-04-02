@@ -20,7 +20,7 @@ TORCHVISION_VERSION = version.parse(tv.__version__)
 
 @pytest.fixture(scope="function")
 def pil_img() -> PIL.Image.Image:
-    img_file = "../../../../docs/img/logo.png"
+    img_file = "logo.png"
     if path.isfile(img_file):
         return PIL.Image.open(img_file).convert("RGB")
     else:
