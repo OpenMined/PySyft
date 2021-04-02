@@ -3,7 +3,7 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.core.common.messages import AbstractMessage
+from syft.core.common.message import AbstractMessage
 from syft.core.io.address import Address
 from syft.grid.messages import association_messages
 from syft.grid.messages import dataset_messages
