@@ -3,6 +3,7 @@ import pytest
 
 # syft absolute
 import syft as sy
+from syft.core.common.messages import AbstractMessage
 from syft.core.io.address import Address
 from syft.grid.messages import association_messages
 from syft.grid.messages import dataset_messages
@@ -512,7 +513,7 @@ def test_message(message_name: str, node: sy.VirtualMachine) -> None:
     message_integrity_test(msg, target)
 
 
-def message_integrity_test(msg: sy.Serializable, target: Address) -> None:
+def message_integrity_test(msg: AbstractMessage, target: Address) -> None:
     blob = sy.serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 
