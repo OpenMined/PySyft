@@ -43,7 +43,10 @@ def test_resolve_any_pointer_type(
     for idx, elem in enumerate(inputs):
         remote_pointer = tuple_ptr[idx]
 
-        assert type(remote_pointer).__name__ == "AnyPointer"
+        assert (
+            type(remote_pointer).__name__
+            == "BoolComplexDictFloatIntPyPrimitiveStringTuple_SyNoneUnionPointer"
+        )
         resolved_pointer = remote_pointer.resolve_pointer_type()
         assert remote_pointer.id_at_location == resolved_pointer.id_at_location
         assert type(resolved_pointer).__name__ == input_pointer_types[idx]

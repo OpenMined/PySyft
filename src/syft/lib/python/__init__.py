@@ -41,6 +41,18 @@ for syft_type in [
 ]:
     syft_type.__module__ = __name__
 
+generic_syft_type_union = UnionGenerator[
+    "syft.lib.python.Bool",
+    "syft.lib.python.Complex",
+    "syft.lib.python.Dict",
+    "syft.lib.python.Float",
+    "syft.lib.python.Int",
+    "syft.lib.python._SyNone",
+    "syft.lib.python.PyPrimitive",
+    "syft.lib.python.String",
+    "syft.lib.python.Tuple",
+]
+
 
 def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
     ast = Globals(client)
@@ -93,7 +105,7 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ),
         # List methods - quite there
         ("syft.lib.python.List.__len__", "syft.lib.python.Int"),
-        ("syft.lib.python.List.__getitem__", "syft.lib.python.Any"),
+        ("syft.lib.python.List.__getitem__", generic_syft_type_union),
         ("syft.lib.python.List.__iter__", "syft.lib.python.Iterator"),
         ("syft.lib.python.List.__add__", "syft.lib.python.List"),
         ("syft.lib.python.List.append", "syft.lib.python._SyNone"),
@@ -119,8 +131,8 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.lib.python.List.sort", "syft.lib.python._SyNone"),
         ("syft.lib.python.List.reverse", "syft.lib.python._SyNone"),
         ("syft.lib.python.List.remove", "syft.lib.python._SyNone"),
-        ("syft.lib.python.List.pop", "syft.lib.python.Any"),
-        ("syft.lib.python.List.index", "syft.lib.python.Any"),
+        ("syft.lib.python.List.pop", generic_syft_type_union),
+        ("syft.lib.python.List.index", generic_syft_type_union),
         ("syft.lib.python.List.insert", "syft.lib.python._SyNone"),
         ("syft.lib.python.List.clear", "syft.lib.python._SyNone"),
         ("syft.lib.python.List.extend", "syft.lib.python._SyNone"),
@@ -288,7 +300,7 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.lib.python.Dict.__eq__", "syft.lib.python.Bool"),
         ("syft.lib.python.Dict.__format__", "syft.lib.python.String"),
         ("syft.lib.python.Dict.__ge__", "syft.lib.python.Bool"),
-        ("syft.lib.python.Dict.__getitem__", "syft.lib.python.Any"),
+        ("syft.lib.python.Dict.__getitem__", generic_syft_type_union),
         ("syft.lib.python.Dict.__gt__", "syft.lib.python.Bool"),
         ("syft.lib.python.Dict.__iter__", "syft.lib.python.Iterator"),
         ("syft.lib.python.Dict.__le__", "syft.lib.python.Bool"),
@@ -300,12 +312,12 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.lib.python.Dict.copy", "syft.lib.python.Dict"),
         ("syft.lib.python.Dict.fromkeys", "syft.lib.python.Dict"),
         # Rename get to dict_get because of conflict
-        ("syft.lib.python.Dict.dict_get", "syft.lib.python.Any"),
+        ("syft.lib.python.Dict.dict_get", generic_syft_type_union),
         ("syft.lib.python.Dict.items", "syft.lib.python.Iterator"),
         ("syft.lib.python.Dict.keys", "syft.lib.python.Iterator"),
-        ("syft.lib.python.Dict.pop", "syft.lib.python.Any"),
+        ("syft.lib.python.Dict.pop", generic_syft_type_union),
         ("syft.lib.python.Dict.popitem", "syft.lib.python.Tuple"),
-        ("syft.lib.python.Dict.setdefault", "syft.lib.python.Any"),
+        ("syft.lib.python.Dict.setdefault", generic_syft_type_union),
         ("syft.lib.python.Dict.values", "syft.lib.python.Iterator"),
         # Int methods - subject to further change
         ("syft.lib.python.Int.__add__", "syft.lib.python.Int"),
@@ -380,7 +392,7 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.lib.python.Tuple.__mul__", "syft.lib.python.Tuple"),
         ("syft.lib.python.Tuple.__rmul__", "syft.lib.python.Tuple"),
         ("syft.lib.python.Tuple.__len__", "syft.lib.python.Int"),
-        ("syft.lib.python.Tuple.__getitem__", "syft.lib.python.Any"),
+        ("syft.lib.python.Tuple.__getitem__", generic_syft_type_union),
         ("syft.lib.python.Tuple.count", "syft.lib.python.Int"),
         ("syft.lib.python.Tuple.index", "syft.lib.python.Int"),
         ("syft.lib.python.Tuple.__iter__", "syft.lib.python.Iterator"),
@@ -462,7 +474,7 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ),
         (
             "syft.lib.python.collections.OrderedDict.__getitem__",
-            "syft.lib.python.Any",
+            generic_syft_type_union,
         ),
         (
             "syft.lib.python.collections.OrderedDict.__gt__",
@@ -507,11 +519,11 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.lib.python.collections.OrderedDict.move_to_end",
             "syft.lib.python._SyNone",
         ),
-        ("syft.lib.python.collections.OrderedDict.pop", "syft.lib.python.Any"),
-        ("syft.lib.python.collections.OrderedDict.popitem", "syft.lib.python.Any"),
+        ("syft.lib.python.collections.OrderedDict.pop", generic_syft_type_union),
+        ("syft.lib.python.collections.OrderedDict.popitem", generic_syft_type_union),
         (
             "syft.lib.python.collections.OrderedDict.setdefault",
-            "syft.lib.python.Any",
+            generic_syft_type_union,
         ),
         (
             "syft.lib.python.collections.OrderedDict.update",
@@ -524,7 +536,7 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.lib.python.collections.OrderedDict.items", "syft.lib.python.List"),
         (
             "syft.lib.python.collections.OrderedDict.dict_get",
-            "syft.lib.python.Any",
+            generic_syft_type_union,
         ),
     ]
 
