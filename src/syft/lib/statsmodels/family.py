@@ -1,4 +1,5 @@
 # stdlib
+from typing import Dict
 from typing import Type
 
 # third party
@@ -10,7 +11,7 @@ from ...lib.python.primitive_factory import PrimitiveFactory
 from ...lib.python.string import String
 from ...proto.lib.statsmodels.family_pb2 import FamilyProto
 
-FAMILY_2_STR = {
+FAMILY_2_STR: Dict[Type[statsmodels.genmod.families.family.Family], str] = {
     statsmodels.genmod.families.family.Binomial: "Binomial",
     statsmodels.genmod.families.family.Gamma: "Gamma",
     statsmodels.genmod.families.family.Gaussian: "Gaussian",
@@ -19,7 +20,7 @@ FAMILY_2_STR = {
     statsmodels.genmod.families.family.Poisson: "Poisson",
     statsmodels.genmod.families.family.Tweedie: "Tweedie",
 }
-LINK_2_STR = {
+LINK_2_STR: Dict[Type[statsmodels.genmod.families.family.Family], str] = {
     statsmodels.genmod.families.links.log: "log",
     statsmodels.genmod.families.links.logit: "logit",
     statsmodels.genmod.families.links.cauchy: "cauchy",
@@ -31,8 +32,12 @@ LINK_2_STR = {
     statsmodels.genmod.families.links.probit: "probit",
 }
 
-STR_2_FAMILY = {v: k for k, v in FAMILY_2_STR.items()}
-STR_2_LINK = {v: k for k, v in LINK_2_STR.items()}
+STR_2_FAMILY: Dict[str, Type[statsmodels.genmod.families.family.Family]] = {
+    v: k for k, v in FAMILY_2_STR.items()
+}
+STR_2_LINK: Dict[str, Type[statsmodels.genmod.families.family.Family]] = {
+    v: k for k, v in LINK_2_STR.items()
+}
 
 
 def object2proto(obj: Type[statsmodels.genmod.families.family.Family]) -> FamilyProto:
@@ -47,8 +52,8 @@ def object2proto(obj: Type[statsmodels.genmod.families.family.Family]) -> Family
 
 
 def proto2object(proto: FamilyProto) -> Type[statsmodels.genmod.families.family.Family]:
-    family_name = String._proto2object(proto=proto.family)
-    link_name = String._proto2object(proto=proto.link)
+    family_name = str(String._proto2object(proto=proto.family))
+    link_name = str(String._proto2object(proto=proto.link))
     obj = STR_2_FAMILY[family_name](link=STR_2_LINK[link_name])
     return obj
 
