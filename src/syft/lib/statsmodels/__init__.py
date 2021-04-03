@@ -15,7 +15,6 @@ from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
-from ..misc.union import UnionGenerator
 from ..util import generic_update_ast
 
 LIB_NAME = "statsmodels"
