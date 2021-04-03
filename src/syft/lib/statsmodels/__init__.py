@@ -97,10 +97,7 @@ def create_ast(client: TypeAny = None) -> Globals:
     ]
 
     methods = [
-        (
-            "statsmodels.api.add_constant",
-            "pandas.DataFrame"
-        ),
+        ("statsmodels.api.add_constant", "pandas.DataFrame"),
         (
             "statsmodels.genmod.generalized_linear_model.GLM.fit",
             "statsmodels.genmod.generalized_linear_model.GLMResultsWrapper",
@@ -111,11 +108,11 @@ def create_ast(client: TypeAny = None) -> Globals:
         ),
         (
             "statsmodels.genmod.generalized_linear_model.GLMResultsWrapper.cov_params",
-            "pandas.DataFrame"
+            "pandas.DataFrame",
         ),
         (
             "statsmodels.genmod.generalized_linear_model.GLMResultsWrapper.conf_int",
-            "pandas.DataFrame"
+            "pandas.DataFrame",
         ),
         ("statsmodels.iolib.summary.Summary.as_csv", "syft.lib.python.String"),
         ("statsmodels.iolib.summary.Summary.as_html", "syft.lib.python.String"),
