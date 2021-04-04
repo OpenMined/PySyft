@@ -147,6 +147,14 @@ class List(UserList, PyPrimitive):
         res = super().count(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
+    def pop(self, key: Optional[int] = -1) -> SyPrimitiveRet:
+        res = super().pop(-1)
+        return PrimitiveFactory.generate_primitive(value=res)
+
+    def index(self, item: Any, *args: Any) -> SyPrimitiveRet:
+        res = super().index(item, *args)
+        return PrimitiveFactory.generate_primitive(value=res)
+
     def _object2proto(self) -> List_PB:
         id_ = serialize(obj=self.id)
         downcasted = [downcast(value=element) for element in self.data]
