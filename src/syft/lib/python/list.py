@@ -147,8 +147,11 @@ class List(UserList, PyPrimitive):
         res = super().count(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def pop(self, key: Optional[int] = -1) -> SyPrimitiveRet:
-        res = super().pop(-1)
+    def pop(self, key: Optional[int] = None) -> SyPrimitiveRet:
+        if key:
+            res = super().pop(key)
+        else:
+            res = super().pop()
         return PrimitiveFactory.generate_primitive(value=res)
 
     def index(self, item: Any, *args: Any) -> SyPrimitiveRet:
