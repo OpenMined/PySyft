@@ -69,9 +69,6 @@ class Slice(PyPrimitive):
         res = self.value.__ne__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def __repr__(self) -> str:
-        return self.value.__repr__()
-
     def __str__(self) -> str:
         return self.value.__str__()
 
