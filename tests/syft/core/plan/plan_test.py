@@ -36,14 +36,12 @@ from syft.core.store.storeable_object import StorableObject
 from syft.lib.python.list import List
 
 
-def test_plan_serialization() -> None:
+def test_plan_serialization(client: sy.VirtualMachineClient) -> None:
 
     # cumbersome way to get a pointer as input for our actions,
     # there is probably a better/shorter way
-    alice = sy.VirtualMachine(name="alice")
-    alice_client = alice.get_client()
     t = th.tensor([1, 2, 3])
-    tensor_pointer = t.send(alice_client)
+    tensor_pointer = t.send(client)
 
     # define actions
     a1 = GetObjectAction(
@@ -100,16 +98,13 @@ def test_plan_serialization() -> None:
     assert all(isinstance(a, Action) for a in plan_reconstructed.actions)
 
 
-def test_plan_execution() -> None:
-    alice = sy.VirtualMachine(name="alice")
-    alice_client = alice.get_client()
+def test_plan_execution(client: sy.VirtualMachineClient) -> None:
+    tensor_pointer1 = th.tensor([1, 2, 3]).send(client)
+    tensor_pointer2 = th.tensor([4, 5, 6]).send(client)
+    tensor_pointer3 = th.tensor([7, 8, 9]).send(client)
 
-    tensor_pointer1 = th.tensor([1, 2, 3]).send(alice_client)
-    tensor_pointer2 = th.tensor([4, 5, 6]).send(alice_client)
-    tensor_pointer3 = th.tensor([7, 8, 9]).send(alice_client)
-
-    result_tensor_pointer1 = th.tensor([0, 0, 0]).send(alice_client)
-    result_tensor_pointer2 = th.tensor([0, 0, 0]).send(alice_client)
+    result_tensor_pointer1 = th.tensor([0, 0, 0]).send(client)
+    result_tensor_pointer2 = th.tensor([0, 0, 0]).send(client)
 
     result1_uid = result_tensor_pointer1.id_at_location
     result2_uid = result_tensor_pointer2.id_at_location
@@ -136,7 +131,7 @@ def test_plan_execution() -> None:
 
     plan = Plan([a1, a2])
 
-    plan_pointer = plan.send(alice_client)
+    plan_pointer = plan.send(client)
 
     plan_pointer()
 
@@ -147,22 +142,19 @@ def test_plan_execution() -> None:
     assert all(expected_tensor2 == result_tensor_pointer2.get())
 
 
-def test_plan_batched_execution() -> None:
-    alice = sy.VirtualMachine(name="alice")
-    alice_client = alice.get_client()
-
+def test_plan_batched_execution(client: sy.VirtualMachineClient) -> None:
     # placeholders for our input
-    input_tensor_pointer1 = th.tensor([0, 0]).send(alice_client)
-    input_tensor_pointer2 = th.tensor([0, 0]).send(alice_client)
+    input_tensor_pointer1 = th.tensor([0, 0]).send(client)
+    input_tensor_pointer2 = th.tensor([0, 0]).send(client)
 
     # tensors in our model
-    model_tensor_pointer1 = th.tensor([1, 2]).send(alice_client)
-    model_tensor_pointer2 = th.tensor([3, 4]).send(alice_client)
+    model_tensor_pointer1 = th.tensor([1, 2]).send(client)
+    model_tensor_pointer2 = th.tensor([3, 4]).send(client)
 
     # placeholders for intermediate results
-    result_tensor_pointer1 = th.tensor([0, 0]).send(alice_client)
-    result_tensor_pointer2 = th.tensor([0, 0]).send(alice_client)
-    result_tensor_pointer3 = th.tensor([0, 0]).send(alice_client)
+    result_tensor_pointer1 = th.tensor([0, 0]).send(client)
+    result_tensor_pointer2 = th.tensor([0, 0]).send(client)
+    result_tensor_pointer3 = th.tensor([0, 0]).send(client)
 
     # define plan
     a1 = RunClassMethodAction(
@@ -197,15 +189,13 @@ def test_plan_batched_execution() -> None:
     plan = Plan(
         [a1, a2, a3], inputs={"x": input_tensor_pointer1, "y": input_tensor_pointer2}
     )
-    plan_pointer = plan.send(alice_client)
+    plan_pointer = plan.send(client)
 
     # Test
     # x is random input, y is the expected model(x)
-    x_batches = [(th.tensor([1, 1]) + i).send(alice_client) for i in range(2)]
+    x_batches = [(th.tensor([1, 1]) + i).send(client) for i in range(2)]
     y_batches = [
-        ((th.tensor([1, 1]) + i) * th.tensor([1, 2]) + th.tensor([3, 4])).send(
-            alice_client
-        )
+        ((th.tensor([1, 1]) + i) * th.tensor([1, 2]) + th.tensor([3, 4])).send(client)
         for i in range(2)
     ]
 
@@ -216,26 +206,20 @@ def test_plan_batched_execution() -> None:
         assert all(result_tensor_pointer3.get(delete_obj=False))
 
 
-def test_make_plan() -> None:
-    alice = sy.VirtualMachine(name="alice")
-    alice_client = alice.get_root_client()
-
+def test_make_plan(client: sy.VirtualMachineClient) -> None:
     @make_plan
     def add_plan(inp=th.zeros((3))) -> th.Tensor:  # type: ignore
         return inp + inp
 
     input_tensor = th.tensor([1, 2, 3])
-    plan_pointer = add_plan.send(alice_client)
+    plan_pointer = add_plan.send(client)
     res = plan_pointer(inp=input_tensor)
     assert th.equal(res.get()[0], th.tensor([2, 4, 6]))
 
 
 @pytest.mark.xfail
-def test_plan_deterministic_bytes() -> None:
+def test_plan_deterministic_bytes(root_client: sy.VirtualMachineClient) -> None:
     # TODO: https://github.com/OpenMined/PySyft/issues/5292
-    alice = sy.VirtualMachine(name="alice")
-    alice_client = alice.get_root_client()
-
     @make_plan
     def add_plan(inp=th.zeros((3))) -> th.Tensor:  # type: ignore
         return inp + inp
@@ -244,8 +228,8 @@ def test_plan_deterministic_bytes() -> None:
     def add_plan2(inp=th.zeros((3))) -> th.Tensor:  # type: ignore
         return inp + inp
 
-    plan_pointer = add_plan.send(alice_client)
-    plan2_pointer = add_plan2.send(alice_client)
+    plan_pointer = add_plan.send(root_client)
+    plan2_pointer = add_plan2.send(root_client)
 
     plan1 = serialize(plan_pointer, to_bytes=True)
     plan2 = serialize(plan2_pointer, to_bytes=True)
@@ -253,16 +237,13 @@ def test_plan_deterministic_bytes() -> None:
     assert plan1 == plan2
 
 
-def test_make_plan2() -> None:
-    alice = sy.VirtualMachine(name="alice")
-    alice_client = alice.get_root_client()
-
+def test_make_plan2(root_client: sy.VirtualMachineClient) -> None:
     @make_plan
     def mul_plan(inp=th.zeros((3)), inp2=th.zeros((3))) -> th.Tensor:  # type: ignore
         return inp * inp2
 
     t1, t2 = th.tensor([1, 2, 3]), th.tensor([1, 2, 3])
-    plan_pointer = mul_plan.send(alice_client)
+    plan_pointer = mul_plan.send(root_client)
     res = plan_pointer(inp=t1, inp2=t2)
     assert th.equal(res.get()[0], th.tensor([1, 4, 9]))
 
@@ -282,7 +263,7 @@ def test_make_plan_error_no_kwargs() -> None:
     assertRaises(ValueError, test_define_plan, "__call__")
 
 
-def test_mlp_plan() -> None:
+def test_mlp_plan(client: sy.VirtualMachineClient) -> None:
     class MLP(sy.Module):
         def __init__(self, torch_ref):  # type: ignore
             super().__init__(torch_ref=torch_ref)
@@ -334,8 +315,7 @@ def test_mlp_plan() -> None:
 
         return model.parameters()
 
-    alice_client = sy.VirtualMachine(name="alice").get_client()
-    train_ptr = train.send(alice_client)
+    train_ptr = train.send(client)
 
     old_params = local_model.parameters().copy()
 

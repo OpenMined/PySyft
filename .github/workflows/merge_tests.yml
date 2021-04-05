@@ -70,15 +70,15 @@ jobs:
 
       - name: Install PyTorch
         run: |
-          pip install packaging
+          pip install packaging --default-timeout=60
           python scripts/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
           cat ./requirements.torch.txt
-          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html
+          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html --default-timeout=60
 
       - name: Install packages
         run: |
-          pip install -r requirements.dev.txt
-          pip install -e .
+          pip install -r requirements.dev.txt --default-timeout=60
+          pip install -e . --default-timeout=60
 
       - name: Run torch tests
         run: |

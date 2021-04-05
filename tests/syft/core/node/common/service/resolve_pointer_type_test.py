@@ -13,11 +13,6 @@ import syft as sy
 
 
 @pytest.fixture()
-def client() -> sy.VirtualMachineClient:
-    return sy.VirtualMachine().get_root_client()
-
-
-@pytest.fixture()
 def inputs() -> Tuple[int, float, bool, torch.Tensor]:
     return (1, 1.5, True, torch.Tensor([1, 2, 3]))
 
@@ -33,12 +28,12 @@ def equality_functions() -> List[Callable]:
 
 
 def test_resolve_any_pointer_type(
-    client: sy.VirtualMachineClient,
+    root_client: sy.VirtualMachineClient,
     inputs: Tuple[int, float, bool, torch.Tensor],
     input_pointer_types: Tuple[str, str, str, str],
     equality_functions: List[Callable],
 ) -> None:
-    tuple_ptr = client.syft.lib.python.Tuple(inputs)
+    tuple_ptr = root_client.syft.lib.python.Tuple(inputs)
 
     for idx, elem in enumerate(inputs):
         remote_pointer = tuple_ptr[idx]
@@ -54,12 +49,12 @@ def test_resolve_any_pointer_type(
 
 
 def test_resolve_union_pointer_type(
-    client: sy.VirtualMachineClient,
+    root_client: sy.VirtualMachineClient,
     inputs: Tuple[int, float, bool, torch.Tensor],
     input_pointer_types: Tuple[str, str, str, str],
     equality_functions: List[Callable],
 ) -> None:
-    list_ptr = client.syft.lib.python.List(list(inputs))
+    list_ptr = root_client.syft.lib.python.List(list(inputs))
 
     for idx, remote_pointer in enumerate(list_ptr):
         assert (

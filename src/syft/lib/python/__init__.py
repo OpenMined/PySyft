@@ -90,7 +90,6 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.lib.python.Slice.__le__", "syft.lib.python.Bool"),
         ("syft.lib.python.Slice.__lt__", "syft.lib.python.Bool"),
         ("syft.lib.python.Slice.__ne__", "syft.lib.python.Bool"),
-        ("syft.lib.python.Slice.__repr__", "syft.lib.python.String"),
         ("syft.lib.python.Slice.__str__", "syft.lib.python.String"),
         ("syft.lib.python.Slice.indices", "syft.lib.python.Tuple"),
         (

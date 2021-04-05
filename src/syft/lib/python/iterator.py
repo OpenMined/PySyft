@@ -115,3 +115,6 @@ class Iterator(PyPrimitive):
             return obj
         except Exception as e:
             raise e
+
+    def upcast(self) -> Any:
+        return iter(self._obj_ref)
