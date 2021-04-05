@@ -592,3 +592,5 @@ class Pointer(AbstractPointer):
 
             # Send the message
             self.client.send_eventual_msg_without_reply(msg=msg)
+
+    #Methods of klass.py are listed here (Pointer related)
