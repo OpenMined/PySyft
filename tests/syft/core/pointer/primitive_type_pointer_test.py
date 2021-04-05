@@ -1,6 +1,7 @@
 # stdlib
 from collections import OrderedDict
 from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import List
 
@@ -359,31 +360,31 @@ test_dict: Dict[str, Dict[str, Any]] = {
         "objects": [lambda: ([41, 15, 3, 80],), lambda: (list(range(2 ** 5)),)],
     },
 }
-parameters = []
-for py_type in test_dict.keys():
+parameters_pointer_objectives = []
+for py_type in test_dict:
     if py_type in ["list"]:
-        parameters += [
+        parameters_pointer_objectives += [
             # test_object in list are lambda func
             [py_type, test_object_fn(), func]
             for test_object_fn in test_dict[py_type]["objects"]
-            for func in test_dict[py_type]["inputs"].keys()
+            for func in test_dict[py_type]["inputs"]
         ]
     else:
-        parameters += [
+        parameters_pointer_objectives += [
             [py_type, test_object, func]
             for test_object in test_dict[py_type]["objects"]
-            for func in test_dict[py_type]["inputs"].keys()
+            for func in test_dict[py_type]["inputs"]
         ]
 
 
-@pytest.mark.parametrize("py_type,test_object,func", parameters)
+@pytest.mark.parametrize("py_type,test_object,func", parameters_pointer_objectives)
 def test_pointer_objectives(
     py_type: str,
     test_object: Any,
     func: str,
     node: sy.VirtualMachine,
     client: sy.VirtualMachineClient,
-):
+) -> None:
     py_construct, sy_construct, remote_sy_construct_fn = test_dict[py_type]["construct"]
     remote_sy_construct = remote_sy_construct_fn(client)
 
@@ -443,28 +444,31 @@ def test_pointer_objectives(
             assert sy_res == remote_sy_res
 
 
-parameters_properties = []
-for py_type in test_dict.keys():
-    if "properties" in test_dict[py_type].keys():
-        parameters_properties += [
+parameters_pointer_properties = []
+for py_type in test_dict:
+    if "properties" in test_dict[py_type]:
+        parameters_pointer_properties += [
             [py_type, test_object, property]
             for test_object in test_dict[py_type]["objects"]
             for property in test_dict[py_type]["properties"]
         ]
 
 
-@pytest.mark.parametrize("py_type,test_object,property", parameters_properties)
+@pytest.mark.slow
+@pytest.mark.parametrize("py_type,test_object,property", parameters_pointer_properties)
 def test_pointer_properties(
     py_type: str,
     test_object: Any,
     property: str,
     node: sy.VirtualMachine,
     client: sy.VirtualMachineClient,
-):
+) -> None:
+    py_construct, sy_construct, remote_sy_construct_fn = test_dict[py_type]["construct"]
+    remote_sy_construct = remote_sy_construct_fn(client)
     py_obj, sy_obj, remote_sy_obj = (
-        test_object,
-        sy.lib.python.Int(test_object),
-        client.syft.lib.python.Int(test_object),
+        py_construct(test_object),
+        sy_construct(test_object),
+        remote_sy_construct(test_object),
     )
 
     try:
@@ -495,7 +499,9 @@ def test_pointer_properties(
 
 @pytest.mark.slow
 @pytest.mark.parametrize("test_object_fn", test_dict["list"]["objects"])
-def test_iterator(test_object_fn, client: sy.VirtualMachineClient):
+def test_iterator(
+    test_object_fn: Callable[[], List[int]], client: sy.VirtualMachineClient
+) -> None:
     py_obj = test_object_fn()
     sy_obj, remote_sy_obj = sy.lib.python.List(py_obj), client.syft.lib.python.List(
         py_obj
@@ -518,7 +524,9 @@ def test_iterator(test_object_fn, client: sy.VirtualMachineClient):
 
 @pytest.mark.slow
 @pytest.mark.parametrize("test_object_fn", test_dict["list"]["objects"])
-def test_reversed_iterator(test_object_fn, client):
+def test_reversed_iterator(
+    test_object_fn: Callable[[], List[int]], client: sy.VirtualMachineClient
+) -> None:
     py_obj = test_object_fn()
     sy_obj, remote_sy_obj = sy.lib.python.List(py_obj), client.syft.lib.python.List(
         py_obj
