@@ -9,8 +9,8 @@ from packaging import version
 import pandas as pd
 
 # syft relative
-from . import categories  # noqa: 401
-from . import categories_dtype  # noqa: 401
+from . import categorical  # noqa: 401
+from . import categorical_dtype  # noqa: 401
 from . import frame  # noqa: 401
 from . import series  # noqa: 401
 from ...ast import add_classes
