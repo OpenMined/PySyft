@@ -377,6 +377,7 @@ for py_type in test_dict:
         ]
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("py_type,test_object,func", parameters_pointer_objectives)
 def test_pointer_objectives(
     py_type: str,
@@ -454,7 +455,6 @@ for py_type in test_dict:
         ]
 
 
-@pytest.mark.slow
 @pytest.mark.parametrize("py_type,test_object,property", parameters_pointer_properties)
 def test_pointer_properties(
     py_type: str,
