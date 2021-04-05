@@ -13,6 +13,7 @@ dist/
 syft.egg-info/
 *.swp
 *.swo
+*.pt
 *.ipynb_checkpoints*
 venv/
 **.pytest_cache/
