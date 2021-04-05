@@ -89,6 +89,7 @@ import time
 from typing import Any
 from typing import List
 from typing import Optional
+from typing import Callable as CallableT
 import warnings
 
 # third party
@@ -637,4 +638,69 @@ class Pointer(AbstractPointer):
 
         return new_pointer
 
-    
+    def get_run_class_method(attr_path_and_name: str) -> CallableT:
+        """
+        It might seem hugely un-necessary to have these methods nested in this way.
+        However, it has to do with ensuring that the scope of `attr_path_and_name` is local
+        and not global.
+
+        If we do not put a `get_run_class_method` around `run_class_method` then
+        each `run_class_method` will end up referencing the same `attr_path_and_name` variable
+        and all methods will actually end up calling the same method.
+
+        If, instead, we return the function object itself then it includes
+        the current `attr_path_and_name` as an internal variable and when we call `get_run_class_method`
+        multiple times it returns genuinely different methods each time with a different
+        internal `attr_path_and_name` variable.
+        """
+
+        def run_class_method(
+            __self: Any,
+            *args: Tuple[Any, ...],
+            **kwargs: Any,
+        ) -> object:
+            # we want to get the return type which matches the attr_path_and_name
+            # so we ask lib_ast for the return type name that matches out
+            # attr_path_and_name and then use that to get the actual pointer klass
+            # then set the result to that pointer klass
+            return_type_name = __self.client.lib_ast.query(
+                attr_path_and_name
+            ).return_type_name
+            resolved_pointer_type = __self.client.lib_ast.query(return_type_name)
+            result = resolved_pointer_type.pointer_type(client=__self.client)
+
+            # QUESTION can the id_at_location be None?
+            result_id_at_location = getattr(result, "id_at_location", None)
+            if result_id_at_location is not None:
+                # first downcast anything primitive which is not already PyPrimitive
+                (
+                    downcast_args,
+                    downcast_kwargs,
+                ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+
+                # then we convert anything which isnt a pointer into a pointer
+                pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                    args=downcast_args, kwargs=downcast_kwargs, client=__self.client
+                )
+
+                cmd = RunClassMethodAction(
+                    path=attr_path_and_name,
+                    _self=__self,
+                    args=pointer_args,
+                    kwargs=pointer_kwargs,
+                    id_at_location=result_id_at_location,
+                    address=__self.client.address,
+                )
+                __self.client.send_immediate_msg_without_reply(msg=cmd)
+
+            inherit_tags(
+                attr_path_and_name=attr_path_and_name,
+                result=result,
+                self_obj=__self,
+                args=args,
+                kwargs=kwargs,
+            )
+
+            return result
+
+        return run_class_method
