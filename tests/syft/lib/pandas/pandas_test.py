@@ -28,6 +28,45 @@ def test_pandas(root_client: sy.VirtualMachineClient) -> None:
 
 
 @pytest.mark.vendor(lib="pandas")
+def test_pd_categoriesdtype(root_client: sy.VirtualMachineClient) -> None:
+    sy.load("pandas")
+    # third party
+    import pandas as pd
+
+    categories = ["b", "a"]
+    ordered = False
+    t = pd.CategoricalDtype(categories=categories, ordered=ordered)
+
+    t_ptr = t.send(root_client)
+
+    t2 = t_ptr.get()
+    print(t2)
+    assert t2.categories.to_list() == categories
+    assert t2.ordered == ordered
+
+
+@pytest.mark.vendor(lib="pandas")
+def test_pd_categories(root_client: sy.VirtualMachineClient) -> None:
+    sy.load("pandas")
+    # third party
+    import pandas as pd
+
+    categories = ["b", "a"]
+    ordered = False
+    t = pd.Categorical(
+        ["b", "a", "c", "a", "b"], categories=categories, ordered=ordered
+    )
+
+    t_ptr = t.send(root_client)
+
+    t2 = t_ptr.get()
+    print(t2)
+    assert t2.categories.to_list() == categories
+    assert t2.ordered == ordered
+    assert t2.codes.tolist() == t.codes.tolist()
+
+
+@pytest.mark.vendor(lib="pandas")
 def test_slice_dataframe(root_client: sy.VirtualMachineClient) -> None:
     sy.load("pandas")
     # third party

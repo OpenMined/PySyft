@@ -9,6 +9,8 @@ from packaging import version
 import pandas as pd
 
 # syft relative
+from . import categories  # noqa: 401
+from . import categories_dtype  # noqa: 401
 from . import frame  # noqa: 401
 from . import series  # noqa: 401
 from ...ast import add_classes
@@ -32,6 +34,8 @@ def create_ast(client: TypeAny = None) -> Globals:
     classes: TypeList[TypeTuple[str, str, TypeAny]] = [
         ("pandas.DataFrame", "pandas.DataFrame", pd.DataFrame),
         ("pandas.Series", "pandas.Series", pd.Series),
+        ("pandas.CategoricalDtype", "pandas.CategoricalDtype", pd.CategoricalDtype),
+        ("pandas.Categorical", "pandas.Categorical", pd.Categorical),
     ]
 
     methods: TypeList[TypeTuple[str, str]] = [
