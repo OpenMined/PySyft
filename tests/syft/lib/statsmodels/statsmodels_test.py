@@ -34,10 +34,6 @@ def test_glm(root_client: sy.VirtualMachineClient) -> None:
     sy.load("pandas")
     sy.load("statsmodels")
 
-    # create a virtual machine
-    vm = sy.VirtualMachine()
-    client = vm.get_root_client()
-
     # download data
     csv_file = "mort_match_nhis_all_years.csv"
     zip_file = f"{csv_file}.zip"
@@ -55,7 +51,7 @@ def test_glm(root_client: sy.VirtualMachineClient) -> None:
     # load data
     df = pd.read_csv(csv_path)
     df = df.head(100)
-    df_ptr = df.send(client)
+    df_ptr = df.send(root_client)
 
     # Drop any missing values in the dataset (those under 18)
     df = df.dropna(subset=["MORTSTAT"])
@@ -83,7 +79,7 @@ def test_glm(root_client: sy.VirtualMachineClient) -> None:
 
     # add constant
     _x = statsmodels.api.add_constant(x)
-    _x_ptr = client.statsmodels.api.add_constant(x_ptr)
+    _x_ptr = root_client.statsmodels.api.add_constant(x_ptr)
 
     # dependent variable
     _y = df["is_alive"]
@@ -99,7 +95,7 @@ def test_glm(root_client: sy.VirtualMachineClient) -> None:
             result = model.fit()
             summary = result.summary().as_csv()
 
-            remote_model = client.statsmodels.genmod.generalized_linear_model.GLM(
+            remote_model = root_client.statsmodels.genmod.generalized_linear_model.GLM(
                 _y_ptr, _x_ptr, family=family(link=link())
             )
             remote_result = remote_model.fit()
