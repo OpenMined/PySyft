@@ -19,15 +19,17 @@ def test_glm(root_client: sy.VirtualMachineClient) -> None:
     import pandas as pd
     import statsmodels
 
-    FAMILY = [statsmodels.genmod.families.Binomial,
-              statsmodels.genmod.families.Gamma,
-              statsmodels.genmod.families.Gaussian,
-              statsmodels.genmod.families.InverseGaussian,
-              statsmodels.genmod.families.NegativeBinomial,
-              statsmodels.genmod.families.Poisson,
-              statsmodels.genmod.families.Tweedie]
+    FAMILY = [
+        statsmodels.genmod.families.Binomial,
+        statsmodels.genmod.families.Gamma,
+        statsmodels.genmod.families.Gaussian,
+        statsmodels.genmod.families.InverseGaussian,
+        statsmodels.genmod.families.NegativeBinomial,
+        statsmodels.genmod.families.Poisson,
+        statsmodels.genmod.families.Tweedie,
+    ]
 
-    UNNECESSARY_STR = r'Time(.*)(?=Pearson)|Date(.*)(?=Deviance)'
+    UNNECESSARY_STR = r"Time(.*)(?=Pearson)|Date(.*)(?=Deviance)"
 
     sy.load("pandas")
     sy.load("statsmodels")
@@ -91,15 +93,15 @@ def test_glm(root_client: sy.VirtualMachineClient) -> None:
     for family in FAMILY:
         for link in family.links:
 
-            model = statsmodels.genmod.\
-                generalized_linear_model.GLM(_y, _x,
-                                             family=family(link=link()))
+            model = statsmodels.genmod.generalized_linear_model.GLM(
+                _y, _x, family=family(link=link())
+            )
             result = model.fit()
             summary = result.summary().as_csv()
 
-            remote_model = client.statsmodels.genmod.\
-                generalized_linear_model.GLM(_y_ptr, _x_ptr,
-                                             family=family(link=link()))
+            remote_model = client.statsmodels.genmod.generalized_linear_model.GLM(
+                _y_ptr, _x_ptr, family=family(link=link())
+            )
             remote_result = remote_model.fit()
             # `get` corresponds to `summary().as_csv()`
             remote_summary = remote_result.get()
