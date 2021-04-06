@@ -2,6 +2,7 @@
 from collections import OrderedDict as PyOrderectDict
 
 # third party
+import pytest
 import torch as th
 
 # syft absolute
@@ -54,14 +55,11 @@ def test_dict_serde() -> None:
         assert deserialized_el == original_el
 
 
-def test_list_send() -> None:
-    alice = sy.VirtualMachine(name="alice")
-    alice_client = alice.get_client()
-
+def test_list_send(root_client: sy.VirtualMachineClient) -> None:
     syft_list = OrderedDict(
         {String("t1"): String("test"), String("t2"): String("test")}
     )
-    ptr = syft_list.send(alice_client)
+    ptr = syft_list.send(root_client)
     # Check pointer type
     assert ptr.__class__.__name__ == "OrderedDictPointer"
 
@@ -69,3 +67,18 @@ def test_list_send() -> None:
     res = ptr.get()
     for res_el, original_el in zip(res, syft_list):
         assert res_el == original_el
+
+
+@pytest.mark.parametrize("method_name", ["items", "keys", "values"])
+def test_iterator_methods(
+    method_name: str, root_client: sy.VirtualMachineClient
+) -> None:
+    d = OrderedDict({"#1": 1, "#2": 2})
+    dptr = d.send(root_client)
+
+    itemsptr = getattr(dptr, method_name)()
+    assert type(itemsptr).__name__ == "IteratorPointer"
+
+    for itemptr, local_item in zip(itemsptr, getattr(d, method_name)()):
+        get_item = itemptr.get()
+        assert get_item == local_item

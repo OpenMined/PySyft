@@ -1892,6 +1892,11 @@
         "not_available": [],
         "skip": []
       },
+      "__len__": {
+        "profile": "tensor_method_input",
+        "inputs": [],
+        "return_type": "syft.lib.python.Int"
+      },
       "__rsub__": {
         "profile": "default",
         "data_types": [
@@ -1901,15 +1906,15 @@
           {
             "data_types": [
               "bool",
-              "int16",
-              "int32",
               "uint8",
               "int8",
-              "float32",
-              "float64",
+              "int16",
               "int64",
+              "int32",
+              "float32",
               "float16",
-              "bfloat16"
+              "bfloat16",
+              "float64"
             ],
             "lte_version": "1.7.0",
             "gte_version": "1.8.0"
@@ -7170,6 +7175,29 @@
             "lte_version": "1.7.0",
             "gte_version": "1.7.0"
           }
+        ],
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          },
+          {
+            "inputs": [null],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
         ]
       },
       "inverse": {
@@ -7193,6 +7221,22 @@
             "lte_version": "1.7.0",
             "gte_version": "1.7.0",
             "cuda": true
+          }
+        ],
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "bfloat16"
+            ],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
           }
         ]
       },
@@ -7806,7 +7850,7 @@
           }
         ]
       },
-      "q_per_channel_zero_points": {
+      "q_per_channel_scales": {
         "profile": "tensor_method_noinput",
         "skip": [],
         "not_available": [
@@ -7867,6 +7911,29 @@
             "lte_version": "1.7.0",
             "gte_version": "1.7.0"
           }
+        ],
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          },
+          {
+            "inputs": [null],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          }
         ]
       },
       "q_zero_point": {
@@ -7899,6 +7966,29 @@
             ],
             "lte_version": "1.7.0",
             "gte_version": "1.7.0"
+          }
+        ],
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
+          },
+          {
+            "inputs": [null],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
           }
         ]
       },
@@ -8467,8 +8557,7 @@
               "int16",
               "int32",
               "int64",
-              "float16",
-              "bool"
+              "float16"
             ],
             "lte_version": "1.8.0",
             "gte_version": "1.8.0"
@@ -10366,12 +10455,13 @@
             "data_types": [
               "bool",
               "uint8",
-              "int8",
-              "int16",
-              "int32",
               "int64",
-              "float16",
-              "bfloat16"
+              "bfloat16",
+              "bool",
+              "int32",
+              "int16",
+              "int8",
+              "float16"
             ],
             "lte_version": "1.7.0",
             "gte_version": "1.7.0",
@@ -10398,9 +10488,12 @@
               "uint8",
               "int8",
               "int16",
-              "int32",
-              "int64",
+              "int8",
+              "uint8",
               "float16",
+              "int64",
+              "bool",
+              "int32",
               "bfloat16"
             ],
             "lte_version": "1.7.0",
@@ -11707,8 +11800,26 @@
         "return_type": "torch.device",
         "skip": [
           {
-            "lte_version": "1.8.0",
+            "lte_version": "1.7.1",
             "reason": "untested"
+          }
+        ],
+        "not_available": [
+          {
+            "data_types": [
+              "bool",
+              "uint8",
+              "int8",
+              "int16",
+              "int32",
+              "int64",
+              "float16",
+              "float32",
+              "float64",
+              "bfloat16"
+            ],
+            "lte_version": "1.8.0",
+            "gte_version": "1.8.0"
           }
         ]
       },

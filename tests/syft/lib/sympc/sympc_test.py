@@ -19,7 +19,7 @@ def test_load_sympc() -> None:
     from sympc.session import SessionManager
     from sympc.tensor import MPCTensor
 
-    sy.load_lib("sympc")
+    sy.load("sympc")
 
     session = Session(parties=[alice_client, bob_client])
     SessionManager.setup_mpc(session)

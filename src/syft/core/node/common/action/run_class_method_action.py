@@ -84,6 +84,13 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
     def pprint(self) -> str:
         return f"RunClassMethodAction({self.path})"
 
+    def __repr__(self) -> str:
+        method_name = self.path.split(".")[-1]
+        self_name = self._self.class_name
+        arg_names = ",".join([a.class_name for a in self.args])
+        kwargs_names = ",".join([f"{k}={v.class_name}" for k, v in self.kwargs.items()])
+        return f"RunClassMethodAction {self_name}.{method_name}({arg_names}, {kwargs_names})"
+
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
 
@@ -149,13 +156,13 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             method_name = self.path.split(".")[-1]
 
             if isinstance(resolved_self.data, Plan) and method_name == "__call__":
-                result = method(
-                    resolved_self.data,
-                    node,
-                    verify_key,
-                    *self.args,
-                    **upcasted_kwargs,
-                )
+                if len(self.args) > 0:
+                    traceback_and_raise(
+                        ValueError(
+                            "You passed args to Plan.__call__, while it only accepts kwargs"
+                        )
+                    )
+                result = method(resolved_self.data, node, verify_key, **self.kwargs)
             else:
                 target_method = getattr(resolved_self.data, method_name, None)
 
@@ -175,6 +182,8 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                 result = float(result)
             if "int" in type(result).__name__:
                 result = int(result)
+            if "bool" in type(result).__name__:
+                result = bool(result)
 
         if lib.python.primitive_factory.isprimitive(value=result):
             # Wrap in a SyPrimitive
@@ -292,7 +301,11 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         """Redefines some of the arguments, and possibly the _self of the function"""
         if self._self.id_at_location == current_input.id_at_location:
             self._self = new_input
-        else:
-            for i, arg in enumerate(self.args):
-                if arg.id_at_location == current_input.id_at_location:
-                    self.args[i] = new_input
+
+        for i, arg in enumerate(self.args):
+            if arg.id_at_location == current_input.id_at_location:
+                self.args[i] = new_input
+
+        for k, v in self.kwargs.items():
+            if v.id_at_location == current_input.id_at_location:
+                self.kwargs[k] = new_input

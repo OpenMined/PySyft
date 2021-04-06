@@ -18,11 +18,17 @@ has_cuda = torch.cuda.is_available()
 # --------------------------------------
 # add exception and it's handler
 # --------------------------------------
-exception_pattern_1 = re.compile("no attribute|no NVIDIA driver")
+exception_pattern_1 = re.compile(
+    "no attribute" + "|no NVIDIA driver" + "|Torch not compiled with CUDA enabled"
+)
 
 
 def fix_exception_pattern_1(not_available: list, **kwargs: Any) -> None:
-    ele = {"lte_version": torch_version, "gte_version": torch_version}
+    ele = {
+        "lte_version": torch_version,
+        "gte_version": torch_version,
+        "reason": "no_cpu",
+    }
     if ele not in not_available:
         not_available.append(ele)
 
@@ -130,9 +136,17 @@ def fix_exception_pattern_syft(
         )
         return i + 1
 
+    def exactly_eq(a: Any, b: Any) -> bool:
+        """
+        `True==1` and `False==0` will return True;
+        But we want them be False, so we also check if they are of the same type.
+        """
+        return type(a) == type(b) and a == b
+
     i = get_ele_index()
-    # if inputs not in not_available[i]["inputs"]:
-    #    not_available[i]["inputs"].append(inputs)
+    already_exists = sum([exactly_eq(inputs, _) for _ in not_available[i]["inputs"]])
+    if not already_exists:
+        not_available[i]["inputs"].append(inputs)
 
 
 exception_fix = []
@@ -229,8 +243,7 @@ while continue_loop:
 
     # run slow test
     print("Running slow test ...This may take a while.")
-    os.system("pytest -m torch -n auto -p no:benchmark")
-    os.system("pytest -m torch -p no:benchmark")
+    os.system("pytest -m torch -n auto -p no:benchmark --tb=no")
     print("Slow test done.")
     print()
 
@@ -339,6 +352,10 @@ while continue_loop:
     with open(f"{root_dir}/tests/syft/lib/allowlist_test.json", "w") as f:
         json.dump(allowlist_test, f, indent=2)
 
+
+# read allowlist_test.json
+with open(f"{root_dir}/tests/syft/lib/allowlist_test.json", "r") as f:
+    allowlist_test = json.load(f)
 
 # optimize json file
 for op, config in allowlist_test["tests"]["torch.Tensor"].items():

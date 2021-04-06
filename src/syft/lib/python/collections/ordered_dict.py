@@ -1,5 +1,8 @@
 # stdlib
 from collections import OrderedDict as PyOrderedDict
+from collections.abc import ItemsView
+from collections.abc import KeysView
+from collections.abc import ValuesView
 from typing import Any
 from typing import Optional
 
@@ -11,10 +14,13 @@ from .... import deserialize
 from .... import serialize
 from ....core.common.serde.serializable import bind_protobuf
 from ....core.common.uid import UID
+from ....logger import traceback_and_raise
 from ....proto.lib.python.collections.ordered_dict_pb2 import (
     OrderedDict as OrderedDict_PB,
 )
+from ..iterator import Iterator
 from ..primitive_factory import PrimitiveFactory
+from ..primitive_factory import isprimitive
 from ..primitive_interface import PyPrimitive
 from ..types import SyPrimitiveRet
 from ..util import downcast
@@ -52,7 +58,14 @@ class OrderedDict(PyOrderedDict, PyPrimitive):
 
     def __getitem__(self, other: Any) -> SyPrimitiveRet:
         res = super().__getitem__(other)
-        return PrimitiveFactory.generate_primitive(value=res)
+        if isprimitive(value=res):
+            return PrimitiveFactory.generate_primitive(value=res)
+        else:
+            # we can have torch.Tensor and other types
+            return res
+
+    def __iter__(self, max_len: Optional[int] = None) -> Iterator:
+        return Iterator(super().__iter__(), max_len=max_len)
 
     def __len__(self) -> SyPrimitiveRet:
         res = super().__len__()
@@ -89,17 +102,19 @@ class OrderedDict(PyOrderedDict, PyPrimitive):
         res = super().fromkeys(iterable, value)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def dict_get(self, other: Any) -> SyPrimitiveRet:
+    def dict_get(self, other: Any) -> Any:
         res = super().get(other)
-        return PrimitiveFactory.generate_primitive(value=res)
+        if isprimitive(value=res):
+            return PrimitiveFactory.generate_primitive(value=res)
+        else:
+            # we can have torch.Tensor and other types
+            return res
 
-    def items(self) -> SyPrimitiveRet:
-        res = list(super().items())
-        return PrimitiveFactory.generate_primitive(value=res)
+    def items(self, max_len: Optional[int] = None) -> Iterator:  # type: ignore
+        return Iterator(ItemsView(self), max_len=max_len)
 
-    def keys(self) -> SyPrimitiveRet:
-        res = list(super().keys())
-        return PrimitiveFactory.generate_primitive(value=res)
+    def keys(self, max_len: Optional[int] = None) -> Iterator:  # type: ignore
+        return Iterator(KeysView(self), max_len=max_len)
 
     def move_to_end(self, other: Any, last: Any = True) -> Any:
         res = super().move_to_end(other, last)
@@ -121,9 +136,15 @@ class OrderedDict(PyOrderedDict, PyPrimitive):
         res = super().update(*args, **kwds)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def values(self) -> SyPrimitiveRet:
-        res = list(super().values())
-        return PrimitiveFactory.generate_primitive(value=res)
+    def values(self, *args: Any, max_len: Optional[int] = None) -> Iterator:  # type: ignore
+        # this is what the super type does and there is a test in dict_test.py
+        # test_values which checks for this so we could disable the test or
+        # keep this workaround
+        if len(args) > 0:
+            traceback_and_raise(
+                TypeError("values() takes 1 positional argument but 2 were given")
+            )
+        return Iterator(ValuesView(self), max_len=max_len)
 
     def _object2proto(self) -> OrderedDict_PB:
         id_ = serialize(obj=self.id)
@@ -167,3 +188,7 @@ class OrderedDict(PyOrderedDict, PyPrimitive):
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return OrderedDict_PB
+
+    def upcast(self) -> PyOrderedDict:
+        # recursively upcast
+        return OrderedDict((k, upcast(v)) for k, v in self.items())
