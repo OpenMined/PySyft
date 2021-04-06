@@ -102,6 +102,7 @@ import syft as sy
 from ...logger import debug
 from ...logger import error
 from ...logger import warning
+from ...logger import traceback_and_raise
 from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
 from ..common.pointer import AbstractPointer
 from ..common.serde.deserialize import _deserialize
