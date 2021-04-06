@@ -30,6 +30,10 @@ LINK_2_STR: Dict[Type[statsmodels.genmod.families.family.Family], str] = {
     statsmodels.genmod.families.links.inverse_squared: "inverse_squared",
     statsmodels.genmod.families.links.nbinom: "nbinom",
     statsmodels.genmod.families.links.probit: "probit",
+    statsmodels.genmod.families.links.Power: "Power",
+    statsmodels.genmod.families.links.NegativeBinomial: "NegativeBinomial",
+    statsmodels.genmod.families.links.CDFLink: "CDFLink",
+    statsmodels.genmod.families.links.sqrt: "sqrt"
 }
 
 STR_2_FAMILY: Dict[str, Type[statsmodels.genmod.families.family.Family]] = {
