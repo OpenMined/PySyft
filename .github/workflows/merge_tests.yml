@@ -84,8 +84,23 @@ jobs:
         run: |
           pytest -m torch -n auto -p no:benchmark
 
-  python-tests-all:
-    strategy: *strategy
+  import-syft-no-dev:
+    strategy:
+      max-parallel: 30
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        python-version: [3.6, 3.7, 3.8, 3.9]
+        torch-version: [1.6.0, 1.7.1, 1.8.0]
+        isMaster:
+          - ${{ contains(github.ref, 'master') }}
+        exclude:
+          - python-version: 3.9
+            torch-version: 1.6.0
+          - python-version: 3.9
+            torch-version: 1.7.1
+          - isMaster: false
+            os: macos-latest
+
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
@@ -127,7 +142,3 @@ jobs:
       - name: Check import
         run: |
           python -c "import syft"
-
-      # - name: Run torch tests
-      #   run: |
-      #     pytest -m torch -n auto -p no:benchmark
