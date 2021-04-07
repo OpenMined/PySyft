@@ -9,6 +9,7 @@ import sys
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Optional
 from typing import Union
 
 # third party
@@ -23,6 +24,7 @@ from ...proto.core.plan.plan_pb2 import Plan as Plan_PB
 from ..common.object import Serializable
 from ..common.serde.serializable import bind_protobuf
 from ..node.abstract.node import AbstractNode
+from ..node.common import client
 from ..node.common.action.common import Action
 from ..node.common.util import listify
 from ..pointer.pointer import Pointer
@@ -46,6 +48,8 @@ class Plan(Serializable):
         actions: Union[List[Action], None] = None,
         inputs: Union[Dict[str, Pointer], None] = None,
         outputs: Union[Pointer, List[Pointer], None] = None,
+        code: Optional[str] = None,
+        max_calls: Optional[int] = None,
     ):
         """
         Initialize the Plan with actions, inputs and outputs
@@ -53,9 +57,15 @@ class Plan(Serializable):
         self.actions: List[Action] = listify(actions)
         self.inputs: Dict[str, Pointer] = inputs if inputs is not None else dict()
         self.outputs: List[Pointer] = listify(outputs)
+        self.code = code
+        self.max_calls = max_calls
+        self.n_calls = 0
 
     def __call__(
-        self, node: AbstractNode, verify_key: VerifyKey, **kwargs: Dict[str, Any]
+        self,
+        node: Optional[AbstractNode] = None,
+        verify_key: VerifyKey = None,
+        **kwargs: Dict[str, Any],
     ) -> List[StorableObject]:
         """
         1) For all pointers that were passed into the init as `inputs`, this method
@@ -72,9 +82,13 @@ class Plan(Serializable):
             *args: the new inputs for the plan, passed as pointers
         """
 
+        self.n_calls += 1
+
         # this is pretty cumbersome, we are searching through all actions to check
         # if we need to redefine some of their attributes that are inputs in the
         # graph of actions
+        if node is None:
+            return self.execute_locally(**kwargs)
 
         new_inputs: Dict[str, Pointer] = {}
         for k, current_input in self.inputs.items():
@@ -102,6 +116,46 @@ class Plan(Serializable):
             return resolved_outputs
         else:
             return []
+
+    def __repr__(self) -> str:
+        obj_str = "Plan"
+
+        allowed, remaining = (
+            (self.max_calls, self.max_calls - self.n_calls)
+            if self.max_calls is not None
+            else ("not defined", "not defined")
+        )
+
+        ex_str = f"Allowed executions:\t{allowed}\nRemaining executions:\t{remaining}"
+
+        inp_str = "Inputs:\n"
+        inp_str += "\n".join(
+            [f"\t\t{k}:\t{v.__class__.__name__}" for k, v in self.inputs.items()]
+        )
+
+        act_str = f"Actions:\n\t\t{len(self.actions)} Actions"
+
+        out_str = "Outputs:\n"
+        out_str += "\n".join([f"\t\t{o.__class__.__name__}" for o in self.outputs])
+
+        plan_str = "Plan code:\n"
+        plan_str += f'"""\n{self.code}\n"""' if self.code is not None else ""
+
+        return f"{obj_str}\n{ex_str}\n{inp_str}\n{act_str}\n{out_str}\n\n{plan_str}"
+
+    def execute_locally(self, **kwargs: Any) -> List[StorableObject]:
+        """Execute a plan by sending it to a virtual machine and calling execute on the pointer.
+        This is a workaround until we have a way to execute plans locally.
+        """
+        # prevent circular dependency
+        # syft relative
+        from ...core.node.vm.vm import VirtualMachine  # noqa: F401
+
+        alice = VirtualMachine(name="plan_executor")
+        alice_client: client.Client = alice.get_client()
+        self_ptr = self.send(alice_client)  # type: ignore
+        out = self_ptr(**kwargs)
+        return out.get()
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:

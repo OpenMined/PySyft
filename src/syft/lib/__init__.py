@@ -5,7 +5,11 @@ from types import ModuleType
 from typing import Any
 from typing import Any as TypeAny
 from typing import Dict as TypeDict
+from typing import Iterable
+from typing import List as TypeList
 from typing import Optional
+from typing import Set as TypeSet
+from typing import Tuple as TypeTuple
 from typing import Union as TypeUnion
 import warnings
 
@@ -142,20 +146,42 @@ def _load_lib(*, lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
             _regenerate_unions(lib_ast=lib_ast, client=client)
 
 
-def load(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
+def load(
+    *libs: TypeUnion[TypeList[str], TypeTuple[str], TypeSet[str], str],
+    options: TypeDict[str, TypeAny] = {},
+    **kwargs: str,
+) -> None:
     """
     Load and Update Node with given library module
 
     Args:
-        lib: name of library to load and update Node with
+        *libs: names of libraries to load and update Node with (can be variadic, tuple, list, set)
         options: external requirements for loading library successfully
+        **kwargs: for backward compatibility with calls like `syft.load(lib = "opacus")`
     """
-    try:
-        _load_lib(lib=lib, options=options)
-    except VendorLibraryImportException as e:
-        critical(e)
-    except Exception as e:
-        critical(f"Unable to load package support for: {lib}. {e}")
+    # For backward compatibility with calls like `syft.load(lib = "opacus")`
+    if "lib" in kwargs.keys():
+        libs += tuple(kwargs["lib"])
+
+    if isinstance(libs[0], Iterable):
+        if not isinstance(libs[0], str):
+            libs = tuple(libs[0])
+        for lib in libs:
+            if isinstance(lib, str):
+                try:
+                    _load_lib(lib=str(lib), options=options)
+                except VendorLibraryImportException as e:
+                    critical(e)
+                except Exception as e:
+                    critical(f"Unable to load package support for: {lib}. {e}")
+            else:
+                critical(
+                    f"Unable to load package support for: {lib}. Pass lib name as string object."
+                )
+    else:
+        critical(
+            "Unable to load package support for any library. Iterable object not found."
+        )
 
 
 def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:

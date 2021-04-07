@@ -9,18 +9,20 @@ import syft as sy
 @pytest.mark.parametrize("loadlib_before_client", [True, False])
 @pytest.mark.parametrize("reveal_intersection", [True, False])
 @pytest.mark.vendor(lib="openmined_psi")
-def test_psi(loadlib_before_client: bool, reveal_intersection: bool) -> None:
+def test_psi(
+    loadlib_before_client: bool, reveal_intersection: bool, node: sy.VirtualMachine
+) -> None:
     # third party
     import openmined_psi as psi
 
     # it should work when call load before or after create clients
     if loadlib_before_client:
         sy.load("openmined_psi")
-        server_vm = sy.VirtualMachine().get_root_client()
-        client_vm = sy.VirtualMachine().get_root_client()
+        server_vm = node.get_root_client()
+        client_vm = node.get_root_client()
     else:
-        server_vm = sy.VirtualMachine().get_root_client()
-        client_vm = sy.VirtualMachine().get_root_client()
+        server_vm = node.get_root_client()
+        client_vm = node.get_root_client()
         sy.load("openmined_psi")
 
     # server send reveal_intersection

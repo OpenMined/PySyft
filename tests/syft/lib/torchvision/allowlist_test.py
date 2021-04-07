@@ -1,10 +1,12 @@
 # stdlib
+import json
+import os
 from os import path
-import os.path
 from typing import Dict
 from typing import Union
 
 # third party
+import PIL
 from packaging import version
 import pytest
 import torch
@@ -14,24 +16,23 @@ import torchvision as tv
 import syft as sy
 from syft.lib.torchvision.allowlist import allowlist
 
-fileName = "imageTensor.pt"
-
 TORCHVISION_VERSION = version.parse(tv.__version__)
 
 
 @pytest.fixture(scope="function")
-def tens() -> torch.Tensor:
-    if path.isfile("imageTensor.pt"):
-        return torch.load("imageTensor.pt")
+def pil_img() -> PIL.Image.Image:
+    img_file = "../../../../docs/img/logo.png"
+    if path.isfile(img_file):
+        return PIL.Image.open(img_file).convert("RGB")
     else:
         cwd = os.getcwd()
-        path_file = cwd + "/tests/syft/lib/torchvision/" + fileName
-        return torch.load(path_file)
+        img_file = cwd + "/docs/img/logo.png"
+        return PIL.Image.open(img_file).convert("RGB")
 
 
 @pytest.fixture(scope="function")
-def alice() -> sy.VirtualMachine:
-    return sy.VirtualMachine(name="alice")
+def tens(pil_img: PIL.Image.Image) -> torch.Tensor:
+    return tv.transforms.functional.to_tensor(pil_img).type(torch.uint8)
 
 
 def version_supported(support_dict: Union[str, Dict[str, str]]) -> bool:
@@ -43,15 +44,26 @@ def version_supported(support_dict: Union[str, Dict[str, str]]) -> bool:
         return TORCHVISION_VERSION >= version.parse(support_dict["min_version"])
 
 
-def test_allowlist(alice: sy.VirtualMachine, tens: torch.Tensor) -> None:
-    alice_client = alice.get_root_client()
-    torchvision = alice_client.torchvision
-    torch = alice_client.torch
+def test_allowlist(
+    root_client: sy.VirtualMachineClient, tens: torch.Tensor, pil_img: PIL.Image.Image
+) -> None:
+    # Required for testing on torchvision==1.6.0
+    sy.load("PIL")
+    torchvision = root_client.torchvision
+    torch = root_client.torch
     try:
         tx = torch.rand(4)
         tx = tx * 2
     except Exception as e:
         print(e)
+
+    try:
+        with open(__file__.replace(".py", "_params.json"), "r") as f:
+            TEST_PARAMS = json.loads(f.read())
+    except Exception as e:
+        print(f"Exception {e} triggered")
+        raise e
+
     transforms = torchvision.transforms
     transforms.RandomAffine(2)
     for item in allowlist:
@@ -60,13 +72,11 @@ def test_allowlist(alice: sy.VirtualMachine, tens: torch.Tensor) -> None:
         if (
             arr[1] == "datasets"
             and len(arr) <= 3
-            and isinstance(allowlist[item], dict)
-            and "test_parameters" in allowlist[item].keys()
+            and item in TEST_PARAMS.keys()
             and version_supported(support_dict=allowlist[item])
         ):
-            print(item)
             try:
-                exec(item + allowlist[item]["test_parameters"])
+                exec(item + TEST_PARAMS[item])
             except RuntimeError as e:
                 assert (
                     "not found" in str(e)
@@ -81,9 +91,8 @@ def test_allowlist(alice: sy.VirtualMachine, tens: torch.Tensor) -> None:
                 assert "No module named" in str(e)
             except KeyError:
                 pass
-        elif (
-            isinstance(allowlist[item], dict)
-            and version_supported(support_dict=allowlist[item])
-            and "test_parameters" in allowlist[item].keys()
+        elif item in TEST_PARAMS.keys() and version_supported(
+            support_dict=allowlist[item]
         ):
-            exec(item + allowlist[item]["test_parameters"])
+            print(item + TEST_PARAMS[item])
+            exec(item + TEST_PARAMS[item])
