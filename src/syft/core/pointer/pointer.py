@@ -635,7 +635,7 @@ class Pointer(AbstractPointer):
 
         return new_pointer
 
-    def get_run_class_method(attr_path_and_name: str) -> CallableT:
+    def get_run_class_method(self, attr_path_and_name: str) -> CallableT:
         """
         It might seem hugely un-necessary to have these methods nested in this way.
         However, it has to do with ensuring that the scope of `attr_path_and_name` is local
