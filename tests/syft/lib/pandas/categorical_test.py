@@ -8,14 +8,6 @@ import pytest
 # syft absolute
 import syft as sy
 
-
-def get_permission(
-    obj: Any, node: sy.VirtualMachine, client: sy.VirtualMachineClient
-) -> None:
-    remote_obj = node.store[obj.id_at_location]
-    remote_obj.read_permissions[client.verify_key] = obj.id_at_location
-
-
 inputs = [
     ("__len__", None),
     ("tolist", None),
@@ -52,6 +44,7 @@ objects = [
 ]
 
 
+@pytest.mark.slow
 @pytest.mark.vendor(lib="pandas")
 @pytest.mark.parametrize("test_object", objects)
 @pytest.mark.parametrize("func,args", inputs)
