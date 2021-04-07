@@ -26,7 +26,7 @@ on:
 
 jobs:
   python-tests-all:
-    strategy:
+    strategy: &strategy
       max-parallel: 30
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
@@ -83,3 +83,51 @@ jobs:
       - name: Run torch tests
         run: |
           pytest -m torch -n auto -p no:benchmark
+
+  python-tests-all:
+    strategy: *strategy
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
+
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - name: Install PyTorch
+        run: |
+          pip install packaging
+          python scripts/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
+          cat ./requirements.torch.txt
+          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html
+
+      - name: Install packages
+        run: |
+          pip install -r requirements.txt
+          pip install -e .
+
+      - name: Check import
+        run: |
+          python -c "import syft"
+
+      # - name: Run torch tests
+      #   run: |
+      #     pytest -m torch -n auto -p no:benchmark
