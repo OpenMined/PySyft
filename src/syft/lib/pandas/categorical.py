@@ -11,7 +11,6 @@ from ...proto.lib.pandas.categorical_pb2 import (
 
 
 def object2proto(obj: pd.Categorical) -> PandasCategorical_PB:
-    # since pd.Index type is not integrated converted obj.categories to List
     pd_codes_list = PrimitiveFactory.generate_primitive(value=obj.codes.tolist())
     codes_proto = pd_codes_list._object2proto()
     pd_cat_list = PrimitiveFactory.generate_primitive(value=obj.categories.tolist())

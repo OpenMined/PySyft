@@ -168,6 +168,36 @@ def create_ast(client: TypeAny = None) -> Globals:
                 "syft.lib.python.Bool", "syft.lib.python.Float", "syft.lib.python.Int"
             ],
         ),
+        # TODO: add methods for pd.Categorical
+        ("pandas.Categorical.__len__", "syft.lib.python.Int"),
+        ("pandas.Categorical.tolist", "syft.lib.python.Float"),
+        ("pandas.Categorical.to_list", "syft.lib.python.Float"),
+        ("pandas.Categorical.value_counts", "pandas.Series"),
+        ("pandas.Categorical.unique", "pandas.Categorical"),
+        ("pandas.Categorical.argmax", "syft.lib.python.Int"),
+        ("pandas.Categorical.argmin", "syft.lib.python.Int"),
+        ("pandas.Categorical.as_ordered", "pandas.Categorical"),
+        ("pandas.Categorical.as_unordered", "pandas.Categorical"),
+        ("pandas.Categorical.copy", "pandas.Categorical"),
+        ("pandas.Categorical.describe", "pandas.DataFrame"),
+        ("pandas.Categorical.dropna", "pandas.Categorical"),
+        ("pandas.Categorical.dtype", "pandas.CategoricalDtype"),
+        # ("pandas.Categorical.equals", "syft.lib.python.Bool"),
+        ("pandas.Categorical.mode", "pandas.Categorical"),
+        ("pandas.Categorical.nbytes", "syft.lib.python.Int"),
+        ("pandas.Categorical.ndim", "syft.lib.python.Int"),
+        ("pandas.Categorical.ordered", "syft.lib.python.Bool"),
+        ("pandas.Categorical.ravel", "pandas.Categorical"),
+        ("pandas.Categorical.remove_categories", "pandas.Categorical"),
+        ("pandas.Categorical.remove_unused_categories", "pandas.Categorical"),
+        ("pandas.Categorical.shape", "syft.lib.python.Tuple"),
+        ("pandas.Categorical.shift", "pandas.Categorical"),
+        ("pandas.Categorical.sort_values", "pandas.Categorical"),
+        ("pandas.Categorical.view", "pandas.Categorical"),
+        # TODO : integrate pandas Index
+        # ("pandas.Categorical.categories", "pandas.Index"),
+        # TODO : integrate numpy array
+        # ("pandas.Categorical.codes","numpy.ndarray")
     ]
 
     if LIB_VERSION > version.parse("1.2.0"):
