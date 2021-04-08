@@ -62,7 +62,6 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.lib.python.Any", "syft.lib.python.Any", Any),
         ("syft.lib.python.Tuple", "syft.lib.python.Tuple", Tuple),
         ("syft.lib.python.Iterator", "syft.lib.python.Iterator", Iterator),
-        ("syft.lib.python.Range", "syft.lib.python.Range", Range),
         ("syft.lib.python.Set", "syft.lib.python.Set", Set),
         (
             "syft.lib.python.collections.OrderedDict",
