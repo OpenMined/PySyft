@@ -17,16 +17,16 @@ from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
 
 
-class RangeIterator(Iterator):
-    pass
-
-
 @bind_protobuf
 class Range(PyPrimitive):
     __slots__ = ["_id", "_index"]
 
     def __init__(
-        self, start: int = 0, stop: int = None, step: int = 1, id: Optional[UID] = None
+        self,
+        start: Any = None,
+        stop: Union[Any] = None,
+        step: Union[Any] = 1,
+        id: Optional[UID] = None,
     ):
         if stop is None:
             stop = start
@@ -61,41 +61,45 @@ class Range(PyPrimitive):
         res = self.value.__sizeof__()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def __bool__(self) -> bool:
-        # Need to return Bool object, not pointer
-        return self.value.__bool__()
+    def __bool__(self) -> SyPrimitiveRet:
+        res = bool(self.value.__len__())
+        return PrimitiveFactory.generate_primitive(value=res)
 
     def __len__(self) -> Any:
         res = self.value.__len__()
-        return res
         return PrimitiveFactory.generate_primitive(value=res)
 
     def __getitem__(self, key: Union[int]) -> Any:
         res = self.value.__getitem__(key)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def __iter__(self, max_len: Optional[int] = None) -> RangeIterator:
-        return RangeIterator(self, max_len=max_len)
+    def __iter__(self, max_len: Optional[int] = None) -> Iterator:
+        return Iterator(self.value, max_len=max_len)
 
     @property
-    def start(self) -> Optional[int]:
-        return self.value.start
+    def start(self) -> SyPrimitiveRet:
+        res = self.value.start
+        return PrimitiveFactory.generate_primitive(value=res)
 
     @property
-    def step(self) -> Optional[int]:
-        return self.value.step
+    def step(self) -> SyPrimitiveRet:
+        res = self.value.step
+        return PrimitiveFactory.generate_primitive(value=res)
 
     @property
-    def stop(self) -> Optional[int]:
-        return self.value.stop
+    def stop(self) -> SyPrimitiveRet:
+        res = self.value.stop
+        return PrimitiveFactory.generate_primitive(value=res)
 
     @property
-    def index(self) -> Optional[int]:
-        return self.value.index
+    def index(self) -> SyPrimitiveRet:
+        res = self.value.index
+        return PrimitiveFactory.generate_primitive(value=res)
 
     @property
-    def count(self) -> Optional[int]:
-        return self.value.count
+    def count(self) -> SyPrimitiveRet:
+        res = self.value.count
+        return PrimitiveFactory.generate_primitive(value=res)
 
     def upcast(self) -> range:
         return self.value
