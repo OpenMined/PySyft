@@ -714,6 +714,8 @@ def test_all_allowlisted_tensor_methods(
                         left=getattr(local_result, field, None),
                         right=getattr(target_result, field, None),
                     )
+            elif target_fqn in ["torch.device"]:
+                assert local_result == target_result
             elif (
                 issubclass(type(local_result), (str, String))
                 or not hasattr(target_result, "__len__")
@@ -812,7 +814,9 @@ def test_all_allowlisted_tensor_methods(
 
             # make sure the return type matches the specified allowlist return type
             if not issubclass(type(local_result), th.Tensor):
-                if target_fqn.startswith("torch.return_types."):
+                if target_fqn.startswith("torch.return_types.") or target_fqn in [
+                    "torch.device"
+                ]:
                     local_type = full_name_with_qualname(klass=type(local_result))
                 else:
                     local_type = full_name_with_qualname(

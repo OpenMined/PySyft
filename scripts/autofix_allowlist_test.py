@@ -64,8 +64,16 @@ def fix_exception_pattern_args(
         )
         return i + 1
 
+    def exactly_eq(a: Any, b: Any) -> bool:
+        """
+        `True==1` and `False==0` will return True;
+        But we want them be False, so we also check if they are of the same type.
+        """
+        return type(a) == type(b) and a == b
+
     i = get_ele_index()
-    if inputs not in not_available[i]["inputs"]:
+    already_exists = sum([exactly_eq(inputs, _) for _ in not_available[i]["inputs"]])
+    if not already_exists:
         not_available[i]["inputs"].append(inputs)
 
 
@@ -108,6 +116,7 @@ exception_pattern_syft = re.compile(
     "reshape is not implemented for sparse tensors"
     + "|aten::empty_strided"
     + "|If you are using DistributedDataParallel \(DDP\) for training"
+    + "|not present in the AST"
 )
 
 
@@ -136,17 +145,7 @@ def fix_exception_pattern_syft(
         )
         return i + 1
 
-    def exactly_eq(a: Any, b: Any) -> bool:
-        """
-        `True==1` and `False==0` will return True;
-        But we want them be False, so we also check if they are of the same type.
-        """
-        return type(a) == type(b) and a == b
-
     i = get_ele_index()
-    already_exists = sum([exactly_eq(inputs, _) for _ in not_available[i]["inputs"]])
-    if not already_exists:
-        not_available[i]["inputs"].append(inputs)
 
 
 exception_fix = []
@@ -243,7 +242,8 @@ while continue_loop:
 
     # run slow test
     print("Running slow test ...This may take a while.")
-    os.system("pytest -m torch -n auto -p no:benchmark --tb=no")
+    # os.system("pytest -m torch -n auto -p no:benchmark --tb=no")
+    os.system("pytest -m torch -p no:benchmark --tb=no")
     print("Slow test done.")
     print()
 
