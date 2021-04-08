@@ -86,13 +86,15 @@ Example:
 """
 # stdlib
 import time
+
+# from typing import Callable as CallableT
+# from typing import Dict
 from typing import Any
-from typing import Callable as CallableT
-from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Tuple
-from typing import Union
+
+# from typing import Tuple
+# from typing import Union
 import warnings
 
 # third party
@@ -103,13 +105,14 @@ from nacl.signing import VerifyKey
 import syft as sy
 
 # syft relative
-from ... import lib
+# from ... import lib
 from ...logger import debug
 from ...logger import error
 from ...logger import traceback_and_raise
 from ...logger import warning
 from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
-from ...util import inherit_tags
+
+# from ...util import inherit_tags
 from ..common.pointer import AbstractPointer
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import bind_protobuf
@@ -117,7 +120,8 @@ from ..common.uid import UID
 from ..io.address import Address
 from ..node.abstract.node import AbstractNode
 from ..node.common.action.get_object_action import GetObjectAction
-from ..node.common.action.run_class_method_action import RunClassMethodAction
+
+# from ..node.common.action.run_class_method_action import RunClassMethodAction
 from ..node.common.service.get_repr_service import GetReprMessage
 from ..node.common.service.obj_search_permission_service import (
     ObjectSearchPermissionUpdateMessage,
@@ -634,99 +638,3 @@ class Pointer(AbstractPointer):
         del self
 
         return new_pointer
-
-    def get_run_class_method(self, attr_path_and_name: str) -> CallableT:
-        """
-        It might seem hugely un-necessary to have these methods nested in this way.
-        However, it has to do with ensuring that the scope of `attr_path_and_name` is local
-        and not global.
-
-        If we do not put a `get_run_class_method` around `run_class_method` then
-        each `run_class_method` will end up referencing the same `attr_path_and_name` variable
-        and all methods will actually end up calling the same method.
-
-        If, instead, we return the function object itself then it includes
-        the current `attr_path_and_name` as an internal variable and when we call `get_run_class_method`
-        multiple times it returns genuinely different methods each time with a different
-        internal `attr_path_and_name` variable.
-        """
-
-        def run_class_method(
-            __self: Any,
-            *args: Tuple[Any, ...],
-            **kwargs: Any,
-        ) -> object:
-            # we want to get the return type which matches the attr_path_and_name
-            # so we ask lib_ast for the return type name that matches out
-            # attr_path_and_name and then use that to get the actual pointer klass
-            # then set the result to that pointer klass
-            return_type_name = __self.client.lib_ast.query(
-                attr_path_and_name
-            ).return_type_name
-            resolved_pointer_type = __self.client.lib_ast.query(return_type_name)
-            result = resolved_pointer_type.pointer_type(client=__self.client)
-
-            # QUESTION can the id_at_location be None?
-            result_id_at_location = getattr(result, "id_at_location", None)
-            if result_id_at_location is not None:
-                # first downcast anything primitive which is not already PyPrimitive
-                (
-                    downcast_args,
-                    downcast_kwargs,
-                ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
-
-                # then we convert anything which isnt a pointer into a pointer
-                pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
-                    args=downcast_args, kwargs=downcast_kwargs, client=__self.client
-                )
-
-                cmd = RunClassMethodAction(
-                    path=attr_path_and_name,
-                    _self=__self,
-                    args=pointer_args,
-                    kwargs=pointer_kwargs,
-                    id_at_location=result_id_at_location,
-                    address=__self.client.address,
-                )
-                __self.client.send_immediate_msg_without_reply(msg=cmd)
-
-            inherit_tags(
-                attr_path_and_name=attr_path_and_name,
-                result=result,
-                self_obj=__self,
-                args=args,
-                kwargs=kwargs,
-            )
-
-            return result
-
-        return run_class_method
-
-
-def pointerize_args_and_kwargs(
-    args: Union[List[Any], Tuple[Any, ...]], kwargs: Dict[Any, Any], client: Any
-) -> Tuple[List[Any], Dict[Any, Any]]:
-    # When we try to send params to a remote function they need to be pointers so
-    # that they can be serialized and fetched from the remote store on arrival
-    # this ensures that any args which are passed in from the user side are first
-    # converted to pointers and sent then the pointer values are used for the
-    # method invocation
-    pointer_args = []
-    pointer_kwargs = {}
-    for arg in args:
-        # check if its already a pointer
-        if not isinstance(arg, Pointer):
-            arg_ptr = arg.send(client, pointable=False)
-            pointer_args.append(arg_ptr)
-        else:
-            pointer_args.append(arg)
-
-    for k, arg in kwargs.items():
-        # check if its already a pointer
-        if not isinstance(arg, Pointer):
-            arg_ptr = arg.send(client, pointable=False)
-            pointer_kwargs[k] = arg_ptr
-        else:
-            pointer_kwargs[k] = arg
-
-    return pointer_args, pointer_kwargs
