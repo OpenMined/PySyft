@@ -7,6 +7,7 @@ from ipywidgets import interact
 from ipywidgets import interact_manual
 from ipywidgets import interactive
 from loguru import logger
+import qgrid
 
 # syft absolute
 import syft as sy
@@ -72,26 +73,33 @@ supportOpenMinedButton = Button(
     tooltip='Support',
     icon='fa-money' # (FontAwesome names without the `fa-` prefix)
 )
+
+line1 = widgets.HBox([duetJoinButton, duetJoinButtonWithLoopback, viewPeers])
+line2 = widgets.HBox([viewDuetStore, disconnectDuetButton, supportOpenMinedButton])
+dashboard = widgets.VBox([line1,line2])
+
 def on_join_duet_button(b):
     dashboardDuetLogger.clear_output()
     with dashboardDuetLogger:
+        global DUET
         DUET = sy.join_duet()
 
 def on_join_duet_loopback_button(b):
     dashboardDuetLogger.clear_output()
     with dashboardDuetLogger:
+        global DUET
         DUET = sy.join_duet(loopback=True)
 
 def view_store_button(b):
     storeLogger.clear_output()
     with storeLogger:
-        global duet
-        qgrid_widget = qgrid.show_grid(duet.store.pandas , show_toolbar = True)
-        display(qgrid_widget)
+        global DUET
+        display(DUET.store.pandas)
 
 def view_peers(b):
     dashboardDuetLogger.clear_output()
     with dashboardDuetLogger:
+        global DUET
         print(f"Peers {sy.grid.duet.get_available_network()}")
 
 
@@ -100,6 +108,11 @@ def support_openmined(b):
     with dashboardDuetLogger:
         print(sy.grid.duet.generate_donation_msg(name="Openmined"))
 
-line1 = widgets.HBox([duetJoinButton, duetJoinButtonWithLoopback, viewPeers])
-line2 = widgets.HBox([viewDuetStore, disconnectDuetButton, supportOpenMinedButton])
-dashboard = widgets.VBox([line1,line2])
+duetJoinButton.on_click(on_join_duet_button)
+duetJoinButtonWithLoopback.on_click(on_join_duet_loopback_button)
+viewDuetStore.on_click(view_store_button)
+viewPeers.on_click(view_peers)
+supportOpenMinedButton.on_click(support_openmined)
+
+dashboardDuetLogger = widgets.Output(layout={'border': '1px solid black'})
+storeLogger = widgets.Output(layout={'border': '1px solid black'})

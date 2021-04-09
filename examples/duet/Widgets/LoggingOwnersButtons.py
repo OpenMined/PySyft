@@ -1,3 +1,6 @@
+# stdlib
+import re
+
 # third party
 import ipywidgets as widgets
 from ipywidgets import Button
@@ -42,6 +45,20 @@ filterLogButton = Button(
     icon='fa-filter',
 )
 
+searchTextInput = widgets.Text(
+    value='',
+    placeholder='Enter Search String',
+    description='Log Search',
+    disabled=False
+)
+
+searchLogButton = widgets.Button(
+    description='Search Logs',
+    disabled=False,
+    button_style='Success', # 'success', 'info', 'warning', 'danger' or ''
+    tooltip='Search',
+    icon='fa-search' # (FontAwesome names without the `fa-` prefix)
+)
 
 for error in ERROR_LIST:
     checkBoxDict[error] = widgets.Checkbox(
@@ -78,14 +95,36 @@ def filterLog(b):
         display(qgrid_widget)
 
 
+def searchLogs(b):
+    selectedIDs, dtimeList, logTypeList, msgList = [] , [] , [] , []
+
+    for i, log in enumerate(LOG_LIST):
+        dtime, logType, msg = log.split('|')
+        if re.search(searchTextInput.value , msg):
+            dtimeList.append(dtime)
+            logTypeList.append(logType)
+            msgList.append(msg)
+
+    SEARCH_FILTER_LOG_WIDGET.clear_output()
+    with SEARCH_FILTER_LOG_WIDGET:
+        dataDict = {
+            "LOG TYPE" : logTypeList,
+            "MESSAGE" : msgList,
+        }
+        df= pd.DataFrame(data=dataDict)
+        qgrid_widget = qgrid.show_grid(df , show_toolbar = True)
+        display(qgrid_widget)
+
+
 
 filterLogButton.on_click(filterLog)
-
-
+searchLogButton.on_click(searchLogs)
 topLineCheckbox = widgets.HBox([checkBoxDict[error] for error in ERROR_LIST[ : 4]])
 bottomLineCheckbox = widgets.HBox([checkBoxDict[error] for error in ERROR_LIST[4 : ]])
 CheckboxDashboard = widgets.VBox([topLineCheckbox, bottomLineCheckbox])
 logFilterWidget = widgets.HBox([filterLogButton, CheckboxDashboard])
+logSearchWidget = widgets.HBox([searchTextInput, searchLogButton])
+FSEWidget = widgets.VBox([logFilterWidget , logSearchWidget])
 
 
 

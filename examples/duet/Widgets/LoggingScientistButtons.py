@@ -7,8 +7,6 @@ from loguru import logger
 # syft absolute
 import syft as sy
 
-duet = None
-
 LOG_LIST = []
 
 def SET_LOGGING_SINK():
@@ -31,5 +29,4 @@ filterLogButton = Button(
     tooltip='Filter Logs',
     icon='fa-filter',
 )
-
 
