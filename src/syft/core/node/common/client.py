@@ -15,7 +15,6 @@ import pandas as pd
 
 # syft relative
 from .... import serialize
-from ....core.pointer.pointer import Pointer
 from ....lib import create_lib_ast
 from ....logger import critical
 from ....logger import debug
@@ -39,6 +38,9 @@ from ...io.route import Route
 from ...io.route import SoloRoute
 from ...io.virtual import VirtualClientConnection
 from ...node.common.service.obj_search_service import ObjectSearchMessage
+from ...pointer.garbage_collection import GarbageCollection
+from ...pointer.garbage_collection import gc_get_default_strategy
+from ...pointer.pointer import Pointer
 from ..abstract.node import AbstractNodeClient
 from .action.exception_action import ExceptionMessage
 from .service.child_node_lifecycle_service import RegisterChildNodeMessage
@@ -70,6 +72,9 @@ class Client(AbstractNodeClient):
 
         self.routes = routes
         self.default_route_index = 0
+
+        gc_strategy_name = gc_get_default_strategy()
+        self.gc = GarbageCollection(gc_strategy_name)
 
         # create a signing key if one isn't provided
         if signing_key is None:
@@ -361,6 +366,9 @@ class Client(AbstractNodeClient):
         keys = f"🔑 {verify}"
 
         return keys
+
+    def __hash__(self) -> Any:
+        return hash(self.id)
 
 
 class StoreClient:

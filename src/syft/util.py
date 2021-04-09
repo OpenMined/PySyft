@@ -104,6 +104,11 @@ def index_syft_by_module_name(fully_qualified_name: str) -> object:
 
     """
     attr_list = fully_qualified_name.split(".")
+
+    # we deal with VerifyAll differently, because we don't it be imported and used by users
+    if attr_list[-1] == "VerifyAll":
+        return type(syft.core.common.group.VERIFYALL)
+
     if attr_list[0] != "syft":
         raise ReferenceError(f"Reference don't match: {attr_list[0]}")
 
@@ -133,7 +138,6 @@ def get_fully_qualified_name(obj: object) -> str:
         the full path and name of the object
 
     """
-
     fqn = obj.__module__
     try:
         fqn += "." + obj.__class__.__name__
@@ -571,7 +575,7 @@ def inherit_tags(
 ) -> None:
     tags = []
     if self_obj is not None and hasattr(self_obj, "tags"):
-        tags.extend([tag for tag in self_obj.tags])  # type: ignore
+        tags.extend(list(self_obj.tags))  # type: ignore
 
     for arg in args:
         if hasattr(arg, "tags"):

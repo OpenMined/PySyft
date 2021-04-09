@@ -76,7 +76,6 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.lib.python.Slice.__le__", "syft.lib.python.Bool"),
         ("syft.lib.python.Slice.__lt__", "syft.lib.python.Bool"),
         ("syft.lib.python.Slice.__ne__", "syft.lib.python.Bool"),
-        ("syft.lib.python.Slice.__repr__", "syft.lib.python.String"),
         ("syft.lib.python.Slice.__str__", "syft.lib.python.String"),
         ("syft.lib.python.Slice.indices", "syft.lib.python.Tuple"),
         (
@@ -291,7 +290,7 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.lib.python.Dict.__ge__", "syft.lib.python.Bool"),
         ("syft.lib.python.Dict.__getitem__", "syft.lib.python.Any"),
         ("syft.lib.python.Dict.__gt__", "syft.lib.python.Bool"),
-        ("syft.lib.python.Dict.__iter__", "syft.lib.python.Any"),
+        ("syft.lib.python.Dict.__iter__", "syft.lib.python.Iterator"),
         ("syft.lib.python.Dict.__le__", "syft.lib.python.Bool"),
         ("syft.lib.python.Dict.__len__", "syft.lib.python.Int"),
         ("syft.lib.python.Dict.__lt__", "syft.lib.python.Bool"),
@@ -384,11 +383,12 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.lib.python.Tuple.__getitem__", "syft.lib.python.Any"),
         ("syft.lib.python.Tuple.count", "syft.lib.python.Int"),
         ("syft.lib.python.Tuple.index", "syft.lib.python.Int"),
-        ("syft.lib.python.Tuple.__iter__", "syft.lib.python.Any"),
+        ("syft.lib.python.Tuple.__iter__", "syft.lib.python.Iterator"),
         # PyContainer - quite there
         ("syft.lib.python.Any.__add__", "syft.lib.python.Any"),
-        ("syft.lib.python.Any.__iter__", "syft.lib.python.Any"),
+        ("syft.lib.python.Any.__iter__", "syft.lib.python.Iterator"),
         ("syft.lib.python.Any.__next__", "syft.lib.python.Any"),
+        ("syft.lib.python.Any.__len__", "syft.lib.python.Int"),
         ("syft.lib.python.Any.__radd__", "syft.lib.python.Any"),
         ("syft.lib.python.Any.__truediv__", "syft.lib.python.Any"),
         ("syft.lib.python.Any.__rtruediv__", "syft.lib.python.Any"),
@@ -408,7 +408,8 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
                 "torch.Tensor",
             ],
         ),  # temp until casting
-        ("syft.lib.python.Iterator.__iter__", "syft.lib.python.Any"),
+        ("syft.lib.python.Iterator.__iter__", "syft.lib.python.Iterator"),
+        ("syft.lib.python.Iterator.__len__", "syft.lib.python.Int"),
         ("syft.lib.python.Set.__and__", "syft.lib.python.Set"),
         ("syft.lib.python.Set.__contains__", "syft.lib.python.Bool"),
         ("syft.lib.python.Set.__eq__", "syft.lib.python.Bool"),
@@ -471,7 +472,10 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.lib.python.collections.OrderedDict.__le__",
             "syft.lib.python.Bool",
         ),
-        ("syft.lib.python.collections.OrderedDict.__iter__", "syft.lib.python.Any"),
+        (
+            "syft.lib.python.collections.OrderedDict.__iter__",
+            "syft.lib.python.Iterator",
+        ),
         ("syft.lib.python.collections.OrderedDict.__len__", "syft.lib.python.Int"),
         (
             "syft.lib.python.collections.OrderedDict.__lt__",
