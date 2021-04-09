@@ -21,15 +21,15 @@ message CreateWorkerResponse {
   syft.core.io.Address address = 4;
 }
 
-// CHECK Worker Deployment Progress
-message CheckWorkerDeploymentMessage {
+// CHECK Cloud instance types
+message GetWorkerInstanceTypesMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
   string content = 3;
   syft.core.io.Address reply_to = 4;
 }
 
-message CheckWorkerDeploymentResponse {
+message GetWorkerInstanceTypesResponse {
   syft.core.common.UID msg_id = 1;
   int32 status_code = 2;
   string content = 3;

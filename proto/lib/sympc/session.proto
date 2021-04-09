@@ -7,6 +7,7 @@ import "proto/lib/python/dict.proto";
 
 
 message MPCSession {
+  bytes protocol = 8;
   bytes uuid = 1;
   int32 rank = 2;
   bytes ring_size = 3; /* 2 ** 64 cannot be handled */
