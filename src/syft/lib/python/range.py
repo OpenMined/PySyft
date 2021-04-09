@@ -62,7 +62,7 @@ class Range(PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     def __bool__(self) -> SyPrimitiveRet:
-        res = bool(self.value.__len__())
+        res = self.value.__bool__()
         return PrimitiveFactory.generate_primitive(value=res)
 
     def __len__(self) -> Any:
@@ -91,14 +91,12 @@ class Range(PyPrimitive):
         res = self.value.stop
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @property
-    def index(self) -> SyPrimitiveRet:
-        res = self.value.index
+    def index(self, value: int) -> SyPrimitiveRet:
+        res = self.value.index(value)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    @property
-    def count(self) -> SyPrimitiveRet:
-        res = self.value.count
+    def count(self, value: int) -> SyPrimitiveRet:
+        res = self.value.count(value)
         return PrimitiveFactory.generate_primitive(value=res)
 
     def upcast(self) -> range:
