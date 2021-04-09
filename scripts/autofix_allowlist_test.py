@@ -117,6 +117,7 @@ exception_pattern_syft = re.compile(
     + "|aten::empty_strided"
     + "|If you are using DistributedDataParallel \(DDP\) for training"
     + "|not present in the AST"
+    + "|Can't detach views in-place\. Use detach\(\) instead"
 )
 
 
@@ -195,8 +196,7 @@ for op in allowlist_test["tests"]["torch.Tensor"].keys():
                 allowlist_test["tests"]["torch.Tensor"][op]["skip"].remove(s)
 
             else:
-                print(allowlist_test["tests"]["torch.Tensor"][op]["skip"])
-                # os.exit()
+                pass
 
     else:
         allowlist_test["tests"]["torch.Tensor"][op]["skip"] = []
@@ -223,7 +223,6 @@ for op in allowlist_test["tests"]["torch.Tensor"].keys():
             ):
                 continue
             allowlist_test["tests"]["torch.Tensor"][op]["not_available"].remove(s)
-    # print(op, allowlist_test['tests']['torch.Tensor'][op])
 
 with open(f"{root_dir}/tests/syft/lib/allowlist_test.json", "w") as f:
     json.dump(allowlist_test, f, indent=2)
@@ -265,7 +264,6 @@ while continue_loop:
     # get all the operators that failed
     with open(err_jsonl, "r+", encoding="utf8") as f:  # type: ignore
         failed_ops = set([item["input"]["op_name"] for item in jsonlines.Reader(f)])
-
     print(f"{len(failed_ops)} operators failed:")
     for cnt, op in enumerate(failed_ops):
         print(f"{cnt:>10}:{op:>20}")
