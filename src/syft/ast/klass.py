@@ -21,58 +21,14 @@ from ..core.node.common.action.get_or_set_property_action import GetOrSetPropert
 from ..core.node.common.action.get_or_set_property_action import PropertyActions
 from ..core.node.common.action.run_class_method_action import RunClassMethodAction
 from ..core.node.common.action.save_object_action import SaveObjectAction
-from ..core.node.common.service.resolve_pointer_type_service import (
-    ResolvePointerTypeMessage,
-)
 from ..core.pointer.pointer import Pointer
+from ..core.pointer.pointer import _resolve_pointer_type
 from ..core.store.storeable_object import StorableObject
 from ..logger import critical
 from ..logger import traceback_and_raise
 from ..logger import warning
 from ..util import aggressive_set_attr
 from ..util import inherit_tags
-
-
-def _resolve_pointer_type(self: Pointer) -> Pointer:
-    """
-    Creates a request on a pointer to validate and regenerate the current pointer type. This method
-    is useful when deadling with AnyPointer or Union<types>Pointers, to retrieve the real pointer.
-
-    The existing pointer will be deleted and a new one will be generated. The remote data won't
-    be touched.
-
-    Args:
-        self: The pointer which will be validated.
-
-    Returns:
-        The new pointer, validated from the remote object.
-    """
-
-    # id_at_location has to be preserved
-    id_at_location = getattr(self, "id_at_location", None)
-
-    if None:
-        traceback_and_raise(
-            ValueError("Can't resolve a pointer that has no underlying object.")
-        )
-
-    cmd = ResolvePointerTypeMessage(
-        id_at_location=id_at_location,
-        address=self.client.address,
-        reply_to=self.client.address,
-    )
-
-    # the path to the underlying type. It has to live in the AST
-    real_type_path = self.client.send_immediate_msg_with_reply(msg=cmd).type_path
-    new_pointer = self.client.lib_ast.query(real_type_path).pointer_type(
-        client=self.client, id_at_location=id_at_location
-    )
-
-    # we disable the garbage collection message and then we delete the existing message.
-    self.gc_enabled = False
-    del self
-
-    return new_pointer
 
 
 def get_run_class_method(attr_path_and_name: str) -> CallableT:
