@@ -468,7 +468,7 @@ def test_all_allowlisted_tensor_methods(
 
                 method = getattr(torch, self_tensor[1])
 
-                def gen_tensor(method, argslist: ListType) -> torch.Tensor:
+                def gen_tensor(method, argslist: ListType) -> torch.Tensor:  # type: ignore
                     for i in range(len(argslist)):
                         if (
                             isinstance(argslist[i], list)
@@ -697,15 +697,15 @@ def test_all_allowlisted_tensor_methods(
         # Step 10: Ensure the method returned a pointer
         assert isinstance(result, Pointer)
 
-        # Step 11: Get the result
-        result_pointer_type = type(result)
-        local_result = result.get()
-
-        debug_data["local_result"] = local_result
-        debug_data["local_result_type"] = type(local_result)
-
-        # Step 12: If there are NaN values, set them to 0 (normal for division by 0)
         try:
+            # Step 11: Get the result
+            result_pointer_type = type(result)
+            local_result = result.get()
+
+            debug_data["local_result"] = local_result
+            debug_data["local_result_type"] = type(local_result)
+
+            # Step 12: If there are NaN values, set them to 0 (normal for division by 0)
             target_fqn = full_name_with_qualname(klass=type(target_result))
             if target_fqn.startswith("torch.return_types."):
                 fields = types_fields[type(local_result)]

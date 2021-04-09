@@ -118,6 +118,7 @@ exception_pattern_syft = re.compile(
     + "|If you are using DistributedDataParallel \(DDP\) for training"
     + "|not present in the AST"
     + "|Can't detach views in-place\. Use detach\(\) instead"
+    + "|object has no attribute '__module__'"
 )
 
 
@@ -153,7 +154,7 @@ exception_fix = []
 exception_fix.append((exception_pattern_1, fix_exception_pattern_1))
 exception_fix.append((exception_pattern_args, fix_exception_pattern_args))  # type: ignore
 exception_fix.append((exception_pattern_2, fix_exception_pattern_2))  # type: ignore
-exception_fix.append((exception_pattern_syft, fix_exception_pattern_syft))
+exception_fix.append((exception_pattern_syft, fix_exception_pattern_syft))  # type: ignore
 
 # ------------------------------
 # some helper function
@@ -230,6 +231,7 @@ with open(f"{root_dir}/tests/syft/lib/allowlist_test.json", "w") as f:
 # -------------------------------
 # loop:
 # [run slow test] -> [comment out allowlist.py] -> [fix allowlist_test.json] -> [run slow test] -> ...
+failed_ops = None
 pre_failed_ops = None
 same_fail_count = 0
 loop_cnt = 0
@@ -256,6 +258,7 @@ while continue_loop:
         os.system(f"git co {p/'allowlist.py'}")
         os.system(f"rm {p/'allowlist.py.bak'}")
         os.system("rm tests/syft/lib/allowlist_test.json.bak")
+        failed_ops = None
         break
 
     # get errors.jsonl file name
@@ -278,28 +281,6 @@ while continue_loop:
         print(f"The same group of operators fail for the last 5 loops. {failed_ops}")
         continue_loop = False
     pre_failed_ops = failed_ops
-
-    # read original content of allowlist.py
-    with open(p / "allowlist.py.bak", "r") as f:
-        lines = f.readlines()
-
-    # comment all lines but these contain err_ops
-    adding_hash = False
-    for i, line in enumerate(lines):
-        if line.startswith('allowlist["torch'):
-            if not is_failed_op(line, failed_ops):
-                adding_hash = True
-            else:
-                adding_hash = False
-            # don't comment out `sum` and `backward`, because we will need them when test "grad"
-            if "sum" in line or "backward" in line:
-                adding_hash = False
-        if adding_hash:
-            lines[i] = "#" + line
-
-    # overwrite content of allowlist.py
-    with open(p / "allowlist.py", "w") as f:
-        f.writelines(lines)
 
     # read allowlist_test.json
     with open(f"{root_dir}/tests/syft/lib/allowlist_test.json", "r") as f:
@@ -349,6 +330,30 @@ while continue_loop:
     # update allowlist_test.json
     with open(f"{root_dir}/tests/syft/lib/allowlist_test.json", "w") as f:
         json.dump(allowlist_test, f, indent=2)
+
+
+if failed_ops is not None:
+    # read original content of allowlist.py
+    with open(p / "allowlist.py.bak", "r") as f:
+        lines = f.readlines()
+
+    # comment all lines but these contain err_ops
+    adding_hash = False
+    for i, line in enumerate(lines):
+        if line.startswith('allowlist["torch'):
+            if not is_failed_op(line, failed_ops):
+                adding_hash = True
+            else:
+                adding_hash = False
+            # don't comment out `sum` and `backward`, because we will need them when test "grad"
+            if "sum" in line or "backward" in line:
+                adding_hash = False
+        if adding_hash:
+            lines[i] = "#" + line
+
+    # overwrite content of allowlist.py
+    with open(p / "allowlist.py", "w") as f:
+        f.writelines(lines)
 
 
 # read allowlist_test.json
