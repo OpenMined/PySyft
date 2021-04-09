@@ -17,6 +17,8 @@ import torch
 
 # syft absolute
 import syft as sy
+from syft.core.node.common.action.run_class_method_action import RunClassMethodAction
+from syft.core.node.common.action.save_object_action import SaveObjectAction
 
 # syft relative
 from ...core.pointer.pointer import Pointer
@@ -122,7 +124,12 @@ class Module:
         # this is how we catch the modules being set during subclass init
         # bug where torch.nn.modules isn't the full name on some imports
         # TODO: fix this properly
-        if "torch.nn" in full_name_with_qualname(klass=type(value)):
+        # third party
+        import torch
+
+        if "torch.nn" in full_name_with_qualname(klass=type(value)) or isinstance(
+            value, torch.nn.Module
+        ):
             modules = self.__dict__.get("_modules")
             if modules is not None:
                 modules[name] = value
@@ -412,11 +419,26 @@ def object2proto(obj: torch.nn.Module, is_child: bool = False) -> Module_PB:
         proto.module_type = type(obj).__name__
     else:
         proto.module_type = f"_USER_DEFINED_MODULE_{type(obj).__name__}"
+        proto.forward.CopyFrom(sy.serialize(obj.forward))
 
     proto.module_repr = obj.extra_repr()
 
+    if hasattr(obj, "_parameter_pointers"):
+        proto.attr2uid.CopyFrom(
+            sy.serialize(
+                SyOrderedDict(
+                    {
+                        attr_name: param.id_at_location
+                        for attr_name, param in obj._parameter_pointers.items()
+                    }
+                )
+            )
+        )
+
     if not is_child:
         proto.state_dict.CopyFrom(sy.serialize(SyOrderedDict(obj.state_dict())))
+
+    proto.parameters.CopyFrom(sy.serialize(SyOrderedDict(obj._parameters)))
 
     for n, m in obj.named_children():
         child_proto = object2proto(m, is_child=True)
@@ -441,11 +463,28 @@ def proto2object(proto: Module_PB) -> torch.nn.Module:
     args, kwargs = repr_to_kwargs(repr_str=proto.module_repr)
     obj = obj_type(*args, **kwargs)
 
+    for name, param in sy.deserialize(proto.parameters).items():
+        obj.register_parameter(str(name), param)
+    # import ipdb
+    # ipdb.set_trace()
+
+    if proto.HasField("forward"):
+        obj.forward = sy.deserialize(proto.forward)
+        obj.__call__ = obj.forward
+
     for child_proto in proto.children:
         obj.add_module(child_proto.module_name, sy.deserialize(child_proto))
 
     if proto.state_dict.ByteSize() > 0:
         obj.load_state_dict(sy.deserialize(proto.state_dict))
+
+    if hasattr(obj, "forward") and proto.HasField("attr2uid"):
+        attr2uid = sy.deserialize(proto.attr2uid)
+        for attr_name, uid in attr2uid.items():
+            for action in obj.forward.actions:
+                if isinstance(action, SaveObjectAction):
+                    if action.obj.id == uid:
+                        action.obj.data = getattr(obj, str(attr_name))
 
     return obj
 

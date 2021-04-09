@@ -33,7 +33,7 @@ def build_plan_inputs(forward_func: Callable) -> Dict[str, Pointer]:
 def map_in2out(inputs: dict, outputs: tuple) -> dict:
     in2out_map = {}
     for k, v in inputs.items():
-        input_id_at_location = v.id_at_location
+        input_id_at_location = getattr(v, "id_at_location", None)
         for i, o in enumerate(outputs):
             if o.id_at_location == input_id_at_location:
                 in2out_map[k] = i

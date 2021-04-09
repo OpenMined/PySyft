@@ -1761,6 +1761,7 @@ allowlist["torch.exp"] = "torch.Tensor"
 # Modules
 allowlist["torch.nn.Module"] = "torch.nn.Module"
 allowlist["torch.nn.Module.__call__"] = "torch.Tensor"
+allowlist["torch.nn.Module.forward"] = "torch.Tensor"
 allowlist["torch.nn.Module.parameters"] = "syft.lib.python.List"
 allowlist["torch.nn.Module.train"] = "torch.nn.Module"
 allowlist["torch.nn.Module.cuda"] = "torch.nn.Module"

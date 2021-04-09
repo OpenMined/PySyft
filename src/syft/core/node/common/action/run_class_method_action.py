@@ -168,14 +168,37 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
             method_name = self.path.split(".")[-1]
 
-            if isinstance(resolved_self.data, Plan) and method_name == "__call__":
+            # import torch
+            # if isinstance(resolved_self.data, torch.nn.Module):
+            #     import ipdb
+            #     ipdb.set_trace()
+            #     print(resolved_self.data, type(resolved_self))
+            # print(resolved_self.data)
+            # print(method_name)
+            if (
+                isinstance(resolved_self.data, Plan)
+                and method_name == "__call__"
+                or (
+                    hasattr(resolved_self.data, "forward")
+                    and resolved_self.data.forward.__class__.__name__ == "Plan"
+                    and method_name in ["__call__", "forward"]
+                )
+            ):
+
+                # if isinstance(resolved_self.data, Plan) and method_name == "__call__":
                 if len(self.args) > 0:
                     traceback_and_raise(
                         ValueError(
                             "You passed args to Plan.__call__, while it only accepts kwargs"
                         )
                     )
-                result = method(resolved_self.data, node, verify_key, **self.kwargs)
+                # import ipdb
+                # ipdb.set_trace()
+                if method.__name__ == "_forward_unimplemented":
+                    method = resolved_self.data.forward
+                    result = method(node, verify_key, **self.kwargs)
+                else:
+                    result = method(resolved_self.data, node, verify_key, **self.kwargs)
             else:
                 target_method = getattr(resolved_self.data, method_name, None)
 
@@ -188,6 +211,11 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     method = functools.partial(method, resolved_self.data)
 
                 result = method(*upcasted_args, **upcasted_kwargs)
+
+        # if method_name == "sum":
+        #     print(method_name)
+        #     import ipdb
+        #     ipdb.set_trace()
 
         # TODO: add numpy support https://github.com/OpenMined/PySyft/issues/5164
         if "numpy." in str(type(result)):

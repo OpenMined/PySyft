@@ -85,6 +85,10 @@ class Plan(Serializable):
         """
 
         self.n_calls += 1
+        # print(node)
+        # print(self.actions)
+        # print()
+        # print(kwargs)
 
         # this is pretty cumbersome, we are searching through all actions to check
         # if we need to redefine some of their attributes that are inputs in the
