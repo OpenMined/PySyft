@@ -1221,6 +1221,7 @@ allowlist["torch.floor"] = "torch.Tensor"
 allowlist["torch.fmod"] = "torch.Tensor"
 allowlist["torch.frac_"] = "torch.Tensor"
 allowlist["torch.frac"] = "torch.Tensor"
+allowlist["torch.from_numpy"] = "torch.Tensor"
 allowlist["torch.gather"] = "torch.Tensor"
 allowlist["torch.ge"] = "torch.Tensor"
 allowlist["torch.geqrf"] = "torch.return_types.geqrf"
@@ -3329,6 +3330,9 @@ allowlist["torch.nn.ZeroPad2d.state_dict"] = "syft.lib.python.collections.Ordere
 allowlist["torch.nn.ZeroPad2d.load_state_dict"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.ZeroPad2d.extra_repr"] = "syft.lib.python.String"
 
+allowlist["torch.distributions.Categorical"] = "torch.distributions.Categorical"
+allowlist["torch.distributions.Categorical.sample"] = "torch.Tensor"
+allowlist["torch.distributions.Categorical.log_prob"] = "torch.Tensor"
 
 allowlist["torch.Tensor.xpu"] = {
     "return_type": "torch.Tensor",
