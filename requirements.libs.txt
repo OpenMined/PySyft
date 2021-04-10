@@ -1,5 +1,6 @@
 -r ./requirements.libs.deps.txt
 
+gym
 numpy
 opacus
 openmined.psi
