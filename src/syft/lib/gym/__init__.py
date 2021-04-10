@@ -25,6 +25,8 @@ def create_ast(client: TypeAny = None) -> Globals:
 
     modules: TypeList[TypeTuple[str, TypeAny]] = [
         ("gym", gym),
+        ("gym.wrappers", gym.wrappers),
+        ("gym.wrappers.time_limit", gym.wrappers.time_limit),
     ]
     classes: TypeList[TypeTuple[str, str, TypeAny]] = [
         (
@@ -35,9 +37,12 @@ def create_ast(client: TypeAny = None) -> Globals:
     ]
 
     methods = [
+        ("gym.make", "gym.wrappers.time_limit.TimeLimit"),
+        ("gym.wrappers.time_limit.TimeLimit.seed", "syft.lib.python.List"),
         ("gym.wrappers.time_limit.TimeLimit.reset", "numpy.ndarray"),
         ("gym.wrappers.time_limit.TimeLimit.step", "syft.lib.python.Tuple"),
-        ("gym.wrappers.time_limit.TimeLimit.render", "syft.lib.python.Bool"),
+        # render may leak the hidden information
+        # ("gym.wrappers.time_limit.TimeLimit.render", "syft.lib.python.Bool"),
     ]
 
     add_modules(ast, modules)
