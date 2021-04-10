@@ -14,6 +14,7 @@ from ..core.node.abstract.node import AbstractNodeClient
 from ..core.node.common.action.function_or_constructor_action import (
     RunFunctionOrConstructorAction,
 )
+from ..core.pointer.pointer import pointerize_args_and_kwargs
 from ..logger import traceback_and_raise
 from ..util import inherit_tags
 from .util import module_type
@@ -81,7 +82,7 @@ class Callable(ast.attribute.Attribute):
             ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
 
             # then we convert anything which isn't a pointer into a pointer
-            pointer_args, pointer_kwargs = ast.klass.pointerize_args_and_kwargs(
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
                 args=downcast_args, kwargs=downcast_kwargs, client=self.client
             )
 

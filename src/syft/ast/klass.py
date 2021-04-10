@@ -23,6 +23,7 @@ from ..core.node.common.action.run_class_method_action import RunClassMethodActi
 from ..core.node.common.action.save_object_action import SaveObjectAction
 from ..core.pointer.pointer import Pointer
 from ..core.pointer.pointer import _resolve_pointer_type
+from ..core.pointer.pointer import pointerize_args_and_kwargs
 from ..core.store.storeable_object import StorableObject
 from ..logger import critical
 from ..logger import traceback_and_raise
@@ -513,32 +514,3 @@ class Class(Callable):
                     return target_object.set_remote_value(value)
 
         return super().__setattr__(key, value)
-
-
-def pointerize_args_and_kwargs(
-    args: Union[List[Any], Tuple[Any, ...]], kwargs: Dict[Any, Any], client: Any
-) -> Tuple[List[Any], Dict[Any, Any]]:
-    # When we try to send params to a remote function they need to be pointers so
-    # that they can be serialized and fetched from the remote store on arrival
-    # this ensures that any args which are passed in from the user side are first
-    # converted to pointers and sent then the pointer values are used for the
-    # method invocation
-    pointer_args = []
-    pointer_kwargs = {}
-    for arg in args:
-        # check if its already a pointer
-        if not isinstance(arg, Pointer):
-            arg_ptr = arg.send(client, pointable=False)
-            pointer_args.append(arg_ptr)
-        else:
-            pointer_args.append(arg)
-
-    for k, arg in kwargs.items():
-        # check if its already a pointer
-        if not isinstance(arg, Pointer):
-            arg_ptr = arg.send(client, pointable=False)
-            pointer_kwargs[k] = arg_ptr
-        else:
-            pointer_kwargs[k] = arg
-
-    return pointer_args, pointer_kwargs
