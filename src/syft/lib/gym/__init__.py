@@ -34,6 +34,11 @@ def create_ast(client: TypeAny = None) -> Globals:
             "gym.wrappers.time_limit.TimeLimit",
             gym.wrappers.time_limit.TimeLimit,
         ),
+        (
+            "gym.Wrapper",
+            "gym.Wrapper",
+            gym.Wrapper,
+        ),
     ]
 
     methods = [
@@ -41,8 +46,6 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("gym.wrappers.time_limit.TimeLimit.seed", "syft.lib.python.List"),
         ("gym.wrappers.time_limit.TimeLimit.reset", "numpy.ndarray"),
         ("gym.wrappers.time_limit.TimeLimit.step", "syft.lib.python.Tuple"),
-        # render may leak the hidden information
-        # ("gym.wrappers.time_limit.TimeLimit.render", "syft.lib.python.Bool"),
     ]
 
     add_modules(ast, modules)
