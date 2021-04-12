@@ -23,4 +23,7 @@ except VersionConflict:
     sys.exit(1)
 
 if __name__ == "__main__":
-    setup(use_pyscaffold=True)
+    setup(
+        use_pyscaffold=True,
+        url="https://github.com/OpenMined/PySyft",
+    )
