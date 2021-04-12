@@ -39,6 +39,10 @@ class AriesDuetTokenExchanger(DuetTokenExchanger):
         self.duet_didcomm_connection_id = None
         self._register_agent_listeners()
         
+    # The DuetTokenExchanger expects this class to be implemented
+    # In this case we are establishing a DIDComm connection, 
+    # challenging the connection with an optional authentication policy
+    # Then to successful connections sending the duet token identifier over this channel.
     def run(
         self,
         duet_token: str,

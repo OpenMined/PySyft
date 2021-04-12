@@ -62,7 +62,7 @@ EOF
 # -----------------------------------------------------------------------------------------------------------------
 # Default Settings:
 # -----------------------------------------------------------------------------------------------------------------
-DEFAULT_CONTAINERS="datascientist-agent ngrok-datascientist-agent dataowner-agent ngrok-dataowner-agent issuer-agent ngrok-issuer "
+DEFAULT_CONTAINERS="datascientist-agent ngrok-datascientist-agent dataowner-agent ngrok-dataowner-agent"
 
 # -----------------------------------------------------------------------------------------------------------------
 # Functions:
