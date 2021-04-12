@@ -80,6 +80,7 @@ has_cuda = th.cuda.is_available()
 # is_property:  this helps understand if the attribute can be called or not
 # return_type:  this helps verify that the return type matches the expected return type
 
+
 # this handles instances where the allow list provides more meta information
 def get_return_type(support_dict: Union[str, Dict[str, str]]) -> str:
     if isinstance(support_dict, str):

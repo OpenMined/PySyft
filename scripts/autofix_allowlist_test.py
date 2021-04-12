@@ -35,7 +35,7 @@ def fix_exception_pattern_1(not_available: list, **kwargs: Any) -> None:
 
 # inappropriate _arg("inputs" in allowlist_test.json)
 exception_pattern_args = re.compile(
-    "argument '\w+.*\(position 1\) must be \w+, not \w+.*\[torch\]"
+    r"argument '\w+.*\(position 1\) must be \w+, not \w+.*\[torch\]"
 )
 
 
@@ -78,7 +78,7 @@ def fix_exception_pattern_args(
 
 
 # exceptions thrown by torch, tagged by allowlist_test.py as "[torch]"
-exception_pattern_2 = re.compile("\[torch\]")
+exception_pattern_2 = re.compile(r"\[torch\]")
 
 
 def fix_exception_pattern_2(
@@ -115,9 +115,9 @@ def fix_exception_pattern_2(
 exception_pattern_syft = re.compile(
     "reshape is not implemented for sparse tensors"
     + "|aten::empty_strided"
-    + "|If you are using DistributedDataParallel \(DDP\) for training"
+    + r"|If you are using DistributedDataParallel \(DDP\) for training"
     + "|not present in the AST"
-    + "|Can't detach views in-place\. Use detach\(\) instead"
+    + r"|Can't detach views in-place\. Use detach\(\) instead"
     + "|object has no attribute '__module__'"
 )
 
@@ -147,7 +147,7 @@ def fix_exception_pattern_syft(
         )
         return i + 1
 
-    i = get_ele_index()
+    get_ele_index()
 
 
 exception_fix = []
@@ -155,6 +155,7 @@ exception_fix.append((exception_pattern_1, fix_exception_pattern_1))
 exception_fix.append((exception_pattern_args, fix_exception_pattern_args))  # type: ignore
 exception_fix.append((exception_pattern_2, fix_exception_pattern_2))  # type: ignore
 exception_fix.append((exception_pattern_syft, fix_exception_pattern_syft))  # type: ignore
+
 
 # ------------------------------
 # some helper function
