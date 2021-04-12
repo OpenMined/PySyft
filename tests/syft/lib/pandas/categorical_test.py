@@ -9,33 +9,42 @@ import pytest
 import syft as sy
 
 inputs = [
-    ("__len__", None),
-    ("tolist", None),
-    ("to_list", None),
-    ("value_counts", None),
-    ("unique", None),
-    ("argmax", None),
-    ("argmin", None),
-    ("as_ordered", None),
-    ("as_unordered", None),
-    ("copy", None),
-    ("describe", None),
-    ("dropna", None),
-    ("dtype", None),
-    # ( "equals",None),
-    ("mode", None),
-    ("nbytes", None),
-    ("ndim", None),
-    ("ordered", None),
-    ("ravel", None),
-    ("remove_categories", ["a"]),
-    ("remove_categories", "a"),
-    ("remove_unused_categories", None),
-    ("shape", None),
-    ("shift", 1),
-    ("shift", 2),
-    ("sort_values", None),
-    ("view", None),
+    {"func": "__eq__", "args": (pd.Categorical(["a", "b", "c", "a"], ordered=True))},
+    {"func": "__ge__", "args": (pd.Categorical(["a", "b", "c", "a"], ordered=True))},
+    {"func": "__gt__", "args": (pd.Categorical(["a", "b", "c", "a"], ordered=True))},
+    {"func": "__le__", "args": (pd.Categorical(["a", "b", "c", "a"], ordered=True))},
+    {"func": "__lt__", "args": (pd.Categorical(["a", "b", "c", "a"], ordered=True))},
+    {"func": "__ne__", "args": (pd.Categorical(["a", "b", "c", "a"], ordered=True))},
+    {"func": "__getitem__", "args": (1)},
+    {"func": "__setitem__", "args": (1, "a")},
+    {"func": "add_categories", "args": (["d"]), "kwargs": {"inplace": True}},
+    {"func": "add_categories", "args": (["d"])},
+    {"func": "__len__", "args": ()},
+    {"func": "tolist", "args": ()},
+    {"func": "to_list", "args": ()},
+    {"func": "value_counts", "args": ()},
+    {"func": "unique", "args": ()},
+    {"func": "argmax", "args": ()},
+    {"func": "argmin", "args": ()},
+    {"func": "as_ordered", "args": ()},
+    {"func": "as_unordered", "args": ()},
+    {"func": "copy", "args": ()},
+    {"func": "describe", "args": ()},
+    {"func": "dropna", "args": ()},
+    {"func": "dtype", "args": ()},
+    {"func": "mode", "args": ()},
+    {"func": "nbytes", "args": ()},
+    {"func": "ndim", "args": ()},
+    {"func": "ordered", "args": ()},
+    {"func": "ravel", "args": ()},
+    {"func": "remove_categories", "args": (["a"])},
+    {"func": "remove_categories", "args": ("a")},
+    {"func": "remove_unused_categories", "args": ()},
+    {"func": "shape", "args": ()},
+    {"func": "shift", "args": (1)},
+    {"func": "shift", "args": (2)},
+    {"func": "sort_values", "args": ()},
+    {"func": "view", "args": ()},
 ]
 
 objects = [
@@ -47,11 +56,10 @@ objects = [
 @pytest.mark.slow
 @pytest.mark.vendor(lib="pandas")
 @pytest.mark.parametrize("test_object", objects)
-@pytest.mark.parametrize("func,args", inputs)
+@pytest.mark.parametrize("inputs", inputs)
 def test_categorical_func(
     test_object: Any,
-    func: str,
-    args: Any,
+    inputs: dict,
     node: sy.VirtualMachine,
     client: sy.VirtualMachineClient,
 ) -> None:
@@ -63,16 +71,17 @@ def test_categorical_func(
     x = test_object
     x_ptr = test_object.send(client)
 
+    func = inputs["func"]
+    args = inputs["args"]
+    kwargs = inputs["kwargs"]
+
     op = getattr(x, func)
     op_ptr = getattr(x_ptr, func)
     # if op is a method
     if callable(op):
         if args is not None:
-            y = op(args)
-            y_ptr = op_ptr(args)
-        else:
-            y = op()
-            y_ptr = op_ptr()
+            y = op(*args, **kwargs)
+            y_ptr = op_ptr(*args, **kwargs)
     # op is a property
     else:
         y = op
