@@ -93,3 +93,22 @@ def test_slice_dataframe(root_client: sy.VirtualMachineClient) -> None:
     assert OrderedDict(data_reverse["col_2"]) == OrderedDict(
         reversed(list(data["col_2"].items()))
     )
+
+
+@pytest.mark.vendor(lib="pandas")
+def test_pandas_json_normalize(root_client: sy.VirtualMachineClient) -> None:
+    sy.load("pandas")
+    # third party
+    import pandas as pd
+
+    data = {"A": [1, 2]}
+    df = pd.json_normalize(data)
+
+    sy_data = sy.lib.python.Dict(data)
+    # create dict pointer
+    data_ptr = sy_data.send(root_client)
+
+    remote_pandas = root_client.pandas
+    df_ptr = remote_pandas.json_normalize(data_ptr)
+
+    assert df.equals(df_ptr.get())
