@@ -244,8 +244,7 @@ while continue_loop:
 
     # run slow test
     print("Running slow test ...This may take a while.")
-    # os.system("pytest -m torch -n auto -p no:benchmark --tb=no")
-    os.system("pytest -m torch -p no:benchmark --tb=no")
+    os.system("pytest -m torch -n auto -p no:benchmark --tb=no")
     print("Slow test done.")
     print()
 
