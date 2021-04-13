@@ -1156,6 +1156,7 @@ allowlist["torch.bitwise_or"] = {
 }
 allowlist["torch.bitwise_xor"] = "torch.Tensor"
 allowlist["torch.bmm"] = "torch.Tensor"
+allowlist["torch.cat"] = "torch.Tensor"
 allowlist["torch.ceil_"] = "torch.Tensor"
 allowlist["torch.ceil"] = "torch.Tensor"
 allowlist["torch.cholesky_inverse"] = "torch.Tensor"
@@ -1346,6 +1347,7 @@ allowlist["torch.square"] = {
     "min_version": "1.5.0",
 }
 allowlist["torch.squeeze"] = "torch.Tensor"
+allowlist["torch.stack"] = "torch.Tensor"
 allowlist["torch.std"] = "torch.Tensor"
 allowlist["torch.stft"] = "torch.Tensor"
 allowlist["torch.sub"] = "torch.Tensor"
