@@ -465,23 +465,8 @@ class ModelExecutor:
     def __init__(self, model: torch.nn.Module):
         """
         This class is meant to be used to execute forward computation of a user defined pytorch model.
-        To work with this class, you must define the forward method of your model in the following
-        style:
-        ```python
-        @staticmethod
-        def forward(model, x):
-            x = model.fc1(x)
-            x = model.fc2(x)
-            ...
-            return x
-        ```
-        which is:
-        - a staticmethod
-        - takes two arguments, the first is an instance of your defined model class, and the second is
-        input data
-        - call each child module in a way like `model.fc1(x)`
         """
-        self.model_forward = model.forward
+        self.model_class = type(model)
         self.children_names = [k for k, _ in model.named_children()]
 
     def __call__(
@@ -503,7 +488,7 @@ class ModelExecutor:
         if isinstance(model, Pointer):
             for name in self.children_names:
                 ModelExecutor.set_pointer_attr(model, name)
-        return self.model_forward(model, x)
+        return self.model_class.forward(model, x)
 
     @staticmethod
     def set_pointer_attr(model_pointer: Pointer, attr_name: str) -> None:
