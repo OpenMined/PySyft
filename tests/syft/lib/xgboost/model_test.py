@@ -6,7 +6,6 @@ import syft as sy
 
 
 @pytest.mark.vendor(lib="xgboost")
-@pytest.mark.vendor(lib="numpy")
 def test_pandas(root_client: sy.VirtualMachineClient) -> None:
     sy.load("xgboost")
     sy.load("numpy")
