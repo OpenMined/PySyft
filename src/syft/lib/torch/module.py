@@ -488,9 +488,6 @@ def proto2object(proto: Module_PB) -> torch.nn.Module:
             for action in obj.forward.actions:
                 if isinstance(action, SaveObjectAction):
                     if action.obj.id == uid:
-                        # import ipdb
-                        # ipdb.set_trace()
-                        # print("DESERIALIZING")
                         action.obj.data = getattr(obj, str(attr_name))
 
     return obj
