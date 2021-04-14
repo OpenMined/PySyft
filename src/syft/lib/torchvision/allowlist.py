@@ -18,9 +18,19 @@ allowlist["torchvision.transforms.Normalize"] = "torchvision.transforms.Normaliz
 # TODO: Normalize properties only exists on the object not on the class?
 # allowlist["torchvision.transforms.Normalize.inplace"] = "syft.lib.python.Bool"
 # TODO: mean and std are actually tuples
-# allowlist["torchvision.transforms.Normalize.mean"] = "syft.lib.python.List"
-# allowlist["torchvision.transforms.Normalize.std"] = "syft.lib.python.List"
+allowlist["torchvision.transforms.Normalize.mean"] = "syft.lib.python.Int"
+allowlist["torchvision.transforms.Normalize.mean"] = "syft.lib.python.Float"
+allowlist["torchvision.transforms.Normalize.mean"] = "syft.lib.python.Tuple"
+allowlist["torchvision.transforms.Normalize.mean"] = "syft.lib.python.List"
+allowlist["torchvision.transforms.Normalize.mean"] = "syft.lib.tensor.IntegerTensor"
+allowlist["torchvision.transforms.Normalize.mean"] = "syft.lib.numpy.ndarray"
 
+allowlist["torchvision.transforms.Normalize.std"] = "syft.lib.python.Int"
+allowlist["torchvision.transforms.Normalize.std"] = "syft.lib.python.Float"
+allowlist["torchvision.transforms.Normalize.std"] = "syft.lib.python.Tuple"
+allowlist["torchvision.transforms.Normalize.std"] = "syft.lib.python.List"
+allowlist["torchvision.transforms.Normalize.std"] = "syft.lib.tensor.IntegerTensor"
+allowlist["torchvision.transforms.Normalize.std"] = "syft.lib.numpy.ndarray"
 # Datasets
 
 allowlist["torchvision.datasets.MNIST"] = {
