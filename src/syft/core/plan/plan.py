@@ -62,6 +62,7 @@ class Plan(Serializable):
         self.code = code
         self.max_calls = max_calls
         self.n_calls = 0
+        self.local_executor = None
 
     def __call__(
         self,
@@ -159,6 +160,10 @@ class Plan(Serializable):
         # prevent circular dependency
         # syft relative
         from ...core.node.vm.vm import VirtualMachine  # noqa: F401
+        if self.local_executor is not None:
+            # this is necessary for syfts nn.module, because the plan contains state from the module
+            # in order to use this state, we first need to send the model, and then execute te plan
+            return self.local_executor(**kwargs)
 
         alice = VirtualMachine(name="plan_executor")
         alice_client: client.Client = alice.get_client()

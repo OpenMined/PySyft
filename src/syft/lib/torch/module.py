@@ -423,7 +423,16 @@ def object2proto(obj: torch.nn.Module, is_child: bool = False) -> Module_PB:
 
     proto.module_repr = obj.extra_repr()
 
-    if hasattr(obj, "_parameter_pointers"):
+    if hasattr(obj, "_attr2uid"):
+        # if we deserialize(serialize(obj)), or obj.send().get(), we need this,
+        # as _parameter_pointers are not set (they are set during plan building)
+        proto.attr2uid.CopyFrom(
+            sy.serialize(
+                SyOrderedDict(obj._attr2uid)
+            )
+        )
+
+    elif hasattr(obj, "_parameter_pointers"):
         proto.attr2uid.CopyFrom(
             sy.serialize(
                 SyOrderedDict(
@@ -434,9 +443,6 @@ def object2proto(obj: torch.nn.Module, is_child: bool = False) -> Module_PB:
                 )
             )
         )
-
-    if not is_child:
-        proto.state_dict.CopyFrom(sy.serialize(SyOrderedDict(obj.state_dict())))
 
     proto.parameters.CopyFrom(sy.serialize(SyOrderedDict(obj._parameters)))
 
@@ -464,26 +470,27 @@ def proto2object(proto: Module_PB) -> torch.nn.Module:
     obj = obj_type(*args, **kwargs)
 
     for name, param in sy.deserialize(proto.parameters).items():
-        obj.register_parameter(str(name), param)
-    # import ipdb
-    # ipdb.set_trace()
+        setattr(obj, str(name), param)
 
     if proto.HasField("forward"):
         obj.forward = sy.deserialize(proto.forward)
         obj.__call__ = obj.forward
 
     for child_proto in proto.children:
-        obj.add_module(child_proto.module_name, sy.deserialize(child_proto))
-
-    if proto.state_dict.ByteSize() > 0:
-        obj.load_state_dict(sy.deserialize(proto.state_dict))
+        setattr(obj, str(child_proto.module_name), sy.deserialize(child_proto))
+        # obj.add_module(child_proto.module_name, sy.deserialize(child_proto))
 
     if hasattr(obj, "forward") and proto.HasField("attr2uid"):
         attr2uid = sy.deserialize(proto.attr2uid)
+        # we need to set it to make sure that deserialize(serialize(obj)) == obj
+        obj._attr2uid = attr2uid
         for attr_name, uid in attr2uid.items():
             for action in obj.forward.actions:
                 if isinstance(action, SaveObjectAction):
                     if action.obj.id == uid:
+                        # import ipdb
+                        # ipdb.set_trace()
+                        # print("DESERIALIZING")
                         action.obj.data = getattr(obj, str(attr_name))
 
     return obj
