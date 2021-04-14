@@ -93,17 +93,13 @@ class Slice(PyPrimitive):
 
     def _object2proto(self) -> Slice_PB:
         slice_pb = Slice_PB()
+
         if self.start:
             slice_pb.start = self.start
-            slice_pb.has_start = True
-
         if self.stop:
             slice_pb.stop = self.stop
-            slice_pb.has_stop = True
-
         if self.step:
             slice_pb.step = self.step
-            slice_pb.has_step = True
 
         slice_pb.id.CopyFrom(serialize(obj=self._id))
 
@@ -115,13 +111,11 @@ class Slice(PyPrimitive):
         start = None
         stop = None
         step = None
-        if proto.has_start:
+        if proto.start:
             start = proto.start
-
-        if proto.has_stop:
+        if proto.stop:
             stop = proto.stop
-
-        if proto.has_step:
+        if proto.step:
             step = proto.step
 
         return Slice(
