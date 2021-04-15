@@ -168,7 +168,14 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
             method_name = self.path.split(".")[-1]
 
-            if isinstance(resolved_self.data, Plan) and method_name == "__call__":
+            if (
+                isinstance(resolved_self.data, Plan)
+                and method_name == "__call__"
+                or (
+                    isinstance(getattr(resolved_self.data, "forward", None), Plan)
+                    and method_name == "__call__"
+                )
+            ):
                 if len(self.args) > 0:
                     traceback_and_raise(
                         ValueError(

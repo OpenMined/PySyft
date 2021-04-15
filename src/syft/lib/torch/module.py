@@ -2,6 +2,7 @@
 import ast
 from collections import OrderedDict
 import copy
+import inspect
 import os
 from pathlib import Path
 import sys
@@ -19,6 +20,9 @@ import torch
 import syft as sy
 
 # syft relative
+from ...core.plan import Plan
+from ...core.plan.plan_builder import ROOT_CLIENT
+from ...core.plan.plan_builder import make_plan
 from ...core.pointer.pointer import Pointer
 from ...generate_wrapper import GenerateWrapper
 
@@ -29,8 +33,6 @@ from ...logger import info
 from ...logger import traceback_and_raise
 from ...proto.lib.torch.module_pb2 import Module as Module_PB
 from ..python.collections import OrderedDict as SyOrderedDict
-
-# from ...core.node.common.service.auth import AuthorizationException
 
 
 def repr_to_kwargs(repr_str: str) -> Tuple[List[Any], Dict[Any, Any]]:
@@ -408,12 +410,21 @@ class Module:
                         info(f"  Layer {n} sum({k}): {s}")
 
 
+CUSTOM_MODELS = {}
+
+
 def object2proto(obj: torch.nn.Module, is_child: bool = False) -> Module_PB:
     proto = Module_PB()
     if "torch.nn." in type(obj).__module__:
         proto.module_type = type(obj).__name__
     else:
         proto.module_type = f"_USER_DEFINED_MODULE_{type(obj).__name__}"
+        # if this env is where the model class is defined, register it
+        if type(obj.forward).__name__ == "method" and obj.forward.__name__ == "forward":
+            CUSTOM_MODELS[type(obj).__name__] = type(obj)
+
+        if hasattr(obj, "_sy_forward_plan"):
+            proto.forward.CopyFrom(sy.serialize(obj._sy_forward_plan))
 
     proto.module_repr = obj.extra_repr()
 
@@ -432,11 +443,11 @@ def proto2object(proto: Module_PB) -> torch.nn.Module:
     is_userdefined = proto.module_type.startswith("_USER_DEFINED_MODULE_")
 
     if is_userdefined:
-        obj_type = type(
-            proto.module_type.replace("_USER_DEFINED_MODULE_", ""),
-            (torch.nn.Module,),
-            {},
-        )
+        type_name = proto.module_type.replace("_USER_DEFINED_MODULE_", "")
+        if type_name in CUSTOM_MODELS:
+            obj_type = CUSTOM_MODELS[type_name]
+        else:
+            obj_type = type(type_name, (torch.nn.Module,), {})
     else:
         obj_type = getattr(torch.nn, proto.module_type)
 
@@ -448,6 +459,10 @@ def proto2object(proto: Module_PB) -> torch.nn.Module:
 
     if proto.state_dict.ByteSize() > 0:
         obj.load_state_dict(sy.deserialize(proto.state_dict))
+
+    if proto.HasField("forward") and obj.forward.__name__ == "_forward_unimplemented":
+        obj.forward = sy.deserialize(proto.forward)
+        obj.__call__ = obj.forward
 
     return obj
 
@@ -461,53 +476,35 @@ GenerateWrapper(
 )
 
 
-class ModelExecutor:
-    def __init__(self, model: torch.nn.Module):
-        """
-        This class is meant to be used to execute forward computation of a user defined pytorch model.
-        """
-        self.model_class = type(model)
-        self.children_names = [k for k, _ in model.named_children()]
+def set_children_pointer(model_ptr: Pointer, children_names: List[str]) -> None:
+    """
+    This function attaches new attributes to model_ptr.
+    The passed in `children_names` should be the names of a child modules of the model.
+    For each `child_name` in `children_names`, this function will create a new Pointer object same as `model_ptr`,
+    but with `attribute_name = child_name`.
+    These new created Pointer objects are then attached to `model_ptr`.
+    Doing so, we can access the child modules of the remote model in a way like `model_ptr.fc1`, for example.
+    """
+    for child_name in children_names:
+        child_ptr = type(model_ptr)(
+            client=model_ptr.client,
+            id_at_location=model_ptr.id_at_location,
+            object_type=model_ptr.object_type,
+        )
+        setattr(child_ptr, "attribute_name", child_name)
+        setattr(model_ptr, child_name, child_ptr)
 
-    def __call__(
-        self, model: torch.nn.Module, x: torch.Tensor
-    ) -> Union[torch.Tensor, Pointer]:
-        """
-        Call a ModelExecutor object on a user defined model and an input data, will execute the forward
-        computatioin of the model with the data.
-        The passed in model can be a local model, or a pointer to a remote model. The local or remote model
-        must be of the same type/class as the model passed in when this ModelExecutor object is initialized.
-        If a local model is passed in, this method just call the static forward method of the model on the
-        passed in data.
-        If a pointer to a remote model is passed in, this method will first call `set_pointer_attr` method,
-        then call the static forward method of the model on the passed in data.
-        What the `set_pointer_attr` method does is to attach to the pointer to the remote model a new
-        attribute according to each child module the model has. These new attached attributes are also
-        pointers, pointing to each child module of the remote model.
-        """
-        if isinstance(model, Pointer):
-            for name in self.children_names:
-                ModelExecutor.set_pointer_attr(model, name)
-        return self.model_class.forward(model, x)
 
-    @staticmethod
-    def set_pointer_attr(model_pointer: Pointer, attr_name: str) -> None:
-        """
-        This method attach a new attribute to the passed in model_pointer, which is a pointer pointing to a
-        remote model.
-        The passed in `attr_name` argument should be the name of a child module of the remote model.
-        This method will create a new Pointer object same as the model_pointer, then give it a new attribute
-        called `attribute_name`, which has value as the passed in `attr_name`. The `attribute_name` attribute
-        will allow us to access the child module of the remote model.
-        Then, this new created Pointer object is attached to model_pointer, as a new attribute has a name the
-        same as `attr_name`.
-        After this, we can access the child module of the remote model in a way like `model_pointer.fc1`.
-        """
-        if not hasattr(model_pointer, attr_name):
-            attr_ptr = type(model_pointer)(
-                client=model_pointer.client,
-                id_at_location=model_pointer.id_at_location,
-                object_type=model_pointer.object_type,
-            )
-            setattr(attr_ptr, "attribute_name", attr_name)
-            setattr(model_pointer, attr_name, attr_ptr)
+def create_forward_plan(model: torch.nn.Module) -> Plan:
+    """
+    This function creates a plan from the `forward` method of `model`.
+    """
+    remote_model = model.send(ROOT_CLIENT)
+    set_children_pointer(remote_model, [k for k, _ in model.named_children()])
+    default_x = list(inspect.signature(model.forward).parameters.values())[0].default
+
+    @make_plan
+    def forward_plan(x: torch.Tensor = default_x) -> Any:
+        return type(model).forward(remote_model, x, ROOT_CLIENT.torch)  # type: ignore
+
+    return forward_plan

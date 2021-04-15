@@ -3,6 +3,7 @@ syntax = "proto3";
 package syft.lib.torch;
 
 import "proto/lib/python/collections/ordered_dict.proto";
+import "proto/core/plan/plan.proto";
 
 message Module {
     string module_type = 1;
@@ -10,4 +11,5 @@ message Module {
     string module_repr = 3;
     repeated Module children = 4;
     syft.lib.python.collections.OrderedDict state_dict = 5;
+    optional syft.core.plan.Plan forward = 6;
 }
