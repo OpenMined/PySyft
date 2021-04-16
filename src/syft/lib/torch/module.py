@@ -478,7 +478,6 @@ def proto2object(proto: Module_PB) -> torch.nn.Module:
 
     for child_proto in proto.children:
         setattr(obj, str(child_proto.module_name), sy.deserialize(child_proto))
-        # obj.add_module(child_proto.module_name, sy.deserialize(child_proto))
 
     if hasattr(obj, "forward") and proto.HasField("attr2uid"):
         attr2uid = sy.deserialize(proto.attr2uid)
