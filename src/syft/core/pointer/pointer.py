@@ -109,9 +109,6 @@ from ..common.serde.serializable import bind_protobuf
 from ..common.uid import UID
 from ..io.address import Address
 from ..node.abstract.node import AbstractNode
-from ..node.common.action.garbage_collect_object_action import (
-    GarbageCollectObjectAction,
-)
 from ..node.common.action.get_object_action import GetObjectAction
 from ..node.common.service.get_repr_service import GetReprMessage
 from ..node.common.service.obj_search_permission_service import (
@@ -155,6 +152,10 @@ class Pointer(AbstractPointer):
             description=description,
         )
         self.object_type = object_type
+        # _exhausted becomes True in get() call
+        # when delete_obj is True and network call
+        # has already been made
+        self._exhausted = False
 
     def _get(self, delete_obj: bool = True, verbose: bool = False) -> StorableObject:
         """Method to download a remote object from a pointer object if you have the right
@@ -259,8 +260,13 @@ class Pointer(AbstractPointer):
         # syft relative
         from ..node.domain.service import RequestStatus
 
+        if self._exhausted:
+            raise ReferenceError(
+                "Object has already been deleted. This pointer is exhausted"
+            )
+
         if not request_block:
-            return self._get(delete_obj=delete_obj, verbose=verbose)
+            result = self._get(delete_obj=delete_obj, verbose=verbose)
         else:
             response_status = self.request(
                 reason=reason,
@@ -272,9 +278,15 @@ class Pointer(AbstractPointer):
                 response_status is not None
                 and response_status == RequestStatus.Accepted
             ):
-                return self._get(delete_obj=delete_obj, verbose=verbose)
+                result = self._get(delete_obj=delete_obj, verbose=verbose)
+            else:
+                return None
 
-        return None
+        if result is not None and delete_obj:
+            self.gc_enabled = False
+            self._exhausted = True
+
+        return result
 
     def _object2proto(self) -> Pointer_PB:
         """Returns a protobuf serialization of self.
@@ -513,7 +525,7 @@ class Pointer(AbstractPointer):
         searchable: Optional[bool] = None,
     ) -> None:
         """Make the object pointed at pointable or not for other people. If
-        target_verify_key is not specified, the searchability for the VerifyAll group
+        target_verify_key is not specified, the searchability for the VERIFYALL group
         will be toggled.
 
         :param pointable: If the target object should be made pointable or not.
@@ -571,10 +583,4 @@ class Pointer(AbstractPointer):
             return
 
         if self.gc_enabled:
-            # Create the delete message
-            msg = GarbageCollectObjectAction(
-                id_at_location=self.id_at_location, address=self.client.address
-            )
-
-            # Send the message
-            self.client.send_eventual_msg_without_reply(msg=msg)
+            self.client.gc.apply(self)

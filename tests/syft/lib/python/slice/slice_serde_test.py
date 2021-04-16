@@ -22,12 +22,9 @@ def test_slice_serde() -> None:
     assert deserialized.step == syft_slice.step
 
 
-def test_slice_send() -> None:
-    alice = sy.VirtualMachine(name="alice")
-    alice_client = alice.get_client()
-
+def test_slice_send(client: sy.VirtualMachineClient) -> None:
     syft_slice = Slice(1, 3, None)
-    ptr = syft_slice.send(alice_client)
+    ptr = syft_slice.send(client)
 
     # Check pointer type
     assert ptr.__class__.__name__ == "SlicePointer"
@@ -39,15 +36,12 @@ def test_slice_send() -> None:
     assert res.step == syft_slice.step
 
 
-def test_slice_tensor() -> None:
-    alice = sy.VirtualMachine(name="alice")
-    alice_client = alice.get_client()
-
+def test_slice_tensor(client) -> None:
     syft_slice = Slice(0, 1)
-    slice_ptr = syft_slice.send(alice_client)
+    slice_ptr = syft_slice.send(client)
 
     t = th.Tensor([1, 2, 3])
-    t_ptr = t.send(alice_client)
+    t_ptr = t.send(client)
     res_ptr = t_ptr[slice_ptr]
 
     # Check that we can get back the object

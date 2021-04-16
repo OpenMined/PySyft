@@ -33,10 +33,11 @@ def build_plan_inputs(forward_func: Callable) -> Dict[str, Pointer]:
 def make_plan(func: Callable) -> Plan:
     inputs = build_plan_inputs(func)
     vm = PLAN_BUILDER_VM
+    code = inspect.getsource(func)
     vm.record_actions()
     res = func(**inputs)
     vm.stop_recording()
-    plan = Plan(actions=vm.recorded_actions, inputs=inputs, outputs=res)
+    plan = Plan(actions=vm.recorded_actions, inputs=inputs, outputs=res, code=code)
     # cleanup
     vm.recorded_actions = []
     return plan

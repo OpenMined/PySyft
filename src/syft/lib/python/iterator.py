@@ -4,6 +4,7 @@ from typing import Optional
 
 # syft relative
 from ...core.common.uid import UID
+from ...logger import traceback_and_raise
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
@@ -20,6 +21,12 @@ class Iterator(PyPrimitive):
 
     def __iter__(self) -> "Iterator":
         return self
+
+    def __len__(self) -> int:
+        try:
+            return len(self._obj_ref)
+        except Exception as e:
+            traceback_and_raise(e)
 
     def __reduce__(self) -> Any:
         # see these tests: test_valuesiterator_pickling and test_iterator_pickling
@@ -108,3 +115,6 @@ class Iterator(PyPrimitive):
             return obj
         except Exception as e:
             raise e
+
+    def upcast(self) -> Any:
+        return iter(self._obj_ref)
