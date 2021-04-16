@@ -1,5 +1,6 @@
 bcrypt
 boto3
+flask_cors
 flask_executor
 flask_migrate
 flask_sockets

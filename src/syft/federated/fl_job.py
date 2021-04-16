@@ -44,6 +44,7 @@ class FLJob(EventEmitter):
         self.grid_worker = grid_worker
         self.model_name = model_name
         self.model_version = model_version
+        self.plan_type = ModelCentricFLWorker.PLAN_TYPE_LIST
 
         self.model: Optional[ListType[TypeAny]] = None
         self.plans: JSONDict = {}
@@ -76,7 +77,7 @@ class FLJob(EventEmitter):
                 self.worker_id,
                 request_key,
                 plan_id,
-                ModelCentricFLWorker.PLAN_TYPE_LIST,
+                self.plan_type,
             )
 
     def start(self) -> None:

@@ -19,9 +19,9 @@ signaling network you can use PyGrid's network app.
 For local development you can run:
 $ python src/syft/grid/example_nodes/network.py
 
-PS 2: The PyGrid's dev / main branches are still supporting PySyft 0.2.x,
-To use this feature you must use the pygrid_0.3.0 branch.
-(https://github.com/OpenMined/PyGrid/tree/pygrid_0.3.0)
+PS 2: The PyGrid repo has a complimentary branch that matches the current PySyft release.
+To use this feature you must use the correct PyGrid branch.
+(https://github.com/OpenMined/PyGrid/)
 
 You can get more details about all this process, in the syft/grid/connections/webrtc.py
 source code.
