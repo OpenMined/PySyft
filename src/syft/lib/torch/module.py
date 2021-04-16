@@ -19,6 +19,7 @@ import torch
 import syft as sy
 from syft.core.node.common.action.run_class_method_action import RunClassMethodAction
 from syft.core.node.common.action.save_object_action import SaveObjectAction
+from syft.core.plan.plan_builder import make_plan, ROOT_CLIENT
 
 # syft relative
 from ...core.pointer.pointer import Pointer
@@ -501,26 +502,36 @@ GenerateWrapper(
 )
 
 
-class ModelExecutor:
-    def __init__(self, model: torch.nn.Module):
-        self.model_forward = model.forward
-        self.children_names = [k for k, _ in model.named_children()]
+class ForwardToPlanConverter(type):
+    def __call__(cls, *args, **kwargs):
+        obj = type.__call__(cls, *args, **kwargs)
+        obj.make_forward_plan()
+        return obj
 
-    def __call__(
-        self, model: torch.nn.Module, x: torch.Tensor
-    ) -> Union[torch.Tensor, Pointer]:
-        if isinstance(model, Pointer):
-            for name in self.children_names:
-                ModelExecutor.set_pointer_attr(model, name)
-        return self.model_forward(model, x)
+class SyModule(torch.nn.Module, metaclass=ForwardToPlanConverter):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.building_forward = False
+        self._parameter_pointers = dict()
 
-    @staticmethod
-    def set_pointer_attr(model: torch.nn.Module, attr_name: str) -> None:
-        if not hasattr(model, attr_name):
-            attr_ptr = type(model)(
-                client=model.client,
-                id_at_location=model.id_at_location,
-                object_type=model.object_type,
-            )
-            attr_ptr.attribute_name = attr_name
-            setattr(model, attr_name, attr_ptr)
+    def make_forward_plan(self):
+        if not hasattr(self, "forward"):
+            raise ValueError("Missing .forward() method for Module")
+        self.building_forward = True
+        plan = make_plan(self.forward)
+        self.forward = plan
+        self.__call__ = plan
+        self.building_forward = False
+        
+    def __getattr__(self, name):
+        # this is __getattr__ instead of __getattribute__ because of the structure of torch.nn.Module
+        if name in self._parameter_pointers and self.building_forward:
+            return self._parameter_pointers[name]
+        
+        res = super().__getattr__(name)
+        if isinstance(res, (torch.nn.Module, torch.nn.Parameter)) and self.building_forward:
+            res_ptr = res.send(ROOT_CLIENT)
+            self._parameter_pointers[name] = res_ptr
+            return res_ptr
+        else:
+            return res
