@@ -59,7 +59,7 @@ has_cuda = th.cuda.is_available()
 #
 # We then check to see if a explicit configuration is set for the attribute path in
 # allowlist_test.json and if so we use the configuration from there.
-# io keep the custom definitions DRY we use a concept called "profiles" which are just
+# To keep the custom definitions DRY we use a concept called "profiles" which are just
 # a key lookup in the main JSON tree. Many configuration options also support the
 # concept of a key lookup for example you will see lots of "all" which is used to map
 # to a whole pre-defined set of supported data types, or inputs. By utilising this
