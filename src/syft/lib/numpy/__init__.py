@@ -54,7 +54,9 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("numpy.ndarray.ctypes", "numpy.ndarray"),
         ("numpy.ndarray.__array_interface__", "numpy.ndarray"),
         ("numpy.ndarray.__array_struct__", "numpy.ndarray"),
+
         # Array methods
+        
         ("numpy.ndarray.item", "numpy.ndarray"),
         ("numpy.ndarray.tolist", "numpy.ndarray"),
         ("numpy.ndarray.itemset", "numpy.ndarray"),
@@ -107,7 +109,7 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("numpy.ndarray.cumprod", "numpy.ndarray"),
         ("numpy.ndarray.all", "numpy.ndarray"),
         ("numpy.ndarray.any", "numpy.ndarray"),
-        # Arithmetic, matrix multiplication, and comparison operations
+        # Arithmetic, matrix multiplication, and comparison operations.
     ]
 
     add_modules(ast, modules)
