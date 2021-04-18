@@ -32,6 +32,7 @@ def create_ast(client: TypeAny = None) -> Globals:
 
     methods: TypeList[TypeTuple[str, str]] = [
         # Array attributes
+
         ("numpy.ndarray.flags", "numpy.ndarray"),
         ("numpy.ndarray.shape", "numpy.ndarray"),
         ("numpy.ndarray.strides", "numpy.ndarray"),
