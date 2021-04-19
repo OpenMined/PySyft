@@ -56,6 +56,6 @@ def test_xgb_base_module(root_client: sy.VirtualMachineClient) -> None:
     model = xgb_remote.train(param, D_train, steps)
     preds_remote = model.predict(D_train).get(root_client)
 
-    assert y_pred_regressor.all() == y_pred_regressor_remote.all()
-    assert y_pred_classifier_remote.all() == y_pred_classifier.all()
-    assert preds_remote.all() == preds.all()
+    assert np.array_equal(y_pred_regressor, y_pred_regressor_remote)
+    assert np.array_equal(y_pred_classifier, y_pred_classifier_remote)
+    assert np.array_equal(preds_remote, preds)
