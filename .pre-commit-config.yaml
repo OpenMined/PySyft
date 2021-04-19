@@ -15,7 +15,7 @@ repos:
         exclude: ^(tests/syft/lib/allowlist_report.py)
       - id: requirements-txt-fixer
   - repo: https://gitlab.com/pycqa/flake8
-    rev: 3.8.4
+    rev: 3.9.1
     hooks:
       - id: flake8
         # additional_dependencies:
@@ -57,7 +57,7 @@ repos:
         additional_dependencies:
           - flynt
   - repo: https://github.com/pycqa/isort
-    rev: 5.7.0
+    rev: 5.8.0
     hooks:
       - id: isort
         name: isort (python)
