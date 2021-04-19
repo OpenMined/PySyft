@@ -86,11 +86,7 @@ for path in (
         continue
 
     # generate a unique port for this testcase
-    while testcase not in PORTS:
-        PORT = secrets.choice(range(21000, 22000))
-        if PORT not in PORTS.values():
-            # unique port so set
-            PORTS[testcase] = PORT
+    PORTS[testcase] = 20157
     load_lib_search = r"load_lib\(\W+([a-z_-]+)\W+\)"
 
     with open(path, "r") as f:

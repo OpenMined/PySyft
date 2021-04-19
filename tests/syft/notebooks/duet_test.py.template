@@ -1,6 +1,5 @@
 # stdlib
 import atexit
-from multiprocessing import Process
 from multiprocessing import set_start_method
 import os
 import shutil
@@ -8,18 +7,11 @@ import socket
 import sys
 import time
 
-# third party
-import pytest
-
-# syft absolute
-import syft as sy
-
 # syft relative
 from ..grid.duet.process_test import SyftTestProcess
-from ..grid.duet.signaling_server_test import run
 
 set_start_method("spawn", force=True)
-PORT = 21000
+PORT = 20157
 
 
 def cleanup() -> None:
@@ -34,21 +26,6 @@ def cleanup() -> None:
         pass
 
 atexit.register(cleanup)
-
-@pytest.fixture(scope="function", autouse=True)
-def signaling_server() -> Process:
-    time.sleep(3)
-    print(f"creating signaling server on port {PORT}")
-    grid_proc = Process(target=run, args=(PORT,))
-    grid_proc.start()
-
-    yield "server"
-
-    print("stop signaling server")
-    grid_proc.terminate()
-    grid_proc.join(10)
-
-    return grid_proc
 
 
 def do() -> None:
@@ -92,7 +69,6 @@ def ds() -> None:
 
 {{LIB_DECORATOR}}
 def test_{{TESTCASE}}() -> None:
-    time.sleep(3)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         assert s.connect_ex(("localhost", PORT)) == 0
 

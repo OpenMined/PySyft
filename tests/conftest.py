@@ -25,7 +25,10 @@ from syft.lib import _load_lib
 from syft.lib import vendor_requirements_available
 
 logger.remove()
+from .syft.grid.duet.signaling_server_test import run
+from multiprocessing import Process
 
+SIGNALING_SERVER_PORT = 20157
 
 @pytest.fixture
 def caplog(caplog: _pytest.logging.LogCaptureFixture) -> Generator:
@@ -158,3 +161,17 @@ def client(node: sy.VirtualMachine) -> sy.VirtualMachineClient:
 @pytest.fixture(scope="session")
 def root_client(node: sy.VirtualMachine) -> sy.VirtualMachineClient:
     return node.get_root_client()
+
+@pytest.fixture(scope="session")
+def signaling_server() -> Process:
+    import time
+    grid_proc = Process(target=run, args=(SIGNALING_SERVER_PORT,))
+    grid_proc.start()
+    time.sleep(3)
+
+    yield "TEST"
+
+    grid_proc.terminate()
+    grid_proc.join(10)
+
+    return grid_proc
