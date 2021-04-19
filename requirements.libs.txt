@@ -11,5 +11,5 @@ pytorch-lightning @ git+https://github.com/tudorcebere/pytorch-lightning@tudor-o
 statsmodels
 sympc @ git+https://github.com/OpenMined/SyMPC@main
 tenseal
-xgboost
+xgboost>=1.4
 zksk
