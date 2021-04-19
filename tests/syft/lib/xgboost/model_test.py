@@ -36,14 +36,14 @@ def test_xgb_base_module() -> None:
 
     D_train = xgb_remote.DMatrix(X, label=y)
     model = xgb_remote.train(param, D_train, steps)
-    preds_remote = model.predict(D_train).get(root_client)
+    preds_remote = model.predict(D_train).get()
 
     classifier = xgb_remote.XGBClassifier(
         n_estimators=100, reg_lambda=1, gamma=0, max_depth=3, use_label_encoder=False
     )
 
     classifier.fit(X, y)
-    y_pred_classifier_remote = classifier.predict(X).get(root_client)
+    y_pred_classifier_remote = classifier.predict(X).get()
 
     classifier = xgb.XGBClassifier(
         n_estimators=100, reg_lambda=1, gamma=0, max_depth=3, use_label_encoder=False
@@ -60,7 +60,7 @@ def test_xgb_base_module() -> None:
         n_estimators=100, reg_lambda=1, gamma=0, max_depth=3
     )
     regressor.fit(X, y)
-    y_pred_regressor_remote = regressor.predict(X).get(root_client)
+    y_pred_regressor_remote = regressor.predict(X).get()
 
     assert np.array_equal(y_pred_regressor, y_pred_regressor_remote)
     assert np.array_equal(y_pred_classifier, y_pred_classifier_remote)
