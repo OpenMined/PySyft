@@ -26,17 +26,29 @@ def create_ast(client: TypeAny) -> Globals:
     modules: TypeList[TypeTuple[str, TypeAny]] = [
         ("xgboost", xgb),
         ("xgboost.core", xgb.core),
+        ("xgboost.sklearn", xgb.sklearn),
     ]
 
     classes: TypeList[TypeTuple[str, str, TypeAny]] = [
         ("xgboost.DMatrix", "xgboost.DMatrix", xgb.core.DMatrix),
         ("xgboost.core.DMatrix", "xgboost.core.DMatrix", xgb.core.DMatrix),
         ("xgboost.core.Booster", "xgboost.core.Booster", xgb.core.Booster),
+        (
+            "xgboost.core.XGBoostError",
+            "xgboost.core.XGBoostError",
+            xgb.core.XGBoostError,
+        ),
+        ("xgboost.XGBClassifier", "xgboost.XGBClassifier", xgb.XGBClassifier),
+        ("xgboost.XGBRegressor", "xgboost.XGBRegressor", xgb.XGBRegressor),
     ]
 
     methods = [
         ("xgboost.train", "xgboost.core.Booster"),
         ("xgboost.core.Booster.predict", "numpy.ndarray"),
+        ("xgboost.XGBClassifier.fit", "xgboost.XGBClassifier"),
+        ("xgboost.XGBClassifier.predict", "numpy.ndarray"),
+        ("xgboost.XGBRegressor.fit", "xgboost.XGBRegressor"),
+        ("xgboost.XGBRegressor.predict", "numpy.ndarray"),
     ]
 
     add_modules(ast, modules)
