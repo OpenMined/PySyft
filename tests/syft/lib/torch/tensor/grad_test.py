@@ -1,7 +1,11 @@
-import syft as sy
+# third party
 import torch
 
-def torch_grad_test(client: sy.VirtualMachineClient):
+# syft absolute
+import syft as sy
+
+
+def torch_grad_test(client: sy.VirtualMachineClient) -> None:
     x = client.torch.Tensor([[1, 1], [1, 1]])
     x.requires_grad = True
     gt = client.torch.Tensor([[1, 1], [1, 1]]) * 16 - 0.5
