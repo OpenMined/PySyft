@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+
+
 # For creating Duet tests from notebooks, adapt your notebooks to the following rules:
 # 1. The DO/DS notebooks have a predefined format:
 #  <test_name>_Data_Owner.ipynb and <test_name>_Data_Scientist.ipynb.
@@ -20,7 +23,6 @@ import json
 import os
 from pathlib import Path
 import re
-import secrets
 import shutil
 from typing import Dict
 
