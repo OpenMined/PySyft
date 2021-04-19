@@ -41,15 +41,14 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("numpy.ndarray.itemsize", "numpy.ndarray"),
         ("numpy.ndarray.nbytes", "numpy.ndarray"),
         ("numpy.ndarray.base", "numpy.ndarray"),
-        ("numpy.ndarray.dtype", "numpy.ndarray"),
+        # ("numpy.ndarray.dtype", "numpy.ndarray"), SECURITY WARNING: DO NOT ADD TO ALLOW LIST YET 
         ("numpy.ndarray.T", "numpy.ndarray"),
-        ("numpy.ndarray.real", "numpy.ndarray"),
-        ("numpy.ndarray.imag", "numpy.ndarray"),
+        # ("numpy.ndarray.real", "numpy.ndarray"), # requires dtype complex
+        # ("numpy.ndarray.imag", "numpy.ndarray"), # requires dtype complex
         ("numpy.ndarray.flat", "numpy.ndarray"),
         ("numpy.ndarray.ctypes", "numpy.ndarray"),
-        ("numpy.ndarray.__array_interface__", "numpy.ndarray.__array_interface__"),
-        ("numpy.ndarray.__array_struct__", "numpy.ndarray.__array_struct__"),
-        ("numpy.ndarray.ctypes", "numpy.ndarray"),
+        ("numpy.ndarray.__array_interface__", "numpy.ndarray"),
+        ("numpy.ndarray.__array_struct__", "numpy.ndarray"),
         # Array methods
         ("numpy.ndarray.item", "numpy.ndarray"),
         ("numpy.ndarray.tolist", "numpy.ndarray"),
