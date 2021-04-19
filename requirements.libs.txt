@@ -1,5 +1,6 @@
 -r ./requirements.libs.deps.txt
 
+gym
 numpy
 opacus
 openmined.psi
@@ -8,6 +9,7 @@ petlib
 pillow
 python-dp
 pytorch-lightning @ git+https://github.com/tudorcebere/pytorch-lightning@tudor-om-v0
+statsmodels
 sympc @ git+https://github.com/OpenMined/SyMPC@main
 tenseal
 zksk
