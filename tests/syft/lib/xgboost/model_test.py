@@ -32,6 +32,6 @@ def test_pandas(root_client: sy.VirtualMachineClient) -> None:
 
     D_train = xgb_remote.DMatrix(X, label=y)
     model = xgb_remote.train(param, D_train, steps)
-    preds_remote = model.predict(D_train)
+    preds_remote = model.predict(D_train).get(root_client)
 
-    assert preds_remote.get(root_client).all() == preds.all()
+    assert preds_remote.all() == preds.all()
