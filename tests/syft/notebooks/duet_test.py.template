@@ -11,7 +11,6 @@ import time
 from ..grid.duet.process_test import SyftTestProcess
 
 set_start_method("spawn", force=True)
-PORT = 20157
 
 
 def cleanup() -> None:
@@ -69,9 +68,6 @@ def ds() -> None:
 
 {{LIB_DECORATOR}}
 def test_{{TESTCASE}}() -> None:
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        assert s.connect_ex(("localhost", PORT)) == 0
-
     cleanup()
 
     start = time.time()

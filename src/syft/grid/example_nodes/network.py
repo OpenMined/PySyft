@@ -12,6 +12,8 @@ import os
 import sys
 
 # third party
+from typing import Optional
+
 import flask
 from flask import Flask
 from flask import Response
@@ -81,24 +83,23 @@ def process_network_msgs() -> flask.Response:
 def run() -> None:
     global network
 
-    IP_MODE = os.getenv("IP_MODE", "IPV4")  # default to ipv4
     if len(sys.argv) > 1:
-        IP_MODE = sys.argv[1]
+        port = int(sys.argv[1])
+    else:
+        port = 5000
 
-    IP_MODE = "IPV6" if IP_MODE == "IPV6" else "IPV4"
-    # this signing_key is to aid in local development and is not used in the real
-    # PyGrid implementation
-    HOST = "0.0.0.0" if IP_MODE == "IPV4" else "::"  # nosec
-    PORT = os.getenv("PORT", 5000)
+    IP_MODE = os.getenv("IP_MODE", "IPV4")
+    HOST = "0.0.0.0"
 
     print("====================================")
     print("========== NODE ROOT KEY ===========")
     print("====================================")
     print(network.signing_key.encode(encoder=HexEncoder).decode("utf-8"), "\n")
 
-    print(f"Using {IP_MODE} and listening on port {PORT}")
+    print(f"Using {IP_MODE} and listening on port {port}")
+    print("READY")
+    app.run(host=HOST, port=int(port))
 
-    app.run(host=HOST, port=int(PORT))
 
-
-run()
+if __name__ == "__main__":
+        run()

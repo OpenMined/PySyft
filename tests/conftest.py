@@ -8,15 +8,16 @@
 
 # stdlib
 import logging
-from multiprocessing import Process
 from typing import Any as TypeAny
 from typing import Dict as TypeDict
 from typing import Generator
 from typing import List as TypeList
+import socket
 
 # third party
 import _pytest
 import pytest
+from xprocess import ProcessStarter
 
 # syft absolute
 import syft as sy
@@ -24,14 +25,10 @@ from syft import logger
 from syft.lib import VendorLibraryImportException
 from syft.lib import _load_lib
 from syft.lib import vendor_requirements_available
+from .util.generate_duet_notebooks import generate_duet_notebooks, free_port
 
-# syft relative
-from .syft.grid.duet.signaling_server_test import run
-
-logger.remove()
-
-SIGNALING_SERVER_PORT = 20157
-
+SIGNALING_SERVER_PORT = free_port()
+generate_duet_notebooks(SIGNALING_SERVER_PORT)
 
 @pytest.fixture
 def caplog(caplog: _pytest.logging.LogCaptureFixture) -> Generator:
@@ -166,18 +163,23 @@ def root_client(node: sy.VirtualMachine) -> sy.VirtualMachineClient:
     return node.get_root_client()
 
 
-@pytest.fixture(scope="session")
-def signaling_server() -> Generator:
-    # stdlib
-    import time
 
-    grid_proc = Process(target=run, args=(SIGNALING_SERVER_PORT,))
-    grid_proc.start()
-    time.sleep(3)
+@pytest.fixture(scope="function")
+def signaling_server(xprocess):
+    print("STARTING PROC")
 
-    yield "TEST"
+    class SignalingServer(ProcessStarter):
+        pattern = "READY"
+        args = ["syft-network", str(SIGNALING_SERVER_PORT)]
+        timeout = 10
+        max_read_lines = 100
 
-    grid_proc.terminate()
-    grid_proc.join(10)
+        def startup_check(self):
+            print("SALOOOT")
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                assert s.connect_ex(("127.0.0.1", SIGNALING_SERVER_PORT)) == 0
 
-    return grid_proc
+    logfile = xprocess.ensure("syft-network", SignalingServer)
+    print("CE")
+    yield SIGNALING_SERVER_PORT
+    xprocess.getinfo("syft-network").terminate()
