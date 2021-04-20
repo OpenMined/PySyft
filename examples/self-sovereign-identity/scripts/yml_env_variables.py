@@ -1,10 +1,17 @@
 # https://gist.github.com/mkaranasou/ba83e25c835a8f7629e34dd7ede01931#file-python_yaml_environment_variables-py
+# stdlib
 import os
 import re
+from typing import Any as TypeAny
+from typing import Optional
+
+# third party
 import yaml
 
 
-def parse_config(path=None, data=None, tag="!ENV"):
+def parse_config(
+    path: Optional[str] = None, data: Optional[str] = None, tag: str = "!ENV"
+) -> TypeAny:
     """
     Load a yaml configuration file and resolve any environment variables
     The environment variables must have !ENV before them and be in this format
@@ -25,14 +32,14 @@ def parse_config(path=None, data=None, tag="!ENV"):
     :rtype: dict[str, T]
     """
     # pattern for global vars: look for ${word}
-    pattern = re.compile(".*?\${(\w+)}.*?")
+    pattern = re.compile(r".*?\${(\w+)}.*?")
     loader = yaml.SafeLoader
 
     # the tag will be used to mark where to start searching for the pattern
     # e.g. somekey: !ENV somestring${MYENVVAR}blah blah blah
-    loader.add_implicit_resolver(tag, pattern, None)
+    loader.add_implicit_resolver(tag, pattern, None)  # type: ignore
 
-    def constructor_env_variables(loader, node):
+    def constructor_env_variables(loader: yaml.Loader, node: yaml.Node) -> TypeAny:
         """
         Extracts the environment variable from the node's value
         :param yaml.Loader loader: the yaml loader
@@ -40,7 +47,7 @@ def parse_config(path=None, data=None, tag="!ENV"):
         :return: the parsed string that contains the value of the environment
         variable
         """
-        value = loader.construct_scalar(node)
+        value = loader.construct_scalar(node)  # type: ignore
         match = pattern.findall(value)  # to find all env variables in line
         if match:
             full_value = value
@@ -53,7 +60,7 @@ def parse_config(path=None, data=None, tag="!ENV"):
         print(value)
         return value
 
-    loader.add_constructor(tag, constructor_env_variables)
+    loader.add_constructor(tag, constructor_env_variables)  # type: ignore
 
     if path:
         with open(path) as conf_data:

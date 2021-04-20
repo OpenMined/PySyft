@@ -8,6 +8,7 @@ repos:
       - id: check-json
       - id: check-added-large-files
       - id: check-yaml
+        exclude: ^(examples/self-sovereign-identity/configuration)
       - id: check-merge-conflict
       - id: check-executables-have-shebangs
       - id: debug-statements
