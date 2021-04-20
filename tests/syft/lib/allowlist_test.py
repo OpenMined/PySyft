@@ -59,7 +59,7 @@ has_cuda = th.cuda.is_available()
 #
 # We then check to see if a explicit configuration is set for the attribute path in
 # allowlist_test.json and if so we use the configuration from there.
-# io keep the custom definitions DRY we use a concept called "profiles" which are just
+# To keep the custom definitions DRY we use a concept called "profiles" which are just
 # a key lookup in the main JSON tree. Many configuration options also support the
 # concept of a key lookup for example you will see lots of "all" which is used to map
 # to a whole pre-defined set of supported data types, or inputs. By utilising this
@@ -607,15 +607,16 @@ def test_all_allowlisted_tensor_methods(
             )
             raise Exception(err)
 
-        # Step 4: Get the method we're going to call
-        # if op_name=="grad", we need to do more operations first
-        if op_name == "grad":
-            self_tensor.sum().backward()  # type: ignore
-        target_op_method = getattr(self_tensor, op_name)
-
-        # Step 5: Test to see whether this method and arguments combination is valid
-        # in normal PyTorch. If it this is an invalid combination, abort the test
         try:
+            # Step 4: Get the method we're going to call
+            # if op_name=="grad", we need to do more operations first
+            if op_name == "grad":
+                self_tensor.retain_grad()  # type: ignore
+                self_tensor.sum().backward()  # type: ignore
+            target_op_method = getattr(self_tensor, op_name)
+
+            # Step 5: Test to see whether this method and arguments combination is valid
+            # in normal PyTorch. If it this is an invalid combination, abort the test
             if not is_property:
                 upcasted_args: Union[dict, list]
                 # this prevents things like syft.lib.python.bool.Bool from getting
@@ -668,6 +669,7 @@ def test_all_allowlisted_tensor_methods(
 
         # if op_name=="grad", we need to do more operations first
         if op_name == "grad":
+            xp.retain_grad()
             xp.sum().backward()
 
         argsp: ListType[Any] = []
@@ -714,6 +716,7 @@ def test_all_allowlisted_tensor_methods(
                     assert compare_tensors(
                         left=getattr(local_result, field, None),
                         right=getattr(target_result, field, None),
+                        inaccuracy=op_name in ["norm"],
                     )
             elif target_fqn in ["torch.device"]:
                 assert local_result == target_result
@@ -756,7 +759,11 @@ def test_all_allowlisted_tensor_methods(
                         if issubclass(type(target_item), th.Tensor) and issubclass(
                             type(local_item), th.Tensor
                         ):
-                            assert compare_tensors(left=target_item, right=local_item)
+                            assert compare_tensors(
+                                left=target_item,
+                                right=local_item,
+                                inaccuracy=op_name in ["norm"],
+                            )
                         else:
                             if not hasattr(local_item, "__len__") and not hasattr(
                                 target_item, "__len__"
@@ -799,7 +806,11 @@ def test_all_allowlisted_tensor_methods(
                             if issubclass(type(left), th.Tensor) and issubclass(
                                 type(right), th.Tensor
                             ):
-                                assert compare_tensors(left=left, right=right)
+                                assert compare_tensors(
+                                    left=left,
+                                    right=right,
+                                    inaccuracy=op_name in ["norm"],
+                                )
                             elif not hasattr(local_item, "__len__") and not hasattr(
                                 target_item, "__len__"
                             ):
@@ -864,8 +875,14 @@ def test_all_allowlisted_tensor_methods(
         raise e
 
 
-def compare_tensors(left: th.Tensor, right: th.Tensor) -> bool:
+# Sometimes there are differences between the results of CPU and CUDA functions, such as norm
+def compare_tensors(left: th.Tensor, right: th.Tensor, inaccuracy: bool) -> bool:
     try:
+        if inaccuracy:
+            # 1e-8 is ok on torch 1.6.0,1.7.0, fails on 1.8.1
+            epsilon = th.tensor(1e-6, dtype=th.float64)
+            return th.abs(left.cpu() - right.cpu()) < epsilon
+
         # if they don't match we can try to remove NaN's
         if not (left.cpu() == right.cpu()).all():
             # Set all NaN to 0
