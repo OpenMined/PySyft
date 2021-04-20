@@ -4,17 +4,29 @@ import glob
 import json
 import os
 from pathlib import Path
+import platform
 import re
 import shutil
+import sys
 from typing import Any
 from typing import Pattern
 
 # third party
 import jsonlines
+from packaging import version
 import torch
 
 torch_version = torch.__version__
 has_cuda = torch.cuda.is_available()
+
+# allowlist_test_errors_{TARGET_PLATFORE}.jsonl, created by allowlist_test.py
+TORCH_VERSION = version.parse(torch.__version__.split("+")[0])
+py_ver = sys.version_info
+PYTHON_VERSION = version.parse(f"{py_ver.major}.{py_ver.minor}")
+OS_NAME = platform.system().lower()
+TARGET_PLATFORM = f"{PYTHON_VERSION}_{TORCH_VERSION}_{OS_NAME}"
+
+
 # --------------------------------------
 # add exception and it's handler
 # --------------------------------------
@@ -249,7 +261,7 @@ while continue_loop:
     print()
 
     # Is errors.jsonl file there?
-    err_jsonl = glob.glob(f"{root_dir}/allowlist_test_errors_*.jsonl")
+    err_jsonl = glob.glob(f"{root_dir}/allowlist_test_errors_{TARGET_PLATFORM}.jsonl")
     # if no, all tests pass, stop loop
     if len(err_jsonl) == 0:
         print()
