@@ -38,17 +38,29 @@ def create_ast(client: TypeAny) -> Globals:
             "xgboost.core.XGBoostError",
             xgb.core.XGBoostError,
         ),
+        # classifiers
         ("xgboost.XGBClassifier", "xgboost.XGBClassifier", xgb.XGBClassifier),
+        ("xgboost.XGBRFClassifier", "xgboost.XGBRFClassifier", xgb.XGBRFClassifier),
+        # ("xgboost.dask.DaskXGBRFClassifier"), Currently dask is not supported in syft
+        # regreessors
         ("xgboost.XGBRegressor", "xgboost.XGBRegressor", xgb.XGBRegressor),
+        ("xgboost.XGBRFRegressor", "xgboost.XGBRFRegressor", xgb.XGBRFRegressor),
+        # ("xgboost.dask.DaskXGBRFRegressor"), Currently dask is not supported in syft
     ]
 
     methods = [
         ("xgboost.train", "xgboost.core.Booster"),
         ("xgboost.core.Booster.predict", "numpy.ndarray"),
+        # classifiers
         ("xgboost.XGBClassifier.fit", "xgboost.XGBClassifier"),
         ("xgboost.XGBClassifier.predict", "numpy.ndarray"),
+        ("xgboost.XGBRFClassifier.fit", "xgboost.XGBRFClassifier"),
+        ("xgboost.XGBRFClassifier.predict", "numpy.ndarray"),
+        # regressors
         ("xgboost.XGBRegressor.fit", "xgboost.XGBRegressor"),
         ("xgboost.XGBRegressor.predict", "numpy.ndarray"),
+        ("xgboost.XGBRFRegressor.fit", "xgboost.XGBRFClassifier"),
+        ("xgboost.XGBRFRegressor.predict", "numpy.ndarray"),
     ]
 
     add_modules(ast, modules)

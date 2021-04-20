@@ -6,15 +6,11 @@ import syft as sy
 
 
 @pytest.mark.vendor(lib="xgboost")
-def test_xgb_base_module() -> None:
+def test_xgb_base_module(root_client: sy.VirtualMachineClient) -> None:
 
-    alice = sy.VirtualMachine(name="alice")
-    root_client = alice.get_root_client()
     sy.load("xgboost")
     sy.load("numpy")
-    # import xgboost
 
-    sy.load("sklearn")
     # third party
     import numpy as np
     import xgboost as xgb
@@ -52,6 +48,20 @@ def test_xgb_base_module() -> None:
     classifier.fit(X, y)
     y_pred_classifier = classifier.predict(X)
 
+    classifier = xgb_remote.XGBRFClassifier(
+        n_estimators=100, reg_lambda=1, gamma=0, max_depth=3, use_label_encoder=False
+    )
+
+    classifier.fit(X, y)
+    y_pred_classifier_rf_remote = classifier.predict(X).get()
+
+    classifier = xgb.XGBRFClassifier(
+        n_estimators=100, reg_lambda=1, gamma=0, max_depth=3, use_label_encoder=False
+    )
+
+    classifier.fit(X, y)
+    y_pred_classifier_rf = classifier.predict(X)
+
     regressor = xgb.XGBRegressor(n_estimators=100, reg_lambda=1, gamma=0, max_depth=3)
     regressor.fit(X, y)
     y_pred_regressor = regressor.predict(X)
@@ -62,6 +72,18 @@ def test_xgb_base_module() -> None:
     regressor.fit(X, y)
     y_pred_regressor_remote = regressor.predict(X).get()
 
+    regressor = xgb.XGBRFRegressor(n_estimators=100, reg_lambda=1, gamma=0, max_depth=3)
+    regressor.fit(X, y)
+    y_pred_regressor_rf = regressor.predict(X)
+
+    regressor = xgb_remote.XGBRFRegressor(
+        n_estimators=100, reg_lambda=1, gamma=0, max_depth=3
+    )
+    regressor.fit(X, y)
+    y_pred_regressor_rf_remote = regressor.predict(X).get()
+
+    assert np.array_equal(y_pred_classifier_rf, y_pred_classifier_rf_remote)
+    assert np.array_equal(y_pred_regressor_rf, y_pred_regressor_rf_remote)
     assert np.array_equal(y_pred_regressor, y_pred_regressor_remote)
     assert np.array_equal(y_pred_classifier, y_pred_classifier_remote)
     assert np.array_equal(preds_remote, preds)
