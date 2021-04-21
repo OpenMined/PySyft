@@ -47,7 +47,9 @@ def do(ct_size: int, batch_size: int, signaling_server: int) -> None:
     sy.load("tenseal")
     sy.logger.add(sys.stderr, "ERROR")
 
-    duet = sy.launch_duet(loopback=True, network_url=f"http://127.0.0.1:{signaling_server}/")
+    duet = sy.launch_duet(
+        loopback=True, network_url=f"http://127.0.0.1:{signaling_server}/"
+    )
     duet.requests.add_handler(action="accept")
 
     context = ts.context(
@@ -78,7 +80,9 @@ def ds(ct_size: int, batch_size: int, signaling_server: int) -> None:
     sy.load("tenseal")
     sy.logger.add(sys.stderr, "ERROR")
 
-    duet = sy.join_duet(loopback=True, network_url=f"http://127.0.0.1:{signaling_server}/")
+    duet = sy.join_duet(
+        loopback=True, network_url=f"http://127.0.0.1:{signaling_server}/"
+    )
 
     time.sleep(10)
 
@@ -109,10 +113,14 @@ def test_tenseal_duet_ciphertext_size(signaling_server: int) -> None:
         for batch_size in [1, 10, ct_size]:
             start = time.time()
 
-            do_proc = SyftTestProcess(target=do, args=(ct_size, batch_size, signaling_server))
+            do_proc = SyftTestProcess(
+                target=do, args=(ct_size, batch_size, signaling_server)
+            )
             do_proc.start()
 
-            ds_proc = SyftTestProcess(target=ds, args=(ct_size, batch_size, signaling_server))
+            ds_proc = SyftTestProcess(
+                target=ds, args=(ct_size, batch_size, signaling_server)
+            )
             ds_proc.start()
 
             ds_proc.join(120)
