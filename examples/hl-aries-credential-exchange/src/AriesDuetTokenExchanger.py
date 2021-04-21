@@ -6,7 +6,7 @@ from typing import Dict as TypeDict
 from typing import Optional
 
 # third party
-from aries_basic_controller.aries_controller import AriesAgentController
+from aries_cloudcontroller import AriesAgentController
 
 # syft absolute
 from syft.grid.duet.exchange_ids import DuetCredentialExchanger
@@ -79,7 +79,7 @@ class AriesDuetTokenExchanger(DuetCredentialExchanger):
             # is_ready = False
             try:
                 response = loop.run_until_complete(
-                    self.agent_controller.connections.accept_connection(invite)
+                    self.agent_controller.connections.receive_invitation(invite)
                 )
                 print(response["connection_id"])
                 connection_id = response["connection_id"]
@@ -153,21 +153,60 @@ class AriesDuetTokenExchanger(DuetCredentialExchanger):
         self.agent_controller.register_listeners(listeners, defaults=True)
 
     def cred_handler(self, payload: TypeDict) -> None:
-        print("Handle Credentials")
-        exchange_id = payload["credential_exchange_id"]
-        state = payload["state"]
-        role = payload["role"]
-        attributes = payload["credential_proposal_dict"]["credential_proposal"][
-            "attributes"
-        ]
-        print(f"Credential exchange {exchange_id}, role: {role}, state: {state}")
-        print(f"Offering: {attributes}")
+        connection_id = payload['connection_id']
+        exchange_id = payload['credential_exchange_id']
+        state = payload['state']
+        role = payload['role']
+        print("\n---------------------------------------------------\n")
+        print("Handle Issue Credential Webhook")
+        print(f"Connection ID : {connection_id}")
+        print(f"Credential exchange ID : {exchange_id}")
+        print("Agent Protocol Role : ", role)
+        print("Protocol State : ", state)
+        print("\n---------------------------------------------------\n")
+        print("Handle Credential Webhook Payload")
+
+        if state == "offer_received":
+            print("Credential Offer Recieved")
+            proposal = payload["credential_proposal_dict"]
+            print(
+                "The proposal dictionary is likely how you would understand and display a credential offer in your application")
+            print("\n", proposal)
+            print("\n This includes the set of attributes you are being offered")
+            attributes = proposal['credential_proposal']['attributes']
+            print(attributes)
+            ## YOUR LOGIC HERE
+        elif state == "request_sent":
+            print(
+                "\nA credential request object contains the commitment to the agents master secret using the nonce from the offer")
+            ## YOUR LOGIC HERE
+        elif state == "credential_received":
+            print("Received Credential")
+            ## YOUR LOGIC HERE
+        elif state == "credential_acked":
+            ## YOUR LOGIC HERE
+            credential = payload["credential"]
+            print("Credential Stored\n")
+            print(credential)
+
+            print("\nThe referent acts as the identifier for retrieving the raw credential from the wallet")
+            # Note: You would probably save this in your application database
+            credential_referent = credential["referent"]
+            print("Referent", credential_referent)
 
     def connection_handler(self, payload: TypeDict) -> None:
-        print("Connection Handler Called")
+        state = payload['state']
         connection_id = payload["connection_id"]
-        state = payload["state"]
-        print(f"Connection {connection_id} in State {state}")
+        their_role = payload["their_role"]
+        routing_state = payload["routing_state"]
+
+        print("----------------------------------------------------------")
+        print("Connection Webhook Event Received")
+        print("Connection ID : ", connection_id)
+        print("State : ", state)
+        print("Routing State : ", routing_state)
+        print("Their Role : ", their_role)
+        print("----------------------------------------------------------")
 
     def proof_handler(self, payload: TypeDict) -> None:
         print("Handle present proof")
@@ -178,11 +217,16 @@ class AriesDuetTokenExchanger(DuetCredentialExchanger):
         loop = asyncio.get_event_loop()
 
         if state == "presentation_received":
-            verify = loop.run_until_complete(
+            verified_response = loop.run_until_complete(
                 self.agent_controller.proofs.verify_presentation(pres_ex_id)
             )
             if self.is_verified is not None:
-                self.is_verified.set_result(verify["state"] == "verified")
+                self.is_verified.set_result(verified_response["state"] == "verified")
+                print("Attributes Presented")
+                for (name, val) in verified_response['presentation']['requested_proof']['revealed_attrs'].items():
+                    ## This is the actual data that you want. It's a little hidden
+                    print("Attribute : ", val)
+                    print("Raw Value : ", val['raw'])
             else:
                 print("is_verified Future has not been created")
 
@@ -195,11 +239,11 @@ class AriesDuetTokenExchanger(DuetCredentialExchanger):
             print("responder_id Future has not been created")
 
     # Used for other Aries connections. E.g. with an issuer
-    def accept_connection(self, invitation: str) -> str:
+    def receive_invitation(self, invitation: str) -> str:
         # Receive Invitation
         loop = asyncio.get_event_loop()
         response = loop.run_until_complete(
-            self.agent_controller.connections.accept_connection(invitation)
+            self.agent_controller.connections.receive_invitation(invitation)
         )
         # Print out accepted Invite and Alice's connection ID
         print("Connection", response)

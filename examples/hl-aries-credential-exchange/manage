@@ -33,7 +33,7 @@ usage() {
 
             Examples:
             $0 start
-            $0 start bob-agent
+            $0 start
 
       start - Same as up
 
@@ -62,8 +62,11 @@ EOF
 # -----------------------------------------------------------------------------------------------------------------
 # Default Settings:
 # -----------------------------------------------------------------------------------------------------------------
-DEFAULT_CONTAINERS="datascientist-agent ngrok-datascientist-agent dataowner-agent ngrok-dataowner-agent"
+DEFAULT_CONTAINERS="data-owner-wallet-db ngrok-data-owner data-owner-agent data-owner-business-logic
+                    data-scientist-wallet-db ngrok-data-scientist data-scientist-agent data-scientist-business-logic
+                    om-authority-wallet-db ngrok-om-authority om-authority-agent om-authority-business-logic"
 
+# DEFAULT_CONTAINERS="data-owner-agent data-scientist-agent"
 # -----------------------------------------------------------------------------------------------------------------
 # Functions:
 # -----------------------------------------------------------------------------------------------------------------
@@ -111,50 +114,9 @@ configureEnvironment() {
     esac
   done
 
-  # global
-  export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:controller}"
-  export GENESIS_URL="https://raw.githubusercontent.com/sovrin-foundation/sovrin/master/sovrin/pool_transactions_sandbox_genesis"
-  export WALLET_TYPE="indy"
 
 
-  # agent
-  export DATASCIENTIST_NAME="DATASCIENTIST"
-  export DATASCIENTIST_ADMIN_PORT=8021
-  export DATASCIENTIST_API_KEY="agent_api_123456789"
-  export DATASCIENTIST_HTTP_PORT=8020
-  export DATASCIENTIST_WEBHOOK_PORT=8022
-  export DATASCIENTIST_WEBHOOK_URL=${DATASCIENTIST_WEBHOOK_URL:-http://$DOCKERHOST:$DATASCIENTIST_WEBHOOK_PORT}
-  export DATASCIENTIST_ENDPOINT=${DATASCIENTIST_ENDPOINT:-http://$DOCKERHOST:$DATASCIENTIST_HTTP_PORT}
-  export DATASCIENTIST_JUPYTER_PORT="8888"
-  export DATASCIENTIST_WALLET_NAME="agent Wallet"
-  export DATASCIENTIST_WALLET_KEY="scientist_key_00000000000000000"
-  export DATASCIENTIST_WALLET_SEED="scientist_seed_00000000000000000"
 
-  # agent
-  export DATAOWNER_NAME="DATAOWNER"
-  export DATAOWNER_ADMIN_PORT=8051
-  export DATAOWNER_API_KEY="agent_api_123456789"
-  export DATAOWNER_HTTP_PORT=8050
-  export DATAOWNER_WEBHOOK_PORT=8052
-  export DATAOWNER_WEBHOOK_URL=${DATAOWNER_WEBHOOK_URL:-http://$DOCKERHOST:$DATAOWNER_WEBHOOK_PORT}
-  export DATAOWNER_ENDPOINT=${DATAOWNER_ENDPOINT:-http://$DOCKERHOST:$DATAOWNER_HTTP_PORT}
-  export DATAOWNER_JUPYTER_PORT="8889"
-  export DATAOWNER_WALLET_NAME="agent Wallet"
-  export DATAOWNER_WALLET_KEY="owner_key_000000000000000000000"
-  export DATAOWNER_WALLET_SEED="owner_seed_000000000000000000000"
-
-  # ISSUER-agent
-  export ISSUER_AGENT_NAME="ISSUER"
-  export ISSUER_ADMIN_PORT=8031
-  export ISSUER_HTTP_PORT=8030
-  export ISSUER_WEBHOOK_PORT=8032
-  export ISSUER_WEBHOOK_URL=${ISSUER_WEBHOOK_URL:-http://$DOCKERHOST:$ISSUER_WEBHOOK_PORT}
-  export ISSUER_AGENT_ENDPOINT=${ISSUER_AGENT_ENDPOINT:-http://$DOCKERHOST:$ISSUER_HTTP_PORT}
-  export ISSUER_WALLET_SEED="IAGENT_seed_00000000000000000000"
-  export ISSUER_WALLET_KEY="ISSUER_key_00000000000000000000000"
-  export ISSUER_WALLET_NAME="ISSUER Wallet"
-  export ISSUER_JUPYTER_PORT="8890"
-  export ISSUER_ADMIN_SECURE="true"
 }
 
 getInputParams() {
@@ -172,6 +134,31 @@ getInputParams() {
   done
 
   echo ${ARGS}
+}
+
+getProductionParams() {
+  CONTAINERS=""
+  ARGS=""
+
+  for arg in $@; do
+    case "$arg" in
+    *=*)
+      # Skip it
+      ;;
+    -*)
+      ARGS+=" $arg"
+      ;;
+    *)
+      CONTAINERS+=" $arg"
+      ;;
+    esac
+  done
+
+  if [ -z "$CONTAINERS" ]; then
+    CONTAINERS="$PRODUCTION_CONTAINERS"
+  fi
+
+  echo ${ARGS} ${CONTAINERS}
 }
 
 getStartupParams() {
@@ -268,6 +255,19 @@ start | up)
   _startupParams=$(getStartupParams $@)
   configureEnvironment "$@"
   docker-compose\
+  --log-level ERROR up \
+  --build --remove-orphans \
+  -d ${_startupParams}
+  docker-compose \
+  --log-level ERROR logs \
+  -f
+  ;;
+production)
+  echoYellow "Starting up... This can take a couple of minutes."
+  _startupParams=$(getProductionParams $@)
+  configureEnvironment "$@"
+  docker-compose\
+  -f docker-compose.prod.yml \
   --log-level ERROR up \
   --build --remove-orphans \
   -d ${_startupParams}
