@@ -224,6 +224,12 @@ jobs:
           pip list
         timeout-minutes: 20
 
+      - name: Test syft-network
+        run: |
+          syft-network 25245 &
+          pgrep syft-network > /dev/null
+          pkill syft-network
+
       - name: Run notebook API examples
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
