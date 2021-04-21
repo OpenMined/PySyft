@@ -1,6 +1,4 @@
 # stdlib
-import atexit
-from multiprocessing import Process
 from multiprocessing import set_start_method
 import socket
 import sys
@@ -22,7 +20,6 @@ ts = pytest.importorskip("tenseal")
 sy.load("tenseal")
 
 set_start_method("spawn", force=True)
-PORT = 21000
 
 
 def chunks(lst: List[Any], n: int) -> Generator[Any, Any, Any]:
@@ -39,7 +36,7 @@ def chunks(lst: List[Any], n: int) -> Generator[Any, Any, Any]:
         yield lst[i : i + n]  # noqa: E203
 
 
-def do(ct_size: int, batch_size: int) -> None:
+def do(ct_size: int, batch_size: int, signaling_server: int) -> None:
     # third party
     import numpy as np
     import tenseal as ts
@@ -50,7 +47,7 @@ def do(ct_size: int, batch_size: int) -> None:
     sy.load("tenseal")
     sy.logger.add(sys.stderr, "ERROR")
 
-    duet = sy.launch_duet(loopback=True, network_url=f"http://127.0.0.1:{PORT}/")
+    duet = sy.launch_duet(loopback=True, network_url=f"http://127.0.0.1:{signaling_server}/")
     duet.requests.add_handler(action="accept")
 
     context = ts.context(
@@ -74,14 +71,14 @@ def do(ct_size: int, batch_size: int) -> None:
     sy.core.common.event_loop.loop.run_forever()
 
 
-def ds(ct_size: int, batch_size: int) -> None:
+def ds(ct_size: int, batch_size: int, signaling_server: int) -> None:
     # syft absolute
     import syft as sy
 
     sy.load("tenseal")
     sy.logger.add(sys.stderr, "ERROR")
 
-    duet = sy.join_duet(loopback=True, network_url=f"http://127.0.0.1:{PORT}/")
+    duet = sy.join_duet(loopback=True, network_url=f"http://127.0.0.1:{signaling_server}/")
 
     time.sleep(10)
 
@@ -106,16 +103,16 @@ def ds(ct_size: int, batch_size: int) -> None:
 def test_tenseal_duet_ciphertext_size(signaling_server: int) -> None:
     time.sleep(3)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        assert s.connect_ex(("localhost", PORT)) == 0
+        assert s.connect_ex(("localhost", signaling_server)) == 0
 
     for ct_size in [10, 20]:
         for batch_size in [1, 10, ct_size]:
             start = time.time()
 
-            do_proc = SyftTestProcess(target=do, args=(ct_size, batch_size))
+            do_proc = SyftTestProcess(target=do, args=(ct_size, batch_size, signaling_server))
             do_proc.start()
 
-            ds_proc = SyftTestProcess(target=ds, args=(ct_size, batch_size))
+            ds_proc = SyftTestProcess(target=ds, args=(ct_size, batch_size, signaling_server))
             ds_proc.start()
 
             ds_proc.join(120)
