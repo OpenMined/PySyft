@@ -21,17 +21,17 @@ register_duet_scenarios(registered_tests)
 
 
 @pytest.mark.slow
-def test_duet() -> None:
+def test_duet(signaling_server: int) -> None:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        assert s.connect_ex(("localhost", port)) == 0
+        assert s.connect_ex(("localhost", signaling_server)) == 0
 
     for testcase, do, ds in registered_tests:
         start = time.time()
 
-        do_proc = SyftTestProcess(target=do, args=(port,))
+        do_proc = SyftTestProcess(target=do, args=(signaling_server,))
         do_proc.start()
 
-        ds_proc = SyftTestProcess(target=ds, args=(port,))
+        ds_proc = SyftTestProcess(target=ds, args=(signaling_server,))
         ds_proc.start()
 
         ds_proc.join(30)

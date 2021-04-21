@@ -6,6 +6,7 @@ import shutil
 import socket
 import sys
 import time
+import pytest
 
 # syft relative
 from ..grid.duet.process_test import SyftTestProcess
@@ -27,9 +28,11 @@ def cleanup() -> None:
 atexit.register(cleanup)
 
 
-def do() -> None:
+def do(port) -> None:
     # stdlib
     import time
+    from . import set_global_var
+    set_global_var(port)
 
     # syft absolute
     import syft as sy
@@ -48,9 +51,11 @@ def do() -> None:
     sy.core.common.event_loop.loop.run_forever()
 
 
-def ds() -> None:
+def ds(port) -> None:
     # stdlib
     import time
+    from . import set_global_var
+    set_global_var(port)
 
     # syft absolute
     import syft as sy
@@ -67,15 +72,18 @@ def ds() -> None:
 
 
 {{LIB_DECORATOR}}
-def test_{{TESTCASE}}() -> None:
+def test_{{TESTCASE}}(signaling_server) -> None:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        assert s.connect_ex(("0.0.0.0", signaling_server)) == 0
+
     cleanup()
 
     start = time.time()
 
-    do_proc = SyftTestProcess(target=do, args=())
+    do_proc = SyftTestProcess(target=do, args=(signaling_server,))
     do_proc.start()
 
-    ds_proc = SyftTestProcess(target=ds, args=())
+    ds_proc = SyftTestProcess(target=ds, args=(signaling_server,))
     ds_proc.start()
 
     ds_proc.join(400)

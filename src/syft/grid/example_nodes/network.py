@@ -12,8 +12,6 @@ import os
 import sys
 
 # third party
-from typing import Optional
-
 import flask
 from flask import Flask
 from flask import Response
@@ -97,9 +95,9 @@ def run() -> None:
     print(network.signing_key.encode(encoder=HexEncoder).decode("utf-8"), "\n")
 
     print(f"Using {IP_MODE} and listening on port {port}")
-    print("READY")
+    print("READY", flush=True)
     app.run(host=HOST, port=int(port))
 
 
 if __name__ == "__main__":
-        run()
+    run()
