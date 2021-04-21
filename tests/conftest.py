@@ -2,7 +2,7 @@
 import atexit
 import logging
 import socket
-from typing import Any
+import subprocess
 from typing import Any as TypeAny
 from typing import Dict as TypeDict
 from typing import Generator
@@ -11,7 +11,6 @@ from typing import List as TypeList
 # third party
 import _pytest
 import pytest
-from xprocess import ProcessStarter
 
 # syft absolute
 import syft as sy
@@ -29,23 +28,19 @@ SIGNALING_SERVER_PORT = None
 
 
 @pytest.fixture(scope="session")
-def signaling_server(xprocess: Any) -> Generator:
+def signaling_server() -> Generator:
     global SIGNALING_SERVER_PORT
     SIGNALING_SERVER_PORT = free_port()
+    proc = subprocess.Popen(["syft-network", str(SIGNALING_SERVER_PORT)])
 
-    class SignalingServer(ProcessStarter):
-        pattern = "READY"
-        args = ["syft-network", str(SIGNALING_SERVER_PORT)]
-        timeout = 45
-        max_read_lines = 100
+    while True:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            if s.connect_ex(("0.0.0.0", SIGNALING_SERVER_PORT)) == 0:
+                break
 
-        def startup_check(self) -> bool:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                return s.connect_ex(("0.0.0.0", SIGNALING_SERVER_PORT)) == 0
-
-    xprocess.ensure("syft-network", SignalingServer)
     yield SIGNALING_SERVER_PORT
-    xprocess.getinfo("syft-network").terminate()
+
+    proc.terminate()
 
 
 @pytest.fixture
