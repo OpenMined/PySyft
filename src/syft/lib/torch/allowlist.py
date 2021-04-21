@@ -1,11 +1,12 @@
 # stdlib
+from typing import Any
 from typing import Dict
 from typing import Union
 
 # syft relative
 from ..misc.union import UnionGenerator
 
-allowlist: Dict[str, Union[str, Dict[str, str]]] = {}  # (path: str, return_type:type)
+allowlist: Dict[str, Union[str, Dict[str, Any]]] = {}  # (path: str, return_type:type)
 
 # --------------------------------------------------------------------------------------
 # SECTION - Tensor methods which are intentionally disabled
@@ -1788,7 +1789,6 @@ allowlist[
     "torch.nn.Conv2d.load_state_dict"
 ] = "syft.lib.python._SyNone"  # torch.nn.modules.module._IncompatibleKeys
 allowlist["torch.nn.Conv2d.extra_repr"] = "syft.lib.python.String"
-
 allowlist["torch.nn.Dropout2d"] = "torch.nn.Dropout2d"
 allowlist["torch.nn.Dropout2d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Dropout2d.parameters"] = "syft.lib.python.List"
@@ -1809,6 +1809,12 @@ allowlist["torch.nn.Linear.cpu"] = "torch.nn.Linear"
 allowlist["torch.nn.Linear.state_dict"] = "syft.lib.python.collections.OrderedDict"
 allowlist["torch.nn.Linear.load_state_dict"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Linear.extra_repr"] = "syft.lib.python.String"
+allowlist["torch.nn.Linear.weight"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.7.0",
+    "obj_attr": True,
+    "module_pargs": [1, 2],
+}
 
 # DataLoader
 allowlist["torch.utils.data.DataLoader"] = "torch.utils.data.DataLoader"

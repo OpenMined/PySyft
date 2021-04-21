@@ -54,9 +54,28 @@ def create_torch_ast(client: Any = None) -> Globals:
             if return_type == "unknown":
                 # this allows us to import them for testing
                 continue
-            ast.add_path(
-                path=method, framework_reference=torch, return_type_name=return_type
-            )
+            if (
+                not isinstance(return_type_name_or_dict, str)
+                and "obj_attr" in return_type_name_or_dict.keys()
+            ):
+                # workaround to only develop for klass.Class
+                # Remove once solution is developed
+                parent_class_name = ".".join(method.split(".")[:-1])
+                parent_class = ast.query(parent_class_name)
+                last_index = len(method.split(".")[:-1])
+                parent_class.add_path(
+                    path=method,  # type: ignore
+                    index=last_index,
+                    framework_reference=torch,
+                    return_type_name=return_type,
+                    obj_attr_req=True,
+                    pos_args=return_type_name_or_dict["module_pargs"],
+                )
+                continue
+            else:
+                ast.add_path(
+                    path=method, framework_reference=torch, return_type_name=return_type
+                )
             # add all the torch.nn.Parameter hooks
             if method.startswith("torch.Tensor."):
                 method = method.replace("torch.Tensor.", "torch.nn.Parameter.")

@@ -365,6 +365,10 @@ class Class(Callable):
         klass_pointer = type(self.pointer_name, (Pointer,), attrs)
         setattr(klass_pointer, "path_and_name", self.path_and_name)
         setattr(self, self.pointer_name, klass_pointer)
+        # if self.path_and_name == "torch.nn.Linear":
+        #     print(attrs)
+        #     print(klass_pointer)
+        #     print(self.path_and_name , klass_pointer.path_and_name)
 
     def create_send_method(outer_self: Any) -> None:
         def send(
@@ -460,7 +464,14 @@ class Class(Callable):
         return_type_name: Optional[str] = None,
         framework_reference: Optional[ModuleType] = None,
         is_static: bool = False,
+        obj_attr_req: bool = False,
+        pos_args: List[Any] = [],
     ) -> None:
+
+        # Delete after use
+        # if obj_attr_req:
+        #     print(pos_args)
+        #     return
 
         if index >= len(path) or path[index] in self.attrs:
             return
@@ -471,7 +482,10 @@ class Class(Callable):
         from enum import Enum
         from enum import EnumMeta
 
-        attr_ref = getattr(self.object_ref, _path[index])
+        if obj_attr_req:
+            attr_ref = getattr(self.object_ref(*pos_args), _path[index])
+        else:
+            attr_ref = getattr(self.object_ref, _path[index])
 
         class_is_enum = isinstance(self.object_ref, EnumMeta)
 
