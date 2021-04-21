@@ -32,3 +32,17 @@ repos:
     rev: 'v5.4.2'  # Use the revision sha / tag you want to point at
     hooks:
       - id: isort
+
+  - repo: https://github.com/pycqa/pydocstyle
+    rev: 5.1.1
+    hooks:
+      - id: pydocstyle
+        args:
+          - --convention=google
+        exclude: (apps/domain/tests/)|(apps/network/tests/)|(apps/worker/tests/)
+
+  - repo: https://github.com/terrencepreilly/darglint
+    rev: master
+    hooks:
+      - id: darglint
+        exclude: (apps/domain/tests/)|(apps/network/tests/)|(apps/worker/tests/)
