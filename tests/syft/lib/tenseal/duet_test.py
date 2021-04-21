@@ -17,7 +17,6 @@ import syft as sy
 
 # syft relative
 from ...grid.duet.process_test import SyftTestProcess
-from ...grid.duet.signaling_server_test import run
 
 ts = pytest.importorskip("tenseal")
 sy.load("tenseal")
@@ -103,24 +102,8 @@ def ds(ct_size: int, batch_size: int) -> None:
     )
 
 
-@pytest.fixture(scope="module")
-def signaling_server() -> Process:
-    print(f"creating signaling server on port {PORT}")
-    grid_proc = Process(target=run, args=(PORT,))
-    grid_proc.start()
-
-    def grid_cleanup() -> None:
-        print("stop signaling server")
-        grid_proc.terminate()
-        grid_proc.join()
-
-    atexit.register(grid_cleanup)
-
-    return grid_proc
-
-
 @pytest.mark.vendor(lib="tenseal")
-def test_tenseal_duet_ciphertext_size(signaling_server: Process) -> None:
+def test_tenseal_duet_ciphertext_size(signaling_server: int) -> None:
     time.sleep(3)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         assert s.connect_ex(("localhost", PORT)) == 0
