@@ -87,7 +87,7 @@ def run() -> None:
         port = 5000
 
     IP_MODE = os.getenv("IP_MODE", "IPV4")
-    HOST = "0.0.0.0"
+    HOST = "0.0.0.0"  # nosec
 
     print("====================================")
     print("========== NODE ROOT KEY ===========")
