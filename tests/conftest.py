@@ -1,18 +1,12 @@
-# -*- coding: utf-8 -*-
-"""
-    Dummy conftest.py for syft.
-    If you don't know what this is for, just leave it empty.
-    Read more about conftest.py under:
-    https://pytest.org/latest/plugins.html
-"""
-
 # stdlib
+import atexit
 import logging
+import socket
+from typing import Any
 from typing import Any as TypeAny
 from typing import Dict as TypeDict
 from typing import Generator
 from typing import List as TypeList
-import socket
 
 # third party
 import _pytest
@@ -25,10 +19,34 @@ from syft import logger
 from syft.lib import VendorLibraryImportException
 from syft.lib import _load_lib
 from syft.lib import vendor_requirements_available
-from .util.generate_duet_notebooks import generate_duet_notebooks, free_port
 
-SIGNALING_SERVER_PORT = free_port()
-generate_duet_notebooks(SIGNALING_SERVER_PORT)
+# syft relative
+from .syft.notebooks import cleanup
+from .syft.notebooks import free_port
+
+atexit.register(cleanup)
+SIGNALING_SERVER_PORT = None
+
+
+@pytest.fixture(scope="session")
+def signaling_server(xprocess: Any) -> Generator:
+    global SIGNALING_SERVER_PORT
+    SIGNALING_SERVER_PORT = free_port()
+
+    class SignalingServer(ProcessStarter):
+        pattern = "READY"
+        args = ["syft-network", str(SIGNALING_SERVER_PORT)]
+        timeout = 45
+        max_read_lines = 100
+
+        def startup_check(self) -> bool:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                return s.connect_ex(("0.0.0.0", SIGNALING_SERVER_PORT)) == 0
+
+    xprocess.ensure("syft-network", SignalingServer)
+    yield SIGNALING_SERVER_PORT
+    xprocess.getinfo("syft-network").terminate()
+
 
 @pytest.fixture
 def caplog(caplog: _pytest.logging.LogCaptureFixture) -> Generator:
@@ -67,6 +85,7 @@ def pytest_collection_modifyitems(
     # $ pytest -m slow for the slow tests
     # $ pytest -m all for all the tests
     # $ pytest -m libs for the vendor tests
+
     slow_tests = pytest.mark.slow
     fast_tests = pytest.mark.fast
     duet_tests = pytest.mark.duet
@@ -161,25 +180,3 @@ def client(node: sy.VirtualMachine) -> sy.VirtualMachineClient:
 @pytest.fixture(scope="session")
 def root_client(node: sy.VirtualMachine) -> sy.VirtualMachineClient:
     return node.get_root_client()
-
-
-
-@pytest.fixture(scope="function")
-def signaling_server(xprocess):
-    print("STARTING PROC")
-
-    class SignalingServer(ProcessStarter):
-        pattern = "READY"
-        args = ["syft-network", str(SIGNALING_SERVER_PORT)]
-        timeout = 10
-        max_read_lines = 100
-
-        def startup_check(self):
-            print("SALOOOT")
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                assert s.connect_ex(("127.0.0.1", SIGNALING_SERVER_PORT)) == 0
-
-    logfile = xprocess.ensure("syft-network", SignalingServer)
-    print("CE")
-    yield SIGNALING_SERVER_PORT
-    xprocess.getinfo("syft-network").terminate()

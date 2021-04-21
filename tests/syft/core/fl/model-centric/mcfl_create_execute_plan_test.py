@@ -58,7 +58,7 @@ DOMAIN_PORT = 7000
 def pygrid_domain(xprocess: Any) -> Generator:
     class Starter(ProcessStarter):
         # startup pattern
-        pattern = "===================================="
+        pattern = "Starting app"
 
         # command to start process
         pygrid_path = os.environ.get(
