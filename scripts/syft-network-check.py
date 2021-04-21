@@ -1,7 +1,9 @@
+# stdlib
+import socket
 import socketserver
 import subprocess
-import socket
 import time
+
 
 def generate_random_port() -> int:
     with socketserver.TCPServer(("localhost", 0), None) as s:  # type: ignore
@@ -21,4 +23,3 @@ if __name__ == "__main__":
         exit(1)
 
     proc.terminate()
-
