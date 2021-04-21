@@ -15,6 +15,7 @@ from ..core.exceptions import (
     GroupNotFoundError,
     AuthorizationError,
     MissingRequestKeyError,
+    MissingSetupKeyError,
     InvalidCredentialsError,
     OwnerAlreadyExistsError,
 )

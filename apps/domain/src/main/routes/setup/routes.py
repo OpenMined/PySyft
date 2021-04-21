@@ -13,7 +13,7 @@ from ...core.task_handler import route_logic
 from main.core.node import get_node
 
 
-@setup_route.route("/", methods=["POST"])
+@setup_route.route("", methods=["POST"])
 @optional_token
 def initial_setup(current_user):
     # Get request body
@@ -34,7 +34,7 @@ def initial_setup(current_user):
     )
 
 
-@setup_route.route("/", methods=["GET"])
+@setup_route.route("", methods=["GET"])
 @token_required
 def get_setup(current_user):
     # Get request body

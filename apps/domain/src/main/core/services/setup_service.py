@@ -26,6 +26,7 @@ from syft.grid.messages.setup_messages import (
 
 from ..exceptions import (
     MissingRequestKeyError,
+    MissingSetupKeyError,
     InvalidParameterValueError,
     AuthorizationError,
     OwnerAlreadyExistsError,
@@ -35,6 +36,7 @@ from ..database.utils import model_to_json
 
 from ...core.database.environment.environment import states
 from ...core.infrastructure import Config, Provider, AWS_Serverfull, AWS_Serverless
+from flask import current_app as app
 
 
 def create_initial_setup(
@@ -46,17 +48,23 @@ def create_initial_setup(
 
     _email = msg.content.get("email", None)
     _password = msg.content.get("password", None)
+    _token = msg.content.get("token", None)
+
+    if not _token:
+        raise MissingSetupKeyError
+    if _token != app.config["SETUP_SECRET_KEY"]:
+        raise MissingSetupKeyError
 
     # Get Payload Content
     configs = {
-        "node_name": msg.content.get("node_name", ""),
+        "domain_name": msg.content.get("domain_name", ""),
         "private_key": msg.content.get("private_key", ""),
         "aws_credentials": msg.content.get("aws_credentials", ""),
         "gcp_credentials": msg.content.get("gcp_credentials", ""),
         "azure_credentials": msg.content.get("azure_credentials", ""),
         "cache_strategy": msg.content.get("cache_strategy", ""),
         "replicate_db": msg.content.get("replicate_db", False),
-        "auto_scale": msg.content.get("auto_scale", ""),
+        "auto_scale": msg.content.get("auto_scale", False),
         "tensor_expiration_policy": msg.content.get("tensor_expiration_policy", 0),
         "allow_user_signup": msg.content.get("allow_user_signup", False),
     }
@@ -75,18 +83,18 @@ def create_initial_setup(
 
     _admin_role = node.roles.first(name="Owner")
 
-    _mandatory_request_fields = _email and _password and configs["node_name"]
+    _mandatory_request_fields = _email and _password and configs["domain_name"]
 
     # Check if email/password/node_name fields are empty
     if not _mandatory_request_fields:
         raise MissingRequestKeyError(
-            message="Invalid request payload, empty fields (email/password/node_name)!"
+            message="Invalid request payload, empty fields (email/password/domain_name)!"
         )
 
     config_obj = SetupConfig(**configs)
 
     # Change Node Name
-    node.name = config_obj.node_name
+    node.name = config_obj.domain_name
 
     # Change Node Root Key (if requested)
     if config_obj.private_key != "":
@@ -138,7 +146,7 @@ def get_setup(
     if users.role(user_id=_current_user_id).name != "Owner":
         raise AuthorizationError("You're not allowed to get setup configs!")
     else:
-        _setup = model_to_json(node.setup.first(node_name=node.name))
+        _setup = model_to_json(node.setup.first(domain_name=node.name))
 
     return GetSetUpResponse(
         address=msg.reply_to,

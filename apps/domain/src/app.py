@@ -39,7 +39,7 @@ import config
 from main.core.node import create_domain_app
 
 DEFAULT_SECRET_KEY = "justasecretkeythatishouldputhere"
-
+DEFAULT_SETUP_SECRET_KEY = "9G9MJ06OQH"
 # Masking/Unmasking is a process used to guarantee some level of security
 # during the transportation of the messages across proxies (as described in WebSocket RFC).
 # Since the masking process needs to iterate over the message payload,
@@ -61,7 +61,11 @@ logger = logging.getLogger()
 
 
 def create_app(
-    args, secret_key=DEFAULT_SECRET_KEY, debug=False, testing=False
+    args,
+    secret_key=DEFAULT_SECRET_KEY,
+    setup_secret_key=DEFAULT_SETUP_SECRET_KEY,
+    debug=False,
+    testing=False,
 ) -> Flask:
     """This method creates a new Flask App instance and attach it with some
     HTTP/Websocket bluetprints.
@@ -83,6 +87,7 @@ def create_app(
 
     app.debug = debug
     app.config["SECRET_KEY"] = secret_key
+    app.config["SETUP_SECRET_KEY"] = setup_secret_key
 
     # Send app instance
     return app
