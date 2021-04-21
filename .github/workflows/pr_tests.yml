@@ -226,10 +226,7 @@ jobs:
 
       - name: Test syft-network
         run: |
-          syft-network 25245 &
-          pgrep syft-network > /dev/null
-          echo $?
-          pkill syft-network
+          python ./scripts/syft-network-check.py
 
       - name: Run notebook API examples
         if: ${{ matrix.os == 'ubuntu-latest' }}

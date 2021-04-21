@@ -7,6 +7,7 @@ from typing import Any as TypeAny
 from typing import Dict as TypeDict
 from typing import Generator
 from typing import List as TypeList
+from time import time
 
 # third party
 import _pytest
@@ -32,11 +33,14 @@ def signaling_server() -> Generator:
     global SIGNALING_SERVER_PORT
     SIGNALING_SERVER_PORT = free_port()
     proc = subprocess.Popen(["syft-network", str(SIGNALING_SERVER_PORT)])
+    start = time()
 
-    while True:
+    while time() - start < 15:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             if s.connect_ex(("0.0.0.0", SIGNALING_SERVER_PORT)) == 0:
                 break
+    else:
+        raise TimeoutError("Can't connect to the signaling server")
 
     yield SIGNALING_SERVER_PORT
 
