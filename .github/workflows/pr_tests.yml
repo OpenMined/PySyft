@@ -228,6 +228,7 @@ jobs:
         run: |
           syft-network 25245 &
           pgrep syft-network > /dev/null
+          echo $?
           pkill syft-network
 
       - name: Run notebook API examples
