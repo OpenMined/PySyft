@@ -224,10 +224,6 @@ jobs:
           pip list
         timeout-minutes: 20
 
-      - name: Test syft-network
-        run: |
-          python ./scripts/syft-network-check.py
-
       - name: Run notebook API examples
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
@@ -239,6 +235,10 @@ jobs:
         run: |
           cat requirements.libs.txt | xargs -I {} -n 1 pip install {} --no-deps --default-timeout=60 || true
           pip install -r requirements.libs.deps.txt --default-timeout=60
+
+      - name: Test syft-network
+        run: |
+          python ./scripts/syft-network-check.py
 
       - name: Run notebook Duet examples
         run: |
