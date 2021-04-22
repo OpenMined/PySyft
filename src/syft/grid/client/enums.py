@@ -33,3 +33,4 @@ class ResponseObjectEnum(str, Enum):
     ROLE = "role"
     USER = "user"
     WORKER = "worker"
+    DATA = "data"
