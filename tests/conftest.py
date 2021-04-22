@@ -1,5 +1,4 @@
 # stdlib
-import atexit
 import logging
 from multiprocessing import Process
 import socket
