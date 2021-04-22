@@ -77,8 +77,17 @@ jobs:
 
       - name: Install packages
         run: |
-          pip install -r requirements.dev.txt --default-timeout=60
-          pip install -e . --default-timeout=60
+          pip install -r requirements.txt
+          pip install -e .
+
+      - name: Check import works without dev packages
+        run: |
+          python -c "import syft"
+
+      - name: Install dev packages
+        run: |
+          pip install -r requirements.dev.txt
+          pip install -e .
 
       - name: Run torch tests
         run: |
