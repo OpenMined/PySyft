@@ -32,6 +32,37 @@ from ..logger import warning
 from ..util import aggressive_set_attr
 from ..util import inherit_tags
 
+binary_ops = [
+    "__radd__",
+    "__rsub__",
+    "__rmul__",
+    "__rmatmul__",
+    "__rtruediv__",
+    "__rfloordiv__",
+    "__rmod__",
+    "__rdivmod__",
+    "__rpow__",
+    "__rlshift__",
+    "__rrshift__",
+    "__rand__",
+    "__rxor__",
+    "__ror__",
+    "__add__",
+    "__sub__",
+    "__mul__",
+    "__matmul__",
+    "__truediv__",
+    "__floordiv__",
+    "__mod__",
+    "__divmod__",
+    "__pow__",
+    "__lshift__",
+    "__rshift__",
+    "__and__",
+    "__xor__",
+    "__or__",
+]
+
 
 def _resolve_pointer_type(self: Pointer) -> Pointer:
     """
@@ -130,8 +161,9 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
             )
             __self.client.send_immediate_msg_without_reply(msg=cmd)
 
-            # Validating the pointer type
-            result = result.resolve_pointer_type()
+            # Validating the pointer type in case of binary operation
+            if attr_path_and_name.split('.')[-1] in binary_ops:
+                result = result.resolve_pointer_type()
 
         inherit_tags(
             attr_path_and_name=attr_path_and_name,
