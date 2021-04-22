@@ -34,7 +34,7 @@ def signaling_server() -> Generator:
     global SIGNALING_SERVER_PORT
     SIGNALING_SERVER_PORT = free_port()
     proc = Process(
-        target=start_signaling_server, args=(SIGNALING_SERVER_PORT, "0.0.0.0")
+        target=start_signaling_server, args=(SIGNALING_SERVER_PORT, "127.0.0.1")
     )
 
     proc.start()
@@ -42,7 +42,7 @@ def signaling_server() -> Generator:
 
     while time() - start < 15:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            if s.connect_ex(("0.0.0.0", SIGNALING_SERVER_PORT)) == 0:
+            if s.connect_ex(("127.0.0.1", SIGNALING_SERVER_PORT)) == 0:
                 break
     else:
         raise TimeoutError("Can't connect to the signaling server")

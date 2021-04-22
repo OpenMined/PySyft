@@ -74,7 +74,7 @@ def ds(port) -> None:
 {{LIB_DECORATOR}}
 def test_{{TESTCASE}}(signaling_server) -> None:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        assert s.connect_ex(("0.0.0.0", signaling_server)) == 0
+        assert s.connect_ex(("127.0.0.1", signaling_server)) == 0
 
     cleanup()
 
