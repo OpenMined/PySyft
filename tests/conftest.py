@@ -25,7 +25,7 @@ from syft.lib import vendor_requirements_available
 from .syft.notebooks import cleanup
 from .syft.notebooks import free_port
 
-atexit.register(cleanup)
+# atexit.register(cleanup)
 SIGNALING_SERVER_PORT = None
 
 
