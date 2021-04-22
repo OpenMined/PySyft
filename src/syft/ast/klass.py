@@ -141,7 +141,7 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
             kwargs=kwargs,
         )
 
-        if result.__name__ == '_SyNotImplementedPointer':
+        if result.__name__ == "_SyNotImplementedPointer":
             return NotImplemented
         return result
 

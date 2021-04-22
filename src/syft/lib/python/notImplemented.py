@@ -1,5 +1,4 @@
 # stdlib
-from typing import Any
 from typing import Optional
 
 # third party
@@ -53,7 +52,9 @@ class _SyNotImplemented(PyPrimitive):
         de_not_impl = _SyNotImplemented()
         de_not_impl._id = not_impl_id
         print("DeSer")
+        # stdlib
         import traceback
+
         traceback.print_stack()
         # return de_not_impl
         return NotImplemented

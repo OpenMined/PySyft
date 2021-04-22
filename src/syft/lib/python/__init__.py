@@ -60,7 +60,11 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.lib.python.Slice", "syft.lib.python.Slice", Slice),
         ("syft.lib.python.String", "syft.lib.python.String", String),
         ("syft.lib.python._SyNone", "syft.lib.python._SyNone", _SyNone),
-        ("syft.lib.python._SyNotImplemented", "syft.lib.python._SyNotImplemented", _SyNotImplemented),
+        (
+            "syft.lib.python._SyNotImplemented",
+            "syft.lib.python._SyNotImplemented",
+            _SyNotImplemented,
+        ),
         ("syft.lib.python.PyPrimitive", "syft.lib.python.PyPrimitive", PyPrimitive),
         ("syft.lib.python.Any", "syft.lib.python.Any", Any),
         ("syft.lib.python.Tuple", "syft.lib.python.Tuple", Tuple),
