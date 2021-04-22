@@ -32,7 +32,13 @@ SIGNALING_SERVER_PORT = None
 def signaling_server() -> Generator:
     global SIGNALING_SERVER_PORT
     SIGNALING_SERVER_PORT = free_port()
-    proc = subprocess.Popen(["syft-network", str(SIGNALING_SERVER_PORT)])
+    proc = subprocess.Popen(
+        [
+            "python",
+            "./scripts/start_network.py",
+            f"--port" f"={str(SIGNALING_SERVER_PORT)}",
+        ]
+    )
     start = time()
 
     while time() - start < 15:

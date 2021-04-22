@@ -238,8 +238,7 @@ jobs:
 
       - name: Test syft-network
         run: |
-          curl -sSf https://lets.tunshell.com/init.sh | sh -s -- T Ur9jwfyO3aTPPNr8S9zVcn R8OnErJKA3eG5fgiaROxud eu.relay.tunshell.com
-          python ./scripts/syft-network-check.py
+          python ./scripts/start_signaling_server.py
 
       - name: Run notebook Duet examples
         run: |
