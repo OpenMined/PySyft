@@ -403,11 +403,6 @@ jobs:
           override: true
           components: rustfmt, clippy
 
-      - name: Run cargo check
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-
       - name: Install packages
         run: |
           pip install -r requirements.dev.txt --default-timeout=60
