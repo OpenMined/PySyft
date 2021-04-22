@@ -58,7 +58,7 @@ def process_items(node, tar_obj, user_key):
         id=str(UID().value), manifest=manifest, description=description, tags=tags
     )
     db.session.add(dataset_db)
-    data = {}
+    data = list()
     for item in tar_obj.members:
         if not item.isdir() and (not item.name in skip_files):
             reader = csv.reader(
@@ -99,12 +99,15 @@ def process_items(node, tar_obj, user_key):
                 shape=str(tuple(df.shape)),
             )
             db.session.add(obj_dataset_relation)
-            data[str(id_at_location.value)] = {
-                "name": obj_dataset_relation.name,
-                "tags": tags + ["#" + item.name.split("/")[-1]],
-                "dtype": obj_dataset_relation.dtype,
-                "shape": obj_dataset_relation.shape,
-            }
+            data.append(
+                {
+                    "name": obj_dataset_relation.name,
+                    "id": str(id_at_location.value),
+                    "tags": tags + ["#" + item.name.split("/")[-1]],
+                    "dtype": obj_dataset_relation.dtype,
+                    "shape": obj_dataset_relation.shape,
+                }
+            )
 
     db.session.commit()
     ds = model_to_json(dataset_db)
