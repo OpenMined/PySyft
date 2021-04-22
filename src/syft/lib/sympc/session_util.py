@@ -58,4 +58,6 @@ def protobuf_session_deserializer(proto: MPCSession_PB) -> Session:
     session.crypto_store = CryptoStore()
     session.nr_parties = nr_parties
 
+    globals()["session"] = session
+
     return session
