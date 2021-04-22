@@ -73,7 +73,7 @@ def test_initial_setup(client, database, cleanup):
     )
 
     assert result.status_code == 200
-    assert result.get_json() == {"msg": "Running initial setup!"}
+    assert result.get_json() == {"message": "Running initial setup!"}
 
 
 def test_get_setup(client, database, cleanup):
@@ -92,7 +92,7 @@ def test_get_setup(client, database, cleanup):
         },
     )
     # assert result.status_code == 200
-    assert result.get_json() == {"msg": "Running initial setup!"}
+    assert result.get_json() == {"message": "Running initial setup!"}
 
     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
     headers = {
