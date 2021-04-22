@@ -1,3 +1,6 @@
+# stdlib
+import json
+
 # third party
 import requests
 
@@ -10,6 +13,10 @@ from syft.core.common.message import SyftMessage
 from syft.core.common.serde.deserialize import _deserialize
 from syft.core.io.connection import ClientConnection
 from syft.proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
+
+# syft relative
+from ..client.enums import RequestAPIFields
+from ..client.exceptions import RequestAPIException
 
 
 class HTTPConnection(ClientConnection):
@@ -31,9 +38,15 @@ class HTTPConnection(ClientConnection):
 
         # Serializes SignedImmediateSyftMessageWithReply
         # and send it using HTTP protocol
-        blob = self._send_msg(msg=msg).content
+        response = self._send_msg(msg=msg)
+
         # Deserialize node's response
-        response = _deserialize(blob=blob, from_bytes=True)
+        if response.status_code == requests.codes.ok:
+            response = _deserialize(blob=response.content, from_bytes=True)
+        else:
+            response_json = json.loads(response.content)
+            raise RequestAPIException(response_json[RequestAPIFields.ERROR])
+
         # Return SignedImmediateSyftMessageWithoutReply
         return response
 

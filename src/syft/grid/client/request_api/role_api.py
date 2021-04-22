@@ -8,12 +8,11 @@ from ...messages.role_messages import DeleteRoleMessage
 from ...messages.role_messages import GetRoleMessage
 from ...messages.role_messages import GetRolesMessage
 from ...messages.role_messages import UpdateRoleMessage
+from ..enums import ResponseObjectEnum
 from .request_api import GridRequestAPI
 
 
 class RoleRequestAPI(GridRequestAPI):
-    response_key: str = "role"
-
     def __init__(self, send: Callable):
         super().__init__(
             create_msg=CreateRoleMessage,
@@ -22,7 +21,7 @@ class RoleRequestAPI(GridRequestAPI):
             update_msg=UpdateRoleMessage,
             delete_msg=DeleteRoleMessage,
             send=send,
-            response_key=RoleRequestAPI.response_key,
+            response_key=ResponseObjectEnum.ROLE,
         )
 
     def __getitem__(self, key: int) -> Any:

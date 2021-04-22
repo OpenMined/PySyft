@@ -11,6 +11,8 @@ import requests
 from ...core.common.message import SyftMessage
 from ...core.common.serde.serialize import _serialize
 from ...proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
+from ..client.enums import RequestAPIFields
+from ..client.exceptions import RequestAPIException
 from ..connections.http_connection import HTTPConnection
 
 
@@ -87,3 +89,12 @@ class GridHTTPConnection(HTTPConnection):
         metadata_pb.ParseFromString(metadata)
 
         return metadata_pb
+
+    def setup(self, **content):
+        response = json.loads(
+            requests.post(self.base_url + "/setup", json=content).text
+        )
+        if response.get(RequestAPIFields.MESSAGE, None):
+            return response
+        else:
+            raise RequestAPIException(response.get(RequestAPIFields.ERROR))

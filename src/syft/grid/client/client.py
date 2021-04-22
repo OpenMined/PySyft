@@ -1,4 +1,5 @@
 # stdlib
+import logging
 from typing import Any
 from typing import Dict
 from typing import List
@@ -30,10 +31,13 @@ from ...core.node.network.client import NetworkClient
 from ...core.node.vm.client import VirtualMachineClient
 from ...core.pointer.pointer import Pointer
 from ..messages.network_search_message import NetworkSearchMessage
-from ..messages.setup_messages import CreateInitialSetUpMessage
 from ..messages.setup_messages import GetSetUpMessage
 from ..messages.transfer_messages import LoadObjectMessage
+from .enums import PyGridClientEnums
+from .enums import RequestAPIFields
+from .exceptions import RequestAPIException
 from .request_api.association_api import AssociationRequestAPI
+from .request_api.dataset_api import DatasetRequestAPI
 from .request_api.group_api import GroupRequestAPI
 from .request_api.role_api import RoleRequestAPI
 from .request_api.user_api import UserRequestAPI
@@ -62,7 +66,7 @@ def connect(
 
             if credentials:
                 metadata, _user_key = self.conn.login(credentials=credentials)  # type: ignore
-                _user_key = SigningKey(_user_key.encode("utf-8"), encoder=HexEncoder)
+                _user_key = SigningKey(_user_key.encode(), encoder=HexEncoder)
             else:
                 metadata = self.conn._get_metadata()  # type: ignore
                 if not user_key:
@@ -107,28 +111,30 @@ def connect(
             self.association_requests = AssociationRequestAPI(
                 send=self.__perform_grid_request
             )
+            self.datasets = DatasetRequestAPI(send=self.__perform_grid_request)
 
         def load(
-            self, obj_ptr: Type[Pointer], address: Address, searchable: bool = False
+            self, obj_ptr: Type[Pointer], address: Address, pointable: bool = False
         ) -> None:
             content = {
-                "address": serialize(address).SerializeToString().decode("ISO-8859-1"),  # type: ignore
-                "uid": str(obj_ptr.id_at_location.value),
-                "searchable": searchable,
+                RequestAPIFields.ADDRESS: serialize(address)
+                .SerializeToString()
+                .decode(PyGridClientEnums.ENCODING),  # type: ignore
+                RequestAPIFields.UID: str(obj_ptr.id_at_location.value),
+                RequestAPIFields.POINTABLE: pointable,
             }
             self.__perform_grid_request(grid_msg=LoadObjectMessage, content=content)
 
-        def initial_setup(self, **kwargs: Any) -> Any:
-            return self.__perform_grid_request(
-                grid_msg=CreateInitialSetUpMessage, content=kwargs
-            )
+        def setup(self, **kwargs: Any) -> Any:
+            response = self.conn.setup(**kwargs)
+            logging.info(response[RequestAPIFields.MESSAGE])
 
         def get_setup(self, **kwargs: Any) -> Any:
             return self.__perform_grid_request(grid_msg=GetSetUpMessage, content=kwargs)
 
         def search(self, query: List, pandas: bool = False) -> Any:
             response = self.__perform_grid_request(
-                grid_msg=NetworkSearchMessage, content={"query": query}
+                grid_msg=NetworkSearchMessage, content={RequestAPIFields.QUERY: query}
             )
             if pandas:
                 response = DataFrame(response)
@@ -189,9 +195,9 @@ def connect(
 
         def __build_msg(self, grid_msg: Any, content: Dict[Any, Any]) -> Any:
             args = {
-                "address": self.address,
-                "content": content,
-                "reply_to": self.address,
+                RequestAPIFields.ADDRESS: self.address,
+                RequestAPIFields.CONTENT: content,
+                RequestAPIFields.REPLY_TO: self.address,
             }
             return grid_msg(**args).sign(signing_key=self.signing_key)
 
@@ -199,8 +205,13 @@ def connect(
             if response.status_code == 200:  # type: ignore
                 return response.content  # type: ignore
             else:
-                raise Exception(response.content["error"])  # type: ignore
+                raise RequestAPIException(
+                    message=response.content[RequestAPIFields.ERROR]
+                )
 
     return GridClient(
-        credentials=credentials, url=url, conn_type=conn_type, client_type=DomainClient
+        credentials=credentials,
+        url=url,
+        conn_type=conn_type,
+        client_type=DomainClient,
     )

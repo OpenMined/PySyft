@@ -1,4 +1,5 @@
 # stdlib
+import logging
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -10,6 +11,7 @@ from pandas import DataFrame
 
 # syft relative
 from ....core.common.message import SyftMessage
+from ..enums import RequestAPIFields
 
 
 class GridRequestAPI:
@@ -35,8 +37,9 @@ class GridRequestAPI:
     def send(self) -> Callable:
         return self.__send
 
-    def create(self, **kwargs: Any) -> Dict[str, str]:
-        return self.__send(grid_msg=self.__create_message, content=kwargs)
+    def create(self, **kwargs: Any) -> None:
+        response = self.__send(grid_msg=self.__create_message, content=kwargs)
+        logging.info(response[RequestAPIFields.MESSAGE])
 
     def get(self, **kwargs: Any) -> Any:
         return self.to_obj(self.__send(grid_msg=self.__get_message, content=kwargs))
@@ -48,11 +51,13 @@ class GridRequestAPI:
 
         return result
 
-    def update(self, **kwargs: Any) -> Dict[str, Any]:
-        return self.__send(grid_msg=self.__update_message, content=kwargs)
+    def update(self, **kwargs: Any) -> None:
+        response = self.__send(grid_msg=self.__update_message, content=kwargs)
+        logging.info(response[RequestAPIFields.MESSAGE])
 
-    def delete(self, **kwargs: Any) -> Dict[str, Any]:
-        return self.__send(grid_msg=self.__delete_message, content=kwargs)
+    def delete(self, **kwargs: Any) -> None:
+        response = self.__send(grid_msg=self.__delete_message, content=kwargs)
+        logging.info(response[RequestAPIFields.MESSAGE])
 
     def to_obj(self, result: Any) -> Any:
         if result:
