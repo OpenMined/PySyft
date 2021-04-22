@@ -34,9 +34,7 @@ class _SyNotImplemented(PyPrimitive):
         """
         return self._id
 
-    def upcast(
-        self,
-    ) -> Any:  # mypy issue with type(NotImplemened) https://github.com/python/mypy/issues/4791
+    def upcast(self) -> type(NotImplemented):  # type: ignore
         return NotImplemented
 
     def __hash__(self) -> SyPrimitiveRet:

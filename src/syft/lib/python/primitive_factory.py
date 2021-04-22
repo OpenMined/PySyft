@@ -29,7 +29,6 @@ primitives = [
     slice,
     None,
     NoneType,
-    NotImplementedType,
     str,
     UserDict,
     UserList,
@@ -49,7 +48,6 @@ PrimitiveType = Union[
     slice,
     None,
     NoneType,
-    NotImplementedType,
     str,
     UserDict,
     UserList,
@@ -70,7 +68,7 @@ class PrimitiveFactory(ABC):
 
     @staticmethod
     def generate_primitive(
-        value: Union[PrimitiveType, PyPrimitive],  # type: ignore
+        value: Union[PrimitiveType, type(NotImplemented), PyPrimitive],  # type: ignore
         id: Optional[UID] = None,
         recurse: bool = False,
     ) -> Any:
