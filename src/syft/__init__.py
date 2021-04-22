@@ -78,6 +78,15 @@ from syft.lib import load  # noqa: F401
 from syft.lib import load_lib  # noqa: F401
 from syft.lib.torch.module import Module  # noqa: F401
 
+# Rust
+try:
+    # third party
+    import libsyft  # noqa: F401
+except ImportError:
+    # run `$ maturin develop`
+    print("Unable to load libsyft")
+
+
 # syft relative
 # Package Imports
 from . import lib  # noqa: F401

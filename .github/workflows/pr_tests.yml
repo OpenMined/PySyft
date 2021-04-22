@@ -351,3 +351,73 @@ jobs:
           pip install -e . --default-timeout=60
           pip install -r requirements.grid.txt --default-timeout=60
           pytest -m grid
+
+  python-libsyft:
+    needs: [python-linting]
+    strategy:
+      max-parallel: 3
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        python-version: [3.9]
+        torch-version: [1.8.0]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
+
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - name: Install PyTorch
+        run: |
+          pip install packaging --default-timeout=60
+          python scripts/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
+          cat ./requirements.torch.txt
+          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html --default-timeout=60
+
+      - name: Install rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
+
+      - name: Run cargo check
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+
+      - name: Install packages
+        run: |
+          pip install -r requirements.dev.txt --default-timeout=60
+          pip install -e . --default-timeout=60
+          pip list
+        timeout-minutes: 20
+
+      - name: maturin build
+        run: |
+          cd src && maturin develop
+
+      - name: Run normal tests
+        run: |
+          pytest -k 'libsyft' -n auto
