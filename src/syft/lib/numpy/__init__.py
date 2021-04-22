@@ -41,7 +41,7 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("numpy.ndarray.itemsize", "numpy.ndarray"),
         ("numpy.ndarray.nbytes", "numpy.ndarray"),
         ("numpy.ndarray.base", "numpy.ndarray"),
-        # ("numpy.ndarray.dtype", "numpy.ndarray"), SECURITY WARNING: DO NOT ADD TO ALLOW LIST YET 
+        # ("numpy.ndarray.dtype", "numpy.ndarray"), # SECURITY WARNING: DO NOT ADD TO ALLOW LIST YET
         ("numpy.ndarray.T", "numpy.ndarray"),
         # ("numpy.ndarray.real", "numpy.ndarray"), # requires dtype complex
         # ("numpy.ndarray.imag", "numpy.ndarray"), # requires dtype complex
