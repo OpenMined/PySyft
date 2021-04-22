@@ -171,6 +171,8 @@ def obj2pointer_type(obj: object) -> type:
         debug(f"Unable to get get_fully_qualified_name of {type(obj)} trying type. {e}")
         if obj is None:
             fqn = "syft.lib.python._SyNone"
+        elif obj is NotImplemented:
+            fqn = "syft.lib.python._SyNotImplemented"
         else:
             fqn = get_fully_qualified_name(obj=type(obj))
 
@@ -180,7 +182,6 @@ def obj2pointer_type(obj: object) -> type:
         log = f"Cannot find {type(obj)} {fqn} in lib_ast. {e}"
         critical(log)
         raise Exception(log)
-
     return ref.pointer_type
 
 

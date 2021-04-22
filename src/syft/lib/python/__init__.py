@@ -18,6 +18,8 @@ from .iterator import Iterator
 from .list import List
 from .none import SyNone
 from .none import _SyNone
+from .notImplemented import SyNotImplemented
+from .notImplemented import _SyNotImplemented
 from .primitive_container import Any
 from .primitive_interface import PyPrimitive
 from .set import Set
@@ -33,6 +35,8 @@ for syft_type in [
     Int,
     SyNone,
     _SyNone,
+    SyNotImplemented,
+    _SyNotImplemented,
     Any,
     PyPrimitive,
     Slice,
@@ -56,6 +60,7 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.lib.python.Slice", "syft.lib.python.Slice", Slice),
         ("syft.lib.python.String", "syft.lib.python.String", String),
         ("syft.lib.python._SyNone", "syft.lib.python._SyNone", _SyNone),
+        ("syft.lib.python._SyNotImplemented", "syft.lib.python._SyNotImplemented", _SyNotImplemented),
         ("syft.lib.python.PyPrimitive", "syft.lib.python.PyPrimitive", PyPrimitive),
         ("syft.lib.python.Any", "syft.lib.python.Any", Any),
         ("syft.lib.python.Tuple", "syft.lib.python.Tuple", Tuple),
@@ -191,6 +196,7 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.lib.python.Float.__rsub__", "syft.lib.python.Float"),
         ("syft.lib.python.Float.__mul__", "syft.lib.python.Float"),
         ("syft.lib.python.Float.__rmul__", "syft.lib.python.Float"),
+        ("syft.lib.python.Float.__radd__", "syft.lib.python.Float"),
         ("syft.lib.python.Float.__divmod__", "syft.lib.python.Tuple"),
         ("syft.lib.python.Float.__int__", "syft.lib.python.Int"),
         ("syft.lib.python.Float.__neg__", "syft.lib.python.Float"),

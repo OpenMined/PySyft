@@ -130,6 +130,9 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
             )
             __self.client.send_immediate_msg_without_reply(msg=cmd)
 
+            # Validating the pointer type
+            result = result.resolve_pointer_type()
+
         inherit_tags(
             attr_path_and_name=attr_path_and_name,
             result=result,
@@ -138,6 +141,8 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
             kwargs=kwargs,
         )
 
+        if result.__name__ == '_SyNotImplementedPointer':
+            return NotImplemented
         return result
 
     return run_class_method

@@ -146,6 +146,6 @@ class PrimitiveFactory(ABC):
             return python.String(value=value, id=id)
 
         if value is NotImplemented:
-            return value
+            return python.SyNotImplemented
 
         return python.SyNone
