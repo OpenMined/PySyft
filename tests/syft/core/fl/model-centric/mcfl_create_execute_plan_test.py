@@ -92,8 +92,12 @@ def test_create_and_execute_plan_autograd(pygrid_domain: Any) -> None:
     plans = {"training_plan": plan}
     host_to_grid(plans, model, fl_name)
 
+    bs = 64 * 3
     plan_inputs = OrderedDict(
-        {"xs": th.rand([64 * 3, 28 * 28]), "ys": th.randint(0, 10, [64 * 3, 10])}
+        {
+            "xs": th.rand([bs, 28 * 28]),
+            "ys": th.nn.functional.one_hot(th.randint(0, 10, [bs]), 10),
+        }
     )
     plan_params_output_idx = [0, 1, 2, 3]
     model_param_type_size = sanity_check_hosted_plan(
@@ -131,7 +135,7 @@ def test_create_and_execute_plan_mobile(pygrid_domain: Any, plan_type: str) -> N
     classes_num = 10
     plan_inputs = OrderedDict(
         {
-            "xs": th.randn(bs, 28 * 28),
+            "xs": th.rand(bs, 28 * 28),
             "ys": th.nn.functional.one_hot(
                 th.randint(0, classes_num, [bs]), classes_num
             ),
@@ -228,7 +232,7 @@ class MLPNoAutograd(sy.Module):
         self, logits: Any, target: Any, batch_size: int
     ) -> TypeTuple[Any, ...]:
         probs = self.torch_ref.softmax(logits, dim=1)
-        loss = -(target * self.torch_ref.log(probs)).mean()
+        loss = -(target * self.torch_ref.log(probs)).sum(dim=1).mean()
         loss_grad = (probs - target) / batch_size
         return loss, loss_grad
 
@@ -256,7 +260,7 @@ def create_plan_autograd() -> TypeTuple[Plan, SyModule]:
     @make_plan
     def train(  # type: ignore
         xs=th.rand([64 * 3, 28 * 28]),
-        ys=th.randint(0, 10, [64 * 3, 10]),
+        ys=th.nn.functional.one_hot(th.randint(0, 10, [64 * 3]), 10),
         params=List(local_model.parameters()),
     ):
 
