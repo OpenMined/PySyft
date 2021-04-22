@@ -123,7 +123,7 @@ def create_initial_setup(
     return CreateInitialSetUpResponse(
         address=msg.reply_to,
         status_code=200,
-        content={"msg": final_msg},
+        content={"message": final_msg},
     )
 
 
