@@ -143,7 +143,7 @@ def create_domain_app(app, args, testing=False):
             seed_db()
 
         if len(db.session.query(SetupConfig).all()) != 0:
-            node.name = db.session.query(SetupConfig).first().node_name
+            node.name = db.session.query(SetupConfig).first().domain_name
 
         role = db.session.query(Role.id).filter_by(name="Owner").first()
         user = User.query.filter_by(role=role.id).first()
