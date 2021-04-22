@@ -159,6 +159,12 @@ class RequestError(PyGridError):
         super().__init__(message)
 
 
+class DatasetNotFoundError(PyGridError):
+    def __init__(self):
+        message = "Dataset ID not found!"
+        super().__init__(message)
+
+
 class InvalidParameterValueError(PyGridError):
     def __init__(self, message=""):
         if not message:

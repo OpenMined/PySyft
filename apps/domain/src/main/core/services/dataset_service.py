@@ -38,12 +38,16 @@ from ..exceptions import (
     AuthorizationError,
     UserNotFoundError,
     AuthorizationError,
+    DatasetNotFoundError,
 )
 from ..database.utils import model_to_json
 from ..datasets.dataset_ops import (
     create_dataset,
     update_dataset,
     delete_dataset,
+    get_specific_dataset_and_relations,
+    get_all_relations,
+    get_all_datasets,
     get_all_datasets_metadata,
     get_dataset_metadata,
 )
@@ -55,6 +59,7 @@ ENCODING = "UTF-8"
 def create_dataset_msg(
     msg: CreateDatasetMessage,
     node: AbstractNode,
+    verify_key: VerifyKey,
 ) -> CreateDatasetResponse:
     # Get Payload Content
     _current_user_id = msg.content.get("current_user", None)
@@ -79,99 +84,144 @@ def create_dataset_msg(
 def get_dataset_metadata_msg(
     msg: GetDatasetMessage,
     node: AbstractNode,
+    verify_key: VerifyKey,
 ) -> GetDatasetResponse:
     # Get Payload Content
     _dataset_id = msg.content.get("dataset_id", None)
     _current_user_id = msg.content.get("current_user", None)
     users = node.users
+    if not _current_user_id:
+        _current_user_id = users.first(
+            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+        ).id
+
     _msg = {}
 
     _allowed = users.can_triage_requests(user_id=_current_user_id)
     if _allowed:
         storage = node.disk_store
-        _msg = get_dataset_metadata(_dataset_id)
+        ds, objs = get_specific_dataset_and_relations(_dataset_id)
+        if not ds:
+            raise DatasetNotFoundError
+        dataset_json = model_to_json(ds)
+        dataset_json["data"] = [
+            {"name": obj.name, "id": obj.obj, "dtype": obj.dtype, "shape": obj.shape}
+            for obj in objs
+        ]
     else:
         raise AuthorizationError("You're not allowed to get a Dataset!")
 
     return GetDatasetResponse(
         address=msg.reply_to,
         status_code=200,
-        content=_msg,
+        content=dataset_json,
     )
 
 
 def get_all_datasets_metadata_msg(
     msg: GetDatasetsMessage,
     node: AbstractNode,
+    verify_key: VerifyKey,
 ) -> GetDatasetsResponse:
     # Get Payload Content
     _current_user_id = msg.content.get("current_user", None)
     users = node.users
+    users = node.users
+    if not _current_user_id:
+        _current_user_id = users.first(
+            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+        ).id
+
     _msg = {}
 
     _allowed = users.can_triage_requests(user_id=_current_user_id)
     if _allowed:
         storage = node.disk_store
-        _msg = get_all_datasets_metadata()
+        datasets = []
+        for dataset in get_all_datasets():
+            ds = model_to_json(dataset)
+            objs = get_all_relations(dataset.id)
+            ds["data"] = [
+                {
+                    "name": obj.name,
+                    "id": obj.obj,
+                    "dtype": obj.dtype,
+                    "shape": obj.shape,
+                }
+                for obj in objs
+            ]
+            datasets.append(ds)
     else:
         raise AuthorizationError("You're not allowed to get Datasets!")
 
     return GetDatasetsResponse(
         address=msg.reply_to,
         status_code=200,
-        content=_msg,
+        content=datasets,
     )
 
 
 def update_dataset_msg(
     msg: UpdateDatasetMessage,
     node: AbstractNode,
+    verify_key: VerifyKey,
 ) -> UpdateDatasetResponse:
     # Get Payload Content
     _current_user_id = msg.content.get("current_user", None)
     _dataset_id = msg.content.get("dataset_id", None)
-    dataset = msg.content.get("dataset", None)
+    _tags = msg.content.get("tags", [])
+    _description = msg.content.get("description", "")
+    _manifest = msg.content.get("manifest", "")
 
     users = node.users
+    if not _current_user_id:
+        _current_user_id = users.first(
+            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+        ).id
+
     _allowed = users.can_upload_data(user_id=_current_user_id)
 
     _msg = {}
     if _allowed:
         storage = node.disk_store
-        _msg = update_dataset(_dataset_id, dataset)
-
+        _msg = update_dataset(_dataset_id, _tags, _manifest, _description)
     else:
         raise AuthorizationError("You're not allowed to upload data!")
 
     return UpdateDatasetResponse(
         address=msg.reply_to,
         status_code=204,
-        content=_msg,
+        content={"message": "Dataset updated successfully!"},
     )
 
 
 def delete_dataset_msg(
     msg: UpdateDatasetMessage,
     node: AbstractNode,
+    verify_key: VerifyKey,
 ) -> DeleteDatasetResponse:
     # Get Payload Content
     _current_user_id = msg.content.get("current_user", None)
     _dataset_id = msg.content.get("dataset_id", None)
 
     users = node.users
+    if not _current_user_id:
+        _current_user_id = users.first(
+            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+        ).id
+
     _allowed = users.can_upload_data(user_id=_current_user_id)
 
     if _allowed:
         storage = node.disk_store
         delete_dataset(_dataset_id)
-
     else:
         raise AuthorizationError("You're not allowed to upload data!")
 
     return DeleteDatasetResponse(
         address=msg.reply_to,
         status_code=204,
-        content={},
+        content={"message": "Dataset deleted successfully!"},
     )
 
 
@@ -204,7 +254,9 @@ class DatasetManagerService(ImmediateNodeServiceWithReply):
         UpdateDatasetResponse,
         DeleteDatasetResponse,
     ]:
-        return DatasetManagerService.msg_handler_map[type(msg)](msg=msg, node=node)
+        return DatasetManagerService.msg_handler_map[type(msg)](
+            msg=msg, node=node, verify_key=verify_key
+        )
 
     @staticmethod
     def message_handler_types() -> List[Type[ImmediateSyftMessageWithReply]]:

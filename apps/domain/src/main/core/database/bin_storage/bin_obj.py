@@ -2,9 +2,12 @@ from .. import BaseModel, db
 from syft import serialize, deserialize
 
 from syft.proto.lib.torch.tensor_pb2 import TensorProto as TensorProto_PB
+from syft.proto.lib.pandas.frame_pb2 import PandasDataFrame as PandasDataFrame_PB
 
-
-bin_to_proto = {TensorProto_PB.__name__: TensorProto_PB}
+bin_to_proto = {
+    TensorProto_PB.__name__: TensorProto_PB,
+    PandasDataFrame_PB.__name__: PandasDataFrame_PB,
+}
 
 
 class BinObject(BaseModel):
