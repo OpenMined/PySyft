@@ -81,15 +81,11 @@ def create_ast(client: TypeAny = None) -> Globals:
          "syft.lib.python._SyNone"
         ),
         ('syfertext.data.iterators.BPTTIterator.__iter__',
-         "syfertext.data.iterators.BPTTIterator"
+         "syft.lib.python.Iterator"
         ),
-        ('syfertext.data.iterators.BPTTIterator.__next__',
-         "torch.Tensor"
+        ('syfertext.data.iterators.BPTTIterator.__len__',
+         "syft.lib.python.Int"
         ),
-        ('syfertext.data.iterators.BPTTIterator.yo',
-         "torch.Tensor"
-        ),
-        
         
     ]
 
