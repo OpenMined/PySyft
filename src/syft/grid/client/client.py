@@ -111,7 +111,9 @@ def connect(
             self.association_requests = AssociationRequestAPI(
                 send=self.__perform_grid_request
             )
-            self.datasets = DatasetRequestAPI(send=self.__perform_grid_request)
+            self.datasets = DatasetRequestAPI(
+                send=self.__perform_grid_request, conn=self.conn, client=self
+            )
 
         def load(
             self, obj_ptr: Type[Pointer], address: Address, pointable: bool = False

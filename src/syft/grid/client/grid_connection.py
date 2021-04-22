@@ -6,6 +6,7 @@ from typing import Tuple
 
 # third party
 import requests
+from requests_toolbelt.multipart import encoder
 
 # syft relative
 from ...core.common.message import SyftMessage
@@ -98,3 +99,22 @@ class GridHTTPConnection(HTTPConnection):
             return response
         else:
             raise RequestAPIException(response.get(RequestAPIFields.ERROR))
+
+    def send_files(self, message_field: str, message: bytes):
+        session = requests.Session()
+        form = encoder.MultipartEncoder(
+            {
+                "file": (message_field, message, "application/octet-stream"),
+            }
+        )
+        headers = {"token": self.session_token}
+        headers = {
+            "Prefer": "respond-async",
+            "Content-Type": form.content_type,
+            "token": self.session_token,
+        }
+        resp = session.post(
+            self.base_url + "/data-centric/datasets", headers=headers, data=form
+        )
+        session.close()
+        return json.loads(resp.content)
