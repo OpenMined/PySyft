@@ -3,11 +3,11 @@ import atexit
 import logging
 import socket
 import subprocess
+from time import time
 from typing import Any as TypeAny
 from typing import Dict as TypeDict
 from typing import Generator
 from typing import List as TypeList
-from time import time
 
 # third party
 import _pytest
