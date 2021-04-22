@@ -353,7 +353,8 @@ jobs:
           pytest -m grid
 
   python-libsyft:
-    needs: [python-linting]
+    # needs: [python-linting]
+    continue-on-error: true
     strategy:
       max-parallel: 3
       matrix:
