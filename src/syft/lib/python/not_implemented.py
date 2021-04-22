@@ -1,4 +1,5 @@
 # stdlib
+from typing import Any
 from typing import Optional
 
 # third party
@@ -9,12 +10,12 @@ from ... import deserialize
 from ... import serialize
 from ...core.common import UID
 from ...core.common.serde.serializable import bind_protobuf
-from ...proto.lib.python.notImplemented_pb2 import SyNotImplemented as NotImplemented_PB
+from ...proto.lib.python.not_implemented_pb2 import (
+    SyNotImplemented as NotImplemented_PB,
+)
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
-
-NotImplementedType = type(NotImplemented)
 
 
 @bind_protobuf
@@ -33,7 +34,9 @@ class _SyNotImplemented(PyPrimitive):
         """
         return self._id
 
-    def upcast(self) -> NotImplementedType:
+    def upcast(
+        self,
+    ) -> Any:  # mypy issue with type(NotImplemened) https://github.com/python/mypy/issues/4791
         return NotImplemented
 
     def __hash__(self) -> SyPrimitiveRet:

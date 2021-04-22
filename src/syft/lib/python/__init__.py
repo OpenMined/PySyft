@@ -18,8 +18,8 @@ from .iterator import Iterator
 from .list import List
 from .none import SyNone
 from .none import _SyNone
-from .notImplemented import SyNotImplemented
-from .notImplemented import _SyNotImplemented
+from .not_implemented import SyNotImplemented
+from .not_implemented import _SyNotImplemented
 from .primitive_container import Any
 from .primitive_interface import PyPrimitive
 from .set import Set

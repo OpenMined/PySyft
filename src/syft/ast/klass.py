@@ -162,7 +162,7 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
             __self.client.send_immediate_msg_without_reply(msg=cmd)
 
             # Validating the pointer type in case of binary operation
-            if attr_path_and_name.split('.')[-1] in binary_ops:
+            if attr_path_and_name.split(".")[-1] in binary_ops:
                 result = result.resolve_pointer_type()
 
         inherit_tags(
