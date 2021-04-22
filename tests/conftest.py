@@ -1,8 +1,8 @@
 # stdlib
 import atexit
 import logging
+from multiprocessing import Process
 import socket
-import subprocess
 from time import time
 from typing import Any as TypeAny
 from typing import Dict as TypeDict
@@ -16,6 +16,7 @@ import pytest
 # syft absolute
 import syft as sy
 from syft import logger
+from syft.grid.example_nodes.network import signaling_server as start_signaling_server
 from syft.lib import VendorLibraryImportException
 from syft.lib import _load_lib
 from syft.lib import vendor_requirements_available
@@ -32,13 +33,11 @@ SIGNALING_SERVER_PORT = None
 def signaling_server() -> Generator:
     global SIGNALING_SERVER_PORT
     SIGNALING_SERVER_PORT = free_port()
-    proc = subprocess.Popen(
-        [
-            "python",
-            "./scripts/start_network.py",
-            f"--port" f"={str(SIGNALING_SERVER_PORT)}",
-        ]
+    proc = Process(
+        target=start_signaling_server, args=(SIGNALING_SERVER_PORT, "0.0.0.0")
     )
+
+    proc.start()
     start = time()
 
     while time() - start < 15:

@@ -238,7 +238,7 @@ jobs:
 
       - name: Test syft-network
         run: |
-          python ./scripts/start_signaling_server.py
+          python ./scripts/start_signaling_server.py --dry_run=True
 
       - name: Run notebook Duet examples
         run: |

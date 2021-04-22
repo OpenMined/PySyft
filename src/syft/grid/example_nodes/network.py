@@ -20,7 +20,7 @@ from syft.grid.services.signaling_service import RegisterDuetPeerService
 from syft.logger import info
 
 
-def signaling_server(port: int = 5000, host: str = "0.0.0.0") -> None:
+def signaling_server(port: int = 5000, host: str = "0.0.0.0") -> None:  # nosec
     app = Flask(__name__)
 
     network = Network(name="om-net")

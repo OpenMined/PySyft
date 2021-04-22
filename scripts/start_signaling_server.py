@@ -1,5 +1,6 @@
 # stdlib
 import argparse
+from multiprocessing import Process
 import socket
 import socketserver
 from time import time
@@ -13,14 +14,14 @@ def free_port() -> int:
         return s.server_address[1]
 
 
-def check_connectivity() -> None:
+def check_connectivity() -> bool:
     start = time()
     while time() - start < 15:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             if s.connect_ex(("0.0.0.0", args.port)) == 0:
-                break
+                return True
     else:
-        raise TimeoutError("Can't connect to the signaling server")
+        return False
 
 
 # Create the parser
@@ -40,7 +41,7 @@ my_parser.add_argument(
     help="the ip address on which to bind the signaling server",
 )
 my_parser.add_argument(
-    "--assert-connectivity", type=bool, default=True, help="Check if the binding worker"
+    "--dry_run", type=bool, default=False, help="Check if the binding works"
 )
 my_parser.add_argument(
     "--timeout", type=int, default=15, help="Connectivity check timeout"
@@ -50,5 +51,13 @@ args = my_parser.parse_args()
 
 
 if __name__ == "__main__":
-    print(args.port)
-    signaling_server(port=args.port, host=args.host)
+    proc = Process(target=signaling_server, args=(args.port, args.host))
+    if args.dry_run:
+        proc.start()
+        connected = check_connectivity()
+        proc.terminate()
+        exit(0) if connected else exit(1)
+    else:
+        proc.daemon = True
+        proc.start()
+        exit(0)
