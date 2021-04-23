@@ -27,7 +27,12 @@ def get_all_instance_types(location=None):
         universal_newlines=True,
     )
     machines = json.loads(proc.stdout.read())
-    all_instances = {"all_instances": [machine["name"] for machine in machines]}
+    all_instances = {
+        "all_instances": [
+            f"Name: {machine['name']} | CPUs: {machine['numberOfCores']} | Mem: {int(machine['memoryInMb']/1024)} "
+            for machine in machines
+        ]
+    }
     return all_instances
 
 
@@ -43,7 +48,7 @@ def get_azure_config() -> Config:
     subscription_id = prompt(
         [
             {
-                "type": "input",
+                "type": "password",
                 "name": "subscription_id",
                 "message": "Please provide your subscription_id",
                 "default": "00000000-0000-0000-0000-000000000000",
@@ -55,7 +60,7 @@ def get_azure_config() -> Config:
     client_id = prompt(
         [
             {
-                "type": "input",
+                "type": "password",
                 "name": "client_id",
                 "message": "Please provide your client_id",
                 "default": "00000000-0000-0000-0000-000000000000",
@@ -67,7 +72,7 @@ def get_azure_config() -> Config:
     client_secret = prompt(
         [
             {
-                "type": "input",
+                "type": "password",
                 "name": "client_secret",
                 "message": "Please provide your client_secret",
                 "default": "XXXX-XXXX-XXX-XXX-XXX",
@@ -79,7 +84,7 @@ def get_azure_config() -> Config:
     tenant_id = prompt(
         [
             {
-                "type": "input",
+                "type": "password",
                 "name": "tenant_id",
                 "message": "Please provide your tenant_id",
                 "default": "00000000-0000-0000-0000-000000000000",
@@ -110,7 +115,7 @@ def get_azure_config() -> Config:
             }
         ],
         style=styles.second,
-    )["VMSize"]
+    )["VMSize"].split(" ")[1]
 
     return Config(
         location=location,

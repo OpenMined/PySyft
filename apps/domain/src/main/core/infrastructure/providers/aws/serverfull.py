@@ -231,7 +231,7 @@ class AWS_Serverfull(AWS):
         self.tfscript += self.load_balancer
 
     def write_domain_exec_script(self, app, index=0):
-        branch = "master"
+        branch = "dev"
         # exec_script = "#cloud-boothook\n#!/bin/bash\n"
         exec_script = "#!/bin/bash\n"
         exec_script += textwrap.dedent(
@@ -299,13 +299,13 @@ class AWS_Serverfull(AWS):
         return exec_script
 
     def write_worker_exec_script(self, app):
-        branch = "master"
+        branch = "dev"
         exec_script = "#!/bin/bash\n"
         exec_script += textwrap.dedent(
             f"""
             exec &> logs.out
             sudo apt update -y
-            
+
             echo 'Setup Miniconda environment'
             sudo wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
             sudo bash miniconda.sh -b -p miniconda
@@ -315,20 +315,20 @@ class AWS_Serverfull(AWS):
             source ~/.bashrc
             conda create -y -n pygrid python=3.7
             conda activate pygrid
-            
+
             echo 'Install poetry...'
             pip install poetry
-            
+
             echo 'Install GCC'
             sudo apt-get install zip unzip -y
             sudo apt-get install python3-dev -y
             sudo apt-get install libevent-dev -y
             sudo apt-get install gcc -y
-            
+
             echo 'Cloning PyGrid'
             git clone https://github.com/OpenMined/PyGrid && cd /PyGrid/
             git checkout {branch}
-            
+
             cd /PyGrid/apps/worker
             echo 'Installing worker Dependencies'
             poetry install
