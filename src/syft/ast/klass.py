@@ -11,6 +11,12 @@ from typing import Tuple
 from typing import Union
 import warnings
 
+# third party
+import torch
+
+# syft absolute
+import syft as sy
+
 # syft relative
 from .. import ast
 from .. import lib
@@ -379,6 +385,28 @@ class Class(Callable):
                 ptr.gc_enabled = False
             else:
                 ptr.gc_enabled = True
+
+            # Extra step for user defined pytorch model: create forward plan
+            if isinstance(self, torch.nn.Module) and not type(
+                self
+            ).__module__.startswith("torch.nn."):
+                # skip if is creating forward plan
+                if not getattr(self, "_sy_creating_plan", False):
+                    # if not has forward plan, create it first
+                    if not hasattr(self, "_sy_forward_plan"):
+                        setattr(self, "_sy_creating_plan", True)
+                        forward_plan = sy.lib.torch.module.create_forward_plan(
+                            model=self
+                        )
+                        setattr(self, "_sy_forward_plan", forward_plan)
+                        delattr(self, "_sy_creating_plan")
+                    # update id_at_location of children pointers
+                    for act in self._sy_forward_plan.actions:
+                        if (
+                            hasattr(act, "_self")
+                            and type(act._self).__name__ == "ModulePointer"
+                        ):
+                            act._self.id_at_location = id_at_location
 
             # Step 2: create message which contains object to send
             storable = StorableObject(

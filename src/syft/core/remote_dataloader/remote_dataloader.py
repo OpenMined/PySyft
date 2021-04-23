@@ -5,7 +5,6 @@ from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-import pandas as pd
 import torch as th
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
@@ -24,7 +23,6 @@ from ..common.serde.serializable import Serializable
 from ..common.serde.serializable import bind_protobuf
 
 DATA_TYPE_TORCH_TENSOR = "torch_tensor"
-DATA_TYPE_PANDAS_CSV = "pandas_csv"
 
 
 @bind_protobuf
@@ -34,8 +32,7 @@ class RemoteDataset(Dataset, Serializable):
         Arguments:
             path: information about where to get the raw data, for example, a file path,
             or a directory path data_type: the type of data for example torch_tensor
-            or pandas_csv
-        For now, it's should simply be a .pt / .csv file, which stores a Dataset object.
+        For now, it's should simply be a .pt file, which stores a Dataset object.
         """
         self.path = path
         self.data_type = data_type
@@ -47,15 +44,11 @@ class RemoteDataset(Dataset, Serializable):
         """
         if self.data_type == DATA_TYPE_TORCH_TENSOR:
             self.dataset = th.load(self.path)
-        elif self.data_type == DATA_TYPE_PANDAS_CSV:
-            self.dataset = pd.read_csv(self.path)
 
     def __len__(self) -> int:
         return len(self.dataset)
 
-    def __getitem__(
-        self, key: Union[str, int, slice, pd.DataFrame, pd.Series]
-    ) -> Union[th.Tensor, pd.DataFrame, pd.Series]:
+    def __getitem__(self, key: Union[str, int, slice]) -> Union[th.Tensor]:
         return self.dataset[key]
 
     def __repr__(self) -> str:
