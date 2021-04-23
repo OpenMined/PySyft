@@ -40,8 +40,9 @@ def map_in2out(inputs: dict, outputs: tuple) -> dict:
     return in2out_map
 
 
-def make_plan(func: Callable) -> Plan:
-    inputs = build_plan_inputs(func)
+def make_plan(func: Callable, inputs=None) -> Plan:
+    if inputs is None:
+        inputs = build_plan_inputs(func)
     vm = PLAN_BUILDER_VM
     code = inspect.getsource(func)
     vm.record_actions()

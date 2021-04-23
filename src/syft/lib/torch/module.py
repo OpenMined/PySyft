@@ -14,12 +14,14 @@ from typing import Union
 
 # third party
 import torch
+import inspect
 
 # syft absolute
 import syft as sy
 from syft.core.node.common.action.run_class_method_action import RunClassMethodAction
 from syft.core.node.common.action.save_object_action import SaveObjectAction
 from syft.core.plan.plan_builder import make_plan, ROOT_CLIENT
+from syft.lib.python import _SyNone
 
 # syft relative
 from ...core.pointer.pointer import Pointer
@@ -471,7 +473,9 @@ def proto2object(proto: Module_PB) -> torch.nn.Module:
     obj = obj_type(*args, **kwargs)
 
     for name, param in sy.deserialize(proto.parameters).items():
-        setattr(obj, str(name), param)
+        # if we don't do this check, some torch.nn layers fail ( e.g. Conv2D with bias=False)
+        if not isinstance(param, _SyNone):
+            setattr(obj, str(name), param)
 
     if proto.HasField("forward"):
         obj.forward = sy.deserialize(proto.forward)
@@ -482,7 +486,7 @@ def proto2object(proto: Module_PB) -> torch.nn.Module:
 
     if hasattr(obj, "forward") and proto.HasField("attr2uid"):
         attr2uid = sy.deserialize(proto.attr2uid)
-        # we need to set it to make sure that deserialize(serialize(obj)) == obj
+        # we need to set this to make sure that deserialize(serialize(obj)) == obj
         obj._attr2uid = attr2uid
         for attr_name, uid in attr2uid.items():
             for action in obj.forward.actions:
@@ -509,16 +513,53 @@ class ForwardToPlanConverter(type):
         return obj
 
 class SyModule(torch.nn.Module, metaclass=ForwardToPlanConverter):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, input_size=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.building_forward = False
         self._parameter_pointers = dict()
+        self.input_size = input_size
 
     def make_forward_plan(self):
         if not hasattr(self, "forward"):
             raise ValueError("Missing .forward() method for Module")
+
+        forward_signature = inspect.signature(self.forward)
+        if not isinstance(self, SySequential):
+            if not hasattr(self, "input_size") or not isinstance(self.input_size, (tuple, list)):
+                raise ValueError("SyModule needs `input_size`: Tuple(Int) as kwarg to trace the forward plan")
+            input_size = self.input_size
+        else:
+            if hasattr(getattr(self, "0"), "input_size"):
+                input_size = getattr(self, "0").input_size
+            elif hasattr(self, "input_size"):
+                input_size = self.input_size
+            else:
+                raise ValueError("SySequential needs either 1) `input_size`: Tuple(Int) as a kwargs for on of its children \
+                                  OR 2) `input_size`: Tuple(Int) as kwarg for itself \
+                                  to trace the forward plan")
+
+        
+        if isinstance(self, SySequential):
+            inp_key = "x"
+        else:
+            args = list(forward_signature.parameters.items())
+            if len(args) == 0 or len(args) > 1:
+                raise ValueError("SyModules accept only *precisely 1* argument and no kwargs")
+            k,v = args[0]
+            if v.default is not inspect.Parameter.empty:
+                raise ValueError("SyModules accept only args, not kwargs")
+            inp_key = k
+            
+        inputs = {inp_key: torch.randn(input_size).send(ROOT_CLIENT)}
+        
         self.building_forward = True
-        plan = make_plan(self.forward)
+        plan = make_plan(self.forward, inputs=inputs)
+        # plan = make_plan(self.forward)
+        # a sync between the module parameters in the object, and the module parameters
+        # in the modules plan is only guaranteed when the module is *deserialized* before
+        # using the parameters, which is currently true, because plans are only executed
+        # on a remote machine. "Local" execution of plans works by sending the plan to an
+        # ephemeral machine, and therefore also works.
         self.forward = plan
         self.__call__ = plan
         self.building_forward = False
@@ -535,3 +576,29 @@ class SyModule(torch.nn.Module, metaclass=ForwardToPlanConverter):
             return res_ptr
         else:
             return res
+
+
+class SySequential(SyModule):
+    def __init__(self, *args, input_size=None):
+        super().__init__(input_size=input_size)
+        for idx, module in enumerate(args):
+            setattr(self, str(idx), module)
+        self.n_modules = len(args)
+            
+    def __iter__(self):
+        if self.building_forward:
+            return iter([getattr(self, str(i)) for i in range(self.n_modules)])
+        else:
+            return iter(self._modules.values())
+    
+    def forward(self, x=None):
+        out = x
+        for i, module in enumerate(self):
+            # handle indexing in the block, or in the sequential?
+            if module.__class__.__name__ == "ModulePointer":
+                # user defined module
+                out = module.forward(x=out)[0]
+            else:
+                # AST module
+                out = module(out)
+        return out
