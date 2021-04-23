@@ -88,7 +88,7 @@ def seed_db():
         can_create_groups=False,
         can_edit_roles=False,
         can_manage_infrastructure=False,
-        can_upload_data=False,
+        can_upload_data=True,
     )
     db.session.add(new_role)
 
