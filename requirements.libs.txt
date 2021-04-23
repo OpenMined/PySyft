@@ -1,12 +1,16 @@
 -r ./requirements.libs.deps.txt
 
+gym
 numpy
 opacus
 openmined.psi
 pandas
-PIL
+petlib
+pillow
 python-dp
 pytorch-lightning @ git+https://github.com/tudorcebere/pytorch-lightning@tudor-om-v0
-scikit-learn
+statsmodels
 sympc @ git+https://github.com/OpenMined/SyMPC@main
 tenseal
+xgboost>=1.4
+zksk

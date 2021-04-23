@@ -4,7 +4,6 @@ from typing import Callable
 from typing import Dict as TypeDict
 from typing import List as ListType
 from typing import Optional
-from typing import Tuple as TupleType
 
 # syft relative
 from ..federated import JSONDict
@@ -22,9 +21,7 @@ class EventEmitter:
             self.listeners[event_name] = []
         self.listeners[event_name].append(fn)
 
-    def trigger(
-        self, event_name: str, *args: TupleType[TypeAny, ...], **kwargs: TypeAny
-    ) -> None:
+    def trigger(self, event_name: str, *args: TypeAny, **kwargs: TypeAny) -> None:
         if event_name in self.listeners:
             for fn in self.listeners[event_name]:
                 fn(*args, **kwargs)
@@ -47,6 +44,7 @@ class FLJob(EventEmitter):
         self.grid_worker = grid_worker
         self.model_name = model_name
         self.model_version = model_version
+        self.plan_type = ModelCentricFLWorker.PLAN_TYPE_LIST
 
         self.model: Optional[ListType[TypeAny]] = None
         self.plans: JSONDict = {}
@@ -79,7 +77,7 @@ class FLJob(EventEmitter):
                 self.worker_id,
                 request_key,
                 plan_id,
-                ModelCentricFLWorker.PLAN_TYPE_LIST,
+                self.plan_type,
             )
 
     def start(self) -> None:
@@ -91,21 +89,22 @@ class FLJob(EventEmitter):
                 model_version=self.model_version,
                 speed_info=speed_info,
             )
-            print("cycle_request_response", cycle_request_response)
+
             cycle_params = cycle_request_response["data"]
 
             if cycle_params["status"] == ModelCentricFLWorker.CYCLE_STATUS_ACCEPTED:
                 self._init_cycle(cycle_params)
-                self.trigger(self.EVENT_ACCEPTED, (self,))
+                self.trigger(self.EVENT_ACCEPTED, self)
             elif cycle_params["status"] == ModelCentricFLWorker.CYCLE_STATUS_REJECTED:
                 timeout = cycle_params.get("timeout")
                 if timeout is not None:
                     timeout = timeout(int)
-                self.trigger(self.EVENT_REJECTED, (self, timeout))
+                self.trigger(self.EVENT_REJECTED, self, timeout)
         except GridError as e:
             self.trigger(
                 self.EVENT_ERROR,
-                (self, f"Grid communication error: {e.error}"),
+                self,
+                f"Grid communication error: {e.error}",
             )
 
     def report(self, updated_model_params: ListType) -> JSONDict:

@@ -1,7 +1,5 @@
 fsspec
-joblib
-matplotlib
-scipy
+msgpack
 sycret>=0.1.3
 tensorboard
 tqdm

@@ -1,19 +1,23 @@
 # stdlib
 import base64
+from collections import OrderedDict
 import json
 import os
 import time
 from typing import Any
+from typing import Dict as TypeDict
 from typing import Generator
 from typing import List as TypeList
 from typing import Optional
 from typing import Tuple as TypeTuple
+from typing import Union as TypeUnion
 
 # third party
 import jwt
 import numpy as np
 import pytest
 import requests
+from syft_proto.execution.v1.plan_pb2 import Plan as PlanTorchscriptPB
 import torch as th
 from torchvision import datasets
 from torchvision import transforms
@@ -24,17 +28,24 @@ from xprocess import ProcessStarter
 import syft as sy
 from syft import deserialize
 from syft import serialize
+from syft.core.plan import Plan
+from syft.core.plan.plan_builder import PLAN_BUILDER_VM
 from syft.core.plan.plan_builder import ROOT_CLIENT
 from syft.core.plan.plan_builder import make_plan
+from syft.core.plan.translation.torchscript.plan import PlanTorchscript
+from syft.core.plan.translation.torchscript.plan_translate import (
+    translate as translate_to_ts,
+)
 from syft.federated import JSONDict
 from syft.federated.fl_client import FLClient
 from syft.federated.fl_job import FLJob
 from syft.federated.model_centric_fl_client import ModelCentricFLClient
+from syft.federated.model_serialization import deserialize_model_params
+from syft.federated.model_serialization import wrap_model_params
 from syft.lib.python.int import Int
 from syft.lib.python.list import List
 from syft.lib.torch.module import Module as SyModule
 from syft.proto.core.plan.plan_pb2 import Plan as PlanPB
-from syft.proto.lib.python.list_pb2 import List as ListPB
 from syft.util import get_root_data_path
 
 th.random.manual_seed(42)
@@ -50,9 +61,11 @@ def pygrid_domain(xprocess: Any) -> Generator:
         pattern = "Starting app"
 
         # command to start process
-        pygrid_path = f"{here}/../../../../../pygrid"
+        pygrid_path = os.environ.get(
+            "TEST_PYGRID_PATH", f"{here}/../../../../../pygrid"
+        )
         domain_path = os.path.abspath(f"{pygrid_path}/apps/domain")
-        database_file = f"{domain_path}/src/datadomain.db"
+        database_file = f"{domain_path}/src/nodedatabase.db"
         if os.path.exists(database_file):
             os.unlink(database_file)
         args = [
@@ -72,23 +85,90 @@ def pygrid_domain(xprocess: Any) -> Generator:
 
 
 @pytest.mark.grid
-def test_create_and_execute_plan(pygrid_domain: Any) -> None:
-    model_param_type_size = create_plan()
+def test_create_and_execute_plan_autograd(pygrid_domain: Any) -> None:
+    fl_name = "mnist_autograd"
+    plan, model = create_plan_autograd()
+
+    plans = {"training_plan": plan}
+    host_to_grid(plans, model, fl_name)
+
+    bs = 64 * 3
+    plan_inputs = OrderedDict(
+        {
+            "xs": th.rand([bs, 28 * 28]),
+            "ys": th.nn.functional.one_hot(th.randint(0, 10, [bs]), 10),
+        }
+    )
+    plan_params_output_idx = [0, 1, 2, 3]
+    model_param_type_size = sanity_check_hosted_plan(
+        fl_name, model, plan_inputs, plan_params_output_idx
+    )
     matches = [
-        (th.nn.Parameter, th.Size([100, 784])),
-        (th.nn.Parameter, th.Size([100])),
-        (th.nn.Parameter, th.Size([10, 100])),
-        (th.nn.Parameter, th.Size([10])),
+        (th.Tensor, th.Size([100, 784])),
+        (th.Tensor, th.Size([100])),
+        (th.Tensor, th.Size([10, 100])),
+        (th.Tensor, th.Size([10])),
     ]
 
     assert model_param_type_size == matches
 
-    accuracy = execute_plan()
+    train_with_hosted_training_plan(fl_name, OrderedDict(), plan_params_output_idx)
+    accuracy = check_resulting_model(fl_name, model)
+
     print(f"Model Centric Federated Learning Complete. Accuracy {accuracy:.2F}")
     assert accuracy > 0.05
 
 
-class MLP(sy.Module):
+@pytest.mark.grid
+@pytest.mark.parametrize("plan_type", ["list", "torchscript"])
+def test_create_and_execute_plan_mobile(pygrid_domain: Any, plan_type: str) -> None:
+    fl_name = "mnist_mobile"
+    plan, plan_ts, model = create_plan_mobile()
+
+    plans = {
+        "training_plan": plan,
+        "training_plan:ts": plan_ts,
+    }
+    host_to_grid(plans, model, fl_name)
+
+    bs = 64
+    classes_num = 10
+    plan_inputs = OrderedDict(
+        {
+            "xs": th.rand(bs, 28 * 28),
+            "ys": th.nn.functional.one_hot(
+                th.randint(0, classes_num, [bs]), classes_num
+            ),
+            "batch_size": th.tensor([bs]),
+            "lr": th.tensor([0.1]),
+        }
+    )
+    plan_output_params_idx = [2, 3, 4, 5]
+
+    model_param_type_size = sanity_check_hosted_plan(
+        fl_name, model, plan_inputs, plan_output_params_idx, plan_type
+    )
+    matches = [
+        (th.Tensor, th.Size([100, 784])),
+        (th.Tensor, th.Size([100])),
+        (th.Tensor, th.Size([10, 100])),
+        (th.Tensor, th.Size([10])),
+    ]
+    assert model_param_type_size == matches
+
+    train_with_hosted_training_plan(
+        fl_name, plan_inputs, plan_output_params_idx, plan_type
+    )
+    accuracy = check_resulting_model(fl_name, model)
+
+    print(f"Model Centric Federated Learning Complete. Accuracy {accuracy:.2F}")
+    assert accuracy > 0.05
+
+
+# === Autograd Plan ===
+
+
+class MLPAutograd(sy.Module):
     def __init__(self, torch_ref: Any) -> None:
         super().__init__(torch_ref=torch_ref)
         self.l1 = self.torch_ref.nn.Linear(784, 100)
@@ -96,8 +176,7 @@ class MLP(sy.Module):
         self.l2 = self.torch_ref.nn.Linear(100, 10)
 
     def forward(self, x: Any) -> Any:
-        x_reshaped = x.view(-1, 28 * 28)
-        l1_out = self.a1(self.l1(x_reshaped))
+        l1_out = self.a1(self.l1(x))
         l2_out = self.l2(l1_out)
         return l2_out
 
@@ -122,6 +201,48 @@ def set_params(model: SyModule, params: List) -> None:
         p.data = p_new.data
 
 
+# === Non-Autograd Plan ===
+
+
+class MLPNoAutograd(sy.Module):
+    """
+    Simple model with method for loss and hand-written backprop.
+    """
+
+    def __init__(self, torch_ref: Any = th) -> None:
+        super(MLPNoAutograd, self).__init__(torch_ref=torch_ref)
+        self.fc1 = torch_ref.nn.Linear(784, 100)
+        self.relu = torch_ref.nn.ReLU()
+        self.fc2 = torch_ref.nn.Linear(100, 10)
+
+    def forward(self, x: Any) -> Any:
+        self.z1 = self.fc1(x)
+        self.a1 = self.relu(self.z1)
+        return self.fc2(self.a1)
+
+    def backward(self, X: Any, error: Any) -> TypeTuple[Any, ...]:
+        z1_grad = (error @ self.fc2.state_dict()["weight"]) * (self.a1 > 0).float()
+        fc1_weight_grad = z1_grad.t() @ X
+        fc1_bias_grad = z1_grad.sum(0)
+        fc2_weight_grad = error.t() @ self.a1
+        fc2_bias_grad = error.sum(0)
+        return fc1_weight_grad, fc1_bias_grad, fc2_weight_grad, fc2_bias_grad
+
+    def softmax_cross_entropy_with_logits(
+        self, logits: Any, target: Any, batch_size: int
+    ) -> TypeTuple[Any, ...]:
+        probs = self.torch_ref.softmax(logits, dim=1)
+        loss = -(target * self.torch_ref.log(probs)).sum(dim=1).mean()
+        loss_grad = (probs - target) / batch_size
+        return loss, loss_grad
+
+    def accuracy(self, logits: Any, targets: Any, batch_size: int) -> Any:
+        pred = self.torch_ref.argmax(logits, dim=1)
+        targets_idx = self.torch_ref.argmax(targets, dim=1)
+        acc = pred.eq(targets_idx).sum().float() / batch_size
+        return acc
+
+
 def read_file(fname: str) -> str:
     with open(fname, "r") as f:
         return f.read()
@@ -133,13 +254,13 @@ public_key = read_file(f"{here}/example_rsa.pub").strip()
 auth_token = jwt.encode({}, private_key, algorithm="RS256").decode("ascii")
 
 
-def create_plan() -> TypeList[TypeTuple[type, th.Size]]:
-    local_model = MLP(th)
+def create_plan_autograd() -> TypeTuple[Plan, SyModule]:
+    local_model = MLPAutograd(th)
 
     @make_plan
     def train(  # type: ignore
-        xs=th.rand([64 * 3, 1, 28, 28]),
-        ys=th.randint(0, 10, [64 * 3, 10]),
+        xs=th.rand([64 * 3, 28 * 28]),
+        ys=th.nn.functional.one_hot(th.randint(0, 10, [64 * 3]), 10),
         params=List(local_model.parameters()),
     ):
 
@@ -153,12 +274,77 @@ def create_plan() -> TypeList[TypeTuple[type, th.Size]]:
             loss.backward()
             sgd_step(model)
 
-        return model.parameters()
+        return (*model.parameters(),)
+
+    return train, local_model
+
+
+def create_plan_mobile() -> Any:
+    def set_remote_model_params(module_ptrs, params_list_ptr):  # type: ignore
+        param_idx = 0
+        for module_name, module_ptr in module_ptrs.items():
+            for param_name, _ in PLAN_BUILDER_VM.store[
+                module_ptr.id_at_location
+            ].data.named_parameters():
+                module_ptr.register_parameter(param_name, params_list_ptr[param_idx])
+                param_idx += 1
+
+    local_model = MLPNoAutograd(th)
+
+    # Dummy inputs
+    bs = 3
+    classes_num = 10
+    model_params_zeros = sy.lib.python.List(
+        [th.nn.Parameter(th.zeros_like(param)) for param in local_model.parameters()]
+    )
 
     @make_plan
+    def training_plan(  # type: ignore
+        xs=th.randn(bs, 28 * 28),
+        ys=th.nn.functional.one_hot(th.randint(0, classes_num, [bs]), classes_num),
+        batch_size=th.tensor([bs]),
+        lr=th.tensor([0.1]),
+        params=model_params_zeros,
+    ):
+        # send the model to plan builder (but not its default params)
+        model = local_model.send(ROOT_CLIENT, send_parameters=False)
+
+        # set model params from input
+        set_remote_model_params(model.modules, params)
+
+        # forward
+        logits = model(xs)
+
+        # loss
+        loss, loss_grad = model.softmax_cross_entropy_with_logits(
+            logits, ys, batch_size
+        )
+
+        # backward
+        grads = model.backward(xs, loss_grad)
+
+        # SGD step
+        updated_params = tuple(
+            param - lr * grad for param, grad in zip(model.parameters(), grads)
+        )
+
+        # accuracy
+        acc = model.accuracy(logits, ys, batch_size)
+
+        # return things
+        return (loss, acc, *updated_params)
+
+    # Translate to torchscript
+    ts_plan = translate_to_ts(training_plan)
+
+    return training_plan, ts_plan, local_model
+
+
+def host_to_grid(plans: TypeDict, model: SyModule, name: str) -> None:
+    @make_plan
     def avg_plan(  # type: ignore
-        avg=List(local_model.parameters()),
-        item=List(local_model.parameters()),
+        avg=List(model.parameters()),
+        item=List(model.parameters()),
         num=Int(0),
     ):
         new_avg = []
@@ -166,12 +352,11 @@ def create_plan() -> TypeList[TypeTuple[type, th.Size]]:
             new_avg.append((avg[i] * num + item[i]) / (num + 1))
         return new_avg
 
-    name = "mnist"
-    version = "1.0"
+    name = name
 
     client_config = {
         "name": name,
-        "version": version,
+        "version": "1.0",
         "batch_size": 64,
         "lr": 0.1,
         "max_updates": 1,  # custom syft.js option that limits number of training loops per worker
@@ -183,7 +368,7 @@ def create_plan() -> TypeList[TypeTuple[type, th.Size]]:
         "pool_selection": "random",
         "do_not_reuse_workers_until_cycle": 6,
         "cycle_length": 28800,  # max cycle length in seconds
-        "num_cycles": 2,  # max number of cycles
+        "num_cycles": 4,  # max number of cycles
         "max_diffs": 1,  # number of diffs to collect before avg
         "minimum_upload_speed": 0,
         "minimum_download_speed": 0,
@@ -197,23 +382,29 @@ def create_plan() -> TypeList[TypeTuple[type, th.Size]]:
 
     # Auth
     grid_address = f"localhost:{DOMAIN_PORT}"
-
     grid = ModelCentricFLClient(address=grid_address, secure=False)
     grid.connect()
 
     # Host
-
     # If the process already exists, might you need to clear the db.
-    # To do that, set path below correctly and run:
     grid.host_federated_training(
-        model=local_model,
-        client_plans={"training_plan": train},
+        model=model,
+        client_plans=plans,
         client_protocols={},
         server_averaging_plan=avg_plan,
         client_config=client_config,
         server_config=server_config,
     )
 
+
+def sanity_check_hosted_plan(
+    name: str,
+    model: SyModule,
+    plan_inputs: OrderedDict,
+    plan_output_params_idx: TypeList[int],
+    plan_type: str = "list",
+) -> TypeList[TypeTuple[type, th.Size]]:
+    grid_address = f"localhost:{DOMAIN_PORT}"
     # Authenticate for cycle
 
     # Helper function to make WS requests
@@ -227,7 +418,7 @@ def create_plan() -> TypeList[TypeTuple[type, th.Size]]:
         "type": "model-centric/authenticate",
         "data": {
             "model_name": name,
-            "model_version": version,
+            "model_version": "1.0",
             "auth_token": auth_token,
         },
     }
@@ -235,13 +426,12 @@ def create_plan() -> TypeList[TypeTuple[type, th.Size]]:
     auth_response = sendWsMessage(auth_request)
 
     # Do cycle request
-
     cycle_request = {
         "type": "model-centric/cycle-request",
         "data": {
             "worker_id": auth_response["data"]["worker_id"],
             "model": name,
-            "version": version,
+            "version": "1.0",
             "ping": 1,
             "download": 10000,
             "upload": 10000,
@@ -264,32 +454,52 @@ def create_plan() -> TypeList[TypeTuple[type, th.Size]]:
                 f"request_key={request_key}&model_id={model_id}"
             )
         )
-        pb = ListPB()
-        pb.ParseFromString(req.content)
-        return deserialize(pb)
+        # TODO migrate to syft-core protobufs
+        return deserialize_model_params(req.content)
 
     # Model
     model_params_downloaded = get_model(grid_address, worker_id, request_key, model_id)
 
-    # Download & Execute Plan
-    req = requests.get(
-        (
-            f"http://{grid_address}/model-centric/get-plan?worker_id={worker_id}&"
-            f"request_key={request_key}&plan_id={training_plan_id}&receive_operations_as=list"
+    def get_plan(
+        grid_address: str,
+        worker_id: int,
+        request_key: str,
+        plan_id: int,
+        plan_type: str,
+    ) -> TypeUnion[PlanTorchscript, Plan]:
+        req = requests.get(
+            (
+                f"http://{grid_address}/model-centric/get-plan?worker_id={worker_id}&"
+                f"request_key={request_key}&plan_id={plan_id}&receive_operations_as={plan_type}"
+            )
         )
-    )
-    pb = PlanPB()
-    pb.ParseFromString(req.content)
-    plan = deserialize(pb)
 
-    xs = th.rand([64 * 3, 1, 28, 28])
-    ys = th.randint(0, 10, [64 * 3, 10])
+        if plan_type == "torchscript":
+            pb = PlanTorchscriptPB()
+            pb.ParseFromString(req.content)
+            return PlanTorchscript._proto2object(pb)
+        else:
+            pb = PlanPB()
+            pb.ParseFromString(req.content)
+            return deserialize(pb)
 
-    (res,) = plan(xs=xs, ys=ys, params=model_params_downloaded)
+    # Download & Execute Plan
+    plan = get_plan(grid_address, worker_id, request_key, training_plan_id, plan_type)
+    plan_inputs["params"] = [
+        th.nn.Parameter(param) for param in model_params_downloaded
+    ]
+
+    if plan_type == "torchscript":
+        # kwargs are not supported in torchscript plan
+        res = plan(*plan_inputs.values())
+    else:
+        res = plan(**plan_inputs)
+
+    updated_params = [res[idx] for idx in plan_output_params_idx]
 
     # Report Model diff
-    diff = [orig - new for orig, new in zip(res, local_model.parameters())]
-    diff_serialized = serialize((List(diff))).SerializeToString()
+    diff = [orig - new for new, orig in zip(updated_params, model.parameters())]
+    diff_serialized = serialize(wrap_model_params(diff)).SerializeToString()
 
     params = {
         "type": "model-centric/report",
@@ -305,7 +515,7 @@ def create_plan() -> TypeList[TypeTuple[type, th.Size]]:
     # Check new model
     req_params = {
         "name": name,
-        "version": version,
+        "version": "1.0",
         "checkpoint": "latest",
     }
 
@@ -313,23 +523,23 @@ def create_plan() -> TypeList[TypeTuple[type, th.Size]]:
         f"http://{grid_address}/model-centric/retrieve-model", req_params
     )
 
-    params_pb = ListPB()
-    params_pb.ParseFromString(res.content)
-    new_model_params = deserialize(params_pb)
-
-    new_model_params[0]
-
+    new_model_params = deserialize_model_params(res.content)
     param_type_size = [(type(v), v.shape) for v in new_model_params]
 
     return param_type_size
 
 
-def execute_plan() -> float:
+def train_with_hosted_training_plan(
+    name: str,
+    plan_inputs: OrderedDict,
+    plan_output_params_idx: TypeList[int],
+    plan_type: str = "list",
+) -> None:
     # PyGrid Node address
     gridAddress = f"ws://localhost:{DOMAIN_PORT}"
 
     # Hosted model name/version
-    model_name = "mnist"
+    model_name = name
     model_version = "1.0"
 
     # syft absolute
@@ -369,7 +579,6 @@ def execute_plan() -> float:
     # Called when client is accepted into FL cycle
     def on_accepted(job: FLJob) -> None:
         print(f"Accepted into {job} cycle {len(cycles_log) + 1}.")
-
         cycle_params = job.client_config
         batch_size, max_updates = (
             cycle_params["batch_size"],
@@ -384,8 +593,17 @@ def execute_plan() -> float:
         )
 
         for batch_idx, (x, y) in enumerate(train_loader):
+            x = x.view(-1, 28 * 28)
             y = th.nn.functional.one_hot(y, 10)
-            (model_params,) = training_plan(xs=x, ys=y, params=model_params)
+            inputs = plan_inputs
+            inputs["xs"] = x
+            inputs["ys"] = y
+            inputs["params"] = [th.nn.Parameter(param) for param in model_params]
+            if plan_type == "torchscript":
+                res = training_plan(*inputs.values())
+            else:
+                res = training_plan(**inputs)
+            model_params = [res[idx] for idx in plan_output_params_idx]
 
             if batch_idx >= max_updates - 1:
                 break
@@ -415,6 +633,9 @@ def execute_plan() -> float:
         )["data"]["worker_id"]
         job = client.new_job(model_name, model_version)
 
+        # Override plan type to use
+        job.plan_type = plan_type
+
         # Set event handlers
         job.add_listener(job.EVENT_ACCEPTED, on_accepted)
         job.add_listener(job.EVENT_REJECTED, on_rejected)
@@ -427,25 +648,26 @@ def execute_plan() -> float:
         create_client_and_run_cycle()
         time.sleep(1)
 
+
+def check_resulting_model(name: str, model: SyModule) -> float:
     # Download trained model
     grid_address = f"localhost:{DOMAIN_PORT}"
     grid = ModelCentricFLClient(address=grid_address, secure=False)
     grid.connect()
+    trained_params = grid.retrieve_model(name, "1.0")
 
-    trained_params = grid.retrieve_model(model_name, model_version)
     # Inference
-
     def test(test_loader: th.utils.data.DataLoader, model: SyModule) -> th.Tensor:
         correct = []
         model.eval()
         for data, target in test_loader:
-            output = model(data)
+            x = data.view(-1, 28 * 28)
+            output = model(x)
             _, pred = th.max(output, 1)
             correct.append(th.sum(np.squeeze(pred.eq(target.data.view_as(pred)))))
         acc = sum(correct) / len(test_loader.dataset)
         return acc
 
-    model = MLP(th)
     set_params(model, trained_params)
 
     tfs = transforms.Compose(
