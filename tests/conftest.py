@@ -23,28 +23,25 @@ from syft.lib import vendor_requirements_available
 # syft relative
 from .syft.notebooks import free_port
 
-SIGNALING_SERVER_PORT = None
+logger.remove()
 
 
 @pytest.fixture(scope="session")
 def signaling_server() -> Generator:
-    global SIGNALING_SERVER_PORT
-    SIGNALING_SERVER_PORT = free_port()
-    proc = Process(
-        target=start_signaling_server, args=(SIGNALING_SERVER_PORT, "127.0.0.1")
-    )
+    port = free_port()
+    proc = Process(target=start_signaling_server, args=(port, "127.0.0.1"))
 
     proc.start()
     start = time()
 
     while time() - start < 15:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            if s.connect_ex(("127.0.0.1", SIGNALING_SERVER_PORT)) == 0:
+            if s.connect_ex(("127.0.0.1", port)) == 0:
                 break
     else:
         raise TimeoutError("Can't connect to the signaling server")
 
-    yield SIGNALING_SERVER_PORT
+    yield port
 
     proc.terminate()
 

@@ -24,30 +24,27 @@ def check_connectivity() -> bool:
         return False
 
 
-# Create the parser
-my_parser = argparse.ArgumentParser(description="Start a signaling server for Syft.")
-
-# Add the arguments
-my_parser.add_argument(
+arg_parser = argparse.ArgumentParser(description="Start a signaling server for Syft.")
+arg_parser.add_argument(
     "--port",
     type=int,
     default=free_port(),
     help="the port on which to bind the signaling server",
 )
-my_parser.add_argument(
+arg_parser.add_argument(
     "--host",
     type=str,
     default="0.0.0.0",
     help="the ip address on which to bind the signaling server",
 )
-my_parser.add_argument(
+arg_parser.add_argument(
     "--dry_run", type=bool, default=False, help="Check if the binding works"
 )
-my_parser.add_argument(
+arg_parser.add_argument(
     "--timeout", type=int, default=15, help="Connectivity check timeout"
 )
 
-args = my_parser.parse_args()
+args = arg_parser.parse_args()
 
 
 if __name__ == "__main__":
