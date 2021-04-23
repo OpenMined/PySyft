@@ -58,19 +58,19 @@ class AZURE(Provider):
 
     def build_resource_group(self):
         self.resource_group = azurerm_resource_group(
-            f"pygrid_resource_group",
-            name=f"pygrid_resource_group",
+            f"pygrid_resource_group_{self.name}",
+            name=f"pygrid_resource_group_{self.name}",
             location=self.config.azure.location,
         )
         self.tfscript += self.resource_group
 
     def build_network(self):
         self.network = azurerm_virtual_network(
-            f"pygrid_network",
-            name=f"pygrid_network",
+            f"pygrid_network_{self.name}",
+            name=f"pygrid_network_{self.name}",
             address_space=["10.0.0.0/16"],
             resource_group_name=var(
-                "azurerm_resource_group.pygrid_resource_group.name"
+                f"azurerm_resource_group.pygrid_resource_group_{self.name}.name"
             ),
             location=self.resource_group.location,
             tags={
@@ -81,22 +81,24 @@ class AZURE(Provider):
         self.tfscript += self.network
 
         self.subnets = azurerm_subnet(
-            f"pygrid_network_subnet",
-            name=f"pygrid_network_subnet",
+            f"pygrid_network_subnet_{self.name}",
+            name=f"pygrid_network_subnet_{self.name}",
             resource_group_name=var(
-                "azurerm_resource_group.pygrid_resource_group.name"
+                f"azurerm_resource_group.pygrid_resource_group_{self.name}.name"
             ),
-            virtual_network_name=var("azurerm_virtual_network.pygrid_network.name"),
+            virtual_network_name=var(
+                f"azurerm_virtual_network.pygrid_network_{self.name}.name"
+            ),
             address_prefixes=["10.0.2.0/24"],
         )
         self.tfscript += self.subnets
 
     def build_network_interface(self):
         self.public_ip = azurerm_public_ip(
-            f"pygrid_network_public_ip",
-            name=f"pygrid_network_public_ip",
+            f"pygrid_network_public_ip_{self.name}",
+            name=f"pygrid_network_public_ip_{self.name}",
             resource_group_name=var(
-                "azurerm_resource_group.pygrid_resource_group.name"
+                f"azurerm_resource_group.pygrid_resource_group_{self.name}.name"
             ),
             location=self.resource_group.location,
             allocation_method="Dynamic",
@@ -104,41 +106,43 @@ class AZURE(Provider):
         self.tfscript += self.public_ip
 
         self.nif = azurerm_network_interface(
-            f"pygrid_network_interface",
-            name=f"pygrid_network_interface",
+            f"pygrid_network_interface_{self.name}",
+            name=f"pygrid_network_interface_{self.name}",
             resource_group_name=var(
-                "azurerm_resource_group.pygrid_resource_group.name"
+                f"azurerm_resource_group.pygrid_resource_group_{self.name}.name"
             ),
             location=self.resource_group.location,
             ip_configuration={
                 "name": "internal",
-                "subnet_id": var("azurerm_subnet.pygrid_network_subnet.id"),
+                "subnet_id": var(
+                    f"azurerm_subnet.pygrid_network_subnet_{self.name}.id"
+                ),
                 "private_ip_address_allocation": "Dynamic",
                 "public_ip_address_id": var(
-                    "azurerm_public_ip.pygrid_network_public_ip.id"
+                    f"azurerm_public_ip.pygrid_network_public_ip_{self.name}.id"
                 ),
             },
         )
         self.tfscript += self.nif
 
         self.nif_association = azurerm_network_interface_security_group_association(
-            f"pygrid_nif_association",
+            f"pygrid_nif_association_{self.name}",
             # name=f"pygrid_nif_association",
             network_interface_id=var(
-                "azurerm_network_interface.pygrid_network_interface.id"
+                f"azurerm_network_interface.pygrid_network_interface_{self.name}.id"
             ),
             network_security_group_id=var(
-                "azurerm_network_security_group.pygrid_network_security_group.id"
+                f"azurerm_network_security_group.pygrid_network_security_group_{self.name}.id"
             ),
         )
         self.tfscript += self.nif_association
 
     def build_security_groups(self):
         self.network_security_group = azurerm_network_security_group(
-            f"pygrid_network_security_group",
-            name=f"pygrid_network_security_group",
+            f"pygrid_network_security_group_{self.name}",
+            name=f"pygrid_network_security_group_{self.name}",
             resource_group_name=var(
-                "azurerm_resource_group.pygrid_resource_group.name"
+                f"azurerm_resource_group.pygrid_resource_group_{self.name}.name"
             ),
             location=self.resource_group.location,
             tags={
@@ -169,10 +173,10 @@ class AZURE(Provider):
                 source_address_prefix="*",
                 destination_address_prefix="*",
                 resource_group_name=var(
-                    "azurerm_resource_group.pygrid_resource_group.name"
+                    f"azurerm_resource_group.pygrid_resource_group_{self.name}.name"
                 ),
                 network_security_group_name=var(
-                    "azurerm_network_security_group.pygrid_network_security_group.name"
+                    f"azurerm_network_security_group.pygrid_network_security_group_{self.name}.name"
                 ),
             )
 
@@ -188,7 +192,7 @@ class AZURE(Provider):
                 name=f"pygrid_{name}_instance_{count}",
                 computer_name="UbuntuServer",
                 resource_group_name=var(
-                    "azurerm_resource_group.pygrid_resource_group.name"
+                    f"azurerm_resource_group.pygrid_resource_group_{self.name}.name"
                 ),
                 location=self.resource_group.location,
                 # vm_os_simple="UbuntuServer",
@@ -204,7 +208,9 @@ class AZURE(Provider):
                     "storage_account_type": "Standard_LRS",
                 },
                 network_interface_ids=[
-                    var("azurerm_network_interface.pygrid_network_interface.id")
+                    var(
+                        f"azurerm_network_interface.pygrid_network_interface_{self.name}.id"
+                    )
                 ],
                 custom_data=var(
                     'filebase64("{}")'.format(
@@ -232,7 +238,7 @@ class AZURE(Provider):
             source="Azure/loadbalancer/azurerm",
             resource_group_name=self.resource_group.name,
             prefix="terraform-lb",
-            depends_on=["azurerm_resource_group.pygrid_resource_group"],
+            depends_on=[f"azurerm_resource_group.pygrid_resource_group_{self.name}"],
             frontend_subnet_id=self.subnets.id,
             remote_port={"ssh": ["Tcp", "22"]},
             lb_port={
