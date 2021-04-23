@@ -63,6 +63,8 @@ def create_dataset(current_user):
         response = {"error": "You're not allowed to upload data!"}
         status_code = 401
 
+    del file_like_object
+
     return Response(
         dumps(response),
         status=status_code,

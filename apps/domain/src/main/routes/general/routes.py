@@ -51,7 +51,7 @@ def metadata_route():
 
 
 @root_route.route("/pysyft", methods=["POST"])
-def root_route():
+def syft_route():
     data = request.get_data()
     obj_msg = deserialize(blob=data, from_bytes=True)
     if isinstance(obj_msg, SignedImmediateSyftMessageWithReply):
@@ -63,4 +63,31 @@ def root_route():
         get_node().recv_immediate_msg_without_reply(msg=obj_msg)
     else:
         get_node().recv_eventual_msg_without_reply(msg=obj_msg)
+    return ""
+
+
+@root_route.route("/pysyft_multipart", methods=["POST"])
+def syft_multipart_route():
+    if "file" not in request.files:
+        response = {"error": "Invalid message!"}
+        status_code = 403
+
+    file_obj = request.files["file"]
+
+    msg = file_obj.stream.read()
+
+    obj_msg = deserialize(blob=msg, from_bytes=True)
+
+    if isinstance(obj_msg, SignedImmediateSyftMessageWithReply):
+        reply = get_node().recv_immediate_msg_with_reply(msg=obj_msg)
+        r = Response(response=_serialize(obj=reply, to_bytes=True), status=200)
+        r.headers["Content-Type"] = "application/octet-stream"
+        del msg
+        del obj_msg
+        return r
+    elif isinstance(obj_msg, SignedImmediateSyftMessageWithoutReply):
+        get_node().recv_immediate_msg_without_reply(msg=obj_msg)
+    else:
+        get_node().recv_eventual_msg_without_reply(msg=obj_msg)
+
     return ""
