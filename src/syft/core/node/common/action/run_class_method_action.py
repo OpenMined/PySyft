@@ -190,6 +190,9 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             result = lib.python.primitive_factory.PrimitiveFactory.generate_primitive(
                 value=result, id=self.id_at_location
             )
+
+            if isinstance(result, type(NotImplemented)):
+                result = lib.python.primitive_factory.notImplementedPrimitive()
         else:
             # TODO: overload all methods to incorporate this automatically
             if hasattr(result, "id"):
