@@ -36,8 +36,7 @@ class DatasetRequestAPI(GridRequestAPI):
         self.client = client
 
     def create(self, path: str) -> Dict[str, str]:
-        file_obj = open(path, "rb")
-        response = self.conn.send_files(path, file_obj)
+        response = self.conn.send_files(path)
         return self.to_obj(response)
 
     def __getitem__(self, key: str) -> Any:
