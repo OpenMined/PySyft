@@ -8,13 +8,23 @@ from ...proto.lib.pandas.series_pb2 import PandasSeries as PandasSeries_PB
 
 
 def object2proto(obj: pd.Series) -> PandasSeries_PB:
-    """convert pd.Series to PandasSeries_PB with pyarrow."""
+    """Convert pd.Series to PandasSeries_PB with pyarrow.
+
+    # noqa: DAR101
+    # noqa: DAR201
+
+    """
     table = pa.Table.from_pandas(obj)
     return PandasSeries_PB(series=pa.serialize(table).to_buffer().to_pybytes())
 
 
 def proto2object(proto: PandasSeries_PB) -> pd.Series:
-    """convert PandasSeries_PB to pd.Series with pyarrow."""
+    """Convert PandasSeries_PB to pd.Series with pyarrow.
+
+    # noqa: DAR101
+    # noqa: DAR201
+
+    """
     reconstructed_buf = pa.py_buffer(proto.series)
     return pa.deserialize(reconstructed_buf).to_pandas()
 
