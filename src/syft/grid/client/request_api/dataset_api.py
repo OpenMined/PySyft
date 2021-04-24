@@ -58,6 +58,6 @@ class DatasetRequestAPI(GridRequestAPI):
             data_obj.pointer = pointers[data_obj.id.replace("-", "")]
             datasets.append(data_obj)
 
-        dataset_obj.all = datasets
+        dataset_obj.files = datasets
         type(dataset_obj).__getitem__ = lambda x, i: x.data[i]
         return dataset_obj
