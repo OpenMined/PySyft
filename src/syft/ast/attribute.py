@@ -204,7 +204,10 @@ class Attribute:
         traceback_and_raise(NotImplementedError)
 
     def fetch_live_object(self) -> Any:
-        return getattr(self.parent.object_ref, self.name)
+        if isinstance(self.parent, ast.klass.Class) and self.parent.args_req:
+            return getattr(self.parent.object_ref(*self.parent.arg_list), self.name)
+        else:
+            return getattr(self.parent.object_ref, self.name)
 
     def object_change(self) -> bool:
         return id(self.fetch_live_object()) != id(self.object_ref)

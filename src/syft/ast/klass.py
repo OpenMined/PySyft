@@ -16,9 +16,16 @@ from .. import ast
 from .. import lib
 from ..ast.callable import Callable
 from ..core.common.group import VERIFYALL
+from ..core.common.pointer import AbstractPointer
 from ..core.common.uid import UID
 from ..core.node.common.action.get_or_set_property_action import GetOrSetPropertyAction
 from ..core.node.common.action.get_or_set_property_action import PropertyActions
+from ..core.node.common.action.get_or_set_static_attribute_action import (
+    GetSetStaticAttributeAction,
+)
+from ..core.node.common.action.get_or_set_static_attribute_action import (
+    StaticAttributeAction,
+)
 from ..core.node.common.action.run_class_method_action import RunClassMethodAction
 from ..core.node.common.action.save_object_action import SaveObjectAction
 from ..core.node.common.service.resolve_pointer_type_service import (
@@ -194,6 +201,31 @@ def generate_class_property_function(
     return class_property_function
 
 
+def get_static_attribute_func(
+    attr_path_and_name: str, return_type_name: Optional[str]
+) -> CallableT:
+    def static_attribute_func(
+        __self: Any, *args: Any, **kwargs: Any
+    ) -> AbstractPointer:
+        return_tensor_type_pointer_type = __self.client.lib_ast.query(
+            path=return_type_name
+        ).pointer_type
+
+        ptr = return_tensor_type_pointer_type(client=__self.client)
+
+        msg = GetSetStaticAttributeAction(
+            path=attr_path_and_name,
+            id_at_location=ptr.id_at_location,
+            address=__self.client.address,
+            action=StaticAttributeAction.GET,
+        )
+
+        __self.client.send_immediate_msg_without_reply(msg=msg)
+        return ptr
+
+    return static_attribute_func
+
+
 def _get_request_config(self: Any) -> Dict[str, Any]:
     return {
         "request_block": True,
@@ -307,6 +339,9 @@ class Class(Callable):
             client=client,
             parent=parent,
         )
+        self.arg_list: List[Any] = []
+        self.args_req: bool = False
+
         if self.path_and_name is not None:
             self.pointer_name = self.path_and_name.split(".")[-1] + "Pointer"
 
@@ -322,6 +357,7 @@ class Class(Callable):
             # attr_path_and_name None
             if isinstance(attr, ast.callable.Callable):
                 attrs[attr_name] = get_run_class_method(attr_path_and_name)
+
             elif isinstance(attr, ast.property.Property):
                 prop = property(
                     generate_class_property_function(
@@ -340,6 +376,11 @@ class Class(Callable):
                     )
                 )
                 attrs[attr_name] = prop
+
+            elif isinstance(attr, ast.static_attr.StaticAttribute):
+                attrs[attr_name] = get_static_attribute_func(
+                    attr_path_and_name, attr.return_type_name
+                )
 
             if attr_name == "__len__":
                 wrap_len(attrs)
@@ -483,6 +524,8 @@ class Class(Callable):
         from enum import EnumMeta
 
         if obj_attr_req:
+            self.arg_list = pos_args
+            self.args_req = obj_attr_req
             attr_ref = getattr(self.object_ref(*pos_args), _path[index])
         else:
             attr_ref = getattr(self.object_ref, _path[index])

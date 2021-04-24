@@ -72,7 +72,13 @@ class StaticAttribute(ast.attribute.Attribute):
         if self.path_and_name is None:
             raise ValueError("path_and_none should not be None")
 
-        return getattr(self.parent.object_ref, self.path_and_name.rsplit(".")[-1])
+        if isinstance(self.parent, ast.klass.Class) and self.parent.args_req:
+            return getattr(
+                self.parent.object_ref(*self.parent.arg_list),
+                self.path_and_name.rsplit(".")[-1],
+            )
+        else:
+            return getattr(self.parent.object_ref, self.path_and_name.rsplit(".")[-1])
 
     def solve_set_value(self, set_value: Any) -> None:
         self.apply_node_changes()

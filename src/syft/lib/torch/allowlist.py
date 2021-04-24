@@ -1813,7 +1813,7 @@ allowlist["torch.nn.Linear.weight"] = {
     "return_type": "torch.Tensor",
     "min_version": "1.7.0",
     "obj_attr": True,
-    "module_pargs": [1, 2],
+    "module_pargs": [2, 3],
 }
 
 # DataLoader
