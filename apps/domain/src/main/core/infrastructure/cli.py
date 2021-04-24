@@ -84,10 +84,10 @@ def deploy(config: SimpleNamespace, provider: str, app: str):
     )
 
     ## Deployment type
-    config.serverless = False
+    # config.serverless = False
     # TODO: Uncomment this after updating serverless deployment
     # if config.app.name == "network":
-    #     config.serverless = click.confirm(f"Do you want to deploy serverless?")
+    config.serverless = click.confirm(f"Do you want to deploy serverless?")
 
     ## Websockets
     if not config.serverless:
