@@ -97,19 +97,15 @@ def get_dataset_metadata_msg(
 
     _msg = {}
 
-    _allowed = users.can_triage_requests(user_id=_current_user_id)
-    if _allowed:
-        storage = node.disk_store
-        ds, objs = get_specific_dataset_and_relations(_dataset_id)
-        if not ds:
-            raise DatasetNotFoundError
-        dataset_json = model_to_json(ds)
-        dataset_json["data"] = [
-            {"name": obj.name, "id": obj.obj, "dtype": obj.dtype, "shape": obj.shape}
-            for obj in objs
-        ]
-    else:
-        raise AuthorizationError("You're not allowed to get a Dataset!")
+    storage = node.disk_store
+    ds, objs = get_specific_dataset_and_relations(_dataset_id)
+    if not ds:
+        raise DatasetNotFoundError
+    dataset_json = model_to_json(ds)
+    dataset_json["data"] = [
+        {"name": obj.name, "id": obj.obj, "dtype": obj.dtype, "shape": obj.shape}
+        for obj in objs
+    ]
 
     return GetDatasetResponse(
         address=msg.reply_to,
@@ -134,25 +130,21 @@ def get_all_datasets_metadata_msg(
 
     _msg = {}
 
-    _allowed = users.can_triage_requests(user_id=_current_user_id)
-    if _allowed:
-        storage = node.disk_store
-        datasets = []
-        for dataset in get_all_datasets():
-            ds = model_to_json(dataset)
-            objs = get_all_relations(dataset.id)
-            ds["data"] = [
-                {
-                    "name": obj.name,
-                    "id": obj.obj,
-                    "dtype": obj.dtype,
-                    "shape": obj.shape,
-                }
-                for obj in objs
-            ]
-            datasets.append(ds)
-    else:
-        raise AuthorizationError("You're not allowed to get Datasets!")
+    storage = node.disk_store
+    datasets = []
+    for dataset in get_all_datasets():
+        ds = model_to_json(dataset)
+        objs = get_all_relations(dataset.id)
+        ds["data"] = [
+            {
+                "name": obj.name,
+                "id": obj.obj,
+                "dtype": obj.dtype,
+                "shape": obj.shape,
+            }
+            for obj in objs
+        ]
+        datasets.append(ds)
 
     return GetDatasetsResponse(
         address=msg.reply_to,
