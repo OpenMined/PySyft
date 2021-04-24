@@ -19,7 +19,7 @@ from syft.core.store.storeable_object import StorableObject
 from nacl.signing import VerifyKey
 from nacl.encoding import HexEncoder
 from .bin_storage.bin_obj import BinObject, ObjectMetadata
-from syft.core.common.group import VerifyAll
+from syft.core.common.group import VerifyAll, VERIFYALL
 from .bin_storage.json_obj import JsonObject
 from .bin_storage.metadata import StorageMetadata, get_metadata
 from . import db, BaseModel
@@ -107,7 +107,7 @@ class DiskObjectStore(ObjectStore):
             description=obj_metadata.description,
             tags=obj_metadata.tags,
             read_permissions=read_permissions,
-            search_permissions=syft.lib.python.Dict({VerifyAll: None}),
+            search_permissions=syft.lib.python.Dict({VERIFYALL: None}),
         )
         return obj
 

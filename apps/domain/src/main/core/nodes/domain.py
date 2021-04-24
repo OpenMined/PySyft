@@ -2,6 +2,7 @@ from typing import Optional
 from typing import Dict
 from typing import List
 from typing import Any
+import os
 
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
@@ -71,8 +72,10 @@ from syft.core.node.common.service.obj_search_permission_service import (
 )
 
 import tenseal as ts
+import sympc
 
 sy.load("tenseal")
+sy.load("sympc")
 
 
 class GridDomain(Domain):
@@ -104,7 +107,8 @@ class GridDomain(Domain):
         self.roles = RoleManager(db)
         self.groups = GroupManager(db)
         self.disk_store = DiskObjectStore(db)
-        self.store = DiskObjectStore(db)
+        if not os.getenv("MEMORY_STORE", None):
+            self.store = DiskObjectStore(db)
         self.environments = EnvironmentManager(db)
         self.setup = SetupManager(db)
         self.association_requests = AssociationRequestManager(db)

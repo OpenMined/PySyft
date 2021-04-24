@@ -15,6 +15,7 @@ from syft.core.common.uid import UID
 from syft.core.store.storeable_object import StorableObject
 from syft.core.node.common.action.save_object_action import SaveObjectAction
 from syft.core.common.group import VerifyAll
+from syft.core.common.group import VERIFYALL
 
 from ..database import db
 from ..database.utils import model_to_json
@@ -80,7 +81,7 @@ def process_items(node, tar_obj, user_key):
                 id=id_at_location,
                 data=df,
                 tags=tags + ["#" + item.name.split("/")[-1]],
-                search_permissions={},
+                search_permissions={VERIFYALL: None},
             )
 
             obj_msg = SaveObjectAction(obj=storable, address=node.address)
