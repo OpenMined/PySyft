@@ -1,3 +1,4 @@
+# serde method for pd.Series
 # third party
 import pandas as pd
 import pyarrow as pa
