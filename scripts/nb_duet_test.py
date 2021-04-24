@@ -62,7 +62,7 @@ for path in (
     + list(Path("examples/differential-privacy/opacus").rglob("*.ipynb"))
     + list(Path("examples/duet/mnist").rglob("*.ipynb"))
     + list(Path("examples/duet/mnist_lightning").rglob("*.ipynb"))
-    # + list(Path("examples/duet/reinforcement_learning").rglob("*.ipynb"))
+    + list(Path("examples/duet/reinforcement_learning").rglob("*.ipynb"))
 ):
     if ".ipynb_checkpoints" in str(path):
         continue
