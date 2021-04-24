@@ -1,4 +1,5 @@
-# serde method for pd.DataFrame
+"""Serde method for pd.DataFrame."""
+
 # third party
 import pandas as pd
 import pyarrow as pa
