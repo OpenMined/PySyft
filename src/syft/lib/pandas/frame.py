@@ -8,7 +8,7 @@ from ...proto.lib.pandas.frame_pb2 import PandasDataFrame as PandasDataFrame_PB
 
 
 def object2proto(obj: pd.DataFrame) -> PandasDataFrame_PB:
-    """convert pd.DataFrame to PandasDataFrame_PB with pyarrow.
+    """Convert pd.DataFrame to PandasDataFrame_PB with pyarrow.
 
     # noqa: DAR101
     # noqa: DAR201
@@ -19,7 +19,7 @@ def object2proto(obj: pd.DataFrame) -> PandasDataFrame_PB:
 
 
 def proto2object(proto: PandasDataFrame_PB) -> pd.DataFrame:
-    """convert PandasDataFrame_PB to pd.DataFrame with pyarrow.
+    """Convert PandasDataFrame_PB to pd.DataFrame with pyarrow.
 
     # noqa: DAR101
     # noqa: DAR201
