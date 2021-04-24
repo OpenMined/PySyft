@@ -68,8 +68,9 @@ def test_user_module() -> None:
             self.fc1 = th.nn.Linear(4, 2)
             self.fc2 = th.nn.Linear(2, 1)
 
-        def forward(self, x: Any) -> Any:
+        def forward(self, x: Any = th.rand(4), th: Any = th) -> Any:
             x = self.fc1(x)
+            x = th.relu(x)
             x = self.fc2(x)
             return x
 
@@ -82,6 +83,10 @@ def test_user_module() -> None:
     sd = OrderedDict(M().state_dict())
     sd_ptr = sd.send(alice_client)
     m_ptr.load_state_dict(sd_ptr)
+
+    # remote call
+    y_ptr = m_ptr(x=th.rand(4))
+    assert isinstance(y_ptr.get(), th.Tensor)
 
     # get
     sd2 = m_ptr.get().state_dict()
