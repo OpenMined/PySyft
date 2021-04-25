@@ -26,9 +26,22 @@ from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
+from ....pointer.pointer import Pointer
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
+
+
+def resolve_object(node: AbstractNode, ptr: Pointer) -> StorableObject:
+    obj = node.store.get_object(key=ptr.id_at_location)
+    if getattr(ptr, "attribute_name", None):
+        obj = StorableObject(
+            id=UID(),
+            data=getattr(obj.data, ptr.attribute_name),  # type: ignore
+            read_permissions=obj.read_permissions,  # type: ignore
+            search_permissions=obj.search_permissions,  # type: ignore
+        )
+    return obj  # type: ignore
 
 
 @bind_protobuf
@@ -108,10 +121,10 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
         resolved_self = None
         if not self.is_static:
-            resolved_self = node.store.get_object(key=self._self.id_at_location)
+            resolved_self = resolve_object(node, self._self)
 
             if resolved_self is None:
-                critical(
+                critical(  # type: ignore
                     f"execute_action on {self.path} failed due to missing object"
                     + f" at: {self._self.id_at_location}"
                 )
@@ -155,7 +168,14 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
             method_name = self.path.split(".")[-1]
 
-            if isinstance(resolved_self.data, Plan) and method_name == "__call__":
+            if (
+                isinstance(resolved_self.data, Plan)
+                and method_name == "__call__"
+                or (
+                    isinstance(getattr(resolved_self.data, "forward", None), Plan)
+                    and method_name == "__call__"
+                )
+            ):
                 if len(self.args) > 0:
                     traceback_and_raise(
                         ValueError(
@@ -300,7 +320,16 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
     def remap_input(self, current_input: Any, new_input: Any) -> None:
         """Redefines some of the arguments, and possibly the _self of the function"""
         if self._self.id_at_location == current_input.id_at_location:
-            self._self = new_input
+            attrribute_name = getattr(self._self, "attribute_name", "")
+            pointer_type = type(new_input)
+            self._self = pointer_type(
+                id_at_location=new_input.id_at_location,
+                client=new_input.client,
+                tags=new_input.tags,
+                description=new_input.description,
+                object_type=new_input.object_type,
+            )
+            self._self.attribute_name = attrribute_name
 
         for i, arg in enumerate(self.args):
             if arg.id_at_location == current_input.id_at_location:
