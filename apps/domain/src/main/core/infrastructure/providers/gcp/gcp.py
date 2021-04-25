@@ -169,7 +169,7 @@ class GCP(Provider):
 
             echo "Setting environment variables"
             export CLOUD_PROVIDER={self.config.provider}
-
+            export MEMORY_STORE=True
             echo "Exporting GCP Configs"
             export project_id={self.config.gcp.project_id},
             export REGION={self.config.gcp.region},

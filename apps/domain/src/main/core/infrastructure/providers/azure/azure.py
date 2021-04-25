@@ -299,7 +299,10 @@ class AZURE(Provider):
 
             echo "Setting environment variables"
             export CLOUD_PROVIDER={self.config.provider}
-
+            
+            echo "Setting memory store mode"
+            export MEMORY_STORE=True
+            
             echo "Exporting Azure Configs"
             export location={self.config.azure.location}
             export subscription_id={self.config.azure.subscription_id}
