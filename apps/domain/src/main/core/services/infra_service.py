@@ -119,7 +119,7 @@ def create_worker_msg(
 
         if instance_type is None:
             raise MissingRequestKeyError
-        """
+        
         config = Config(
             app=Config(name="worker", count=1, id=len(node.environments.all()) + 1),
             apps=[Config(name="worker", count=1, port=_worker_port)],
@@ -157,25 +157,21 @@ def create_worker_msg(
         elif config.provider == "gcp":
             deployment = GCP(config=config)
         
-        """
 
-        if True:  # deployment.validate():
-            deployed, output = True, {
-                "instance_0_endpoint": {"value": ["localhost"]}
-            }  # deployment.deploy()  # Deploy
-            if True:  # deployed:
+
+        if deployment.validate():
+            deployed, output = deployment.deploy()  # Deploy
+            if deployed:
                 env_parameters = {
-                    # "id": 1, #config.app.id,
-                    "provider": "Azure",  # config.provider,
+                    "id": config.app.id,
+                    "provider": config.provider,
                     "created_at": datetime.now(),
                     "state": states["success"],
                     "address": output["instance_0_endpoint"]["value"][0]
                     + ":"
                     + str(_worker_port),
                 }
-                env_parameters["region"] = "sa-sao_paulo"
-                env_parameters["instance_type"] = "local_instance"
-                """
+                
                 if config.provider == "aws":
                     env_parameters["region"] = config.vpc.region
                     env_parameters[
@@ -187,14 +183,13 @@ def create_worker_msg(
                 elif config.provider == "gcp":
                     env_parameters["region"] = config.gcp.region
                     env_parameters["instance_type"] = config.gcp.machine_type
-                """
 
                 new_env = node.environments.register(**env_parameters)
                 node.environments.association(
                     user_id=_current_user_id, env_id=new_env.id
                 )
             else:
-                # node.environments.set(id=config.app.id, state=states["failed"])
+                node.environments.set(id=config.app.id, state=states["failed"])
                 raise Exception("Worker creation failed!")
         final_msg = "Worker created successfully!"
         return CreateWorkerResponse(
