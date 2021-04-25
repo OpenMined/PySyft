@@ -39,7 +39,10 @@ class GridRequestAPI:
 
     def create(self, **kwargs: Any) -> None:
         response = self.__send(grid_msg=self.__create_message, content=kwargs)
-        logging.info(response[RequestAPIFields.MESSAGE])
+        try:
+            logging.info(response[RequestAPIFields.MESSAGE])
+        except KeyError:
+            logging.info(response["msg"])
 
     def get(self, **kwargs: Any) -> Any:
         return self.to_obj(self.__send(grid_msg=self.__get_message, content=kwargs))
@@ -53,7 +56,10 @@ class GridRequestAPI:
 
     def update(self, **kwargs: Any) -> None:
         response = self.__send(grid_msg=self.__update_message, content=kwargs)
-        logging.info(response[RequestAPIFields.MESSAGE])
+        try:
+            logging.info(response[RequestAPIFields.MESSAGE])
+        except KeyError:
+            logging.info(response["msg"])
 
     def delete(self, **kwargs: Any) -> None:
         response = self.__send(grid_msg=self.__delete_message, content=kwargs)
