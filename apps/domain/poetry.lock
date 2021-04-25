@@ -841,6 +841,14 @@ python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
 six = ">=1.5"
 
 [[package]]
+name = "python-dp"
+version = "1.0.2"
+description = "Python API for Google's Differential Privacy library"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "python-editor"
 version = "1.0.4"
 description = "Programmatically open an editor, capture the result."
@@ -1078,7 +1086,7 @@ protobuf = ">=3.12.2"
 
 [[package]]
 name = "sympc"
-version = "0.5.0rc1.post0.dev10+g3f83953"
+version = "0.5.0rc1.post0.dev11+g81bd519"
 description = "A SMPC companion library for Syft"
 category = "main"
 optional = false
@@ -1097,7 +1105,7 @@ testing = ["pytest", "pytest-cov"]
 type = "git"
 url = "https://github.com/OpenMined/SyMPC"
 reference = "main"
-resolved_reference = "3f839530d3792de7b0621c79be55c6bddad8d721"
+resolved_reference = "81bd5190f6113f6635361bb83c3e7724977261df"
 
 [[package]]
 name = "tenseal"
@@ -1307,7 +1315,7 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "ebc433faf95b8d17066a6c73ebfba25b73f0826553f120b56057b6223c5e1228"
+content-hash = "71caf31785c13bb9d5ef9a80f80f5c821bd982658fbb0dc4047e3d72aa6bb15d"
 
 [metadata.files]
 aioice = [
@@ -2044,6 +2052,16 @@ pytest = [
 python-dateutil = [
     {file = "python-dateutil-2.8.1.tar.gz", hash = "sha256:73ebfe9dbf22e832286dafa60473e4cd239f8592f699aa5adaf10050e6e1823c"},
     {file = "python_dateutil-2.8.1-py2.py3-none-any.whl", hash = "sha256:75bb3f31ea686f1197762692a9ee6a7550b59fc6ca3a1f4b5d7e32fb98e2da2a"},
+]
+python-dp = [
+    {file = "python_dp-1.0.2-cp35-cp35m-macosx_11_0_x86_64.whl", hash = "sha256:7a4bfd2b4b84174f9ee1461caaf4d4e2bfc78da8af393cbfdc90dfe80c425783"},
+    {file = "python_dp-1.0.2-cp35-cp35m-manylinux1_x86_64.whl", hash = "sha256:5492dffe53c45fbd46e0f65dd8041bebee1570d0698eca256d85af30d185ff49"},
+    {file = "python_dp-1.0.2-cp36-cp36m-macosx_11_0_x86_64.whl", hash = "sha256:31b1f8585d478ec0b29ee4f72da9c079406b3966dbe4e8d29540127e0eef97f2"},
+    {file = "python_dp-1.0.2-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:2e5f980592ca1050a9230916f924700f54769226a6975bd844d3d9b83d9882e0"},
+    {file = "python_dp-1.0.2-cp37-cp37m-macosx_11_0_x86_64.whl", hash = "sha256:b1a7435fe92cfd2fb28eb6dac32421e728c24388d65732ecadde23681d68d4f2"},
+    {file = "python_dp-1.0.2-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:690a9dabdd6b80f2425de4bd6800f41c59ac60ab5695513044b49f4371111d04"},
+    {file = "python_dp-1.0.2-cp38-cp38-macosx_11_0_x86_64.whl", hash = "sha256:0ec4b7e9f671e9f9d95995c02f660e5e68d9deeb79fab1ef97621891ceec3510"},
+    {file = "python_dp-1.0.2-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:499da98c13440fa94b5f9b9485d85f361ce1d6f2dba2ac001c921ddb961b3b6a"},
 ]
 python-editor = [
     {file = "python-editor-1.0.4.tar.gz", hash = "sha256:51fda6bcc5ddbbb7063b2af7509e43bd84bfc32a4ff71349ec7847713882327b"},
