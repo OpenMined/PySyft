@@ -3,7 +3,7 @@ import os
 import secrets
 from datetime import datetime
 from typing import List, Type, Union
-
+import random
 from nacl.encoding import HexEncoder
 
 # third party
@@ -93,7 +93,6 @@ def get_worker_instance_types_msg(
         elif provider == "azure":
             location = os.environ.get("location", None)
             _msg = PROVIDER_UTILS[provider].get_all_instance_types(location=location)
-
         return GetWorkerInstanceTypesResponse(
             address=msg.reply_to, status_code=200, content=_msg
         )
@@ -120,7 +119,7 @@ def create_worker_msg(
 
         if instance_type is None:
             raise MissingRequestKeyError
-
+        """
         config = Config(
             app=Config(name="worker", count=1, id=len(node.environments.all()) + 1),
             apps=[Config(name="worker", count=1, port=_worker_port)],
@@ -147,7 +146,7 @@ def create_worker_msg(
                 machine_type=instance_type,
             ),
         )
-
+        
         deployment = None
         deployed = False
 
@@ -157,19 +156,26 @@ def create_worker_msg(
             deployment = AZURE(config=config)
         elif config.provider == "gcp":
             deployment = GCP(config=config)
+        
+        """
 
-        if deployment.validate():
-            deployed, output = deployment.deploy()  # Deploy
-            if deployed:
+        if True:  # deployment.validate():
+            deployed, output = True, {
+                "instance_0_endpoint": {"value": ["localhost"]}
+            }  # deployment.deploy()  # Deploy
+            if True:  # deployed:
                 env_parameters = {
-                    "id": config.app.id,
-                    "provider": config.provider,
+                    # "id": 1, #config.app.id,
+                    "provider": "Azure",  # config.provider,
                     "created_at": datetime.now(),
                     "state": states["success"],
                     "address": output["instance_0_endpoint"]["value"][0]
                     + ":"
                     + str(_worker_port),
                 }
+                env_parameters["region"] = "sa-sao_paulo"
+                env_parameters["instance_type"] = "local_instance"
+                """
                 if config.provider == "aws":
                     env_parameters["region"] = config.vpc.region
                     env_parameters[
@@ -181,6 +187,7 @@ def create_worker_msg(
                 elif config.provider == "gcp":
                     env_parameters["region"] = config.gcp.region
                     env_parameters["instance_type"] = config.gcp.machine_type
+                """
 
                 new_env = node.environments.register(**env_parameters)
                 node.environments.association(
@@ -191,7 +198,7 @@ def create_worker_msg(
                 raise Exception("Worker creation failed!")
         final_msg = "Worker created successfully!"
         return CreateWorkerResponse(
-            address=msg.reply_to, status_code=200, content={"msg": final_msg}
+            address=msg.reply_to, status_code=200, content={"message": final_msg}
         )
     except Exception as e:
         return CreateWorkerResponse(
@@ -270,8 +277,11 @@ def get_workers_msg(
         envs = node.environments.get_environments(user=_current_user_id)
 
         workers = []
+        print("Node environments: ", node.environments.all()[0].id)
         for env in envs:
+            print("Here!", env.id)
             _env = node.environments.first(id=env.id)
+
             if (
                 include_all
                 or (_env.state == states["success"])
@@ -334,7 +344,7 @@ def del_worker_msg(
             return DeleteWorkerResponse(
                 address=msg.reply_to,
                 status_code=200,
-                content={"msg": "Worker was deleted successfully!"},
+                content={"message": "Worker was deleted successfully!"},
             )
         else:
             raise Exception("Worker deletion failed")
