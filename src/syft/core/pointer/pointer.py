@@ -109,9 +109,6 @@ from ..common.serde.serializable import bind_protobuf
 from ..common.uid import UID
 from ..io.address import Address
 from ..node.abstract.node import AbstractNode
-from ..node.common.action.garbage_collect_object_action import (
-    GarbageCollectObjectAction,
-)
 from ..node.common.action.get_object_action import GetObjectAction
 from ..node.common.service.get_repr_service import GetReprMessage
 from ..node.common.service.obj_search_permission_service import (
@@ -314,6 +311,7 @@ class Pointer(AbstractPointer):
             tags=self.tags,
             description=self.description,
             object_type=self.object_type,
+            attribute_name=getattr(self, "attribute_name", ""),
         )
 
     @staticmethod
@@ -338,13 +336,15 @@ class Pointer(AbstractPointer):
         pointer_type = getattr(points_to_type, proto.pointer_name)
         # WARNING: This is sending a serialized Address back to the constructor
         # which currently depends on a Client for send_immediate_msg_with_reply
-        return pointer_type(
+        res = pointer_type(
             id_at_location=_deserialize(blob=proto.id_at_location),
             client=_deserialize(blob=proto.location),
             tags=proto.tags,
             description=proto.description,
             object_type=proto.object_type,
         )
+        res.attribute_name = proto.attribute_name
+        return res
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
@@ -584,11 +584,6 @@ class Pointer(AbstractPointer):
         if (_client_type == Address) or issubclass(_client_type, AbstractNode):
             # it is a serialized pointer that we receive from another client do nothing
             return
-        if self.gc_enabled:
-            # Create the delete message
-            msg = GarbageCollectObjectAction(
-                id_at_location=self.id_at_location, address=self.client.address
-            )
 
-            # Send the message
-            self.client.send_eventual_msg_without_reply(msg=msg)
+        if self.gc_enabled:
+            self.client.gc.apply(self)

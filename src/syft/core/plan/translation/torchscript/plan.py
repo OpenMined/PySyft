@@ -8,9 +8,9 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from syft_proto.execution.v1.plan_pb2 import Plan as Plan_PB
 import torch as th
 
-# syft absolute
-from syft.core.common.object import Serializable
-from syft.logger import traceback_and_raise
+# syft relative
+from .....core.common.object import Serializable
+from .....logger import traceback_and_raise
 
 
 class PlanTorchscript(Serializable):
