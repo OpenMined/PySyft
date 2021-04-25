@@ -56,6 +56,7 @@ sy.load("sympc")
 sy.load("tenseal")
 sy.load("pydp")
 
+
 class GridWorker(Domain):
     def __init__(
         self,
