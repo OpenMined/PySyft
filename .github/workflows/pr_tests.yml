@@ -14,7 +14,7 @@ on:
       - "**.py"
       - "**.txt"
       - "setup.cfg"
-      - ".github/workflows/**.yml"
+      - ".github/workflows/*.yml"
       - "examples/private-ai-series/**.ipynb"
 
 jobs:
