@@ -32,7 +32,6 @@ def create_ast(client: TypeAny = None) -> Globals:
 
     methods: TypeList[TypeTuple[str, str]] = [
         # Array attributes
-
         ("numpy.ndarray.flags", "numpy.ndarray"),
         ("numpy.ndarray.shape", "numpy.ndarray"),
         ("numpy.ndarray.strides", "numpy.ndarray"),
@@ -42,11 +41,7 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("numpy.ndarray.itemsize", "numpy.ndarray"),
         ("numpy.ndarray.nbytes", "numpy.ndarray"),
         ("numpy.ndarray.base", "numpy.ndarray"),
-<<<<<<< HEAD
         # ("numpy.ndarray.dtype", "numpy.ndarray"), # SECURITY WARNING: DO NOT ADD TO ALLOW LIST YET
-=======
-        # ("numpy.ndarray.dtype", "numpy.ndarray"), SECURITY WARNING: DO NOT ADD TO ALLOW LIST YET 
->>>>>>> commented methods which hinders privacy
         ("numpy.ndarray.T", "numpy.ndarray"),
         # ("numpy.ndarray.real", "numpy.ndarray"), # requires dtype complex
         # ("numpy.ndarray.imag", "numpy.ndarray"), # requires dtype complex
@@ -54,9 +49,7 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("numpy.ndarray.ctypes", "numpy.ndarray"),
         ("numpy.ndarray.__array_interface__", "numpy.ndarray"),
         ("numpy.ndarray.__array_struct__", "numpy.ndarray"),
-
         # Array methods
-        
         ("numpy.ndarray.item", "numpy.ndarray"),
         ("numpy.ndarray.tolist", "numpy.ndarray"),
         ("numpy.ndarray.itemset", "numpy.ndarray"),
@@ -109,7 +102,7 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("numpy.ndarray.cumprod", "numpy.ndarray"),
         ("numpy.ndarray.all", "numpy.ndarray"),
         ("numpy.ndarray.any", "numpy.ndarray"),
-        # Arithmetic, matrix multiplication, and comparison operations.
+        # Arithmetic, matrix multiplication, and comparison operations
     ]
 
     add_modules(ast, modules)
