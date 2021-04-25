@@ -49,9 +49,12 @@ from threading import Thread
 
 import syft as sy
 import tenseal as ts
+import pydp
+import sympc
 
+sy.load("sympc")
 sy.load("tenseal")
-
+sy.load("pydp")
 
 class GridWorker(Domain):
     def __init__(

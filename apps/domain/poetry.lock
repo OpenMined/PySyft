@@ -1035,7 +1035,7 @@ pycparser = ">=2"
 
 [[package]]
 name = "syft"
-version = "0.5.0rc1"
+version = "0.3.0.post0.dev1315+gfc8dd76ec"
 description = "PySyft is a Python library for secure and private Deep Learning, allowing you to compute on data you do not own and cannot see"
 category = "main"
 optional = false
@@ -1070,8 +1070,8 @@ testing = ["dataclasses", "flask", "pandas", "protobuf", "PyJWT (==1.7.1)", "pyn
 [package.source]
 type = "git"
 url = "https://github.com/OpenMined/PySyft"
-reference = "0.5.0rc1"
-resolved_reference = "5755b1f8baf1755d31b06ae7aa85d1ab40804d09"
+reference = "pygrid_demo"
+resolved_reference = "fc8dd76ec3c9e708b5537782bb85765b9abefeca"
 
 [[package]]
 name = "syft-proto"
@@ -1315,7 +1315,7 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "71caf31785c13bb9d5ef9a80f80f5c821bd982658fbb0dc4047e3d72aa6bb15d"
+content-hash = "ca6f4c3b85bd25648c430e9b85c89fb85266bcaa5dab08a73bff63ef714abc2c"
 
 [metadata.files]
 aioice = [
