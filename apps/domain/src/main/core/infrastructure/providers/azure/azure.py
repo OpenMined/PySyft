@@ -66,8 +66,8 @@ class AZURE(Provider):
 
     def build_network(self):
         self.network = azurerm_virtual_network(
-            f"pygrid_network_{self.name}",
-            name=f"pygrid_network_{self.name}",
+            f"pygrid_vpc_{self.name}",
+            name=f"pygrid_vpc_{self.name}",
             address_space=["10.0.0.0/16"],
             resource_group_name=var(
                 f"azurerm_resource_group.pygrid_resource_group_{self.name}.name"
@@ -81,13 +81,13 @@ class AZURE(Provider):
         self.tfscript += self.network
 
         self.subnets = azurerm_subnet(
-            f"pygrid_network_subnet_{self.name}",
-            name=f"pygrid_network_subnet_{self.name}",
+            f"pygrid_vpc_subnet_{self.name}",
+            name=f"pygrid_vpc_subnet_{self.name}",
             resource_group_name=var(
                 f"azurerm_resource_group.pygrid_resource_group_{self.name}.name"
             ),
             virtual_network_name=var(
-                f"azurerm_virtual_network.pygrid_network_{self.name}.name"
+                f"azurerm_virtual_network.pygrid_vpc_{self.name}.name"
             ),
             address_prefixes=["10.0.2.0/24"],
         )
@@ -95,8 +95,8 @@ class AZURE(Provider):
 
     def build_network_interface(self):
         self.public_ip = azurerm_public_ip(
-            f"pygrid_network_public_ip_{self.name}",
-            name=f"pygrid_network_public_ip_{self.name}",
+            f"pygrid_vpc_public_ip_{self.name}",
+            name=f"pygrid_vpc_public_ip_{self.name}",
             resource_group_name=var(
                 f"azurerm_resource_group.pygrid_resource_group_{self.name}.name"
             ),
@@ -106,20 +106,18 @@ class AZURE(Provider):
         self.tfscript += self.public_ip
 
         self.nif = azurerm_network_interface(
-            f"pygrid_network_interface_{self.name}",
-            name=f"pygrid_network_interface_{self.name}",
+            f"pygrid_vpc_interface_{self.name}",
+            name=f"pygrid_vpc_interface_{self.name}",
             resource_group_name=var(
                 f"azurerm_resource_group.pygrid_resource_group_{self.name}.name"
             ),
             location=self.resource_group.location,
             ip_configuration={
                 "name": "internal",
-                "subnet_id": var(
-                    f"azurerm_subnet.pygrid_network_subnet_{self.name}.id"
-                ),
+                "subnet_id": var(f"azurerm_subnet.pygrid_vpc_subnet_{self.name}.id"),
                 "private_ip_address_allocation": "Dynamic",
                 "public_ip_address_id": var(
-                    f"azurerm_public_ip.pygrid_network_public_ip_{self.name}.id"
+                    f"azurerm_public_ip.pygrid_vpc_public_ip_{self.name}.id"
                 ),
             },
         )
@@ -129,18 +127,18 @@ class AZURE(Provider):
             f"pygrid_nif_association_{self.name}",
             # name=f"pygrid_nif_association",
             network_interface_id=var(
-                f"azurerm_network_interface.pygrid_network_interface_{self.name}.id"
+                f"azurerm_network_interface.pygrid_vpc_interface_{self.name}.id"
             ),
             network_security_group_id=var(
-                f"azurerm_network_security_group.pygrid_network_security_group_{self.name}.id"
+                f"azurerm_network_security_group.pygrid_vpc_security_group_{self.name}.id"
             ),
         )
         self.tfscript += self.nif_association
 
     def build_security_groups(self):
         self.network_security_group = azurerm_network_security_group(
-            f"pygrid_network_security_group_{self.name}",
-            name=f"pygrid_network_security_group_{self.name}",
+            f"pygrid_vpc_security_group_{self.name}",
+            name=f"pygrid_vpc_security_group_{self.name}",
             resource_group_name=var(
                 f"azurerm_resource_group.pygrid_resource_group_{self.name}.name"
             ),
@@ -153,12 +151,12 @@ class AZURE(Provider):
         self.tfscript += self.network_security_group
 
         security_rules = [
-            ("HTTPS", 100, 443, 443),
-            ("HTTP", 101, 80, 80),
-            ("PyGrid_Domains", 102, 5000, 5999),
-            ("PyGrid_Workers", 103, 6000, 6999),
-            ("PyGrid_Networks", 104, 7000, 7999),
-            ("SSH", 105, 22, 22),
+            ("HTTPS", 100, "*", 443),
+            ("HTTP", 101, "*", 80),
+            ("PyGrid_Domains", 102, "*", "5000-5999"),
+            ("PyGrid_Workers", 103, "*", "6000-6999"),
+            ("PyGrid_Networks", 104, "*", "7000-7999"),
+            ("SSH", 105, "*", 22),
         ]
         for name, priority, source_port, dest_port in security_rules:
             self.tfscript += azurerm_network_security_rule(
@@ -169,14 +167,14 @@ class AZURE(Provider):
                 access="Allow",
                 protocol="Tcp",
                 source_port_range=source_port,
-                destination_port_range=dest_port,
+                destination_port_ranges=[dest_port],
                 source_address_prefix="*",
                 destination_address_prefix="*",
                 resource_group_name=var(
                     f"azurerm_resource_group.pygrid_resource_group_{self.name}.name"
                 ),
                 network_security_group_name=var(
-                    f"azurerm_network_security_group.pygrid_network_security_group_{self.name}.name"
+                    f"azurerm_network_security_group.pygrid_vpc_security_group_{self.name}.name"
                 ),
             )
 
@@ -209,7 +207,7 @@ class AZURE(Provider):
                 },
                 network_interface_ids=[
                     var(
-                        f"azurerm_network_interface.pygrid_network_interface_{self.name}.id"
+                        f"azurerm_network_interface.pygrid_vpc_interface_{self.name}.id"
                     )
                 ],
                 custom_data=var(
@@ -219,6 +217,10 @@ class AZURE(Provider):
                         else self.write_worker_exec_script(app)
                     )
                 ),
+                admin_ssh_key={
+                    "username": "pygriduser",
+                    "public_key": var('file("{}")'.format("~/.ssh/id_rsa.pub")),
+                },
                 admin_username="pygriduser",
                 admin_password="pswd123!",
                 disable_password_authentication=False,
@@ -227,7 +229,7 @@ class AZURE(Provider):
             self.tfscript += instance
             self.tfscript += terrascript.Output(
                 f"instance_{count}_endpoint",
-                value=var(instance.public_ip_address),
+                value=[var(instance.public_ip_address)],
                 description=f"The public IP address of #{count} instance.",
             )
             self.instances.append(instance)
@@ -272,7 +274,7 @@ class AZURE(Provider):
             sudo apt update -y
             sudo apt install apache2 -y
             sudo systemctl start apache2
-            echo '<h1>OpenMined {self.config.app.name} Server ({index}) Deployed via Terraform</h1>' | sudo tee /var/www/html/index.html
+            echo '<h1>OpenMined {self.config.app.name} Server Azure Deployed via Terraform</h1>' | sudo tee /var/www/html/index.html
 
             echo 'Setup Miniconda environment'
             sudo wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
@@ -287,6 +289,9 @@ class AZURE(Provider):
             echo 'Install poetry...'
             pip install poetry
 
+            echo 'Install AZ CLI'
+            curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
             echo 'Install GCC'
             sudo apt-get install zip unzip -y
             sudo apt-get install python3-dev -y
@@ -299,9 +304,11 @@ class AZURE(Provider):
 
             echo "Setting environment variables"
             export CLOUD_PROVIDER={self.config.provider}
+            echo "CLOUD_PROVIDER={self.config.provider}" | sudo tee -a /etc/environment >/dev/null
             
             echo "Setting memory store mode"
             export MEMORY_STORE=True
+            echo "MEMORY_STORE=True" | sudo tee -a /etc/environment >/dev/null
             
             echo "Exporting Azure Configs"
             export location={self.config.azure.location}
@@ -309,6 +316,12 @@ class AZURE(Provider):
             export client_id={self.config.azure.client_id}
             export client_secret={self.config.azure.client_secret}
             export tenant_id={self.config.azure.tenant_id}
+
+            echo "location={self.config.azure.location}"  | sudo tee -a /etc/environment >/dev/null
+            echo "subscription_id={self.config.azure.subscription_id}"  | sudo tee -a /etc/environment >/dev/null
+            echo "client_id={self.config.azure.client_id}"  | sudo tee -a /etc/environment >/dev/null
+            echo "client_secret={self.config.azure.client_secret}"  | sudo tee -a /etc/environment >/dev/null
+            echo "tenant_id={self.config.azure.tenant_id}"  | sudo tee -a /etc/environment >/dev/null
 
             echo 'Cloning PyGrid'
             git clone https://github.com/OpenMined/PyGrid && cd /PyGrid/
@@ -318,9 +331,6 @@ class AZURE(Provider):
 
             echo 'Installing {self.config.app.name} Dependencies'
             poetry install
-
-            ## TODO(amr): remove this after poetry updates
-            pip install pymysql
 
             nohup ./run.sh --port {app.port}  --host 0.0.0.0 --start_local_db
             """
@@ -337,8 +347,14 @@ class AZURE(Provider):
         exec_script = "#!/bin/bash\n"
         exec_script += textwrap.dedent(
             f"""
+            ## For debugging
+            # redirect stdout/stderr to a file
             exec &> logs.out
+            echo 'Simple Web Server for testing the deployment'
             sudo apt update -y
+            sudo apt install apache2 -y
+            sudo systemctl start apache2
+            echo '<h1>OpenMined {self.config.app.name} Azure Deployed via Terraform</h1>' | sudo tee /var/www/html/index.html
 
             echo 'Setup Miniconda environment'
             sudo wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
