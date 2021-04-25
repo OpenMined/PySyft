@@ -1,3 +1,8 @@
+"""Partial-dependency library, runs when user loads xgboost.
+
+__init__ file for sklearn. This defines various modules, classes and methods which we currently support.
+We create an AST for all these modules, classes and methods so that they can be called remotely.
+"""
 # stdlib
 import functools
 from typing import Any as TypeAny
@@ -21,6 +26,14 @@ PACKAGE_SUPPORT = {
 
 
 def create_ast(client: TypeAny) -> Globals:
+    """Create ast for all mdules, classes and attributes for sklearn so that they can be called remotely.
+
+    Args:
+        client: Remote client where we have to create the ast.
+
+    Returns:
+        Globals: returns ast created for xgboost.
+    """
     ast = Globals(client=client)
 
     modules: TypeList[TypeTuple[str, TypeAny]] = [
