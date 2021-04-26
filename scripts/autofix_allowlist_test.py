@@ -1,4 +1,13 @@
-# %load PySyft/scripts/autofix_allowlist_test.py
+"""Automatically tests the data types and input parameters available to all functions/properties.
+
+Temporarily clean up the test results current torch version in allowlist_test.json,
+run allowlist_test.py(pytest -m torch),
+read the error message (allowlist_test_errors_xxxx.jsonl),
+record the data types and input parameters that failed the test in allowlist_test.json.
+Repeat the test several times until no error files are generated,
+otherwise, the corresponding functions/properties in allowList.py are commented out.
+"""
+
 # stdlib
 import glob
 import json
@@ -41,6 +50,15 @@ exception_pattern_args = re.compile(
 def fix_exception_pattern_args(
     not_available: list, inputs: Any, cuda: bool, **kwargs: None
 ) -> None:
+    """Add/update an inappropriate input parameter entry to not_available.
+
+    Args:
+        not_available: list to be updated.
+        inputs: arguments to the function.
+        cuda: true for cuda, false for cpu.
+        **kwargs: the rest of the parmeters.
+    """
+
     def get_ele_index() -> int:
 
         keys = {"inputs", "lte_version", "gte_version", "reason", "cuda"}
@@ -66,9 +84,17 @@ def fix_exception_pattern_args(
         return i + 1
 
     def exactly_eq(a: Any, b: Any) -> bool:
-        """
+        """Determine whether the two parameters are equal.
+
         `True==1` and `False==0` will return True;
         But we want them be False, so we also check if they are of the same type.
+
+        Args:
+            a: parameter 1.
+            b: parameter 2.
+
+        Returns:
+            bool: equal or not.
         """
         return type(a) == type(b) and a == b
 
@@ -85,6 +111,16 @@ exception_pattern_2 = re.compile(r"\[torch\]")
 def fix_exception_pattern_2(
     not_available: list, tensor_type: str, inputs: Any, cuda: bool, **kwargs: None
 ) -> None:
+    """Add/update an inappropriate data type entry to not_available.
+
+    Args:
+        not_available: list to be updated.
+        tensor_type: tensor's dtype.
+        inputs: arguments to the function.
+        cuda: true for cuda, false for cpu.
+        **kwargs: the rest of the parmeters.
+    """
+
     def get_ele_index() -> int:
         keys = {"data_types", "lte_version", "gte_version", "cuda", "reason"}
         i = -1
@@ -127,6 +163,15 @@ exception_pattern_syft = re.compile(
 def fix_exception_pattern_syft(
     not_available: list, inputs: Any, cuda: bool, **kwargs: None
 ) -> None:
+    """Add/update an unsupported entry to not_available.
+
+    Args:
+        not_available: list to be updated.
+        inputs: arguments to the function.
+        cuda: true for cuda, false for cpu.
+        **kwargs: the rest of the parmeters.
+    """
+
     def get_ele_index() -> int:
         keys = {"lte_version", "gte_version", "cuda", "reason", "data_types"}
         i = -1
@@ -164,10 +209,28 @@ exception_fix.append((exception_pattern_syft, fix_exception_pattern_syft))
 # ------------------------------
 # some helper function
 def match_pattern(exception: str, pattern: Pattern) -> int:
+    """Matches the type of the exception.
+
+    Args:
+        exception: exception caught.
+        pattern: pattern of exception.
+
+    Returns:
+        int: number of matches, > 0 means success.
+    """
     return len(pattern.findall(exception)) > 0
 
 
 def is_failed_op(line: str, failed_ops: set) -> bool:
+    """Check if a function/property fails.
+
+    Args:
+        line: line from allowlist.py.
+        failed_ops: op_name in allowlist_test_errors_xxx.jsonl.
+
+    Returns:
+        bool: whether function/property test fails.
+    """
     for op in failed_ops:
         if op in line:
             return True
