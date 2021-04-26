@@ -54,7 +54,7 @@ def create_ast(client: TypeAny = None) -> Globals:
         ),
     ]
 
-    methods: TypeList[TypeTuple[str, str]] = [
+    attrs: TypeList[TypeTuple[str, str]] = [
         ("sympc.store.CryptoStore.get_primitives_from_store", "syft.lib.python.List"),
         ("sympc.session.Session.crypto_store", "sympc.store.CryptoStore"),
         ("sympc.protocol.fss.fss.mask_builder", "sympc.tensor.ShareTensor"),
@@ -112,11 +112,12 @@ def create_ast(client: TypeAny = None) -> Globals:
         ),
         ("sympc.tensor.ShareTensor.unsqueeze", "sympc.tensor.ShareTensor"),
         ("sympc.tensor.ShareTensor.view", "sympc.tensor.ShareTensor"),
+        ("sympc.store.CryptoStore.store", "syft.lib.python.Dict"),
     ]
 
     add_modules(ast, modules)
     add_classes(ast, classes)
-    add_methods(ast, methods)
+    add_methods(ast, attrs)
 
     for klass in ast.classes:
         klass.create_pointer_class()
