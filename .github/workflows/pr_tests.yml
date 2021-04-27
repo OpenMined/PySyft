@@ -61,7 +61,15 @@ jobs:
           pip install black isort --default-timeout=60
           ./scripts/build_proto.sh
 
+      - id: file_changes  # get changed files.
+        uses: trilom/file-changes-action@v1.2.3
+        with:
+          output: ' '
+
+
       - uses: pre-commit/action@v2.0.0
+        with:
+          extra_args: --files ${{ steps.file_changes.outputs.files}}  # apply only to changed files.
 
       # - name: Run darglint via flake8 - Ignore Errors
       #   continue-on-error: true

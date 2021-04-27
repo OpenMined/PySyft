@@ -21,47 +21,29 @@ parser.add_argument(
     "--upscale-factor",
     type=int,
     required=True,
-    help="super resolution upscale factor[REQUIRED]"
+    help="super resolution upscale factor[REQUIRED]",
 )
 parser.add_argument(
-    "--batch-size",
-    type=int,
-    default=64,
-    help="training batch size; default: 64"
+    "--batch-size", type=int, default=64, help="training batch size; default: 64"
 )
 parser.add_argument(
-    "--test-batch-size",
-    type=int,
-    default=10,
-    help="testing batch size; default: 10"
+    "--test-batch-size", type=int, default=10, help="testing batch size; default: 10"
 )
 parser.add_argument(
-    "--epochs",
-    type=int,
-    default=2,
-    help="number of epochs to train; default: 2"
+    "--epochs", type=int, default=2, help="number of epochs to train; default: 2"
 )
 parser.add_argument(
-    "--lr",
-    type=float,
-    default=0.01,
-    help="Learning Rate; default: 0.01"
+    "--lr", type=float, default=0.01, help="Learning Rate; default: 0.01"
 )
-parser.add_argument(
-    "--cuda",
-    action="store_true",
-    help="use cuda?")
+parser.add_argument("--cuda", action="store_true", help="use cuda?")
 parser.add_argument(
     "--threads",
     type=int,
     default=4,
-    help="number of threads for data loader to use; default: 4"
+    help="number of threads for data loader to use; default: 4",
 )
 parser.add_argument(
-    "--seed",
-    type=int,
-    default=123,
-    help="random seed to use; default:123"
+    "--seed", type=int, default=123, help="random seed to use; default:123"
 )
 opt = parser.parse_args()
 
