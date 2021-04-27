@@ -208,7 +208,7 @@ exception_fix.append((exception_pattern_syft, fix_exception_pattern_syft))
 
 # ------------------------------
 # some helper function
-def match_pattern(exception: str, pattern: Pattern) -> int:
+def match_pattern(exception: str, pattern: Pattern) -> bool:
     """Matches the type of the exception.
 
     Args:
@@ -216,7 +216,7 @@ def match_pattern(exception: str, pattern: Pattern) -> int:
         pattern: pattern of exception.
 
     Returns:
-        int: number of matches, > 0 means success.
+        bool: weather to match.
     """
     return len(pattern.findall(exception)) > 0
 
