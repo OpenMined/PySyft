@@ -9,12 +9,24 @@
 """
 
 # stdlib
+from subprocess import check_call
 import sys
 
 # third party
 from pkg_resources import VersionConflict
 from pkg_resources import require
 from setuptools import setup
+from setuptools.command.develop import develop
+
+
+class PostDevelopCommand(develop):
+    """Post-installation for development mode."""
+
+    def run(self) -> None:
+        develop.run(self)
+        check_call("pip install pre-commit".split())
+        check_call("pre-commit install".split())
+
 
 try:
     require("setuptools>=38.3")
@@ -26,4 +38,7 @@ if __name__ == "__main__":
     setup(
         use_pyscaffold=True,
         url="https://github.com/OpenMined/PySyft",
+        cmdclass={
+            "develop": PostDevelopCommand,
+        },
     )
