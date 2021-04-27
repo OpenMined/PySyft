@@ -119,7 +119,7 @@ def create_worker_msg(
 
         if instance_type is None:
             raise MissingRequestKeyError
-        
+
         config = Config(
             app=Config(name="worker", count=1, id=len(node.environments.all()) + 1),
             apps=[Config(name="worker", count=1, port=_worker_port)],
@@ -146,7 +146,7 @@ def create_worker_msg(
                 machine_type=instance_type,
             ),
         )
-        
+
         deployment = None
         deployed = False
 
@@ -156,8 +156,6 @@ def create_worker_msg(
             deployment = AZURE(config=config)
         elif config.provider == "gcp":
             deployment = GCP(config=config)
-        
-
 
         if deployment.validate():
             deployed, output = deployment.deploy()  # Deploy
@@ -171,7 +169,7 @@ def create_worker_msg(
                     + ":"
                     + str(_worker_port),
                 }
-                
+
                 if config.provider == "aws":
                     env_parameters["region"] = config.vpc.region
                     env_parameters[
