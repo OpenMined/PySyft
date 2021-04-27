@@ -52,10 +52,6 @@ def create_ast(client: TypeAny = None) -> Globals:
         # Array methods
         ("numpy.ndarray.item", "numpy.ndarray"),
         ("numpy.ndarray.tolist", "numpy.ndarray"),
-        ("numpy.ndarray.itemset", "numpy.ndarray"),
-        ("numpy.ndarray.tostring", "numpy.ndarray"),
-        ("numpy.ndarray.tobytes", "numpy.ndarray"),
-        ("numpy.ndarray.tofile", "numpy.ndarray"),
         ("numpy.ndarray.dump", "numpy.ndarray"),
         ("numpy.ndarray.dumps", "numpy.ndarray"),
         ("numpy.ndarray.astype", "numpy.ndarray"),
