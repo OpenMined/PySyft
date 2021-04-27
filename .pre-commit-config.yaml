@@ -15,7 +15,7 @@ repos:
         exclude: ^(tests/syft/lib/allowlist_report.py)
       - id: requirements-txt-fixer
   - repo: https://gitlab.com/pycqa/flake8
-    rev: 3.8.4
+    rev: 3.9.1
     hooks:
       - id: flake8
         # additional_dependencies:
@@ -23,7 +23,7 @@ repos:
         # - darglint
         exclude: ^(src/syft/proto|examples/duet)
   - repo: https://github.com/psf/black
-    rev: 20.8b1
+    rev: 21.4b0
     hooks:
       - id: black
         exclude: ^(src/syft/proto|examples/duet)
@@ -57,7 +57,21 @@ repos:
         additional_dependencies:
           - flynt
   - repo: https://github.com/pycqa/isort
-    rev: 5.7.0
+    rev: 5.8.0
     hooks:
       - id: isort
         name: isort (python)
+
+  # - repo: https://github.com/pycqa/pydocstyle
+  #   rev: 5.1.1
+  #   hooks:
+  #     - id: pydocstyle
+  #       args:
+  #         - --convention=google
+  #       exclude: tests
+
+  # - repo: https://github.com/terrencepreilly/darglint
+  #   rev: master
+  #   hooks:
+  #     - id: darglint
+  #       exclude: tests
