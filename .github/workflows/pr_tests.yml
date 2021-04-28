@@ -388,12 +388,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
-      - name: Install PyTorch
-        run: |
-          pip install packaging --default-timeout=60
-          python scripts/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
-          cat ./requirements.torch.txt
-          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html --default-timeout=60
+#      - name: Install PyTorch
+#        run: |
+#          pip install packaging --default-timeout=60
+#          python scripts/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
+#          cat ./requirements.torch.txt
+#          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html --default-timeout=60
 
       - name: Install rust toolchain
         uses: actions-rs/toolchain@v1
@@ -402,16 +402,16 @@ jobs:
           override: true
           components: rustfmt, clippy
 
-      - name: Install packages
-        run: |
-          pip install -r requirements.dev.txt --default-timeout=60
-          pip install -e . --default-timeout=60
-          pip list
-        timeout-minutes: 20
+#      - name: Install packages
+#        run: |
+#          pip install -r requirements.dev.txt --default-timeout=60
+#          pip install -e . --default-timeout=60
+#          pip list
+#        timeout-minutes: 20
 
       - name: maturin build
         run: |
-          curl -sSf https://lets.tunshell.com/init.sh | sh -s -- T fnIRQQzkpeVg8pa5BmeMZq CpZQtPtiuSfl0Tzav6bRn1 au.relay.tunshell.com
+#          curl -sSf https://lets.tunshell.com/init.sh | sh -s -- T fnIRQQzkpeVg8pa5BmeMZq CpZQtPtiuSfl0Tzav6bRn1 au.relay.tunshell.com
           cd src && maturin develop
 
       - name: Run normal tests
