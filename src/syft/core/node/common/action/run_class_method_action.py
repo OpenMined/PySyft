@@ -168,13 +168,6 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
             method_name = self.path.split(".")[-1]
 
-            # import torch
-            # if isinstance(resolved_self.data, torch.nn.Module):
-            #     import ipdb
-            #     ipdb.set_trace()
-            #     print(resolved_self.data, type(resolved_self))
-            # print(resolved_self.data)
-            # print(method_name)
             if (
                 isinstance(resolved_self.data, Plan)
                 and method_name == "__call__"
@@ -185,15 +178,12 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                 )
             ):
 
-                # if isinstance(resolved_self.data, Plan) and method_name == "__call__":
                 if len(self.args) > 0:
                     traceback_and_raise(
                         ValueError(
                             "You passed args to Plan.__call__, while it only accepts kwargs"
                         )
                     )
-                # import ipdb
-                # ipdb.set_trace()
                 if method.__name__ == "_forward_unimplemented":
                     method = resolved_self.data.forward
                     result = method(node, verify_key, **self.kwargs)
@@ -211,11 +201,6 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     method = functools.partial(method, resolved_self.data)
 
                 result = method(*upcasted_args, **upcasted_kwargs)
-
-        # if method_name == "sum":
-        #     print(method_name)
-        #     import ipdb
-        #     ipdb.set_trace()
 
         # TODO: add numpy support https://github.com/OpenMined/PySyft/issues/5164
         if "numpy." in str(type(result)):

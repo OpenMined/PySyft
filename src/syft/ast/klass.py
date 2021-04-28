@@ -120,9 +120,6 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
                 args=downcast_args, kwargs=downcast_kwargs, client=__self.client
             )
 
-            # if attr_path_and_name == "torch.nn.Module.__call__":
-            #     return __self.forward(*args, **kwargs)
-
             cmd = RunClassMethodAction(
                 path=attr_path_and_name,
                 _self=__self,
@@ -420,38 +417,6 @@ class Class(Callable):
             )
 
             ptr._pointable = pointable
-
-            # import torch
-            # if isinstance(self, torch.nn.Module):
-            #     sendable_attributes = [x for x in dir(self) if hasattr(getattr(self, x), "send") and x != "__class__"]
-            #     for s in sendable_attributes:
-            #         attr_path_and_name = f"torch.nn.Module.{s}"
-            #         # prop = property(generate_class_property_function(attr_path_and_name, PropertyActions.GET))
-            #         prop = property(
-            #             generate_class_property_function(
-            #                 attr_path_and_name, PropertyActions.GET
-            #             )
-            #         )
-            #         prop = prop.setter(
-            #             generate_class_property_function(
-            #                 attr_path_and_name, PropertyActions.SET
-            #             )
-            #         )
-            #         prop = prop.deleter(
-            #             generate_class_property_function(
-            #                 attr_path_and_name, PropertyActions.DEL
-            #             )
-            #         )
-            #         # typptr.__dict__[s] = prop
-            #         setattr(type(ptr), s, prop)
-            #         import __main__ as __main__
-            #         ptr.client.lib_ast.add_path(path=f"__main__.MLP.{s}",
-            #                                 framework_reference=__main__,
-            #                                 return_type_name="torch.nn.Module")
-            #         # pass
-            #     print(sendable_attributes)
-            # import ipdb
-            # ipdb.set_trace()
 
             if pointable:
                 ptr.gc_enabled = False
