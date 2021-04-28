@@ -9,7 +9,7 @@ import time
 import pytest
 
 # syft relative
-from ..grid.duet.process_test import SyftTestProcess
+from ...syft.grid.duet.process_test import SyftTestProcess
 
 set_start_method("spawn", force=True)
 
