@@ -24,8 +24,11 @@ class PostDevelopCommand(develop):
 
     def run(self) -> None:
         develop.run(self)
-        check_call("pip install pre-commit".split())
-        check_call("pre-commit install".split())
+        try:
+            check_call("pip install pre-commit".split())
+            check_call("pre-commit install".split())
+        except Exception as e:
+            print(f"Failed to install pre-commit. {e}")
 
 
 try:
