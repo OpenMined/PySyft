@@ -8,6 +8,7 @@ from sympc.session import Session
 from sympc.store import CryptoStore
 
 # syft relative
+from ....syft import logger
 from ...proto.lib.sympc.session_pb2 import MPCSession as MPCSession_PB
 from ..python import Dict
 from ..python.primitive_factory import PrimitiveFactory
@@ -58,6 +59,8 @@ def protobuf_session_deserializer(proto: MPCSession_PB) -> Session:
     session.crypto_store = CryptoStore()
     session.nr_parties = nr_parties
 
-    globals()["session"] = session
+    if "session" in globals():
+        logger.info("Overwritting session for MPC")
+        globals()["session"] = session
 
     return session
