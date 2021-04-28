@@ -243,6 +243,10 @@ jobs:
           cat requirements.libs.txt | xargs -I {} -n 1 pip install {} --no-deps --default-timeout=60 || true
           pip install -r requirements.libs.deps.txt --default-timeout=60
 
+      - name: Test syft-network
+        run: |
+          python ./scripts/start_signaling_server.py --dry_run=True
+
       - name: Run notebook Duet examples
         run: |
           python ./scripts/mnist.py
