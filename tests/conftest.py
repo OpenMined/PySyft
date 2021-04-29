@@ -74,6 +74,7 @@ def pytest_configure(config: _pytest.config.Config) -> None:
     config.addinivalue_line("markers", "torch: runs torch tests")
     config.addinivalue_line("markers", "duet: runs duet notebook integration tests")
     config.addinivalue_line("markers", "grid: runs grid tests")
+    config.addinivalue_line("markers", "rust: runs python tests against rust API")
 
 
 def pytest_collection_modifyitems(
@@ -88,7 +89,7 @@ def pytest_collection_modifyitems(
     fast_tests = pytest.mark.fast
     duet_tests = pytest.mark.duet
     grid_tests = pytest.mark.grid
-    libsyft_tests = pytest.mark.libsyft
+    rust_tests = pytest.mark.rust
     all_tests = pytest.mark.all
 
     # dynamically filtered vendor lib tests
@@ -107,8 +108,8 @@ def pytest_collection_modifyitems(
             item.add_marker(grid_tests)
             continue
 
-        if "libsyft" in item.keywords:
-            item.add_marker(libsyft_tests)
+        if "rust" in item.keywords:
+            item.add_marker(rust_tests)
             continue
 
         # mark with: pytest.mark.vendor

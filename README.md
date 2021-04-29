@@ -120,6 +120,10 @@ Duet is a peer-to-peer tool within PySyft that provides a research-friendly API 
 
 You can find all [Duet examples](https://github.com/OpenMined/PySyft/tree/master/examples/duet) in the `examples/duet` folder.
 
+## Experimental Rust 🦀
+
+We are currently experimenting with Rust as a compiled submodule of Syft where we can write some additional functionality rust and access it via the CPython API. For more information see the [Rust Docs](./src/src/README.md)
+
 ## Contributing
 
 The guide for contributors can be found [here](https://github.com/OpenMined/PySyft/blob/master/CONTRIBUTING.md).
@@ -134,7 +138,7 @@ This software is in beta. Use at your own risk.
 
 ## A quick note about 0.2.x
 
-The PySyft 0.2.x codebase is now in its own branch [here](https://github.com/OpenMined/PySyft/tree/syft_0.2.x), but OpenMined will not offer official support for this version range. We have compiled a list of [FAQs](docs/FAQ_0.2.x.md) relating to this version._
+The PySyft 0.2.x codebase is now in its own branch [here](https://github.com/OpenMined/PySyft/tree/syft_0.2.x), but OpenMined will not offer official support for this version range. We have compiled a list of [FAQs](docs/FAQ_0.2.x.md) relating to this version.\_
 
 ## Support
 
@@ -149,7 +153,7 @@ We are very grateful for contributions to PySyft from the following organization
 - [<img src="https://i.ibb.co/vYwcG9N/arkhn-logo.png" alt="Arkhn" width="160" />](http://ark.hn)
 - [<img src="https://raw.githubusercontent.com/dropoutlabs/files/master/dropout-labs-logo-white-2500.png" alt="Dropout Labs" width="160"/>](https://dropoutlabs.com/)
 - [<img src="https://raw.githubusercontent.com/OpenMined/PySyft/master/docs/img/organizations/genbu.png" alt="GENBU AI" width="160"/>](https://genbu.ai/)
-- [<img src="https://raw.githubusercontent.com/OpenMined/PySyft/master/docs/img/organizations/bitdefender.png" alt="Bitdefender" width="160"/>](https://www.bitdefender.com/)                      |
+- [<img src="https://raw.githubusercontent.com/OpenMined/PySyft/master/docs/img/organizations/bitdefender.png" alt="Bitdefender" width="160"/>](https://www.bitdefender.com/) |
 
 ## License
 

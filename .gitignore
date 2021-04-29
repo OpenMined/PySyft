@@ -35,3 +35,4 @@ tests/syft/notebooks/dataset
 /data
 **/lightning_logs
 /src/target/**
+/src/syft/*.so

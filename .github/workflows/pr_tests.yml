@@ -21,7 +21,7 @@ on:
       - "**.proto"
 
 jobs:
-  python-libsyft:
+  python-rust-core:
     # needs: [python-linting]
     strategy:
       max-parallel: 3
@@ -43,10 +43,12 @@ jobs:
       - name: Upgrade pip
         run: |
           pip install --upgrade --user pip
+
       - name: Get pip cache dir
         id: pip-cache
         run: |
           echo "::set-output name=dir::$(pip cache dir)"
+
       - name: pip cache
         uses: actions/cache@v2
         with:
@@ -54,12 +56,14 @@ jobs:
           key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
       - name: Install PyTorch
         run: |
           pip install packaging --default-timeout=60
           python scripts/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
           cat ./requirements.torch.txt
           pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html --default-timeout=60
+
       - name: Install rust toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -76,12 +80,11 @@ jobs:
 
       - name: maturin build
         run: |
-          maturin build -i python
-          cd src && maturin develop
+          cd src && maturin build -i python
           pip install `find -L ./target/wheels -name "*.whl"`
       - name: Run normal tests
         run: |
-          pytest -k 'libsyft' -n auto
+          pytest -m rust -n auto
 
   # python-linting:
   #   runs-on: ubuntu-latest

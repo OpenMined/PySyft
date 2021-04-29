@@ -9,7 +9,7 @@ fn hello_rust() -> PyResult<String> {
 
 /// A Python module implemented in Rust.
 #[pymodule]
-fn libsyft(_py: Python, m: &PyModule) -> PyResult<()> {
+fn syft(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_wrapped(wrap_pyfunction!(hello_rust))?;
 
     Ok(())

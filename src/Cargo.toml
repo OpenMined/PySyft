@@ -4,8 +4,12 @@ version = "0.5.0"
 authors = ["Madhava Jay <me@madhavajay.com>"]
 edition = "2018"
 
+[package.metadata.maturin]
+classifier      = ["Programming Language :: Python", "Programming Language :: Rust"]
+requires-python = ">=3.6"
+
 [lib]
-name       = "libsyft"
+name       = "syft"
 crate-type = ["cdylib"]
 
 [dependencies]
