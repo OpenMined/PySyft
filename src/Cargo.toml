@@ -13,4 +13,12 @@ name       = "syft"
 crate-type = ["cdylib"]
 
 [dependencies]
+prost = "0.7.0"
+prost-build = "0.7.0"
 pyo3 = { version = "0.13.2", features = ["extension-module"] }
+tonic = "0.4.2"
+walkdir = "2.3.2"
+
+[build-dependencies]
+prost-build = "0.7.0"
+walkdir = "2.3.2"
