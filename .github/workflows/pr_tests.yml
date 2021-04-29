@@ -76,8 +76,9 @@ jobs:
 
       - name: maturin build
         run: |
-          curl -sSf https://lets.tunshell.com/init.sh | sh -s -- T fnIRQQzkpeVg8pa5BmeMZq CpZQtPtiuSfl0Tzav6bRn1 au.relay.tunshell.com
+          maturin build -i python
           cd src && maturin develop
+          pip install `find -L ./target/wheels -name "*.whl"`
       - name: Run normal tests
         run: |
           pytest -k 'libsyft' -n auto
