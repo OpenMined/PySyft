@@ -622,6 +622,7 @@ class SyModule(torch.nn.Module, metaclass=ForwardToPlanConverter):
             raise ValueError(
                 "SyModule needs `input_size`: Tuple(Int) as kwarg to trace the forward plan."
                 "Also, make sure to call **super().__init__(**kwargs)** in ALL your SyModules"
+                ""
             )
         return self.input_size
 
