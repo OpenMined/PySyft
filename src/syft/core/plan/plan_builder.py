@@ -3,14 +3,12 @@ import inspect
 from typing import Any
 from typing import Callable
 from typing import Dict
-from typing import Tuple
+from typing import Optional
 
 # syft relative
 from ...core.node.common.client import Client
 from ...core.node.vm.plan_vm import PlanVirtualMachine
 from ...core.pointer.pointer import Pointer
-from ...logger import info
-from ...logger import traceback_and_raise
 from .plan import Plan
 
 PLAN_BUILDER_VM: PlanVirtualMachine = PlanVirtualMachine(name="plan_vm")
@@ -40,7 +38,7 @@ def map_in2out(inputs: dict, outputs: tuple) -> dict:
     return in2out_map
 
 
-def make_plan(func: Callable, inputs=None) -> Plan:
+def make_plan(func: Callable, inputs: Optional[Dict[str, Any]] = None) -> Plan:
     if inputs is None:
         inputs = build_plan_inputs(func)
     vm = PLAN_BUILDER_VM

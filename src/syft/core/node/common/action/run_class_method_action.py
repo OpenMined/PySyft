@@ -26,12 +26,9 @@ from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
-from ....pointer.pointer import Pointer
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
-
-
 
 
 @bind_protobuf
@@ -114,7 +111,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             resolved_self = node.store.get_object(key=self._self.id_at_location)
 
             if resolved_self is None:
-                critical(  # type: ignore
+                critical(
                     f"execute_action on {self.path} failed due to missing object"
                     + f" at: {self._self.id_at_location}"
                 )

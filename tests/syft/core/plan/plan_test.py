@@ -327,4 +327,3 @@ def test_mlp_plan(client: sy.VirtualMachineClient) -> None:
     (new_params,) = res_ptr.get()
 
     assert not (old_params[0] == new_params[0]).all()
-
