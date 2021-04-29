@@ -1,13 +1,8 @@
-# -*- coding: utf-8 -*-
-"""
-    Dummy conftest.py for syft.
-    If you don't know what this is for, just leave it empty.
-    Read more about conftest.py under:
-    https://pytest.org/latest/plugins.html
-"""
-
 # stdlib
 import logging
+from multiprocessing import Process
+import socket
+from time import time
 from typing import Any as TypeAny
 from typing import Dict as TypeDict
 from typing import Generator
@@ -20,11 +15,35 @@ import pytest
 # syft absolute
 import syft as sy
 from syft import logger
+from syft.grid.example_nodes.network import signaling_server as start_signaling_server
 from syft.lib import VendorLibraryImportException
 from syft.lib import _load_lib
 from syft.lib import vendor_requirements_available
 
+# syft relative
+from .syft.notebooks import free_port
+
 logger.remove()
+
+
+@pytest.fixture(scope="session")
+def signaling_server() -> Generator:
+    port = free_port()
+    proc = Process(target=start_signaling_server, args=(port, "127.0.0.1"))
+
+    proc.start()
+    start = time()
+
+    while time() - start < 15:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            if s.connect_ex(("127.0.0.1", port)) == 0:
+                break
+    else:
+        raise TimeoutError("Can't connect to the signaling server")
+
+    yield port
+
+    proc.terminate()
 
 
 @pytest.fixture
@@ -64,6 +83,7 @@ def pytest_collection_modifyitems(
     # $ pytest -m slow for the slow tests
     # $ pytest -m all for all the tests
     # $ pytest -m libs for the vendor tests
+
     slow_tests = pytest.mark.slow
     fast_tests = pytest.mark.fast
     duet_tests = pytest.mark.duet
