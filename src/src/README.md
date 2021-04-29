@@ -2,7 +2,7 @@
 
 ![Rusty](https://images.unsplash.com/photo-1612590675174-3c497ca9c79a?auto=format&fit=crop&w=1280&q=80)
 
-###### <div style="float:right;margin:0 10px 10px 0" markdown="1">Photo by <a href="https://unsplash.com/@jacobsoup?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText">Jacob Campbell</a> on <a href="https://unsplash.com/?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText">Unsplash</a></div>
+###### Photo by [Jacob Campbell](https://unsplash.com/@jacobsoup?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText) on [Unsplash](https://unsplash.com/?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText)
 
 ## _“An elegant weapon for a more civilized age.” — Obi-Wan Kenobi_
 
