@@ -62,7 +62,6 @@ class Plan(Serializable):
         self.code = code
         self.max_calls = max_calls
         self.n_calls = 0
-        self.local_executor = None
 
     def __call__(
         self,

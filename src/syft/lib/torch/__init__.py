@@ -54,11 +54,6 @@ def create_torch_ast(client: Any = None) -> Globals:
             if return_type == "unknown":
                 # this allows us to import them for testing
                 continue
-            # if method == "torch.Tensor.data":
-            #     ast.add_path(path="torch.Tensor.datar", framework_reference=torch, return_type_name="torch.nn.Module")
-            #     ast.add_path(path="torch.nn.Module.a", framework_reference=torch, return_type_name="torch.nn.Module")
-            # import ipdb
-            # ipdb.set_trace()
             ast.add_path(
                 path=method, framework_reference=torch, return_type_name=return_type
             )

@@ -484,9 +484,11 @@ def proto2object(proto: Module_PB) -> torch.nn.Module:
     for child_proto in proto.children:
         setattr(obj, str(child_proto.module_name), sy.deserialize(child_proto))
 
+    # here we (possibly recompile the plan), if the object state has changed since the
+    # forward plan was created, we update the forward plan here
     if hasattr(obj, "forward") and proto.HasField("attr2uid"):
         attr2uid = sy.deserialize(proto.attr2uid)
-        # we need to set this to make sure that deserialize(serialize(obj)) == obj
+        # we need to set obj._attr2uid to make sure that deserialize(serialize(obj)) == obj
         obj._attr2uid = attr2uid
         for attr_name, uid in attr2uid.items():
             for action in obj.forward.actions:
@@ -507,54 +509,53 @@ GenerateWrapper(
 
 
 class ForwardToPlanConverter(type):
+    """This metaclass ensures that:
+    1) the object is initialized when calling Object()
+    2) obj._make_forward_plan() is called after initialization
+    """
     def __call__(cls, *args, **kwargs):
+        # TODO: check if contains input_size
         obj = type.__call__(cls, *args, **kwargs)
-        obj.make_forward_plan()
+        obj._make_forward_plan()
         return obj
 
 class SyModule(torch.nn.Module, metaclass=ForwardToPlanConverter):
+    """A `SyModule` is the pointable equivalent of a torch.nn.Module. In order to make
+    SyModule remotely executable, its `.forward` method is converted into a `Plan` object
+    when initializing a `SyModule` object. This object has two "modes", in which it behaves
+    differently. During the "forward plan building stage" it transforms parameters and submodules
+    into pointer when the user retrieves them. After plan building the model behaves more
+    like a regular torch.nn.Module, but instead of running a forward method, the user executes 
+    a `Plan`. As the user does not need to understand the building stage, and the .forward API
+    is farily similar to a regular torch.nn.Module, there is no need to understand all internals 
+    to use this module.
+
+    """
     def __init__(self, *args, input_size=None, **kwargs):
+        """Initializes an empty SyModule
+
+        Args:
+            input_size (Tuple[Int], optional): input_size of the Module, needs to be defined or inferrable.
+            Defaults to None.
+        """
         super().__init__(*args, **kwargs)
         self.building_forward = False
         self._parameter_pointers = dict()
         self.input_size = input_size
 
-    def make_forward_plan(self):
-        if not hasattr(self, "forward"):
+    def _make_forward_plan(self):
+        """Convert forward function into a `Plan` object
+
+        Raises:
+            ValueError: `.forward` method must be defined
+        """
+        if getattr(self.forward, __name__, None) == "_forward_unimplemented":
             raise ValueError("Missing .forward() method for Module")
 
-        forward_signature = inspect.signature(self.forward)
-        if not isinstance(self, SySequential):
-            if not hasattr(self, "input_size") or not isinstance(self.input_size, (tuple, list)):
-                raise ValueError("SyModule needs `input_size`: Tuple(Int) as kwarg to trace the forward plan")
-            input_size = self.input_size
-        else:
-            if hasattr(getattr(self, "0"), "input_size"):
-                input_size = getattr(self, "0").input_size
-            elif hasattr(self, "input_size"):
-                input_size = self.input_size
-            else:
-                raise ValueError("SySequential needs either 1) `input_size`: Tuple(Int) as a kwargs for on of its children \
-                                  OR 2) `input_size`: Tuple(Int) as kwarg for itself \
-                                  to trace the forward plan")
-
-        
-        if isinstance(self, SySequential):
-            inp_key = "x"
-        else:
-            args = list(forward_signature.parameters.items())
-            if len(args) == 0 or len(args) > 1:
-                raise ValueError("SyModules accept only *precisely 1* argument and no kwargs")
-            k,v = args[0]
-            if v.default is not inspect.Parameter.empty:
-                raise ValueError("SyModules accept only args, not kwargs")
-            inp_key = k
-            
-        inputs = {inp_key: torch.randn(input_size).send(ROOT_CLIENT)}
+        inputs = self._get_forward_inputs()
         
         self.building_forward = True
         plan = make_plan(self.forward, inputs=inputs)
-        # plan = make_plan(self.forward)
         # a sync between the module parameters in the object, and the module parameters
         # in the modules plan is only guaranteed when the module is *deserialized* before
         # using the parameters, which is currently true, because plans are only executed
@@ -565,6 +566,19 @@ class SyModule(torch.nn.Module, metaclass=ForwardToPlanConverter):
         self.building_forward = False
         
     def __getattr__(self, name):
+        """A custom getattr method. When retrieving a torch.nn.Module or a torch.nn.Parameter
+        *during forward plan building*, SyModule instead returns a Pointer to this attrbiute.
+        The first time an attribute is retrieved, we send it to the plan builder VM, and store
+        it in self._parameters_pointers, which will be used for plan Recompilation during
+        *deserialization*. If an attribute is requested again, we return the pointer from
+        `_parameters_pointers`
+
+        Args:
+            name (str): name of the attr
+
+        Returns:
+            Any: Attribute value or Pointer to it
+        """
         # this is __getattr__ instead of __getattribute__ because of the structure of torch.nn.Module
         if name in self._parameter_pointers and self.building_forward:
             return self._parameter_pointers[name]
@@ -576,10 +590,58 @@ class SyModule(torch.nn.Module, metaclass=ForwardToPlanConverter):
             return res_ptr
         else:
             return res
+    
+    def _get_inp_key(self):
+        """Get key for the `.forward` argument
+
+        Returns:
+            str: input key
+        """
+
+        forward_signature = inspect.signature(self.forward)
+        args = list(forward_signature.parameters.items())
+        if len(args) == 0 or len(args) > 1:
+            raise ValueError("SyModules accept only *precisely 1* argument and no kwargs")
+        k,v = args[0]
+        if v.default is not inspect.Parameter.empty:
+            raise ValueError("SyModules accept only args, not kwargs")
+        inp_key = k
+        return inp_key
+
+    def _get_inp_size(self):
+        """Get input size for this module
+
+        Returns:
+            Tuple[Int]: input size for `.forward`
+        """
+        if not hasattr(self, "input_size") or not isinstance(self.input_size, (tuple, list)):
+            raise ValueError("SyModule needs `input_size`: Tuple(Int) as kwarg to trace the forward plan")
+        return self.input_size
+
+    def _get_forward_inputs(self):
+        """Get the dummy inputs for generating the .forward `Plan`
+
+        Returns:
+            Dict[str: Any]: inputs for .forward
+        """
+        input_size = self._get_inp_size()
+        inp_key = self._get_inp_key()
+        if isinstance(self, SySequential):
+            inp_key = "x"
+            
+        inputs = {inp_key: torch.randn(input_size).send(ROOT_CLIENT)}
+        return inputs
 
 
 class SySequential(SyModule):
+    """The Syft equivalent of torch.nn.Sequential
+    """
     def __init__(self, *args, input_size=None):
+        """initializes SySequential and stores the submodules
+
+        input_size (Tuple[Int], optional): input_size of the Module, needs to be defined or inferrable.
+            Defaults to None.
+        """
         super().__init__(input_size=input_size)
         for idx, module in enumerate(args):
             setattr(self, str(idx), module)
@@ -592,6 +654,14 @@ class SySequential(SyModule):
             return iter(self._modules.values())
     
     def forward(self, x=None):
+        """Sequentially call submodule.forward
+
+        Args:
+            x (Any, optional): input. Defaults to None.
+
+        Returns:
+            Any: Module output
+        """
         out = x
         for i, module in enumerate(self):
             # handle indexing in the block, or in the sequential?
@@ -602,3 +672,26 @@ class SySequential(SyModule):
                 # AST module
                 out = module(out)
         return out
+
+    def _get_inp_key(self):
+        """Get key for the `.forward` argument, allways x for this module
+
+        Returns:
+            str: "x"
+        """
+        return "x"
+
+    def _get_inp_size(self):
+        """Get input size for this module
+
+        Returns:
+            Tuple[Int]: input size for `.forward`
+        """
+        if hasattr(getattr(self, "0"), "input_size"):
+            return getattr(self, "0").input_size
+        elif hasattr(self, "input_size"):
+            return self.input_size
+        else:
+            raise ValueError("SySequential needs either 1) `input_size`: Tuple(Int) as a kwargs for on of its children \
+                                OR 2) `input_size`: Tuple(Int) as kwarg for itself \
+                                to trace the forward plan")
