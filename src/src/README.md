@@ -1,6 +1,6 @@
 # Syft Rust Core
 
-![Rusty](https://images.unsplash.com/photo-1612590675174-3c497ca9c79a)
+![Rusty](https://images.unsplash.com/photo-1612590675174-3c497ca9c79a?auto=format&fit=crop&w=1280&q=80)
 
 ## _“An elegant weapon for a more civilized age.” — Obi-Wan Kenobi_
 
