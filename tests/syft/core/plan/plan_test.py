@@ -5,7 +5,6 @@ import torch as th
 # syft absolute
 import syft as sy
 from syft import Plan
-from syft import PlanBuilder
 from syft import make_plan
 from syft import serialize
 from syft.core.common.uid import UID
@@ -329,18 +328,3 @@ def test_mlp_plan(client: sy.VirtualMachineClient) -> None:
 
     assert not (old_params[0] == new_params[0]).all()
 
-
-def test_planbuilder() -> None:
-    class TestModel(PlanBuilder):
-        def __init__(self) -> None:
-            self.model_pointer = th.tensor([1, 2, 3])
-            super().__init__()
-
-        def forward(self, x: th.Tensor = th.tensor([0, 0, 0])) -> th.Tensor:
-            res = x * self.model_pointer
-            return res
-
-    model = TestModel()
-
-    res = model(x=th.tensor([4, 5, 6]))
-    assert th.equal(*res.get(), th.tensor([4, 10, 18]))

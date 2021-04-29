@@ -63,7 +63,6 @@ from syft.core.node.network.network import NetworkClient  # noqa: F401
 from syft.core.node.vm.vm import VirtualMachine  # noqa: F401
 from syft.core.node.vm.vm import VirtualMachineClient  # noqa: F401
 from syft.core.plan.plan import Plan  # noqa: F401
-from syft.core.plan.plan_builder import PlanBuilder  # noqa: F401
 from syft.core.plan.plan_builder import make_plan  # noqa: F401
 
 # Convenience Functions
