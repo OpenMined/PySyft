@@ -12,8 +12,11 @@ from ...proto.lib.pandas.frame_pb2 import PandasDataFrame as PandasDataFrame_PB
 def object2proto(obj: pd.DataFrame) -> PandasDataFrame_PB:
     """Convert pd.DataFrame to PandasDataFrame_PB with pyarrow.
 
-    # noqa: DAR101
-    # noqa: DAR201
+    Args:
+        obj: target dataframe
+
+    Returns:
+        Serialized version of Dataframe, which will be used to reconstruct model.
 
     """
     table = pa.Table.from_pandas(obj)
@@ -21,11 +24,13 @@ def object2proto(obj: pd.DataFrame) -> PandasDataFrame_PB:
 
 
 def proto2object(proto: PandasDataFrame_PB) -> pd.DataFrame:
-    """Convert PandasDataFrame_PB to pd.DataFrame with pyarrow.
+    """Proto to object conversion using to return desired model.
 
-    # noqa: DAR101
-    # noqa: DAR201
+    Args:
+        proto: Serialized version of Dataframe, which will be used to reconstruct model.
 
+    Returns:
+        Re-constructed dataframe.
     """
     reconstructed_buf = pa.py_buffer(proto.dataframe)
     return pa.deserialize(reconstructed_buf).to_pandas()
