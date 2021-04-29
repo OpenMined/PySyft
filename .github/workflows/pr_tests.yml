@@ -83,7 +83,12 @@ jobs:
         run: |
           cd src && maturin build -i python
           pip install `find -L ./target/wheels -name "*.whl"`
+
       - name: Run normal tests
+        run: |
+          pytest -m fast -n auto
+
+      - name: Run rust tests
         run: |
           pytest -m rust -n auto
 
