@@ -10,6 +10,7 @@ on:
   pull_request:
     branches:
       - dev
+      - feature/rust
     paths:
       - "**.py"
       - "**.txt"
