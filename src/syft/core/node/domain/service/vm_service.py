@@ -25,7 +25,7 @@ class VMRequestService(ImmediateNodeServiceWithoutReply):
     def process(
         node: AbstractNode, msg: RequestMessage, verify_key: Optional[VerifyKey] = None
     ) -> None:
-        ""
+        """ """
 
 
 class VMRequestAnswerMessageService(ImmediateNodeServiceWithReply):
