@@ -1,5 +1,5 @@
-mod ffi;
 mod core;
+mod ffi;
 
-pub use ffi::*;
 pub use crate::core::*;
+pub use ffi::*;
