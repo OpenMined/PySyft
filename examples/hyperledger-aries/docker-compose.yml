@@ -141,7 +141,7 @@ services:
   ##### OM Authority #####
   om-authority-wallet-db:
     image: postgres:11
-    container_name: om-authority-wallet-db
+    container_name: om-duet-authority-wallet-db
     command: postgres -c listen_addresses='*'
     # env file defines
     env_file:
