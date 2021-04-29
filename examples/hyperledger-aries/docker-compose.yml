@@ -115,8 +115,8 @@ services:
     env_file:
       - playground/data-scientist/.env
     ports:
-      - 3020:3020
-      - 3021:3021
+      - 6020:3020
+      - 6021:3021
     depends_on:
       - data-scientist-wallet-db
     networks:
@@ -137,7 +137,7 @@ services:
       - ./src:/workspace/src
     ports:
       - "8888:8888"
-      - 3010:3010
+      - 6010:3010
   ##### OM Authority #####
   om-authority-wallet-db:
     image: postgres:11
