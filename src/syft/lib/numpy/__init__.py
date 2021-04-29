@@ -49,7 +49,7 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("numpy.ndarray.ctypes", "numpy.ndarray"),
         ("numpy.ndarray.__array_interface__", "numpy.ndarray"),
         ("numpy.ndarray.__array_struct__", "numpy.ndarray"),
-        # Array methods
+        # Array methods - Array Conversion
         ("numpy.ndarray.item", "numpy.ndarray"),
         ("numpy.ndarray.tolist", "numpy.ndarray"),
         ("numpy.ndarray.dump", "numpy.ndarray"),
@@ -61,6 +61,7 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("numpy.ndarray.getfield", "numpy.ndarray"),
         ("numpy.ndarray.setflags", "numpy.ndarray"),
         ("numpy.ndarray.fill", "numpy.ndarray"),
+        # Array methods - Shape Manipulation
         ("numpy.ndarray.reshape", "numpy.ndarray"),
         ("numpy.ndarray.resize", "numpy.ndarray"),
         ("numpy.ndarray.transpose", "numpy.ndarray"),
@@ -68,6 +69,7 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("numpy.ndarray.flatten", "numpy.ndarray"),
         ("numpy.ndarray.ravel", "numpy.ndarray"),
         ("numpy.ndarray.squeeze", "numpy.ndarray"),
+        # Array methods - Item Selection and Manipulation
         ("numpy.ndarray.take", "numpy.ndarray"),
         ("numpy.ndarray.put", "numpy.ndarray"),
         ("numpy.ndarray.repeat", "numpy.ndarray"),
@@ -80,6 +82,7 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("numpy.ndarray.nonzero", "numpy.ndarray"),
         ("numpy.ndarray.compress", "numpy.ndarray"),
         ("numpy.ndarray.diagonal", "numpy.ndarray"),
+        # Array methods - Calculation
         ("numpy.ndarray.max", "numpy.ndarray"),
         ("numpy.ndarray.argmax", "numpy.ndarray"),
         ("numpy.ndarray.min", "numpy.ndarray"),
@@ -99,6 +102,50 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("numpy.ndarray.all", "numpy.ndarray"),
         ("numpy.ndarray.any", "numpy.ndarray"),
         # Arithmetic, matrix multiplication, and comparison operations
+        # Comparison operators
+        ("numpy.ndarray.__lt__","numpy.ndarray"),
+        ("numpy.ndarray.__le__","numpy.ndarray"),
+        ("numpy.ndarray.__gt__","numpy.ndarray"),
+        ("numpy.ndarray.__ge__","numpy.ndarray"),
+        ("numpy.ndarray.__eq__","numpy.ndarray"),
+        ("numpy.ndarray.__ne__","numpy.ndarray"),
+        # Truth value of an array
+        ("numpy.ndarray.__bool__","numpy.ndarray"),
+        # Unary operations
+        ("numpy.ndarray.__neg__","numpy.ndarray"),
+        ("numpy.ndarray.__pos__","numpy.ndarray"),
+        ("numpy.ndarray.__abs__","numpy.ndarray"),
+        ("numpy.ndarray.__invert__","numpy.ndarray"),
+        # Arithmetic
+        ("numpy.ndarray.__add__","numpy.ndarray"),
+        ("numpy.ndarray.__sub__","numpy.ndarray"),
+        ("numpy.ndarray.__mul__","numpy.ndarray"),
+        ("numpy.ndarray.__truediv__","numpy.ndarray"),
+        ("numpy.ndarray.__floordiv__","numpy.ndarray"),
+        ("numpy.ndarray.__mod__","numpy.ndarray"),
+        ("numpy.ndarray.__divmod__","numpy.ndarray"),
+        ("numpy.ndarray.__pow__","numpy.ndarray"),
+        ("numpy.ndarray.__lshift__","numpy.ndarray"),
+        ("numpy.ndarray.__rshift__","numpy.ndarray"),
+        ("numpy.ndarray.__and__","numpy.ndarray"),
+        ("numpy.ndarray.__or__","numpy.ndarray"),
+        ("numpy.ndarray.__xor__","numpy.ndarray"),
+        # Arithmetic, in-place
+        ("numpy.ndarray.__iadd__","numpy.ndarray"),
+        ("numpy.ndarray.__isub__","numpy.ndarray"),
+        ("numpy.ndarray.__imul__","numpy.ndarray"),
+        ("numpy.ndarray.__itruediv__","numpy.ndarray"),
+        ("numpy.ndarray.__ifloordiv__","numpy.ndarray"),
+        ("numpy.ndarray.__imod__","numpy.ndarray"),
+        ("numpy.ndarray.__ipow__","numpy.ndarray"),
+        ("numpy.ndarray.__ilshift__","numpy.ndarray"),
+        ("numpy.ndarray.__irshift__","numpy.ndarray"),
+        ("numpy.ndarray.__iand__","numpy.ndarray"),
+        ("numpy.ndarray.__ior__","numpy.ndarray"),
+        ("numpy.ndarray.__ixor__","numpy.ndarray"),
+        # Matrix Multiplication
+        ("numpy.ndarray.__matmul__","numpy.ndarray"),
+        #Special Methods
     ]
 
     add_modules(ast, modules)
