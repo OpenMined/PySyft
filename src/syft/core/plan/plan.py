@@ -60,16 +60,6 @@ class Plan(Serializable):
         self.code = code
         self.max_calls = max_calls
         self.n_calls = 0
-        self.i2o_map = self.map_in2out()
-
-    def map_in2out(self) -> dict:
-        in2out_map = {}
-        for k, v in self.inputs.items():
-            input_id_at_location = v.id_at_location
-            for i, o in enumerate(self.outputs):
-                if o.id_at_location == input_id_at_location:
-                    in2out_map[k] = i
-        return in2out_map
 
     def __call__(
         self,
@@ -117,9 +107,6 @@ class Plan(Serializable):
 
         for a in self.actions:
             a.execute_action(node, verify_key)
-
-        for k, v in self.i2o_map.items():
-            self.outputs[v] = self.inputs[k]
 
         if len(self.outputs):
             resolved_outputs = []
