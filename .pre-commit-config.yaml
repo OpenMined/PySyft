@@ -61,6 +61,13 @@ repos:
     hooks:
       - id: isort
         name: isort (python)
+  - repo: https://github.com/doublify/pre-commit-rust
+    rev: v1.0
+    hooks:
+      - id: fmt
+        args: ["--manifest-path", "src/Cargo.toml", "--"]
+      - id: cargo-check
+        args: ["--manifest-path", "src/Cargo.toml", "--"]
 
   # - repo: https://github.com/pycqa/pydocstyle
   #   rev: 5.1.1

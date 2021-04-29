@@ -88,6 +88,7 @@ def pytest_collection_modifyitems(
     fast_tests = pytest.mark.fast
     duet_tests = pytest.mark.duet
     grid_tests = pytest.mark.grid
+    libsyft_tests = pytest.mark.libsyft
     all_tests = pytest.mark.all
 
     # dynamically filtered vendor lib tests
@@ -105,6 +106,11 @@ def pytest_collection_modifyitems(
         if "grid" in item.keywords:
             item.add_marker(grid_tests)
             continue
+
+        if "libsyft" in item.keywords:
+            item.add_marker(libsyft_tests)
+            continue
+
         # mark with: pytest.mark.vendor
         # run with: pytest -m libs -n auto 0
         if "vendor" in item.keywords:
