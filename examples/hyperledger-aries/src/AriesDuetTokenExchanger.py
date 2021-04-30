@@ -225,7 +225,7 @@ class AriesDuetTokenExchanger(DuetCredentialExchanger):
                 self.agent_controller.proofs.verify_presentation(pres_ex_id)
             )
             if self.is_verified is not None:
-                self.is_verified.set_result(verified_response["verified"] == True)
+                self.is_verified.set_result(verified_response["verified"] is True)
                 print("Attributes Presented")
                 for (name, val) in verified_response["presentation"]["requested_proof"][
                     "revealed_attrs"
