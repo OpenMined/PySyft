@@ -316,16 +316,19 @@ def test_sy_module(
     sy_model: SyModule,
     torch_model: torch.nn.Module,
 ) -> None:
-    assert isinstance(sy_model.forward, Plan)
-    assert len(sy_model.forward.actions) > 0
+    assert isinstance(sy_model._forward_plan, Plan)
+    assert len(sy_model._forward_plan.actions) > 0
     assert sy_model.state_dict().keys() == torch_model.state_dict().keys()
 
     sy_model.load_state_dict(torch_model.state_dict())
     sy_model_ptr = sy_model.send(ROOT_CLIENT)
 
     x = th.randn(32, 28 * 28)
-    sy_out = sy_model_ptr(x=x).get()[0]
+
+    sy_out = sy_model(x=x)[0]
+    sy_ptr_out = sy_model_ptr(x=x).get()[0]
     torch_out = torch_model(x)
+    assert th.equal(torch_out, sy_ptr_out)
     assert th.equal(torch_out, sy_out)
 
 
@@ -355,7 +358,7 @@ def test_sy_sequential(
 ) -> None:
     for module in sy_sequential:
         assert isinstance(module, SyModule)
-        assert isinstance(module.forward, Plan)
+        assert isinstance(module._forward_plan, Plan)
 
     (res,) = sy_sequential(x=th.randn(32, 100))
     assert res.shape == (32, 10)

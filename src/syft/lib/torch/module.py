@@ -20,6 +20,7 @@ import torch
 
 # syft absolute
 import syft as sy
+from syft import VirtualMachine
 from syft.core.node.common.action.save_object_action import SaveObjectAction
 from syft.core.plan.plan_builder import ROOT_CLIENT
 from syft.core.plan.plan_builder import make_plan
@@ -424,7 +425,7 @@ def object2proto(obj: torch.nn.Module, is_child: bool = False) -> Module_PB:
         proto.module_type = type(obj).__name__
     else:
         proto.module_type = f"_USER_DEFINED_MODULE_{type(obj).__name__}"
-        proto.forward.CopyFrom(sy.serialize(obj.forward))
+        proto.forward.CopyFrom(sy.serialize(obj._forward_plan))
 
     proto.module_repr = obj.extra_repr()
 
@@ -476,20 +477,22 @@ def proto2object(proto: Module_PB) -> torch.nn.Module:
             setattr(obj, str(name), param)
 
     if proto.HasField("forward"):
-        obj.forward = sy.deserialize(proto.forward)
-        obj.__call__ = obj.forward
+        forward_plan = sy.deserialize(proto.forward)
+        obj._forward_plan = forward_plan
+        obj.__call__ = forward_plan
+        obj.forward = forward_plan
 
     for child_proto in proto.children:
         setattr(obj, str(child_proto.module_name), sy.deserialize(child_proto))
 
     # here we (possibly recompile the plan), if the object state has changed since the
     # forward plan was created, we update the forward plan here
-    if hasattr(obj, "forward") and proto.HasField("attr2uid"):
+    if hasattr(obj, "_forward_plan") and proto.HasField("attr2uid"):
         attr2uid = sy.deserialize(proto.attr2uid)
         # we need to set obj._attr2uid to make sure that deserialize(serialize(obj)) == obj
         obj._attr2uid = attr2uid
         for attr_name, uid in attr2uid.items():
-            for action in obj.forward.actions:
+            for action in obj._forward_plan.actions:
                 if isinstance(action, SaveObjectAction):
                     if action.obj.id == uid:
                         action.obj.data = getattr(obj, str(attr_name))
@@ -562,9 +565,15 @@ class SyModule(torch.nn.Module, metaclass=ForwardToPlanConverter):
         # using the parameters, which is currently true, because plans are only executed
         # on a remote machine. "Local" execution of plans works by sending the plan to an
         # ephemeral machine, and therefore also works.
-        self.forward = plan
+        self.forward = self._local_forward
+        self._forward_plan = plan
         self.__call__ = plan
         self.building_forward = False
+
+    def _local_forward(self, *args, **kwargs):  # type: ignore
+        alice_client = VirtualMachine(name="alice").get_root_client()
+        remote_module = self.send(alice_client)
+        return remote_module(*args, **kwargs).get()
 
     def __getattr__(self, name: str) -> Any:
         """A custom getattr method. When retrieving a torch.nn.Module or a torch.nn.Parameter
@@ -689,7 +698,7 @@ class SySequential(SyModule):
             key = self._get_item_by_idx(self._modules.keys(), idx)
             delattr(self, key)
 
-    def forward(self, x: Any = None) -> Any:
+    def forward(self, x: Any = None) -> Any:  # type: ignore
         """Sequentially call submodule.forward
 
         Args:
