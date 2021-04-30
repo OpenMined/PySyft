@@ -13,10 +13,13 @@ name       = "syft"
 crate-type = ["cdylib"]
 
 [dependencies]
+bytes = "1.0.1"
 prost = "0.7.0"
 prost-build = "0.7.0"
+prost-types = "0.7.0"
 pyo3 = { version = "0.13.2", features = ["extension-module"] }
 tonic = "0.4.2"
+uuid = { version = "0.8.2", features = ["serde", "v4"]}
 walkdir = "2.3.2"
 
 [build-dependencies]
