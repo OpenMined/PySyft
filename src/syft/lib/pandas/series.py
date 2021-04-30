@@ -32,10 +32,7 @@ def object2proto(obj: pd.Series) -> PandasSeries_PB:
     siz = len(buf)
     df_bytes = pa.compress(buf, asbytes=True)
 
-    return PandasSeries_PB(
-        serise=df_bytes,
-        decompressed_size=siz
-    )
+    return PandasSeries_PB(serise=df_bytes, decompressed_size=siz)
 
 
 def proto2object(proto: PandasSeries_PB) -> pd.Series:
@@ -48,8 +45,7 @@ def proto2object(proto: PandasSeries_PB) -> pd.Series:
         Re-constructed Series.
 
     """
-    buf = pa.decompress(proto.serise,
-                        decompressed_size=proto.decompressed_size)
+    buf = pa.decompress(proto.serise, decompressed_size=proto.decompressed_size)
     return pa.ipc.open_file(buf).read_pandas()
 
 
