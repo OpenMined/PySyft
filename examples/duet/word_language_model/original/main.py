@@ -20,63 +20,39 @@ parser.add_argument(
     "--data",
     type=str,
     default="./data/wikitext-2",
-    help="location of the data corpus; default: \"./data/wikitext-2\""
+    help='location of the data corpus; default: "./data/wikitext-2"',
 )
 parser.add_argument(
     "--model",
     type=str,
     default="LSTM",
-    help="type of recurrent net (RNN_TANH, RNN_RELU, LSTM, GRU, Transformer); default: \"LSTM\"",
+    help='type of recurrent net (RNN_TANH, RNN_RELU, LSTM, GRU, Transformer); default: "LSTM"',
 )
 parser.add_argument(
-    "--emsize",
-    type=int,
-    default=200,
-    help="size of word embeddings; default: 200"
+    "--emsize", type=int, default=200, help="size of word embeddings; default: 200"
 )
 parser.add_argument(
     "--nhid",
     type=int,
     default=200,
-    help="number of hidden units per layer; default: 200"
+    help="number of hidden units per layer; default: 200",
 )
 parser.add_argument(
-    "--nlayers",
-    type=int,
-    default=2,
-    help="number of layers; default: 2"
+    "--nlayers", type=int, default=2, help="number of layers; default: 2"
 )
 parser.add_argument(
-    "--lr",
-    type=float,
-    default=20,
-    help="initial learning rate; default: 20"
+    "--lr", type=float, default=20, help="initial learning rate; default: 20"
 )
 parser.add_argument(
-    "--clip",
-    type=float,
-    default=0.25,
-    help="gradient clipping; default: 0.25"
+    "--clip", type=float, default=0.25, help="gradient clipping; default: 0.25"
 )
 parser.add_argument(
-    "--epochs",
-    type=int,
-    default=40,
-    help="upper epoch limit; default: 40"
+    "--epochs", type=int, default=40, help="upper epoch limit; default: 40"
 )
 parser.add_argument(
-    "--batch_size",
-    type=int,
-    default=20,
-    metavar="N",
-    help="batch size; default: 20"
+    "--batch_size", type=int, default=20, metavar="N", help="batch size; default: 20"
 )
-parser.add_argument(
-    "--bptt",
-    type=int,
-    default=35,
-    help="sequence length; default: 35"
-)
+parser.add_argument("--bptt", type=int, default=35, help="sequence length; default: 35")
 parser.add_argument(
     "--dropout",
     type=float,
@@ -84,33 +60,22 @@ parser.add_argument(
     help="dropout applied to layers (0 = no dropout); default: 0.2",
 )
 parser.add_argument(
-    "--tied",
-    action="store_true",
-    help="tie the word embedding and softmax weights"
+    "--tied", action="store_true", help="tie the word embedding and softmax weights"
 )
-parser.add_argument(
-    "--seed",
-    type=int,
-    default=1111,
-    help="random seed; default: 1111"
-)
-parser.add_argument(
-    "--cuda",
-    action="store_true",
-    help="use CUDA"
-)
+parser.add_argument("--seed", type=int, default=1111, help="random seed; default: 1111")
+parser.add_argument("--cuda", action="store_true", help="use CUDA")
 parser.add_argument(
     "--log-interval",
     type=int,
     default=200,
     metavar="N",
-    help="report interval; default: 200"
+    help="report interval; default: 200",
 )
 parser.add_argument(
     "--save",
     type=str,
     default="model.pt",
-    help="path to save the final model; default: \"model.pt\""
+    help='path to save the final model; default: "model.pt"',
 )
 parser.add_argument(
     "--onnx-export",
@@ -126,9 +91,7 @@ parser.add_argument(
     help="the number of heads in the encoder/decoder of the transformer model; default: 2",
 )
 parser.add_argument(
-    "--dry-run",
-    action="store_true",
-    help="verify the code and the model"
+    "--dry-run", action="store_true", help="verify the code and the model"
 )
 
 args = parser.parse_args()
@@ -203,6 +166,7 @@ criterion = nn.NLLLoss()
 ###############################################################################
 # Training code
 ###############################################################################
+
 
 def repackage_hidden(h):
     """Wraps hidden states in new Tensors, to detach them from their history."""

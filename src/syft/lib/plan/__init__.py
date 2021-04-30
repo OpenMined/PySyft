@@ -9,6 +9,7 @@ from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
 from ...core.plan.plan import Plan
+from ...core.plan.translation.torchscript.plan import PlanTorchscript
 
 
 def create_plan_ast(client: TypeAny = None) -> Globals:
@@ -28,6 +29,9 @@ def create_plan_ast(client: TypeAny = None) -> Globals:
         "syft.core",
         "syft.core.plan",
         "syft.core.plan.plan",
+        "syft.core.plan.translation",
+        "syft.core.plan.translation.torchscript",
+        "syft.core.plan.translation.torchscript.plan",
     ]
 
     classes: TypeList[TypeTuple[str, str, TypeAny]] = [
@@ -35,6 +39,11 @@ def create_plan_ast(client: TypeAny = None) -> Globals:
             "syft.core.plan.Plan",
             "syft.core.plan.Plan",
             Plan,
+        ),
+        (
+            "syft.core.plan.translation.torchscript.PlanTorchscript",
+            "syft.core.plan.translation.torchscript.PlanTorchscript",
+            PlanTorchscript,
         ),
     ]
 
