@@ -275,7 +275,7 @@ class Module:
 
         self.load_state_dict(input=path)
 
-    def send(self, client: Any) -> Any:
+    def send(self, client: Any, send_parameters: bool = True) -> Any:
         if not self.is_local:
             info("> This model is remote so try calling .get()")
             return
@@ -295,8 +295,10 @@ class Module:
             remote_model.__setattr__(name, remote_module_ptr)
 
             # if the remote module has state_dict lets get it
-            if hasattr(module, "state_dict") and hasattr(
-                remote_module_ptr, "load_state_dict"
+            if (
+                send_parameters
+                and hasattr(module, "state_dict")
+                and hasattr(remote_module_ptr, "load_state_dict")
             ):
                 local_state_ord_dict = module.state_dict()
                 # cast to dict because OrderedDict is not supported
@@ -525,7 +527,7 @@ class SyModule(torch.nn.Module, metaclass=ForwardToPlanConverter):
     into pointer when the user retrieves them. After plan building the model behaves more
     like a regular torch.nn.Module, but instead of running a forward method, the user executes
     a `Plan`. As the user does not need to understand the building stage, and the .forward API
-    is farily similar to a regular torch.nn.Module, there is no need to understand all internals
+    is fairly similar to a regular torch.nn.Module, there is no need to understand all internals
     to use this module.
 
     """
@@ -566,7 +568,7 @@ class SyModule(torch.nn.Module, metaclass=ForwardToPlanConverter):
 
     def __getattr__(self, name: str) -> Any:
         """A custom getattr method. When retrieving a torch.nn.Module or a torch.nn.Parameter
-        *during forward plan building*, SyModule instead returns a Pointer to this attrbiute.
+        *during forward plan building*, SyModule instead returns a Pointer to this attribute.
         The first time an attribute is retrieved, we send it to the plan builder VM, and store
         it in self._parameters_pointers, which will be used for plan Recompilation during
         *deserialization*. If an attribute is requested again, we return the pointer from

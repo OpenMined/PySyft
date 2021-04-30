@@ -1,3 +1,7 @@
+# stdlib
+from typing import Any
+from typing import Tuple as TypeTuple
+
 # third party
 import pytest
 import torch as th
@@ -327,3 +331,19 @@ def test_mlp_plan(client: sy.VirtualMachineClient) -> None:
     (new_params,) = res_ptr.get()
 
     assert not (old_params[0] == new_params[0]).all()
+
+
+def test_check_placeholder() -> None:
+    def test_define_plan() -> None:
+        @make_plan
+        def add_plan(inp: Any) -> Any:
+            return inp + inp
+
+    def assertRaises(
+        exc: Exception, obj: object, methodname: str, *args: TypeTuple[Any, ...]
+    ) -> None:
+        with pytest.raises(exc) as e_info:
+            getattr(obj, methodname)(*args)
+        assert str(e_info) != ""
+
+    assertRaises(ValueError(), test_define_plan, "__call__")
