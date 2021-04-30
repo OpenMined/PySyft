@@ -9,9 +9,15 @@ from typing import Tuple
 # third party
 import pytest
 import torch
+import torch as th
 
 # syft absolute
 import syft as sy
+from syft import SyModule
+from syft import SySequential
+from syft.core.plan.plan import Plan
+from syft.core.plan.plan_builder import ROOT_CLIENT
+from syft.core.plan.plan_builder import make_plan
 
 IN_DIM = 100
 OUT_DIM = 10
@@ -42,6 +48,66 @@ class SyNetEmpty(sy.Module):
         return 0
 
 
+class MySyModuleBlock(SyModule):
+    def __init__(self, **kwargs):  # type: ignore
+        super().__init__(**kwargs)
+        self.p1 = th.nn.Parameter(th.rand(100, 10) * 0.01)
+
+    def forward(self, x):  # type: ignore
+        o1 = x @ self.p1
+        return o1
+
+
+class MySyModule(SyModule):
+    def __init__(self, **kwargs):  # type: ignore
+        super().__init__(**kwargs)
+        self.layer1 = th.nn.Linear(28 * 28, 100)
+        self.relu1 = th.nn.ReLU()
+        self.layer2 = MySyModuleBlock(input_size=(32, 100))
+
+    def forward(self, x):  # type: ignore
+        x_reshaped = x.view(-1, 28 * 28)
+        o1 = self.layer1(x_reshaped)
+        a1 = self.relu1(o1)
+        out = self.layer2(x=a1)[0]
+        return out
+
+
+class MyTorchModuleBlock(th.nn.Module):
+    def __init__(self):  # type: ignore
+        super().__init__()
+        self.p1 = th.nn.Parameter(th.rand(100, 10) * 0.01)
+
+    def forward(self, x):  # type: ignore
+        o1 = x @ self.p1
+        return o1
+
+
+class MyTorchModule(th.nn.Module):
+    def __init__(self):  # type: ignore
+        super().__init__()
+        self.layer1 = th.nn.Linear(28 * 28, 100)
+        self.relu1 = th.nn.ReLU()
+        self.layer2 = MyTorchModuleBlock()
+
+    def forward(self, x):  # type: ignore
+        x_reshaped = x.view(-1, 28 * 28)
+        o1 = self.layer1(x_reshaped)
+        a1 = self.relu1(o1)
+        out = self.layer2(a1)
+        return out
+
+
+class MySySequentialBlock(SyModule):
+    def __init__(self, n_in, n_out, **kwargs):  # type: ignore
+        super().__init__(**kwargs)
+        self.layer = th.nn.Linear(n_in, n_out)
+
+    def forward(self, x):  # type: ignore
+        o1 = self.layer(x)
+        return o1
+
+
 @pytest.fixture(scope="function")
 def model() -> SyNet:
     return SyNet()
@@ -55,6 +121,24 @@ def modelEmpty() -> SyNetEmpty:
 @pytest.fixture(scope="function")
 def dataloader() -> Tuple[torch.Tensor, torch.Tensor]:
     return torch.randn(size=(1, IN_DIM)), torch.randn(size=(1, OUT_DIM))
+
+
+@pytest.fixture(scope="function")
+def sy_model() -> SyNet:
+    return MySyModule(input_size=(32, 28 * 28))  # type: ignore
+
+
+@pytest.fixture(scope="function")
+def torch_model() -> SyNet:
+    return MyTorchModule()  # type: ignore
+
+
+@pytest.fixture(scope="function")
+def sy_sequential() -> SyNet:
+    return SySequential(
+        MySySequentialBlock(100, 10, input_size=(32, 100)),  # type: ignore
+        MySySequentialBlock(10, 10, input_size=(32, 10)),  # type: ignore
+    )
 
 
 def test_repr_to_kwargs() -> None:
@@ -225,3 +309,53 @@ def test_debug_sum_layers(root_client: sy.VirtualMachineClient, model: SyNet) ->
     model_ptr = model.send(root_client)
 
     assert model_ptr.debug_sum_layers() is None
+
+
+def test_sy_module(
+    root_client: sy.VirtualMachineClient,
+    sy_model: SyModule,
+    torch_model: torch.nn.Module,
+) -> None:
+    assert isinstance(sy_model.forward, Plan)
+    assert len(sy_model.forward.actions) > 0
+    assert sy_model.state_dict().keys() == torch_model.state_dict().keys()
+
+    sy_model.load_state_dict(torch_model.state_dict())
+    sy_model_ptr = sy_model.send(ROOT_CLIENT)
+
+    x = th.randn(32, 28 * 28)
+    sy_out = sy_model_ptr(x=x).get()[0]
+    torch_out = torch_model(x)
+    assert th.equal(torch_out, sy_out)
+
+
+def test_nest_sy_module(
+    root_client: sy.VirtualMachineClient, sy_model: SyModule
+) -> None:
+    remote_torch = ROOT_CLIENT.torch
+
+    @make_plan
+    def train(model=sy_model):  # type: ignore
+        optimizer = remote_torch.optim.SGD(model.parameters(), lr=0.1)
+        optimizer.zero_grad()
+        out = model(x=th.randn(32, 28 * 28))[0]
+        loss = remote_torch.nn.functional.cross_entropy(out, th.randint(10, (32,)))
+        loss.backward()
+        optimizer.step()
+        return [model]
+
+    (new_model,) = train(model=sy_model)
+    assert not th.equal(
+        sy_model.state_dict()["layer1.weight"], new_model.state_dict()["layer1.weight"]
+    )
+
+
+def test_sy_sequential(
+    root_client: sy.VirtualMachineClient, sy_sequential: SySequential
+) -> None:
+    for module in sy_sequential:
+        assert isinstance(module, SyModule)
+        assert isinstance(module.forward, Plan)
+
+    (res,) = sy_sequential(x=th.randn(32, 100))
+    assert res.shape == (32, 10)

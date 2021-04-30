@@ -3,11 +3,13 @@ import ast
 from collections import OrderedDict
 import copy
 import inspect
+from itertools import islice
 import os
 from pathlib import Path
 import sys
 from typing import Any
 from typing import Dict
+from typing import Iterator
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -660,6 +662,30 @@ class SySequential(SyModule):
             return iter([getattr(self, str(i)) for i in range(self.n_modules)])
         else:
             return iter(self._modules.values())
+
+    def _get_item_by_idx(self, iterator: Iterator, idx: int) -> SyModule:
+        """Get the idx-th item of the iterator"""
+        size = self.n_modules
+        if not -size <= idx < size:
+            raise IndexError(f"index {idx} is out of range")
+        return next(islice(iterator, idx, None))
+
+    def __getitem__(self, idx: int) -> SyModule:
+        if isinstance(idx, slice):  # type: ignore
+            raise ValueError("SySequential does not support slices")
+        else:
+            return self._get_item_by_idx(self._modules.values(), idx)
+
+    def __setitem__(self, idx: int, module: Module) -> None:
+        key = self._get_item_by_idx(self._modules.keys(), idx)
+        return setattr(self, key, module)
+
+    def __delitem__(self, idx: Union[slice, int]) -> None:
+        if isinstance(idx, slice):
+            raise ValueError("SySequential does not support slices")
+        else:
+            key = self._get_item_by_idx(self._modules.keys(), idx)
+            delattr(self, key)
 
     def forward(self, x: Any = None) -> Any:
         """Sequentially call submodule.forward
