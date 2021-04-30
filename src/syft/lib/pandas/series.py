@@ -10,25 +10,47 @@ from ...proto.lib.pandas.series_pb2 import PandasSeries as PandasSeries_PB
 
 
 def object2proto(obj: pd.Series) -> PandasSeries_PB:
-    """Convert pd.Series to PandasSeries_PB with pyarrow.
+    """Convert pd.Series to PandasDataFrame_PB with pyarrow.
 
-    # noqa: DAR101
-    # noqa: DAR201
+    Args:
+        obj: target Series
+
+    Returns:
+        Serialized version of Series, which will be used to reconstruction.
 
     """
+    schema = pa.Schema.from_pandas(obj)
     table = pa.Table.from_pandas(obj)
-    return PandasSeries_PB(series=pa.serialize(table).to_buffer().to_pybytes())
+    sink = pa.BufferOutputStream()
+
+    writer = pa.ipc.new_file(sink, schema)
+    writer.write(table)
+    writer.close()
+
+    buf = sink.getvalue()
+
+    siz = len(buf)
+    df_bytes = pa.compress(buf, asbytes=True)
+
+    return PandasSeries_PB(
+        serise=df_bytes,
+        decompressed_size=siz
+    )
 
 
 def proto2object(proto: PandasSeries_PB) -> pd.Series:
     """Convert PandasSeries_PB to pd.Series with pyarrow.
 
-    # noqa: DAR101
-    # noqa: DAR201
+    Args:
+        proto: Serialized version of Series, which will be used to reconstruction.
+
+    Returns:
+        Re-constructed Series.
 
     """
-    reconstructed_buf = pa.py_buffer(proto.series)
-    return pa.deserialize(reconstructed_buf).to_pandas()
+    buf = pa.decompress(proto.serise,
+                        decompressed_size=proto.decompressed_size)
+    return pa.ipc.open_file(buf).read_pandas()
 
 
 GenerateWrapper(

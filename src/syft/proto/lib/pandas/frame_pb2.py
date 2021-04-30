@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x1cproto/lib/pandas/frame.proto\x12\x0fsyft.lib.pandas"$\n\x0fPandasDataFrame\x12\x11\n\tdataframe\x18\x01 \x01(\x0c\x62\x06proto3',
+    serialized_pb=b'\n\x1cproto/lib/pandas/frame.proto\x12\x0fsyft.lib.pandas"?\n\x0fPandasDataFrame\x12\x11\n\tdataframe\x18\x01 \x01(\x0c\x12\x19\n\x11\x64\x65\x63ompressed_size\x18\x02 \x01(\x04\x62\x06proto3',
 )
 
 
@@ -50,6 +50,25 @@ _PANDASDATAFRAME = _descriptor.Descriptor(
             file=DESCRIPTOR,
             create_key=_descriptor._internal_create_key,
         ),
+        _descriptor.FieldDescriptor(
+            name="decompressed_size",
+            full_name="syft.lib.pandas.PandasDataFrame.decompressed_size",
+            index=1,
+            number=2,
+            type=4,
+            cpp_type=4,
+            label=1,
+            has_default_value=False,
+            default_value=0,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -60,7 +79,7 @@ _PANDASDATAFRAME = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=49,
-    serialized_end=85,
+    serialized_end=112,
 )
 
 DESCRIPTOR.message_types_by_name["PandasDataFrame"] = _PANDASDATAFRAME
