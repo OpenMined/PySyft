@@ -50,3 +50,30 @@ def test_remote_numpy_array(root_client: sy.VirtualMachineClient) -> None:
 
         assert all(test_array == received_array)
         assert test_array.dtype == received_array.dtype
+
+# Attributes test
+
+@pytest.mark.vendor(lib="numpy")
+def test_flags(root_client: sy.VirtualMachineClient) -> None:
+    # third party
+    import numpy as np
+    x = np.array([1, 2, 3, 4])
+    x_ptr = x.send(root_client)
+    flags_ptr = x_ptr.flags
+    local_flags = x.flags
+    flags_val = flags_ptr.get()
+    assert flags_val == x.writeable
+    assert local_flags == flags_val
+
+@pytest.mark.vendor(lib="numpy")
+def test_shape(root_client: sy.VirtualMachineClient) -> None:
+    # third party
+    import numpy as np
+
+    x = np.array([1, 2, 3, 4])
+    x_ptr = x.send(root_client)
+    shape_ptr = x_ptr.shape
+    local_shape_val = x.shape
+    shape_val = shape_ptr.get()
+    assert shape_val == (4,)
+    assert local_shape_val == shape_val

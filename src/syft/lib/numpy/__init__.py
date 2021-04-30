@@ -28,39 +28,44 @@ def create_ast(client: TypeAny = None) -> Globals:
 
     classes: TypeList[TypeTuple[str, str, TypeAny]] = [
         ("numpy.ndarray", "numpy.ndarray", np.ndarray),
+        ("numpy.flagsobj", "numpy.flagsobj", np.flagsobj),
+        ("numpy.flatiter", "numpy.flatiter", np.flatiter),
+        ("numpy.core._internal._ctypes", "numpy.core._internal._ctypes", np.core._internal._ctypes),
+        ("numpy.flatiter", "numpy.flatiter", np.flatiter),
     ]
 
     methods: TypeList[TypeTuple[str, str]] = [
         # Array attributes
-        ("numpy.ndarray.flags", "numpy.ndarray"),
-        ("numpy.ndarray.shape", "numpy.ndarray"),
-        ("numpy.ndarray.strides", "numpy.ndarray"),
-        ("numpy.ndarray.ndim", "numpy.ndarray"),
-        ("numpy.ndarray.data", "numpy.ndarray"),
-        ("numpy.ndarray.size", "numpy.ndarray"),
-        ("numpy.ndarray.itemsize", "numpy.ndarray"),
-        ("numpy.ndarray.nbytes", "numpy.ndarray"),
-        ("numpy.ndarray.base", "numpy.ndarray"),
+        ("numpy.ndarray.flags", "numpy.flagsobj"), 
+        ("numpy.ndarray.shape", "syft.lib.python.Tuple"),
+        ("numpy.ndarray.strides", "syft.lib.python.Tuple"),
+        ("numpy.ndarray.ndim", "syft.lib.python.Int"),
+        ("numpy.ndarray.data", "syft.lib.python.memoryview"), # serde Req
+        ("numpy.ndarray.size", "syft.lib.python.Int"),
+        ("numpy.ndarray.itemsize", "syft.lib.python.Int"),
+        ("numpy.ndarray.nbytes", "syft.lib.python.Int"),
+        ("numpy.ndarray.base", "syft.lib.python._SyNone"),
         # ("numpy.ndarray.dtype", "numpy.ndarray"), # SECURITY WARNING: DO NOT ADD TO ALLOW LIST YET
         ("numpy.ndarray.T", "numpy.ndarray"),
         # ("numpy.ndarray.real", "numpy.ndarray"), # requires dtype complex
         # ("numpy.ndarray.imag", "numpy.ndarray"), # requires dtype complex
-        ("numpy.ndarray.flat", "numpy.ndarray"),
-        ("numpy.ndarray.ctypes", "numpy.ndarray"),
-        ("numpy.ndarray.__array_interface__", "numpy.ndarray"),
-        ("numpy.ndarray.__array_struct__", "numpy.ndarray"),
+        ("numpy.ndarray.flat", "numpy.flatiter"), 
+        ("numpy.ndarray.ctypes", "numpy.core._internal._ctypes"), 
+        ("numpy.ndarray.__array_interface__", "syft.lib.python.Dict"),
+        ("numpy.ndarray.__array_struct__", "syft.lib.python.PyCapsule"), # serde Req
         # Array methods - Array Conversion
-        ("numpy.ndarray.item", "numpy.ndarray"),
-        ("numpy.ndarray.tolist", "numpy.ndarray"),
-        ("numpy.ndarray.dump", "numpy.ndarray"),
-        ("numpy.ndarray.dumps", "numpy.ndarray"),
-        ("numpy.ndarray.astype", "numpy.ndarray"),
+        ("numpy.ndarray.item", "syft.lib.python.Int"), 
+        ("numpy.ndarray.tolist", "syft.lib.python.List"), # Ask if required 
+        # ("numpy.ndarray.dump", "syft.lib.python.builtin_function_or_method"), 
+        # ("numpy.ndarray.dumps", "syft.lib.python.builtin_function_or_method"),
+        ("numpy.ndarray.astype", "numpy.ndarray"), # Ask if required 
         ("numpy.ndarray.byteswap", "numpy.ndarray"),
         ("numpy.ndarray.copy", "numpy.ndarray"),
         ("numpy.ndarray.view", "numpy.ndarray"),
         ("numpy.ndarray.getfield", "numpy.ndarray"),
         ("numpy.ndarray.setflags", "numpy.ndarray"),
         ("numpy.ndarray.fill", "numpy.ndarray"),
+        # Do above Tests
         # Array methods - Shape Manipulation
         ("numpy.ndarray.reshape", "numpy.ndarray"),
         ("numpy.ndarray.resize", "numpy.ndarray"),
@@ -145,7 +150,7 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("numpy.ndarray.__ixor__", "numpy.ndarray"),
         # Matrix Multiplication
         ("numpy.ndarray.__matmul__", "numpy.ndarray"),
-        #Special Methods
+        # Special Methods
     ]
 
     add_modules(ast, modules)
