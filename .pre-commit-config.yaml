@@ -62,16 +62,18 @@ repos:
       - id: isort
         name: isort (python)
 
-  # - repo: https://github.com/pycqa/pydocstyle
-  #   rev: 5.1.1
-  #   hooks:
-  #     - id: pydocstyle
-  #       args:
-  #         - --convention=google
-  #       exclude: tests
+  - repo: https://github.com/pycqa/pydocstyle
+    rev: 5.1.1
+    hooks:
+      - id: pydocstyle
+        args:
+          - --convention=google
+        exclude: tests
 
-  # - repo: https://github.com/terrencepreilly/darglint
-  #   rev: master
-  #   hooks:
-  #     - id: darglint
-  #       exclude: tests
+  - repo: https://github.com/terrencepreilly/darglint
+    rev: master
+    hooks:
+      - id: darglint
+        args:
+          - -v 2
+        exclude: tests
