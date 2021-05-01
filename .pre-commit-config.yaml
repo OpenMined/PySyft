@@ -62,6 +62,14 @@ repos:
       - id: isort
         name: isort (python)
 
+  - repo: https://github.com/myint/autoflake
+    rev: v1.4
+    hooks:
+      - id: autoflake
+        args:
+          - --in-place
+          - --remove-unused-variables
+
   # - repo: https://github.com/pycqa/pydocstyle
   #   rev: 5.1.1
   #   hooks:
