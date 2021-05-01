@@ -51,8 +51,14 @@ parser.add_argument(
     "--dry-run", action="store_true", help="check a single training cycle works"
 )
 parser.add_argument("--n_gpu", type=int, default=1, help="number of GPUs to use")
-parser.add_argument("--net_generator", default="", help="path to net_generator (to continue training)")
-parser.add_argument("--net_discriminator", default="", help="path to net_discriminator (to continue training)")
+parser.add_argument(
+    "--net_generator", default="", help="path to net_generator (to continue training)"
+)
+parser.add_argument(
+    "--net_discriminator",
+    default="",
+    help="path to net_discriminator (to continue training)",
+)
 parser.add_argument(
     "--out_folder", default=".", help="folder to output images and model checkpoints"
 )
@@ -150,7 +156,10 @@ elif opt.dataset == "fake":
 
 assert dataset
 dataloader = torch.utils.data.DataLoader(
-    dataset, batch_size=opt.batch_size, shuffle=True, num_data_workers=int(opt.data_workers)
+    dataset,
+    batch_size=opt.batch_size,
+    shuffle=True,
+    num_data_workers=int(opt.data_workers),
 )
 
 device = torch.device("cuda:0" if opt.cuda else "cpu")
@@ -259,8 +268,12 @@ real_label = 1
 fake_label = 0
 
 # setup optimizer
-optim_discriminator = optim.Adam(net_discriminator.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
-optim_generator = optim.Adam(net_generator.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
+optim_discriminator = optim.Adam(
+    net_discriminator.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999)
+)
+optim_generator = optim.Adam(
+    net_generator.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999)
+)
 
 if opt.dry_run:
     opt.n_iter = 1
@@ -319,7 +332,9 @@ for epoch in range(opt.n_iter):
             )
         )
         if i % 100 == 0:
-            vutils.save_image(real_cpu, f"{opt.out_folder}/real_samples.png", normalize=True)
+            vutils.save_image(
+                real_cpu, f"{opt.out_folder}/real_samples.png", normalize=True
+            )
             fake = net_generator(fixed_noise)
             vutils.save_image(
                 fake.detach(),
@@ -330,5 +345,11 @@ for epoch in range(opt.n_iter):
         if opt.dry_run:
             break
     # do checkpointing
-    torch.save(net_generator.state_dict(), "%s/net_generator_epoch_%d.pth" % (opt.out_folder, epoch))
-    torch.save(net_discriminator.state_dict(), "%s/net_discriminator_epoch_%d.pth" % (opt.out_folder, epoch))
+    torch.save(
+        net_generator.state_dict(),
+        "%s/net_generator_epoch_%d.pth" % (opt.out_folder, epoch),
+    )
+    torch.save(
+        net_discriminator.state_dict(),
+        "%s/net_discriminator_epoch_%d.pth" % (opt.out_folder, epoch),
+    )
