@@ -68,6 +68,7 @@ repos:
       - id: autoflake
         args:
           - --in-place
+          - --recursive
           - --remove-unused-variables
 
   # - repo: https://github.com/pycqa/pydocstyle
