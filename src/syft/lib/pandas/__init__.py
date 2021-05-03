@@ -177,7 +177,6 @@ def create_ast(client: TypeAny = None) -> Globals:
         # ("pandas.Categorical.__init__",),
         # ("pandas.Categorical.__iter__",), Return a list Iterator
         # ("pandas.Categorical.__repr__",),
-        # \/ zComparision raises error if not ordered
         ("pandas.Categorical.__eq__", "numpy.ndarray"),
         ("pandas.Categorical.__ge__", "numpy.ndarray"),
         ("pandas.Categorical.__gt__", "numpy.ndarray"),
@@ -212,7 +211,7 @@ def create_ast(client: TypeAny = None) -> Globals:
         (
             "pandas.Categorical.factorize",
             "syft.lib.python.Tuple",
-        ),  # TODO: requires testing
+        ),
         ("pandas.Categorical.fillna", "pandas.Categorical"),
         ("pandas.Categorical.from_codes", "pandas.Categorical"),
         ("pandas.Categorical.is_dtype_equal", "syft.lib.python.Bool"),
@@ -250,11 +249,11 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("pandas.Categorical.remove_unused_categories", "pandas.Categorical"),
         (
             "pandas.Categorical.rename_categories",
-            UnionGenerator["pandas.Categorical", "syft.lib.python._SyNone"],
+            "pandas.Categorical",
         ),
         (
             "pandas.Categorical.reorder_categories",
-            UnionGenerator["pandas.Categorical", "syft.lib.python._SyNone"],
+            "pandas.Categorical",
         ),
         ("pandas.Categorical.repeat", "pandas.Categorical"),
         ("pandas.Categorical.replace", "pandas.Categorical"),
@@ -262,11 +261,11 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("pandas.Categorical.searchsorted", "syft.lib.python.Int"),
         (
             "pandas.Categorical.set_categories",
-            UnionGenerator["pandas.Categorical", "syft.lib.python._SyNone"],
-        ),  # inplace=True will return None
+            "pandas.Categorical",
+        ),
         (
             "pandas.Categorical.set_ordered",
-            UnionGenerator["pandas.Categorical", "syft.lib.python._SyNone"],
+            "pandas.Categorical",
         ),
         ("pandas.Categorical.shift", "pandas.Categorical"),
         ("pandas.Categorical.sort_values", "pandas.Categorical"),
