@@ -103,12 +103,8 @@ class RequestAnswerMessageService(ImmediateNodeServiceWithReply):
                 )
             )
 
+        status = node.get_request_status(message_request_id=msg.request_id)  # type: ignore
         address = msg.reply_to
-        if node == msg.reply_to:
-            status = RequestStatus.Accepted
-        else:
-            status = node.get_request_status(message_request_id=msg.request_id)  # type: ignore
-
         return RequestAnswerResponse(
             request_id=msg.request_id, address=address, status=status
         )
