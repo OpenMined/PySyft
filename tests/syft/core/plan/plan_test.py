@@ -346,4 +346,4 @@ def test_check_placeholder() -> None:
             getattr(obj, methodname)(*args)
         assert str(e_info) != ""
 
-    assertRaises(ValueError(), test_define_plan, "__call__")
+    assertRaises(ValueError, test_define_plan, "__call__")  # type: ignore

@@ -13,5 +13,5 @@ message Module {
     syft.lib.python.collections.OrderedDict state_dict = 5;
     syft.lib.python.collections.OrderedDict parameters = 6;
     optional syft.core.plan.Plan forward = 7;
-    optional syft.lib.python.collections.OrderedDict attr2uid = 8;
+    optional syft.lib.python.collections.OrderedDict _uid2attr = 8;
 }

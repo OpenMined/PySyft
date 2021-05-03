@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import sys
 from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import Iterator
 from typing import List
@@ -20,7 +21,6 @@ import torch
 
 # syft absolute
 import syft as sy
-from syft import VirtualMachine
 from syft.core.node.common.action.save_object_action import SaveObjectAction
 from syft.core.plan.plan_builder import ROOT_CLIENT
 from syft.core.plan.plan_builder import make_plan
@@ -429,22 +429,8 @@ def object2proto(obj: torch.nn.Module, is_child: bool = False) -> Module_PB:
 
     proto.module_repr = obj.extra_repr()
 
-    if hasattr(obj, "_attr2uid"):
-        # if we deserialize(serialize(obj)), or obj.send().get(), we need this,
-        # as _parameter_pointers are not set (they are set during plan building)
-        proto.attr2uid.CopyFrom(sy.serialize(SyOrderedDict(obj._attr2uid)))
-
-    elif hasattr(obj, "_parameter_pointers"):
-        proto.attr2uid.CopyFrom(
-            sy.serialize(
-                SyOrderedDict(
-                    {
-                        attr_name: param.id_at_location
-                        for attr_name, param in obj._parameter_pointers.items()
-                    }
-                )
-            )
-        )
+    if hasattr(obj, "_uid2attr"):
+        proto._uid2attr.CopyFrom(sy.serialize(SyOrderedDict(obj._uid2attr)))
 
     proto.parameters.CopyFrom(sy.serialize(SyOrderedDict(obj._parameters)))
 
@@ -479,25 +465,56 @@ def proto2object(proto: Module_PB) -> torch.nn.Module:
     if proto.HasField("forward"):
         forward_plan = sy.deserialize(proto.forward)
         obj._forward_plan = forward_plan
-        obj.__call__ = forward_plan
-        obj.forward = forward_plan
+        compile_and_forward = create_compile_and_forward_fn(obj)
+        obj.__call__ = compile_and_forward
+        obj.forward = compile_and_forward
+        # obj.__call__ = forward_plan
+        # obj.forward = forward_plan
 
     for child_proto in proto.children:
         setattr(obj, str(child_proto.module_name), sy.deserialize(child_proto))
 
-    # here we (possibly recompile the plan), if the object state has changed since the
-    # forward plan was created, we update the forward plan here
-    if hasattr(obj, "_forward_plan") and proto.HasField("attr2uid"):
-        attr2uid = sy.deserialize(proto.attr2uid)
-        # we need to set obj._attr2uid to make sure that deserialize(serialize(obj)) == obj
-        obj._attr2uid = attr2uid
-        for attr_name, uid in attr2uid.items():
-            for action in obj._forward_plan.actions:
-                if isinstance(action, SaveObjectAction):
-                    if action.obj.id == uid:
-                        action.obj.data = getattr(obj, str(attr_name))
+    if proto.HasField("_uid2attr"):
+        obj._uid2attr = sy.deserialize(proto._uid2attr)
+
+    if is_userdefined:
+        recompile(obj)
 
     return obj
+
+
+def create_compile_and_forward_fn(obj: "SyModule") -> Callable:
+    """Wraps a forward plan in a function that first recompiles the plan, and then
+    executes the plan
+
+    Args:
+        obj (SyModule): the SyModule
+    """
+
+    def _compile_and_forward(*args, **kwargs):  # type: ignore
+        recompile(obj)
+        return obj._forward_plan(*args, **kwargs)
+
+    return _compile_and_forward
+
+
+def recompile(sy_module: "SyModule") -> None:
+    """Recompiles the forward plan, if the object state has changed since the
+    forward plan was created, we update the plan here
+
+    Args:
+        sy_module (SyModule): the module to compile
+    """
+    print("RECOMPILING")
+    if hasattr(sy_module, "_forward_plan"):
+        for action in sy_module._forward_plan.actions:  # type: ignore
+            if (
+                isinstance(action, SaveObjectAction)
+                and action.obj.id in sy_module._uid2attr
+            ):
+                action.obj.data = getattr(
+                    sy_module, str(sy_module._uid2attr[action.obj.id])
+                )
 
 
 GenerateWrapper(
@@ -568,12 +585,21 @@ class SyModule(torch.nn.Module, metaclass=ForwardToPlanConverter):
         self.forward = self._local_forward
         self._forward_plan = plan
         self.__call__ = plan
+        self._create_uid2attr()
         self.building_forward = False
 
     def _local_forward(self, *args, **kwargs):  # type: ignore
-        alice_client = VirtualMachine(name="alice").get_root_client()
-        remote_module = self.send(alice_client)
-        return remote_module(*args, **kwargs).get()
+        recompile(self)
+        return self._forward_plan(*args, **kwargs)
+        # alice_client = VirtualMachine(name="alice").get_root_client()
+        # remote_module = self.send(alice_client)
+        # return remote_module(*args, **kwargs).get()
+
+    def _create_uid2attr(self) -> None:
+        self._uid2attr = {
+            param.id_at_location: attr_name
+            for attr_name, param in self._parameter_pointers.items()
+        }
 
     def __getattr__(self, name: str) -> Any:
         """A custom getattr method. When retrieving a torch.nn.Module or a torch.nn.Parameter

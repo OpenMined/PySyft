@@ -160,7 +160,11 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                 and method_name == "__call__"
                 or (
                     hasattr(resolved_self.data, "forward")
-                    and resolved_self.data.forward.__class__.__name__ == "Plan"
+                    and (
+                        resolved_self.data.forward.__class__.__name__ == "Plan"
+                        or getattr(resolved_self.data.forward, "__name__", None)
+                        == "_compile_and_forward"
+                    )
                     and method_name in ["__call__", "forward"]
                 )
             ):

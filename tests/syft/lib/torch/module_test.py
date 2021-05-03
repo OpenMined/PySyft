@@ -332,6 +332,21 @@ def test_sy_module(
     assert th.equal(torch_out, sy_out)
 
 
+def test_recompile_downloaded_sy_module(
+    sy_model: SyModule,
+    torch_model: torch.nn.Module,
+) -> None:
+    # first download
+    downloaded_sy_model = sy_model.send(ROOT_CLIENT).get()
+    # then load new weights
+    downloaded_sy_model.load_state_dict(torch_model.state_dict())
+    # then execute & compare
+    x = th.randn(32, 28 * 28)
+    sy_out = downloaded_sy_model(x=x)[0]
+    torch_out = torch_model(x)
+    assert th.equal(torch_out, sy_out)
+
+
 def test_nest_sy_module(
     root_client: sy.VirtualMachineClient, sy_model: SyModule
 ) -> None:
