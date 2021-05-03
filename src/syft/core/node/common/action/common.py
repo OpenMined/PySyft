@@ -13,7 +13,7 @@ from ...abstract.node import AbstractNode
 
 
 class Action(SyftMessage):
-    ""
+    """ """
 
     def execute_action(
         self, node: AbstractNode, verify_key: VerifyKey
@@ -22,21 +22,21 @@ class Action(SyftMessage):
 
 
 class ImmediateActionWithoutReply(Action, ImmediateSyftMessageWithoutReply):
-    ""
+    """ """
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         raise NotImplementedError
 
 
 class EventualActionWithoutReply(Action, EventualSyftMessageWithoutReply):
-    ""
+    """ """
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         raise NotImplementedError
 
 
 class ImmediateActionWithReply(Action, ImmediateSyftMessageWithReply):
-    ""
+    """ """
 
     def execute_action(
         self, node: AbstractNode, verify_key: VerifyKey
