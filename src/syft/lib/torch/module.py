@@ -577,11 +577,6 @@ class SyModule(torch.nn.Module, metaclass=ForwardToPlanConverter):
 
         self.building_forward = True
         plan = make_plan(self.forward, inputs=inputs)  # type: ignore
-        # a sync between the module parameters in the object, and the module parameters
-        # in the modules plan is only guaranteed when the module is *deserialized* before
-        # using the parameters, which is currently true, because plans are only executed
-        # on a remote machine. "Local" execution of plans works by sending the plan to an
-        # ephemeral machine, and therefore also works.
         self.forward = self._local_forward
         self._forward_plan = plan
         self.__call__ = plan
@@ -591,9 +586,6 @@ class SyModule(torch.nn.Module, metaclass=ForwardToPlanConverter):
     def _local_forward(self, *args, **kwargs):  # type: ignore
         recompile(self)
         return self._forward_plan(*args, **kwargs)
-        # alice_client = VirtualMachine(name="alice").get_root_client()
-        # remote_module = self.send(alice_client)
-        # return remote_module(*args, **kwargs).get()
 
     def _create_uid2attr(self) -> None:
         self._uid2attr = {
