@@ -39,7 +39,6 @@ inputs = [
         "args": ([pd.Categorical(["a", "b", "c", "a"], ordered=True)]),
         "kwargs": {},
     },
-    # Results on data_len access Error
     pytest.param(
         {"func": "__len__", "args": (), "kwargs": {}},
         marks=pytest.mark.xfail(reason="np.ndarray not Implemented"),
@@ -79,7 +78,6 @@ inputs = [
     {"func": "isin", "args": [["a", "b"]], "kwargs": {}},
     {"func": "isna", "args": [], "kwargs": {}},
     {"func": "isnull", "args": [], "kwargs": {}},
-    # TODO: {"func": "map", "args": [], "kwargs": {}},
     {"func": "max", "args": [], "kwargs": {}},
     {"func": "memory_usage", "args": [], "kwargs": {}},
     {"func": "min", "args": [], "kwargs": {}},
@@ -90,8 +88,8 @@ inputs = [
     {"func": "remove_categories", "args": (["a"]), "kwargs": {}},
     {"func": "remove_categories", "args": ("a"), "kwargs": {}},
     {"func": "remove_unused_categories", "args": (), "kwargs": {}},
-    {"func": "rename_categories", "args": [[0, 1, 2, 3]], "kwargs": {}},
-    {"func": "reorder_categories", "args": [["a", "c", "d", "b"]], "kwargs": {}},
+    {"func": "rename_categories", "args": [[0, 1, 2]], "kwargs": {}},
+    {"func": "reorder_categories", "args": [["a", "c", "b"]], "kwargs": {}},
     {"func": "repeat", "args": [2], "kwargs": {}},
     {"func": "replace", "args": ["a", "e"], "kwargs": {}},
     {"func": "reshape", "args": [-1], "kwargs": {}},
