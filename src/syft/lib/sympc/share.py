@@ -22,10 +22,6 @@ def object2proto(obj: object) -> ShareTensor_PB:
     tensor_data = getattr(share.tensor, "data", None)
     if tensor_data is not None:
         proto.tensor.tensor.CopyFrom(protobuf_tensor_serializer(tensor_data))
-    proto.tensor.requires_grad = getattr(share.tensor, "requires_grad", False)
-    grad = getattr(share.tensor, "grad", None)
-    if grad is not None:
-        proto.tensor.grad.CopyFrom(protobuf_tensor_serializer(grad))
 
     return proto
 
