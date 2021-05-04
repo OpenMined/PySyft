@@ -19,8 +19,12 @@ def object2proto(obj: pd.Series) -> PandasSeries_PB:
         Serialized version of Series, which will be used to reconstruction.
 
     """
-    schema = pa.Schema.from_pandas(obj)
-    table = pa.Table.from_pandas(obj)
+    # https://arrow.apache.org/docs/python/pandas.html
+    # series must either be converted to a dataframe or use pa.Array
+    # however pa.Array mentions you must account for the null values yourself
+    dataframe = obj.to_frame()
+    schema = pa.Schema.from_pandas(dataframe)
+    table = pa.Table.from_pandas(dataframe)
     sink = pa.BufferOutputStream()
 
     writer = pa.ipc.new_file(sink, schema)
@@ -32,7 +36,7 @@ def object2proto(obj: pd.Series) -> PandasSeries_PB:
     siz = len(buf)
     df_bytes = pa.compress(buf, asbytes=True)
 
-    return PandasSeries_PB(serise=df_bytes, decompressed_size=siz)
+    return PandasSeries_PB(series=df_bytes, decompressed_size=siz)
 
 
 def proto2object(proto: PandasSeries_PB) -> pd.Series:
@@ -45,8 +49,10 @@ def proto2object(proto: PandasSeries_PB) -> pd.Series:
         Re-constructed Series.
 
     """
-    buf = pa.decompress(proto.serise, decompressed_size=proto.decompressed_size)
-    return pa.ipc.open_file(buf).read_pandas()
+    buf = pa.decompress(proto.series, decompressed_size=proto.decompressed_size)
+    dataframe = pa.ipc.open_file(buf).read_pandas()
+    # we know that this is a series being stored as a dataframe so just grab the first
+    return dataframe[dataframe.columns[0]]
 
 
 GenerateWrapper(
