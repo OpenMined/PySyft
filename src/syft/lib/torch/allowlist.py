@@ -1825,6 +1825,13 @@ allowlist[
     "torch.utils.data.dataloader._SingleProcessDataLoaderIter.__len__"
 ] = "syft.lib.python.Int"
 
+# Sampler
+allowlist[
+    "torch.utils.data.sampler.SequentialSampler"
+] = "torch.utils.data.sampler.SequentialSampler"
+
+allowlist["torch.utils.data.BatchSampler"] = "torch.utils.data.BatchSampler"
+
 
 # Functional
 allowlist["torch.nn.functional.relu"] = "torch.Tensor"
