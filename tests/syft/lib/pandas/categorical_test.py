@@ -9,120 +9,14 @@ import pytest
 import syft as sy
 
 inputs = [
-    {
-        "func": "__eq__",
-        "args": ([pd.Categorical(["a", "b", "c", "a"], ordered=True)]),
-        "kwargs": {},
-    },
-    {
-        "func": "__ge__",
-        "args": ([pd.Categorical(["a", "b", "c", "a"], ordered=True)]),
-        "kwargs": {},
-    },
-    {
-        "func": "__gt__",
-        "args": ([pd.Categorical(["a", "b", "c", "a"], ordered=True)]),
-        "kwargs": {},
-    },
-    {
-        "func": "__le__",
-        "args": ([pd.Categorical(["a", "b", "c", "a"], ordered=True)]),
-        "kwargs": {},
-    },
-    {
-        "func": "__lt__",
-        "args": ([pd.Categorical(["a", "b", "c", "a"], ordered=True)]),
-        "kwargs": {},
-    },
-    {
-        "func": "__ne__",
-        "args": ([pd.Categorical(["a", "b", "c", "a"], ordered=True)]),
-        "kwargs": {},
-    },
-    pytest.param(
-        {"func": "__len__", "args": (), "kwargs": {}},
-        marks=pytest.mark.xfail(reason="np.ndarray not Implemented"),
-    ),
-    {"func": "__getitem__", "args": ([1]), "kwargs": {}},
-    {"func": "__setitem__", "args": (1, "a"), "kwargs": {}},
-    {"func": "add_categories", "args": (["e"]), "kwargs": {}},
-    {"func": "add_categories", "args": (["d"]), "kwargs": {"inplace": True}},
-    {"func": "argmax", "args": [], "kwargs": {}},
-    {"func": "argmin", "args": [], "kwargs": {}},
-    {"func": "argsort", "args": [], "kwargs": {}},
-    {"func": "as_ordered", "args": [], "kwargs": {}},
-    {"func": "as_unordered", "args": [], "kwargs": {}},
-    {"func": "copy", "args": [], "kwargs": {}},
-    {"func": "describe", "args": [], "kwargs": {}},
-    {"func": "dropna", "args": [], "kwargs": {}},
-    {
-        "func": "equals",
-        "args": [pd.Categorical(["a", "b", "c", "a"], ordered=True)],
-        "kwargs": {},
-    },
-    pytest.param(
-        {"func": "factorize", "args": [], "kwargs": {}},
-        marks=pytest.mark.xfail,
-    ),
-    {"func": "fillna", "args": ["a"], "kwargs": {}},
-    {
-        "func": "from_codes",
-        "args": [[1, 0, 2, -1]],
-        "kwargs": {"categories": ["a", "b", "c", "e"]},
-    },
-    {
-        "func": "is_dtype_equal",
-        "args": [pd.Categorical(["a", "b", "c", "a"], ordered=True)],
-        "kwargs": {},
-    },
-    {"func": "isin", "args": [["a", "b"]], "kwargs": {}},
-    {"func": "isna", "args": [], "kwargs": {}},
-    {"func": "isnull", "args": [], "kwargs": {}},
-    {"func": "max", "args": [], "kwargs": {}},
-    {"func": "memory_usage", "args": [], "kwargs": {}},
-    {"func": "min", "args": [], "kwargs": {}},
-    {"func": "mode", "args": (), "kwargs": {}},
-    {"func": "notna", "args": (), "kwargs": {}},
-    {"func": "notnull", "args": (), "kwargs": {}},
-    {"func": "ravel", "args": (), "kwargs": {}},
-    {"func": "remove_categories", "args": (["a"]), "kwargs": {}},
-    {"func": "remove_categories", "args": ("a"), "kwargs": {}},
-    {"func": "remove_unused_categories", "args": (), "kwargs": {}},
-    {"func": "rename_categories", "args": [[0, 1, 2]], "kwargs": {}},
-    {"func": "reorder_categories", "args": [["a", "c", "b"]], "kwargs": {}},
-    {"func": "repeat", "args": [2], "kwargs": {}},
-    {"func": "replace", "args": ["a", "e"], "kwargs": {}},
-    {"func": "reshape", "args": [-1], "kwargs": {}},
-    {"func": "searchsorted", "args": ["c"], "kwargs": {}},
-    {"func": "set_categories", "args": [["a", "c", "d"]], "kwargs": {}},
-    {"func": "set_ordered", "args": [False], "kwargs": {}},
-    {"func": "shift", "args": ([1]), "kwargs": {}},
-    {"func": "shift", "args": ([2]), "kwargs": {}},
-    {"func": "sort_values", "args": (), "kwargs": {}},
-    {"func": "take", "args": [[1]], "kwargs": {}},
-    {"func": "take_nd", "args": [[1]], "kwargs": {}},
     pytest.param(
         {"func": "to_dense", "args": [], "kwargs": {}},
-        marks=pytest.mark.xfail(reason="np.ndarray not Implemented"),
+        marks=pytest.mark.xfail(reason="np.ndarray object dtype not Implemented"),
     ),
-    {"func": "tolist", "args": (), "kwargs": {}},
-    {"func": "to_list", "args": (), "kwargs": {}},
     pytest.param(
         {"func": "to_numpy", "args": [], "kwargs": {}},
-        marks=pytest.mark.xfail(reason="np.ndarray not Implemented"),
+        marks=pytest.mark.xfail(reason="np.ndarray object dtype not Implemented"),
     ),
-    {"func": "tolist", "args": [], "kwargs": {}},
-    {"func": "unique", "args": [], "kwargs": {}},
-    {"func": "value_counts", "args": [], "kwargs": {}},
-    {"func": "view", "args": [], "kwargs": {}},
-    # ===== properites =====
-    {"func": "T", "args": (), "kwargs": {}},
-    {"func": "codes", "args": (), "kwargs": {}},
-    {"func": "dtype", "args": (), "kwargs": {}},
-    {"func": "nbytes", "args": (), "kwargs": {}},
-    {"func": "ndim", "args": (), "kwargs": {}},
-    {"func": "ordered", "args": (), "kwargs": {}},
-    {"func": "shape", "args": (), "kwargs": {}},
 ]
 
 objects = [
@@ -168,7 +62,6 @@ def test_categorical_func(
         y_ptr = op_ptr
 
     y_dash = y_ptr.get()
-    print(type(y))
 
     if (
         isinstance(y, pd.Categorical)
@@ -178,5 +71,8 @@ def test_categorical_func(
         assert y.equals(y_dash)
     elif isinstance(y, np.ndarray):
         assert (y == y_dash).all()
+    elif isinstance(y, tuple):
+        assert (y[0] == y_dash[0]).all()
+        assert (y[1] == y_dash[1]).all()
     else:
         assert y == y_dash
