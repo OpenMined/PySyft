@@ -95,10 +95,10 @@ jobs:
           git checkout ${{ github.event.pull_request.head.sha }}
           docstr-coverage -p --fail-under=$BASE_COV src
 
-      - name: Check docstring modified files
-        if: ${{ failure() }}
-        run: |
-          git diff --name-only $(git merge-base ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }}) | xargs docstr-coverage --accept-empty
+      # - name: Check docstring modified files
+      #   if: ${{ failure() }}
+      #   run: |
+      #     git diff --name-only $(git merge-base ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }}) | xargs docstr-coverage --accept-empty
 
   python-tests-latest-versions:
     needs: [python-linting]
@@ -321,6 +321,10 @@ jobs:
         run: |
           cat requirements.libs.txt | xargs -I {} -n 1 pip install {} --no-deps --default-timeout=60 || true
           pip install -r requirements.libs.deps.txt --default-timeout=60
+
+      - name: Test syft-network
+        run: |
+          python ./scripts/start_signaling_server.py --dry_run=True
 
       - name: Run notebook Duet examples
         run: |
