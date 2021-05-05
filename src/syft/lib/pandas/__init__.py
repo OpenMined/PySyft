@@ -35,7 +35,6 @@ def create_ast(client: TypeAny = None) -> Globals:
     ]
 
     methods: TypeList[TypeTuple[str, str]] = [
-        ("pandas.read_csv", "pandas.DataFrame"),
         ("pandas.DataFrame.__getitem__", "pandas.Series"),
         ("pandas.DataFrame.__setitem__", "pandas.Series"),
         ("pandas.DataFrame.__len__", "syft.lib.python.Int"),
@@ -71,6 +70,8 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("pandas.DataFrame.__sub__", "pandas.DataFrame"),
         ("pandas.DataFrame.__truediv__", "pandas.DataFrame"),
         ("pandas.DataFrame.dropna", "pandas.DataFrame"),
+        ("pandas.DataFrame.apply", "pandas.DataFrame"),
+        ("pandas.DataFrame.loc", "pandas.DataFrame"),  # TODO replace with Union below
         ("pandas.Series.__getitem__", "pandas.Series"),
         ("pandas.Series.__setitem__", "pandas.Series"),
         ("pandas.Series.__len__", "syft.lib.python.Int"),
@@ -108,6 +109,7 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("pandas.Series.__sub__", "pandas.Series"),
         ("pandas.Series.__truediv__", "pandas.Series"),
         ("pandas.Series.add", "pandas.Series"),
+        ("pandas.Series.apply", "pandas.Series"),
         ("pandas.Series.sub", "pandas.Series"),
         ("pandas.Series.mul", "pandas.Series"),
         ("pandas.Series.div", "pandas.Series"),
@@ -123,6 +125,7 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("pandas.Series.rfloordiv", "pandas.Series"),
         ("pandas.Series.rmod", "pandas.Series"),
         ("pandas.Series.rpow", "pandas.Series"),
+        ("pandas.Series.loc", "pandas.Series"),  # TODO replace with Union below
         ("pandas.Series.lt", "pandas.Series"),
         ("pandas.Series.gt", "pandas.Series"),
         ("pandas.Series.le", "pandas.Series"),
