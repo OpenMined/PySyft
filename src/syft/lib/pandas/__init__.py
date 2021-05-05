@@ -71,7 +71,7 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("pandas.DataFrame.__truediv__", "pandas.DataFrame"),
         ("pandas.DataFrame.dropna", "pandas.DataFrame"),
         ("pandas.DataFrame.apply", "pandas.DataFrame"),
-        ("pandas.DataFrame.loc", "pandas.DataFrame"),
+        ("pandas.DataFrame.loc", "pandas.DataFrame"),  # TODO replace with Union below
         ("pandas.Series.__getitem__", "pandas.Series"),
         ("pandas.Series.__setitem__", "pandas.Series"),
         ("pandas.Series.__len__", "syft.lib.python.Int"),
@@ -125,7 +125,7 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("pandas.Series.rfloordiv", "pandas.Series"),
         ("pandas.Series.rmod", "pandas.Series"),
         ("pandas.Series.rpow", "pandas.Series"),
-        ("pandas.Series.loc", "pandas.Series"),
+        ("pandas.Series.loc", "pandas.Series"),  # TODO replace with Union below
         ("pandas.Series.lt", "pandas.Series"),
         ("pandas.Series.gt", "pandas.Series"),
         ("pandas.Series.le", "pandas.Series"),
