@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package syft.lib.syfertext;
+
+import "proto/lib/syfertext/data/readers/language_modeling/text_reader.proto";
+
+message BERTIterator {
+    bytes uuid = 1;
+    uint32 batch_size = 2;
+    uint32 sentence_len = 3;
+    TextReader dataset_reader = 4;
+}
