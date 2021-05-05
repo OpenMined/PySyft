@@ -117,14 +117,12 @@ def test_len(custom_client: Client) -> None:
     assert result == result_from_ptr
 
 
-# @pytest.mark.xfail(strict=False)
 def test_iter(custom_client: Client) -> None:
     """Unit test to check iterator of the class"""
     a_ptr = custom_client.module_test.A()
     iter_from_ptr = a_ptr.__iter__()
     a = module_test.A()
     iter_from_obj = iter(a)
-    print(len(a), module_test.A.static_attr)
     for _ in range(1, len(a)):
         assert next(iter_from_ptr).get() == next(iter_from_obj)
 
