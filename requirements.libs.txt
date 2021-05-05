@@ -7,6 +7,7 @@ openmined.psi
 pandas
 petlib
 pillow
+pyarrow
 python-dp
 pytorch-lightning @ git+https://github.com/tudorcebere/pytorch-lightning@tudor-om-v0
 statsmodels
