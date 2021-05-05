@@ -53,19 +53,25 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("numpy.ndarray.T", "numpy.ndarray"),
         # ("numpy.ndarray.real", "numpy.ndarray"), # requires dtype complex
         # ("numpy.ndarray.imag", "numpy.ndarray"), # requires dtype complex
-        ("numpy.ndarray.flat", "numpy.flatiter"),
-        ("numpy.ndarray.ctypes", "numpy.core._internal._ctypes"),
+        ("numpy.ndarray.flat", "numpy.flatiter"), # serde Req
+        ("numpy.ndarray.ctypes", "numpy.core._internal._ctypes"), #serde Req
         ("numpy.ndarray.__array_interface__", "syft.lib.python.Dict"),
         ("numpy.ndarray.__array_struct__", "syft.lib.python.PyCapsule"),  # serde Req
         # Array methods - Array Conversion
-        ("numpy.ndarray.item", "syft.lib.python.Int"),
+        # ->
+        (
+            "numpy.ndarray.item", 
+            UnionGenerator[
+                "syft.lib.python.Bool", "syft.lib.python.Float", "syft.lib.python.Int"
+            ],
+        ),
         ("numpy.ndarray.tolist", "syft.lib.python.List"),  # Ask if required
         # ("numpy.ndarray.dump", "syft.lib.python.builtin_function_or_method"),
         # ("numpy.ndarray.dumps", "syft.lib.python.builtin_function_or_method"),
         ("numpy.ndarray.astype", "numpy.ndarray"),  # Ask if required
         ("numpy.ndarray.byteswap", "numpy.ndarray"),
         ("numpy.ndarray.copy", "numpy.ndarray"),
-        ("numpy.ndarray.view", "numpy.ndarray"),
+        ("numpy.ndarray.view", "numpy.ndarray"), # Not sure about return type
         ("numpy.ndarray.getfield", "numpy.ndarray"),
         ("numpy.ndarray.setflags", "numpy.ndarray"),
         ("numpy.ndarray.fill", "numpy.ndarray"),

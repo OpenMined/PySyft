@@ -54,21 +54,6 @@ def test_remote_numpy_array(root_client: sy.VirtualMachineClient) -> None:
 
 # Attributes test
 
-
-@pytest.mark.vendor(lib="numpy")
-def test_flags(root_client: sy.VirtualMachineClient) -> None:
-    # third party
-    import numpy as np
-
-    x = np.array([1, 2, 3, 4])
-    x_ptr = x.send(root_client)
-    flags_ptr = x_ptr.flags
-    local_flags = x.flags
-    flags_val = flags_ptr.get()
-    assert flags_val == x.writeable
-    assert local_flags == flags_val
-
-
 @pytest.mark.vendor(lib="numpy")
 def test_shape(root_client: sy.VirtualMachineClient) -> None:
     # third party
@@ -152,14 +137,3 @@ def test_nbytes(root_client: sy.VirtualMachineClient) -> None:
     assert nbytes_val == 240
     assert local_nbytes_val == nbytes_val
 
-
-@pytest.mark.vendor(lib="numpy")
-def test_base(root_client: sy.VirtualMachineClient) -> None:
-    # third party
-    import numpy as np
-
-    x = np.array([1, 2, 3, 4])
-    x_ptr = x.send(root_client)
-    base_ptr = x_ptr.base
-    base_val = base_ptr.get()
-    assert base_val is None
