@@ -78,6 +78,7 @@ assert Path(\"{}\").exists()
 
 PATHS = [
     "examples/homomorphic-encryption",
+    "examples/data-science/pandas",
     "examples/duet/dcgan",
     "examples/duet/super_resolution",
     "examples/private-ai-series/duet_basics",
