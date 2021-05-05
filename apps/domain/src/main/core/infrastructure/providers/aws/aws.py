@@ -1,5 +1,7 @@
-# from ..terraform import generate_cidr_block, var, var_module
-from ...tf import generate_cidr_block, var, var_module
+# grid relative
+from ...tf import generate_cidr_block
+from ...tf import var
+from ...tf import var_module
 from ..provider import *
 
 

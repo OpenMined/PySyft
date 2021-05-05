@@ -8,35 +8,28 @@
 - Import order : python std libraries, extendend libs, internal source code.
 """
 
-# Std Python imports
-from typing import Optional
-from typing import Dict
+# stdlib
 import logging
 import os
+
+# third party
+import config
 
 # Extended Python imports
 from flask import Flask
 from flask_cors import CORS
-
 from geventwebsocket.websocket import Header
-from nacl.signing import SigningKey
-from nacl.encoding import HexEncoder
-from syft.core.node.domain.domain import Domain
-
+from main.core.node import create_domain_app
+from main.routes import association_requests_blueprint  # noqa: 401
+from main.routes import dcfl_blueprint  # noqa: 401
+from main.routes import groups_blueprint  # noqa: 401
+from main.routes import roles_blueprint  # noqa: 401
+from main.routes import root_blueprint  # noqa: 401
+from main.routes import setup_blueprint  # noqa: 401
+from main.routes import users_blueprint  # noqa: 401
 
 # Internal imports
 from main.utils.monkey_patch import mask_payload_fast
-from main.routes import (
-    roles_blueprint,
-    users_blueprint,
-    setup_blueprint,
-    groups_blueprint,
-    dcfl_blueprint,
-    association_requests_blueprint,
-    root_blueprint,
-)
-import config
-from main.core.node import create_domain_app
 
 DEFAULT_SECRET_KEY = "justasecretkeythatishouldputhere"
 DEFAULT_SETUP_SECRET_KEY = "9G9MJ06OQH"

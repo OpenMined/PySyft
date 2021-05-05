@@ -1,9 +1,13 @@
-import pytest
+# stdlib
+import os
+import sys
 
-import sys, os
+# third party
+import pytest
 
 myPath = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(myPath + "/../src/")
+# third party
 from app import create_app
 from main.core.database import db
 import main.core.node

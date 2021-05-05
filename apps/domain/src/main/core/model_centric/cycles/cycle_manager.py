@@ -1,21 +1,21 @@
-# Cycle module imports
+# stdlib
+from datetime import datetime
+from datetime import timedelta
+from functools import reduce
 import json
 import logging
 
-# Generic imports
-from datetime import datetime, timedelta
-from functools import reduce
-
+# third party
 import torch as th
 
+# grid relative
 from ...exceptions import CycleNotFoundError
-
-# PyGrid modules
 from ...manager.database_manager import DatabaseManager
 from ..models import model_manager
 from ..processes import process_manager
 from ..syft_assets import PlanManager
-from ..tasks.cycle import complete_cycle, run_task_once
+from ..tasks.cycle import complete_cycle
+from ..tasks.cycle import run_task_once
 from .cycle import Cycle
 from .worker_cycle import WorkerCycle
 

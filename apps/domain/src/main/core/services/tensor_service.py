@@ -5,34 +5,31 @@ from typing import Type
 from typing import Union
 
 # third party
-from nacl.signing import VerifyKey
-import torch as th
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
+from nacl.signing import VerifyKey
 
 # syft relative
 from syft.core.common.group import VerifyAll
+from syft.core.common.message import ImmediateSyftMessageWithReply
+from syft.core.common.uid import UID
 from syft.core.node.abstract.node import AbstractNode
+from syft.core.node.common.action.save_object_action import SaveObjectAction
 from syft.core.node.common.service.auth import service_auth
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.common.uid import UID
-from syft.core.node.common.action.save_object_action import SaveObjectAction
 from syft.core.store.storeable_object import StorableObject
-
-from syft.grid.messages.tensor_messages import (
-    CreateTensorMessage,
-    CreateTensorResponse,
-    GetTensorMessage,
-    GetTensorResponse,
-    UpdateTensorMessage,
-    UpdateTensorResponse,
-    DeleteTensorMessage,
-    DeleteTensorResponse,
-    GetTensorsMessage,
-    GetTensorsResponse,
-)
+from syft.grid.messages.tensor_messages import CreateTensorMessage
+from syft.grid.messages.tensor_messages import CreateTensorResponse
+from syft.grid.messages.tensor_messages import DeleteTensorMessage
+from syft.grid.messages.tensor_messages import DeleteTensorResponse
+from syft.grid.messages.tensor_messages import GetTensorMessage
+from syft.grid.messages.tensor_messages import GetTensorResponse
+from syft.grid.messages.tensor_messages import GetTensorsMessage
+from syft.grid.messages.tensor_messages import GetTensorsResponse
+from syft.grid.messages.tensor_messages import UpdateTensorMessage
+from syft.grid.messages.tensor_messages import UpdateTensorResponse
+import torch as th
 
 
 def create_tensor_msg(

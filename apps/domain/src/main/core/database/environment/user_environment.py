@@ -1,4 +1,6 @@
-from .. import BaseModel, db
+# grid relative
+from .. import BaseModel
+from .. import db
 
 
 class UserEnvironment(BaseModel):

@@ -1,18 +1,21 @@
-from .blueprint import association_requests_blueprint as association_request_route
-from flask import request, Response
+# stdlib
 import json
 
-from syft.grid.messages.association_messages import (
-    SendAssociationRequestMessage,
-    ReceiveAssociationRequestMessage,
-    GetAssociationRequestMessage,
-    DeleteAssociationRequestMessage,
-    GetAssociationRequestsMessage,
-    RespondAssociationRequestMessage,
-)
+# third party
+from flask import Response
+from flask import request
+from syft.grid.messages.association_messages import DeleteAssociationRequestMessage
+from syft.grid.messages.association_messages import GetAssociationRequestMessage
+from syft.grid.messages.association_messages import GetAssociationRequestsMessage
+from syft.grid.messages.association_messages import ReceiveAssociationRequestMessage
+from syft.grid.messages.association_messages import RespondAssociationRequestMessage
+from syft.grid.messages.association_messages import SendAssociationRequestMessage
 
-from ..auth import error_handler, token_required
+# grid relative
 from ...core.task_handler import route_logic
+from ..auth import error_handler
+from ..auth import token_required
+from .blueprint import association_requests_blueprint as association_request_route
 
 
 @association_request_route.route("/request", methods=["POST"])

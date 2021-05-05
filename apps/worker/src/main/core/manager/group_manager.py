@@ -1,18 +1,17 @@
+# stdlib
 from typing import List
 
-from .database_manager import DatabaseManager
+# grid relative
 from ..database.groups.groups import Group
 from ..database.groups.usergroup import UserGroup
-
-from ..exceptions import (
-    AuthorizationError,
-    GroupNotFoundError,
-    InvalidCredentialsError,
-    MissingRequestKeyError,
-    PyGridError,
-    RoleNotFoundError,
-    UserNotFoundError,
-)
+from ..exceptions import AuthorizationError
+from ..exceptions import GroupNotFoundError
+from ..exceptions import InvalidCredentialsError
+from ..exceptions import MissingRequestKeyError
+from ..exceptions import PyGridError
+from ..exceptions import RoleNotFoundError
+from ..exceptions import UserNotFoundError
+from .database_manager import DatabaseManager
 
 
 class GroupManager(DatabaseManager):

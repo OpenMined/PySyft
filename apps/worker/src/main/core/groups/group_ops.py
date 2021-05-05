@@ -1,21 +1,27 @@
-from datetime import datetime, timedelta
+# stdlib
+from datetime import datetime
+from datetime import timedelta
+from json import dumps
+from json import loads
 from json.decoder import JSONDecodeError
-from json import dumps, loads
-from secrets import token_hex
 import logging
+from secrets import token_hex
 
+# grid relative
 from ..codes import RESPONSE_MSG
-from ..exceptions import (
-    AuthorizationError,
-    GroupNotFoundError,
-    InvalidCredentialsError,
-    MissingRequestKeyError,
-    PyGridError,
-    RoleNotFoundError,
-    UserNotFoundError,
-)
-from ..database import Group, Role, User, UserGroup, db
+from ..database import Group
+from ..database import Role
+from ..database import User
+from ..database import UserGroup
+from ..database import db
 from ..database.utils import model_to_json
+from ..exceptions import AuthorizationError
+from ..exceptions import GroupNotFoundError
+from ..exceptions import InvalidCredentialsError
+from ..exceptions import MissingRequestKeyError
+from ..exceptions import PyGridError
+from ..exceptions import RoleNotFoundError
+from ..exceptions import UserNotFoundError
 
 
 def create_group(current_user, name):

@@ -1,10 +1,11 @@
+# stdlib
 from typing import List
 from typing import Union
-from .database_manager import DatabaseManager
+
+# grid relative
 from ..database.setup.setup import SetupConfig
-from ..exceptions import (
-    SetupNotFoundError,
-)
+from ..exceptions import SetupNotFoundError
+from .database_manager import DatabaseManager
 
 
 class SetupManager(DatabaseManager):

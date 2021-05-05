@@ -1,11 +1,13 @@
-from json import dumps, loads
+# stdlib
+from json import dumps
+from json import loads
+import time
 
+# third party
+from flask import current_app as app
 import jwt
 import pytest
-from flask import current_app as app
-
 from src.main.core.database import *
-import time
 
 JSON_DECODE_ERR_MSG = (
     "Expecting property name enclosed in " "double quotes: line 1 column 2 (char 1)"

@@ -1,15 +1,11 @@
-# Processes module imports
-from ...exceptions import (
-    FLProcessConflict,
-    PlanNotFoundError,
-    ProcessNotFoundError,
-    ProtocolNotFoundError,
-)
-
-# PyGrid imports
+# grid relative
+from ...exceptions import FLProcessConflict
+from ...exceptions import PlanNotFoundError
+from ...exceptions import ProcessNotFoundError
+from ...exceptions import ProtocolNotFoundError
 from ...manager.database_manager import DatabaseManager
-
-from ..syft_assets import plans, protocols
+from ..syft_assets import plans
+from ..syft_assets import protocols
 from .config import Config
 from .fl_process import FLProcess
 

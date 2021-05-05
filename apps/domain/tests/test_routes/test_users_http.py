@@ -1,10 +1,12 @@
-from json import dumps, loads
+# stdlib
+from json import dumps
+from json import loads
 
-import jwt
-import pytest
+# third party
 from bcrypt import checkpw
 from flask import current_app as app
-
+import jwt
+import pytest
 from src.main.core.database import *
 
 JSON_DECODE_ERR_MSG = (

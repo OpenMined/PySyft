@@ -1,10 +1,14 @@
+# stdlib
+import json
 import subprocess
 
-import click
-import json
+# third party
 from PyInquirer import prompt
+import click
 
-from ...utils import Config, styles
+# grid relative
+from ...utils import Config
+from ...utils import styles
 
 
 class AZ:

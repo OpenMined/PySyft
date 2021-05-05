@@ -1,10 +1,12 @@
+# third party
+from bcrypt import checkpw
+import pytest
 from src.main.core.database import *
 from src.main.core.database.environment.environment import Environment
 from src.main.core.database.environment.user_environment import UserEnvironment
-from src.main.core.manager import EnvironmentManager, UserManager
 from src.main.core.exceptions import InvalidCredentialsError
-import pytest
-from bcrypt import checkpw
+from src.main.core.manager import EnvironmentManager
+from src.main.core.manager import UserManager
 
 user_role = ("User", False, False, False, False, False, False, False)
 admin_role = ("Administrator", True, True, True, True, False, False, True)

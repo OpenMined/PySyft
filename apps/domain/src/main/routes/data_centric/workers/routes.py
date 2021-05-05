@@ -1,15 +1,22 @@
+# stdlib
 import json
 
-from flask import Response, request
+# third party
+from flask import Response
+from flask import request
+from syft.grid.messages.infra_messages import GetWorkerInstanceTypesMessage
+
+# grid relative
 from ....core.task_handler import route_logic
-from ...auth import error_handler, token_required
+from ...auth import error_handler
+from ...auth import token_required
 from ..blueprint import dcfl_blueprint as dcfl_route
 
+# syft absolute
 from syft.grid.messages.infra_messages import CreateWorkerMessage  # noqa isort:skip
 from syft.grid.messages.infra_messages import DeleteWorkerMessage  # noqa isort:skip
 from syft.grid.messages.infra_messages import GetWorkerMessage  # noqa isort:skip
 from syft.grid.messages.infra_messages import GetWorkersMessage  # noqa isort:skip
-from syft.grid.messages.infra_messages import GetWorkerInstanceTypesMessage
 
 
 @dcfl_route.route("/workers/instances", methods=["GET"])

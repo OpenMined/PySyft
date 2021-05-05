@@ -1,26 +1,29 @@
-from json import dumps, loads
-
-from flask import request, Response
-from werkzeug.utils import secure_filename
+# stdlib
 import io
-from syft.core.node.common.service.repr_service import ReprMessage
-from syft.grid.messages.dataset_messages import CreateDatasetMessage
-from syft.grid.messages.dataset_messages import (
-    CreateDatasetMessage,
-    GetDatasetMessage,
-    GetDatasetsMessage,
-    UpdateDatasetMessage,
-    DeleteDatasetMessage,
-)
+from json import dumps
+from json import loads
 
-from ...auth import error_handler, token_required, optional_token
-from main.core.task_handler import route_logic, task_handler
-from ..blueprint import dcfl_blueprint as dcfl_route
-from ....core.node import get_node
+# third party
+from flask import Response
+from flask import request
 from main.core.datasets.dataset_ops import create_df_dataset
 from main.core.exceptions import AuthorizationError
+from main.core.task_handler import route_logic
+from main.core.task_handler import task_handler
 from main.utils.executor import executor
+from syft.core.node.common.service.repr_service import ReprMessage
+from syft.grid.messages.dataset_messages import CreateDatasetMessage
+from syft.grid.messages.dataset_messages import DeleteDatasetMessage
+from syft.grid.messages.dataset_messages import GetDatasetMessage
+from syft.grid.messages.dataset_messages import GetDatasetsMessage
+from syft.grid.messages.dataset_messages import UpdateDatasetMessage
+from werkzeug.utils import secure_filename
 
+# grid relative
+from ...auth import error_handler
+from ...auth import optional_token
+from ...auth import token_required
+from ..blueprint import dcfl_blueprint as dcfl_route
 
 ALLOWED_EXTENSIONS = {"tar.gz"}
 
@@ -32,6 +35,9 @@ def allowed_file(filename):
 @dcfl_route.route("/datasets", methods=["POST"])
 @token_required
 def create_dataset(current_user):
+    # grid relative
+    from ....core.node import get_node  # TODO: fix circular import
+
     # check if the post request has the file part
     if "file" not in request.files:
         response = {

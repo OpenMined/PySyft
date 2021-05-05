@@ -1,8 +1,12 @@
-from .. import BaseModel, db
-from syft import serialize, deserialize
-
-from syft.proto.lib.torch.tensor_pb2 import TensorProto as TensorProto_PB
+# third party
+from syft import deserialize
+from syft import serialize
 from syft.proto.lib.pandas.frame_pb2 import PandasDataFrame as PandasDataFrame_PB
+from syft.proto.lib.torch.tensor_pb2 import TensorProto as TensorProto_PB
+
+# grid relative
+from .. import BaseModel
+from .. import db
 
 bin_to_proto = {
     TensorProto_PB.__name__: TensorProto_PB,

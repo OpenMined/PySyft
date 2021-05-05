@@ -1,24 +1,33 @@
+# stdlib
 import json
-from nacl.encoding import HexEncoder
-from flask import Response, request
 
-from ...core.node import get_node
-from .blueprint import root_blueprint as root_route
+# third party
+from flask import Response
+from flask import request
+from nacl.encoding import HexEncoder
+from syft import deserialize
+from syft import serialize
+from syft.core.common.message import SignedImmediateSyftMessageWithReply
 
 # syft absolute
-from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft.core.common.serde.deserialize import _deserialize
 from syft.core.common.serde.serialize import _serialize
-from syft import deserialize, serialize
 
-from ..auth import error_handler, token_required
-from ...core.exceptions import UserNotFoundError, AuthorizationError
+# grid relative
+from ...core.exceptions import AuthorizationError
+from ...core.exceptions import UserNotFoundError
+from ..auth import error_handler
+from ..auth import token_required
+from .blueprint import root_blueprint as root_route
 
 
 @root_route.route("/dashboard", methods=["GET"])
 @token_required
 def dashboard_route(current_user):
+    # grid relative
+    from ...core.node import get_node  # TODO: fix circular import
+
     # Check if current session is the owner user
     _allowed = current_user.role == get_node().roles.owner_role.id
     if not _allowed:
@@ -42,6 +51,9 @@ def dashboard_route(current_user):
 
 @root_route.route("/metadata", methods=["GET"])
 def metadata_route():
+    # grid relative
+    from ...core.node import get_node  # TODO: fix circular import
+
     response_body = {
         "metadata": serialize(get_node().get_metadata_for_client())
         .SerializeToString()
@@ -52,6 +64,9 @@ def metadata_route():
 
 @root_route.route("/pysyft", methods=["POST"])
 def syft_route():
+    # grid relative
+    from ...core.node import get_node  # TODO: fix circular import
+
     data = request.get_data()
     obj_msg = deserialize(blob=data, from_bytes=True)
     if isinstance(obj_msg, SignedImmediateSyftMessageWithReply):
@@ -68,6 +83,9 @@ def syft_route():
 
 @root_route.route("/pysyft_multipart", methods=["POST"])
 def syft_multipart_route():
+    # grid relative
+    from ...core.node import get_node  # TODO: fix circular import
+
     if "file" not in request.files:
         response = {"error": "Invalid message!"}
         status_code = 403

@@ -1,13 +1,13 @@
-# Syft assets module imports
-# Syft dependencies
+# third party
 import syft as sy
-from syft import deserialize, serialize
-
+from syft import deserialize
+from syft import serialize
 from syft.proto.core.plan.plan_pb2 import Plan as PlanPB
 
-from ...exceptions import PlanInvalidError, PlanNotFoundError, PlanTranslationError
-
-# PyGrid imports
+# grid relative
+from ...exceptions import PlanInvalidError
+from ...exceptions import PlanNotFoundError
+from ...exceptions import PlanTranslationError
 from ...manager.database_manager import DatabaseManager
 from .plan import Plan
 

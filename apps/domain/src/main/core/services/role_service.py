@@ -5,35 +5,32 @@ from typing import Type
 from typing import Union
 
 # third party
-from nacl.signing import VerifyKey
 from nacl.encoding import HexEncoder
+from nacl.signing import VerifyKey
+from syft.core.common.message import ImmediateSyftMessageWithReply
 
 # syft relative
 from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.service.auth import service_auth
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
-from syft.core.common.message import ImmediateSyftMessageWithReply
+from syft.grid.messages.role_messages import CreateRoleMessage
+from syft.grid.messages.role_messages import CreateRoleResponse
+from syft.grid.messages.role_messages import DeleteRoleMessage
+from syft.grid.messages.role_messages import DeleteRoleResponse
+from syft.grid.messages.role_messages import GetRoleMessage
+from syft.grid.messages.role_messages import GetRoleResponse
+from syft.grid.messages.role_messages import GetRolesMessage
+from syft.grid.messages.role_messages import GetRolesResponse
+from syft.grid.messages.role_messages import UpdateRoleMessage
+from syft.grid.messages.role_messages import UpdateRoleResponse
 
-from syft.grid.messages.role_messages import (
-    CreateRoleMessage,
-    CreateRoleResponse,
-    GetRoleMessage,
-    GetRoleResponse,
-    UpdateRoleMessage,
-    UpdateRoleResponse,
-    DeleteRoleMessage,
-    DeleteRoleResponse,
-    GetRolesMessage,
-    GetRolesResponse,
-)
-from ..exceptions import (
-    AuthorizationError,
-    MissingRequestKeyError,
-    RoleNotFoundError,
-    RequestError,
-)
+# grid relative
 from ..database.utils import model_to_json
+from ..exceptions import AuthorizationError
+from ..exceptions import MissingRequestKeyError
+from ..exceptions import RequestError
+from ..exceptions import RoleNotFoundError
 
 
 def create_role_msg(

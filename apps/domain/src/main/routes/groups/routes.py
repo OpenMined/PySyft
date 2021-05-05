@@ -1,18 +1,20 @@
-from .blueprint import groups_blueprint as group_route
-from flask import request, Response
+# stdlib
 import json
 
-from syft.grid.messages.group_messages import (
-    CreateGroupMessage,
-    DeleteGroupMessage,
-    GetGroupMessage,
-    GetGroupsMessage,
-    UpdateGroupMessage,
-)
+# third party
+from flask import Response
+from flask import request
+from syft.grid.messages.group_messages import CreateGroupMessage
+from syft.grid.messages.group_messages import DeleteGroupMessage
+from syft.grid.messages.group_messages import GetGroupMessage
+from syft.grid.messages.group_messages import GetGroupsMessage
+from syft.grid.messages.group_messages import UpdateGroupMessage
 
-from ..auth import error_handler, token_required
+# grid relative
 from ...core.task_handler import route_logic
-from ...core.node import node
+from ..auth import error_handler
+from ..auth import token_required
+from .blueprint import groups_blueprint as group_route
 
 
 @group_route.route("", methods=["POST"])

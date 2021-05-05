@@ -1,16 +1,16 @@
-# PyGrid imports
-# Syft dependencies
+# third party
 import syft as sy
-from syft import deserialize, serialize
+from syft import deserialize
+from syft import serialize
+from syft.federated.model_serialization import deserialize_model_params
+from syft.federated.model_serialization import wrap_model_params
 from syft.lib.python.list import List
-from syft.federated.model_serialization import (
-    wrap_model_params,
-    deserialize_model_params,
-)
 
+# grid relative
 from ...exceptions import ModelNotFoundError
 from ...manager.database_manager import DatabaseManager
-from ..models.ai_model import Model, ModelCheckPoint
+from ..models.ai_model import Model
+from ..models.ai_model import ModelCheckPoint
 
 
 class ModelCheckPointManager(DatabaseManager):

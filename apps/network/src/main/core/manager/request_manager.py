@@ -1,11 +1,13 @@
-from typing import Union
-from typing import List
+# stdlib
 from datetime import datetime
+from typing import List
+from typing import Union
 
-from .database_manager import DatabaseManager
+# grid relative
 from ..database.requests.request import Request
-from .role_manager import RoleManager
 from ..exceptions import RequestError
+from .database_manager import DatabaseManager
+from .role_manager import RoleManager
 
 
 class RequestManager(DatabaseManager):

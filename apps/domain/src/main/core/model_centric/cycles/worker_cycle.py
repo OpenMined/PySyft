@@ -1,8 +1,9 @@
-# Standard python imports
+# stdlib
 import datetime
 
-# Local imports
-from ...database import BaseModel, db
+# grid relative
+from ...database import BaseModel
+from ...database import db
 
 
 class WorkerCycle(BaseModel):

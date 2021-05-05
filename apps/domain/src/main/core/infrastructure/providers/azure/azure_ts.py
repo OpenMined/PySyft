@@ -1,4 +1,4 @@
-# terrascript/azure/r.py
+# third party
 import terrascript
 
 

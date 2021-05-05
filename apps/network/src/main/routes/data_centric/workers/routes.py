@@ -389,12 +389,17 @@ def delete_autoscaling_condition(autoscaling_id):
     )
 """
 
+# stdlib
 import json
 
-from flask import Response, request
+# third party
+from flask import Response
+from flask import request
 
+# grid relative
 from ....core.task_handler import route_logic
-from ...auth import error_handler, token_required
+from ...auth import error_handler
+from ...auth import token_required
 from ..blueprint import dcfl_blueprint as dcfl_route
 
 from syft.grid.messages.infra_messages import CreateWorkerMessage  # noqa isort:skip

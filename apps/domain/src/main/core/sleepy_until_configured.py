@@ -1,10 +1,15 @@
-from werkzeug.wrappers import Request
-from .database import db, SetupConfig
-from flask import Response
+# stdlib
 from json import dumps
 
-from .exceptions import AppInSleepyMode
+# third party
+from flask import Response
+from werkzeug.wrappers import Request
+
+# grid relative
 from ..core.codes import RESPONSE_MSG
+from .database import SetupConfig
+from .database import db
+from .exceptions import AppInSleepyMode
 
 
 class SleepyUntilConfigured(object):

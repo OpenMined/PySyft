@@ -1,51 +1,46 @@
 # stdlib
+from datetime import datetime
 import os
 import secrets
-from datetime import datetime
-from typing import List, Type, Union
-
-from nacl.encoding import HexEncoder
+from typing import List
+from typing import Type
+from typing import Union
 
 # third party
-from nacl.signing import SigningKey, VerifyKey
+from nacl.encoding import HexEncoder
+from nacl.signing import SigningKey
+from nacl.signing import VerifyKey
+from syft import deserialize
+from syft import serialize
 from syft.core.common.message import ImmediateSyftMessageWithReply
 
 # syft relative
 from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.service.auth import service_auth
-
-from syft.core.node.common.service.node_service import (
-    ImmediateNodeServiceWithoutReply,
-    ImmediateNodeServiceWithReply,
-)
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.proto.core.io.address_pb2 import Address as Address_PB
-
-# from syft.grid.client import connect
+from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
+from syft.core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
+from syft.core.node.domain.client import DomainClient
 from syft.grid.client.client import connect
 from syft.grid.client.grid_connection import GridHTTPConnection
-from syft.core.node.domain.client import DomainClient
-from ..database.utils import model_to_json
-from syft import serialize, deserialize
-
-from syft.core.node.domain.client import DomainClient
 from syft.grid.connections.http_connection import HTTPConnection
+from syft.grid.messages.infra_messages import CreateWorkerMessage
+from syft.grid.messages.infra_messages import CreateWorkerResponse
+from syft.grid.messages.infra_messages import DeleteWorkerMessage
+from syft.grid.messages.infra_messages import DeleteWorkerResponse
+from syft.grid.messages.infra_messages import GetWorkerMessage
+from syft.grid.messages.infra_messages import GetWorkerResponse
+from syft.grid.messages.infra_messages import GetWorkersMessage
+from syft.grid.messages.infra_messages import GetWorkersResponse
+from syft.proto.core.io.address_pb2 import Address as Address_PB
 
-from syft.grid.messages.infra_messages import (
-    CreateWorkerMessage,
-    CreateWorkerResponse,
-    DeleteWorkerMessage,
-    DeleteWorkerResponse,
-    GetWorkerMessage,
-    GetWorkerResponse,
-    GetWorkersMessage,
-    GetWorkersResponse,
-)
-
+# grid relative
 from ...core.database.environment.environment import states
-from ...core.infrastructure import AWS_Serverfull, Config, Provider
+from ...core.infrastructure import AWS_Serverfull
+from ...core.infrastructure import Config
+from ...core.infrastructure import Provider
 from ..database.utils import model_to_json
-from ..exceptions import AuthorizationError, MissingRequestKeyError
+from ..exceptions import AuthorizationError
+from ..exceptions import MissingRequestKeyError
 
 # TODO: Modify existing routes or add new ones, to
 # 1. allow admin to get all workers deployed by a specific user

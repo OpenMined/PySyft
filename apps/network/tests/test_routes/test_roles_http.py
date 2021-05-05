@@ -1,10 +1,16 @@
-from json import dumps, loads
+# stdlib
+from json import dumps
+from json import loads
 
+# third party
+from flask import current_app as app
 import jwt
 import pytest
-from flask import current_app as app
-
-from src.main.core.database import Role, User, create_role, create_user, model_to_json
+from src.main.core.database import Role
+from src.main.core.database import User
+from src.main.core.database import create_role
+from src.main.core.database import create_user
+from src.main.core.database import model_to_json
 
 payload = {
     "name": "mario mario",

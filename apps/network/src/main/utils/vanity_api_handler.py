@@ -1,10 +1,15 @@
-from ..core.node import node
+# stdlib
 from typing import Dict
 from typing import Optional
-from syft.core.common.message import SyftMessage
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.common.message import ImmediateSyftMessageWithReply
+
+# third party
 from syft.core.common.message import EventualSyftMessageWithoutReply
+from syft.core.common.message import ImmediateSyftMessageWithReply
+from syft.core.common.message import ImmediateSyftMessageWithoutReply
+from syft.core.common.message import SyftMessage
+
+# grid relative
+from ..core.node import node
 
 
 def handle_vanity_api(msg_type: SyftMessage, args: Dict) -> Optional[Dict]:

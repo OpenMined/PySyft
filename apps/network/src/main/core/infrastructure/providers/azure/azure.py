@@ -1,11 +1,15 @@
+# stdlib
 import subprocess
 
-import click
+# third party
 from PyInquirer import prompt
+import click
 
+# grid relative
 from ..deploy import base_setup
 from ..tf import *
-from ..utils import Config, styles
+from ..utils import Config
+from ..utils import styles
 from .provider import *
 
 

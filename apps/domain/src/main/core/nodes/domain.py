@@ -1,68 +1,34 @@
-from typing import Optional
+# stdlib
+import os
+from threading import Thread
+from time import sleep
+from typing import Any
 from typing import Dict
 from typing import List
-from typing import Any
-import os
+from typing import Optional
 
+# third party
+from flask import current_app as app
+import jwt
+from nacl.signing import SigningKey
+from nacl.signing import VerifyKey
+import pydp
+import syft as sy
+from syft import serialize
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
-
+from syft.core.io.location import Location
+from syft.core.io.location import SpecificLocation
 from syft.core.node.common.action.exception_action import ExceptionMessage
 from syft.core.node.common.action.exception_action import UnknownPrivateException
 from syft.core.node.common.service.auth import AuthorizationException
-from syft.core.node.domain.domain import Domain
-from syft.core.node.device.client import DeviceClient
-from syft.grid.connections.http_connection import HTTPConnection
-from syft.core.io.location import SpecificLocation
-from syft.core.io.location import Location
-from syft import serialize
-
-# Services
-from ..services.association_request import AssociationRequestService
-from ..services.infra_service import DomainInfrastructureService
-from ..services.setup_service import SetUpService
-from ..services.tensor_service import RegisterTensorService
-from ..services.role_service import RoleManagerService
-from ..services.user_service import UserManagerService
-from ..services.dataset_service import DatasetManagerService
-from ..services.group_service import GroupManagerService
-from ..services.transfer_service import TransferObjectService
-from ..services.request_service import RequestService, RequestServiceWithoutReply
-
-# Database Management
-from ..database import db
-from ..database.store_disk import DiskObjectStore
-from ..manager.user_manager import UserManager
-from ..manager.role_manager import RoleManager
-from ..manager.group_manager import GroupManager
-from ..manager.environment_manager import EnvironmentManager
-from ..manager.setup_manager import SetupManager
-from ..manager.association_request_manager import AssociationRequestManager
-from ..manager.request_manager import RequestManager
-
-from nacl.signing import SigningKey
-from nacl.signing import VerifyKey
-from time import sleep
-
-import jwt
-from flask import current_app as app
-from threading import Thread
-
-import syft as sy
-from syft.core.node.common.service.obj_action_service import (
-    ImmediateObjectActionServiceWithReply,
-)
-from syft.core.node.common.service.obj_search_service import (
-    ImmediateObjectSearchService,
-)
-from syft.core.node.common.service.resolve_pointer_type_service import (
-    ResolvePointerTypeService,
-)
-from syft.core.node.common.service.get_repr_service import GetReprService
-from syft.core.node.common.service.repr_service import ReprService
-from syft.core.node.common.service.heritage_update_service import HeritageUpdateService
 from syft.core.node.common.service.child_node_lifecycle_service import (
     ChildNodeLifecycleService,
+)
+from syft.core.node.common.service.get_repr_service import GetReprService
+from syft.core.node.common.service.heritage_update_service import HeritageUpdateService
+from syft.core.node.common.service.obj_action_service import (
+    ImmediateObjectActionServiceWithReply,
 )
 from syft.core.node.common.service.obj_action_service import (
     ImmediateObjectActionServiceWithoutReply,
@@ -70,10 +36,40 @@ from syft.core.node.common.service.obj_action_service import (
 from syft.core.node.common.service.obj_search_permission_service import (
     ImmediateObjectSearchPermissionUpdateService,
 )
-
-import tenseal as ts
+from syft.core.node.common.service.obj_search_service import (
+    ImmediateObjectSearchService,
+)
+from syft.core.node.common.service.repr_service import ReprService
+from syft.core.node.common.service.resolve_pointer_type_service import (
+    ResolvePointerTypeService,
+)
+from syft.core.node.device.client import DeviceClient
+from syft.core.node.domain.domain import Domain
+from syft.grid.connections.http_connection import HTTPConnection
 import sympc
-import pydp
+import tenseal as ts
+
+# grid relative
+from ..database import db
+from ..database.store_disk import DiskObjectStore
+from ..manager.association_request_manager import AssociationRequestManager
+from ..manager.environment_manager import EnvironmentManager
+from ..manager.group_manager import GroupManager
+from ..manager.request_manager import RequestManager
+from ..manager.role_manager import RoleManager
+from ..manager.setup_manager import SetupManager
+from ..manager.user_manager import UserManager
+from ..services.association_request import AssociationRequestService
+from ..services.dataset_service import DatasetManagerService
+from ..services.group_service import GroupManagerService
+from ..services.infra_service import DomainInfrastructureService
+from ..services.request_service import RequestService
+from ..services.request_service import RequestServiceWithoutReply
+from ..services.role_service import RoleManagerService
+from ..services.setup_service import SetUpService
+from ..services.tensor_service import RegisterTensorService
+from ..services.transfer_service import TransferObjectService
+from ..services.user_service import UserManagerService
 
 sy.load("tenseal")
 sy.load("sympc")

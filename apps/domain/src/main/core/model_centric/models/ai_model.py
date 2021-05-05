@@ -1,8 +1,9 @@
-# External imports
+# third party
 import syft as sy
 
-# Local imports
-from ...database import BaseModel, db
+# grid relative
+from ...database import BaseModel
+from ...database import db
 
 
 class Model(BaseModel):

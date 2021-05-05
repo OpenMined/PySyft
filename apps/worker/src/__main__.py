@@ -8,12 +8,15 @@ with Flask through a WSGI protocol.
 A common choice for that is Gunicorn.
 """
 
+# stdlib
+import argparse
+import json
+import os
+
+# third party
 from app import create_app
 from gevent import pywsgi
 from geventwebsocket.handler import WebSocketHandler
-import argparse
-import os
-import json
 
 parser = argparse.ArgumentParser(description="Run PyGrid application.")
 

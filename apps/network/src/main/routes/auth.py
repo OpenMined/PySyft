@@ -1,21 +1,25 @@
+# stdlib
 from functools import wraps
 from json import dumps
-from flask import Response, request
 from json.decoder import JSONDecodeError
+
+# third party
+from flask import Response
 from flask import current_app as app
+from flask import request
 import jwt
 
+# grid relative
 from ..core.codes import RESPONSE_MSG
-from ..core.exceptions import (
-    PyGridError,
-    UserNotFoundError,
-    RoleNotFoundError,
-    GroupNotFoundError,
-    AuthorizationError,
-    MissingRequestKeyError,
-    InvalidCredentialsError,
-)
-from ..core.database import User, db
+from ..core.database import User
+from ..core.database import db
+from ..core.exceptions import AuthorizationError
+from ..core.exceptions import GroupNotFoundError
+from ..core.exceptions import InvalidCredentialsError
+from ..core.exceptions import MissingRequestKeyError
+from ..core.exceptions import PyGridError
+from ..core.exceptions import RoleNotFoundError
+from ..core.exceptions import UserNotFoundError
 
 
 def token_required_factory(get_token, format_result, optional=False):

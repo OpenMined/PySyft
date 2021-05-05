@@ -1,10 +1,15 @@
+# stdlib
 import subprocess
 import textwrap
 
-import click
+# third party
 from PyInquirer import prompt
+import click
 
-from ...tf import generate_cidr_block, var, var_module
+# grid relative
+from ...tf import generate_cidr_block
+from ...tf import var
+from ...tf import var_module
 from ..provider import *
 
 

@@ -5,41 +5,36 @@ from typing import Type
 from typing import Union
 
 # third party
-from nacl.signing import VerifyKey
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
-
+from nacl.signing import VerifyKey
+from syft.core.common.message import ImmediateSyftMessageWithReply
 
 # syft relative
 from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.service.auth import service_auth
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
-from syft.core.common.message import ImmediateSyftMessageWithReply
+from syft.grid.messages.user_messages import CreateUserMessage
+from syft.grid.messages.user_messages import CreateUserResponse
+from syft.grid.messages.user_messages import DeleteUserMessage
+from syft.grid.messages.user_messages import DeleteUserResponse
+from syft.grid.messages.user_messages import GetUserMessage
+from syft.grid.messages.user_messages import GetUserResponse
+from syft.grid.messages.user_messages import GetUsersMessage
+from syft.grid.messages.user_messages import GetUsersResponse
+from syft.grid.messages.user_messages import SearchUsersMessage
+from syft.grid.messages.user_messages import SearchUsersResponse
+from syft.grid.messages.user_messages import UpdateUserMessage
+from syft.grid.messages.user_messages import UpdateUserResponse
 
-from syft.grid.messages.user_messages import (
-    CreateUserMessage,
-    CreateUserResponse,
-    GetUserMessage,
-    GetUserResponse,
-    UpdateUserMessage,
-    UpdateUserResponse,
-    DeleteUserMessage,
-    DeleteUserResponse,
-    GetUsersMessage,
-    GetUsersResponse,
-    SearchUsersMessage,
-    SearchUsersResponse,
-)
-
-from ..exceptions import (
-    MissingRequestKeyError,
-    RoleNotFoundError,
-    AuthorizationError,
-    UserNotFoundError,
-)
-from ..database.utils import model_to_json
+# grid relative
 from ..database import expand_user_object
+from ..database.utils import model_to_json
+from ..exceptions import AuthorizationError
+from ..exceptions import MissingRequestKeyError
+from ..exceptions import RoleNotFoundError
+from ..exceptions import UserNotFoundError
 
 
 def create_user_msg(

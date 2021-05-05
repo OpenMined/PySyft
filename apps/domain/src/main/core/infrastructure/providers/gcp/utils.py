@@ -1,9 +1,13 @@
+# stdlib
 import subprocess
 
-import click
+# third party
 from PyInquirer import prompt
+import click
 
-from ...utils import Config, styles
+# grid relative
+from ...utils import Config
+from ...utils import styles
 
 
 class GCloud:

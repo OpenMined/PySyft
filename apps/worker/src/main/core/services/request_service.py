@@ -4,35 +4,31 @@ from typing import Type
 from typing import Union
 
 # third party
-from nacl.signing import VerifyKey
 from nacl.encoding import HexEncoder
+from nacl.signing import VerifyKey
+from syft.core.common.message import ImmediateSyftMessageWithReply
 
 # syft relative
 from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.service.auth import service_auth
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
-from syft.core.common.message import ImmediateSyftMessageWithReply
+from syft.grid.messages.request_messages import CreateRequestMessage
+from syft.grid.messages.request_messages import CreateRequestResponse
+from syft.grid.messages.request_messages import DeleteRequestMessage
+from syft.grid.messages.request_messages import DeleteRequestResponse
+from syft.grid.messages.request_messages import GetRequestMessage
+from syft.grid.messages.request_messages import GetRequestResponse
+from syft.grid.messages.request_messages import GetRequestsMessage
+from syft.grid.messages.request_messages import GetRequestsResponse
+from syft.grid.messages.request_messages import UpdateRequestMessage
+from syft.grid.messages.request_messages import UpdateRequestResponse
 
-from syft.grid.messages.request_messages import (
-    CreateRequestMessage,
-    CreateRequestResponse,
-    GetRequestMessage,
-    GetRequestResponse,
-    GetRequestsMessage,
-    GetRequestsResponse,
-    UpdateRequestMessage,
-    UpdateRequestResponse,
-    DeleteRequestMessage,
-    DeleteRequestResponse,
-)
-
-from ..exceptions import (
-    MissingRequestKeyError,
-    AuthorizationError,
-    InvalidParameterValueError,
-)
+# grid relative
 from ..database.utils import model_to_json
+from ..exceptions import AuthorizationError
+from ..exceptions import InvalidParameterValueError
+from ..exceptions import MissingRequestKeyError
 
 
 def create_request_msg(

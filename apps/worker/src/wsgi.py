@@ -1,6 +1,9 @@
 """This source file is used for production purposes."""
-from app import create_app
+# stdlib
 import os
+
+# third party
+from app import create_app
 
 args = {
     "port": os.environ.get("GRID_NODE_PORT", 5000),
