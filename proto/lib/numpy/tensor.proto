@@ -7,11 +7,7 @@ syntax = "proto3";
 
 package syft.lib.numpy;
 
-// TensorProtos stores multiple TensorProto objects in one single proto.
-message TensorProtos { repeated TensorProto protos = 1; }
-
-// TensorProto stores serialized Tensor objects.
-message TensorProto {
+message NumpyTensorProto {
   // The dimensions in the tensor.
   repeated int64 dims = 1;
 

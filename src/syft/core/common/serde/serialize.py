@@ -5,10 +5,8 @@ from typing import Union
 from google.protobuf.message import Message
 
 # syft relative
-from ....logger import debug
 from ....logger import traceback_and_raise
-from ....proto.util.data_message_pb2 import DataMessage
-from ....util import get_fully_qualified_name
+from ....proto.syft_message_pb2 import SyftNative
 from ....util import validate_type
 from .serializable import Serializable
 
@@ -44,7 +42,6 @@ def _serialize(
     :return: a serialized form of the object on which serialize() is called.
     :rtype: Union[str, bytes, Message]
     """
-
     is_serializable: Serializable
     if not isinstance(obj, Serializable):
         if hasattr(obj, "_sy_serializable_wrapper_type"):
@@ -59,13 +56,10 @@ def _serialize(
         is_serializable = obj
 
     if to_bytes:
-        debug(f"Serializing {type(is_serializable)}")
-        # indent=None means no white space or \n in the serialized version
-        # this is compatible with json.dumps(x, indent=None)
-        serialized_data = is_serializable._object2proto().SerializeToString()
-        blob: Message = DataMessage(
-            obj_type=get_fully_qualified_name(obj=is_serializable),
-            content=serialized_data,
+        proto = is_serializable._object2proto()
+        blob: Message = SyftNative()
+        getattr(blob, type(proto).__name__.lower()).MergeFromString(
+            proto.SerializeToString()
         )
         return validate_type(blob.SerializeToString(), bytes)
     elif to_proto:

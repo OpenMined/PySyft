@@ -49,7 +49,7 @@ message TensorData {
   // repeated double contents_complex128 = 31;
 }
 
-message TensorProto {
+message TorchTensorProto {
   TensorData tensor = 1;
   bool requires_grad = 2;
   TensorData grad = 3;

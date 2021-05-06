@@ -138,10 +138,7 @@ def test_object_with_id_binary_serialization() -> None:
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     obj = ObjectWithID(id=uid)
 
-    blob = (
-        b"\n$syft.core.common.object.ObjectWithID\x12\x14\n\x12\n\x10\xfb\x1b\xb0"
-        + b"g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15\x14"
-    )
+    blob = b"\n\x14\n\x12\n\x10\xfb\x1b\xb0g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15\x14"
 
     assert sy.serialize(obj, to_bytes=True) == blob
     assert sy.serialize(obj, to_bytes=True) == blob
@@ -151,10 +148,7 @@ def test_object_with_id_binary_serialization() -> None:
 def test_object_with_id_binary_deserialization() -> None:
     """Test that binary ObjectWithID deserialization works as expected"""
 
-    blob = (
-        b"\n$syft.core.common.object.ObjectWithID\x12\x14\n\x12\n\x10\xfb\x1b\xb0"
-        + b"g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15\x14"
-    )
+    blob = b"\n\x14\n\x12\n\x10\xfb\x1b\xb0g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15\x14"
     obj = sy.deserialize(blob=blob, from_bytes=True)
     assert obj == ObjectWithID(
         id=UID(value=uuid.UUID(int=333779996850170035686993356951732753684))

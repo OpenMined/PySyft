@@ -8,6 +8,9 @@ execute the exact same functionality but do so over a network"""
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import final
 
+# syft absolute
+from syft.core.common.serde.serializable import bind_protobuf
+
 # syft relative
 from ...proto.core.io.connection_pb2 import (
     VirtualClientConnection as VirtualClientConnection_PB,
@@ -25,6 +28,7 @@ from .connection import ServerConnection
 
 
 @final
+@bind_protobuf
 class VirtualServerConnection(ServerConnection):
     def __init__(self, node: AbstractNode):
         self.node = node
@@ -60,6 +64,7 @@ class VirtualServerConnection(ServerConnection):
 
 
 @final
+@bind_protobuf
 class VirtualClientConnection(ClientConnection):
     def __init__(self, server: VirtualServerConnection):
         self.server = server

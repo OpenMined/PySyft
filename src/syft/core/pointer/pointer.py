@@ -425,9 +425,6 @@ class Pointer(AbstractPointer):
 
         self.client.send_immediate_msg_without_reply(msg=msg)
 
-        # wait long enough for it to arrive and trigger a handler
-        time.sleep(0.1)
-
         if not block:
             return None
         else:

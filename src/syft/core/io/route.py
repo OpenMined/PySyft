@@ -90,6 +90,9 @@ from typing import Union
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
+# syft absolute
+from syft.core.common.serde.serializable import bind_protobuf
+
 # syft relative
 from ...logger import debug
 from ...logger import traceback_and_raise
@@ -151,6 +154,7 @@ class Route(ObjectWithID):
         traceback_and_raise(NotImplementedError)
 
 
+@bind_protobuf
 class SoloRoute(Route):
     def __init__(
         self,

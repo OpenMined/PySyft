@@ -694,6 +694,7 @@ class InvalidLoopBackRequest(ImmediateSyftMessageWithoutReply):
         return InvalidLoopBackRequest_PB
 
 
+@bind_protobuf
 @final
 class CloseConnectionMessage(ImmediateSyftMessageWithoutReply):
     def __init__(

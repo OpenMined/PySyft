@@ -59,8 +59,8 @@ from syft.proto.grid.messages.dataset_messages_pb2 import (
 )
 
 
-@bind_protobuf
 @final
+@bind_protobuf
 class CreateDatasetMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,

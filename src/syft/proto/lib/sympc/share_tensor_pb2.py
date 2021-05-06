@@ -23,7 +23,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n"proto/lib/sympc/share_tensor.proto\x12\x0esyft.lib.sympc\x1a\x1cproto/lib/torch/tensor.proto\x1a\x1dproto/lib/sympc/session.proto"g\n\x0bShareTensor\x12+\n\x06tensor\x18\x01 \x01(\x0b\x32\x1b.syft.lib.torch.TensorProto\x12+\n\x07session\x18\x02 \x01(\x0b\x32\x1a.syft.lib.sympc.MPCSessionb\x06proto3',
+    serialized_pb=b'\n"proto/lib/sympc/share_tensor.proto\x12\x0esyft.lib.sympc\x1a\x1cproto/lib/torch/tensor.proto\x1a\x1dproto/lib/sympc/session.proto"l\n\x0bShareTensor\x12\x30\n\x06tensor\x18\x01 \x01(\x0b\x32 .syft.lib.torch.TorchTensorProto\x12+\n\x07session\x18\x02 \x01(\x0b\x32\x1a.syft.lib.sympc.MPCSessionb\x06proto3',
     dependencies=[
         proto_dot_lib_dot_torch_dot_tensor__pb2.DESCRIPTOR,
         proto_dot_lib_dot_sympc_dot_session__pb2.DESCRIPTOR,
@@ -87,12 +87,12 @@ _SHARETENSOR = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=115,
-    serialized_end=218,
+    serialized_end=223,
 )
 
 _SHARETENSOR.fields_by_name[
     "tensor"
-].message_type = proto_dot_lib_dot_torch_dot_tensor__pb2._TENSORPROTO
+].message_type = proto_dot_lib_dot_torch_dot_tensor__pb2._TORCHTENSORPROTO
 _SHARETENSOR.fields_by_name[
     "session"
 ].message_type = proto_dot_lib_dot_sympc_dot_session__pb2._MPCSESSION

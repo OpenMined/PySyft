@@ -25,7 +25,6 @@ def GenerateWrapper(
     type_object2proto: CallableT,
     type_proto2object: CallableT,
 ) -> None:
-    @bind_protobuf
     class Wrapper(Serializable):
         def __init__(self, value: object):
             self.obj = value
@@ -64,6 +63,8 @@ def GenerateWrapper(
     aggressive_set_attr(
         obj=wrapped_type, name="_sy_serializable_wrapper_type", attr=Wrapper
     )
+
+    bind_protobuf(Wrapper)
 
 
 def GenerateProtobufWrapper(

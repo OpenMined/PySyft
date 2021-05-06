@@ -7,7 +7,7 @@ from google.protobuf.message import Message
 
 # syft relative
 from ....logger import traceback_and_raise
-from ....proto.util.data_message_pb2 import DataMessage
+from ....proto.syft_message_pb2 import SyftNative
 from ....util import index_syft_by_module_name
 
 
@@ -52,21 +52,9 @@ def _deserialize(
     )
 
     if from_bytes:
-        data_message = DataMessage()
+        data_message = SyftNative()
         data_message.ParseFromString(blob)
-        obj_type = index_syft_by_module_name(fully_qualified_name=data_message.obj_type)
-        get_protobuf_schema = getattr(obj_type, "get_protobuf_schema", None)
-
-        if not callable(get_protobuf_schema):
-            traceback_and_raise(deserialization_error)
-
-        protobuf_type = get_protobuf_schema()
-        blob = protobuf_type()
-
-        if not isinstance(blob, Message):
-            traceback_and_raise(deserialization_error)
-
-        blob.ParseFromString(data_message.content)
+        blob = getattr(data_message, data_message.WhichOneof("data_field"))
 
     # lets try to lookup the type we are deserializing
     obj_type = getattr(type(blob), "schema2type", None)
@@ -76,7 +64,7 @@ def _deserialize(
         obj_type = getattr(blob, "obj_type", None)
         if obj_type is None:
             traceback_and_raise(deserialization_error)
-        obj_type = index_syft_by_module_name(fully_qualified_name=obj_type)  # type: ignore
+        obj_type = index_syft_by_module_name(fully_qualified_name=obj_type)
         obj_type = getattr(obj_type, "_sy_serializable_wrapper_type", obj_type)
 
     if not isinstance(obj_type, type):

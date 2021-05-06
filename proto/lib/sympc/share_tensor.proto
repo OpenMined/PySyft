@@ -6,6 +6,6 @@ import "proto/lib/torch/tensor.proto";
 import "proto/lib/sympc/session.proto";
 
 message ShareTensor {
-  syft.lib.torch.TensorProto tensor = 1;
+  syft.lib.torch.TorchTensorProto tensor = 1;
   syft.lib.sympc.MPCSession session = 2;
 }

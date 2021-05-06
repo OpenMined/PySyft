@@ -9,14 +9,15 @@ from ...lib.torch.tensor_util import protobuf_tensor_deserializer
 from ...lib.torch.tensor_util import protobuf_tensor_serializer
 from ...logger import warning
 from ...proto.lib.torch.device_pb2 import Device as Device_PB
-from ...proto.lib.torch.tensor_pb2 import TensorProto as Tensor_PB
+from ...proto.lib.torch.tensor_pb2 import TorchTensorProto as Tensor_PB
 
 torch_tensor_type = type(th.tensor([1, 2, 3]))
 
 
 def object2proto(obj: object) -> Tensor_PB:
+    tensor_obj = protobuf_tensor_serializer(obj).SerializeToString()
     proto = Tensor_PB()
-    proto.tensor.CopyFrom(protobuf_tensor_serializer(obj))
+    proto.tensor.MergeFromString(tensor_obj)
 
     proto.requires_grad = getattr(obj, "requires_grad", False)
     proto.device.CopyFrom(
@@ -29,7 +30,9 @@ def object2proto(obj: object) -> Tensor_PB:
     if proto.requires_grad:
         grad = getattr(obj, "grad", None)
         if grad is not None:
-            proto.grad.CopyFrom(protobuf_tensor_serializer(grad))
+            proto.grad.MergeFromString(
+                protobuf_tensor_serializer(grad).SerializeToString()
+            )
 
     return proto
 

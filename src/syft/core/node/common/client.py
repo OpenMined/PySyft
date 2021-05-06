@@ -13,6 +13,9 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import pandas as pd
 
+# syft absolute
+from syft.core.common.serde.serializable import bind_protobuf
+
 # syft relative
 from .... import serialize
 from ....lib import create_lib_ast
@@ -46,6 +49,7 @@ from .action.exception_action import ExceptionMessage
 from .service.child_node_lifecycle_service import RegisterChildNodeMessage
 
 
+@bind_protobuf
 class Client(AbstractNodeClient):
     """Client is an incredibly powerful abstraction in Syft. We assume that,
     no matter where a client is, it can figure out how to communicate with
