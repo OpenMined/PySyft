@@ -9,7 +9,6 @@ from autodp.autodp_core import Mechanism
 from autodp.transformer_zoo import Composition
 
 # syft relative
-from .entity import Entity
 from .scalar import Scalar
 
 
@@ -37,7 +36,7 @@ class AdversarialAccountant:
             value=composed_mech.get_approxDP(self.delta),
             min_val=0,
             max_val=self.max_budget,
-            entity=Entity(name=entity_name),
+            entity=entity_name,
         )
 
     def has_budget(self, entity_name: str) -> bool:
@@ -61,5 +60,5 @@ class AdversarialAccountant:
         return entities
 
     def print_ledger(self, delta: float = 1e-6) -> None:
-        for entity, mechanisms in self.entity2ledger.items():
-            print(entity + "\t" + str(self.get_eps_for_entity(entity)._value))
+        for entity_name, mechanisms in self.entity2ledger.items():
+            print(entity_name + "\t" + str(self.get_eps_for_entity(entity_name)._value))

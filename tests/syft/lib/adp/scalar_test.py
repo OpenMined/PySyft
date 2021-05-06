@@ -23,6 +23,4 @@ def test_required_serde() -> None:
     assert bob.min_val == deserialized.min_val
     assert bob.max_val == deserialized.max_val
     # assert bob.poly == deserialized.poly
-    assert bob.entity.name == deserialized.entity.name
-    assert bob.entity.id == deserialized.entity.id
-    assert bob.enabled == deserialized.enabled
+    assert bob.entity_name == deserialized.entity_name

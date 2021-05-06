@@ -11,6 +11,7 @@ from typing import List
 from typing import Optional
 from typing import Set
 from typing import Tuple
+from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -31,7 +32,9 @@ from ...proto.lib.adp.scalar_pb2 import Scalar as Scalar_PB
 from .entity import Entity
 from .idp_gaussian_mechanism import iDPGaussianMechanism
 
-# @Madhava: whats this global state used for?
+# scalar_name2obj is used to look and extract value, min_val and max_val
+# if we are able to store these in the name string instead we could extract them
+# at the point of use instead of lookup
 scalar_name2obj = {}
 
 
@@ -48,11 +51,10 @@ class Scalar(Serializable):
         value: Optional[float] = None,
         min_val: Optional[float] = None,
         max_val: Optional[float] = None,
-        entity: Optional[Entity] = None,
+        entity: Optional[Union[str, Entity]] = None,
         poly: Optional[Symbol] = None,
         name: Optional[str] = None,
         id: Optional[UID] = None,
-        enabled: bool = True,
     ):
         self.id = id if id else UID()
         if name is None:
@@ -62,18 +64,14 @@ class Scalar(Serializable):
         self._value = value
         self._min_val = min_val
         self._max_val = max_val
-        # Tudor C: What is enabled?
-        self.enabled = enabled
+        self.entity = entity
 
         if poly is not None:
             # if this Scalar is being formed as a function of other Scalar objects
             self._poly = poly
         elif entity is not None:
-            # @Madhava: will we need the entity after serde, if not maybe the init
-            # should just take the entity.name or we can serde the self.scalar_name
-            self.entity = entity
-            # if you're creating a Scalar for the first time (no parents)
-            self.scalar_name = self.name + "_" + entity.name
+            self.entity_name = entity.name if isinstance(entity, Entity) else entity
+            self.scalar_name = self.name + "_" + self.entity_name
             self._poly = symbols(self.scalar_name)
             scalar_name2obj[self.scalar_name] = self
         else:
@@ -168,15 +166,13 @@ class Scalar(Serializable):
         else:
             L = resbrute[symbol2index[symbol_name]]
 
-        input_obj = scalar_name2obj[symbol_name]
-
-        if input_obj._value is None:
+        if self._value is None:
             raise ValueError("Tudor: This should be an error, right?")
 
         # Step 4: create the gaussian mechanism object
         gm1 = iDPGaussianMechanism(
             sigma=sigma,
-            value=input_obj._value,
+            value=self._value,
             L=L,
             entity=symbol_name.split("_")[1],
             name="gm_" + symbol_name,
@@ -252,9 +248,8 @@ class Scalar(Serializable):
             max_val=self._max_val if self._max_val is not None else 0,
             # has_poly=True if self._poly is not None else False,
             # poly=self._poly if self._poly is not None else None,
-            has_entity=True if self.entity is not None else False,
-            entity=self.entity._object2proto() if self.entity is not None else None,
-            enabled=self.enabled,
+            has_entity_name=True if self.entity_name is not None else False,
+            entity_name=self.entity_name if self.entity_name is not None else "",
         )
 
     @staticmethod
@@ -275,9 +270,9 @@ class Scalar(Serializable):
         if proto.has_max_val:
             max_val = proto.max_val
 
-        entity: Optional[Entity] = None
-        if proto.has_entity:
-            entity = Entity._proto2object(proto.entity)
+        entity_name: Optional[str] = None
+        if proto.has_entity_name:
+            entity_name = proto.entity_name
 
         return Scalar(
             id=UID._proto2object(proto.id),
@@ -285,8 +280,7 @@ class Scalar(Serializable):
             value=value,
             min_val=min_val,
             max_val=max_val,
-            entity=entity,
-            enabled=proto.enabled,
+            entity=entity_name,
         )
 
     @staticmethod

@@ -17,7 +17,6 @@ _sym_db = _symbol_database.Default()
 from syft.proto.core.common import (
     common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
 )
-from syft.proto.lib.adp import entity_pb2 as proto_dot_lib_dot_adp_dot_entity__pb2
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/lib/adp/scalar.proto",
@@ -25,10 +24,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x1aproto/lib/adp/scalar.proto\x12\x0csyft.lib.adp\x1a%proto/core/common/common_object.proto\x1a\x1aproto/lib/adp/entity.proto"\x84\x02\n\x06Scalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x10\n\x08has_name\x18\x02 \x01(\x08\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x11\n\thas_value\x18\x04 \x01(\x08\x12\r\n\x05value\x18\x05 \x01(\x02\x12\x13\n\x0bhas_min_val\x18\x06 \x01(\x08\x12\x0f\n\x07min_val\x18\x07 \x01(\x02\x12\x13\n\x0bhas_max_val\x18\x08 \x01(\x08\x12\x0f\n\x07max_val\x18\t \x01(\x02\x12\x12\n\nhas_entity\x18\x0c \x01(\x08\x12$\n\x06\x65ntity\x18\r \x01(\x0b\x32\x14.syft.lib.adp.Entity\x12\x0f\n\x07\x65nabled\x18\x0e \x01(\x08\x62\x06proto3',
+    serialized_pb=b'\n\x1aproto/lib/adp/scalar.proto\x12\x0csyft.lib.adp\x1a%proto/core/common/common_object.proto"\xe7\x01\n\x06Scalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x10\n\x08has_name\x18\x02 \x01(\x08\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x11\n\thas_value\x18\x04 \x01(\x08\x12\r\n\x05value\x18\x05 \x01(\x02\x12\x13\n\x0bhas_min_val\x18\x06 \x01(\x08\x12\x0f\n\x07min_val\x18\x07 \x01(\x02\x12\x13\n\x0bhas_max_val\x18\x08 \x01(\x08\x12\x0f\n\x07max_val\x18\t \x01(\x02\x12\x17\n\x0fhas_entity_name\x18\x0c \x01(\x08\x12\x13\n\x0b\x65ntity_name\x18\r \x01(\tb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
-        proto_dot_lib_dot_adp_dot_entity__pb2.DESCRIPTOR,
     ],
 )
 
@@ -213,8 +211,8 @@ _SCALAR = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="has_entity",
-            full_name="syft.lib.adp.Scalar.has_entity",
+            name="has_entity_name",
+            full_name="syft.lib.adp.Scalar.has_entity_name",
             index=9,
             number=12,
             type=8,
@@ -232,34 +230,15 @@ _SCALAR = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="entity",
-            full_name="syft.lib.adp.Scalar.entity",
+            name="entity_name",
+            full_name="syft.lib.adp.Scalar.entity_name",
             index=10,
             number=13,
-            type=11,
-            cpp_type=10,
+            type=9,
+            cpp_type=9,
             label=1,
             has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="enabled",
-            full_name="syft.lib.adp.Scalar.enabled",
-            index=11,
-            number=14,
-            type=8,
-            cpp_type=7,
-            label=1,
-            has_default_value=False,
-            default_value=False,
+            default_value=b"".decode("utf-8"),
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -278,16 +257,13 @@ _SCALAR = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=112,
-    serialized_end=372,
+    serialized_start=84,
+    serialized_end=315,
 )
 
 _SCALAR.fields_by_name[
     "id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_SCALAR.fields_by_name[
-    "entity"
-].message_type = proto_dot_lib_dot_adp_dot_entity__pb2._ENTITY
 DESCRIPTOR.message_types_by_name["Scalar"] = _SCALAR
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
