@@ -104,11 +104,16 @@ def test_pandas_json_normalize(root_client: sy.VirtualMachineClient) -> None:
     data = {"A": [1, 2]}
     df = pd.json_normalize(data)
 
-    sy_data = sy.lib.python.Dict(data)
     # create dict pointer
+    sy_data = sy.lib.python.Dict(data)
     data_ptr = sy_data.send(root_client)
 
     remote_pandas = root_client.pandas
     df_ptr = remote_pandas.json_normalize(data_ptr)
+    res_df = df_ptr.get()
 
-    assert df.equals(df_ptr.get())
+    # Serde converts the list to an np.array. To allow comparison and prevent this test
+    # being coupled with numpy as a dependency we just convert back to a list.
+    res_df.iloc[0][0] = list(res_df.iloc[0][0])
+
+    assert df.equals(res_df)
