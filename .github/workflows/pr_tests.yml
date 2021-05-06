@@ -152,6 +152,7 @@ jobs:
       - name: Scan for security issues
         run: |
           bandit -r src
+          safety check
 
       - name: Run normal tests
         run: |

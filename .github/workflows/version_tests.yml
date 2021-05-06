@@ -58,6 +58,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
+      - name: Scan for security issues
+        run: |
+          bandit -r src
+          safety check
+
       - name: Install PyTorch
         run: |
           pip install packaging --default-timeout=60
