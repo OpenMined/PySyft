@@ -23,7 +23,7 @@ repos:
         # - darglint
         exclude: ^(src/syft/proto|examples/duet)
   - repo: https://github.com/psf/black
-    rev: 20.8b1
+    rev: 21.4b0
     hooks:
       - id: black
         exclude: ^(src/syft/proto|examples/duet)
@@ -61,3 +61,17 @@ repos:
     hooks:
       - id: isort
         name: isort (python)
+
+  # - repo: https://github.com/pycqa/pydocstyle
+  #   rev: 5.1.1
+  #   hooks:
+  #     - id: pydocstyle
+  #       args:
+  #         - --convention=google
+  #       exclude: tests
+
+  # - repo: https://github.com/terrencepreilly/darglint
+  #   rev: master
+  #   hooks:
+  #     - id: darglint
+  #       exclude: tests

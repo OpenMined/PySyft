@@ -48,6 +48,7 @@ class Plan(Serializable):
         actions: Union[List[Action], None] = None,
         inputs: Union[Dict[str, Pointer], None] = None,
         outputs: Union[Pointer, List[Pointer], None] = None,
+        i2o_map: Union[Dict[str, int], None] = None,
         code: Optional[str] = None,
         max_calls: Optional[int] = None,
     ):
@@ -57,19 +58,10 @@ class Plan(Serializable):
         self.actions: List[Action] = listify(actions)
         self.inputs: Dict[str, Pointer] = inputs if inputs is not None else dict()
         self.outputs: List[Pointer] = listify(outputs)
+        self.i2o_map: Dict[str, int] = i2o_map if i2o_map is not None else dict()
         self.code = code
         self.max_calls = max_calls
         self.n_calls = 0
-        self.i2o_map = self.map_in2out()
-
-    def map_in2out(self) -> dict:
-        in2out_map = {}
-        for k, v in self.inputs.items():
-            input_id_at_location = v.id_at_location
-            for i, o in enumerate(self.outputs):
-                if o.id_at_location == input_id_at_location:
-                    in2out_map[k] = i
-        return in2out_map
 
     def __call__(
         self,
@@ -219,8 +211,11 @@ class Plan(Serializable):
         ]
         inputs_pb = {k: v._object2proto() for k, v in self.inputs.items()}
         outputs_pb = [out._object2proto() for out in self.outputs]
+        i2o_map_pb = self.i2o_map
 
-        return Plan_PB(actions=actions_pb, inputs=inputs_pb, outputs=outputs_pb)
+        return Plan_PB(
+            actions=actions_pb, inputs=inputs_pb, outputs=outputs_pb, i2o_map=i2o_map_pb
+        )
 
     @staticmethod
     def _proto2object(proto: Plan_PB) -> "Plan":
@@ -251,5 +246,6 @@ class Plan(Serializable):
         outputs = [
             Pointer._proto2object(pointer_proto) for pointer_proto in proto.outputs
         ]
+        i2o_map = proto.i2o_map
 
-        return Plan(actions=actions, inputs=inputs, outputs=outputs)
+        return Plan(actions=actions, inputs=inputs, outputs=outputs, i2o_map=i2o_map)
