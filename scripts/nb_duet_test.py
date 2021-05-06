@@ -77,14 +77,16 @@ assert Path(\"{}\").exists()
 """
 
 PATHS = [
-    "examples/homomorphic-encryption",
+    "examples/data-science/pandas",
+    "examples/differential-privacy",
     "examples/duet/dcgan",
+    "examples/duet/mnist_lightning",
+    "examples/duet/mnist",
+    "examples/duet/reinforcement_learning",
     "examples/duet/super_resolution",
+    "examples/homomorphic-encryption",
     "examples/private-ai-series/duet_basics",
     "examples/private-ai-series/duet_iris_classifier",
-    "examples/differential-privacy/opacus" "examples/duet/mnist",
-    "examples/duet/mnist_lightning",
-    "examples/duet/reinforcement_learning",
 ]
 
 NOTEBOOK_TESTS_PATH = Path("tests/syft/notebooks")
