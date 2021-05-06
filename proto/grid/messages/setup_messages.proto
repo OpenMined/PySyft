@@ -19,7 +19,6 @@ message CreateInitialSetUpResponse {
   syft.core.io.Address address = 4;
 }
 
-
 message GetSetUpMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
@@ -28,6 +27,20 @@ message GetSetUpMessage {
 }
 
 message GetSetUpResponse {
+  syft.core.common.UID msg_id = 1;
+  int32 status_code = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}
+
+message UpdateSetup {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+message UpdateSetupResponse {
   syft.core.common.UID msg_id = 1;
   int32 status_code = 2;
   string content = 3;
