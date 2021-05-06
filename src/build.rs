@@ -1,5 +1,4 @@
 use prost_build;
-use std::fs::DirEntry;
 use std::path::Path;
 use walkdir;
 

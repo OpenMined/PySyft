@@ -50,6 +50,11 @@ def _serialize(
         if hasattr(obj, "_sy_serializable_wrapper_type"):
             is_serializable = obj._sy_serializable_wrapper_type(value=obj)  # type: ignore
         else:
+            if obj.__module__ == "builtins":
+                serde_func = getattr(obj, "serialize", None)
+                if callable(serde_func):
+                    serde_func(compression=True)
+
             traceback_and_raise(
                 Exception(
                     f"Object {type(obj)} is not serializable and has no _sy_serializable_wrapper_type"

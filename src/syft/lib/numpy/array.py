@@ -48,7 +48,6 @@ def object2proto(obj: np.ndarray) -> NumpyProto:
     tensor = torch.from_numpy(obj).clone()
     tensor_proto = protobuf_tensor_serializer(tensor)
     dtype = original_dtype.name
-
     return NumpyProto(tensor=tensor_proto, dtype=dtype)
 
 

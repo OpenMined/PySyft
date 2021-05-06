@@ -47,6 +47,24 @@ pub mod core {
     }
 }
 
+pub mod lib {
+    pub mod numpy {
+        tonic::include_proto!("syft.lib.numpy");
+    }
+
+    pub mod torch {
+        tonic::include_proto!("syft.lib.torch");
+    }
+
+    pub mod python {
+        pub mod collections {
+            tonic::include_proto!("syft.lib.python.collections");
+        }
+
+        tonic::include_proto!("syft.lib.python");
+    }
+}
+
 pub mod util {
     tonic::include_proto!("syft.util");
 }

@@ -7,6 +7,7 @@ from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
+from google.protobuf.internal import enum_type_wrapper
 
 # @@protoc_insertion_point(imports)
 
@@ -19,13 +20,12 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x1cproto/lib/numpy/tensor.proto\x12\x0esyft.lib.numpy";\n\x0cTensorProtos\x12+\n\x06protos\x18\x01 \x03(\x0b\x32\x1b.syft.lib.numpy.TensorProto"\xef\x02\n\x0bTensorProto\x12\x0c\n\x04\x64ims\x18\x01 \x03(\x03\x12\x37\n\tdata_type\x18\x02 \x01(\x0e\x32$.syft.lib.numpy.TensorProto.DataType\x12\x12\n\nfloat_data\x18\x03 \x03(\x02\x12\x12\n\nint32_data\x18\x04 \x03(\x05\x12\x11\n\tbyte_data\x18\x05 \x01(\x0c\x12\x13\n\x0bstring_data\x18\x06 \x03(\x0c\x12\x13\n\x0b\x64ouble_data\x18\x07 \x03(\x01\x12\x12\n\nint64_data\x18\x08 \x03(\x03"\x9f\x01\n\x08\x44\x61taType\x12\r\n\tUNDEFINED\x10\x00\x12\t\n\x05\x46LOAT\x10\x01\x12\t\n\x05INT32\x10\x02\x12\x08\n\x04\x42YTE\x10\x03\x12\n\n\x06STRING\x10\x04\x12\x08\n\x04\x42OOL\x10\x05\x12\t\n\x05UINT8\x10\x06\x12\x08\n\x04INT8\x10\x07\x12\n\n\x06UINT16\x10\x08\x12\t\n\x05INT16\x10\t\x12\t\n\x05INT64\x10\n\x12\x0b\n\x07\x46LOAT16\x10\x0c\x12\n\n\x06\x44OUBLE\x10\rb\x06proto3',
+    serialized_pb=b'\n\x1cproto/lib/numpy/tensor.proto\x12\x0esyft.lib.numpy";\n\x0cTensorProtos\x12+\n\x06protos\x18\x01 \x03(\x0b\x32\x1b.syft.lib.numpy.TensorProto"\xc1\x01\n\x0bTensorProto\x12\x0c\n\x04\x64ims\x18\x01 \x03(\x03\x12+\n\tdata_type\x18\x02 \x01(\x0e\x32\x18.syft.lib.numpy.DataType\x12\x12\n\nfloat_data\x18\x03 \x03(\x02\x12\x12\n\nint32_data\x18\x04 \x03(\x05\x12\x11\n\tbyte_data\x18\x05 \x01(\x0c\x12\x13\n\x0bstring_data\x18\x06 \x03(\x0c\x12\x13\n\x0b\x64ouble_data\x18\x07 \x03(\x01\x12\x12\n\nint64_data\x18\x08 \x03(\x03*\x9f\x01\n\x08\x44\x61taType\x12\r\n\tUNDEFINED\x10\x00\x12\t\n\x05\x46LOAT\x10\x01\x12\t\n\x05INT32\x10\x02\x12\x08\n\x04\x42YTE\x10\x03\x12\n\n\x06STRING\x10\x04\x12\x08\n\x04\x42OOL\x10\x05\x12\t\n\x05UINT8\x10\x06\x12\x08\n\x04INT8\x10\x07\x12\n\n\x06UINT16\x10\x08\x12\t\n\x05INT16\x10\t\x12\t\n\x05INT64\x10\n\x12\x0b\n\x07\x46LOAT16\x10\x0c\x12\n\n\x06\x44OUBLE\x10\rb\x06proto3',
 )
 
-
-_TENSORPROTO_DATATYPE = _descriptor.EnumDescriptor(
+_DATATYPE = _descriptor.EnumDescriptor(
     name="DataType",
-    full_name="syft.lib.numpy.TensorProto.DataType",
+    full_name="syft.lib.numpy.DataType",
     filename=None,
     file=DESCRIPTOR,
     create_key=_descriptor._internal_create_key,
@@ -137,10 +137,25 @@ _TENSORPROTO_DATATYPE = _descriptor.EnumDescriptor(
     ],
     containing_type=None,
     serialized_options=None,
-    serialized_start=318,
-    serialized_end=477,
+    serialized_start=306,
+    serialized_end=465,
 )
-_sym_db.RegisterEnumDescriptor(_TENSORPROTO_DATATYPE)
+_sym_db.RegisterEnumDescriptor(_DATATYPE)
+
+DataType = enum_type_wrapper.EnumTypeWrapper(_DATATYPE)
+UNDEFINED = 0
+FLOAT = 1
+INT32 = 2
+BYTE = 3
+STRING = 4
+BOOL = 5
+UINT8 = 6
+INT8 = 7
+UINT16 = 8
+INT16 = 9
+INT64 = 10
+FLOAT16 = 12
+DOUBLE = 13
 
 
 _TENSORPROTOS = _descriptor.Descriptor(
@@ -347,23 +362,21 @@ _TENSORPROTO = _descriptor.Descriptor(
     ],
     extensions=[],
     nested_types=[],
-    enum_types=[
-        _TENSORPROTO_DATATYPE,
-    ],
+    enum_types=[],
     serialized_options=None,
     is_extendable=False,
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
     serialized_start=110,
-    serialized_end=477,
+    serialized_end=303,
 )
 
 _TENSORPROTOS.fields_by_name["protos"].message_type = _TENSORPROTO
-_TENSORPROTO.fields_by_name["data_type"].enum_type = _TENSORPROTO_DATATYPE
-_TENSORPROTO_DATATYPE.containing_type = _TENSORPROTO
+_TENSORPROTO.fields_by_name["data_type"].enum_type = _DATATYPE
 DESCRIPTOR.message_types_by_name["TensorProtos"] = _TENSORPROTOS
 DESCRIPTOR.message_types_by_name["TensorProto"] = _TENSORPROTO
+DESCRIPTOR.enum_types_by_name["DataType"] = _DATATYPE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 TensorProtos = _reflection.GeneratedProtocolMessageType(

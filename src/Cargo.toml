@@ -14,6 +14,8 @@ crate-type = ["cdylib"]
 
 [dependencies]
 bytes = "1.0.1"
+ndarray = "0.15.1"
+numpy = "0.13.1"
 prost = "0.7.0"
 prost-build = "0.7.0"
 prost-types = "0.7.0"
