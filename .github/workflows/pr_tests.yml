@@ -175,6 +175,11 @@ jobs:
             pip install $i --no-deps --default-timeout=60
           }
 
+      - name: Install libomp for XGBoost
+        if: startsWith(runner.os, 'macos')
+        run: |
+          brew install libomp
+
       - name: Run supported library tests
         run: |
           pip install -r requirements.libs.deps.txt --default-timeout=60
