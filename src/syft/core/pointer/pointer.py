@@ -311,6 +311,7 @@ class Pointer(AbstractPointer):
             tags=self.tags,
             description=self.description,
             object_type=self.object_type,
+            attribute_name=getattr(self, "attribute_name", ""),
         )
 
     @staticmethod
