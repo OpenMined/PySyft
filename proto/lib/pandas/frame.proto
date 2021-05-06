@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package syft.lib.pandas;
+
+message PandasDataFrame {
+  bytes dataframe = 1;
+  uint64 decompressed_size = 2;
+}

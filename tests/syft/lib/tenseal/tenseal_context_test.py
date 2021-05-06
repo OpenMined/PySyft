@@ -8,7 +8,7 @@ import pytest
 import syft as sy
 
 ts = pytest.importorskip("tenseal")
-sy.load_lib("tenseal")
+sy.load("tenseal")
 
 
 @pytest.fixture(scope="function")
@@ -23,50 +23,39 @@ def context() -> Any:
     return context
 
 
-@pytest.fixture(scope="function")
-def duet() -> Any:
-    return sy.VirtualMachine().get_root_client()
-
-
 @pytest.mark.vendor(lib="tenseal")
-def test_context_send(context: Any) -> None:
+def test_context_send(context: Any, root_client: sy.VirtualMachineClient) -> None:
     """Test sending a TenSEAL context
 
     Args:
         context: TenSEAL context to test
     """
-    alice = sy.VirtualMachine(name="alice")
-    alice_client = alice.get_client()
+    assert len(root_client.store) == 0
 
-    assert len(alice.store) == 0
+    _ = context.send(root_client)
 
-    _ = context.send(alice_client)
-
-    assert len(alice.store) == 1
+    assert len(root_client.store) == 1
 
 
-@pytest.mark.vendor(lib="tenseal")
 @pytest.mark.parametrize("scheme", [ts.SCHEME_TYPE.CKKS, ts.SCHEME_TYPE.BFV])
-def test_scheme_send(scheme: Any) -> None:
+@pytest.mark.vendor(lib="tenseal")
+def test_scheme_send(scheme: Any, client: sy.VirtualMachineClient) -> None:
     """Test sending a TenSEAL scheme
 
     Args:
         scheme: TenSEAL scheme to test
     """
-    alice = sy.VirtualMachine(name="alice")
-    alice_client = alice.get_client()
-
-    st_ptr = scheme.send(alice_client, searchable=True)
+    st_ptr = scheme.send(client, pointable=True)
     assert st_ptr.get() == scheme
 
 
 @pytest.mark.vendor(lib="tenseal")
-def test_context_link(context: Any, duet: sy.VirtualMachine) -> None:
+def test_context_link(context: Any, root_client: sy.VirtualMachineClient) -> None:
     v1 = [0, 1, 2, 3, 4]
     enc_v1 = ts.ckks_vector(context, v1)
 
-    ctx_ptr = context.send(duet, searchable=True)
-    enc_v1_ptr = enc_v1.send(duet, searchable=True)
+    ctx_ptr = context.send(root_client, pointable=True)
+    enc_v1_ptr = enc_v1.send(root_client, pointable=True)
 
     remove_ctx = ctx_ptr.get(delete_obj=False)
     enc_v1 = enc_v1_ptr.get(delete_obj=False)
@@ -75,12 +64,12 @@ def test_context_link(context: Any, duet: sy.VirtualMachine) -> None:
 
 
 @pytest.mark.vendor(lib="tenseal")
-def test_context_link_ptr(context: Any, duet: sy.VirtualMachine) -> None:
+def test_context_link_ptr(context: Any, root_client: sy.VirtualMachineClient) -> None:
     v1 = [0, 1, 2, 3, 4]
     enc_v1 = ts.ckks_vector(context, v1)
 
-    ctx_ptr = context.send(duet, searchable=True)
-    enc_v1_ptr = enc_v1.send(duet, searchable=True)
+    ctx_ptr = context.send(root_client, pointable=True)
+    enc_v1_ptr = enc_v1.send(root_client, pointable=True)
 
     assert ctx_ptr.is_private().get()
     assert not ctx_ptr.has_galois_keys().get()
@@ -98,26 +87,32 @@ def test_context_link_ptr(context: Any, duet: sy.VirtualMachine) -> None:
 
 
 @pytest.mark.vendor(lib="tenseal")
-def test_context_generate_relin_keys(context: Any, duet: sy.VirtualMachine) -> None:
+def test_context_generate_relin_keys(
+    context: Any, root_client: sy.VirtualMachineClient
+) -> None:
     context.generate_relin_keys()
-    ctx_ptr = context.send(duet, searchable=True)
+    ctx_ptr = context.send(root_client, pointable=True)
 
     assert ctx_ptr.has_relin_keys().get()
 
 
 @pytest.mark.vendor(lib="tenseal")
-def test_context_generate_galois_keys(context: Any, duet: sy.VirtualMachine) -> None:
+def test_context_generate_galois_keys(
+    context: Any, root_client: sy.VirtualMachineClient
+) -> None:
     context.generate_galois_keys()
-    ctx_ptr = context.send(duet, searchable=True)
+    ctx_ptr = context.send(root_client, pointable=True)
 
     assert ctx_ptr.has_galois_keys().get()
 
 
 @pytest.mark.vendor(lib="tenseal")
-def test_context_make_public(context: Any, duet: sy.VirtualMachine) -> None:
+def test_context_make_public(
+    context: Any, root_client: sy.VirtualMachineClient
+) -> None:
     context.make_context_public(generate_galois_keys=False, generate_relin_keys=False)
 
-    ctx_ptr = context.send(duet, searchable=True)
+    ctx_ptr = context.send(root_client, pointable=True)
 
     assert not ctx_ptr.is_private().get()
     assert not ctx_ptr.has_galois_keys().get()
@@ -128,8 +123,8 @@ def test_context_make_public(context: Any, duet: sy.VirtualMachine) -> None:
 
 
 @pytest.mark.vendor(lib="tenseal")
-def test_context_options(context: Any, duet: sy.VirtualMachine) -> None:
-    ctx_ptr = context.send(duet, searchable=True)
+def test_context_options(context: Any, root_client: sy.VirtualMachineClient) -> None:
+    ctx_ptr = context.send(root_client, pointable=True)
 
     assert ctx_ptr.auto_mod_switch.get()
     assert ctx_ptr.auto_relin.get()

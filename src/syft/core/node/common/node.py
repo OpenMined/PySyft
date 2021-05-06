@@ -51,6 +51,7 @@ from .client import Client
 from .metadata import Metadata
 from .service.auth import AuthorizationException
 from .service.child_node_lifecycle_service import ChildNodeLifecycleService
+from .service.get_repr_service import GetReprService
 from .service.heritage_update_service import HeritageUpdateService
 from .service.msg_forwarding_service import SignedMessageWithReplyForwardingService
 from .service.msg_forwarding_service import SignedMessageWithoutReplyForwardingService
@@ -64,6 +65,7 @@ from .service.obj_search_permission_service import (
 )
 from .service.obj_search_service import ImmediateObjectSearchService
 from .service.repr_service import ReprService
+from .service.resolve_pointer_type_service import ResolvePointerTypeService
 
 # this generic type for Client bound by Client
 ClientT = TypeVar("ClientT", bound=Client)
@@ -204,6 +206,8 @@ class Node(AbstractNode):
         self.immediate_services_with_reply: List[Any] = []
         self.immediate_services_with_reply.append(ImmediateObjectActionServiceWithReply)
         self.immediate_services_with_reply.append(ImmediateObjectSearchService)
+        self.immediate_services_with_reply.append(GetReprService)
+        self.immediate_services_with_reply.append(ResolvePointerTypeService)
 
         # for services which can run at a later time and do not return a reply
         self.eventual_services_without_reply = list()
@@ -262,8 +266,8 @@ class Node(AbstractNode):
     def icon(self) -> str:
         return "📍"
 
-    def get_client(self, routes: List[Route] = []) -> ClientT:
-        if not len(routes):
+    def get_client(self, routes: Optional[List[Route]] = None) -> ClientT:
+        if not routes:
             conn_client = create_virtual_connection(node=self)
             solo = SoloRoute(destination=self.target_id, connection=conn_client)
             # inject name
@@ -281,7 +285,7 @@ class Node(AbstractNode):
             verify_key=None,  # DO NOT PASS IN A VERIFY KEY!!! The client generates one.
         )
 
-    def get_root_client(self, routes: List[Route] = []) -> ClientT:
+    def get_root_client(self, routes: Optional[List[Route]] = None) -> ClientT:
         client: ClientT = self.get_client(routes=routes)
         self.root_verify_key = client.verify_key
         return client

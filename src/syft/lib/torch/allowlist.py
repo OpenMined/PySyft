@@ -74,7 +74,6 @@ allowlist: Dict[str, Union[str, Dict[str, str]]] = {}  # (path: str, return_type
 # allowlist["torch.Tensor.to_mkldnn"] = SERDE WARNING: DO NOT ADD TO ALLOW LIST
 # allowlist["torch.Tensor.to_sparse"] = SERDE WARNING: DO NOT ADD TO ALLOW LIST
 
-
 # --------------------------------------------------------------------------------------
 # SECTION - Tensor methods which are tested
 # --------------------------------------------------------------------------------------
@@ -218,12 +217,37 @@ allowlist["torch.Tensor.cosh"] = "torch.Tensor"
 allowlist["torch.Tensor.cpu"] = "torch.Tensor"
 allowlist["torch.Tensor.cross"] = "torch.Tensor"
 allowlist["torch.Tensor.cuda"] = "torch.Tensor"
+allowlist["torch.return_types"] = "torch.return_types"
+allowlist["torch.return_types.cummax"] = {
+    "return_type": "torch.return_types.cummax",
+    "min_version": "1.5.0",
+}
+allowlist["torch.return_types.cummin"] = {
+    "return_type": "torch.return_types.cummin",
+    "min_version": "1.5.0",
+}
+allowlist["torch.return_types.eig"] = "torch.return_types.eig"
+allowlist["torch.return_types.kthvalue"] = "torch.return_types.kthvalue"
+allowlist["torch.return_types.lstsq"] = "torch.return_types.lstsq"
+allowlist["torch.return_types.slogdet"] = "torch.return_types.slogdet"
+allowlist["torch.return_types.qr"] = "torch.return_types.qr"
+allowlist["torch.return_types.mode"] = "torch.return_types.mode"
+allowlist["torch.return_types.solve"] = "torch.return_types.solve"
+allowlist["torch.return_types.sort"] = "torch.return_types.sort"
+allowlist["torch.return_types.symeig"] = "torch.return_types.symeig"
+allowlist["torch.return_types.topk"] = "torch.return_types.topk"
+allowlist["torch.return_types.triangular_solve"] = "torch.return_types.triangular_solve"
+allowlist["torch.return_types.svd"] = "torch.return_types.svd"
+allowlist["torch.return_types.geqrf"] = "torch.return_types.geqrf"
+allowlist["torch.return_types.median"] = "torch.return_types.median"
+allowlist["torch.return_types.max"] = "torch.return_types.max"
+allowlist["torch.return_types.min"] = "torch.return_types.min"
 allowlist["torch.Tensor.cummax"] = {
-    "return_type": "syft.lib.python.ValuesIndices",
+    "return_type": "torch.return_types.cummax",
     "min_version": "1.5.0",
 }
 allowlist["torch.Tensor.cummin"] = {
-    "return_type": "syft.lib.python.ValuesIndices",
+    "return_type": "torch.return_types.cummin",
     "min_version": "1.5.0",
 }
 allowlist["torch.Tensor.cumprod"] = "torch.Tensor"
@@ -244,7 +268,7 @@ allowlist["torch.Tensor.dim"] = "torch.Tensor"
 allowlist["torch.Tensor.dist"] = "torch.Tensor"
 allowlist["torch.Tensor.dot"] = "torch.Tensor"
 allowlist["torch.Tensor.double"] = "torch.Tensor"
-allowlist["torch.Tensor.eig"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.Tensor.eig"] = "torch.return_types.eig"
 allowlist["torch.Tensor.element_size"] = "syft.lib.python.Int"
 allowlist["torch.Tensor.eq_"] = "torch.Tensor"
 allowlist["torch.Tensor.eq"] = "torch.Tensor"
@@ -262,7 +286,6 @@ allowlist["torch.Tensor.expand"] = "torch.Tensor"
 allowlist["torch.Tensor.expm1_"] = "torch.Tensor"
 allowlist["torch.Tensor.expm1"] = "torch.Tensor"
 allowlist["torch.Tensor.exponential_"] = "torch.Tensor"
-allowlist["torch.Tensor.fft"] = "torch.Tensor"
 allowlist["torch.Tensor.fill_"] = "torch.Tensor"
 allowlist["torch.Tensor.fill_diagonal_"] = "torch.Tensor"
 allowlist["torch.Tensor.flatten"] = "torch.Tensor"
@@ -278,7 +301,7 @@ allowlist["torch.Tensor.gather"] = "torch.Tensor"
 allowlist["torch.Tensor.ge_"] = "torch.Tensor"
 allowlist["torch.Tensor.ge"] = "torch.Tensor"
 allowlist["torch.Tensor.geometric_"] = "torch.Tensor"
-allowlist["torch.Tensor.geqrf"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.Tensor.geqrf"] = "torch.return_types.geqrf"
 allowlist["torch.Tensor.ger"] = "torch.Tensor"
 allowlist["torch.Tensor.get_device"] = "syft.lib.python.Int"
 allowlist["torch.Tensor.gt_"] = "torch.Tensor"
@@ -286,7 +309,6 @@ allowlist["torch.Tensor.gt"] = "torch.Tensor"
 allowlist["torch.Tensor.half"] = "torch.Tensor"
 allowlist["torch.Tensor.hardshrink"] = "torch.Tensor"
 allowlist["torch.Tensor.histc"] = "torch.Tensor"
-allowlist["torch.Tensor.ifft"] = "torch.Tensor"
 allowlist["torch.Tensor.index_add_"] = "torch.Tensor"
 allowlist["torch.Tensor.index_add"] = "torch.Tensor"
 allowlist["torch.Tensor.index_copy_"] = "torch.Tensor"
@@ -300,7 +322,6 @@ allowlist["torch.Tensor.indices"] = "torch.Tensor"
 allowlist["torch.Tensor.int_repr"] = "torch.Tensor"
 allowlist["torch.Tensor.int"] = "torch.Tensor"
 allowlist["torch.Tensor.inverse"] = "torch.Tensor"
-allowlist["torch.Tensor.irfft"] = "torch.Tensor"
 allowlist["torch.Tensor.is_coalesced"] = "syft.lib.python.Bool"
 allowlist["torch.Tensor.is_complex"] = "syft.lib.python.Bool"
 allowlist["torch.Tensor.is_contiguous"] = "syft.lib.python.Bool"
@@ -321,7 +342,7 @@ allowlist["torch.Tensor.isclose"] = "torch.Tensor"
 allowlist["torch.Tensor.item"] = UnionGenerator[
     "syft.lib.python.Int", "syft.lib.python.Float", "syft.lib.python.Bool"
 ]
-allowlist["torch.Tensor.kthvalue"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.Tensor.kthvalue"] = "torch.return_types.kthvalue"
 allowlist["torch.Tensor.le_"] = "torch.Tensor"
 allowlist["torch.Tensor.le"] = "torch.Tensor"
 allowlist["torch.Tensor.lerp_"] = "torch.Tensor"
@@ -345,7 +366,7 @@ allowlist["torch.Tensor.logical_xor_"] = "torch.Tensor"
 allowlist["torch.Tensor.logical_xor"] = "torch.Tensor"
 allowlist["torch.Tensor.logsumexp"] = "torch.Tensor"
 allowlist["torch.Tensor.long"] = "torch.Tensor"
-allowlist["torch.Tensor.lstsq"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.Tensor.lstsq"] = "torch.return_types.lstsq"
 allowlist["torch.Tensor.lt_"] = "torch.Tensor"
 allowlist["torch.Tensor.lt"] = "torch.Tensor"
 allowlist["torch.Tensor.lu_solve"] = "torch.Tensor"
@@ -361,23 +382,23 @@ allowlist["torch.Tensor.max"] = UnionGenerator[
     "syft.lib.python.Bool",
     "syft.lib.python.Float",
     "syft.lib.python.Int",
-    "syft.lib.python.ValuesIndices",
+    "torch.return_types.max",
 ]
 allowlist["torch.Tensor.mean"] = "torch.Tensor"
 allowlist["torch.Tensor.median"] = UnionGenerator[
     "syft.lib.python.Bool",
     "syft.lib.python.Float",
     "syft.lib.python.Int",
-    "syft.lib.python.ValuesIndices",
+    "torch.return_types.median",
 ]
 allowlist["torch.Tensor.min"] = UnionGenerator[
     "syft.lib.python.Bool",
     "syft.lib.python.Float",
     "syft.lib.python.Int",
-    "syft.lib.python.ValuesIndices",
+    "torch.return_types.min",
 ]
 allowlist["torch.Tensor.mm"] = "torch.Tensor"
-allowlist["torch.Tensor.mode"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.Tensor.mode"] = "torch.return_types.mode"
 allowlist["torch.Tensor.mul_"] = "torch.Tensor"
 allowlist["torch.Tensor.mul"] = "torch.Tensor"
 allowlist["torch.Tensor.multinomial"] = "torch.Tensor"
@@ -421,7 +442,7 @@ allowlist["torch.Tensor.q_per_channel_scales"] = "torch.Tensor"
 allowlist["torch.Tensor.q_per_channel_zero_points"] = "torch.Tensor"
 allowlist["torch.Tensor.q_scale"] = "syft.lib.python.Float"
 allowlist["torch.Tensor.q_zero_point"] = "syft.lib.python.Int"
-allowlist["torch.Tensor.qr"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.Tensor.qr"] = "torch.return_types.qr"
 allowlist["torch.Tensor.random_"] = "torch.Tensor"
 allowlist["torch.Tensor.reciprocal_"] = "torch.Tensor"
 allowlist["torch.Tensor.reciprocal"] = "torch.Tensor"
@@ -440,7 +461,6 @@ allowlist["torch.Tensor.resize_as_"] = "torch.Tensor"
 allowlist["torch.Tensor.resize_as"] = "torch.Tensor"
 allowlist["torch.Tensor.resize"] = "torch.Tensor"
 allowlist["torch.Tensor.retain_grad"] = "syft.lib.python._SyNone"
-allowlist["torch.Tensor.rfft"] = "torch.Tensor"
 allowlist["torch.Tensor.roll"] = "torch.Tensor"
 allowlist["torch.Tensor.rot90"] = "torch.Tensor"
 allowlist["torch.Tensor.round_"] = "torch.Tensor"
@@ -462,10 +482,10 @@ allowlist["torch.Tensor.sin_"] = "torch.Tensor"
 allowlist["torch.Tensor.sin"] = "torch.Tensor"
 allowlist["torch.Tensor.sinh_"] = "torch.Tensor"
 allowlist["torch.Tensor.sinh"] = "torch.Tensor"
-allowlist["torch.Tensor.slogdet"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.Tensor.slogdet"] = "torch.return_types.slogdet"
 allowlist["torch.Tensor.softmax"] = "torch.Tensor"
-allowlist["torch.Tensor.solve"] = "syft.lib.python.ValuesIndices"
-allowlist["torch.Tensor.sort"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.Tensor.solve"] = "torch.return_types.solve"
+allowlist["torch.Tensor.sort"] = "torch.return_types.sort"
 allowlist["torch.Tensor.split_with_sizes"] = "syft.lib.python.List"  # Tuple not List
 allowlist["torch.Tensor.split"] = "syft.lib.python.List"  # Tuple not List
 allowlist["torch.Tensor.sqrt_"] = "torch.Tensor"
@@ -481,8 +501,8 @@ allowlist["torch.Tensor.sub_"] = "torch.Tensor"
 allowlist["torch.Tensor.sub"] = "torch.Tensor"
 allowlist["torch.Tensor.sum_to_size"] = "torch.Tensor"
 allowlist["torch.Tensor.sum"] = "torch.Tensor"
-allowlist["torch.Tensor.svd"] = "syft.lib.python.ValuesIndices"
-allowlist["torch.Tensor.symeig"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.Tensor.svd"] = "torch.return_types.svd"
+allowlist["torch.Tensor.symeig"] = "torch.return_types.symeig"
 allowlist["torch.Tensor.t_"] = "torch.Tensor"
 allowlist["torch.Tensor.t"] = "torch.Tensor"
 allowlist["torch.Tensor.t"] = "torch.Tensor"
@@ -494,11 +514,11 @@ allowlist["torch.Tensor.tanh_"] = "torch.Tensor"
 allowlist["torch.Tensor.tanh"] = "torch.Tensor"
 allowlist["torch.Tensor.to"] = "torch.Tensor"
 allowlist["torch.Tensor.tolist"] = "syft.lib.python.List"
-allowlist["torch.Tensor.topk"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.Tensor.topk"] = "torch.return_types.topk"
 allowlist["torch.Tensor.trace"] = "torch.Tensor"
 allowlist["torch.Tensor.transpose_"] = "torch.Tensor"
 allowlist["torch.Tensor.transpose"] = "torch.Tensor"
-allowlist["torch.Tensor.triangular_solve"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.Tensor.triangular_solve"] = "torch.return_types.triangular_solve"
 allowlist["torch.Tensor.tril_"] = "torch.Tensor"
 allowlist["torch.Tensor.tril"] = "torch.Tensor"
 allowlist["torch.Tensor.triu_"] = "torch.Tensor"
@@ -1007,6 +1027,29 @@ allowlist["torch.Tensor.unsafe_split_with_sizes"] = {
     "min_version": "1.7.0",
 }
 
+# SECTION - Tensor methods since 1.8.0
+
+# Deprecated
+allowlist["torch.Tensor.fft"] = {
+    "return_type": "torch.Tensor",
+    "max_version": "1.7.1",
+}
+
+allowlist["torch.Tensor.ifft"] = {
+    "return_type": "torch.Tensor",
+    "max_version": "1.7.1",
+}
+
+allowlist["torch.Tensor.irfft"] = {
+    "return_type": "torch.Tensor",
+    "max_version": "1.7.1",
+}
+
+allowlist["torch.Tensor.rfft"] = {
+    "return_type": "torch.Tensor",
+    "max_version": "1.7.1",
+}
+
 # --------------------------------------------------------------------------------------
 # SECTION - Tensor methods which are incomplete or untested but enabled
 # --------------------------------------------------------------------------------------
@@ -1019,9 +1062,11 @@ allowlist["torch.Tensor.grad"] = "torch.Tensor"  # need an example with grad
 # --------------------------------------------------------------------------------------
 # allowlist["torch.layout"] = "torch.layout"  # requires protobuf serialization
 # allowlist["torch.Tensor.layout"] = "torch.layout" # requires torch layout
-# allowlist["torch.Size"] = "torch.Size" # requires protobuf serialization
-# allowlist["torch.Tensor.size"] = "torch.Size" # requires torch.Size
-# allowlist["torch.Tensor.shape"] = "torch.Size" # requires torch.Size
+allowlist["torch.Size"] = "torch.Size"  # requires protobuf serialization
+allowlist["torch.Size.__len__"] = "syft.lib.python.Int"
+allowlist["torch.Size.__iter__"] = "syft.lib.python.Iterator"
+allowlist["torch.Tensor.size"] = "torch.Size"  # requires torch.Size
+allowlist["torch.Tensor.shape"] = "torch.Size"  # requires torch.Size
 # allowlist["torch.Tensor.__iter__"] = "unknown"  # How to handle return iterator?
 # allowlist["torch.Tensor.imag"] = "torch.Tensor"  # requires dtype complex
 # allowlist["torch.Tensor.real"] = "torch.Tensor"  # requires dtype complex
@@ -1060,6 +1105,13 @@ allowlist["torch.Tensor.grad"] = "torch.Tensor"  # need an example with grad
 # allowlist["torch.Tensor.sparse_resize_"] = "unknown" # requires sparse tensors
 # allowlist["torch.Tensor.sparse_resize_and_clear_"] = "unknown" # requires sparse
 # allowlist["torch.Tensor.values"] = "unknown"  # requires sparse tensors
+
+# SECTION - Module methods
+allowlist["torch.set_grad_enabled"] = "syft.lib.python._SyNone"
+allowlist["torch.zeros"] = "torch.Tensor"
+allowlist["torch.randn"] = "torch.Tensor"
+allowlist["torch.ones_like"] = "torch.Tensor"
+allowlist["torch.Tensor.__len__"] = "syft.lib.python.Int"
 
 # --------------------------------------------------------------------------------------
 # SECTION - Torch functions enabled as torch.Tensor methods above
@@ -1104,6 +1156,7 @@ allowlist["torch.bitwise_or"] = {
 }
 allowlist["torch.bitwise_xor"] = "torch.Tensor"
 allowlist["torch.bmm"] = "torch.Tensor"
+allowlist["torch.cat"] = "torch.Tensor"
 allowlist["torch.ceil_"] = "torch.Tensor"
 allowlist["torch.ceil"] = "torch.Tensor"
 allowlist["torch.cholesky_inverse"] = "torch.Tensor"
@@ -1124,11 +1177,11 @@ allowlist["torch.cosh_"] = "torch.Tensor"
 allowlist["torch.cosh"] = "torch.Tensor"
 allowlist["torch.cross"] = "torch.Tensor"
 allowlist["torch.cummax"] = {
-    "return_type": "syft.lib.python.ValuesIndices",
+    "return_type": "torch.return_types.cummax",
     "min_version": "1.5.0",
 }
 allowlist["torch.cummin"] = {
-    "return_type": "syft.lib.python.ValuesIndices",
+    "return_type": "torch.return_types.cummin",
     "min_version": "1.5.0",
 }
 allowlist["torch.cumprod"] = "torch.Tensor"
@@ -1144,7 +1197,7 @@ allowlist["torch.digamma"] = "torch.Tensor"
 allowlist["torch.dist"] = "torch.Tensor"
 allowlist["torch.div"] = "torch.Tensor"
 allowlist["torch.dot"] = "torch.Tensor"
-allowlist["torch.eig"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.eig"] = "torch.return_types.eig"
 allowlist["torch.eq"] = "torch.Tensor"
 allowlist["torch.equal"] = "syft.lib.python.Bool"
 allowlist["torch.erf_"] = "torch.Tensor"
@@ -1169,15 +1222,15 @@ allowlist["torch.floor"] = "torch.Tensor"
 allowlist["torch.fmod"] = "torch.Tensor"
 allowlist["torch.frac_"] = "torch.Tensor"
 allowlist["torch.frac"] = "torch.Tensor"
+allowlist["torch.from_numpy"] = "torch.Tensor"
 allowlist["torch.gather"] = "torch.Tensor"
 allowlist["torch.ge"] = "torch.Tensor"
-allowlist["torch.geqrf"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.geqrf"] = "torch.return_types.geqrf"
 allowlist["torch.ger"] = "torch.Tensor"
 allowlist["torch.get_device"] = "syft.lib.python.Int"
 allowlist["torch.gt"] = "torch.Tensor"
 allowlist["torch.hardshrink"] = "torch.Tensor"
 allowlist["torch.histc"] = "torch.Tensor"
-allowlist["torch.ifft"] = "torch.Tensor"
 allowlist["torch.index_add"] = "torch.Tensor"
 allowlist["torch.index_copy"] = "torch.Tensor"
 allowlist["torch.index_fill"] = "torch.Tensor"
@@ -1186,7 +1239,6 @@ allowlist["torch.index_put"] = "torch.Tensor"
 allowlist["torch.index_select"] = "torch.Tensor"
 allowlist["torch.int_repr"] = "torch.Tensor"
 allowlist["torch.inverse"] = "torch.Tensor"
-allowlist["torch.irfft"] = "torch.Tensor"
 allowlist["torch.is_complex"] = "syft.lib.python.Bool"
 allowlist["torch.is_distributed"] = "syft.lib.python.Bool"
 allowlist["torch.is_floating_point"] = "syft.lib.python.Bool"
@@ -1194,7 +1246,7 @@ allowlist["torch.is_nonzero"] = "syft.lib.python.Bool"
 allowlist["torch.is_same_size"] = "syft.lib.python.Bool"
 allowlist["torch.is_signed"] = "syft.lib.python.Bool"
 allowlist["torch.isclose"] = "torch.Tensor"
-allowlist["torch.kthvalue"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.kthvalue"] = "torch.return_types.kthvalue"
 allowlist["torch.le"] = "torch.Tensor"
 allowlist["torch.lerp"] = "torch.Tensor"
 allowlist["torch.lgamma"] = "torch.Tensor"
@@ -1219,7 +1271,7 @@ allowlist["torch.logical_or"] = {
 }
 allowlist["torch.logical_xor"] = "torch.Tensor"
 allowlist["torch.logsumexp"] = "torch.Tensor"
-allowlist["torch.lstsq"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.lstsq"] = "torch.return_types.lstsq"
 allowlist["torch.lt"] = "torch.Tensor"
 allowlist["torch.lu_solve"] = "torch.Tensor"
 allowlist["torch.lu"] = "syft.lib.python.List"  # Tuple not List
@@ -1230,7 +1282,7 @@ allowlist["torch.matmul"] = "torch.Tensor"
 allowlist["torch.matrix_power"] = "torch.Tensor"
 allowlist["torch.mean"] = "torch.Tensor"
 allowlist["torch.mm"] = "torch.Tensor"
-allowlist["torch.mode"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.mode"] = "torch.return_types.mode"
 allowlist["torch.mul"] = "torch.Tensor"
 allowlist["torch.multinomial"] = "torch.Tensor"
 allowlist["torch.mv"] = "torch.Tensor"
@@ -1252,7 +1304,7 @@ allowlist["torch.q_per_channel_scales"] = "torch.Tensor"
 allowlist["torch.q_per_channel_zero_points"] = "torch.Tensor"
 allowlist["torch.q_scale"] = "syft.lib.python.Float"
 allowlist["torch.q_zero_point"] = "syft.lib.python.Int"
-allowlist["torch.qr"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.qr"] = "torch.return_types.qr"
 allowlist["torch.reciprocal_"] = "torch.Tensor"
 allowlist["torch.reciprocal"] = "torch.Tensor"
 allowlist["torch.relu_"] = "torch.Tensor"
@@ -1262,7 +1314,6 @@ allowlist["torch.renorm"] = "torch.Tensor"
 allowlist["torch.repeat_interleave"] = "torch.Tensor"
 allowlist["torch.reshape"] = "torch.Tensor"
 allowlist["torch.resize_as_"] = "torch.Tensor"
-allowlist["torch.rfft"] = "torch.Tensor"
 allowlist["torch.roll"] = "torch.Tensor"
 allowlist["torch.rot90"] = "torch.Tensor"
 allowlist["torch.round_"] = "torch.Tensor"
@@ -1279,10 +1330,10 @@ allowlist["torch.sin_"] = "torch.Tensor"
 allowlist["torch.sin"] = "torch.Tensor"
 allowlist["torch.sinh_"] = "torch.Tensor"
 allowlist["torch.sinh"] = "torch.Tensor"
-allowlist["torch.slogdet"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.slogdet"] = "torch.return_types.slogdet"
 allowlist["torch.softmax"] = "torch.Tensor"
-allowlist["torch.solve"] = "syft.lib.python.ValuesIndices"
-allowlist["torch.sort"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.solve"] = "torch.return_types.solve"
+allowlist["torch.sort"] = "torch.return_types.sort"
 allowlist["torch.split_with_sizes"] = "syft.lib.python.List"  # Tuple not List
 allowlist["torch.split"] = "syft.lib.python.List"  # Tuple not List
 allowlist["torch.sqrt_"] = "torch.Tensor"
@@ -1296,22 +1347,23 @@ allowlist["torch.square"] = {
     "min_version": "1.5.0",
 }
 allowlist["torch.squeeze"] = "torch.Tensor"
+allowlist["torch.stack"] = "torch.Tensor"
 allowlist["torch.std"] = "torch.Tensor"
 allowlist["torch.stft"] = "torch.Tensor"
 allowlist["torch.sub"] = "torch.Tensor"
 allowlist["torch.sum"] = "torch.Tensor"
-allowlist["torch.svd"] = "syft.lib.python.ValuesIndices"
-allowlist["torch.symeig"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.svd"] = "torch.return_types.svd"
+allowlist["torch.symeig"] = "torch.return_types.symeig"
 allowlist["torch.t"] = "torch.Tensor"
 allowlist["torch.take"] = "torch.Tensor"
 allowlist["torch.tan_"] = "torch.Tensor"
 allowlist["torch.tan"] = "torch.Tensor"
 allowlist["torch.tanh_"] = "torch.Tensor"
 allowlist["torch.tanh"] = "torch.Tensor"
-allowlist["torch.topk"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.topk"] = "torch.return_types.topk"
 allowlist["torch.trace"] = "torch.Tensor"
 allowlist["torch.transpose"] = "torch.Tensor"
-allowlist["torch.triangular_solve"] = "syft.lib.python.ValuesIndices"
+allowlist["torch.triangular_solve"] = "torch.return_types.triangular_solve"
 allowlist["torch.tril"] = "torch.Tensor"
 allowlist["torch.triu"] = "torch.Tensor"
 allowlist["torch.true_divide"] = {
@@ -1325,6 +1377,21 @@ allowlist["torch.unique"] = "torch.Tensor"
 allowlist["torch.unsqueeze"] = "torch.Tensor"
 allowlist["torch.var"] = "torch.Tensor"
 allowlist["torch.unsafe_chunk"] = "syft.lib.python.List"  # Tuple not List
+
+allowlist["torch.ifft"] = {
+    "return_type": "torch.Tensor",
+    "max_version": "1.7.1",
+}
+
+allowlist["torch.irfft"] = {
+    "return_type": "torch.Tensor",
+    "max_version": "1.7.1",
+}
+
+allowlist["torch.rfft"] = {
+    "return_type": "torch.Tensor",
+    "max_version": "1.7.1",
+}
 
 # SECTION - Tensor functions since 1.6.0
 
@@ -1697,10 +1764,13 @@ allowlist["torch.exp"] = "torch.Tensor"
 # Modules
 allowlist["torch.nn.Module"] = "torch.nn.Module"
 allowlist["torch.nn.Module.__call__"] = "torch.Tensor"
+allowlist["torch.nn.Module.forward"] = "torch.Tensor"
 allowlist["torch.nn.Module.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Module.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Module.train"] = "torch.nn.Module"
 allowlist["torch.nn.Module.cuda"] = "torch.nn.Module"
 allowlist["torch.nn.Module.cpu"] = "torch.nn.Module"
+allowlist["torch.nn.Module.add_module"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Module.state_dict"] = "syft.lib.python.collections.OrderedDict"
 allowlist[
     "torch.nn.Module.load_state_dict"
@@ -1710,6 +1780,7 @@ allowlist["torch.nn.Module.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.Conv2d"] = "torch.nn.Conv2d"
 allowlist["torch.nn.Conv2d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Conv2d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Conv2d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Conv2d.train"] = "torch.nn.Conv2d"
 allowlist["torch.nn.Conv2d.cuda"] = "torch.nn.Conv2d"
 allowlist["torch.nn.Conv2d.cpu"] = "torch.nn.Conv2d"
@@ -1722,6 +1793,7 @@ allowlist["torch.nn.Conv2d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.Dropout2d"] = "torch.nn.Dropout2d"
 allowlist["torch.nn.Dropout2d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Dropout2d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Dropout2d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Dropout2d.train"] = "torch.nn.Dropout2d"
 allowlist["torch.nn.Dropout2d.cuda"] = "torch.nn.Dropout2d"
 allowlist["torch.nn.Dropout2d.cpu"] = "torch.nn.Dropout2d"
@@ -1730,6 +1802,8 @@ allowlist["torch.nn.Dropout2d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.Linear"] = "torch.nn.Linear"
 allowlist["torch.nn.Linear.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Linear.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Linear.register_parameter"] = "syft.lib.python._SyNone"
+allowlist["torch.nn.Linear.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Linear.train"] = "torch.nn.Linear"
 allowlist["torch.nn.Linear.cuda"] = "torch.nn.Linear"
 allowlist["torch.nn.Linear.cpu"] = "torch.nn.Linear"
@@ -1742,6 +1816,17 @@ allowlist["torch.utils.data.DataLoader"] = "torch.utils.data.DataLoader"
 allowlist["torch.utils.data.DataLoader.__iter__"] = "syft.lib.python.Iterator"
 allowlist["torch.utils.data.DataLoader.__len__"] = "syft.lib.python.Int"
 
+allowlist[
+    "torch.utils.data.dataloader._SingleProcessDataLoaderIter"
+] = "torch.utils.data.dataloader._SingleProcessDataLoaderIter"
+allowlist[
+    "torch.utils.data.dataloader._SingleProcessDataLoaderIter.__iter__"
+] = "syft.lib.python.Iterator"
+allowlist[
+    "torch.utils.data.dataloader._SingleProcessDataLoaderIter.__len__"
+] = "syft.lib.python.Int"
+
+
 # Functional
 allowlist["torch.nn.functional.relu"] = "torch.Tensor"
 allowlist["torch.nn.functional.max_pool2d"] = "torch.Tensor"
@@ -1752,54 +1837,73 @@ allowlist["torch.flatten"] = "torch.Tensor"
 allowlist["torch.optim.ASGD"] = "torch.optim.ASGD"
 allowlist["torch.optim.ASGD.zero_grad"] = "syft.lib.python._SyNone"
 allowlist["torch.optim.ASGD.step"] = "syft.lib.python._SyNone"
+allowlist["torch.optim.ASGD.state_dict"] = "syft.lib.python.collections.OrderedDict"
 
 allowlist["torch.optim.Adadelta"] = "torch.optim.Adadelta"
 allowlist["torch.optim.Adadelta.zero_grad"] = "syft.lib.python._SyNone"
 allowlist["torch.optim.Adadelta.step"] = "syft.lib.python._SyNone"
+allowlist["torch.optim.Adadelta.state_dict"] = "syft.lib.python.collections.OrderedDict"
 
 allowlist["torch.optim.Adagrad"] = "torch.optim.Adagrad"
 allowlist["torch.optim.Adagrad.zero_grad"] = "syft.lib.python._SyNone"
 allowlist["torch.optim.Adagrad.step"] = "syft.lib.python._SyNone"
+allowlist["torch.optim.Adagrad.state_dict"] = "syft.lib.python.collections.OrderedDict"
 
 allowlist["torch.optim.Adam"] = "torch.optim.Adam"
 allowlist["torch.optim.Adam.zero_grad"] = "syft.lib.python._SyNone"
 allowlist["torch.optim.Adam.step"] = "syft.lib.python._SyNone"
+allowlist["torch.optim.Adam.state_dict"] = "syft.lib.python.collections.OrderedDict"
 
 allowlist["torch.optim.AdamW"] = "torch.optim.AdamW"
 allowlist["torch.optim.AdamW.zero_grad"] = "syft.lib.python._SyNone"
 allowlist["torch.optim.AdamW.step"] = "syft.lib.python._SyNone"
+allowlist["torch.optim.AdamW.state_dict"] = "syft.lib.python.collections.OrderedDict"
 
 allowlist["torch.optim.Adamax"] = "torch.optim.Adamax"
 allowlist["torch.optim.Adamax.zero_grad"] = "syft.lib.python._SyNone"
 allowlist["torch.optim.Adamax.step"] = "syft.lib.python._SyNone"
+allowlist["torch.optim.Adamax.state_dict"] = "syft.lib.python.collections.OrderedDict"
 
 allowlist["torch.optim.LBFGS"] = "torch.optim.LBFGS"
 allowlist["torch.optim.LBFGS.zero_grad"] = "syft.lib.python._SyNone"
 allowlist["torch.optim.LBFGS.step"] = "syft.lib.python._SyNone"
+allowlist["torch.optim.LBFGS.state_dict"] = "syft.lib.python.collections.OrderedDict"
 
 allowlist["torch.optim.Optimizer"] = "torch.optim.Optimizer"
 allowlist["torch.optim.Optimizer.zero_grad"] = "syft.lib.python._SyNone"
 allowlist["torch.optim.Optimizer.step"] = "syft.lib.python._SyNone"
+allowlist[
+    "torch.optim.Optimizer.state_dict"
+] = "syft.lib.python.collections.OrderedDict"
 
 allowlist["torch.optim.RMSprop"] = "torch.optim.RMSprop"
 allowlist["torch.optim.RMSprop.zero_grad"] = "syft.lib.python._SyNone"
 allowlist["torch.optim.RMSprop.step"] = "syft.lib.python._SyNone"
+allowlist["torch.optim.RMSprop.state_dict"] = "syft.lib.python.collections.OrderedDict"
 
 allowlist["torch.optim.Rprop"] = "torch.optim.Rprop"
 allowlist["torch.optim.Rprop.zero_grad"] = "syft.lib.python._SyNone"
 allowlist["torch.optim.Rprop.step"] = "syft.lib.python._SyNone"
+allowlist["torch.optim.Rprop.state_dict"] = "syft.lib.python.collections.OrderedDict"
 
 allowlist["torch.optim.SGD"] = "torch.optim.SGD"
 allowlist["torch.optim.SGD.zero_grad"] = "syft.lib.python._SyNone"
 allowlist["torch.optim.SGD.step"] = "syft.lib.python._SyNone"
+allowlist["torch.optim.SGD.state_dict"] = "syft.lib.python.collections.OrderedDict"
 
 allowlist["torch.optim.SparseAdam"] = "torch.optim.SparseAdam"
 allowlist["torch.optim.SparseAdam.zero_grad"] = "syft.lib.python._SyNone"
 allowlist["torch.optim.SparseAdam.step"] = "syft.lib.python._SyNone"
+allowlist[
+    "torch.optim.SparseAdam.state_dict"
+] = "syft.lib.python.collections.OrderedDict"
 
 # Scheduler
 allowlist["torch.optim.lr_scheduler.StepLR"] = "torch.optim.lr_scheduler.StepLR"
 allowlist["torch.optim.lr_scheduler.StepLR.step"] = "syft.lib.python._SyNone"
+allowlist[
+    "torch.optim.lr_scheduler.StepLR.state_dict"
+] = "syft.lib.python.collections.OrderedDict"
 
 # Autograd
 allowlist["torch.no_grad"] = "torch.autograd.grad_mode.no_grad"
@@ -1811,6 +1915,7 @@ allowlist["torch.nn.Sequential"] = "torch.nn.Sequential"
 allowlist["torch.nn.Sequential.cpu"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Sequential.cuda"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Sequential.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Sequential.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Sequential.train"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Sequential.eval"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Sequential.__call__"] = "torch.Tensor"
@@ -1826,6 +1931,7 @@ allowlist["torch.nn.functional.multi_margin_loss"] = "torch.Tensor"
 allowlist["torch.nn.functional.multilabel_margin_loss"] = "torch.Tensor"
 allowlist["torch.nn.functional.multilabel_soft_margin_loss"] = "torch.Tensor"
 allowlist["torch.nn.functional.nll_loss"] = "torch.Tensor"
+allowlist["torch.nn.functional.cross_entropy"] = "torch.Tensor"
 allowlist["torch.nn.functional.poisson_nll_loss"] = "torch.Tensor"
 allowlist["torch.nn.functional.smooth_l1_loss"] = "torch.Tensor"
 allowlist["torch.nn.functional.soft_margin_loss"] = "torch.Tensor"
@@ -1877,6 +1983,7 @@ allowlist["torch.nn.TripletMarginLoss.__call__"] = "torch.Tensor"
 allowlist["torch.nn.AdaptiveAvgPool1d"] = "torch.nn.AdaptiveAvgPool1d"
 allowlist["torch.nn.AdaptiveAvgPool1d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.AdaptiveAvgPool1d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.AdaptiveAvgPool1d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.AdaptiveAvgPool1d.train"] = "torch.nn.AdaptiveAvgPool1d"
 allowlist["torch.nn.AdaptiveAvgPool1d.cuda"] = "torch.nn.AdaptiveAvgPool1d"
 allowlist["torch.nn.AdaptiveAvgPool1d.cpu"] = "torch.nn.AdaptiveAvgPool1d"
@@ -1889,6 +1996,7 @@ allowlist["torch.nn.AdaptiveAvgPool1d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.AdaptiveAvgPool2d"] = "torch.nn.AdaptiveAvgPool2d"
 allowlist["torch.nn.AdaptiveAvgPool2d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.AdaptiveAvgPool2d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.AdaptiveAvgPool2d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.AdaptiveAvgPool2d.train"] = "torch.nn.AdaptiveAvgPool2d"
 allowlist["torch.nn.AdaptiveAvgPool2d.cuda"] = "torch.nn.AdaptiveAvgPool2d"
 allowlist["torch.nn.AdaptiveAvgPool2d.cpu"] = "torch.nn.AdaptiveAvgPool2d"
@@ -1901,6 +2009,7 @@ allowlist["torch.nn.AdaptiveAvgPool2d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.AdaptiveAvgPool3d"] = "torch.nn.AdaptiveAvgPool3d"
 allowlist["torch.nn.AdaptiveAvgPool3d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.AdaptiveAvgPool3d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.AdaptiveAvgPool3d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.AdaptiveAvgPool3d.train"] = "torch.nn.AdaptiveAvgPool3d"
 allowlist["torch.nn.AdaptiveAvgPool3d.cuda"] = "torch.nn.AdaptiveAvgPool3d"
 allowlist["torch.nn.AdaptiveAvgPool3d.cpu"] = "torch.nn.AdaptiveAvgPool3d"
@@ -1913,6 +2022,7 @@ allowlist["torch.nn.AdaptiveAvgPool3d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.AdaptiveMaxPool1d"] = "torch.nn.AdaptiveMaxPool1d"
 allowlist["torch.nn.AdaptiveMaxPool1d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.AdaptiveMaxPool1d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.AdaptiveMaxPool1d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.AdaptiveMaxPool1d.train"] = "torch.nn.AdaptiveMaxPool1d"
 allowlist["torch.nn.AdaptiveMaxPool1d.cuda"] = "torch.nn.AdaptiveMaxPool1d"
 allowlist["torch.nn.AdaptiveMaxPool1d.cpu"] = "torch.nn.AdaptiveMaxPool1d"
@@ -1925,6 +2035,7 @@ allowlist["torch.nn.AdaptiveMaxPool1d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.AdaptiveMaxPool2d"] = "torch.nn.AdaptiveMaxPool2d"
 allowlist["torch.nn.AdaptiveMaxPool2d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.AdaptiveMaxPool2d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.AdaptiveMaxPool2d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.AdaptiveMaxPool2d.train"] = "torch.nn.AdaptiveMaxPool2d"
 allowlist["torch.nn.AdaptiveMaxPool2d.cuda"] = "torch.nn.AdaptiveMaxPool2d"
 allowlist["torch.nn.AdaptiveMaxPool2d.cpu"] = "torch.nn.AdaptiveMaxPool2d"
@@ -1937,6 +2048,7 @@ allowlist["torch.nn.AdaptiveMaxPool2d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.AdaptiveMaxPool3d"] = "torch.nn.AdaptiveMaxPool3d"
 allowlist["torch.nn.AdaptiveMaxPool3d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.AdaptiveMaxPool3d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.AdaptiveMaxPool3d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.AdaptiveMaxPool3d.train"] = "torch.nn.AdaptiveMaxPool3d"
 allowlist["torch.nn.AdaptiveMaxPool3d.cuda"] = "torch.nn.AdaptiveMaxPool3d"
 allowlist["torch.nn.AdaptiveMaxPool3d.cpu"] = "torch.nn.AdaptiveMaxPool3d"
@@ -1949,6 +2061,7 @@ allowlist["torch.nn.AdaptiveMaxPool3d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.AlphaDropout"] = "torch.nn.AlphaDropout"
 allowlist["torch.nn.AlphaDropout.__call__"] = "torch.Tensor"
 allowlist["torch.nn.AlphaDropout.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.AlphaDropout.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.AlphaDropout.train"] = "torch.nn.AlphaDropout"
 allowlist["torch.nn.AlphaDropout.cuda"] = "torch.nn.AlphaDropout"
 allowlist["torch.nn.AlphaDropout.cpu"] = "torch.nn.AlphaDropout"
@@ -1961,6 +2074,7 @@ allowlist["torch.nn.AlphaDropout.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.AvgPool1d"] = "torch.nn.AvgPool1d"
 allowlist["torch.nn.AvgPool1d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.AvgPool1d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.AvgPool1d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.AvgPool1d.train"] = "torch.nn.AvgPool1d"
 allowlist["torch.nn.AvgPool1d.cuda"] = "torch.nn.AvgPool1d"
 allowlist["torch.nn.AvgPool1d.cpu"] = "torch.nn.AvgPool1d"
@@ -1971,6 +2085,7 @@ allowlist["torch.nn.AvgPool1d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.AvgPool2d"] = "torch.nn.AvgPool2d"
 allowlist["torch.nn.AvgPool2d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.AvgPool2d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.AvgPool2d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.AvgPool2d.train"] = "torch.nn.AvgPool2d"
 allowlist["torch.nn.AvgPool2d.cuda"] = "torch.nn.AvgPool2d"
 allowlist["torch.nn.AvgPool2d.cpu"] = "torch.nn.AvgPool2d"
@@ -1981,6 +2096,7 @@ allowlist["torch.nn.AvgPool2d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.AvgPool3d"] = "torch.nn.AvgPool3d"
 allowlist["torch.nn.AvgPool3d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.AvgPool3d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.AvgPool3d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.AvgPool3d.train"] = "torch.nn.AvgPool3d"
 allowlist["torch.nn.AvgPool3d.cuda"] = "torch.nn.AvgPool3d"
 allowlist["torch.nn.AvgPool3d.cpu"] = "torch.nn.AvgPool3d"
@@ -1991,6 +2107,7 @@ allowlist["torch.nn.AvgPool3d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.BatchNorm1d"] = "torch.nn.BatchNorm1d"
 allowlist["torch.nn.BatchNorm1d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.BatchNorm1d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.BatchNorm1d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.BatchNorm1d.train"] = "torch.nn.BatchNorm1d"
 allowlist["torch.nn.BatchNorm1d.cuda"] = "torch.nn.BatchNorm1d"
 allowlist["torch.nn.BatchNorm1d.cpu"] = "torch.nn.BatchNorm1d"
@@ -2001,6 +2118,7 @@ allowlist["torch.nn.BatchNorm1d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.BatchNorm2d"] = "torch.nn.BatchNorm2d"
 allowlist["torch.nn.BatchNorm2d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.BatchNorm2d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.BatchNorm2d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.BatchNorm2d.train"] = "torch.nn.BatchNorm2d"
 allowlist["torch.nn.BatchNorm2d.cuda"] = "torch.nn.BatchNorm2d"
 allowlist["torch.nn.BatchNorm2d.cpu"] = "torch.nn.BatchNorm2d"
@@ -2011,6 +2129,7 @@ allowlist["torch.nn.BatchNorm2d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.BatchNorm3d"] = "torch.nn.BatchNorm3d"
 allowlist["torch.nn.BatchNorm3d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.BatchNorm3d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.BatchNorm3d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.BatchNorm3d.train"] = "torch.nn.BatchNorm3d"
 allowlist["torch.nn.BatchNorm3d.cuda"] = "torch.nn.BatchNorm3d"
 allowlist["torch.nn.BatchNorm3d.cpu"] = "torch.nn.BatchNorm3d"
@@ -2021,6 +2140,7 @@ allowlist["torch.nn.BatchNorm3d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.Bilinear"] = "torch.nn.Bilinear"
 allowlist["torch.nn.Bilinear.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Bilinear.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Bilinear.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Bilinear.train"] = "torch.nn.Bilinear"
 allowlist["torch.nn.Bilinear.cuda"] = "torch.nn.Bilinear"
 allowlist["torch.nn.Bilinear.cpu"] = "torch.nn.Bilinear"
@@ -2031,6 +2151,7 @@ allowlist["torch.nn.Bilinear.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.CELU"] = "torch.nn.CELU"
 allowlist["torch.nn.CELU.__call__"] = "torch.Tensor"
 allowlist["torch.nn.CELU.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.CELU.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.CELU.train"] = "torch.nn.CELU"
 allowlist["torch.nn.CELU.cuda"] = "torch.nn.CELU"
 allowlist["torch.nn.CELU.cpu"] = "torch.nn.CELU"
@@ -2041,6 +2162,7 @@ allowlist["torch.nn.CELU.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.ConstantPad1d"] = "torch.nn.ConstantPad1d"
 allowlist["torch.nn.ConstantPad1d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.ConstantPad1d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.ConstantPad1d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.ConstantPad1d.train"] = "torch.nn.ConstantPad1d"
 allowlist["torch.nn.ConstantPad1d.cuda"] = "torch.nn.ConstantPad1d"
 allowlist["torch.nn.ConstantPad1d.cpu"] = "torch.nn.ConstantPad1d"
@@ -2053,6 +2175,7 @@ allowlist["torch.nn.ConstantPad1d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.ConstantPad2d"] = "torch.nn.ConstantPad2d"
 allowlist["torch.nn.ConstantPad2d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.ConstantPad2d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.ConstantPad2d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.ConstantPad2d.train"] = "torch.nn.ConstantPad2d"
 allowlist["torch.nn.ConstantPad2d.cuda"] = "torch.nn.ConstantPad2d"
 allowlist["torch.nn.ConstantPad2d.cpu"] = "torch.nn.ConstantPad2d"
@@ -2065,6 +2188,7 @@ allowlist["torch.nn.ConstantPad2d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.ConstantPad3d"] = "torch.nn.ConstantPad3d"
 allowlist["torch.nn.ConstantPad3d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.ConstantPad3d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.ConstantPad3d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.ConstantPad3d.train"] = "torch.nn.ConstantPad3d"
 allowlist["torch.nn.ConstantPad3d.cuda"] = "torch.nn.ConstantPad3d"
 allowlist["torch.nn.ConstantPad3d.cpu"] = "torch.nn.ConstantPad3d"
@@ -2077,6 +2201,7 @@ allowlist["torch.nn.ConstantPad3d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.Container"] = "torch.nn.Container"
 allowlist["torch.nn.Container.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Container.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Container.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Container.train"] = "torch.nn.Container"
 allowlist["torch.nn.Container.cuda"] = "torch.nn.Container"
 allowlist["torch.nn.Container.cpu"] = "torch.nn.Container"
@@ -2087,6 +2212,7 @@ allowlist["torch.nn.Container.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.Conv1d"] = "torch.nn.Conv1d"
 allowlist["torch.nn.Conv1d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Conv1d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Conv1d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Conv1d.train"] = "torch.nn.Conv1d"
 allowlist["torch.nn.Conv1d.cuda"] = "torch.nn.Conv1d"
 allowlist["torch.nn.Conv1d.cpu"] = "torch.nn.Conv1d"
@@ -2097,6 +2223,7 @@ allowlist["torch.nn.Conv1d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.Conv2d"] = "torch.nn.Conv2d"
 allowlist["torch.nn.Conv2d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Conv2d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Conv2d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Conv2d.train"] = "torch.nn.Conv2d"
 allowlist["torch.nn.Conv2d.cuda"] = "torch.nn.Conv2d"
 allowlist["torch.nn.Conv2d.cpu"] = "torch.nn.Conv2d"
@@ -2107,6 +2234,7 @@ allowlist["torch.nn.Conv2d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.Conv3d"] = "torch.nn.Conv3d"
 allowlist["torch.nn.Conv3d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Conv3d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Conv3d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Conv3d.train"] = "torch.nn.Conv3d"
 allowlist["torch.nn.Conv3d.cuda"] = "torch.nn.Conv3d"
 allowlist["torch.nn.Conv3d.cpu"] = "torch.nn.Conv3d"
@@ -2117,6 +2245,7 @@ allowlist["torch.nn.Conv3d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.ConvTranspose1d"] = "torch.nn.ConvTranspose1d"
 allowlist["torch.nn.ConvTranspose1d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.ConvTranspose1d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.ConvTranspose1d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.ConvTranspose1d.train"] = "torch.nn.ConvTranspose1d"
 allowlist["torch.nn.ConvTranspose1d.cuda"] = "torch.nn.ConvTranspose1d"
 allowlist["torch.nn.ConvTranspose1d.cpu"] = "torch.nn.ConvTranspose1d"
@@ -2129,6 +2258,7 @@ allowlist["torch.nn.ConvTranspose1d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.ConvTranspose2d"] = "torch.nn.ConvTranspose2d"
 allowlist["torch.nn.ConvTranspose2d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.ConvTranspose2d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.ConvTranspose2d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.ConvTranspose2d.train"] = "torch.nn.ConvTranspose2d"
 allowlist["torch.nn.ConvTranspose2d.cuda"] = "torch.nn.ConvTranspose2d"
 allowlist["torch.nn.ConvTranspose2d.cpu"] = "torch.nn.ConvTranspose2d"
@@ -2141,6 +2271,7 @@ allowlist["torch.nn.ConvTranspose2d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.ConvTranspose3d"] = "torch.nn.ConvTranspose3d"
 allowlist["torch.nn.ConvTranspose3d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.ConvTranspose3d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.ConvTranspose3d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.ConvTranspose3d.train"] = "torch.nn.ConvTranspose3d"
 allowlist["torch.nn.ConvTranspose3d.cuda"] = "torch.nn.ConvTranspose3d"
 allowlist["torch.nn.ConvTranspose3d.cpu"] = "torch.nn.ConvTranspose3d"
@@ -2153,6 +2284,7 @@ allowlist["torch.nn.ConvTranspose3d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.CosineSimilarity"] = "torch.nn.CosineSimilarity"
 allowlist["torch.nn.CosineSimilarity.__call__"] = "torch.Tensor"
 allowlist["torch.nn.CosineSimilarity.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.CosineSimilarity.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.CosineSimilarity.train"] = "torch.nn.CosineSimilarity"
 allowlist["torch.nn.CosineSimilarity.cuda"] = "torch.nn.CosineSimilarity"
 allowlist["torch.nn.CosineSimilarity.cpu"] = "torch.nn.CosineSimilarity"
@@ -2165,6 +2297,7 @@ allowlist["torch.nn.CosineSimilarity.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.CrossMapLRN2d"] = "torch.nn.CrossMapLRN2d"
 allowlist["torch.nn.CrossMapLRN2d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.CrossMapLRN2d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.CrossMapLRN2d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.CrossMapLRN2d.train"] = "torch.nn.CrossMapLRN2d"
 allowlist["torch.nn.CrossMapLRN2d.cuda"] = "torch.nn.CrossMapLRN2d"
 allowlist["torch.nn.CrossMapLRN2d.cpu"] = "torch.nn.CrossMapLRN2d"
@@ -2177,6 +2310,7 @@ allowlist["torch.nn.CrossMapLRN2d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.DataParallel"] = "torch.nn.DataParallel"
 allowlist["torch.nn.DataParallel.__call__"] = "torch.Tensor"
 allowlist["torch.nn.DataParallel.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.DataParallel.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.DataParallel.train"] = "torch.nn.DataParallel"
 allowlist["torch.nn.DataParallel.cuda"] = "torch.nn.DataParallel"
 allowlist["torch.nn.DataParallel.cpu"] = "torch.nn.DataParallel"
@@ -2189,6 +2323,7 @@ allowlist["torch.nn.DataParallel.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.Dropout"] = "torch.nn.Dropout"
 allowlist["torch.nn.Dropout.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Dropout.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Dropout.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Dropout.train"] = "torch.nn.Dropout"
 allowlist["torch.nn.Dropout.cuda"] = "torch.nn.Dropout"
 allowlist["torch.nn.Dropout.cpu"] = "torch.nn.Dropout"
@@ -2199,6 +2334,7 @@ allowlist["torch.nn.Dropout.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.Dropout2d"] = "torch.nn.Dropout2d"
 allowlist["torch.nn.Dropout2d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Dropout2d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Dropout2d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Dropout2d.train"] = "torch.nn.Dropout2d"
 allowlist["torch.nn.Dropout2d.cuda"] = "torch.nn.Dropout2d"
 allowlist["torch.nn.Dropout2d.cpu"] = "torch.nn.Dropout2d"
@@ -2209,6 +2345,7 @@ allowlist["torch.nn.Dropout2d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.Dropout3d"] = "torch.nn.Dropout3d"
 allowlist["torch.nn.Dropout3d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Dropout3d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Dropout3d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Dropout3d.train"] = "torch.nn.Dropout3d"
 allowlist["torch.nn.Dropout3d.cuda"] = "torch.nn.Dropout3d"
 allowlist["torch.nn.Dropout3d.cpu"] = "torch.nn.Dropout3d"
@@ -2219,6 +2356,7 @@ allowlist["torch.nn.Dropout3d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.ELU"] = "torch.nn.ELU"
 allowlist["torch.nn.ELU.__call__"] = "torch.Tensor"
 allowlist["torch.nn.ELU.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.ELU.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.ELU.train"] = "torch.nn.ELU"
 allowlist["torch.nn.ELU.cuda"] = "torch.nn.ELU"
 allowlist["torch.nn.ELU.cpu"] = "torch.nn.ELU"
@@ -2229,6 +2367,7 @@ allowlist["torch.nn.ELU.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.Embedding"] = "torch.nn.Embedding"
 allowlist["torch.nn.Embedding.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Embedding.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Embedding.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Embedding.train"] = "torch.nn.Embedding"
 allowlist["torch.nn.Embedding.cuda"] = "torch.nn.Embedding"
 allowlist["torch.nn.Embedding.cpu"] = "torch.nn.Embedding"
@@ -2239,6 +2378,7 @@ allowlist["torch.nn.Embedding.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.EmbeddingBag"] = "torch.nn.EmbeddingBag"
 allowlist["torch.nn.EmbeddingBag.__call__"] = "torch.Tensor"
 allowlist["torch.nn.EmbeddingBag.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.EmbeddingBag.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.EmbeddingBag.train"] = "torch.nn.EmbeddingBag"
 allowlist["torch.nn.EmbeddingBag.cuda"] = "torch.nn.EmbeddingBag"
 allowlist["torch.nn.EmbeddingBag.cpu"] = "torch.nn.EmbeddingBag"
@@ -2251,6 +2391,7 @@ allowlist["torch.nn.EmbeddingBag.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.FeatureAlphaDropout"] = "torch.nn.FeatureAlphaDropout"
 allowlist["torch.nn.FeatureAlphaDropout.__call__"] = "torch.Tensor"
 allowlist["torch.nn.FeatureAlphaDropout.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.FeatureAlphaDropout.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.FeatureAlphaDropout.train"] = "torch.nn.FeatureAlphaDropout"
 allowlist["torch.nn.FeatureAlphaDropout.cuda"] = "torch.nn.FeatureAlphaDropout"
 allowlist["torch.nn.FeatureAlphaDropout.cpu"] = "torch.nn.FeatureAlphaDropout"
@@ -2263,6 +2404,7 @@ allowlist["torch.nn.FeatureAlphaDropout.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.Flatten"] = "torch.nn.Flatten"
 allowlist["torch.nn.Flatten.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Flatten.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Flatten.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Flatten.train"] = "torch.nn.Flatten"
 allowlist["torch.nn.Flatten.cuda"] = "torch.nn.Flatten"
 allowlist["torch.nn.Flatten.cpu"] = "torch.nn.Flatten"
@@ -2273,6 +2415,7 @@ allowlist["torch.nn.Flatten.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.Fold"] = "torch.nn.Fold"
 allowlist["torch.nn.Fold.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Fold.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Fold.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Fold.train"] = "torch.nn.Fold"
 allowlist["torch.nn.Fold.cuda"] = "torch.nn.Fold"
 allowlist["torch.nn.Fold.cpu"] = "torch.nn.Fold"
@@ -2283,6 +2426,7 @@ allowlist["torch.nn.Fold.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.FractionalMaxPool2d"] = "torch.nn.FractionalMaxPool2d"
 allowlist["torch.nn.FractionalMaxPool2d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.FractionalMaxPool2d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.FractionalMaxPool2d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.FractionalMaxPool2d.train"] = "torch.nn.FractionalMaxPool2d"
 allowlist["torch.nn.FractionalMaxPool2d.cuda"] = "torch.nn.FractionalMaxPool2d"
 allowlist["torch.nn.FractionalMaxPool2d.cpu"] = "torch.nn.FractionalMaxPool2d"
@@ -2295,6 +2439,7 @@ allowlist["torch.nn.FractionalMaxPool2d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.FractionalMaxPool3d"] = "torch.nn.FractionalMaxPool3d"
 allowlist["torch.nn.FractionalMaxPool3d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.FractionalMaxPool3d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.FractionalMaxPool3d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.FractionalMaxPool3d.train"] = "torch.nn.FractionalMaxPool3d"
 allowlist["torch.nn.FractionalMaxPool3d.cuda"] = "torch.nn.FractionalMaxPool3d"
 allowlist["torch.nn.FractionalMaxPool3d.cpu"] = "torch.nn.FractionalMaxPool3d"
@@ -2307,6 +2452,7 @@ allowlist["torch.nn.FractionalMaxPool3d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.GELU"] = "torch.nn.GELU"
 allowlist["torch.nn.GELU.__call__"] = "torch.Tensor"
 allowlist["torch.nn.GELU.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.GELU.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.GELU.train"] = "torch.nn.GELU"
 allowlist["torch.nn.GELU.cuda"] = "torch.nn.GELU"
 allowlist["torch.nn.GELU.cpu"] = "torch.nn.GELU"
@@ -2317,6 +2463,7 @@ allowlist["torch.nn.GELU.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.GLU"] = "torch.nn.GLU"
 allowlist["torch.nn.GLU.__call__"] = "torch.Tensor"
 allowlist["torch.nn.GLU.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.GLU.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.GLU.train"] = "torch.nn.GLU"
 allowlist["torch.nn.GLU.cuda"] = "torch.nn.GLU"
 allowlist["torch.nn.GLU.cpu"] = "torch.nn.GLU"
@@ -2327,6 +2474,7 @@ allowlist["torch.nn.GLU.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.GRU"] = "torch.nn.GRU"
 allowlist["torch.nn.GRU.__call__"] = "torch.Tensor"
 allowlist["torch.nn.GRU.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.GRU.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.GRU.train"] = "torch.nn.GRU"
 allowlist["torch.nn.GRU.cuda"] = "torch.nn.GRU"
 allowlist["torch.nn.GRU.cpu"] = "torch.nn.GRU"
@@ -2337,6 +2485,7 @@ allowlist["torch.nn.GRU.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.GRUCell"] = "torch.nn.GRUCell"
 allowlist["torch.nn.GRUCell.__call__"] = "torch.Tensor"
 allowlist["torch.nn.GRUCell.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.GRUCell.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.GRUCell.train"] = "torch.nn.GRUCell"
 allowlist["torch.nn.GRUCell.cuda"] = "torch.nn.GRUCell"
 allowlist["torch.nn.GRUCell.cpu"] = "torch.nn.GRUCell"
@@ -2347,6 +2496,7 @@ allowlist["torch.nn.GRUCell.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.GroupNorm"] = "torch.nn.GroupNorm"
 allowlist["torch.nn.GroupNorm.__call__"] = "torch.Tensor"
 allowlist["torch.nn.GroupNorm.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.GroupNorm.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.GroupNorm.train"] = "torch.nn.GroupNorm"
 allowlist["torch.nn.GroupNorm.cuda"] = "torch.nn.GroupNorm"
 allowlist["torch.nn.GroupNorm.cpu"] = "torch.nn.GroupNorm"
@@ -2357,6 +2507,7 @@ allowlist["torch.nn.GroupNorm.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.Hardshrink"] = "torch.nn.Hardshrink"
 allowlist["torch.nn.Hardshrink.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Hardshrink.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Hardshrink.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Hardshrink.train"] = "torch.nn.Hardshrink"
 allowlist["torch.nn.Hardshrink.cuda"] = "torch.nn.Hardshrink"
 allowlist["torch.nn.Hardshrink.cpu"] = "torch.nn.Hardshrink"
@@ -2445,6 +2596,7 @@ allowlist["torch.nn.Hardswish.extra_repr"] = {  # exists in # 1.6.0 +
 allowlist["torch.nn.Hardtanh"] = "torch.nn.Hardtanh"
 allowlist["torch.nn.Hardtanh.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Hardtanh.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Hardtanh.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Hardtanh.train"] = "torch.nn.Hardtanh"
 allowlist["torch.nn.Hardtanh.cuda"] = "torch.nn.Hardtanh"
 allowlist["torch.nn.Hardtanh.cpu"] = "torch.nn.Hardtanh"
@@ -2455,6 +2607,7 @@ allowlist["torch.nn.Hardtanh.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.Identity"] = "torch.nn.Identity"
 allowlist["torch.nn.Identity.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Identity.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Identity.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Identity.train"] = "torch.nn.Identity"
 allowlist["torch.nn.Identity.cuda"] = "torch.nn.Identity"
 allowlist["torch.nn.Identity.cpu"] = "torch.nn.Identity"
@@ -2465,6 +2618,7 @@ allowlist["torch.nn.Identity.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.InstanceNorm1d"] = "torch.nn.InstanceNorm1d"
 allowlist["torch.nn.InstanceNorm1d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.InstanceNorm1d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.InstanceNorm1d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.InstanceNorm1d.train"] = "torch.nn.InstanceNorm1d"
 allowlist["torch.nn.InstanceNorm1d.cuda"] = "torch.nn.InstanceNorm1d"
 allowlist["torch.nn.InstanceNorm1d.cpu"] = "torch.nn.InstanceNorm1d"
@@ -2477,6 +2631,7 @@ allowlist["torch.nn.InstanceNorm1d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.InstanceNorm2d"] = "torch.nn.InstanceNorm2d"
 allowlist["torch.nn.InstanceNorm2d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.InstanceNorm2d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.InstanceNorm2d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.InstanceNorm2d.train"] = "torch.nn.InstanceNorm2d"
 allowlist["torch.nn.InstanceNorm2d.cuda"] = "torch.nn.InstanceNorm2d"
 allowlist["torch.nn.InstanceNorm2d.cpu"] = "torch.nn.InstanceNorm2d"
@@ -2489,6 +2644,7 @@ allowlist["torch.nn.InstanceNorm2d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.InstanceNorm3d"] = "torch.nn.InstanceNorm3d"
 allowlist["torch.nn.InstanceNorm3d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.InstanceNorm3d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.InstanceNorm3d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.InstanceNorm3d.train"] = "torch.nn.InstanceNorm3d"
 allowlist["torch.nn.InstanceNorm3d.cuda"] = "torch.nn.InstanceNorm3d"
 allowlist["torch.nn.InstanceNorm3d.cpu"] = "torch.nn.InstanceNorm3d"
@@ -2501,6 +2657,7 @@ allowlist["torch.nn.InstanceNorm3d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.LPPool1d"] = "torch.nn.LPPool1d"
 allowlist["torch.nn.LPPool1d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.LPPool1d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.LPPool1d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.LPPool1d.train"] = "torch.nn.LPPool1d"
 allowlist["torch.nn.LPPool1d.cuda"] = "torch.nn.LPPool1d"
 allowlist["torch.nn.LPPool1d.cpu"] = "torch.nn.LPPool1d"
@@ -2511,6 +2668,7 @@ allowlist["torch.nn.LPPool1d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.LPPool2d"] = "torch.nn.LPPool2d"
 allowlist["torch.nn.LPPool2d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.LPPool2d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.LPPool2d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.LPPool2d.train"] = "torch.nn.LPPool2d"
 allowlist["torch.nn.LPPool2d.cuda"] = "torch.nn.LPPool2d"
 allowlist["torch.nn.LPPool2d.cpu"] = "torch.nn.LPPool2d"
@@ -2521,6 +2679,7 @@ allowlist["torch.nn.LPPool2d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.LSTM"] = "torch.nn.LSTM"
 allowlist["torch.nn.LSTM.__call__"] = "torch.Tensor"
 allowlist["torch.nn.LSTM.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.LSTM.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.LSTM.train"] = "torch.nn.LSTM"
 allowlist["torch.nn.LSTM.cuda"] = "torch.nn.LSTM"
 allowlist["torch.nn.LSTM.cpu"] = "torch.nn.LSTM"
@@ -2531,6 +2690,7 @@ allowlist["torch.nn.LSTM.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.LSTMCell"] = "torch.nn.LSTMCell"
 allowlist["torch.nn.LSTMCell.__call__"] = "torch.Tensor"
 allowlist["torch.nn.LSTMCell.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.LSTMCell.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.LSTMCell.train"] = "torch.nn.LSTMCell"
 allowlist["torch.nn.LSTMCell.cuda"] = "torch.nn.LSTMCell"
 allowlist["torch.nn.LSTMCell.cpu"] = "torch.nn.LSTMCell"
@@ -2541,6 +2701,7 @@ allowlist["torch.nn.LSTMCell.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.LayerNorm"] = "torch.nn.LayerNorm"
 allowlist["torch.nn.LayerNorm.__call__"] = "torch.Tensor"
 allowlist["torch.nn.LayerNorm.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.LayerNorm.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.LayerNorm.train"] = "torch.nn.LayerNorm"
 allowlist["torch.nn.LayerNorm.cuda"] = "torch.nn.LayerNorm"
 allowlist["torch.nn.LayerNorm.cpu"] = "torch.nn.LayerNorm"
@@ -2551,6 +2712,7 @@ allowlist["torch.nn.LayerNorm.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.LeakyReLU"] = "torch.nn.LeakyReLU"
 allowlist["torch.nn.LeakyReLU.__call__"] = "torch.Tensor"
 allowlist["torch.nn.LeakyReLU.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.LeakyReLU.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.LeakyReLU.train"] = "torch.nn.LeakyReLU"
 allowlist["torch.nn.LeakyReLU.cuda"] = "torch.nn.LeakyReLU"
 allowlist["torch.nn.LeakyReLU.cpu"] = "torch.nn.LeakyReLU"
@@ -2561,6 +2723,7 @@ allowlist["torch.nn.LeakyReLU.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.Linear"] = "torch.nn.Linear"
 allowlist["torch.nn.Linear.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Linear.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Linear.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Linear.train"] = "torch.nn.Linear"
 allowlist["torch.nn.Linear.cuda"] = "torch.nn.Linear"
 allowlist["torch.nn.Linear.cpu"] = "torch.nn.Linear"
@@ -2571,6 +2734,7 @@ allowlist["torch.nn.Linear.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.LocalResponseNorm"] = "torch.nn.LocalResponseNorm"
 allowlist["torch.nn.LocalResponseNorm.__call__"] = "torch.Tensor"
 allowlist["torch.nn.LocalResponseNorm.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.LocalResponseNorm.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.LocalResponseNorm.train"] = "torch.nn.LocalResponseNorm"
 allowlist["torch.nn.LocalResponseNorm.cuda"] = "torch.nn.LocalResponseNorm"
 allowlist["torch.nn.LocalResponseNorm.cpu"] = "torch.nn.LocalResponseNorm"
@@ -2583,6 +2747,7 @@ allowlist["torch.nn.LocalResponseNorm.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.LogSigmoid"] = "torch.nn.LogSigmoid"
 allowlist["torch.nn.LogSigmoid.__call__"] = "torch.Tensor"
 allowlist["torch.nn.LogSigmoid.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.LogSigmoid.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.LogSigmoid.train"] = "torch.nn.LogSigmoid"
 allowlist["torch.nn.LogSigmoid.cuda"] = "torch.nn.LogSigmoid"
 allowlist["torch.nn.LogSigmoid.cpu"] = "torch.nn.LogSigmoid"
@@ -2593,6 +2758,7 @@ allowlist["torch.nn.LogSigmoid.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.LogSoftmax"] = "torch.nn.LogSoftmax"
 allowlist["torch.nn.LogSoftmax.__call__"] = "torch.Tensor"
 allowlist["torch.nn.LogSoftmax.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.LogSoftmax.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.LogSoftmax.train"] = "torch.nn.LogSoftmax"
 allowlist["torch.nn.LogSoftmax.cuda"] = "torch.nn.LogSoftmax"
 allowlist["torch.nn.LogSoftmax.cpu"] = "torch.nn.LogSoftmax"
@@ -2603,6 +2769,7 @@ allowlist["torch.nn.LogSoftmax.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.MaxPool1d"] = "torch.nn.MaxPool1d"
 allowlist["torch.nn.MaxPool1d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.MaxPool1d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.MaxPool1d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.MaxPool1d.train"] = "torch.nn.MaxPool1d"
 allowlist["torch.nn.MaxPool1d.cuda"] = "torch.nn.MaxPool1d"
 allowlist["torch.nn.MaxPool1d.cpu"] = "torch.nn.MaxPool1d"
@@ -2613,6 +2780,7 @@ allowlist["torch.nn.MaxPool1d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.MaxPool2d"] = "torch.nn.MaxPool2d"
 allowlist["torch.nn.MaxPool2d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.MaxPool2d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.MaxPool2d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.MaxPool2d.train"] = "torch.nn.MaxPool2d"
 allowlist["torch.nn.MaxPool2d.cuda"] = "torch.nn.MaxPool2d"
 allowlist["torch.nn.MaxPool2d.cpu"] = "torch.nn.MaxPool2d"
@@ -2623,6 +2791,7 @@ allowlist["torch.nn.MaxPool2d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.MaxPool3d"] = "torch.nn.MaxPool3d"
 allowlist["torch.nn.MaxPool3d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.MaxPool3d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.MaxPool3d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.MaxPool3d.train"] = "torch.nn.MaxPool3d"
 allowlist["torch.nn.MaxPool3d.cuda"] = "torch.nn.MaxPool3d"
 allowlist["torch.nn.MaxPool3d.cpu"] = "torch.nn.MaxPool3d"
@@ -2633,6 +2802,7 @@ allowlist["torch.nn.MaxPool3d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.MaxUnpool1d"] = "torch.nn.MaxUnpool1d"
 allowlist["torch.nn.MaxUnpool1d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.MaxUnpool1d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.MaxUnpool1d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.MaxUnpool1d.train"] = "torch.nn.MaxUnpool1d"
 allowlist["torch.nn.MaxUnpool1d.cuda"] = "torch.nn.MaxUnpool1d"
 allowlist["torch.nn.MaxUnpool1d.cpu"] = "torch.nn.MaxUnpool1d"
@@ -2643,6 +2813,7 @@ allowlist["torch.nn.MaxUnpool1d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.MaxUnpool2d"] = "torch.nn.MaxUnpool2d"
 allowlist["torch.nn.MaxUnpool2d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.MaxUnpool2d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.MaxUnpool2d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.MaxUnpool2d.train"] = "torch.nn.MaxUnpool2d"
 allowlist["torch.nn.MaxUnpool2d.cuda"] = "torch.nn.MaxUnpool2d"
 allowlist["torch.nn.MaxUnpool2d.cpu"] = "torch.nn.MaxUnpool2d"
@@ -2653,6 +2824,7 @@ allowlist["torch.nn.MaxUnpool2d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.MaxUnpool3d"] = "torch.nn.MaxUnpool3d"
 allowlist["torch.nn.MaxUnpool3d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.MaxUnpool3d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.MaxUnpool3d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.MaxUnpool3d.train"] = "torch.nn.MaxUnpool3d"
 allowlist["torch.nn.MaxUnpool3d.cuda"] = "torch.nn.MaxUnpool3d"
 allowlist["torch.nn.MaxUnpool3d.cpu"] = "torch.nn.MaxUnpool3d"
@@ -2663,6 +2835,7 @@ allowlist["torch.nn.MaxUnpool3d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.Module"] = "torch.nn.Module"
 allowlist["torch.nn.Module.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Module.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Module.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Module.train"] = "torch.nn.Module"
 allowlist["torch.nn.Module.cuda"] = "torch.nn.Module"
 allowlist["torch.nn.Module.cpu"] = "torch.nn.Module"
@@ -2673,6 +2846,7 @@ allowlist["torch.nn.Module.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.ModuleDict"] = "torch.nn.ModuleDict"
 allowlist["torch.nn.ModuleDict.__call__"] = "torch.Tensor"
 allowlist["torch.nn.ModuleDict.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.ModuleDict.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.ModuleDict.train"] = "torch.nn.ModuleDict"
 allowlist["torch.nn.ModuleDict.cuda"] = "torch.nn.ModuleDict"
 allowlist["torch.nn.ModuleDict.cpu"] = "torch.nn.ModuleDict"
@@ -2683,6 +2857,7 @@ allowlist["torch.nn.ModuleDict.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.ModuleList"] = "torch.nn.ModuleList"
 allowlist["torch.nn.ModuleList.__call__"] = "torch.Tensor"
 allowlist["torch.nn.ModuleList.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.ModuleList.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.ModuleList.train"] = "torch.nn.ModuleList"
 allowlist["torch.nn.ModuleList.cuda"] = "torch.nn.ModuleList"
 allowlist["torch.nn.ModuleList.cpu"] = "torch.nn.ModuleList"
@@ -2693,6 +2868,7 @@ allowlist["torch.nn.ModuleList.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.MultiheadAttention"] = "torch.nn.MultiheadAttention"
 allowlist["torch.nn.MultiheadAttention.__call__"] = "torch.Tensor"
 allowlist["torch.nn.MultiheadAttention.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.MultiheadAttention.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.MultiheadAttention.train"] = "torch.nn.MultiheadAttention"
 allowlist["torch.nn.MultiheadAttention.cuda"] = "torch.nn.MultiheadAttention"
 allowlist["torch.nn.MultiheadAttention.cpu"] = "torch.nn.MultiheadAttention"
@@ -2705,6 +2881,7 @@ allowlist["torch.nn.MultiheadAttention.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.PReLU"] = "torch.nn.PReLU"
 allowlist["torch.nn.PReLU.__call__"] = "torch.Tensor"
 allowlist["torch.nn.PReLU.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.PReLU.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.PReLU.train"] = "torch.nn.PReLU"
 allowlist["torch.nn.PReLU.cuda"] = "torch.nn.PReLU"
 allowlist["torch.nn.PReLU.cpu"] = "torch.nn.PReLU"
@@ -2715,6 +2892,7 @@ allowlist["torch.nn.PReLU.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.PairwiseDistance"] = "torch.nn.PairwiseDistance"
 allowlist["torch.nn.PairwiseDistance.__call__"] = "torch.Tensor"
 allowlist["torch.nn.PairwiseDistance.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.PairwiseDistance.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.PairwiseDistance.train"] = "torch.nn.PairwiseDistance"
 allowlist["torch.nn.PairwiseDistance.cuda"] = "torch.nn.PairwiseDistance"
 allowlist["torch.nn.PairwiseDistance.cpu"] = "torch.nn.PairwiseDistance"
@@ -2727,6 +2905,7 @@ allowlist["torch.nn.PairwiseDistance.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.PixelShuffle"] = "torch.nn.PixelShuffle"
 allowlist["torch.nn.PixelShuffle.__call__"] = "torch.Tensor"
 allowlist["torch.nn.PixelShuffle.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.PixelShuffle.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.PixelShuffle.train"] = "torch.nn.PixelShuffle"
 allowlist["torch.nn.PixelShuffle.cuda"] = "torch.nn.PixelShuffle"
 allowlist["torch.nn.PixelShuffle.cpu"] = "torch.nn.PixelShuffle"
@@ -2739,6 +2918,7 @@ allowlist["torch.nn.PixelShuffle.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.RNN"] = "torch.nn.RNN"
 allowlist["torch.nn.RNN.__call__"] = "torch.Tensor"
 allowlist["torch.nn.RNN.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.RNN.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.RNN.train"] = "torch.nn.RNN"
 allowlist["torch.nn.RNN.cuda"] = "torch.nn.RNN"
 allowlist["torch.nn.RNN.cpu"] = "torch.nn.RNN"
@@ -2749,6 +2929,7 @@ allowlist["torch.nn.RNN.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.RNNBase"] = "torch.nn.RNNBase"
 allowlist["torch.nn.RNNBase.__call__"] = "torch.Tensor"
 allowlist["torch.nn.RNNBase.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.RNNBase.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.RNNBase.train"] = "torch.nn.RNNBase"
 allowlist["torch.nn.RNNBase.cuda"] = "torch.nn.RNNBase"
 allowlist["torch.nn.RNNBase.cpu"] = "torch.nn.RNNBase"
@@ -2759,6 +2940,7 @@ allowlist["torch.nn.RNNBase.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.RNNCell"] = "torch.nn.RNNCell"
 allowlist["torch.nn.RNNCell.__call__"] = "torch.Tensor"
 allowlist["torch.nn.RNNCell.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.RNNCell.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.RNNCell.train"] = "torch.nn.RNNCell"
 allowlist["torch.nn.RNNCell.cuda"] = "torch.nn.RNNCell"
 allowlist["torch.nn.RNNCell.cpu"] = "torch.nn.RNNCell"
@@ -2769,6 +2951,7 @@ allowlist["torch.nn.RNNCell.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.RNNCellBase"] = "torch.nn.RNNCellBase"
 allowlist["torch.nn.RNNCellBase.__call__"] = "torch.Tensor"
 allowlist["torch.nn.RNNCellBase.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.RNNCellBase.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.RNNCellBase.train"] = "torch.nn.RNNCellBase"
 allowlist["torch.nn.RNNCellBase.cuda"] = "torch.nn.RNNCellBase"
 allowlist["torch.nn.RNNCellBase.cpu"] = "torch.nn.RNNCellBase"
@@ -2779,6 +2962,7 @@ allowlist["torch.nn.RNNCellBase.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.RReLU"] = "torch.nn.RReLU"
 allowlist["torch.nn.RReLU.__call__"] = "torch.Tensor"
 allowlist["torch.nn.RReLU.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.RReLU.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.RReLU.train"] = "torch.nn.RReLU"
 allowlist["torch.nn.RReLU.cuda"] = "torch.nn.RReLU"
 allowlist["torch.nn.RReLU.cpu"] = "torch.nn.RReLU"
@@ -2789,6 +2973,7 @@ allowlist["torch.nn.RReLU.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.ReLU"] = "torch.nn.ReLU"
 allowlist["torch.nn.ReLU.__call__"] = "torch.Tensor"
 allowlist["torch.nn.ReLU.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.ReLU.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.ReLU.train"] = "torch.nn.ReLU"
 allowlist["torch.nn.ReLU.cuda"] = "torch.nn.ReLU"
 allowlist["torch.nn.ReLU.cpu"] = "torch.nn.ReLU"
@@ -2799,6 +2984,7 @@ allowlist["torch.nn.ReLU.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.ReLU6"] = "torch.nn.ReLU6"
 allowlist["torch.nn.ReLU6.__call__"] = "torch.Tensor"
 allowlist["torch.nn.ReLU6.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.ReLU6.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.ReLU6.train"] = "torch.nn.ReLU6"
 allowlist["torch.nn.ReLU6.cuda"] = "torch.nn.ReLU6"
 allowlist["torch.nn.ReLU6.cpu"] = "torch.nn.ReLU6"
@@ -2809,6 +2995,7 @@ allowlist["torch.nn.ReLU6.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.ReflectionPad1d"] = "torch.nn.ReflectionPad1d"
 allowlist["torch.nn.ReflectionPad1d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.ReflectionPad1d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.ReflectionPad1d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.ReflectionPad1d.train"] = "torch.nn.ReflectionPad1d"
 allowlist["torch.nn.ReflectionPad1d.cuda"] = "torch.nn.ReflectionPad1d"
 allowlist["torch.nn.ReflectionPad1d.cpu"] = "torch.nn.ReflectionPad1d"
@@ -2821,6 +3008,7 @@ allowlist["torch.nn.ReflectionPad1d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.ReflectionPad2d"] = "torch.nn.ReflectionPad2d"
 allowlist["torch.nn.ReflectionPad2d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.ReflectionPad2d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.ReflectionPad2d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.ReflectionPad2d.train"] = "torch.nn.ReflectionPad2d"
 allowlist["torch.nn.ReflectionPad2d.cuda"] = "torch.nn.ReflectionPad2d"
 allowlist["torch.nn.ReflectionPad2d.cpu"] = "torch.nn.ReflectionPad2d"
@@ -2833,6 +3021,7 @@ allowlist["torch.nn.ReflectionPad2d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.ReplicationPad1d"] = "torch.nn.ReplicationPad1d"
 allowlist["torch.nn.ReplicationPad1d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.ReplicationPad1d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.ReplicationPad1d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.ReplicationPad1d.train"] = "torch.nn.ReplicationPad1d"
 allowlist["torch.nn.ReplicationPad1d.cuda"] = "torch.nn.ReplicationPad1d"
 allowlist["torch.nn.ReplicationPad1d.cpu"] = "torch.nn.ReplicationPad1d"
@@ -2845,6 +3034,7 @@ allowlist["torch.nn.ReplicationPad1d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.ReplicationPad2d"] = "torch.nn.ReplicationPad2d"
 allowlist["torch.nn.ReplicationPad2d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.ReplicationPad2d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.ReplicationPad2d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.ReplicationPad2d.train"] = "torch.nn.ReplicationPad2d"
 allowlist["torch.nn.ReplicationPad2d.cuda"] = "torch.nn.ReplicationPad2d"
 allowlist["torch.nn.ReplicationPad2d.cpu"] = "torch.nn.ReplicationPad2d"
@@ -2857,6 +3047,7 @@ allowlist["torch.nn.ReplicationPad2d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.ReplicationPad3d"] = "torch.nn.ReplicationPad3d"
 allowlist["torch.nn.ReplicationPad3d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.ReplicationPad3d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.ReplicationPad3d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.ReplicationPad3d.train"] = "torch.nn.ReplicationPad3d"
 allowlist["torch.nn.ReplicationPad3d.cuda"] = "torch.nn.ReplicationPad3d"
 allowlist["torch.nn.ReplicationPad3d.cpu"] = "torch.nn.ReplicationPad3d"
@@ -2869,6 +3060,7 @@ allowlist["torch.nn.ReplicationPad3d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.SELU"] = "torch.nn.SELU"
 allowlist["torch.nn.SELU.__call__"] = "torch.Tensor"
 allowlist["torch.nn.SELU.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.SELU.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.SELU.train"] = "torch.nn.SELU"
 allowlist["torch.nn.SELU.cuda"] = "torch.nn.SELU"
 allowlist["torch.nn.SELU.cpu"] = "torch.nn.SELU"
@@ -2879,6 +3071,7 @@ allowlist["torch.nn.SELU.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.Sequential"] = "torch.nn.Sequential"
 allowlist["torch.nn.Sequential.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Sequential.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Sequential.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Sequential.train"] = "torch.nn.Sequential"
 allowlist["torch.nn.Sequential.cuda"] = "torch.nn.Sequential"
 allowlist["torch.nn.Sequential.cpu"] = "torch.nn.Sequential"
@@ -2889,6 +3082,7 @@ allowlist["torch.nn.Sequential.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.Sigmoid"] = "torch.nn.Sigmoid"
 allowlist["torch.nn.Sigmoid.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Sigmoid.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Sigmoid.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Sigmoid.train"] = "torch.nn.Sigmoid"
 allowlist["torch.nn.Sigmoid.cuda"] = "torch.nn.Sigmoid"
 allowlist["torch.nn.Sigmoid.cpu"] = "torch.nn.Sigmoid"
@@ -2899,6 +3093,7 @@ allowlist["torch.nn.Sigmoid.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.Softmax"] = "torch.nn.Softmax"
 allowlist["torch.nn.Softmax.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Softmax.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Softmax.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Softmax.train"] = "torch.nn.Softmax"
 allowlist["torch.nn.Softmax.cuda"] = "torch.nn.Softmax"
 allowlist["torch.nn.Softmax.cpu"] = "torch.nn.Softmax"
@@ -2909,6 +3104,7 @@ allowlist["torch.nn.Softmax.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.Softmax2d"] = "torch.nn.Softmax2d"
 allowlist["torch.nn.Softmax2d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Softmax2d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Softmax2d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Softmax2d.train"] = "torch.nn.Softmax2d"
 allowlist["torch.nn.Softmax2d.cuda"] = "torch.nn.Softmax2d"
 allowlist["torch.nn.Softmax2d.cpu"] = "torch.nn.Softmax2d"
@@ -2919,6 +3115,7 @@ allowlist["torch.nn.Softmax2d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.Softmin"] = "torch.nn.Softmin"
 allowlist["torch.nn.Softmin.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Softmin.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Softmin.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Softmin.train"] = "torch.nn.Softmin"
 allowlist["torch.nn.Softmin.cuda"] = "torch.nn.Softmin"
 allowlist["torch.nn.Softmin.cpu"] = "torch.nn.Softmin"
@@ -2929,6 +3126,7 @@ allowlist["torch.nn.Softmin.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.Softplus"] = "torch.nn.Softplus"
 allowlist["torch.nn.Softplus.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Softplus.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Softplus.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Softplus.train"] = "torch.nn.Softplus"
 allowlist["torch.nn.Softplus.cuda"] = "torch.nn.Softplus"
 allowlist["torch.nn.Softplus.cpu"] = "torch.nn.Softplus"
@@ -2939,6 +3137,7 @@ allowlist["torch.nn.Softplus.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.Softshrink"] = "torch.nn.Softshrink"
 allowlist["torch.nn.Softshrink.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Softshrink.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Softshrink.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Softshrink.train"] = "torch.nn.Softshrink"
 allowlist["torch.nn.Softshrink.cuda"] = "torch.nn.Softshrink"
 allowlist["torch.nn.Softshrink.cpu"] = "torch.nn.Softshrink"
@@ -2949,6 +3148,7 @@ allowlist["torch.nn.Softshrink.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.Softsign"] = "torch.nn.Softsign"
 allowlist["torch.nn.Softsign.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Softsign.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Softsign.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Softsign.train"] = "torch.nn.Softsign"
 allowlist["torch.nn.Softsign.cuda"] = "torch.nn.Softsign"
 allowlist["torch.nn.Softsign.cpu"] = "torch.nn.Softsign"
@@ -2959,6 +3159,7 @@ allowlist["torch.nn.Softsign.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.SyncBatchNorm"] = "torch.nn.SyncBatchNorm"
 allowlist["torch.nn.SyncBatchNorm.__call__"] = "torch.Tensor"
 allowlist["torch.nn.SyncBatchNorm.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.SyncBatchNorm.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.SyncBatchNorm.train"] = "torch.nn.SyncBatchNorm"
 allowlist["torch.nn.SyncBatchNorm.cuda"] = "torch.nn.SyncBatchNorm"
 allowlist["torch.nn.SyncBatchNorm.cpu"] = "torch.nn.SyncBatchNorm"
@@ -2971,6 +3172,7 @@ allowlist["torch.nn.SyncBatchNorm.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.Tanh"] = "torch.nn.Tanh"
 allowlist["torch.nn.Tanh.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Tanh.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Tanh.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Tanh.train"] = "torch.nn.Tanh"
 allowlist["torch.nn.Tanh.cuda"] = "torch.nn.Tanh"
 allowlist["torch.nn.Tanh.cpu"] = "torch.nn.Tanh"
@@ -2981,6 +3183,7 @@ allowlist["torch.nn.Tanh.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.Tanhshrink"] = "torch.nn.Tanhshrink"
 allowlist["torch.nn.Tanhshrink.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Tanhshrink.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Tanhshrink.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Tanhshrink.train"] = "torch.nn.Tanhshrink"
 allowlist["torch.nn.Tanhshrink.cuda"] = "torch.nn.Tanhshrink"
 allowlist["torch.nn.Tanhshrink.cpu"] = "torch.nn.Tanhshrink"
@@ -2991,6 +3194,7 @@ allowlist["torch.nn.Tanhshrink.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.Threshold"] = "torch.nn.Threshold"
 allowlist["torch.nn.Threshold.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Threshold.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Threshold.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Threshold.train"] = "torch.nn.Threshold"
 allowlist["torch.nn.Threshold.cuda"] = "torch.nn.Threshold"
 allowlist["torch.nn.Threshold.cpu"] = "torch.nn.Threshold"
@@ -3001,6 +3205,7 @@ allowlist["torch.nn.Threshold.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.Transformer"] = "torch.nn.Transformer"
 allowlist["torch.nn.Transformer.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Transformer.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Transformer.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Transformer.train"] = "torch.nn.Transformer"
 allowlist["torch.nn.Transformer.cuda"] = "torch.nn.Transformer"
 allowlist["torch.nn.Transformer.cpu"] = "torch.nn.Transformer"
@@ -3011,6 +3216,7 @@ allowlist["torch.nn.Transformer.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.TransformerDecoder"] = "torch.nn.TransformerDecoder"
 allowlist["torch.nn.TransformerDecoder.__call__"] = "torch.Tensor"
 allowlist["torch.nn.TransformerDecoder.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.TransformerDecoder.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.TransformerDecoder.train"] = "torch.nn.TransformerDecoder"
 allowlist["torch.nn.TransformerDecoder.cuda"] = "torch.nn.TransformerDecoder"
 allowlist["torch.nn.TransformerDecoder.cpu"] = "torch.nn.TransformerDecoder"
@@ -3023,6 +3229,9 @@ allowlist["torch.nn.TransformerDecoder.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.TransformerDecoderLayer"] = "torch.nn.TransformerDecoderLayer"
 allowlist["torch.nn.TransformerDecoderLayer.__call__"] = "torch.Tensor"
 allowlist["torch.nn.TransformerDecoderLayer.parameters"] = "syft.lib.python.List"
+allowlist[
+    "torch.nn.TransformerDecoderLayer.register_parameter"
+] = "syft.lib.python._SyNone"
 allowlist["torch.nn.TransformerDecoderLayer.train"] = "torch.nn.TransformerDecoderLayer"
 allowlist["torch.nn.TransformerDecoderLayer.cuda"] = "torch.nn.TransformerDecoderLayer"
 allowlist["torch.nn.TransformerDecoderLayer.cpu"] = "torch.nn.TransformerDecoderLayer"
@@ -3037,6 +3246,7 @@ allowlist["torch.nn.TransformerDecoderLayer.extra_repr"] = "syft.lib.python.Stri
 allowlist["torch.nn.TransformerEncoder"] = "torch.nn.TransformerEncoder"
 allowlist["torch.nn.TransformerEncoder.__call__"] = "torch.Tensor"
 allowlist["torch.nn.TransformerEncoder.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.TransformerEncoder.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.TransformerEncoder.train"] = "torch.nn.TransformerEncoder"
 allowlist["torch.nn.TransformerEncoder.cuda"] = "torch.nn.TransformerEncoder"
 allowlist["torch.nn.TransformerEncoder.cpu"] = "torch.nn.TransformerEncoder"
@@ -3049,6 +3259,9 @@ allowlist["torch.nn.TransformerEncoder.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.TransformerEncoderLayer"] = "torch.nn.TransformerEncoderLayer"
 allowlist["torch.nn.TransformerEncoderLayer.__call__"] = "torch.Tensor"
 allowlist["torch.nn.TransformerEncoderLayer.parameters"] = "syft.lib.python.List"
+allowlist[
+    "torch.nn.TransformerEncoderLayer.register_parameter"
+] = "syft.lib.python._SyNone"
 allowlist["torch.nn.TransformerEncoderLayer.train"] = "torch.nn.TransformerEncoderLayer"
 allowlist["torch.nn.TransformerEncoderLayer.cuda"] = "torch.nn.TransformerEncoderLayer"
 allowlist["torch.nn.TransformerEncoderLayer.cpu"] = "torch.nn.TransformerEncoderLayer"
@@ -3063,6 +3276,7 @@ allowlist["torch.nn.TransformerEncoderLayer.extra_repr"] = "syft.lib.python.Stri
 allowlist["torch.nn.Unfold"] = "torch.nn.Unfold"
 allowlist["torch.nn.Unfold.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Unfold.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Unfold.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Unfold.train"] = "torch.nn.Unfold"
 allowlist["torch.nn.Unfold.cuda"] = "torch.nn.Unfold"
 allowlist["torch.nn.Unfold.cpu"] = "torch.nn.Unfold"
@@ -3073,6 +3287,7 @@ allowlist["torch.nn.Unfold.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.Upsample"] = "torch.nn.Upsample"
 allowlist["torch.nn.Upsample.__call__"] = "torch.Tensor"
 allowlist["torch.nn.Upsample.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.Upsample.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Upsample.train"] = "torch.nn.Upsample"
 allowlist["torch.nn.Upsample.cuda"] = "torch.nn.Upsample"
 allowlist["torch.nn.Upsample.cpu"] = "torch.nn.Upsample"
@@ -3083,6 +3298,9 @@ allowlist["torch.nn.Upsample.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.UpsamplingBilinear2d"] = "torch.nn.UpsamplingBilinear2d"
 allowlist["torch.nn.UpsamplingBilinear2d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.UpsamplingBilinear2d.parameters"] = "syft.lib.python.List"
+allowlist[
+    "torch.nn.UpsamplingBilinear2d.register_parameter"
+] = "syft.lib.python._SyNone"
 allowlist["torch.nn.UpsamplingBilinear2d.train"] = "torch.nn.UpsamplingBilinear2d"
 allowlist["torch.nn.UpsamplingBilinear2d.cuda"] = "torch.nn.UpsamplingBilinear2d"
 allowlist["torch.nn.UpsamplingBilinear2d.cpu"] = "torch.nn.UpsamplingBilinear2d"
@@ -3095,6 +3313,7 @@ allowlist["torch.nn.UpsamplingBilinear2d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.UpsamplingNearest2d"] = "torch.nn.UpsamplingNearest2d"
 allowlist["torch.nn.UpsamplingNearest2d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.UpsamplingNearest2d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.UpsamplingNearest2d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.UpsamplingNearest2d.train"] = "torch.nn.UpsamplingNearest2d"
 allowlist["torch.nn.UpsamplingNearest2d.cuda"] = "torch.nn.UpsamplingNearest2d"
 allowlist["torch.nn.UpsamplingNearest2d.cpu"] = "torch.nn.UpsamplingNearest2d"
@@ -3107,9 +3326,263 @@ allowlist["torch.nn.UpsamplingNearest2d.extra_repr"] = "syft.lib.python.String"
 allowlist["torch.nn.ZeroPad2d"] = "torch.nn.ZeroPad2d"
 allowlist["torch.nn.ZeroPad2d.__call__"] = "torch.Tensor"
 allowlist["torch.nn.ZeroPad2d.parameters"] = "syft.lib.python.List"
+allowlist["torch.nn.ZeroPad2d.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.ZeroPad2d.train"] = "torch.nn.ZeroPad2d"
 allowlist["torch.nn.ZeroPad2d.cuda"] = "torch.nn.ZeroPad2d"
 allowlist["torch.nn.ZeroPad2d.cpu"] = "torch.nn.ZeroPad2d"
 allowlist["torch.nn.ZeroPad2d.state_dict"] = "syft.lib.python.collections.OrderedDict"
 allowlist["torch.nn.ZeroPad2d.load_state_dict"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.ZeroPad2d.extra_repr"] = "syft.lib.python.String"
+
+allowlist["torch.distributions.Categorical"] = "torch.distributions.Categorical"
+allowlist["torch.distributions.Categorical.sample"] = "torch.Tensor"
+allowlist["torch.distributions.Categorical.log_prob"] = "torch.Tensor"
+
+allowlist["torch.Tensor.xpu"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.tile"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.fmax"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.ldexp_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.sinc"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.kron"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.nan_to_num"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.msort"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.row_stack"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.new_empty_strided"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.ravel"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.swapdims_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.moveaxis"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.swapaxes"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.tensor_split"] = {
+    "return_type": "syft.lib.python.List",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.tensor_split"] = {
+    "return_type": "syft.lib.python.List",
+    "min_version": "1.8.0",
+}
+allowlist["torch.tile"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.float_power_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.broadcast_to"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.fmin"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.ldexp"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+# allowlist["torch.broadcast_shapes"] = {
+#     "return_type": "torch.Size",
+#     "min_version": "1.8.0",
+# }
+allowlist["torch.Tensor.swapdims"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.igamma"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.nan_to_num_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.copysign"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.swapaxes_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.cumprod_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.ldexp"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.igamma_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.float_power"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.igammac_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.xlogy"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.copysign"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.nanmedian"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.igammac"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.cumsum_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.diff"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.igamma"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.sinc"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.igammac"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.kron"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.column_stack"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.msort"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.pixel_unshuffle"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.fmin"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.xlogy"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.moveaxis"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.swapaxes"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.nan_to_num"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.inner"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.fmax"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.float_power"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.nanmedian"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.sinc_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.copysign_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.ravel"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.broadcast_to"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.diff"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.xlogy_"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.swapdims"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}
+allowlist["torch.Tensor.inner"] = {
+    "return_type": "torch.Tensor",
+    "min_version": "1.8.0",
+}

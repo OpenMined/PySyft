@@ -1,28 +1,17 @@
 # stdlib
 import atexit
-from multiprocessing import Process
 from multiprocessing import set_start_method
 import os
 import shutil
 import socket
 import sys
 import time
-
-# third party
 import pytest
 
-# syft absolute
-import syft as sy
-
 # syft relative
-from ..grid.duet.process_test import SyftTestProcess
-from ..grid.duet.signaling_server_test import run
-
-ts = pytest.importorskip("tenseal")
-sy.load_lib("tenseal")
+from ...syft.grid.duet.process_test import SyftTestProcess
 
 set_start_method("spawn", force=True)
-PORT = 21000
 
 
 def cleanup() -> None:
@@ -32,31 +21,18 @@ def cleanup() -> None:
     except BaseException:
         pass
     try:
-        os.mkdir(checkpoint_dir)
+        os.makedirs(checkpoint_dir, exist_ok=True)
     except BaseException:
         pass
 
 atexit.register(cleanup)
 
-@pytest.fixture(scope="function", autouse=True)
-def signaling_server() -> Process:
-    time.sleep(3)
-    print(f"creating signaling server on port {PORT}")
-    grid_proc = Process(target=run, args=(PORT,))
-    grid_proc.start()
 
-    yield "server"
-
-    print("stop signaling server")
-    grid_proc.terminate()
-    grid_proc.join(10)
-
-    return grid_proc
-
-
-def do() -> None:
+def do(port) -> None:
     # stdlib
     import time
+    from . import set_global_var
+    set_global_var(port)
 
     # syft absolute
     import syft as sy
@@ -75,9 +51,11 @@ def do() -> None:
     sy.core.common.event_loop.loop.run_forever()
 
 
-def ds() -> None:
+def ds(port) -> None:
     # stdlib
     import time
+    from . import set_global_var
+    set_global_var(port)
 
     # syft absolute
     import syft as sy
@@ -93,20 +71,19 @@ def ds() -> None:
     sys.stderr.write(f"DS get took {time.time() - start} sec\n")
 
 
-
-def test_{{TESTCASE}}() -> None:
-    time.sleep(3)
+{{LIB_DECORATOR}}
+def test_{{TESTCASE}}(signaling_server) -> None:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        assert s.connect_ex(("localhost", PORT)) == 0
+        assert s.connect_ex(("127.0.0.1", signaling_server)) == 0
 
     cleanup()
 
     start = time.time()
 
-    do_proc = SyftTestProcess(target=do, args=())
+    do_proc = SyftTestProcess(target=do, args=(signaling_server,))
     do_proc.start()
 
-    ds_proc = SyftTestProcess(target=ds, args=())
+    ds_proc = SyftTestProcess(target=ds, args=(signaling_server,))
     ds_proc.start()
 
     ds_proc.join(400)

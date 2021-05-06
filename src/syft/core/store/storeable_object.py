@@ -1,5 +1,4 @@
 # stdlib
-import pydoc
 from typing import Any
 from typing import List
 from typing import Optional
@@ -14,6 +13,7 @@ import syft as sy
 from ...logger import traceback_and_raise
 from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
 from ...util import get_fully_qualified_name
+from ...util import index_syft_by_module_name
 from ...util import key_emoji
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
@@ -79,6 +79,10 @@ class StorableObject(AbstractStorableObject):
     def object_type(self) -> str:
         return str(type(self.data))
 
+    @property
+    def object_qualname(self) -> str:
+        return get_fully_qualified_name(self.data)
+
     # Why define data as a property?
     # For C type/class objects as data.
     # We need to use it's wrapper type very often inside StorableObject, so we set _data
@@ -142,7 +146,7 @@ class StorableObject(AbstractStorableObject):
                     proto.tags.append(tag)
 
         # Step 6: save read permissions
-        if len(self.read_permissions.keys()) > 0:
+        if len(self.read_permissions) > 0:
             permission_data = sy.lib.python.Dict()
             for k, v in self.read_permissions.items():
                 permission_data[k] = v
@@ -165,10 +169,8 @@ class StorableObject(AbstractStorableObject):
         if not isinstance(id, UID):
             traceback_and_raise(ValueError("TODO"))
 
-        # TODO: FIX THIS SECURITY BUG!!! WE CANNOT USE
-        # PYDOC.LOCATE!!!
         # Step 2: get the type of wrapper to use to deserialize
-        data_type = pydoc.locate(proto.data_type)
+        data_type = index_syft_by_module_name(fully_qualified_name=proto.data_type)
 
         # Step 3: get the protobuf type we deserialize for .data
         schematic_type = data_type.get_protobuf_schema()  # type: ignore

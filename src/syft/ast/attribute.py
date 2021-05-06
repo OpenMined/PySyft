@@ -13,9 +13,7 @@ from ..logger import traceback_and_raise
 
 
 class Attribute:
-    """
-    Attribute is the interface of a generic node in the AST that covers basic functionality.
-    """
+    """Attribute is the interface of a generic node in the AST that covers basic functionality."""
 
     __slots__ = [
         "path_and_name",
@@ -23,6 +21,7 @@ class Attribute:
         "attrs",
         "return_type_name",
         "client",
+        "_parent",
     ]
 
     lookup_cache: Dict[Any, Any] = {}
@@ -33,15 +32,16 @@ class Attribute:
         path_and_name: Optional[str] = None,
         object_ref: Any = None,
         return_type_name: Optional[str] = None,
+        parent: Optional["Attribute"] = None,
     ):
-        """
-        Base constructor for all AST nodes.
+        """Base constructor for all AST nodes.
 
         Args:
             client: The client for which all computation is being executed.
-            path_and_name: The path for the current node, e.g. `syft.lib.python.List`
+            path_and_name: The path for the current node, e.g. `syft.lib.python.List`.
             object_ref: The actual python object for which the computation is being made.
             return_type_name: The given action's return type name, with its full path, in string format.
+            parent: The parent node in the AST.
         """
         self.client: Optional[AbstractNodeClient] = client
         self.path_and_name: Optional[str] = path_and_name
@@ -51,6 +51,7 @@ class Attribute:
         # The `attrs` are the nodes that have the current node as a parent node
         # maps from the name on the path ot the actual attribute.
         self.attrs: Dict[str, "Attribute"] = {}
+        self._parent: Optional["Attribute"] = parent
 
     def __call__(
         self,
@@ -58,12 +59,10 @@ class Attribute:
         index: int = 0,
         obj_type: Optional[type] = None,
     ) -> Any:
-        """
-        Execute the given node object reference with the given parameters.
+        """Execute the given node object reference with the given parameters.
 
         Args:
-            path: The path for the node in the AST to execute,
-                e.g. `syft.lib.python.List` or ["syft", "lib", "python", "List]
+            path: The node path in AST to execute, e.g. `syft.lib.python.List` or ["syft", "lib", "python", "List].
             index: The associated position in the path for the current node.
             obj_type: The type of the object to be called, whose path is resolved from the `lookup_cache`.
 
@@ -81,14 +80,12 @@ class Attribute:
         ],
         field: str,
     ) -> None:
-        """
-        Helper function to extract a class of nodes whose parent is the current node.
+        """Helper function to extract a class of nodes whose parent is the current node.
 
         Args:
             container: A list of objects in which we want to store the results.
             field: The typeof attribute from the current node's `attrs`.
         """
-
         for ref in self.attrs.values():
             sub_prop = getattr(ref, field, None)
             if sub_prop is None:
@@ -98,8 +95,7 @@ class Attribute:
 
     @property
     def classes(self) -> List["ast.klass.Class"]:
-        """
-        Extract all classes from the current node attributes.
+        """Extract all classes from the current node attributes.
 
         Returns:
             The list of classes in the current AST node attributes.
@@ -114,8 +110,7 @@ class Attribute:
 
     @property
     def properties(self) -> List["ast.property.Property"]:
-        """
-        Extract all properties from the current node attributes.
+        """Extract all properties from the current node attributes.
 
         Returns:
             The list of properties in the current AST node attributes.
@@ -131,19 +126,20 @@ class Attribute:
     def query(
         self, path: Union[List[str], str], obj_type: Optional[type] = None
     ) -> "Attribute":
-        """
-        The query method is a tree traversal function based on the path to retrieve the node. It
-        has a similar functionality to `__call__`, the main difference being that `query` retrieves the
-        node without performing execution on the node.
+        """The query method is a tree traversal function based on the path to retrieve the node.
+           It has a similar functionality to `__call__`,
+           main difference being that `query` retrieves node without performing execution on node.
 
         Args:
-            path: The path for the node in the AST to be queried,
-                e.g. `syft.lib.python.List` or ["syft", "lib", "python", "List"]
+            path: The node path in AST to be queried, e.g. `syft.lib.python.List` or ["syft", "lib", "python", "List"].
             obj_type: The type of the object that we want to call, whose path is resolved from the `lookup_cache`.
 
         Returns:
             The attribute in the AST at the given initial path.
         """
+        # TODO: fix hacky work around
+        if path == "syft.lib.python.list.List":
+            path = "syft.lib.python.List"
 
         if obj_type is not None:
             # If the searched given type has already been seen, resolve it with the path from `lookup_cache`.
@@ -165,8 +161,7 @@ class Attribute:
 
     @property
     def name(self) -> str:
-        """
-        Retrieve the name of the current AST node from its `path_and_name`.
+        """Retrieve the name of the current AST node from its `path_and_name`.
 
         Returns:
             The name of the current attribute.
@@ -182,17 +177,38 @@ class Attribute:
         framework_reference: Optional[ModuleType] = None,
         is_static: bool = False,
     ) -> None:
-        """
-        The add_path method adds new nodes in the AST based on the type of the current node and
-        the type of the object to be added.
+        """The add_path method adds new nodes in AST based on type of current node and type of object to be added.
 
         Args:
-            path: The path for the node in the AST to be added,
-                e.g. `syft.lib.python.List` or ["syft", "lib", "python", "List]
+            path: The node path added in AST, e.g. `syft.lib.python.List` or ["syft", "lib", "python", "List].
             index: The associated position in the path for the current node.
-            framework_reference: The Python framework in which we can resolve the same path to obtain the Python object.
+            framework_reference: The Python framework in which we can resolve same path to obtain Python object.
             return_type_name: The return type name of the given action as a string with its full path.
-            is_static: If the queried object is static, it has to be found on the ast
-                itself, not on an existing pointer.
+            is_static: If the queried object is static, it has to be found on AST itself, not on an existing pointer.
         """
         traceback_and_raise(NotImplementedError)
+
+    def fetch_live_object(self) -> Any:
+        """Get the new object and its attributes from the client."""
+        return getattr(self.parent.object_ref, self.name)
+
+    def object_change(self) -> bool:
+        """Check if client wants to change any nodes in the AST with a new object."""
+        return id(self.fetch_live_object()) != id(self.object_ref)
+
+    def reconstruct_node(self) -> None:
+        """Changes node reference in the AST by adding the new object's reference as specified by client."""
+        self.object_ref = self.fetch_live_object()
+
+    def apply_node_changes(self) -> None:
+        """Apply the changes in the nodes in the AST as specified by the client."""
+        if self._parent and self.object_change():
+            self.reconstruct_node()
+
+    @property
+    def parent(self) -> "Attribute":
+        """Check if all the nodes have a parent node."""
+        if self._parent:
+            return self._parent
+
+        raise AttributeError(f"Node {self} in the AST has not parent attribute set!")

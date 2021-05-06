@@ -1,0 +1,6 @@
+fsspec
+msgpack
+patsy
+sycret>=0.1.3
+tensorboard
+tqdm

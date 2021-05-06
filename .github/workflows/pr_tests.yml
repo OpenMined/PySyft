@@ -10,11 +10,12 @@ on:
   pull_request:
     branches:
       - dev
-      - "0.4"
     paths:
       - "**.py"
+      - "**.txt"
       - "setup.cfg"
-      - ".github/workflows/**.yml"
+      - ".github/workflows/*.yml"
+      - "examples/private-ai-series/**.ipynb"
 
 jobs:
   python-linting:
@@ -22,7 +23,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        python-version: [3.8]
+        python-version: [3.9]
 
     steps:
       - uses: actions/checkout@v2
@@ -31,6 +32,10 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
 
       - name: Get pip cache dir
         id: pip-cache
@@ -50,45 +55,59 @@ jobs:
         with:
           version: "3.x"
 
-      - uses: pre-commit/action@v2.0.0
-
-      - name: Upgrade pip
-        run: |
-          pip install --upgrade --user pip
-
-      - name: Run lint checks
+      - name: Build Protos
         run: |
           set -e
-          pip install -r requirements.dev.txt --default-timeout=60
+          pip install black isort --default-timeout=60
           ./scripts/build_proto.sh
-          pre-commit run --all-files
-      - name: Run darglint via flake8 - Ignore Errors
+
+      - id: file_changes # get changed files.
+        uses: trilom/file-changes-action@v1.2.3
+        with:
+          output: " "
+
+      - uses: pre-commit/action@v2.0.0
+        with:
+          extra_args: --files ${{ steps.file_changes.outputs.files}} # apply only to changed files.
+
+      # - name: Run darglint via flake8 - Ignore Errors
+      #   continue-on-error: true
+      #   run: |
+      #     pip install darglint flake8
+      #     flake8 src tests
+
+      # check docstring coverage. If head coverage < base, exitcode = 1
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Install docstr-coverage
+        run: pip install docstr-coverage --default-timeout=60
+
+      - name: Get base coverage
+        run: |
+          git checkout ${{ github.event.pull_request.base.sha }}
+          echo "BASE_COV=$(docstr-coverage -p src)" >> $GITHUB_ENV
+
+      - name: Get head coverage
         continue-on-error: true
         run: |
-          flake8 src tests
+          git checkout ${{ github.event.pull_request.head.sha }}
+          docstr-coverage -p --fail-under=$BASE_COV src
 
-  python-tests-fast:
+      # - name: Check docstring modified files
+      #   if: ${{ failure() }}
+      #   run: |
+      #     git diff --name-only $(git merge-base ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }}) | xargs docstr-coverage --accept-empty
+
+  python-tests-latest-versions:
     needs: [python-linting]
     strategy:
-      max-parallel: 30
-      fail-fast: false
+      max-parallel: 3
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        python-version: [3.6, 3.7, 3.8]
-        torch-version: [1.5.0, 1.5.1, 1.6.0, 1.7.0]
-        include:
-          - os: ubuntu-latest
-            python-version: 3.7
-            torch-version: 1.4.0
-          # - os: windows-latest
-          #   python-version: 3.9
-          #   torch-version: 1.7.1
-          # - os: ubuntu-20.04
-          #   python-version: 3.9
-          #   torch-version: 1.7.1
-          # - os: macos-latest
-          #   python-version: 3.9
-          #   torch-version: 1.7.1
+        python-version: [3.8]
+        torch-version: [1.8.0]
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -99,12 +118,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - run: pip install "pip>=20.1"
-
-      - name: Adjust PyTorch versions
+      - name: Upgrade pip
         run: |
-          python .github/adjust_torch_versions.py ./requirements.txt ${{ matrix.torch-version }}
-          cat ./requirements.txt
+          pip install --upgrade --user pip
 
       - name: Get pip cache dir
         id: pip-cache
@@ -119,17 +135,23 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
-      - name: Scan for security issues
+      - name: Install PyTorch
         run: |
-          pip install bandit --default-timeout=60
-          bandit -r src -ll
+          pip install packaging --default-timeout=60
+          python scripts/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
+          cat ./requirements.torch.txt
+          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html --default-timeout=60
 
       - name: Install packages
         run: |
-          pip install -r requirements.dev.txt -f https://pypi.python.org/simple/ -f https://download.pytorch.org/whl/torch_stable.html
-          pip install -e .
+          pip install -r requirements.dev.txt --default-timeout=60
+          pip install -e . --default-timeout=60
           pip list
         timeout-minutes: 20
+
+      - name: Scan for security issues
+        run: |
+          bandit -r src
 
       - name: Run normal tests
         run: |
@@ -138,20 +160,27 @@ jobs:
       - name: Install supported library packages Linux and MacOS - Ignore Errors
         if: startsWith(runner.os, 'Windows') != true
         run: |
-          cat requirements/supported_libs.txt | xargs -I {} -n 1 pip install {} --default-timeout=60 || true
+          cat requirements.libs.txt | xargs -I {} -n 1 pip install {} --no-deps --default-timeout=60 || true
 
       - name: Install supported library packages Windows - Ignore Errors
         if: startsWith(runner.os, 'Windows')
         run: |
-          foreach ($i in cat requirements/supported_libs.txt) {
-            pip install $i --default-timeout=60
+          foreach ($i in cat requirements.libs.txt) {
+            pip install $i --no-deps --default-timeout=60
           }
+
+      - name: Install libomp for XGBoost
+        if: startsWith(runner.os, 'macos')
+        run: |
+          brew install libomp
 
       - name: Run supported library tests
         run: |
+          pip install -r requirements.libs.deps.txt --default-timeout=60
           pip list
-          pytest -m libs -n auto -k "not tenseal"
-          pytest -m libs -n 1 -k "tenseal"
+          pytest -m libs --co
+          pytest -m libs -n auto -k "not tenseal" --suppress-no-test-exit-code
+          pytest -m libs -n 1 -k "tenseal" --suppress-no-test-exit-code
 
   python-nb-examples:
     needs: [python-linting]
@@ -160,8 +189,8 @@ jobs:
       max-parallel: 1
       matrix:
         python-version: [3.8]
-        os: [ubuntu-latest, macos-latest]
-
+        torch-version: [1.8.0]
+        os: [ubuntu-latest]
     steps:
       - uses: actions/checkout@v2
 
@@ -170,7 +199,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - run: pip install "pip>=20.1"
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
 
       - name: Get pip cache dir
         id: pip-cache
@@ -185,34 +216,50 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
+      - name: Install PyTorch
+        run: |
+          pip install packaging --default-timeout=60
+          python scripts/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
+          cat ./requirements.torch.txt
+          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html --default-timeout=60
+
+      - name: Install packages
+        run: |
+          pip install -r requirements.dev.txt --default-timeout=60
+          pip install -e . --default-timeout=60
+          pip list
+        timeout-minutes: 20
+
       - name: Run notebook API examples
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
-          pip install -r requirements.dev.txt --default-timeout=60
-          pip install -e . --default-timeout=60
           ./scripts/nb_test.sh
           pytest examples/api -n auto
 
-      - name: Install supported library packages
+      - name: Install supported library packages Linux and MacOS - Ignore Errors
+        if: startsWith(runner.os, 'Windows') != true
         run: |
-          pip install -r requirements/supported_libs.txt
-        timeout-minutes: 10
-        continue-on-error: true
+          cat requirements.libs.txt | xargs -I {} -n 1 pip install {} --no-deps --default-timeout=60 || true
+          pip install -r requirements.libs.deps.txt --default-timeout=60
+
+      - name: Test syft-network
+        run: |
+          python ./scripts/start_signaling_server.py --dry_run=True
 
       - name: Run notebook Duet examples
         run: |
-          pip install -r requirements.dev.txt --default-timeout=60
-          pip install -e . --default-timeout=60
+          python ./scripts/mnist.py
           python ./scripts/nb_duet_test.py
-          cd tests/syft/notebooks/ && pytest . -n 1
+          pytest -m duet -n 1 --suppress-no-test-exit-code
 
   pygrid-unit-tests:
     needs: [python-linting]
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 3
+      max-parallel: 1
       matrix:
-        python-version: [3.6, 3.7, 3.8]
+        python-version: [3.8]
+        torch-version: [1.8.0]
 
     steps:
       - uses: actions/checkout@v2
@@ -222,7 +269,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - run: pip install "pip>=20.1"
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
 
       - name: Get pip cache dir
         id: pip-cache
@@ -240,16 +289,75 @@ jobs:
       - uses: actions/checkout@v2
         with:
           repository: "OpenMined/PyGrid"
-          ref: "pygrid_0.4.0"
+          ref: "dev"
           path: "pygrid"
+
+      - name: Install PyTorch
+        run: |
+          pip install packaging --default-timeout=60
+          python scripts/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
+          cat ./requirements.torch.txt
+          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html --default-timeout=60
 
       - name: Test PyGrid
         continue-on-error: true
         run: |
           pip install -e . --default-timeout=60
-          pip install pytest PyJWT==1.7.1 flask_sockets flask_sqlalchemy bcrypt \
-                      sqlalchemy_utils flask_migrate sqlalchemy_mixins flask_executor \
-                      --default-timeout=60
+          pip install -r requirements.grid.txt --default-timeout=60
           pytest ./pygrid/apps/domain/tests
           pytest ./pygrid/apps/network/tests
           pytest ./pygrid/apps/worker/tests
+
+  pygrid-integration-tests:
+    needs: [python-linting]
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix:
+        python-version: [3.8]
+        torch-version: [1.8.0]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip --default-timeout=60
+
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - uses: actions/checkout@v2
+        with:
+          repository: "OpenMined/PyGrid"
+          ref: "dev"
+          path: "pygrid"
+
+      - name: Install PyTorch
+        run: |
+          pip install packaging --default-timeout=60
+          python scripts/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
+          cat ./requirements.torch.txt
+          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html --default-timeout=60
+
+      - name: Test PyGrid
+        continue-on-error: true
+        run: |
+          pip install -e . --default-timeout=60
+          pip install -r requirements.grid.txt --default-timeout=60
+          pytest -m grid

@@ -29,14 +29,25 @@ class StaticAttribute(ast.attribute.Attribute):
         return_type_name: Optional[str] = None,
         client: Optional[Any] = None,
     ):
-        self.parent = parent
+        """Base constructor.
+
+        Args:
+            parent: The parent node is needed.
+            path_and_name: The path for the current node, e.g. `syft.lib.python.List`.
+            return_type_name: The return type name of given action as a string with it's full path.
+            client: The client for which all computation is being executed.
+        """
         super().__init__(
             path_and_name=path_and_name,
             return_type_name=return_type_name,
             client=client,
+            parent=parent,
         )
 
     def get_remote_value(self) -> AbstractPointer:
+        """Remote execution is performed when AST is constructed with a client.
+        The get_remote_value method triggers GetSetStaticAttributeAction on the AST.
+        """
         if self.path_and_name is None:
             traceback_and_raise(
                 ValueError("Can't execute remote get if path is not specified.")
@@ -67,18 +78,31 @@ class StaticAttribute(ast.attribute.Attribute):
         return ptr
 
     def solve_get_value(self) -> Any:
+        """Local execution of the getter function is performed.
+        The solve_get_value method executes the getter function on the AST.
+        """
+        self.apply_node_changes()
+
         if self.path_and_name is None:
             raise ValueError("path_and_none should not be None")
 
         return getattr(self.parent.object_ref, self.path_and_name.rsplit(".")[-1])
 
     def solve_set_value(self, set_value: Any) -> None:
+        """Local execution of setter function is performed.
+        The solve_set_value method executes the setter function on the AST.
+        """
+        self.apply_node_changes()
+
         if self.path_and_name is None:
             raise ValueError("path_and_none should not be None")
 
         setattr(self.parent.object_ref, self.path_and_name.rsplit(".")[-1], set_value)
 
     def set_remote_value(self, set_arg: Any) -> None:
+        """Remote execution of setter function is performed when AST is constructed with a client.
+        The set_remote_value method triggers GetSetStaticAttributeAction on the AST.
+        """
         if self.client is None:
             raise ValueError(
                 "MAKE PROPER SCHEMA - Can't get remote value if there is no remote "

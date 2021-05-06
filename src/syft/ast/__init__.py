@@ -1,6 +1,6 @@
-"""
- Syft's AST submodule is responsible for remote call executions. Basically, an AST is a
- tree that maps function calls to their exact path and knows what to do with that node in the tree.
+"""Syft's AST submodule is responsible for remote call executions.
+   An AST is a tree that maps function calls to their exact path,
+   and knows what to do with that node in tree.
 
  Example: Suppose we want to append an object to a List. This means that we need to
  know where we could find the `append` method, so we need to know the following chain:
@@ -38,8 +38,8 @@ and attributes on a `Pointer` and the return type of the performed action.
 The existing types of nodes are:
 * a `Globals`, which is the entry point of an execution, from which point on we can only access Modules.
 
-* a `Callable`, which can be a node for a method, a static method, a function, or a constructor. This
-node can no longer have any attributes.
+* a `Callable`, which can be a node for a method, a static method, a function, or a constructor.
+This node can no longer have any attributes.
 
 * a `Class`, which is a node that represents a Python Class. This node can contain methods - Callable,
 static methods - Callable, class methods - Callable, slot attributes - StaticAttribute, properties - Property,
@@ -78,8 +78,7 @@ from . import static_attr  # noqa: F401
 def get_parent(
     path: str, root: Union[attribute.Attribute, globals.Globals, module.Module]
 ) -> Union[module.Module, klass.Class]:
-    """
-    Return the parent of a given path.
+    """Return the parent of a given path.
 
     Args:
         path: The full path to an object.
@@ -89,8 +88,7 @@ def get_parent(
         The parent module or class.
 
     Examples:
-        For instance, given the syft project root directory, the parent to the path
-        `syft.lib.python.Int` is `python`.
+        For instance, given the syft project root directory, the parent to the path `syft.lib.python.Int` is `python`.
     """
     parent = root
     for step in path.split(".")[:-1]:
@@ -107,8 +105,7 @@ def add_modules(
     ast: globals.Globals,
     modules: Union[TypeList[str], TypeList[TypeTuple[str, TypeAny]]],
 ) -> None:
-    """
-    Parse a list of modules and register each module to its corresponding parent object in the AST path.
+    """Parse a list of modules and register each module to its corresponding parent object in the AST path.
 
     Args:
         ast: The global AST.
@@ -138,8 +135,7 @@ def add_classes(
     ast: globals.Globals,
     paths: TypeList[TypeTuple[str, str, TypeAny]],
 ) -> None:
-    """
-    Parse a list of classes and register each class to its corresponding parent object in the AST path.
+    """Parse a list of classes and register each class to its corresponding parent object in the AST path.
 
     Args:
         ast: The global AST.
@@ -155,6 +151,7 @@ def add_classes(
                 object_ref=ref,
                 return_type_name=return_type,
                 client=ast.client,
+                parent=parent,
             ),
         )
 
@@ -163,8 +160,7 @@ def add_methods(
     ast: globals.Globals,
     paths: TypeList[TypeTuple[str, str]],
 ) -> None:
-    """
-    Parse a list of methods and register each method to its corresponding parent object in the AST path.
+    """Parse a list of methods and register each method to its corresponding parent object in the AST path.
 
     Args:
         ast: The global AST.

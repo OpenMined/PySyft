@@ -89,6 +89,7 @@ import time
 from typing import Any
 from typing import List
 from typing import Optional
+import warnings
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -100,6 +101,7 @@ import syft as sy
 # syft relative
 from ...logger import debug
 from ...logger import error
+from ...logger import warning
 from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
 from ..common.pointer import AbstractPointer
 from ..common.serde.deserialize import _deserialize
@@ -107,10 +109,8 @@ from ..common.serde.serializable import bind_protobuf
 from ..common.uid import UID
 from ..io.address import Address
 from ..node.abstract.node import AbstractNode
-from ..node.common.action.garbage_collect_object_action import (
-    GarbageCollectObjectAction,
-)
 from ..node.common.action.get_object_action import GetObjectAction
+from ..node.common.service.get_repr_service import GetReprMessage
 from ..node.common.service.obj_search_permission_service import (
     ObjectSearchPermissionUpdateMessage,
 )
@@ -135,7 +135,7 @@ class Pointer(AbstractPointer):
     """
 
     path_and_name: str
-    _searchable: bool = False
+    _pointable: bool = False
 
     def __init__(
         self,
@@ -152,6 +152,10 @@ class Pointer(AbstractPointer):
             description=description,
         )
         self.object_type = object_type
+        # _exhausted becomes True in get() call
+        # when delete_obj is True and network call
+        # has already been made
+        self._exhausted = False
 
     def _get(self, delete_obj: bool = True, verbose: bool = False) -> StorableObject:
         """Method to download a remote object from a pointer object if you have the right
@@ -200,6 +204,45 @@ class Pointer(AbstractPointer):
             verbose=verbose,
         )
 
+    def print(self) -> "Pointer":
+        obj = None
+        try:
+            obj_msg = GetReprMessage(
+                id_at_location=self.id_at_location,
+                address=self.client.address,
+                reply_to=self.client.address,
+            )
+
+            obj = self.client.send_immediate_msg_with_reply(msg=obj_msg).repr
+        except Exception as e:
+            if "You do not have permission to .get()" in str(
+                e
+            ) or "UnknownPrivateException" in str(e):
+                # syft relative
+                from ..node.domain.service import RequestStatus
+
+                response_status = self.request(
+                    reason="Calling remote print",
+                    block=True,
+                    timeout_secs=3,
+                )
+                if (
+                    response_status is not None
+                    and response_status == RequestStatus.Accepted
+                ):
+                    return self.print()
+
+        # TODO: Create a remote print interface for objects which displays them in a
+        # nice way, we could also even buffer this between chained ops until we return
+        # so that we can print once and display a nice list of data and ops
+        # issue: https://github.com/OpenMined/PySyft/issues/5167
+        if obj is not None:
+            print(obj)
+        else:
+            print(f"No permission to print() {self}")
+
+        return self
+
     def get(
         self,
         request_block: bool = False,
@@ -217,8 +260,13 @@ class Pointer(AbstractPointer):
         # syft relative
         from ..node.domain.service import RequestStatus
 
+        if self._exhausted:
+            raise ReferenceError(
+                "Object has already been deleted. This pointer is exhausted"
+            )
+
         if not request_block:
-            return self._get(delete_obj=delete_obj, verbose=verbose)
+            result = self._get(delete_obj=delete_obj, verbose=verbose)
         else:
             response_status = self.request(
                 reason=reason,
@@ -230,9 +278,15 @@ class Pointer(AbstractPointer):
                 response_status is not None
                 and response_status == RequestStatus.Accepted
             ):
-                return self._get(delete_obj=delete_obj, verbose=verbose)
+                result = self._get(delete_obj=delete_obj, verbose=verbose)
+            else:
+                return None
 
-        return None
+        if result is not None and delete_obj:
+            self.gc_enabled = False
+            self._exhausted = True
+
+        return result
 
     def _object2proto(self) -> Pointer_PB:
         """Returns a protobuf serialization of self.
@@ -257,6 +311,7 @@ class Pointer(AbstractPointer):
             tags=self.tags,
             description=self.description,
             object_type=self.object_type,
+            attribute_name=getattr(self, "attribute_name", ""),
         )
 
     @staticmethod
@@ -437,29 +492,62 @@ class Pointer(AbstractPointer):
 
     @property
     def searchable(self) -> bool:
-        return self._searchable
+        msg = "`searchable` is deprecated please use `pointable` in future"
+        warning(msg, print=True)
+        warnings.warn(
+            msg,
+            DeprecationWarning,
+        )
+        return self._pointable
 
     @searchable.setter
     def searchable(self, value: bool) -> None:
-        if value != self._searchable:
-            self.update_searchability(not self._searchable)
+        msg = "`searchable` is deprecated please use `pointable` in future"
+        warning(msg, print=True)
+        warnings.warn(
+            msg,
+            DeprecationWarning,
+        )
+        self.pointable = value
+
+    @property
+    def pointable(self) -> bool:
+        return self._pointable
+
+    @pointable.setter
+    def pointable(self, value: bool) -> None:
+        if value != self._pointable:
+            self.update_searchability(not self._pointable)
 
     def update_searchability(
-        self, searchable: bool = True, target_verify_key: Optional[VerifyKey] = None
+        self,
+        pointable: bool = True,
+        target_verify_key: Optional[VerifyKey] = None,
+        searchable: Optional[bool] = None,
     ) -> None:
-        """Make the object pointed at searchable or not for other people. If
-        target_verify_key is not specified, the searchability for the VerifyAll group
+        """Make the object pointed at pointable or not for other people. If
+        target_verify_key is not specified, the searchability for the VERIFYALL group
         will be toggled.
 
-        :param searchable: If the target object should be made searchable or not.
+        :param pointable: If the target object should be made pointable or not.
         :type target_verify_key: bool
         :param target_verify_key: The verify_key of the client to which we want to give
                search permission.
         :type target_verify_key: Optional[VerifyKey]
         """
-        self._searchable = searchable
+
+        if searchable is not None:
+            warn_msg = "`searchable` is deprecated please use `pointable` in future"
+            warning(warn_msg, print=True)
+            warnings.warn(
+                warn_msg,
+                DeprecationWarning,
+            )
+            pointable = searchable
+
+        self._pointable = pointable
         msg = ObjectSearchPermissionUpdateMessage(
-            add_instead_of_remove=searchable,
+            add_instead_of_remove=pointable,
             target_verify_key=target_verify_key,
             target_object_id=self.id_at_location,
             address=self.client.address,
@@ -496,10 +584,4 @@ class Pointer(AbstractPointer):
             return
 
         if self.gc_enabled:
-            # Create the delete message
-            msg = GarbageCollectObjectAction(
-                id_at_location=self.id_at_location, address=self.client.address
-            )
-
-            # Send the message
-            self.client.send_eventual_msg_without_reply(msg=msg)
+            self.client.gc.apply(self)

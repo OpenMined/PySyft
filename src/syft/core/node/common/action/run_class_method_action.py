@@ -1,4 +1,5 @@
 # stdlib
+import functools
 from typing import Any
 from typing import Dict
 from typing import List
@@ -16,6 +17,7 @@ from ..... import lib
 from ..... import serialize
 from .....logger import critical
 from .....logger import traceback_and_raise
+from .....logger import warning
 from .....proto.core.node.common.action.run_class_method_pb2 import (
     RunClassMethodAction as RunClassMethodAction_PB,
 )
@@ -82,6 +84,13 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
     def pprint(self) -> str:
         return f"RunClassMethodAction({self.path})"
 
+    def __repr__(self) -> str:
+        method_name = self.path.split(".")[-1]
+        self_name = self._self.class_name
+        arg_names = ",".join([a.class_name for a in self.args])
+        kwargs_names = ",".join([f"{k}={v.class_name}" for k, v in self.kwargs.items()])
+        return f"RunClassMethodAction {self_name}.{method_name}({arg_names}, {kwargs_names})"
+
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
 
@@ -144,36 +153,54 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     ValueError(f"Method {method} called, but self is None.")
                 )
 
-            # in opacus the step method in torch gets monkey patched on .attach
-            # this means we can't use the original AST method reference and need to
-            # get it again from the actual object so for now lets allow the following
-            # two methods to be resolved at execution time
             method_name = self.path.split(".")[-1]
-            if method_name in ["step", "zero_grad"]:
-                # TODO: Remove this Opacus workaround
-                try:
-                    method = getattr(resolved_self.data, method_name, None)
-                    result = method(*upcasted_args, **upcasted_kwargs)
-                except Exception as e:
-                    critical(
-                        f"Unable to resolve method {self.path} on {resolved_self}. {e}"
+
+            if (
+                isinstance(resolved_self.data, Plan)
+                and method_name == "__call__"
+                or (
+                    hasattr(resolved_self.data, "forward")
+                    and (
+                        resolved_self.data.forward.__class__.__name__ == "Plan"
+                        or getattr(resolved_self.data.forward, "__name__", None)
+                        == "_compile_and_forward"
                     )
-                    result = method(
-                        resolved_self.data, *upcasted_args, **upcasted_kwargs
+                    and method_name in ["__call__", "forward"]
+                )
+            ):
+
+                if len(self.args) > 0:
+                    traceback_and_raise(
+                        ValueError(
+                            "You passed args to Plan.__call__, while it only accepts kwargs"
+                        )
                     )
-            else:
-                if isinstance(resolved_self.data, Plan) and method_name == "__call__":
-                    result = method(
-                        resolved_self.data,
-                        node,
-                        verify_key,
-                        *self.args,
-                        **upcasted_kwargs,
-                    )
+                if method.__name__ == "_forward_unimplemented":
+                    method = resolved_self.data.forward
+                    result = method(node, verify_key, **self.kwargs)
                 else:
-                    result = method(
-                        resolved_self.data, *upcasted_args, **upcasted_kwargs
+                    result = method(resolved_self.data, node, verify_key, **self.kwargs)
+            else:
+                target_method = getattr(resolved_self.data, method_name, None)
+
+                if id(target_method) != id(method):
+                    warning(
+                        f"Method {method_name} overwritten on object {resolved_self.data}"
                     )
+                    method = target_method
+                else:
+                    method = functools.partial(method, resolved_self.data)
+
+                result = method(*upcasted_args, **upcasted_kwargs)
+
+        # TODO: add numpy support https://github.com/OpenMined/PySyft/issues/5164
+        if "numpy." in str(type(result)):
+            if "float" in type(result).__name__:
+                result = float(result)
+            if "int" in type(result).__name__:
+                result = int(result)
+            if "bool" in type(result).__name__:
+                result = bool(result)
 
         if lib.python.primitive_factory.isprimitive(value=result):
             # Wrap in a SyPrimitive
@@ -190,7 +217,8 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     else:
                         result.id = self.id_at_location
 
-                    assert result.id == self.id_at_location
+                    if result.id != self.id_at_location:
+                        raise AttributeError("IDs don't match")
                 except AttributeError as e:
                     err = f"Unable to set id on result {type(result)}. {e}"
                     traceback_and_raise(Exception(err))
@@ -290,7 +318,11 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         """Redefines some of the arguments, and possibly the _self of the function"""
         if self._self.id_at_location == current_input.id_at_location:
             self._self = new_input
-        else:
-            for i, arg in enumerate(self.args):
-                if arg.id_at_location == current_input.id_at_location:
-                    self.args[i] = new_input
+
+        for i, arg in enumerate(self.args):
+            if arg.id_at_location == current_input.id_at_location:
+                self.args[i] = new_input
+
+        for k, v in self.kwargs.items():
+            if v.id_at_location == current_input.id_at_location:
+                self.kwargs[k] = new_input
