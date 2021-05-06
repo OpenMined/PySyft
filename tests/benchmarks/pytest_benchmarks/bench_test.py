@@ -2,7 +2,6 @@
 Define benchmark tests
 """
 # stdlib
-import atexit
 from multiprocessing import Process
 from multiprocessing import set_start_method
 import os
@@ -16,7 +15,6 @@ import pytest
 import syft as sy
 
 # syft relative
-from ...syft.grid.duet.signaling_server_test import run
 from ..pytest_benchmarks.benchmark_send_get_local_test import send_get_list_local
 from ..pytest_benchmarks.benchmark_send_get_local_test import send_get_string_local
 from ..pytest_benchmarks.benchmark_send_get_multiprocess_test import (
@@ -25,7 +23,6 @@ from ..pytest_benchmarks.benchmark_send_get_multiprocess_test import (
 from ..pytest_benchmarks.benchmark_send_get_multiprocess_test import (
     send_get_string_multiprocess,
 )
-from ..pytest_benchmarks.benchmark_send_get_multiprocess_test import PORT
 from ..pytest_benchmarks.benchmarks_functions_test import list_serde
 from ..pytest_benchmarks.benchmarks_functions_test import string_serde
 
@@ -34,22 +31,6 @@ set_start_method("spawn", force=True)
 KB = 2 ** 10
 MB = 2 ** 20
 LIST_TEMPLATE = "a" * (10 * KB)
-
-
-@pytest.fixture(scope="module")
-def signaling_server() -> Process:
-    print(f"creating signaling server on port {PORT}")
-    grid_proc = Process(target=run, args=(PORT,))
-    grid_proc.start()
-
-    def grid_cleanup() -> None:
-        print("stop signaling server")
-        grid_proc.terminate()
-        grid_proc.join()
-
-    atexit.register(grid_cleanup)
-
-    return grid_proc
 
 
 @pytest.mark.benchmark
