@@ -12,6 +12,8 @@ from nacl.signing import VerifyKey
 import pandas as pd
 
 # syft relative
+from ....lib.adp.adversarial_accountant import AdversarialAccountant
+from ....lib.adp.approximate_budget import ApproximateBudget
 from ....logger import traceback_and_raise
 from ....util import validate_field
 from ...common.uid import UID
@@ -258,6 +260,7 @@ class DomainClient(Client):
         )
 
         self.requests = RequestQueueClient(client=self)
+        self.accountant = AdversarialAccountant()
         self.post_init()
 
     @property
@@ -317,3 +320,6 @@ class DomainClient(Client):
                 for tag in tags:
                     state[tag] = ptr
         return self.store.pandas
+
+    def budget(self, spend_epsilon: bool = False) -> ApproximateBudget:
+        return ApproximateBudget()

@@ -13,6 +13,7 @@ from typing import Set
 from typing import Tuple
 
 # third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 from scipy import optimize
 from scipy.optimize import OptimizeResult
@@ -24,9 +25,13 @@ from sympy import symbols
 from syft.core.common.serde import Serializable
 
 # syft relative
+from ...core.common import UID
+from ...core.common.serde.serializable import bind_protobuf
+from ...proto.lib.adp.scalar_pb2 import Scalar as Scalar_PB
 from .entity import Entity
 from .idp_gaussian_mechanism import iDPGaussianMechanism
 
+# @Madhava: whats this global state used for?
 scalar_name2obj = {}
 
 
@@ -35,17 +40,21 @@ def search(run_specific_args: Callable, rranges: Tuple) -> OptimizeResult:
     return optimize.shgo(run_specific_args, rranges)
 
 
+@bind_protobuf
 class Scalar(Serializable):
     def __init__(
         self,
+        *,
         value: Optional[float] = None,
         min_val: Optional[float] = None,
         max_val: Optional[float] = None,
+        entity: Optional[Entity] = None,
         poly: Optional[Symbol] = None,
-        ent: Optional[Entity] = None,
         name: Optional[str] = None,
+        id: Optional[UID] = None,
+        enabled: bool = True,
     ):
-
+        self.id = id if id else UID()
         if name is None:
             name = "".join([random.choice(ascii_letters) for _ in range(5)])
 
@@ -54,18 +63,21 @@ class Scalar(Serializable):
         self._min_val = min_val
         self._max_val = max_val
         # Tudor C: What is enabled?
-        self.enabled = True
+        self.enabled = enabled
 
         if poly is not None:
             # if this Scalar is being formed as a function of other Scalar objects
             self._poly = poly
-        elif ent is not None:
+        elif entity is not None:
+            # @Madhava: will we need the entity after serde, if not maybe the init
+            # should just take the entity.name or we can serde the self.scalar_name
+            self.entity = entity
             # if you're creating a Scalar for the first time (no parents)
-            self.scalar_name = self.name + "_" + ent.name
+            self.scalar_name = self.name + "_" + entity.name
             self._poly = symbols(self.scalar_name)
             scalar_name2obj[self.scalar_name] = self
         else:
-            raise Exception("Poly or ent must be not None")
+            raise Exception("Poly or entity must be not None")
 
     @property
     def poly(self) -> Symbol:
@@ -226,3 +238,57 @@ class Scalar(Serializable):
         acc_original.entity2ledger = deepcopy(acc_temp.entity2ledger)
 
         return output
+
+    def _object2proto(self) -> Scalar_PB:
+        return Scalar_PB(
+            id=self.id._object2proto(),
+            has_name=True if self.name is not None else False,
+            name=self.name if self.name is not None else "",
+            has_value=True if self._value is not None else False,
+            value=self._value if self._value is not None else 0,
+            has_min_val=True if self._min_val is not None else False,
+            min_val=self._min_val if self._min_val is not None else 0,
+            has_max_val=True if self._max_val is not None else False,
+            max_val=self._max_val if self._max_val is not None else 0,
+            # has_poly=True if self._poly is not None else False,
+            # poly=self._poly if self._poly is not None else None,
+            has_entity=True if self.entity is not None else False,
+            entity=self.entity._object2proto() if self.entity is not None else None,
+            enabled=self.enabled,
+        )
+
+    @staticmethod
+    def _proto2object(proto: Scalar_PB) -> "Scalar":
+        name: Optional[str] = None
+        if proto.has_name:
+            name = proto.name
+
+        value: Optional[float] = None
+        if proto.has_value:
+            value = proto.value
+
+        min_val: Optional[float] = None
+        if proto.has_min_val:
+            min_val = proto.min_val
+
+        max_val: Optional[float] = None
+        if proto.has_max_val:
+            max_val = proto.max_val
+
+        entity: Optional[Entity] = None
+        if proto.has_entity:
+            entity = Entity._proto2object(proto.entity)
+
+        return Scalar(
+            id=UID._proto2object(proto.id),
+            name=name,
+            value=value,
+            min_val=min_val,
+            max_val=max_val,
+            entity=entity,
+            enabled=proto.enabled,
+        )
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return Scalar_PB

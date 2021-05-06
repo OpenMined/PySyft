@@ -1,6 +1,7 @@
 -r ./requirements.torch.txt
 
 aiortc
+autodp
 cryptography>=3.4.7
 dataclasses # backport to python 3.6
 dpcontracts
@@ -18,6 +19,7 @@ requests
 scikit-learn
 sqlitedict
 syft-proto
+sympy
 typeguard
 typing-extensions # backport to older python 3
 websocket-client
