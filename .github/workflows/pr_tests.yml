@@ -14,7 +14,7 @@ on:
       - "**.py"
       - "**.txt"
       - "setup.cfg"
-      - ".github/workflows/**.yml"
+      - ".github/workflows/*.yml"
       - "examples/private-ai-series/**.ipynb"
 
 jobs:
@@ -100,19 +100,14 @@ jobs:
       #   run: |
       #     git diff --name-only $(git merge-base ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }}) | xargs docstr-coverage --accept-empty
 
-  python-tests-fast:
+  python-tests-latest-versions:
     needs: [python-linting]
     strategy:
-      max-parallel: 30
+      max-parallel: 3
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        python-version: [3.6, 3.7, 3.8, 3.9]
-        torch-version: [1.6.0, 1.7.1, 1.8.0]
-        exclude:
-          - python-version: 3.9
-            torch-version: 1.6.0
-          - python-version: 3.9
-            torch-version: 1.7.1
+        python-version: [3.8]
+        torch-version: [1.8.0]
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -191,11 +186,10 @@ jobs:
     needs: [python-linting]
     runs-on: ${{ matrix.os }}
     strategy:
-      max-parallel: 2
+      max-parallel: 1
       matrix:
-        python-version: [3.9]
+        python-version: [3.8]
         torch-version: [1.8.0]
-        # os: [ubuntu-latest, macos-latest]
         os: [ubuntu-latest]
     steps:
       - uses: actions/checkout@v2
@@ -262,9 +256,9 @@ jobs:
     needs: [python-linting]
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 3
+      max-parallel: 1
       matrix:
-        python-version: [3.7, 3.8, 3.9]
+        python-version: [3.8]
         torch-version: [1.8.0]
 
     steps:
