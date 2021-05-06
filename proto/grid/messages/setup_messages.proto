@@ -33,7 +33,7 @@ message GetSetUpResponse {
   syft.core.io.Address address = 4;
 }
 
-message UpdateSetup {
+message UpdateSetupMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
   string content = 3;
