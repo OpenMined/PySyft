@@ -6,29 +6,31 @@ from pytest import approx
 import syft as sy
 
 
-@pytest.mark.vendor(lib="openmined_psi")
 @pytest.mark.parametrize("loadlib_before_client", [True, False])
 @pytest.mark.parametrize("reveal_intersection", [True, False])
-def test_psi(loadlib_before_client: bool, reveal_intersection: bool) -> None:
+@pytest.mark.vendor(lib="openmined_psi")
+def test_psi(
+    loadlib_before_client: bool, reveal_intersection: bool, node: sy.VirtualMachine
+) -> None:
     # third party
     import openmined_psi as psi
 
-    # it should work when call load_lib before or after create clients
+    # it should work when call load before or after create clients
     if loadlib_before_client:
-        sy.load_lib("openmined_psi")
-        server_vm = sy.VirtualMachine().get_root_client()
-        client_vm = sy.VirtualMachine().get_root_client()
+        sy.load("openmined_psi")
+        server_vm = node.get_root_client()
+        client_vm = node.get_root_client()
     else:
-        server_vm = sy.VirtualMachine().get_root_client()
-        client_vm = sy.VirtualMachine().get_root_client()
-        sy.load_lib("openmined_psi")
+        server_vm = node.get_root_client()
+        client_vm = node.get_root_client()
+        sy.load("openmined_psi")
 
     # server send reveal_intersection
     s_reveal_intersection = reveal_intersection
     s_sy_reveal_intersection = sy.lib.python.Bool(s_reveal_intersection)
     s_sy_reveal_intersection.send(
         server_vm,
-        searchable=True,
+        pointable=True,
         tags=["reveal_intersection"],
         description="reveal intersection value",
     )
@@ -45,7 +47,7 @@ def test_psi(loadlib_before_client: bool, reveal_intersection: bool) -> None:
     s_fpr = 1e-6
     s_sy_fpr = sy.lib.python.Float(s_fpr)
     s_sy_fpr.send(
-        server_vm, searchable=True, tags=["fpr"], description="false positive rate"
+        server_vm, pointable=True, tags=["fpr"], description="false positive rate"
     )
 
     # client get fpr
@@ -58,7 +60,7 @@ def test_psi(loadlib_before_client: bool, reveal_intersection: bool) -> None:
     c_sy_client_items_len = sy.lib.python.Int(len(c_items))
     c_sy_client_items_len.send(
         client_vm,
-        searchable=True,
+        pointable=True,
         tags=["client_items_len"],
         description="client items length",
     )
@@ -73,7 +75,7 @@ def test_psi(loadlib_before_client: bool, reveal_intersection: bool) -> None:
     s_setup = psi_server.CreateSetupMessage(s_fpr, s_sy_client_items_len, s_items)
     s_setup.send(
         server_vm,
-        searchable=True,
+        pointable=True,
         tags=["setup"],
         description="psi.server Setup Message",
     )
@@ -86,7 +88,7 @@ def test_psi(loadlib_before_client: bool, reveal_intersection: bool) -> None:
     # client send request
     c_request = psi_client.CreateRequest(c_items)
     c_request.send(
-        client_vm, tags=["request"], searchable=True, description="client request"
+        client_vm, tags=["request"], pointable=True, description="client request"
     )
 
     # server get request
@@ -96,7 +98,7 @@ def test_psi(loadlib_before_client: bool, reveal_intersection: bool) -> None:
     # server send response
     s_response = psi_server.ProcessRequest(s_request)
     s_response.send(
-        server_vm, searchable=True, tags=["response"], description="psi.server response"
+        server_vm, pointable=True, tags=["response"], description="psi.server response"
     )
 
     # client get response

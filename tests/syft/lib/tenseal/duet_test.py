@@ -1,6 +1,4 @@
 # stdlib
-import atexit
-from multiprocessing import Process
 from multiprocessing import set_start_method
 import socket
 import sys
@@ -17,13 +15,11 @@ import syft as sy
 
 # syft relative
 from ...grid.duet.process_test import SyftTestProcess
-from ...grid.duet.signaling_server_test import run
 
 ts = pytest.importorskip("tenseal")
-sy.load_lib("tenseal")
+sy.load("tenseal")
 
 set_start_method("spawn", force=True)
-PORT = 21000
 
 
 def chunks(lst: List[Any], n: int) -> Generator[Any, Any, Any]:
@@ -40,7 +36,7 @@ def chunks(lst: List[Any], n: int) -> Generator[Any, Any, Any]:
         yield lst[i : i + n]  # noqa: E203
 
 
-def do(ct_size: int, batch_size: int) -> None:
+def do(ct_size: int, batch_size: int, signaling_server: int) -> None:
     # third party
     import numpy as np
     import tenseal as ts
@@ -48,10 +44,12 @@ def do(ct_size: int, batch_size: int) -> None:
     # syft absolute
     import syft as sy
 
-    sy.load_lib("tenseal")
+    sy.load("tenseal")
     sy.logger.add(sys.stderr, "ERROR")
 
-    duet = sy.launch_duet(loopback=True, network_url=f"http://127.0.0.1:{PORT}/")
+    duet = sy.launch_duet(
+        loopback=True, network_url=f"http://127.0.0.1:{signaling_server}/"
+    )
     duet.requests.add_handler(action="accept")
 
     context = ts.context(
@@ -65,9 +63,9 @@ def do(ct_size: int, batch_size: int) -> None:
         enc.append(ts.ckks_vector(context, data))
 
     start = time.time()
-    _ = context.send(duet, searchable=True)
+    _ = context.send(duet, pointable=True)
     for chunk in chunks(enc, batch_size):
-        _ = sy.lib.python.List(chunk).send(duet, searchable=True)
+        _ = sy.lib.python.List(chunk).send(duet, pointable=True)
     sys.stderr.write(
         f"[{ct_size}][{batch_size}] DO sending took {time.time() - start} sec\n"
     )
@@ -75,14 +73,16 @@ def do(ct_size: int, batch_size: int) -> None:
     sy.core.common.event_loop.loop.run_forever()
 
 
-def ds(ct_size: int, batch_size: int) -> None:
+def ds(ct_size: int, batch_size: int, signaling_server: int) -> None:
     # syft absolute
     import syft as sy
 
-    sy.load_lib("tenseal")
+    sy.load("tenseal")
     sy.logger.add(sys.stderr, "ERROR")
 
-    duet = sy.join_duet(loopback=True, network_url=f"http://127.0.0.1:{PORT}/")
+    duet = sy.join_duet(
+        loopback=True, network_url=f"http://127.0.0.1:{signaling_server}/"
+    )
 
     time.sleep(10)
 
@@ -103,36 +103,24 @@ def ds(ct_size: int, batch_size: int) -> None:
     )
 
 
-@pytest.fixture(scope="module")
-def signaling_server() -> Process:
-    print(f"creating signaling server on port {PORT}")
-    grid_proc = Process(target=run, args=(PORT,))
-    grid_proc.start()
-
-    def grid_cleanup() -> None:
-        print("stop signaling server")
-        grid_proc.terminate()
-        grid_proc.join()
-
-    atexit.register(grid_cleanup)
-
-    return grid_proc
-
-
 @pytest.mark.vendor(lib="tenseal")
-def test_tenseal_duet_ciphertext_size(signaling_server: Process) -> None:
+def test_tenseal_duet_ciphertext_size(signaling_server: int) -> None:
     time.sleep(3)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        assert s.connect_ex(("localhost", PORT)) == 0
+        assert s.connect_ex(("localhost", signaling_server)) == 0
 
     for ct_size in [10, 20]:
         for batch_size in [1, 10, ct_size]:
             start = time.time()
 
-            do_proc = SyftTestProcess(target=do, args=(ct_size, batch_size))
+            do_proc = SyftTestProcess(
+                target=do, args=(ct_size, batch_size, signaling_server)
+            )
             do_proc.start()
 
-            ds_proc = SyftTestProcess(target=ds, args=(ct_size, batch_size))
+            ds_proc = SyftTestProcess(
+                target=ds, args=(ct_size, batch_size, signaling_server)
+            )
             ds_proc.start()
 
             ds_proc.join(120)

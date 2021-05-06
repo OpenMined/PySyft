@@ -1,3 +1,5 @@
+-r ./requirements.torch.txt
+
 aiortc
 dataclasses # backport to python 3.6
 dpcontracts
@@ -9,12 +11,12 @@ nest_asyncio
 packaging
 pandas
 protobuf
+PyJWT==1.7.1
 PyNaCl
 requests
+scikit-learn
 sqlitedict
-torch>=1.4.0
-torchcsprng
-torchvision>=0.5
+syft-proto
 typeguard
 typing-extensions # backport to older python 3
-websockets
+websocket-client

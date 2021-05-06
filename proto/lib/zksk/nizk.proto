@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package syft.lib.zksk;
+
+import "proto/lib/petlib/bn.proto";
+import "proto/lib/python/tuple.proto";
+
+message NIZK {
+  syft.lib.petlib.Bn challenge = 1;
+  syft.lib.python.Tuple responses = 2;
+  bytes stmt_hash = 3;
+  // not used yet precommitment = 4;
+}

@@ -3,12 +3,13 @@ from typing import Any as TypeAny
 from typing import List as TypeList
 from typing import Tuple as TypeTuple
 
-# syft absolute
-from syft.ast import add_classes
-from syft.ast import add_methods
-from syft.ast import add_modules
-from syft.ast.globals import Globals
-from syft.core.plan.plan import Plan
+# syft relative
+from ...ast import add_classes
+from ...ast import add_methods
+from ...ast import add_modules
+from ...ast.globals import Globals
+from ...core.plan.plan import Plan
+from ...core.plan.translation.torchscript.plan import PlanTorchscript
 
 
 def create_plan_ast(client: TypeAny = None) -> Globals:
@@ -25,22 +26,29 @@ def create_plan_ast(client: TypeAny = None) -> Globals:
     modules = [
         "syft",
         "syft.core",
-        "syft.core.node",
-        "syft.core.node.common",
-        "syft.core.node.common.plan",
-        "syft.core.node.common.plan.plan",
+        "syft.core",
+        "syft.core.plan",
+        "syft.core.plan.plan",
+        "syft.core.plan.translation",
+        "syft.core.plan.translation.torchscript",
+        "syft.core.plan.translation.torchscript.plan",
     ]
 
     classes: TypeList[TypeTuple[str, str, TypeAny]] = [
         (
-            "syft.core.node.common.plan.plan.Plan",
-            "syft.core.node.common.plan.plan.Plan",
+            "syft.core.plan.Plan",
+            "syft.core.plan.Plan",
             Plan,
+        ),
+        (
+            "syft.core.plan.translation.torchscript.PlanTorchscript",
+            "syft.core.plan.translation.torchscript.PlanTorchscript",
+            PlanTorchscript,
         ),
     ]
 
     methods: TypeList[TypeTuple[str, str]] = [
-        ("syft.core.node.common.plan.plan.Plan.__call__", "syft.lib.python._SyNone"),
+        ("syft.core.plan.Plan.__call__", "syft.lib.python.List"),
     ]
 
     add_modules(ast, modules)
