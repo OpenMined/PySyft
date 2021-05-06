@@ -9,4 +9,5 @@ message Plan {
   repeated syft.core.node.common.action.Action actions = 1;
   map<string, syft.core.pointer.Pointer> inputs = 2;
   repeated syft.core.pointer.Pointer outputs = 3;
+  map<string, int32> i2o_map = 4;
 }
