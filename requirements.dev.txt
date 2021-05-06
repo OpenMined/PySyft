@@ -20,3 +20,4 @@ pytest-randomly
 pytest-sugar
 pytest-xdist[psutil]
 pytest-xprocess
+safety
