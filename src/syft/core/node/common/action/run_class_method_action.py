@@ -26,22 +26,9 @@ from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
-from ....pointer.pointer import Pointer
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
-
-
-def resolve_object(node: AbstractNode, ptr: Pointer) -> StorableObject:
-    obj = node.store.get_object(key=ptr.id_at_location)
-    if getattr(ptr, "attribute_name", None):
-        obj = StorableObject(
-            id=UID(),
-            data=getattr(obj.data, ptr.attribute_name),  # type: ignore
-            read_permissions=obj.read_permissions,  # type: ignore
-            search_permissions=obj.search_permissions,  # type: ignore
-        )
-    return obj  # type: ignore
 
 
 @bind_protobuf
@@ -121,10 +108,10 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
         resolved_self = None
         if not self.is_static:
-            resolved_self = resolve_object(node, self._self)
+            resolved_self = node.store.get_object(key=self._self.id_at_location)
 
             if resolved_self is None:
-                critical(  # type: ignore
+                critical(
                     f"execute_action on {self.path} failed due to missing object"
                     + f" at: {self._self.id_at_location}"
                 )
@@ -172,17 +159,27 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                 isinstance(resolved_self.data, Plan)
                 and method_name == "__call__"
                 or (
-                    isinstance(getattr(resolved_self.data, "forward", None), Plan)
-                    and method_name == "__call__"
+                    hasattr(resolved_self.data, "forward")
+                    and (
+                        resolved_self.data.forward.__class__.__name__ == "Plan"
+                        or getattr(resolved_self.data.forward, "__name__", None)
+                        == "_compile_and_forward"
+                    )
+                    and method_name in ["__call__", "forward"]
                 )
             ):
+
                 if len(self.args) > 0:
                     traceback_and_raise(
                         ValueError(
                             "You passed args to Plan.__call__, while it only accepts kwargs"
                         )
                     )
-                result = method(resolved_self.data, node, verify_key, **self.kwargs)
+                if method.__name__ == "_forward_unimplemented":
+                    method = resolved_self.data.forward
+                    result = method(node, verify_key, **self.kwargs)
+                else:
+                    result = method(resolved_self.data, node, verify_key, **self.kwargs)
             else:
                 target_method = getattr(resolved_self.data, method_name, None)
 
@@ -320,16 +317,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
     def remap_input(self, current_input: Any, new_input: Any) -> None:
         """Redefines some of the arguments, and possibly the _self of the function"""
         if self._self.id_at_location == current_input.id_at_location:
-            attrribute_name = getattr(self._self, "attribute_name", "")
-            pointer_type = type(new_input)
-            self._self = pointer_type(
-                id_at_location=new_input.id_at_location,
-                client=new_input.client,
-                tags=new_input.tags,
-                description=new_input.description,
-                object_type=new_input.object_type,
-            )
-            self._self.attribute_name = attrribute_name
+            self._self = new_input
 
         for i, arg in enumerate(self.args):
             if arg.id_at_location == current_input.id_at_location:
