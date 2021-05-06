@@ -95,6 +95,7 @@ def create_ast(client: TypeAny = None) -> Globals:
         ),
     ]
 
+    # TODO: finish all these methods, summary is an object attribute for example
     methods = [
         ("statsmodels.api.add_constant", "pandas.DataFrame"),
         (
