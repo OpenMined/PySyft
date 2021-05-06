@@ -6,7 +6,8 @@ opacus
 openmined.psi
 pandas
 petlib
-pillow
+pillow>=8.1.2 #security-issues
+pyarrow
 python-dp
 pytorch-lightning @ git+https://github.com/tudorcebere/pytorch-lightning@tudor-om-v0
 statsmodels
