@@ -166,13 +166,13 @@ class Scalar(Serializable):
         else:
             L = resbrute[symbol2index[symbol_name]]
 
-        if self._value is None:
+        if self.value is None:
             raise ValueError("Tudor: This should be an error, right?")
 
         # Step 4: create the gaussian mechanism object
         gm1 = iDPGaussianMechanism(
             sigma=sigma,
-            value=self._value,
+            value=self.value,
             L=L,
             entity=symbol_name.split("_")[1],
             name="gm_" + symbol_name,
