@@ -80,11 +80,6 @@ jobs:
           pip install -r requirements.dev.txt
           pip install -e .
 
-      - name: Synk security check
-        uses: snyk/actions/python-3.8@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }} # to be setup, @reviewer.
-
       - name: Run torch tests
         run: |
           pytest -m torch -n auto -p no:benchmark
