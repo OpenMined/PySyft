@@ -87,7 +87,7 @@ class Scalar(Serializable):
             return self._value
         run_specific_args, index2symbol, _ = self.create_run_specific_args(f=self.poly)
         inputs = [scalar_name2obj[sym]._value for sym in index2symbol]
-        return run_specific_args(inputs)
+        return float(run_specific_args(inputs))
 
     @property
     def min_val(self) -> Optional[float]:
@@ -168,6 +168,7 @@ class Scalar(Serializable):
 
         if self.value is None:
             raise ValueError("Tudor: This should be an error, right?")
+
 
         # Step 4: create the gaussian mechanism object
         gm1 = iDPGaussianMechanism(

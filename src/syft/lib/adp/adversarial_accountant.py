@@ -40,7 +40,8 @@ class AdversarialAccountant:
         )
 
     def has_budget(self, entity_name: str) -> bool:
-        value = self.get_eps_for_entity(entity_name)._value
+        eps = self.get_eps_for_entity(entity_name)
+        value = eps.value
         if value is not None:
             return value < self.max_budget
         return True
