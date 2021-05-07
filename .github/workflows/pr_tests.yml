@@ -154,6 +154,13 @@ jobs:
           bandit -r src
           safety check
 
+      # TO BE MOVED TO merge_tests, adding here to check its working before merging.
+
+      - name: Synk security check
+        uses: snyk/actions/python-3.8@master
+        env:
+          SNYK_TOKEN: 3106d1f2-a045-4bc6-8695-d899ab653448 # to be changed to env variable.
+
       - name: Run normal tests
         run: |
           pytest -m 'fast or slow' --cov syft --cov-fail-under 80 -n auto
