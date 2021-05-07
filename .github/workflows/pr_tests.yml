@@ -187,7 +187,6 @@ jobs:
 
       - name: Synk security check
         uses: snyk/actions/python-3.8@master
-        continue-on-error: true
         env:
           SNYK_TOKEN: 3106d1f2-a045-4bc6-8695-d899ab653448 # to be changed to env variable.
         with:
@@ -374,3 +373,66 @@ jobs:
           pip install -e . --default-timeout=60
           pip install -r requirements.grid.txt --default-timeout=60
           pytest -m grid
+
+  # To be removed later
+  security-temp:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: [3.8]
+        torch-version: [1.7.0]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
+
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - name: Install PyTorch
+        run: |
+          pip install packaging --default-timeout=60
+          python scripts/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
+          cat ./requirements.torch.txt
+          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html --default-timeout=60
+
+      - name: Install packages
+        run: |
+          pip install -r requirements.dev.txt --default-timeout=60
+          pip install -e . --default-timeout=60
+          pip list
+        timeout-minutes: 20
+
+      - name: Scan for security issues
+        run: |
+          bandit -r src
+          safety check
+
+      - name: Synk security check
+        uses: snyk/actions/python-3.8@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: 3106d1f2-a045-4bc6-8695-d899ab653448 # to be changed to env variable.
+        with:
+          args: --sarif-file-output=snyk.sarif --skip-unresolved
+      - name: Upload result to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v1
+        with:
+          sarif_file: snyk.sarif
