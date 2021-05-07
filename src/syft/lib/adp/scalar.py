@@ -169,11 +169,13 @@ class Scalar(Serializable):
         if self.value is None:
             raise ValueError("Tudor: This should be an error, right?")
 
+        symbol = scalar_name2obj[symbol_name]
 
+        # print("New Mechanism(sigma=" + str(sigma) + " value=" + str(symbol.value) + "L=" + str(L) + ")")
         # Step 4: create the gaussian mechanism object
         gm1 = iDPGaussianMechanism(
             sigma=sigma,
-            value=self.value,
+            value=symbol.value,
             L=L,
             entity=symbol_name.split("_")[1],
             name="gm_" + symbol_name,
