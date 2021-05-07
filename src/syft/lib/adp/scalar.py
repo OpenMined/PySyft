@@ -69,6 +69,7 @@ class Scalar(Serializable):
         if poly is not None:
             # if this Scalar is being formed as a function of other Scalar objects
             self._poly = poly
+            self.entity_name = None
         elif entity is not None:
             self.entity_name = entity.name if isinstance(entity, Entity) else entity
             self.scalar_name = self.name + "_" + self.entity_name
