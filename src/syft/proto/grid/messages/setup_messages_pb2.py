@@ -25,7 +25,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n(proto/grid/messages/setup_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\xa4\x01\n\x19\x43reateInitialSetUpMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x91\x01\n\x1a\x43reateInitialSetUpResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9a\x01\n\x0fGetSetUpMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x87\x01\n\x10GetSetUpResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9d\x01\n\x12UpdateSetupMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x8a\x01\n\x13UpdateSetupResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
+    serialized_pb=b'\n(proto/grid/messages/setup_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\xa4\x01\n\x19\x43reateInitialSetUpMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x91\x01\n\x1a\x43reateInitialSetUpResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9a\x01\n\x0fGetSetUpMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x87\x01\n\x10GetSetUpResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9d\x01\n\x12UpdateSetUpMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x8a\x01\n\x13UpdateSetUpResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
@@ -426,8 +426,8 @@ _GETSETUPRESPONSE = _descriptor.Descriptor(
 
 
 _UPDATESETUPMESSAGE = _descriptor.Descriptor(
-    name="UpdateSetupMessage",
-    full_name="syft.grid.messages.UpdateSetupMessage",
+    name="UpdateSetUpMessage",
+    full_name="syft.grid.messages.UpdateSetUpMessage",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -435,7 +435,7 @@ _UPDATESETUPMESSAGE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
-            full_name="syft.grid.messages.UpdateSetupMessage.msg_id",
+            full_name="syft.grid.messages.UpdateSetUpMessage.msg_id",
             index=0,
             number=1,
             type=11,
@@ -454,7 +454,7 @@ _UPDATESETUPMESSAGE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="address",
-            full_name="syft.grid.messages.UpdateSetupMessage.address",
+            full_name="syft.grid.messages.UpdateSetUpMessage.address",
             index=1,
             number=2,
             type=11,
@@ -473,7 +473,7 @@ _UPDATESETUPMESSAGE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="content",
-            full_name="syft.grid.messages.UpdateSetupMessage.content",
+            full_name="syft.grid.messages.UpdateSetUpMessage.content",
             index=2,
             number=3,
             type=9,
@@ -492,7 +492,7 @@ _UPDATESETUPMESSAGE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="reply_to",
-            full_name="syft.grid.messages.UpdateSetupMessage.reply_to",
+            full_name="syft.grid.messages.UpdateSetUpMessage.reply_to",
             index=3,
             number=4,
             type=11,
@@ -524,8 +524,8 @@ _UPDATESETUPMESSAGE = _descriptor.Descriptor(
 
 
 _UPDATESETUPRESPONSE = _descriptor.Descriptor(
-    name="UpdateSetupResponse",
-    full_name="syft.grid.messages.UpdateSetupResponse",
+    name="UpdateSetUpResponse",
+    full_name="syft.grid.messages.UpdateSetUpResponse",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -533,7 +533,7 @@ _UPDATESETUPRESPONSE = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="msg_id",
-            full_name="syft.grid.messages.UpdateSetupResponse.msg_id",
+            full_name="syft.grid.messages.UpdateSetUpResponse.msg_id",
             index=0,
             number=1,
             type=11,
@@ -552,7 +552,7 @@ _UPDATESETUPRESPONSE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="status_code",
-            full_name="syft.grid.messages.UpdateSetupResponse.status_code",
+            full_name="syft.grid.messages.UpdateSetUpResponse.status_code",
             index=1,
             number=2,
             type=5,
@@ -571,7 +571,7 @@ _UPDATESETUPRESPONSE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="content",
-            full_name="syft.grid.messages.UpdateSetupResponse.content",
+            full_name="syft.grid.messages.UpdateSetUpResponse.content",
             index=2,
             number=3,
             type=9,
@@ -590,7 +590,7 @@ _UPDATESETUPRESPONSE = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="address",
-            full_name="syft.grid.messages.UpdateSetupResponse.address",
+            full_name="syft.grid.messages.UpdateSetUpResponse.address",
             index=3,
             number=4,
             type=11,
@@ -673,8 +673,8 @@ DESCRIPTOR.message_types_by_name[
 ] = _CREATEINITIALSETUPRESPONSE
 DESCRIPTOR.message_types_by_name["GetSetUpMessage"] = _GETSETUPMESSAGE
 DESCRIPTOR.message_types_by_name["GetSetUpResponse"] = _GETSETUPRESPONSE
-DESCRIPTOR.message_types_by_name["UpdateSetupMessage"] = _UPDATESETUPMESSAGE
-DESCRIPTOR.message_types_by_name["UpdateSetupResponse"] = _UPDATESETUPRESPONSE
+DESCRIPTOR.message_types_by_name["UpdateSetUpMessage"] = _UPDATESETUPMESSAGE
+DESCRIPTOR.message_types_by_name["UpdateSetUpResponse"] = _UPDATESETUPRESPONSE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 CreateInitialSetUpMessage = _reflection.GeneratedProtocolMessageType(
@@ -721,27 +721,27 @@ GetSetUpResponse = _reflection.GeneratedProtocolMessageType(
 )
 _sym_db.RegisterMessage(GetSetUpResponse)
 
-UpdateSetupMessage = _reflection.GeneratedProtocolMessageType(
-    "UpdateSetupMessage",
+UpdateSetUpMessage = _reflection.GeneratedProtocolMessageType(
+    "UpdateSetUpMessage",
     (_message.Message,),
     {
         "DESCRIPTOR": _UPDATESETUPMESSAGE,
         "__module__": "proto.grid.messages.setup_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.UpdateSetupMessage)
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.UpdateSetUpMessage)
     },
 )
-_sym_db.RegisterMessage(UpdateSetupMessage)
+_sym_db.RegisterMessage(UpdateSetUpMessage)
 
-UpdateSetupResponse = _reflection.GeneratedProtocolMessageType(
-    "UpdateSetupResponse",
+UpdateSetUpResponse = _reflection.GeneratedProtocolMessageType(
+    "UpdateSetUpResponse",
     (_message.Message,),
     {
         "DESCRIPTOR": _UPDATESETUPRESPONSE,
         "__module__": "proto.grid.messages.setup_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.UpdateSetupResponse)
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.UpdateSetUpResponse)
     },
 )
-_sym_db.RegisterMessage(UpdateSetupResponse)
+_sym_db.RegisterMessage(UpdateSetUpResponse)
 
 
 # @@protoc_insertion_point(module_scope)
