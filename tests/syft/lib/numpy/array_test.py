@@ -53,7 +53,6 @@ def test_remote_numpy_array(root_client: sy.VirtualMachineClient) -> None:
 
 
 # Attributes test
-
 @pytest.mark.vendor(lib="numpy")
 def test_shape(root_client: sy.VirtualMachineClient) -> None:
     # third party
@@ -136,4 +135,3 @@ def test_nbytes(root_client: sy.VirtualMachineClient) -> None:
     nbytes_val = nbytes_ptr.get()
     assert nbytes_val == 240
     assert local_nbytes_val == nbytes_val
-
