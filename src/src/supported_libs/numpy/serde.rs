@@ -5,6 +5,7 @@ use prost::Message;
 use pyo3::prelude::*;
 use pyo3::PyResult;
 
+//adapt this to the current Serializable Trait
 #[pyfunction]
 fn numpy_serde(obj: &numpy::PyArrayDyn<npy_float>) -> PyResult<Vec<u8>> {
     let readonly = obj.readonly();
