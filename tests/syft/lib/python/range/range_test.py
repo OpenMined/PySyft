@@ -198,7 +198,7 @@ class RangeTest(unittest.TestCase):
         self.assertEqual(x[0], a)
         idx = sys.maxsize + 1
         self.assertEqual(x[idx], a + idx)
-        self.assertEqual(x[idx : idx + 1][0], a + idx)
+        self.assertEqual(x[idx : idx + 1][0], a + idx)  # noqa: E203
         with self.assertRaises(IndexError):
             x[-expected_len - 1]
         with self.assertRaises(IndexError):
@@ -216,7 +216,7 @@ class RangeTest(unittest.TestCase):
         self.assertEqual(x[0], a)
         idx = sys.maxsize + 1
         self.assertEqual(x[idx], a + idx)
-        self.assertEqual(x[idx : idx + 1][0], a + idx)
+        self.assertEqual(x[idx : idx + 1][0], a + idx)  # noqa: E203
         with self.assertRaises(IndexError):
             x[-expected_len - 1]
         with self.assertRaises(IndexError):
@@ -235,7 +235,7 @@ class RangeTest(unittest.TestCase):
         self.assertEqual(x[0], a)
         idx = sys.maxsize + 1
         self.assertEqual(x[idx], a + (idx * c))
-        self.assertEqual(x[idx : idx + 1][0], a + (idx * c))
+        self.assertEqual(x[idx : idx + 1][0], a + (idx * c))  # noqa: E203
         with self.assertRaises(IndexError):
             x[-expected_len - 1]
         with self.assertRaises(IndexError):
@@ -254,7 +254,7 @@ class RangeTest(unittest.TestCase):
         self.assertEqual(x[0], a)
         idx = sys.maxsize + 1
         self.assertEqual(x[idx], a + (idx * c))
-        self.assertEqual(x[idx : idx + 1][0], a + (idx * c))
+        self.assertEqual(x[idx : idx + 1][0], a + (idx * c))  # noqa: E203
         with self.assertRaises(IndexError):
             x[-expected_len - 1]
         with self.assertRaises(IndexError):
