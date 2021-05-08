@@ -34,6 +34,7 @@ from syft.proto.grid.messages.setup_messages_pb2 import (
     UpdateSetUpResponse as UpdateSetUpResponse_PB,
 )
 
+
 @bind_protobuf
 @final
 class GetSetUpMessage(ImmediateSyftMessageWithReply):
