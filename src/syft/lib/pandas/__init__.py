@@ -9,6 +9,8 @@ from packaging import version
 import pandas as pd
 
 # syft relative
+from . import categorical  # noqa: 401
+from . import categorical_dtype  # noqa: 401
 from . import frame  # noqa: 401
 from . import series  # noqa: 401
 from ...ast import add_classes
@@ -32,10 +34,12 @@ def create_ast(client: TypeAny = None) -> Globals:
     classes: TypeList[TypeTuple[str, str, TypeAny]] = [
         ("pandas.DataFrame", "pandas.DataFrame", pd.DataFrame),
         ("pandas.Series", "pandas.Series", pd.Series),
+        ("pandas.CategoricalDtype", "pandas.CategoricalDtype", pd.CategoricalDtype),
+        ("pandas.Categorical", "pandas.Categorical", pd.Categorical),
     ]
 
     methods: TypeList[TypeTuple[str, str]] = [
-        ("pandas.read_csv", "pandas.DataFrame"),
+        ("pandas.json_normalize", "pandas.DataFrame"),
         ("pandas.DataFrame.__getitem__", "pandas.Series"),
         ("pandas.DataFrame.__setitem__", "pandas.Series"),
         ("pandas.DataFrame.__len__", "syft.lib.python.Int"),
@@ -71,6 +75,8 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("pandas.DataFrame.__sub__", "pandas.DataFrame"),
         ("pandas.DataFrame.__truediv__", "pandas.DataFrame"),
         ("pandas.DataFrame.dropna", "pandas.DataFrame"),
+        ("pandas.DataFrame.apply", "pandas.DataFrame"),
+        ("pandas.DataFrame.loc", "pandas.DataFrame"),  # TODO replace with Union below
         ("pandas.Series.__getitem__", "pandas.Series"),
         ("pandas.Series.__setitem__", "pandas.Series"),
         ("pandas.Series.__len__", "syft.lib.python.Int"),
@@ -108,6 +114,7 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("pandas.Series.__sub__", "pandas.Series"),
         ("pandas.Series.__truediv__", "pandas.Series"),
         ("pandas.Series.add", "pandas.Series"),
+        ("pandas.Series.apply", "pandas.Series"),
         ("pandas.Series.sub", "pandas.Series"),
         ("pandas.Series.mul", "pandas.Series"),
         ("pandas.Series.div", "pandas.Series"),
@@ -123,6 +130,7 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("pandas.Series.rfloordiv", "pandas.Series"),
         ("pandas.Series.rmod", "pandas.Series"),
         ("pandas.Series.rpow", "pandas.Series"),
+        ("pandas.Series.loc", "pandas.Series"),  # TODO replace with Union below
         ("pandas.Series.lt", "pandas.Series"),
         ("pandas.Series.gt", "pandas.Series"),
         ("pandas.Series.le", "pandas.Series"),
@@ -164,6 +172,124 @@ def create_ast(client: TypeAny = None) -> Globals:
                 "syft.lib.python.Bool", "syft.lib.python.Float", "syft.lib.python.Int"
             ],
         ),
+        # ===== methods for pd.Categorical ======
+        # ("pandas.Categorical.__array__",),
+        # ("pandas.Categorical.__array_ufunc__",),
+        # ("pandas.Categorical.__contains__",),
+        # ("pandas.Categorical.__dir__",),
+        # ("pandas.Categorical.__init__",),
+        # ("pandas.Categorical.__iter__",), Return a list Iterator
+        # ("pandas.Categorical.__repr__",),
+        ("pandas.Categorical.__eq__", "numpy.ndarray"),
+        ("pandas.Categorical.__ge__", "numpy.ndarray"),
+        ("pandas.Categorical.__gt__", "numpy.ndarray"),
+        ("pandas.Categorical.__le__", "numpy.ndarray"),
+        ("pandas.Categorical.__lt__", "numpy.ndarray"),
+        ("pandas.Categorical.__ne__", "numpy.ndarray"),
+        ("pandas.Categorical.__len__", "syft.lib.python.Int"),
+        (
+            "pandas.Categorical.__getitem__",
+            UnionGenerator[
+                "syft.lib.python.Bool",
+                "syft.lib.python.Float",
+                "syft.lib.python.Int",
+                "syft.lib.python.Complex",
+            ],
+        ),
+        ("pandas.Categorical.__setitem__", "syft.lib.python._SyNone"),
+        # ("pandas.Categorical.__setstate__",), # method to support Pickle support
+        # ("pandas.Categorical.__sizeof__",),
+        ("pandas.Categorical.add_categories", "pandas.Categorical"),
+        ("pandas.Categorical.argmax", "syft.lib.python.Int"),
+        ("pandas.Categorical.argmin", "syft.lib.python.Int"),
+        ("pandas.Categorical.argsort", "numpy.ndarray"),
+        ("pandas.Categorical.as_ordered", "pandas.Categorical"),
+        ("pandas.Categorical.as_unordered", "pandas.Categorical"),
+        # ("pandas.Categorical.astype",), # Need support for other pandas types
+        # ("pandas.Categorical.check_for_ordered",),
+        ("pandas.Categorical.copy", "pandas.Categorical"),
+        ("pandas.Categorical.describe", "pandas.DataFrame"),
+        ("pandas.Categorical.dropna", "pandas.Categorical"),
+        ("pandas.Categorical.equals", "syft.lib.python.Bool"),
+        (
+            "pandas.Categorical.factorize",
+            "syft.lib.python.Tuple",
+        ),
+        ("pandas.Categorical.fillna", "pandas.Categorical"),
+        ("pandas.Categorical.from_codes", "pandas.Categorical"),
+        ("pandas.Categorical.is_dtype_equal", "syft.lib.python.Bool"),
+        ("pandas.Categorical.isin", "numpy.ndarray"),
+        ("pandas.Categorical.isna", "numpy.ndarray"),
+        ("pandas.Categorical.isnull", "numpy.ndarray"),
+        (
+            "pandas.Categorical.map",
+            "pandas.Categorical",
+        ),  # TODO: returns pd.Categorical or pd.Index
+        (
+            "pandas.Categorical.max",
+            UnionGenerator[
+                "syft.lib.python.Bool",
+                "syft.lib.python.Float",
+                "syft.lib.python.Int",
+                "syft.lib.python.Complex",
+            ],
+        ),
+        ("pandas.Categorical.memory_usage", "syft.lib.python.Int"),
+        (
+            "pandas.Categorical.min",
+            UnionGenerator[
+                "syft.lib.python.Bool",
+                "syft.lib.python.Float",
+                "syft.lib.python.Int",
+                "syft.lib.python.Complex",
+            ],
+        ),
+        ("pandas.Categorical.mode", "pandas.Categorical"),
+        ("pandas.Categorical.notna", "numpy.ndarray"),
+        ("pandas.Categorical.notnull", "numpy.ndarray"),
+        ("pandas.Categorical.ravel", "pandas.Categorical"),
+        ("pandas.Categorical.remove_categories", "pandas.Categorical"),
+        ("pandas.Categorical.remove_unused_categories", "pandas.Categorical"),
+        (
+            "pandas.Categorical.rename_categories",
+            "pandas.Categorical",
+        ),
+        (
+            "pandas.Categorical.reorder_categories",
+            "pandas.Categorical",
+        ),
+        ("pandas.Categorical.repeat", "pandas.Categorical"),
+        ("pandas.Categorical.replace", "pandas.Categorical"),
+        ("pandas.Categorical.reshape", "pandas.Categorical"),
+        ("pandas.Categorical.searchsorted", "syft.lib.python.Int"),
+        (
+            "pandas.Categorical.set_categories",
+            "pandas.Categorical",
+        ),
+        (
+            "pandas.Categorical.set_ordered",
+            "pandas.Categorical",
+        ),
+        ("pandas.Categorical.shift", "pandas.Categorical"),
+        ("pandas.Categorical.sort_values", "pandas.Categorical"),
+        ("pandas.Categorical.take", "pandas.Categorical"),
+        ("pandas.Categorical.take_nd", "pandas.Categorical"),
+        ("pandas.Categorical.to_dense", "numpy.ndarray"),
+        ("pandas.Categorical.to_list", "syft.lib.python.Float"),
+        ("pandas.Categorical.to_numpy", "numpy.ndarray"),
+        ("pandas.Categorical.tolist", "syft.lib.python.Float"),
+        ("pandas.Categorical.unique", "pandas.Categorical"),
+        ("pandas.Categorical.value_counts", "pandas.Series"),
+        ("pandas.Categorical.view", "pandas.Categorical"),
+        # ==== pd.Categorical properties ====
+        ("pandas.Categorical.T", "pandas.Categorical"),
+        # ("pandas.Categorical.categories",), require support for pd.Index
+        ("pandas.Categorical.codes", "numpy.ndarray"),
+        ("pandas.Categorical.dtype", "pandas.CategoricalDtype"),
+        ("pandas.Categorical.nbytes", "syft.lib.python.Int"),
+        ("pandas.Categorical.ordered", "syft.lib.python.Bool"),
+        ("pandas.Categorical.shape", "syft.lib.python.Tuple"),
+        ("pandas.Categorical.ndim", "syft.lib.python.Int"),
     ]
 
     if LIB_VERSION > version.parse("1.2.0"):

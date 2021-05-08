@@ -47,10 +47,7 @@ class Sequence(nn.Module):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--steps",
-        type=int,
-        default=15,
-        help="steps to run; default:15"
+        "--steps", type=int, default=15, help="steps to run; default:15"
     )
     opt = parser.parse_args()
 

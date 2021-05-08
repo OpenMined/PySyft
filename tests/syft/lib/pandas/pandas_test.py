@@ -28,6 +28,45 @@ def test_pandas(root_client: sy.VirtualMachineClient) -> None:
 
 
 @pytest.mark.vendor(lib="pandas")
+def test_pd_categoriesdtype(root_client: sy.VirtualMachineClient) -> None:
+    sy.load("pandas")
+    # third party
+    import pandas as pd
+
+    categories = ["b", "a"]
+    ordered = False
+    t = pd.CategoricalDtype(categories=categories, ordered=ordered)
+
+    t_ptr = t.send(root_client)
+
+    t2 = t_ptr.get()
+    print(t2)
+    assert t2.categories.to_list() == categories
+    assert t2.ordered == ordered
+
+
+@pytest.mark.vendor(lib="pandas")
+def test_pd_categories(root_client: sy.VirtualMachineClient) -> None:
+    sy.load("pandas")
+    # third party
+    import pandas as pd
+
+    categories = ["b", "a"]
+    ordered = False
+    t = pd.Categorical(
+        ["b", "a", "c", "a", "b"], categories=categories, ordered=ordered
+    )
+
+    t_ptr = t.send(root_client)
+
+    t2 = t_ptr.get()
+    print(t2)
+    assert t2.categories.to_list() == categories
+    assert t2.ordered == ordered
+    assert t2.codes.tolist() == t.codes.tolist()
+
+
+@pytest.mark.vendor(lib="pandas")
 def test_slice_dataframe(root_client: sy.VirtualMachineClient) -> None:
     sy.load("pandas")
     # third party
@@ -54,3 +93,27 @@ def test_slice_dataframe(root_client: sy.VirtualMachineClient) -> None:
     assert OrderedDict(data_reverse["col_2"]) == OrderedDict(
         reversed(list(data["col_2"].items()))
     )
+
+
+@pytest.mark.vendor(lib="pandas")
+def test_pandas_json_normalize(root_client: sy.VirtualMachineClient) -> None:
+    sy.load("pandas")
+    # third party
+    import pandas as pd
+
+    data = {"A": [1, 2]}
+    df = pd.json_normalize(data)
+
+    # create dict pointer
+    sy_data = sy.lib.python.Dict(data)
+    data_ptr = sy_data.send(root_client)
+
+    remote_pandas = root_client.pandas
+    df_ptr = remote_pandas.json_normalize(data_ptr)
+    res_df = df_ptr.get()
+
+    # Serde converts the list to an np.array. To allow comparison and prevent this test
+    # being coupled with numpy as a dependency we just convert back to a list.
+    res_df.iloc[0][0] = list(res_df.iloc[0][0])
+
+    assert df.equals(res_df)
