@@ -63,7 +63,7 @@ def setup_domain() -> None:
             url=f"http://localhost:{DOMAIN_PORT}", conn_type=GridHTTPConnection
         )
 
-        ua_client.setup(
+        ua_client.initial_setup(
             email="owner@myorg.com",
             password="ownerpwd",
             domain_name="OpenMined Domain",
@@ -72,6 +72,8 @@ def setup_domain() -> None:
     except Exception as e:
         if "domain already has an owner" not in str(e):
             raise e
+        else:
+            print(f"Failed to run initial_setup. {e}")
 
 
 @pytest.fixture
