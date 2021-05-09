@@ -62,7 +62,13 @@ class Range(PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     def __bool__(self) -> SyPrimitiveRet:
-        res = self.value.__bool__()
+        # res = self.value.__bool__()
+        # error: "range" has no attribute "__bool__"
+        # work around:
+        try:
+            res = bool(self.value.__len__())
+        except OverflowError:
+            res = True
         return PrimitiveFactory.generate_primitive(value=res)
 
     def __len__(self) -> Any:
