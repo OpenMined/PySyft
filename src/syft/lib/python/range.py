@@ -63,7 +63,7 @@ class Range(PyPrimitive):
 
     def __bool__(self) -> SyPrimitiveRet:
         # res = self.value.__bool__()
-        # error: "range" has no attribute "__bool__"
+        # mypy error: "range" has no attribute "__bool__"
         # work around:
         try:
             res = bool(self.value.__len__())
