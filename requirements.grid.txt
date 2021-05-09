@@ -5,6 +5,7 @@ flask_executor
 flask_migrate
 flask_sockets
 flask_sqlalchemy
+names
 PyInquirer
 PyJWT==1.7.1
 pytest

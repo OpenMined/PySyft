@@ -100,6 +100,7 @@ class GridHTTPConnection(HTTPConnection):
         return metadata_pb
 
     def setup(self, **content):
+
         response = json.loads(
             requests.post(self.base_url + "/setup", json=content).text
         )

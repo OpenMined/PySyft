@@ -7,9 +7,11 @@ from typing import Optional
 from typing import Type
 from typing import Union
 
+
 # third party
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
+import names
 from pandas import DataFrame
 
 # syft relative
@@ -36,6 +38,7 @@ from ..messages.transfer_messages import LoadObjectMessage
 from .enums import PyGridClientEnums
 from .enums import RequestAPIFields
 from .exceptions import RequestAPIException
+from .grid_connection import GridHTTPConnection
 from .request_api.association_api import AssociationRequestAPI
 from .request_api.dataset_api import DatasetRequestAPI
 from .request_api.group_api import GroupRequestAPI
@@ -45,8 +48,8 @@ from .request_api.worker_api import WorkerRequestAPI
 
 
 def connect(
-    url: str,
-    conn_type: Type[ClientConnection],
+    url: str = "http://127.0.0.1:5000",
+    conn_type: Type[ClientConnection] = GridHTTPConnection,
     credentials: Dict = {},
     user_key: Optional[SigningKey] = None,
 ) -> Any:
@@ -127,7 +130,18 @@ def connect(
             }
             self.__perform_grid_request(grid_msg=LoadObjectMessage, content=content)
 
-        def setup(self, **kwargs: Any) -> Any:
+        def setup(self, domain_name: str = None, **kwargs: Any) -> Any:
+
+            if domain_name is None:
+                domain_name = names.get_full_name() + "'s Domain"
+                logging.info("No Domain Name provided... picking randomly as: " + domain_name)
+
+            if 'token' not in kwargs.keys():
+                kwargs['token'] = '9G9MJ06OQH'
+                logging.info("No token provided... trying PyGrid Default (THIS IS NOT SAFE!!!): " + kwargs['token'])
+
+            kwargs['domain_name'] = domain_name
+
             response = self.conn.setup(**kwargs)
             logging.info(response[RequestAPIFields.MESSAGE])
 
@@ -217,3 +231,23 @@ def connect(
         conn_type=conn_type,
         client_type=DomainClient,
     )
+
+
+def login(email: str = None,
+          password: str = None,
+          url: str = "http://127.0.0.1:5000",
+          conn_type: Type[ClientConnection] = GridHTTPConnection):
+
+    if email is None or password is None:
+        credentials = {}
+        logging.info("\n\nNo email and password defined in login() - connecting as anonymous user!!!\n")
+    else:
+        credentials = {"email": email, "password": password}
+
+    domain = connect(
+        url = url,
+        credentials=credentials,
+        conn_type=conn_type
+    )
+
+    return domain

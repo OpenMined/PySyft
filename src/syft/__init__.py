@@ -71,6 +71,7 @@ from syft.grid.duet import bcolors  # noqa: F401
 from syft.grid.duet import duet  # noqa: F401
 from syft.grid.duet import join_duet  # noqa: F401
 from syft.grid.duet import launch_duet  # noqa: F401
+from syft.grid.client.client import login
 
 # Convenience Objects
 from syft.lib import lib_ast  # noqa: F401
