@@ -60,7 +60,7 @@ class AWS_Serverfull(AWS):
         if hasattr(self, "load_balancer"):
             self.tfscript += terrascript.Output(
                 "load_balancer_dns",
-                value=var_module(self.load_balancer, "this_elb_dns_name"),
+                value=var_module(self.load_balancer, "elb_dns_name"),
                 description="The DNS name of the ELB.",
             )
 
@@ -272,7 +272,7 @@ class AWS_Serverfull(AWS):
 
             echo "Setting environment variables"
             export DATABASE_URL={self.database.engine}+pymysql://{self.database.username}:{self.database.password}@{var(self.database.endpoint)}/{self.database.name}
-            
+
             export MEMORY_STORE=True
             # export DATABASE_URL="sqlite:///pygrid.db"
             export CLOUD_PROVIDER={self.config.provider}
