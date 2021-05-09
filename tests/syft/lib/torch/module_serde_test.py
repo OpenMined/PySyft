@@ -1,6 +1,3 @@
-# stdlib
-from typing import Any
-
 # third party
 import torch as th
 
@@ -55,43 +52,3 @@ def test_relu_module() -> None:
     assert type(relu) == type(relu2)
     rand_output2 = relu2(rand_data)
     assert (rand_output2 == rand_output).all()
-
-
-def test_user_module() -> None:
-    alice = sy.VirtualMachine()
-    alice_client = alice.get_root_client()
-
-    # user defined model
-    class M(th.nn.Module):
-        def __init__(self) -> None:
-            super(M, self).__init__()
-            self.fc1 = th.nn.Linear(4, 2)
-            self.fc2 = th.nn.Linear(2, 1)
-
-        def forward(self, x: Any = th.rand(4), th: Any = th) -> Any:
-            x = self.fc1(x)
-            x = th.relu(x)
-            x = self.fc2(x)
-            return x
-
-    m = M()
-
-    # send
-    m_ptr = m.send(alice_client)
-
-    # remote update state dict
-    sd = OrderedDict(M().state_dict())
-    sd_ptr = sd.send(alice_client)
-    m_ptr.load_state_dict(sd_ptr)
-
-    # remote call
-    y_ptr = m_ptr(x=th.rand(4))
-    assert isinstance(y_ptr.get(), th.Tensor)
-
-    # get
-    sd2 = m_ptr.get().state_dict()
-
-    assert (sd["fc1.weight"] == sd2["fc1.weight"]).all()
-    assert (sd["fc1.bias"] == sd2["fc1.bias"]).all()
-    assert (sd["fc2.weight"] == sd2["fc2.weight"]).all()
-    assert (sd["fc2.bias"] == sd2["fc2.bias"]).all()
