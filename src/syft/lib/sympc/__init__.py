@@ -1,3 +1,5 @@
+"""add the sympc library into syft."""
+
 # stdlib
 import functools
 from typing import Any as TypeAny
@@ -22,6 +24,15 @@ PACKAGE_SUPPORT = {
 
 
 def create_ast(client: TypeAny = None) -> Globals:
+    """Add the modules, classes and attributes from sympc to syft.
+
+    Args:
+        client: Client
+
+    Returns:
+        Globals
+
+    """
     # third party
     import sympc
 
@@ -54,8 +65,9 @@ def create_ast(client: TypeAny = None) -> Globals:
         ),
     ]
 
-    methods: TypeList[TypeTuple[str, str]] = [
+    attrs: TypeList[TypeTuple[str, str]] = [
         ("sympc.store.CryptoStore.get_primitives_from_store", "syft.lib.python.List"),
+        ("sympc.store.CryptoStore.store", "syft.lib.python.Dict"),
         ("sympc.session.Session.crypto_store", "sympc.store.CryptoStore"),
         ("sympc.protocol.fss.fss.mask_builder", "sympc.tensor.ShareTensor"),
         ("sympc.protocol.fss.fss.evaluate", "sympc.tensor.ShareTensor"),
@@ -103,6 +115,18 @@ def create_ast(client: TypeAny = None) -> Globals:
             "sympc.tensor.ShareTensor",
         ),
         (
+            "sympc.tensor.ShareTensor.t",
+            "sympc.tensor.ShareTensor",
+        ),
+        (
+            "sympc.tensor.ShareTensor.sum",
+            "sympc.tensor.ShareTensor",
+        ),
+        (
+            "sympc.tensor.ShareTensor.clone",
+            "sympc.tensor.ShareTensor",
+        ),
+        (
             "sympc.tensor.ShareTensor.numel",
             "syft.lib.python.Int",  # FIXME: Can't we just return an int??
         ),
@@ -116,7 +140,7 @@ def create_ast(client: TypeAny = None) -> Globals:
 
     add_modules(ast, modules)
     add_classes(ast, classes)
-    add_methods(ast, methods)
+    add_methods(ast, attrs)
 
     for klass in ast.classes:
         klass.create_pointer_class()

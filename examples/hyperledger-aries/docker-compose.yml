@@ -1,0 +1,306 @@
+######################################################################################
+#############   Aries ACA-Py ACC-Py Jupyter Playground Configuration   ###############
+######################################################################################
+##### The example configuration defines services for two actors: Alice and Bob   #####
+##### A template for the set of actor actor is provided below these              #####
+##### Uncomment and customise as you like                                        #####
+##### You will need to create a folder under playground for this actor           #####
+##### Copy the template playground/actor folder to get started                   #####
+##### This contains an empty notebooks folder and a template dummy.env file      #####
+##### The notebooks folder will be mounted in the jupyter workspace              #####
+##### You need to customise the dummy.env file and rename it to .env             #####
+##### Change any variables enclosed with < > e.g. ENV=<actor>                    #####
+##### You do not need to change ports - each agent runs on it's own container    #####
+##### Make sure to map the ports in the env file to unique ports on your machine #####
+##### All the docker services use this file                                      #####
+##### Add any defined services to the DEFAULT_CONTAINERS arg in manage.sh        #####
+######################################################################################
+version: "3"
+services:
+  ##### Data Onwer Services #####
+  # wallet-db
+  # postgres database where agent data will be persisted until running ./manage.sh down
+  # ./manage.sh stop with stop the containers but persist the database volumes
+  data-owner-wallet-db:
+    image: postgres:11
+    container_name: data-owner-wallet-db
+    command: postgres -c listen_addresses='*'
+    # env file defines
+    env_file:
+      - playground/data-owner/.env
+    # This creates the data base tables if not present. See resources/init.sql #
+    volumes:
+      - ./resources/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - data-owner-domain
+    tty: true
+  #### ngrok
+  # Use if wish to expose agent to public. E.g. so mobile wallets can access #
+  ngrok-data-owner:
+    image: wernight/ngrok
+    env_file:
+      - playground/data-owner/.env
+    ## You must make sure this points to your agent service. e.g. data-owner-agent:HTTP_PORT
+    command: ngrok http data-owner-agent:3020 --log stdout
+    networks:
+      - data-owner-domain
+  ### agent
+  # This is data-owner's ACA-Py instance
+  # See dockerfiles/Dockerfile.agent
+  data-owner-agent:
+    build:
+      context: .
+      dockerfile: dockerfiles/Dockerfile.agent
+    env_file:
+      - playground/data-owner/.env
+    ## These map from ports defined in the .env file to unique ports on your machine
+    ## YOUR_MACHINE:DOCKER_SERVICE
+    ports:
+      # HTTP_PORT
+      - 4020:3020
+      # ADMIN_PORT
+      - 4021:3021
+    depends_on:
+      - data-owner-wallet-db
+    networks:
+      - data-owner-domain
+  ### business-logic
+  # This is where you will create notebooks to interact with your agent
+  # This uses the aries-cloudcontroller pip package.
+  # See dockerfiles/Dockerfile.controller
+  # All business logic share a common set of code recipes to get you started
+  data-owner-business-logic:
+    build:
+      context: .
+      dockerfile: dockerfiles/Dockerfile.controller
+    env_file:
+      - playground/data-owner/.env
+    depends_on:
+      - data-owner-agent
+    networks:
+      - data-owner-domain
+    volumes:
+      - ./playground/data-owner/notebooks:/workspace
+      - ./recipes:/workspace/recipes
+      - ./src:/workspace/src
+    ports:
+      # Jupyter Notebook port - always map from 8888 to any available port
+      - 8889:8888
+      # WEBHOOK_PORT
+      - 4010:3010
+  #########################################################################
+  #### Data Scientist Services
+  data-scientist-wallet-db:
+    image: postgres:11
+    container_name: data-scientist-wallet-db
+    command: postgres -c listen_addresses='*'
+    env_file:
+      - playground/data-scientist/.env
+    volumes:
+      - ./resources/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - data-scientist-domain
+    tty: true
+  ngrok-data-scientist:
+    image: wernight/ngrok
+    env_file:
+      - playground/data-scientist/.env
+    command: ngrok http data-scientist-agent:3020 --log stdout
+    networks:
+      - data-scientist-domain
+  data-scientist-agent:
+    build:
+      context: .
+      dockerfile: dockerfiles/Dockerfile.agent
+    env_file:
+      - playground/data-scientist/.env
+    ports:
+      - 6020:3020
+      - 6021:3021
+    depends_on:
+      - data-scientist-wallet-db
+    networks:
+      - data-scientist-domain
+  data-scientist-business-logic:
+    build:
+      context: .
+      dockerfile: dockerfiles/Dockerfile.controller
+    env_file:
+      - playground/data-scientist/.env
+    depends_on:
+      - data-scientist-agent
+    networks:
+      - data-scientist-domain
+    volumes:
+      - ./playground/data-scientist/notebooks:/workspace
+      - ./recipes:/workspace/recipes
+      - ./src:/workspace/src
+    ports:
+      - "8888:8888"
+      - 6010:3010
+  ##### OM Authority #####
+  om-authority-wallet-db:
+    image: postgres:11
+    container_name: om-duet-authority-wallet-db
+    command: postgres -c listen_addresses='*'
+    # env file defines
+    env_file:
+      - playground/om-authority/.env
+    volumes:
+      - ./resources/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - om-authority-domain
+    tty: true
+  ngrok-om-authority:
+    image: wernight/ngrok
+    command: ngrok http om-authority-agent:3020 --log stdout
+    networks:
+      - om-authority-domain
+  om-authority-agent:
+    build:
+      context: .
+      dockerfile: dockerfiles/Dockerfile.agent
+    env_file:
+      - playground/om-authority/.env
+    ports:
+      # HTTP_PORT
+      - 5020:3020
+      # ADMIN_PORT
+      - 5021:3021
+    depends_on:
+      - om-authority-wallet-db
+    networks:
+      - om-authority-domain
+  om-authority-business-logic:
+    build:
+      context: .
+      dockerfile: dockerfiles/Dockerfile.controller
+    env_file:
+      - playground/om-authority/.env
+    depends_on:
+      - om-authority-agent
+    networks:
+      - om-authority-domain
+    volumes:
+      - ./playground/om-authority/notebooks:/workspace
+      - ./recipes:/workspace/recipes
+      - ./src:/workspace/src
+    ports:
+      - 8890:8888
+      # WEBHOOK_PORT
+      - 5010:3010
+#    #### ACTOR TEMPLATE SERVICES - Uncomment and edit as appropriate ######
+#      actor-wallet-db:
+#        image: postgres:11
+#        container_name: actor-wallet-db
+#        command: postgres -c listen_addresses='*'
+#        # env file defines
+#        env_file:
+#          - playground/actor/.env
+#        volumes:
+#          - ./resources/init.sql:/docker-entrypoint-initdb.d/init.sql
+#        networks:
+#          - actor-domain
+#        tty: true
+#      ngrok-actor:
+#        image: wernight/ngrok
+#        command: ngrok http actor-agent:3020 --log stdout
+#        networks:
+#          - actor-domain
+#      actor-agent:
+#        build:
+#          context: .
+#          dockerfile: dockerfiles/Dockerfile.agent
+#        env_file:
+#          - playground/actor/.env
+#        ports:
+#          # HTTP_PORT
+#          - <UNIQUE_PORT>:3020
+#          # ADMIN_PORT
+#          - <UNIQUE_PORT>:3021
+#        depends_on:
+#          - actor-wallet-db
+#        networks:
+#          - actor-domain
+#      actor-business-logic:
+#        build:
+#          context: .
+#          dockerfile: dockerfiles/Dockerfile.controller
+#        env_file:
+#          - playground/actor/.env
+#        depends_on:
+#          - actor-agent
+#        networks:
+#          - actor-domain
+#        volumes:
+#          - ./playground/actor/notebooks:/workspace
+#          - ./recipes:/workspace/recipes
+#        ports:
+#          - 8890:8888
+#          # WEBHOOK_PORT
+#          - <UNIQUE_PORT>:3010
+networks:
+  data-scientist-domain:
+  data-owner-domain:
+  om-authority-domain:
+## UNCOMMENT IF YOU WISH TO RUN A LOCAL INDY NETWORK BASED ON VON
+## THIS WILL NEED REQUIRE CHANGES TO THE ENV FILES OF ALL AGENTS
+#  ledger-browser:
+#    build:
+#      context: https://github.com/bcgov/von-network.git
+#      dockerfile: Dockerfile
+#    command: "bash -c 'sleep 10; ./scripts/start_webserver.sh;'"
+#    environment:
+#      - DOCKERHOST=${DOCKERHOST}
+#      - MAX_FETCH=50000
+#      - RESYNC_TIME=120
+#      - REGISTER_NEW_DIDS=True
+#      - LEDGER_INSTANCE_NAME=localhost
+#    ports:
+#      - ${WEB_SERVER_HOST_PORT:-9000}:8000
+#    volumes:
+#      - webserver-cli:/home/indy/.indy-cli
+#      - webserver-ledger:/home/indy/ledger
+#    networks:
+#      - indy_demo
+
+#  ledger-nodes:
+#    build:
+#      context: https://github.com/bcgov/von-network.git
+#      dockerfile: Dockerfile
+#    command: "bash -c './scripts/start_nodes.sh'"
+#    ports:
+#      - 9701:9701
+#      - 9702:9702
+#      - 9703:9703
+#      - 9704:9704
+#      - 9705:9705
+#      - 9706:9706
+#      - 9707:9707
+#      - 9708:9708
+#    environment:
+#      - DOCKERHOST=${DOCKERHOST}
+#    volumes:
+#      - nodes-data:/home/indy/ledger
+#    networks:
+#      - indy_demo
+
+##### UNCOMMENT FOR A TAILS SERVER ######
+#  tails-server:
+#    build:
+#      context: https://github.com/bcgov/indy-tails-server.git
+#      dockerfile: docker/Dockerfile.tails-server
+#    ports:
+#      - 6543:6543
+#    networks:
+#      - indy_demo
+#    command: >
+#      tails-server
+#        --host 0.0.0.0
+#        --port 6543
+#        --storage-path $STORAGE_PATH
+#        --log-level INFO
+#volumes:
+#  webserver-cli:
+#  webserver-ledger:
+#  nodes-data:

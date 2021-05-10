@@ -14,7 +14,7 @@ on:
       - "**.py"
       - "**.txt"
       - "setup.cfg"
-      - ".github/workflows/**.yml"
+      - ".github/workflows/*.yml"
       - "examples/private-ai-series/**.ipynb"
 
 jobs:
@@ -61,15 +61,14 @@ jobs:
           pip install black isort --default-timeout=60
           ./scripts/build_proto.sh
 
-      - id: file_changes  # get changed files.
+      - id: file_changes # get changed files.
         uses: trilom/file-changes-action@v1.2.3
         with:
-          output: ' '
-
+          output: " "
 
       - uses: pre-commit/action@v2.0.0
         with:
-          extra_args: --files ${{ steps.file_changes.outputs.files}}  # apply only to changed files.
+          extra_args: --files ${{ steps.file_changes.outputs.files}} # apply only to changed files.
 
       # - name: Run darglint via flake8 - Ignore Errors
       #   continue-on-error: true
@@ -96,24 +95,19 @@ jobs:
           git checkout ${{ github.event.pull_request.head.sha }}
           docstr-coverage -p --fail-under=$BASE_COV src
 
-      - name: Check docstring modified files
-        if: ${{ failure() }}
-        run: |
-          git diff --name-only $(git merge-base ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }}) | xargs docstr-coverage --accept-empty
+      # - name: Check docstring modified files
+      #   if: ${{ failure() }}
+      #   run: |
+      #     git diff --name-only $(git merge-base ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }}) | xargs docstr-coverage --accept-empty
 
-  python-tests-fast:
+  python-tests-latest-versions:
     needs: [python-linting]
     strategy:
-      max-parallel: 30
+      max-parallel: 3
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        python-version: [3.6, 3.7, 3.8, 3.9]
-        torch-version: [1.6.0, 1.7.1, 1.8.0]
-        exclude:
-          - python-version: 3.9
-            torch-version: 1.6.0
-          - python-version: 3.9
-            torch-version: 1.7.1
+        python-version: [3.8]
+        torch-version: [1.8.0]
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -158,6 +152,7 @@ jobs:
       - name: Scan for security issues
         run: |
           bandit -r src
+          safety check
 
       - name: Run normal tests
         run: |
@@ -175,6 +170,11 @@ jobs:
             pip install $i --no-deps --default-timeout=60
           }
 
+      - name: Install libomp for XGBoost
+        if: startsWith(runner.os, 'macos')
+        run: |
+          brew install libomp
+
       - name: Run supported library tests
         run: |
           pip install -r requirements.libs.deps.txt --default-timeout=60
@@ -187,11 +187,10 @@ jobs:
     needs: [python-linting]
     runs-on: ${{ matrix.os }}
     strategy:
-      max-parallel: 2
+      max-parallel: 1
       matrix:
-        python-version: [3.9]
+        python-version: [3.8]
         torch-version: [1.8.0]
-        # os: [ubuntu-latest, macos-latest]
         os: [ubuntu-latest]
     steps:
       - uses: actions/checkout@v2
@@ -244,6 +243,10 @@ jobs:
           cat requirements.libs.txt | xargs -I {} -n 1 pip install {} --no-deps --default-timeout=60 || true
           pip install -r requirements.libs.deps.txt --default-timeout=60
 
+      - name: Test syft-network
+        run: |
+          python ./scripts/start_signaling_server.py --dry_run=True
+
       - name: Run notebook Duet examples
         run: |
           python ./scripts/mnist.py
@@ -254,9 +257,9 @@ jobs:
     needs: [python-linting]
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 3
+      max-parallel: 1
       matrix:
-        python-version: [3.6, 3.7, 3.8, 3.9]
+        python-version: [3.8]
         torch-version: [1.8.0]
 
     steps:
@@ -287,7 +290,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           repository: "OpenMined/PyGrid"
-          ref: "pygrid_0.4.0"
+          ref: "dev"
           path: "pygrid"
 
       - name: Install PyTorch
@@ -312,7 +315,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        python-version: [3.9]
+        python-version: [3.8]
         torch-version: [1.8.0]
 
     steps:
@@ -342,8 +345,8 @@ jobs:
 
       - uses: actions/checkout@v2
         with:
-          repository: "vvmnnnkv/PyGrid"
-          ref: "mcfl-legacy-model-serialization"
+          repository: "OpenMined/PyGrid"
+          ref: "dev"
           path: "pygrid"
 
       - name: Install PyTorch
