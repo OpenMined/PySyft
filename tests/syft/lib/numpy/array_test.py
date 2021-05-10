@@ -135,3 +135,78 @@ def test_nbytes(root_client: sy.VirtualMachineClient) -> None:
     nbytes_val = nbytes_ptr.get()
     assert nbytes_val == 240
     assert local_nbytes_val == nbytes_val
+
+
+@pytest.mark.vendor(lib="numpy")
+def test_transpose(root_client: sy.VirtualMachineClient) -> None:
+    # third party
+    import numpy as np
+
+    x = np.array([1, 2, 3])
+    x_ptr = x.send(root_client)
+    T_ptr = x_ptr.T
+    local_T_val = x.T
+    T_val = T_ptr.get()
+    assert (T_val == np.array([1, 2, 3])).all()
+    assert (local_T_val == T_val).all()
+
+
+@pytest.mark.vendor(lib="numpy")
+def test_item(root_client: sy.VirtualMachineClient) -> None:
+    # third party
+    import numpy as np
+
+    x = np.array([6, 8, 4, 7])
+    x_ptr = x.send(root_client)
+    item_ptr = x_ptr.item(3)
+    local_item_val = x.item(3)
+    item_val = item_ptr.get()
+    assert item_val == 7
+    assert local_item_val == item_val
+
+
+@pytest.mark.vendor(lib="numpy")
+def test_byteswap(root_client: sy.VirtualMachineClient) -> None:
+    # third party
+    import numpy as np
+
+    x = np.array([1, 256, 8755], dtype=np.int16)
+    x_ptr = x.send(root_client)
+    byteswap_ptr = x_ptr.byteswap(inplace=True)
+    local_byteswap_val = x.byteswap(inplace=True)
+    byteswap_val = byteswap_ptr.get()
+    y = np.array([256, 1, 13090], dtype=np.int16)
+    assert (byteswap_val == y).all()
+    assert (local_byteswap_val == byteswap_val).all()
+
+
+@pytest.mark.vendor(lib="numpy")
+def test_copy(root_client: sy.VirtualMachineClient) -> None:
+    # third party
+    import numpy as np
+
+    x = np.array([1, 2, 3])
+    x_ptr = x.send(root_client)
+    copy_ptr = x_ptr.copy()
+    local_copy = x.copy()
+    copy_val = copy_ptr.get()
+    y = np.array([1, 2, 3])
+    assert (copy_val == y).all()
+    assert (local_copy == copy_val).all()
+
+
+@pytest.mark.vendor(lib="numpy")
+def test_view(root_client: sy.VirtualMachineClient) -> None:
+    # third party
+    import numpy as np
+
+    x = np.array([(1, 2, 3)])
+    x_ptr = x.send(root_client)
+    view_ptr = x_ptr.view()
+    local_view = x.view()
+    view_val = view_ptr.get()
+    y = np.array(
+        [[1, 2, 3]],
+    )
+    assert (view_val == y).all()
+    assert (local_view == view_val).all()
