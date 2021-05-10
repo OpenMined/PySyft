@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package syft.lib.numpy;
+
+import "proto/lib/torch/tensor.proto";
+import "proto/core/common/common_object.proto";
+import "proto/lib/python/dict.proto";
+
+message FlagsProto {
+  syft.lib.torch.TensorData tensor = 1;
+  syft.core.common.UID id = 2;
+  syft.lib.python.Dict flags = 3;
+}

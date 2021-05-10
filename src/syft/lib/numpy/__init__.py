@@ -9,6 +9,7 @@ import numpy as np
 
 # syft relative
 from . import array  # noqa: 401
+from . import array_flags  # noqa: 401
 from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
@@ -29,9 +30,11 @@ def create_ast(client: TypeAny = None) -> Globals:
 
     classes: TypeList[TypeTuple[str, str, TypeAny]] = [
         ("numpy.ndarray", "numpy.ndarray", np.ndarray),
+        ("numpy.flagsobj", "numpy.flagsobj", np.flagsobj),
     ]
 
     methods: TypeList[TypeTuple[str, str]] = [
+        ("numpy.ndarray.flags", "numpy.flagsobj"),
         ("numpy.ndarray.shape", "syft.lib.python.Tuple"),
         ("numpy.ndarray.strides", "syft.lib.python.Tuple"),
         ("numpy.ndarray.ndim", "syft.lib.python.Int"),
