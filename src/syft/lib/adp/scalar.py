@@ -40,7 +40,10 @@ scalar_name2obj = {}
 
 @lru_cache(maxsize=None)
 def search(run_specific_args: Callable, rranges: Tuple) -> OptimizeResult:
-    return optimize.shgo(run_specific_args, rranges)
+    print("beginning an epic search...")
+    results = optimize.shgo(run_specific_args, rranges)
+    print("search complete... ")
+    return results
 
 
 @bind_protobuf
@@ -143,7 +146,8 @@ class Scalar(Serializable):
 
     def neg_deriv(self, name: str) -> Symbol:
         obj = scalar_name2obj[name]
-        return -diff(self.poly, obj.poly)
+        derivative = -diff(self.poly, obj.poly)
+        return derivative
 
     def create_run_specific_args(
         self, f: Symbol
@@ -176,12 +180,13 @@ class Scalar(Serializable):
 
         # Step 3: maximize the derivative over a bounded range of <entity_name>
         resbrute = search(run_specific_args, tuple(rranges))
-        resbrute = resbrute.x
 
-        if isinstance(resbrute, np.float64):
-            L = resbrute
-        else:
-            L = resbrute[symbol2index[symbol_name]]
+        L = float(resbrute.fun)
+
+        # if isinstance(resbrute, np.float64):
+        #     L = resbrute
+        # else:
+        #     L = resbrute[symbol2index[symbol_name]]
 
         if self.value is None:
             raise ValueError("Tudor: This should be an error, right?")

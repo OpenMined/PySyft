@@ -8,6 +8,7 @@ from .entity import Entity
 from .scalar import Scalar
 from .adversarial_accountant import AdversarialAccountant
 
+
 def make_entities(n=100):
     ents = list()
     for i in range(n):
@@ -16,33 +17,44 @@ def make_entities(n=100):
 
 
 def private(input_data, min_val, max_val, entities=None):
+
     self = input_data
-
-    flat_data = self.flatten()
-
     if entities is None:
+        flat_data = self.flatten()
         entities = make_entities(n=len(flat_data))
 
-    scalars = list()
-    for i in flat_data:
-        value = max(min(float(i), max_val), min_val)
-        s = Scalar(value=value, min_val=min_val, max_val=max_val, entity=entities[len(scalars)])
-        scalars.append(s)
+        scalars = list()
+        for i in flat_data:
+            value = max(min(float(i), max_val), min_val)
+            s = Scalar(value=value, min_val=min_val, max_val=max_val, entity=entities[len(scalars)])
+            scalars.append(s)
 
-    return to_values(np.array(scalars)).reshape(input_data.shape)
+        return to_values(np.array(scalars)).reshape(input_data.shape)
 
-
-import numpy as np
+    elif isinstance(entities, list):
+        if len(entities) == len(self):
+            output_rows = list()
+            for row_i, row in enumerate(self):
+                row_of_entries = list()
+                for item in row.flatten():
+                    s = Scalar(value=item, min_val=min_val, max_val=max_val, entity=entities[row_i])
+                    row_of_entries.append(s)
+                output_rows.append(np.array(row_of_entries).reshape(row.shape))
+            return to_values(np.array(output_rows)).reshape(self.shape)
+        else:
+            print(len(entities))
+            print(len(self))
+            raise Exception("len(entities) must equal len(self)")
 
 
 class Tensor(np.ndarray):
 
-    def __new__(cls, input_array, min_val=None, max_val=None, info=None):
+    def __new__(cls, input_array, min_val=None, max_val=None, entities=None, info=None):
 
         is_private = False
 
         if min_val is not None and max_val is not None:
-            input_array = private(input_array, min_val=min_val, max_val=max_val)
+            input_array = private(input_array, min_val=min_val, max_val=max_val, entities=entities)
             is_private = True
         else:
             input_array = to_values(input_array)
@@ -62,9 +74,10 @@ class Tensor(np.ndarray):
         output = out_arr.view(Tensor)
 
         is_private = False
-        for arg in context[1]:
-            if hasattr(arg, 'is_private') and arg.is_private:
-                is_private = True
+        if context is not None:
+            for arg in context[1]:
+                if hasattr(arg, 'is_private') and arg.is_private:
+                    is_private = True
         output.is_private = is_private
 
         return output
@@ -82,6 +95,12 @@ class Tensor(np.ndarray):
             grads.append(val._grad)
         return Tensor(grads).reshape(self.shape)
 
+    def publish(self, **kwargs):
+        grads = list()
+        for val in self.flatten().tolist():
+            grads.append(val.value.publish(**kwargs))
+        return np.array(grads).reshape(self.shape)
+
     @property
     def value(self):
         values = list()
@@ -92,8 +111,9 @@ class Tensor(np.ndarray):
                 values.append(val.value)
         return np.array(values).reshape(self.shape)
 
-    def private(self, min_val, max_val):
+    def private(self, min_val, max_val, entities=None):
         if self.is_private:
             raise Exception("Cannot call .private() on tensor which is already private")
 
-        return Tensor(self.value, min_val=min_val, max_val=max_val)
+        return Tensor(self.value, min_val=min_val, max_val=max_val, entities=entities)
+
