@@ -84,7 +84,7 @@ class Scalar(Serializable):
 
     @property
     def value(self) -> float:
-        if self._value:
+        if self._value is not None:
             return self._value
         run_specific_args, index2symbol, _ = self.create_run_specific_args(f=self.poly)
         inputs = [scalar_name2obj[sym]._value for sym in index2symbol]
@@ -98,13 +98,29 @@ class Scalar(Serializable):
     def max_val(self) -> Optional[float]:
         return self._max_val
 
+    def __rmul__(self, other):
+        return self * other
+
     def __mul__(self, other: "Scalar") -> "Scalar":
-        result_poly = self.poly * other.poly
+
+        if hasattr(other, 'poly'):
+            result_poly = self.poly * other.poly
+        else:
+            result_poly = self.poly * other
+
         result = Scalar(value=None, poly=result_poly)
         return result
 
+    def __radd__(self, other):
+        return self + other
+
     def __add__(self, other: "Scalar") -> "Scalar":
-        result_poly = self.poly + other.poly
+
+        if hasattr(other, 'poly'):
+            result_poly = self.poly + other.poly
+        else:
+            result_poly = self.poly + other
+
         result = Scalar(value=None, poly=result_poly)
         return result
 
