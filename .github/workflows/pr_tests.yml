@@ -183,18 +183,6 @@ jobs:
           pytest -m libs -n auto -k "not tenseal" --suppress-no-test-exit-code
           pytest -m libs -n 1 -k "tenseal" --suppress-no-test-exit-code
 
-      # TO BE MOVED TO merge_tests, adding here to check its working before merging.
-
-      - name: Synk security check
-        if: startsWith(runner.os, 'ubuntu')
-        uses: snyk/actions/python-3.8@master
-        env:
-          SNYK_TOKEN: 3106d1f2-a045-4bc6-8695-d899ab653448 # to be changed to env variable.
-        with:
-          args: --skip-unresolved
-
-      ##-----##
-
   python-nb-examples:
     needs: [python-linting]
     runs-on: ${{ matrix.os }}

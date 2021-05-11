@@ -1,23 +1,12 @@
 name: Security-check
-# on:
-#   push:
-#     branches:
-#       - dev
-#     paths:
-#       - "**.py"
-#       - ".github/workflows/**.yml"
 
-# Running job as a PR test
 on:
-  pull_request:
+  pull_request: # change to push before merging code
     branches:
       - dev
     paths:
       - "**.py"
-      - "**.txt"
-      - "setup.cfg"
       - ".github/workflows/*.yml"
-      - "examples/private-ai-series/**.ipynb"
 
 jobs:
   security-check:
@@ -81,15 +70,10 @@ jobs:
           pip install -r requirements.libs.deps.txt --default-timeout=60
           pip list
 
-      # TO BE MOVED TO merge_tests, adding here to check its working before merging.
-
       - name: Synk security check
         if: startsWith(runner.os, 'ubuntu')
         uses: snyk/actions/python-3.8@master
         env:
-          SNYK_TOKEN: 3106d1f2-a045-4bc6-8695-d899ab653448 # to be changed to env variable.
+          SNYK_TOKEN: 3106d1f2-a045-4bc6-8695-d899ab653448 # to be changed to ${{ secrets.SNYK_TOKEN }}
         with:
           args: --skip-unresolved
-
-      ##-----##
-
