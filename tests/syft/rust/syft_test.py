@@ -7,4 +7,4 @@ import syft as sy
 
 @pytest.mark.rust
 def test_rust_api() -> None:
-    sy.libsyft.RustUID()
+    sy.libsyft.core.common.RustUID()
