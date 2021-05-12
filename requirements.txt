@@ -16,6 +16,7 @@ protobuf
 PyJWT==1.7.1
 PyNaCl
 requests
+requests_toolbelt
 scikit-learn
 sqlitedict
 syft-proto

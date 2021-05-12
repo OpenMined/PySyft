@@ -1,4 +1,5 @@
 # stdlib
+import ast
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -57,7 +58,7 @@ class DatasetRequestAPI(GridRequestAPI):
         for data in dataset_obj.data:
             _class_name = ResponseObjectEnum.DATA.capitalize()
             data_obj = type(_class_name, (object,), data)()
-            data_obj.shape = eval(data_obj.shape)
+            data_obj.shape = ast.literal_eval(data_obj.shape)
             data_obj.pointer = pointers[data_obj.id.replace("-", "")]
             datasets.append(data_obj)
 
