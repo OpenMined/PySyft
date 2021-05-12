@@ -1,7 +1,8 @@
-use crate::core::common::uid;
-use crate::proto::core::common::Uid;
-use bytes::{Bytes, BytesMut};
+use crate::core::common::serde::serializable::Serializable;
+use crate::core::common::uid::RustUID;
+use bytes::BytesMut;
 use pyo3::prelude::*;
+use pyo3::{wrap_pyfunction, wrap_pymodule};
 
 #[pyfunction]
 fn uid_serde(obj: &PyAny) -> PyResult<Vec<u8>> {
@@ -14,6 +15,8 @@ fn uid_serde(obj: &PyAny) -> PyResult<Vec<u8>> {
 /// A Python module implemented in Rust.
 #[pymodule]
 fn syft(_py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_class::<crate::core::common::uid::RustUID>().unwrap();
+    let submod = PyModule::new(_py, "core")?;
+    crate::core::core_mod(_py, submod);
+    m.add_submodule(submod);
     Ok(())
 }

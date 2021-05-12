@@ -32,7 +32,6 @@ Syft "python" functionality includes the following modules:
 
 To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` module...
 """
-
 # stdlib
 from pathlib import Path
 import sys
@@ -78,18 +77,11 @@ from syft.lib import load  # noqa: F401
 from syft.lib import load_lib  # noqa: F401
 from syft.lib.torch.module import Module  # noqa: F401
 
-# Rust
-try:
-    # syft relative
-    from . import syft as libsyft  # type: ignore # noqa: F401
-except ImportError:
-    # run `$ maturin develop`
-    print("Unable to load Rust Syft Core")
-
 # syft relative
 # Package Imports
 from . import lib  # noqa: F401
 from . import logger  # noqa: F401
+from . import syft as libsyft  # type: ignore # noqa: F401
 
 # VERSIONING
 try:

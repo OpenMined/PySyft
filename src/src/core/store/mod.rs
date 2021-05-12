@@ -1,0 +1,1 @@
+mod store_trait;
