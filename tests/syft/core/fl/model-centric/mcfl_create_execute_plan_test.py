@@ -63,7 +63,7 @@ def setup_domain() -> None:
             url=f"http://localhost:{DOMAIN_PORT}", conn_type=GridHTTPConnection
         )
 
-        ua_client.initial_setup(
+        ua_client.setup(
             email="owner@myorg.com",
             password="ownerpwd",
             domain_name="OpenMined Domain",
