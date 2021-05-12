@@ -47,7 +47,7 @@ from .request_api.worker_api import WorkerRequestAPI
 
 DEFAULT_PYGRID_PORT = 5000
 DEFAULT_PYGRID_ADDRESS = f"http://127.0.0.1:{DEFAULT_PYGRID_PORT}"
-INSECURE_PYGRID_TOKEN = "9G9MJ06OQH"
+INSECURE_PYGRID_TOKEN = "9G9MJ06OQH"  # nosec
 
 
 class GridClient(DomainClient):
