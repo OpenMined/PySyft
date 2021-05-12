@@ -21,3 +21,4 @@ sympc @ git+https://github.com/OpenMined/SyMPC@main
 tenseal
 tenseal
 terrascript
+Werkzeug>=1.0.1,<2.0.0
