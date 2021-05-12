@@ -47,9 +47,10 @@ class VMRequestAnswerMessageService(ImmediateNodeServiceWithReply):
             )
 
         status = RequestStatus.Rejected
-        if node.root_verify_key == verify_key:
-            status = RequestStatus.Accepted
         address = msg.reply_to
+        if node.root_verify_key == verify_key or node.vm_id == address.vm_id:
+            status = RequestStatus.Accepted
+
         return RequestAnswerResponse(
             request_id=msg.request_id, address=address, status=status
         )
