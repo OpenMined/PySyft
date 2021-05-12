@@ -5,6 +5,7 @@ from typing import Callable
 from typing import Dict
 from typing import Optional
 from typing import Type
+from typing import Union
 
 # third party
 from pandas import DataFrame
@@ -47,7 +48,7 @@ class GridRequestAPI:
     def get(self, **kwargs: Any) -> Any:
         return self.to_obj(self.__send(grid_msg=self.__get_message, content=kwargs))
 
-    def all(self, pandas: bool = False) -> Dict[str, Any]:
+    def all(self, pandas: bool = False) -> Union[DataFrame, Dict[Any, Any]]:
         result = self.__send(grid_msg=self.__get_all_message)
         if pandas:
             result = DataFrame(result)

@@ -85,9 +85,10 @@ class WorkerRequestAPI(GridRequestAPI):
                     RequestAPIFields.DOMAIN_ADDRESS: self.domain_client.conn.base_url,
                 },
             }
-            signed_msg = SaveObjectMessage(**_content).sign(
-                signing_key=_worker_obj.signing_key
-            )
+            signed_msg = SaveObjectMessage(
+                address=_content[RequestAPIFields.ADDRESS],
+                content=_content[RequestAPIFields.CONTENT],
+            ).sign(signing_key=_worker_obj.signing_key)
             _worker_obj.send_immediate_msg_without_reply(msg=signed_msg)
 
         _worker_obj.save = _save

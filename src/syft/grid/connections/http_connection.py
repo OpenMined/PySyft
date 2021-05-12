@@ -13,8 +13,6 @@ from ...core.common.serde.deserialize import _deserialize
 from ...core.common.serde.serialize import _serialize
 from ...core.io.connection import ClientConnection
 from ...proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
-
-# syft relative
 from ..client.enums import RequestAPIFields
 from ..client.exceptions import RequestAPIException
 
@@ -42,13 +40,15 @@ class HTTPConnection(ClientConnection):
 
         # Deserialize node's response
         if response.status_code == requests.codes.ok:
-            response = _deserialize(blob=response.content, from_bytes=True)
-        else:
+            # Return SignedImmediateSyftMessageWithoutReply
+            return _deserialize(blob=response.content, from_bytes=True)
+
+        try:
             response_json = json.loads(response.content)
             raise RequestAPIException(response_json[RequestAPIFields.ERROR])
-
-        # Return SignedImmediateSyftMessageWithoutReply
-        return response
+        except Exception as e:
+            print(f"Unable to json decode message. {e}")
+            raise e
 
     def send_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply

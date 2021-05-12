@@ -2,6 +2,7 @@
 import io
 import json
 import sys
+from typing import Any
 from typing import Dict
 from typing import Optional
 from typing import Tuple
@@ -99,8 +100,7 @@ class GridHTTPConnection(HTTPConnection):
 
         return metadata_pb
 
-    def setup(self, **content):
-
+    def setup(self, **content: Dict[str, Any]) -> Any:
         response = json.loads(
             requests.post(self.base_url + "/setup", json=content).text
         )
@@ -109,7 +109,7 @@ class GridHTTPConnection(HTTPConnection):
         else:
             raise RequestAPIException(response.get(RequestAPIFields.ERROR))
 
-    def send_files(self, file_path: str):
+    def send_files(self, file_path: str) -> Dict[str, Any]:
         session = requests.Session()
 
         with open(file_path, "rb") as f:
@@ -134,7 +134,7 @@ class GridHTTPConnection(HTTPConnection):
 
         return json.loads(resp.content)
 
-    def send_streamed_messages(self, blob_message: bytes):
+    def send_streamed_messages(self, blob_message: bytes) -> requests.Response:
         session = requests.Session()
         with io.BytesIO(blob_message) as msg:
             form = encoder.MultipartEncoder(

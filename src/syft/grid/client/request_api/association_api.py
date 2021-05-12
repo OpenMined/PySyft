@@ -27,7 +27,7 @@ class AssociationRequestAPI(GridRequestAPI):
             response_key=ResponseObjectEnum.ASSOCIATION_REQUEST,
         )
 
-    def update(self, **kwargs: Any) -> Dict[Any, Any]:
+    def update(self, **kwargs: Any) -> Dict[Any, Any]:  # type: ignore
         raise PyGridClientException(
             "You can not update an association request, try to send another one instead."
         )
