@@ -5,6 +5,7 @@ from typing import Union
 from google.protobuf.message import Message
 
 # syft relative
+from ....logger import debug
 from ....logger import traceback_and_raise
 from ....proto.syft_message_pb2 import SyftNative
 from ....util import validate_type
@@ -56,6 +57,7 @@ def _serialize(
         is_serializable = obj
 
     if to_bytes:
+        debug(f"Serializing {type(is_serializable)}")
         proto = is_serializable._object2proto()
         blob: Message = SyftNative()
         getattr(blob, type(proto).__name__.lower()).MergeFromString(
