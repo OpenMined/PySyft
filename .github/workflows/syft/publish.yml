@@ -1,8 +1,12 @@
-name: Publish
+name: Syft Publish
 
 on:
   release:
     types: [published]
+
+defaults:
+  run:
+    working-directory: /packages/syft
 
 jobs:
   deploy:

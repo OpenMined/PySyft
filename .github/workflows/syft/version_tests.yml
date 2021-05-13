@@ -4,7 +4,7 @@
 # we don't consume a lot of extra actions when we don't need to. It's important to
 # keep this in sync with pr_tests.yml so that they are essentially doing the same thing
 # only this runs on a schedule.
-name: Version Tests
+name: Syft Version Tests
 
 on:
   schedule:
@@ -13,7 +13,11 @@ on:
     branches:
       - dev
     paths:
-      - "tests/trigger/version_tests"
+      - "packages/syft/tests/trigger/version_tests"
+
+defaults:
+  run:
+    working-directory: /packages/syft
 
 jobs:
   python-tests-all-versions:

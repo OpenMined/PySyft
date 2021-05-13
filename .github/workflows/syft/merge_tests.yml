@@ -6,7 +6,7 @@
 # and the differences between Ubuntu and MacOS are minimal compared with the higher
 # time unit cost of MacOS tests. Finally if we are merging with main we run the MacOS
 # tests as well.
-name: Merge Tests
+name: Syft Merge Tests
 
 on:
   push:
@@ -15,15 +15,19 @@ on:
       - main
       - dev
     paths:
-      - "**.py"
-      - "setup.cfg"
-      - "**.txt"
-      - ".github/workflows/**.yml"
+      - "packages/syft/**.py"
+      - "packages/syft/setup.cfg"
+      - "packages/syft/**.txt"
+      - ".github/workflows/syft/**.yml"
   workflow_dispatch:
     inputs:
       none:
         description: "Run Merge Tests Manually"
         required: false
+
+defaults:
+  run:
+    working-directory: /packages/syft
 
 jobs:
   python-tests-latest-versions:

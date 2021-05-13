@@ -4,18 +4,22 @@
 # `pytest -m fast` tests against Ubuntu and Windows and the notebook examples.
 # Once these checks pass and we decide to do a merge, the actions in `merge_tests.yml`
 # get executed.
-name: PR Tests
+name: Syft PR Tests
 
 on:
   pull_request:
     branches:
       - dev
     paths:
-      - "**.py"
-      - "**.txt"
-      - "setup.cfg"
-      - ".github/workflows/*.yml"
-      - "examples/private-ai-series/**.ipynb"
+      - "packages/syft/**.py"
+      - "packages/syft/**.txt"
+      - "packages/syft/setup.cfg"
+      - ".github/workflows/syft/**.yml"
+      - "packages/syft/examples/private-ai-series/**.ipynb"
+
+defaults:
+  run:
+    working-directory: /packages/syft
 
 jobs:
   python-linting:
