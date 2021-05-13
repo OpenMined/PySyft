@@ -101,7 +101,7 @@ jobs:
       #     git diff --name-only $(git merge-base ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }}) | xargs docstr-coverage --accept-empty
 
   python-tests-latest-versions:
-#    needs: [python-linting]
+    needs: [python-linting]
     strategy:
       max-parallel: 3
       matrix:
@@ -140,7 +140,7 @@ jobs:
           pip install packaging --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
-          pip install ."[all-cli]" -f https://download.pytorch.org/whl/torch_stable.html
+          pip install ."[ci-all]" -f https://download.pytorch.org/whl/torch_stable.html
           grep -o -P '(?<=;).*(?=#install-custom-dependency)' setup.cfg | xargs pip install --no-deps
 
       - name: Scan for security issues
@@ -202,7 +202,7 @@ jobs:
           pip install packaging --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
-          pip install ."[all-cli]" -f https://download.pytorch.org/whl/torch_stable.html
+          pip install ."[ci-all]" -f https://download.pytorch.org/whl/torch_stable.html
           grep -o -P '(?<=;).*(?=#install-custom-dependency)' setup.cfg | xargs pip install --no-deps
 
       - name: Run notebook API examples
@@ -266,7 +266,7 @@ jobs:
           pip install packaging --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
-          pip install ."[all-cli]" -f https://download.pytorch.org/whl/torch_stable.html
+          pip install ."[ci-all]" -f https://download.pytorch.org/whl/torch_stable.html
           grep -o -P '(?<=;).*(?=#install-custom-dependency)' setup.cfg | xargs pip install --no-deps
 
 
@@ -323,7 +323,7 @@ jobs:
           pip install packaging --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
-          pip install ."[all-cli]" -f https://download.pytorch.org/whl/torch_stable.html
+          pip install ."[ci-all]" -f https://download.pytorch.org/whl/torch_stable.html
           grep -o -P '(?<=;).*(?=#install-custom-dependency)' setup.cfg | xargs pip install --no-deps
 
       - name: Test PyGrid
