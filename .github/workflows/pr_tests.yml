@@ -46,7 +46,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
@@ -131,21 +131,20 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
       - name: Install PyTorch
         run: |
           pip install packaging --default-timeout=60
-          python scripts/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
-          cat ./requirements.torch.txt
-          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html --default-timeout=60
+          python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
+          grep -A 3 "torch_ecosystem" setup.cfg
+          pip install . --no-deps -f https://download.pytorch.org/whl/torch_stable.html --default-timeout=60
 
       - name: Install packages
         run: |
-          pip install -r requirements.dev.txt --default-timeout=60
-          pip install -e . --default-timeout=60
+          pip install ."[dev]" --default-timeout=60
           pip list
         timeout-minutes: 20
 
@@ -158,17 +157,9 @@ jobs:
         run: |
           pytest -m 'fast or slow' --cov syft --cov-fail-under 80 -n auto
 
-      - name: Install supported library packages Linux and MacOS - Ignore Errors
-        if: startsWith(runner.os, 'Windows') != true
+      - name: Install supported library packages Windows, Linux and MacOS - Ignore Errors
         run: |
-          cat requirements.libs.txt | xargs -I {} -n 1 pip install {} --no-deps --default-timeout=60 || true
-
-      - name: Install supported library packages Windows - Ignore Errors
-        if: startsWith(runner.os, 'Windows')
-        run: |
-          foreach ($i in cat requirements.libs.txt) {
-            pip install $i --no-deps --default-timeout=60
-          }
+          pip install .["all"] --install-option="no-deps" --default-timeout=60 || true
 
       - name: Install libomp for XGBoost
         if: startsWith(runner.os, 'macos')
@@ -177,8 +168,6 @@ jobs:
 
       - name: Run supported library tests
         run: |
-          pip install -r requirements.libs.deps.txt --default-timeout=60
-          pip list
           pytest -m libs --co
           pytest -m libs -n auto -k "not tenseal" --suppress-no-test-exit-code
           pytest -m libs -n 1 -k "tenseal" --suppress-no-test-exit-code
@@ -213,21 +202,20 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('./setup.cfg') }}
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
       - name: Install PyTorch
         run: |
           pip install packaging --default-timeout=60
-          python scripts/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
-          cat ./requirements.torch.txt
-          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html --default-timeout=60
+          python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
+          grep -A 3 "torch_ecosystem" setup.cfg
+          pip install . --no-deps -f https://download.pytorch.org/whl/torch_stable.html --default-timeout=60
 
       - name: Install packages
         run: |
-          pip install -r requirements.dev.txt --default-timeout=60
-          pip install -e . --default-timeout=60
+          pip install ."[dev]" --default-timeout=60
           pip list
         timeout-minutes: 20
 
@@ -240,8 +228,7 @@ jobs:
       - name: Install supported library packages Linux and MacOS - Ignore Errors
         if: startsWith(runner.os, 'Windows') != true
         run: |
-          cat requirements.libs.txt | xargs -I {} -n 1 pip install {} --no-deps --default-timeout=60 || true
-          pip install -r requirements.libs.deps.txt --default-timeout=60
+              pip install .["libs"] --install-option="no-deps" --default-timeout=60 || true
 
       - name: Test syft-network
         run: |
@@ -283,7 +270,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('/setup.cfg') }}
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
@@ -296,15 +283,14 @@ jobs:
       - name: Install PyTorch
         run: |
           pip install packaging --default-timeout=60
-          python scripts/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
-          cat ./requirements.torch.txt
-          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html --default-timeout=60
+          python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
+          grep -A 3 "torch_ecosystem" setup.cfg
+          pip install . --no-deps -f https://download.pytorch.org/whl/torch_stable.html --default-timeout=60
 
       - name: Test PyGrid
         continue-on-error: true
         run: |
-          pip install -e . --default-timeout=60
-          pip install -r requirements.grid.txt --default-timeout=60
+          pip install .["grid"] --default-timeout=60
           pytest ./pygrid/apps/domain/tests
           pytest ./pygrid/apps/network/tests
           pytest ./pygrid/apps/worker/tests
@@ -339,7 +325,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('./setup.cfg') }}
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
@@ -352,13 +338,12 @@ jobs:
       - name: Install PyTorch
         run: |
           pip install packaging --default-timeout=60
-          python scripts/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
-          cat ./requirements.torch.txt
-          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html --default-timeout=60
+          python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
+          grep -A 3 "torch_ecosystem" setup.cfg
+          pip install . --no-deps -f https://download.pytorch.org/whl/torch_stable.html --default-timeout=60
 
       - name: Test PyGrid
         continue-on-error: true
         run: |
-          pip install -e . --default-timeout=60
-          pip install -r requirements.grid.txt --default-timeout=60
+          pip install ."[grid]" --default-timeout=60
           pytest -m grid

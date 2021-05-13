@@ -36,16 +36,16 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('./setup.cfg') }}
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
       - name: Install PyTorch
         run: |
-          pip install packaging
-          python scripts/adjust_torch_versions.py ./requirements.torch.txt ${{ matrix.torch-version }}
-          cat ./requirements.torch.txt
-          pip install -r requirements.torch.txt --no-deps -f https://download.pytorch.org/whl/torch_stable.html
+          pip install packaging --default-timeout=60
+          python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
+          grep -A 3 "torch_ecosystem" setup.cfg
+          pip install . --no-deps -f https://download.pytorch.org/whl/torch_stable.html --default-timeout=60
 
       - name: Reset git
         run: |
@@ -53,8 +53,7 @@ jobs:
 
       - name: Install PySyft dependencies
         run: |
-          pip install -r requirements.dev.txt
-          pip install -e .
+          pip install -e ."[dev]"
 
       - name: Run benchmarks
         run: |
