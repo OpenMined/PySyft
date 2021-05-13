@@ -102,6 +102,7 @@ class RequestAnswerMessageService(ImmediateNodeServiceWithReply):
                     "Can't process Request service without a given " "verification key"
                 )
             )
+
         status = node.get_request_status(message_request_id=msg.request_id)  # type: ignore
         address = msg.reply_to
         return RequestAnswerResponse(

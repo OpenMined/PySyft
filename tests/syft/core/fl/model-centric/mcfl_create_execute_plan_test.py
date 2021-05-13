@@ -42,6 +42,8 @@ from syft.federated.fl_job import FLJob
 from syft.federated.model_centric_fl_client import ModelCentricFLClient
 from syft.federated.model_serialization import deserialize_model_params
 from syft.federated.model_serialization import wrap_model_params
+from syft.grid.client.client import connect
+from syft.grid.client.grid_connection import GridHTTPConnection
 from syft.lib.python.int import Int
 from syft.lib.python.list import List
 from syft.lib.torch.module import Module as SyModule
@@ -52,6 +54,26 @@ th.random.manual_seed(42)
 
 here = os.path.dirname(__file__)
 DOMAIN_PORT = 7000
+
+
+def setup_domain() -> None:
+    # this ensures that the new PyGrid Domain is setup and will respond to commands
+    try:
+        ua_client = connect(
+            url=f"http://localhost:{DOMAIN_PORT}", conn_type=GridHTTPConnection
+        )
+
+        ua_client.initial_setup(
+            email="owner@myorg.com",
+            password="ownerpwd",
+            domain_name="OpenMined Domain",
+            token="9G9MJ06OQH",
+        )
+    except Exception as e:
+        if "domain already has an owner" not in str(e):
+            raise e
+        else:
+            print(f"Failed to run initial_setup. {e}")
 
 
 @pytest.fixture
@@ -68,6 +90,7 @@ def pygrid_domain(xprocess: Any) -> Generator:
         database_file = f"{domain_path}/src/nodedatabase.db"
         if os.path.exists(database_file):
             os.unlink(database_file)
+
         args = [
             "python",
             f"{domain_path}/src/__main__.py",
@@ -86,6 +109,8 @@ def pygrid_domain(xprocess: Any) -> Generator:
 
 @pytest.mark.grid
 def test_create_and_execute_plan_autograd(pygrid_domain: Any) -> None:
+    setup_domain()
+
     fl_name = "mnist_autograd"
     plan, model = create_plan_autograd()
 
@@ -122,6 +147,8 @@ def test_create_and_execute_plan_autograd(pygrid_domain: Any) -> None:
 @pytest.mark.grid
 @pytest.mark.parametrize("plan_type", ["list", "torchscript"])
 def test_create_and_execute_plan_mobile(pygrid_domain: Any, plan_type: str) -> None:
+    setup_domain()
+
     fl_name = "mnist_mobile"
     plan, plan_ts, model = create_plan_mobile()
 
