@@ -20,6 +20,7 @@ from .none import SyNone
 from .none import _SyNone
 from .primitive_container import Any
 from .primitive_interface import PyPrimitive
+from .range import Range
 from .set import Set
 from .slice import Slice
 from .string import String
@@ -68,6 +69,7 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.lib.python.Int", "syft.lib.python.Int", Int),
         ("syft.lib.python.List", "syft.lib.python.List", List),
         ("syft.lib.python.Slice", "syft.lib.python.Slice", Slice),
+        ("syft.lib.python.Range", "syft.lib.python.Range", Range),
         ("syft.lib.python.String", "syft.lib.python.String", String),
         ("syft.lib.python._SyNone", "syft.lib.python._SyNone", _SyNone),
         ("syft.lib.python.PyPrimitive", "syft.lib.python.PyPrimitive", PyPrimitive),
@@ -83,6 +85,39 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
     ]
 
     methods = [
+        # Range methods - quite there
+        ("syft.lib.python.Range.__eq__", "syft.lib.python.Bool"),
+        ("syft.lib.python.Range.__ge__", "syft.lib.python.Bool"),
+        ("syft.lib.python.Range.__gt__", "syft.lib.python.Bool"),
+        ("syft.lib.python.Range.__le__", "syft.lib.python.Bool"),
+        ("syft.lib.python.Range.__lt__", "syft.lib.python.Bool"),
+        ("syft.lib.python.Range.__ne__", "syft.lib.python.Bool"),
+        ("syft.lib.python.Range.__bool__", "syft.lib.python.Bool"),
+        ("syft.lib.python.Range.__contains__", "syft.lib.python.Bool"),
+        ("syft.lib.python.Range.__getitem__", "syft.lib.python.Any"),
+        ("syft.lib.python.Range.__len__", "syft.lib.python.Int"),
+        ("syft.lib.python.Range.__iter__", "syft.lib.python.Iterator"),
+        ("syft.lib.python.Range.__sizeof__", "syft.lib.python.Int"),
+        (
+            "syft.lib.python.Range.start",
+            UnionGenerator["syft.lib.python.Int", "syft.lib.python._SyNone"],
+        ),
+        (
+            "syft.lib.python.Range.step",
+            UnionGenerator["syft.lib.python.Int", "syft.lib.python._SyNone"],
+        ),
+        (
+            "syft.lib.python.Range.stop",
+            UnionGenerator["syft.lib.python.Int", "syft.lib.python._SyNone"],
+        ),
+        (
+            "syft.lib.python.Range.count",
+            UnionGenerator["syft.lib.python.Int", "syft.lib.python._SyNone"],
+        ),
+        (
+            "syft.lib.python.Range.index",
+            UnionGenerator["syft.lib.python.Int", "syft.lib.python._SyNone"],
+        ),
         # Slice methods - quite there
         ("syft.lib.python.Slice.__eq__", "syft.lib.python.Bool"),
         ("syft.lib.python.Slice.__ge__", "syft.lib.python.Bool"),
