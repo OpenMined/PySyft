@@ -42,8 +42,9 @@ def proto2object(proto: Logistic_PB) -> sklearn.linear_model.LogisticRegression:
     ret_model = sklearn.linear_model.LogisticRegression()
 
     for attribute, value in vars_dict.items():
-        if str(type(value)).find("_SyNone") != -1:
-            value = None
+        if hasattr(value, "upcast"):
+            # This would convert all Sy objects to their original types
+            value = value.upcast()
         setattr(ret_model, attribute, value)
 
     return ret_model
