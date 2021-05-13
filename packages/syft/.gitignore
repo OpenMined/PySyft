@@ -15,3 +15,5 @@ src/syft/*.so
 docs/_modules
 build
 src/syft.egg-info/
+Pipfile
+.coverage*

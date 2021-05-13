@@ -317,7 +317,7 @@
         "not_available": [
           {
             "data_types": ["bool"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["float16", "bfloat16"],
@@ -406,7 +406,7 @@
           {
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "gte_version": "1.6.0",
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -455,7 +455,7 @@
         "not_available": [
           {
             "data_types": ["bool", "float16", "float32", "float64", "bfloat16"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -464,7 +464,7 @@
         "not_available": [
           {
             "data_types": ["bool", "float16", "float32", "float64", "bfloat16"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -473,7 +473,7 @@
         "not_available": [
           {
             "data_types": ["bool", "float16", "float32", "float64", "bfloat16"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -482,7 +482,7 @@
         "not_available": [
           {
             "data_types": ["bool", "float16", "float32", "float64", "bfloat16"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -516,7 +516,7 @@
           },
           {
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -561,7 +561,7 @@
         "not_available": [
           {
             "data_types": ["bool", "bfloat16"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -582,7 +582,7 @@
         "not_available": [
           {
             "data_types": ["bool", "bfloat16"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -591,7 +591,7 @@
         "not_available": [
           {
             "data_types": ["bool", "bfloat16"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -605,7 +605,7 @@
           },
           {
             "data_types": ["float16", "bfloat16"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -615,7 +615,7 @@
         "not_available": [
           {
             "data_types": ["bool", "float16", "bfloat16"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -633,7 +633,7 @@
         "not_available": [
           {
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["float16"],
@@ -646,7 +646,7 @@
         "not_available": [
           {
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["float16"],
@@ -701,7 +701,7 @@
         "not_available": [
           {
             "data_types": ["float16", "float32", "float64", "bfloat16"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -962,7 +962,7 @@
         "profile": "tensor_method_input",
         "not_available": [
           {
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -1024,7 +1024,7 @@
           },
           {
             "data_types": ["bool"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["float16"],
@@ -1041,7 +1041,7 @@
           },
           {
             "data_types": ["bool"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["float16"],
@@ -1157,7 +1157,7 @@
         "not_available": [
           {
             "data_types": ["float16", "float32", "float64", "bfloat16"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -1184,7 +1184,7 @@
         "not_available": [
           {
             "data_types": ["bool"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["bfloat16", "float16"],
@@ -1197,7 +1197,7 @@
         "not_available": [
           {
             "data_types": ["bool"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["bfloat16", "float16"],
@@ -1218,7 +1218,7 @@
               "int64",
               "float16"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["bfloat16"],
@@ -1303,7 +1303,7 @@
         "not_available": [
           {
             "data_types": ["bool", "bfloat16"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["float16"],
@@ -1324,7 +1324,7 @@
               "int64",
               "float16"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["bfloat16"],
@@ -1371,7 +1371,7 @@
               "int64",
               "float16"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["bfloat16"],
@@ -1410,7 +1410,7 @@
         "not_available": [
           {
             "inputs": [false, true, 0, 1],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": [
@@ -1448,7 +1448,7 @@
         "not_available": [
           {
             "inputs": [false, true, 0, 1],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": [
@@ -1486,7 +1486,7 @@
         "not_available": [
           {
             "data_types": ["bfloat16", "float16", "float32", "float64"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -1495,7 +1495,7 @@
         "not_available": [
           {
             "data_types": ["bfloat16", "float16", "float32", "float64"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -1552,7 +1552,7 @@
               "int64",
               "float16"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["bfloat16"],
@@ -1573,7 +1573,7 @@
               "int64",
               "float16"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["bfloat16"],
@@ -1609,7 +1609,7 @@
               "int64",
               "float16"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["bfloat16"],
@@ -1657,7 +1657,7 @@
               "bfloat16",
               "float16"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -1776,7 +1776,7 @@
               "int64",
               "float16"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["bfloat16"],
@@ -1823,7 +1823,7 @@
               "int64",
               "float16"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["bfloat16"],
@@ -1870,7 +1870,7 @@
               "int64",
               "float16"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["bfloat16"],
@@ -1917,7 +1917,7 @@
               "int64",
               "float16"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["bfloat16"],
@@ -1964,7 +1964,7 @@
               "int64",
               "float16"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["bfloat16"],
@@ -2020,7 +2020,7 @@
               "int64",
               "float16"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["bfloat16"],
@@ -2041,7 +2041,7 @@
               "int64",
               "float16"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["bfloat16"],
@@ -2054,7 +2054,7 @@
         "not_available": [
           {
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["bfloat16", "float16"],
@@ -2067,7 +2067,7 @@
         "not_available": [
           {
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["bfloat16", "float16"],
@@ -2183,7 +2183,7 @@
               "int64",
               "float16"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["bfloat16"],
@@ -2230,7 +2230,7 @@
               "int64",
               "float16"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["bfloat16"],
@@ -2277,7 +2277,7 @@
               "int64",
               "float16"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["bfloat16"],
@@ -2324,7 +2324,7 @@
               "int64",
               "float16"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["bfloat16"],
@@ -2371,7 +2371,7 @@
               "int64",
               "float16"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["bfloat16"],
@@ -2479,7 +2479,7 @@
           },
           {
             "data_types": ["bool"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -2488,7 +2488,7 @@
         "not_available": [
           {
             "data_types": ["bool"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["float16"],
@@ -2601,7 +2601,7 @@
               "float16",
               "bfloat16"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -2625,7 +2625,7 @@
               "float16",
               "bfloat16"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -2637,7 +2637,7 @@
           },
           {
             "data_types": ["bfloat16", "float16"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -2649,7 +2649,7 @@
           },
           {
             "data_types": ["bfloat16", "float16"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -2660,7 +2660,7 @@
         "not_available": [
           {
             "data_types": ["bfloat16", "float16"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -2669,7 +2669,7 @@
         "not_available": [
           {
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["bfloat16", "float16"],
@@ -2695,7 +2695,7 @@
         "not_available": [
           {
             "data_types": ["bool", "float16", "bfloat16"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -2704,7 +2704,7 @@
         "not_available": [
           {
             "data_types": ["bool", "float16", "bfloat16"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -2714,7 +2714,7 @@
         "not_available": [
           {
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["float16"],
@@ -2766,7 +2766,7 @@
               "int64",
               "float16"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["bfloat16"],
@@ -2787,7 +2787,7 @@
               "int64",
               "float16"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["bfloat16"],
@@ -2809,7 +2809,7 @@
               "float16",
               "bfloat16"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -2855,7 +2855,7 @@
               "int64",
               "float16"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["bfloat16"],
@@ -2920,7 +2920,7 @@
               "int64",
               "float16"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["bfloat16"],
@@ -2968,7 +2968,7 @@
               "float16",
               "bfloat16"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -3008,7 +3008,7 @@
               "int64",
               "float16"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["bfloat16"],
@@ -3084,7 +3084,7 @@
         "not_available": [
           {
             "data_types": ["bool"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["float16"],
@@ -3098,7 +3098,7 @@
         "not_available": [
           {
             "data_types": ["bool"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["float16"],
@@ -3133,7 +3133,7 @@
               "int64",
               "float16"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["bfloat16"],
@@ -3180,7 +3180,7 @@
               "int64",
               "float16"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["bfloat16"],
@@ -3224,7 +3224,7 @@
         "not_available": [
           {
             "data_types": ["bool", "float16", "bfloat16"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -3235,7 +3235,7 @@
         "not_available": [
           {
             "data_types": ["bfloat16"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -3246,7 +3246,7 @@
         "not_available": [
           {
             "data_types": ["bfloat16"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -3257,7 +3257,7 @@
         "not_available": [
           {
             "data_types": ["bfloat16"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -3268,7 +3268,7 @@
         "not_available": [
           {
             "data_types": ["bfloat16"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -3285,7 +3285,7 @@
               "int64",
               "float16"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["bfloat16"],
@@ -3306,7 +3306,7 @@
               "int64",
               "float16"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           },
           {
             "data_types": ["bfloat16"],
@@ -3320,7 +3320,7 @@
         "not_available": [
           {
             "data_types": ["bfloat16", "float16"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -3392,7 +3392,7 @@
         "not_available": [
           {
             "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },
@@ -4201,7 +4201,7 @@
               "int32",
               "int64"
             ],
-            "lte_version": "1.8.0"
+            "lte_version": "1.8.1"
           }
         ]
       },

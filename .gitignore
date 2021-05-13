@@ -1,7 +1,6 @@
 # dot files / folders
 .cache/
 .coverage
-.coverage
 .DS_Store
 .eggs/
 .idea/
