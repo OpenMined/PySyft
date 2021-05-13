@@ -71,7 +71,9 @@ jobs:
       #     output: " "
       - name: Hack pre-commit # https://github.com/pre-commit/action/issues/44
         run: |
-          sudo cp .pre-commit-config.yml ../../
+          pwd
+          ls
+          cp .pre-commit-config.yml ../../
       - uses: pre-commit/action@v2.0.0
       # with:
       #   extra_args: --files ${{ steps.file_changes.outputs.files}} # apply only to changed files.
