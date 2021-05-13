@@ -64,7 +64,7 @@ If you have questions or want to get involved with any of the other exciting pro
 
 ## Issues / PRs
 
-- Development is done on the `dev` branch so if you want to add a PR please point it at this branch and not `master`.
+- Development is done on the `dev` branch so if you want to add a PR please point it at this branch and not `main`.
 - PR's may be closed without warning for any of the following reasons: lack of an associated Github issue, lack of tests, lack of proper documentation, or anything that isn't within the intended development roadmap of the Syft core team.
 - If you are working on an existing issue posted by someone else, please ask to be added as Assignee so that effort is not duplicated.
 - If you want to contribute to an issue someone else is already working on please get in contact with that person via slack or GitHub and discuss your collaboration.

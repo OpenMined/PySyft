@@ -71,7 +71,7 @@ repos:
   #       exclude: tests
 
   # - repo: https://github.com/terrencepreilly/darglint
-  #   rev: master
+  #   rev: main
   #   hooks:
   #     - id: darglint
   #       exclude: tests
