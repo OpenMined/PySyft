@@ -141,6 +141,7 @@ jobs:
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
           pip install ."[ci-all]" -f https://download.pytorch.org/whl/torch_stable.html
+          python -c
           grep -o -P '(?<=;).*(?=#install-custom-dependency)' setup.cfg | xargs pip install --no-deps
 
       - name: Scan for security issues
@@ -203,7 +204,7 @@ jobs:
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
           pip install ."[ci-all]" -f https://download.pytorch.org/whl/torch_stable.html
-          grep -o -P '(?<=;).*(?=#install-custom-dependency)' setup.cfg | xargs pip install --no-deps
+          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps
 
       - name: Run notebook API examples
         if: ${{ matrix.os == 'ubuntu-latest' }}
@@ -267,7 +268,7 @@ jobs:
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
           pip install ."[ci-all]" -f https://download.pytorch.org/whl/torch_stable.html
-          grep -o -P '(?<=;).*(?=#install-custom-dependency)' setup.cfg | xargs pip install --no-deps
+          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps
 
 
       - name: Test PyGrid
@@ -324,7 +325,7 @@ jobs:
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
           pip install ."[ci-all]" -f https://download.pytorch.org/whl/torch_stable.html
-          grep -o -P '(?<=;).*(?=#install-custom-dependency)' setup.cfg | xargs pip install --no-deps
+          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps
 
       - name: Test PyGrid
         continue-on-error: true
