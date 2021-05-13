@@ -4,6 +4,7 @@ import warnings
 import syft
 from syft.frameworks.torch.tensors.interpreters.replicated_shared import ReplicatedSharingTensor
 from syft.frameworks.torch.nn import nn
+from syft.frameworks.torch.nn.functional import _max_pool2d_backward
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
@@ -488,6 +489,20 @@ class FixedPrecisionTensor(AbstractTensor):
     __matmul__ = matmul
     mm = matmul
 
+    def conv2d(self, other, **kwargs):
+        if kwargs.get("bias") is not None and not isinstance(kwargs["bias"], FixedPrecisionTensor):
+            kwargs["bias"] = kwargs["bias"].child
+        return torch.nn.functional.conv2d(self, other, **kwargs)
+
+    def conv_transpose2d(self, *args, **kwargs):
+        return torch.nn.functional.conv_transpose2d(self, *args, **kwargs)
+
+    def max_pool2d(self, *args, **kwargs):
+        return torch.nn.functional.max_pool2d(self, *args, **kwargs)
+
+    def _max_pool2d_backward(self, *args, **kwargs):
+        return _max_pool2d_backward(self, *args, **kwargs)
+
     def signum(self):
         """
         Calculation of signum function for a given tensor
@@ -922,6 +937,27 @@ class FixedPrecisionTensor(AbstractTensor):
             return response
 
         module.nn.functional.conv2d = conv2d
+
+        def conv_transpose2d(*args, **kwargs):
+            # put bias to None, we will add it just after
+            _, new_args, new_kwargs = hook_args.unwrap_args_from_method(
+                "conv_transpose2d", None, args, kwargs
+            )
+
+            response = torch.nn.functional.conv_transpose2d(*new_args, **new_kwargs)
+
+            response = hook_args.hook_response(
+                "conv_transpose2d",
+                response,
+                wrap_type=type(args[0]),
+                wrap_args=args[0].get_class_attributes(),
+            )
+
+            response = response.truncate(args[0].precision_fractional)
+
+            return response
+
+        module.nn.functional.conv_transpose2d = conv_transpose2d
 
     @classmethod
     def handle_func_command(cls, command):

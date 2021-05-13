@@ -32,6 +32,7 @@ class PrimitiveStorage:
         self.mul: dict = defaultdict(list)
         self.matmul: dict = defaultdict(list)
         self.conv2d: dict = defaultdict(list)
+        self.conv_transpose2d: dict = defaultdict(list)
 
         self._owner: AbstractWorker = owner
         self._builders: dict = {
@@ -40,6 +41,7 @@ class PrimitiveStorage:
             "mul": self.build_triples(op="mul"),
             "matmul": self.build_triples(op="matmul"),
             "conv2d": self.build_triples(op="conv2d"),
+            "conv_transpose2d": self.build_triples(op="conv_transpose2d"),
         }
 
         self.force_preprocessing = False
@@ -65,15 +67,17 @@ class PrimitiveStorage:
             kwargs (dict): further arguments to be used depending of the primitive
         """
         primitive_stack = getattr(self, op)
-        if op in {"mul", "matmul", "conv2d"}:
+        if op in {"mul", "matmul", "conv2d", "conv_transpose2d"}:
             assert n_instances == 1
             shapes = kwargs.get("shapes")
             dtype = kwargs.get("dtype")
             torch_dtype = str(kwargs.get("torch_dtype"))
             field = kwargs.get("field")
             kwargs_ = kwargs.get("kwargs_")
-            hashable_kwargs_ = tuple(kwargs_.keys()), tuple(kwargs_.values())
-            if op == "conv2d":
+            hashable_kwargs = {k: v for k, v in kwargs_.items() if k != "bias"}
+            hashable_kwargs_ = tuple(hashable_kwargs.keys()), tuple(hashable_kwargs.values())
+            if op in {"conv2d", "conv_transpose2d"}:
+
                 config = (shapes, dtype, torch_dtype, field, hashable_kwargs_)
             else:
                 config = (shapes, dtype, torch_dtype, field)
@@ -93,7 +97,7 @@ class PrimitiveStorage:
                         f"n_instances={n_instances}"
                     )
 
-                if op == "conv2d":
+                if op in {"conv2d", "conv_transpose2d"}:
                     sy.preprocessed_material[op].append(
                         (tuple(shapes[0]), tuple(shapes[1]), hashable_kwargs_)
                     )
@@ -187,7 +191,7 @@ class PrimitiveStorage:
                 raise ValueError(f"Unknown crypto primitives {op}")
 
             current_primitives = getattr(self, op)
-            if op in {"mul", "matmul", "conv2d"}:
+            if op in {"mul", "matmul", "conv2d", "conv_transpose2d"}:
                 for params, primitive_triple in primitives:
                     if th.cuda.is_available():
                         primitive_triple = [p.cuda() for p in primitive_triple]
@@ -274,8 +278,9 @@ class PrimitiveStorage:
             torch_dtype = kwargs.get("torch_dtype", th.int64)
             field = kwargs.get("field", 2 ** 64)
 
-            if op == "conv2d":
-                hashable_kwargs_ = tuple(kwargs_.keys()), tuple(kwargs_.values())
+            if op in {"conv2d", "conv_transpose2d"}:
+                hashable_kwargs = {k: v for k, v in kwargs_.items() if k != "bias"}
+                hashable_kwargs_ = tuple(hashable_kwargs.keys()), tuple(hashable_kwargs.values())
 
             primitives_worker = [[] for _ in range(n_party)]
             for shape in shapes:
@@ -283,7 +288,7 @@ class PrimitiveStorage:
                 shape = (tuple(shape[0]), tuple(shape[1]))
                 torch_dtype = str(torch_dtype)
 
-                if op == "conv2d":
+                if op in {"conv2d", "conv_transpose2d"}:
                     config = (shape, dtype, torch_dtype, field, hashable_kwargs_)
                 else:
                     config = (shape, dtype, torch_dtype, field)

@@ -147,24 +147,39 @@ class AutogradTensor(AbstractTensor):
     def relu(self, self_, **kwargs):
         return self_.relu()
 
+    @overloaded.method
+    def _max_pool2d_backward(self, self_, *args, **kwargs):
+        return self_._max_pool2d_backward(*args, **kwargs)
+
+    @overloaded.method
+    def conv_transpose2d(self, self_, *args, **kwargs):
+        return self_.conv_transpose2d(*args, **kwargs)
+
     def __getattribute__(self, name):
         # Automatically attaching gradient functions if they are defined in the
         # gradients module.
-        grad_fn = getattr(gradients, name.capitalize() + "Backward", None)
+        GradFn = getattr(gradients, name.capitalize() + "Backward", None)
 
-        # print(f"getattribute {name}")
-        if grad_fn is not None:
+        if GradFn is not None:
 
             def method_with_grad(*args, **kwargs):
+                grad_fn = GradFn(self, *args, **kwargs)
+
+                forward_method = getattr(grad_fn, "forward", None)
+
                 new_self, new_args, new_kwargs = hook_args.unwrap_args_from_method(
                     name, self, args, kwargs
                 )
 
-                result = getattr(new_self, name)(*new_args, **new_kwargs)
+                if forward_method:
+                    result = forward_method(new_self, *new_args, **new_kwargs)
+                else:
+                    result = getattr(new_self, name)(*new_args, **new_kwargs)
 
                 # Put back SyftTensor on the tensors found in the response
                 result = hook_args.hook_response(name, result, wrap_type=type(self))
-                result.grad_fn = grad_fn(self, *args, **kwargs)
+
+                result.grad_fn = grad_fn
 
                 return result
 
@@ -260,6 +275,26 @@ class AutogradTensor(AbstractTensor):
 
                 module.relu = relu
 
+                def conv2d(input, weight, *args, **kwargs):
+                    if len(args) > 1:  # if the conv params have been provided in args
+                        return input.conv2d(
+                            weight,
+                            bias=args[0],
+                            stride=args[1] if isinstance(args[1], int) else args[1][0],
+                            padding=args[2],
+                            dilation=args[3],
+                            groups=args[4],
+                        )
+                    else:
+                        return input.conv2d(weight, bias=args[0], **kwargs)
+
+                module.conv2d = conv2d
+
+                def max_pool2d(input, *args, **kwargs):
+                    return input.max_pool2d(*args, **kwargs)
+
+                module.max_pool2d = max_pool2d
+
             module.functional = functional
 
         # Modules should be registered just like functions
@@ -292,6 +327,8 @@ class AutogradTensor(AbstractTensor):
 
         if cmd is not None:
             return cmd(*args_, **kwargs_)
+        else:
+            print("cmd_name", cmd_name, "not found in autograd")
 
         # Replace all AutogradTensor with their child attribute
         new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(

@@ -74,7 +74,7 @@ def build_triple(
                 c = cmd(a_, b)
         else:
             c = cmd(a, b)
-    elif op in {"matmul", "conv2d"}:
+    elif op in {"matmul", "conv2d", "conv_transpose2d"}:
         if th.cuda.is_available():
             cmd = getattr(CUDALongTensor, op)
             a_ = CUDALongTensor(a)

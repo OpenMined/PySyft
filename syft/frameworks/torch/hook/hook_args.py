@@ -61,11 +61,12 @@ ambiguous_methods = {
     "chunk",
     "new",
     "permute",
+    "repeat",
     "reshape",
     "split",
     "stack",
     "sub_",
-    "view",
+    "transpose" "view",
 }
 
 ambiguous_functions = {
@@ -85,6 +86,7 @@ ambiguous_functions = {
     "split",
     "backward",
     "torch.nn.functional.conv2d",
+    "torch.nn.functional.conv_transpose2d",
     "torch.nn.functional.max_pool2d",
     "torch.nn.functional.adaptive_max_pool2d",
     "torch.nn.functional.avg_pool2d",

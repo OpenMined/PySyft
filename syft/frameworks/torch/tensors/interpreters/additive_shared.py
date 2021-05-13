@@ -546,7 +546,7 @@ class AdditiveSharingTensor(AbstractTensor):
                 summation form
         """
         # check to see that operation is either mul or matmul
-        if equation not in {"mul", "matmul", "conv2d"}:
+        if equation not in {"mul", "matmul", "conv2d", "conv_transpose2d"}:
             raise NotImplementedError(
                 f"Operation({equation}) is not possible, only mul, matmul or conv2d are allowed"
             )
@@ -660,12 +660,21 @@ class AdditiveSharingTensor(AbstractTensor):
         return AdditiveSharingTensor._private_mul(self, other, "matmul")
 
     def conv2d(self, other, **kw):
-        """Multiplies two tensors matrices together
+        """Performs a convolution2D
+
         Args:
             self: an AdditiveSharingTensor
             other: another AdditiveSharingTensor or a MultiPointerTensor
         """
         return AdditiveSharingTensor._private_mul(self, other, "conv2d", kw)
+
+    def conv_transpose2d(self, other, **kw):
+        """Performs a convolutionTranspose2D
+        Args:
+            self: an AdditiveSharingTensor
+            other: another AdditiveSharingTensor or a MultiPointerTensor
+        """
+        return AdditiveSharingTensor._private_mul(self, other, "conv_transpose2d", kw)
 
     def mm(self, *args, **kwargs):
         """Multiplies two tensors matrices together"""
@@ -921,10 +930,10 @@ class AdditiveSharingTensor(AbstractTensor):
 
                 module.pad = pad
 
-                def conv2d(a, b, *args, **kwargs):
+                def conv2d(input, weight, *args, **kwargs):
                     if len(args) > 1:  # if the conv params have been provided in args
-                        return a.conv2d(
-                            b,
+                        return input.conv2d(
+                            weight,
                             bias=args[0],
                             stride=args[1] if isinstance(args[1], int) else args[1][0],
                             padding=args[2],
@@ -932,9 +941,25 @@ class AdditiveSharingTensor(AbstractTensor):
                             groups=args[4],
                         )
                     else:
-                        return a.conv2d(b, bias=args[0], **kwargs)
+                        return input.conv2d(weight, bias=args[0], **kwargs)
 
                 module.conv2d = conv2d
+
+                def conv_transpose2d(input, weight, *args, **kwargs):
+                    if len(args) > 1:  # if the conv params have been provided in args
+                        return input.conv_transpose2d(
+                            weight,
+                            bias=args[0],
+                            stride=args[1] if isinstance(args[1], int) else args[1][0],
+                            padding=args[2],
+                            output_padding=args[3],
+                            groups=args[4],
+                            dilation=args[5],  # WARNING: groups & dilation are flipped!
+                        )
+                    else:
+                        return input.conv_transpose2d(weight, **kwargs)
+
+                module.conv_transpose2d = conv_transpose2d
 
             module.functional = functional
 
@@ -1086,7 +1111,7 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         return (-self).argmax(dim=dim, keepdim=keepdim, one_hot=one_hot)
 
-    def max(self, dim=None, keepdim=False, algorithm="pairwise"):
+    def max(self, dim=None, keepdim=False, algorithm="pairwise", return_indices=False):
         """
         Returns the maximum value of all elements in the input tensor, using argmax
         Args:
@@ -1103,12 +1128,18 @@ class AdditiveSharingTensor(AbstractTensor):
 
         argmax_result = self.argmax(dim=dim, keepdim=keepdim, one_hot=True)
         if dim is not None:
+            assert return_indices is False, "Ow I don't know to do this"
+
             max_result = (self * argmax_result).sum(dim=dim, keepdim=keepdim)
             if keepdim and (max_result.dim() < self.dim()):
                 max_result = max.result.unsqueeze(dim)
         else:
             max_result = (self * argmax_result).sum()
-        return max_result
+
+        if return_indices:
+            return max_result, argmax_result
+        else:
+            return max_result
 
     def min(self, dim=None, keepdim=False, algorithm="pairwise"):
         """
