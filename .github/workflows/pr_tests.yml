@@ -107,7 +107,7 @@ jobs:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
         python-version: [3.8]
-        torch-version: [1.8.0]
+        torch-version: [1.8.1]
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -190,7 +190,7 @@ jobs:
       max-parallel: 1
       matrix:
         python-version: [3.8]
-        torch-version: [1.8.0]
+        torch-version: [1.8.1]
         os: [ubuntu-latest]
     steps:
       - uses: actions/checkout@v2
@@ -260,7 +260,7 @@ jobs:
       max-parallel: 1
       matrix:
         python-version: [3.8]
-        torch-version: [1.8.0]
+        torch-version: [1.8.1]
 
     steps:
       - uses: actions/checkout@v2
@@ -316,7 +316,7 @@ jobs:
       max-parallel: 1
       matrix:
         python-version: [3.8]
-        torch-version: [1.8.0]
+        torch-version: [1.8.1]
 
     steps:
       - uses: actions/checkout@v2

@@ -332,6 +332,7 @@ def test_sy_module(
     assert th.equal(torch_out, sy_out)
 
 
+@pytest.mark.slow
 def test_recompile_downloaded_sy_module(
     sy_model: SyModule,
     torch_model: torch.nn.Module,
@@ -347,6 +348,7 @@ def test_recompile_downloaded_sy_module(
     assert th.equal(torch_out, sy_out)
 
 
+@pytest.mark.slow
 def test_nest_sy_module(
     root_client: sy.VirtualMachineClient, sy_model: SyModule
 ) -> None:

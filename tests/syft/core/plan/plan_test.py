@@ -266,6 +266,7 @@ def test_make_plan_error_no_kwargs() -> None:
     assertRaises(ValueError, test_define_plan, "__call__")
 
 
+@pytest.mark.slow
 def test_mlp_plan(client: sy.VirtualMachineClient) -> None:
     class MLP(sy.Module):
         def __init__(self, torch_ref):  # type: ignore

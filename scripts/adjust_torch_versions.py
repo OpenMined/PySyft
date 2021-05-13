@@ -17,6 +17,7 @@ VERSIONS_LUT: Dict[str, Dict[str, Any]] = {
     "1.7.0": dict(torchvision="0.8.1", torchcsprng="0.1.3"),
     "1.7.1": dict(torchvision="0.8.2", torchcsprng="0.1.4"),
     "1.8.0": dict(torchvision="0.9.0", torchcsprng="0.2.0"),
+    "1.8.1": dict(torchvision="0.9.1", torchcsprng="0.2.1"),
 }
 
 system = platform.system()

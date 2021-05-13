@@ -21,6 +21,7 @@ def test_searchable_pointable(root_client: sy.VirtualMachineClient) -> None:
         assert x_ptr.searchable is False
 
 
+@pytest.mark.slow
 def test_load_lib_deprecated() -> None:
     with pytest.deprecated_call():
         assert load_lib("tenseal") is None
