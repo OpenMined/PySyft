@@ -142,7 +142,7 @@ jobs:
           grep -A 3 "torch_ecosystem" setup.cfg
           pip install ."[ci-all]" -f https://download.pytorch.org/whl/torch_stable.html
           python -c
-          grep -o -P '(?<=;).*(?=#install-custom-dependency)' setup.cfg | xargs pip install --no-deps
+          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps
 
       - name: Scan for security issues
         run: |
