@@ -13,23 +13,13 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-# syft absolute
-from syft.proto.core.common import (
-    common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
-)
-from syft.proto.lib.python import dict_pb2 as proto_dot_lib_dot_python_dot_dict__pb2
-
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/lib/pandas/frame.proto",
     package="syft.lib.pandas",
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x1cproto/lib/pandas/frame.proto\x12\x0fsyft.lib.pandas\x1a%proto/core/common/common_object.proto\x1a\x1bproto/lib/python/dict.proto"^\n\x0fPandasDataFrame\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12(\n\tdataframe\x18\x02 \x01(\x0b\x32\x15.syft.lib.python.Dictb\x06proto3',
-    dependencies=[
-        proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
-        proto_dot_lib_dot_python_dot_dict__pb2.DESCRIPTOR,
-    ],
+    serialized_pb=b'\n\x1cproto/lib/pandas/frame.proto\x12\x0fsyft.lib.pandas"?\n\x0fPandasDataFrame\x12\x11\n\tdataframe\x18\x01 \x01(\x0c\x12\x19\n\x11\x64\x65\x63ompressed_size\x18\x02 \x01(\x04\x62\x06proto3',
 )
 
 
@@ -42,15 +32,15 @@ _PANDASDATAFRAME = _descriptor.Descriptor(
     create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
-            name="id",
-            full_name="syft.lib.pandas.PandasDataFrame.id",
+            name="dataframe",
+            full_name="syft.lib.pandas.PandasDataFrame.dataframe",
             index=0,
             number=1,
-            type=11,
-            cpp_type=10,
+            type=12,
+            cpp_type=9,
             label=1,
             has_default_value=False,
-            default_value=None,
+            default_value=b"",
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -61,15 +51,15 @@ _PANDASDATAFRAME = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="dataframe",
-            full_name="syft.lib.pandas.PandasDataFrame.dataframe",
+            name="decompressed_size",
+            full_name="syft.lib.pandas.PandasDataFrame.decompressed_size",
             index=1,
             number=2,
-            type=11,
-            cpp_type=10,
+            type=4,
+            cpp_type=4,
             label=1,
             has_default_value=False,
-            default_value=None,
+            default_value=0,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -88,16 +78,10 @@ _PANDASDATAFRAME = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=117,
-    serialized_end=211,
+    serialized_start=49,
+    serialized_end=112,
 )
 
-_PANDASDATAFRAME.fields_by_name[
-    "id"
-].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_PANDASDATAFRAME.fields_by_name[
-    "dataframe"
-].message_type = proto_dot_lib_dot_python_dot_dict__pb2._DICT
 DESCRIPTOR.message_types_by_name["PandasDataFrame"] = _PANDASDATAFRAME
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 

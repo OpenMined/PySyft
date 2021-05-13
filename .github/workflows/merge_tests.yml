@@ -25,22 +25,13 @@ on:
         required: false
 
 jobs:
-  python-tests-all:
+  python-tests-latest-versions:
     strategy:
-      max-parallel: 30
+      max-parallel: 3
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        python-version: [3.6, 3.7, 3.8, 3.9]
-        torch-version: [1.6.0, 1.7.1, 1.8.0]
-        isMaster:
-          - ${{ contains(github.ref, 'master') }}
-        exclude:
-          - python-version: 3.9
-            torch-version: 1.6.0
-          - python-version: 3.9
-            torch-version: 1.7.1
-          - isMaster: false
-            os: macos-latest
+        python-version: [3.9]
+        torch-version: [1.8.0]
 
     runs-on: ${{ matrix.os }}
     steps:
