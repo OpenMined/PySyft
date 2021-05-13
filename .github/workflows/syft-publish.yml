@@ -6,7 +6,7 @@ on:
 
 defaults:
   run:
-    working-directory: /packages/syft
+    working-directory: ./packages/syft
 
 jobs:
   deploy:
