@@ -143,7 +143,6 @@ jobs:
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
           pip install ."[ci-all]" -f https://download.pytorch.org/whl/torch_stable.html
-          python -c
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps
 
       - name: Scan for security issues
