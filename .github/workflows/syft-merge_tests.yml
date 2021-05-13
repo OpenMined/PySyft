@@ -15,10 +15,10 @@ on:
       - main
       - dev
     paths:
+      - ".github/workflows/syft-*.yml"
       - "packages/syft/**.py"
       - "packages/syft/setup.cfg"
       - "packages/syft/**.txt"
-      - ".github/workflows/syft/**.yml"
   workflow_dispatch:
     inputs:
       none:

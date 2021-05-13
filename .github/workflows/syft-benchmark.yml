@@ -4,8 +4,8 @@ on:
     branches:
       - dev
     paths:
+      - ".github/workflows/syft-*.yml"
       - "packages/syft/**.py"
-      - ".github/workflows/syft/**.yml"
 
 defaults:
   run:

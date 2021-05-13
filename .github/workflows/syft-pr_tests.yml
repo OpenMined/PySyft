@@ -11,10 +11,10 @@ on:
     branches:
       - dev
     paths:
+      - ".github/workflows/syft-*.yml"
       - "packages/syft/**.py"
       - "packages/syft/**.txt"
       - "packages/syft/setup.cfg"
-      - ".github/workflows/syft/**.yml"
       - "packages/syft/examples/private-ai-series/**.ipynb"
 
 defaults:
