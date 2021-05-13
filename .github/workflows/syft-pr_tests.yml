@@ -65,14 +65,14 @@ jobs:
           pip install black isort --default-timeout=60
           ./scripts/build_proto.sh
 
-      - id: file_changes # get changed files.
-        uses: trilom/file-changes-action@v1.2.3
-        with:
-          output: " "
+      # - id: file_changes # get changed files.
+      #   uses: trilom/file-changes-action@v1.2.3
+      #   with:
+      #     output: " "
 
-      - uses: pre-commit/action@v2.0.0
-        with:
-          extra_args: --files ${{ steps.file_changes.outputs.files}} # apply only to changed files.
+      # - uses: pre-commit/action@v2.0.0
+      #   with:
+      #     extra_args: --files ${{ steps.file_changes.outputs.files}} # apply only to changed files.
 
       # - name: Run darglint via flake8 - Ignore Errors
       #   continue-on-error: true
@@ -81,23 +81,23 @@ jobs:
       #     flake8 src tests
 
       # check docstring coverage. If head coverage < base, exitcode = 1
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
+      # - uses: actions/checkout@v2
+      #   with:
+      #     fetch-depth: 0
 
-      - name: Install docstr-coverage
-        run: pip install docstr-coverage --default-timeout=60
+      # - name: Install docstr-coverage
+      #   run: pip install docstr-coverage --default-timeout=60
 
-      - name: Get base coverage
-        run: |
-          git checkout ${{ github.event.pull_request.base.sha }}
-          echo "BASE_COV=$(docstr-coverage -p src)" >> $GITHUB_ENV
+      # - name: Get base coverage
+      #   run: |
+      #     git checkout ${{ github.event.pull_request.base.sha }}
+      #     echo "BASE_COV=$(docstr-coverage -p src)" >> $GITHUB_ENV
 
-      - name: Get head coverage
-        continue-on-error: true
-        run: |
-          git checkout ${{ github.event.pull_request.head.sha }}
-          docstr-coverage -p --fail-under=$BASE_COV src
+      # - name: Get head coverage
+      #   continue-on-error: true
+      #   run: |
+      #     git checkout ${{ github.event.pull_request.head.sha }}
+      #     docstr-coverage -p --fail-under=$BASE_COV src
 
       # - name: Check docstring modified files
       #   if: ${{ failure() }}
