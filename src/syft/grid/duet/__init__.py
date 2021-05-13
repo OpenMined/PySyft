@@ -93,7 +93,7 @@ def begin_duet_logger(my_domain: Domain) -> None:
             thread_parent = sys.stdout.parent_header  # type: ignore
             iterator = 0
             while True:
-                time.sleep(0.1)
+                # time.sleep(0.1)
                 # then ensure that the parent is the same as when the thread started
                 # every time we print
                 with set_stdout_parent(thread_parent):

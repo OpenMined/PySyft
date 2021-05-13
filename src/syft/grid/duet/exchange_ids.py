@@ -57,7 +57,8 @@ class OpenGridTokenManualInputExchanger(DuetCredentialExchanger):
         )
         info("\nimport syft as sy", print=True)
         info(
-            'duet = sy.duet("' + bcolors.BOLD + credential + bcolors.ENDC + '")',
+            'duet = sy.duet("' + bcolors.BOLD +
+            credential + bcolors.ENDC + '")',
             print=True,
         )
 
@@ -155,12 +156,15 @@ class OpenGridTokenFileExchanger(DuetCredentialExchanger):
                         client_id = str(loopback_config["client_id"])
                         break
                 debug("client not ready")
+                # wait for client to be ready before next retry
                 time.sleep(0.5)
+
             except KeyboardInterrupt:
                 debug("Cancelling server connection")
                 break
             except Exception as e:
                 info("server config load failed", self.file_path, e)
+                # wait for client to be ready before next retry
                 time.sleep(0.5)
 
         if client_id == "":
@@ -184,12 +188,14 @@ class OpenGridTokenFileExchanger(DuetCredentialExchanger):
                         server_id = str(loopback_config["server_id"])
                         break
                 debug("server not ready")
+                # wait for server to be ready before next retry
                 time.sleep(0.5)
             except KeyboardInterrupt:
                 debug("Cancelling client connection")
                 break
             except Exception as e:
                 info("client config load failed", self.file_path, e)
+                # wait for server to be ready before next retry
                 time.sleep(0.5)
 
         if server_id == "":

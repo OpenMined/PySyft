@@ -25,7 +25,7 @@ def ds_test(port: int) -> None:
 
     duet = sy.join_duet(loopback=True, network_url=f"http://127.0.0.1:{port}/")
 
-    time.sleep(1)
+    # time.sleep(1)
 
     data_ptr = duet.store[0]
     data = data_ptr.get(request_block=True, delete_obj=False)
