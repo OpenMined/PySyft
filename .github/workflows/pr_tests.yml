@@ -101,7 +101,7 @@ jobs:
       #     git diff --name-only $(git merge-base ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }}) | xargs docstr-coverage --accept-empty
 
   python-tests-latest-versions:
-    needs: [python-linting]
+#    needs: [python-linting]
     strategy:
       max-parallel: 3
       matrix:
@@ -135,18 +135,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
-      - name: Install PyTorch
+      - name: Install Dependencies
         run: |
           pip install packaging --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
-          pip install . --no-deps -f https://download.pytorch.org/whl/torch_stable.html --default-timeout=60
-
-      - name: Install packages
-        run: |
-          pip install ."[dev]" --default-timeout=60
-          pip list
-        timeout-minutes: 20
+          pip install ."[all-cli]" -f https://download.pytorch.org/whl/torch_stable.html
+          grep -o -P '(?<=;).*(?=#install-custom-dependency)' setup.cfg | xargs pip install --no-deps
 
       - name: Scan for security issues
         run: |
@@ -156,10 +151,6 @@ jobs:
       - name: Run normal tests
         run: |
           pytest -m 'fast or slow' --cov syft --cov-fail-under 80 -n auto
-
-      - name: Install supported library packages Windows, Linux and MacOS - Ignore Errors
-        run: |
-          pip install .["all"] --install-option="no-deps" --default-timeout=60 || true
 
       - name: Install libomp for XGBoost
         if: startsWith(runner.os, 'macos')
@@ -206,29 +197,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
-      - name: Install PyTorch
+      - name: Install Dependencies
         run: |
           pip install packaging --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
-          pip install . --no-deps -f https://download.pytorch.org/whl/torch_stable.html --default-timeout=60
-
-      - name: Install packages
-        run: |
-          pip install ."[dev]" --default-timeout=60
-          pip list
-        timeout-minutes: 20
+          pip install ."[all-cli]" -f https://download.pytorch.org/whl/torch_stable.html
+          grep -o -P '(?<=;).*(?=#install-custom-dependency)' setup.cfg | xargs pip install --no-deps
 
       - name: Run notebook API examples
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
           ./scripts/nb_test.sh
           pytest examples/api -n auto
-
-      - name: Install supported library packages Linux and MacOS - Ignore Errors
-        if: startsWith(runner.os, 'Windows') != true
-        run: |
-              pip install .["libs"] --install-option="no-deps" --default-timeout=60 || true
 
       - name: Test syft-network
         run: |
@@ -280,17 +261,19 @@ jobs:
           ref: "dev"
           path: "pygrid"
 
-      - name: Install PyTorch
+      - name: Install Dependencies
         run: |
           pip install packaging --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
-          pip install . --no-deps -f https://download.pytorch.org/whl/torch_stable.html --default-timeout=60
+          pip install ."[all-cli]" -f https://download.pytorch.org/whl/torch_stable.html
+          grep -o -P '(?<=;).*(?=#install-custom-dependency)' setup.cfg | xargs pip install --no-deps
+
 
       - name: Test PyGrid
         continue-on-error: true
         run: |
-          pip install .["grid"] --default-timeout=60
+          pip install ."[grid]" --default-timeout=60
           pytest ./pygrid/apps/domain/tests
           pytest ./pygrid/apps/network/tests
           pytest ./pygrid/apps/worker/tests
@@ -335,12 +318,13 @@ jobs:
           ref: "dev"
           path: "pygrid"
 
-      - name: Install PyTorch
+      - name: Install Dependencies
         run: |
           pip install packaging --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
-          pip install . --no-deps -f https://download.pytorch.org/whl/torch_stable.html --default-timeout=60
+          pip install ."[all-cli]" -f https://download.pytorch.org/whl/torch_stable.html
+          grep -o -P '(?<=;).*(?=#install-custom-dependency)' setup.cfg | xargs pip install --no-deps
 
       - name: Test PyGrid
         continue-on-error: true

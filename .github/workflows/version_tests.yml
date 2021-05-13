@@ -150,7 +150,7 @@ jobs:
       - name: Test PyGrid
         continue-on-error: true
         run: |
-          pip install .["grid"] --default-timeout=60
+          pip install ."[grid]" --default-timeout=60
           pytest ./pygrid/apps/domain/tests
           pytest ./pygrid/apps/network/tests
           pytest ./pygrid/apps/worker/tests
