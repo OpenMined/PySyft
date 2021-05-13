@@ -44,6 +44,7 @@ def version_supported(support_dict: Union[str, Dict[str, str]]) -> bool:
         return TORCHVISION_VERSION >= version.parse(support_dict["min_version"])
 
 
+@pytest.mark.slow
 def test_allowlist(
     root_client: sy.VirtualMachineClient, tens: torch.Tensor, pil_img: PIL.Image.Image
 ) -> None:

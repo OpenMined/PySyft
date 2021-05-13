@@ -2,6 +2,7 @@
 import os
 
 # third party
+import pytest
 import torch as th
 from torch.utils.data import Dataset
 
@@ -26,6 +27,7 @@ ten = th.rand((1000, 4))
 ds = ExampleDataset(ten)
 
 
+@pytest.mark.slow
 def test_remote_dataset(
     node: sy.VirtualMachine, client: sy.VirtualMachineClient
 ) -> None:
@@ -42,6 +44,7 @@ def test_remote_dataset(
     os.system("rm ds.pt")
 
 
+@pytest.mark.slow
 def test_remote_dataloader(root_client: sy.VirtualMachineClient) -> None:
     th.save(ds, "ds.pt")
 

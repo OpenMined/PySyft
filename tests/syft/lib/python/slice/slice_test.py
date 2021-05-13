@@ -163,6 +163,7 @@ class SliceTest(unittest.TestCase):
             expected = range(length)[slice.value]
             self.assertEqual(actual, expected)
 
+    @pytest.mark.slow
     def test_indices(self):
         self.assertEqual(Slice(None).indices(10), (0, 10, 1))
         self.assertEqual(Slice(None, None, 2).indices(10), (0, 10, 2))

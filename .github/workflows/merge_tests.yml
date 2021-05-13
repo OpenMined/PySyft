@@ -31,7 +31,7 @@ jobs:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
         python-version: [3.9]
-        torch-version: [1.8.0]
+        torch-version: [1.8.1]
 
     runs-on: ${{ matrix.os }}
     steps:

@@ -1,4 +1,5 @@
 # third party
+import pytest
 import torch as th
 
 # syft absolute
@@ -6,6 +7,7 @@ import syft as sy
 from syft.lib.python.collections import OrderedDict
 
 
+@pytest.mark.slow
 def test_linear_module() -> None:
     alice = sy.VirtualMachine()
     alice_client = alice.get_root_client()

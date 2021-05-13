@@ -1,4 +1,5 @@
 # third party
+import pytest
 import torch as th
 
 # syft absolute
@@ -9,6 +10,7 @@ from syft.core.plan.plan_builder import ROOT_CLIENT
 from syft.core.plan.translation.torchscript.plan_translate import translate
 
 
+@pytest.mark.slow
 def test_mnist_demo_plan_translation() -> None:
     class MLP(sy.Module):
         """

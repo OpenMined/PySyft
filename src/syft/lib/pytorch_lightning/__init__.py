@@ -17,7 +17,7 @@ from ..util import generic_update_ast
 LIB_NAME = "pytorch_lightning"
 PACKAGE_SUPPORT = {
     "lib": LIB_NAME,
-    "torch": {"max_version": "1.8.0"},
+    "torch": {"max_version": "1.8.1"},
     "python": {"max_version": (3, 9, 99)},
 }
 
