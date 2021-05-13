@@ -4,7 +4,11 @@
 import itertools
 import pickle
 import sys
-from test.support import ALWAYS_EQ
+
+if sys.version_info >= (3, 9):
+    from test.support import ALWAYS_EQ
+
+# stdlib
 import unittest
 
 # third party
@@ -319,7 +323,17 @@ class RangeTest(unittest.TestCase):
         self.assertRaises(ValueError, Range(1, 2 ** 100, 2).index, 2 ** 87)
         self.assertEqual(Range(1, 2 ** 100, 2).index(2 ** 87 + 1), 2 ** 86)
 
-        self.assertEqual(Range(10).index(ALWAYS_EQ), 0)
+        if sys.version_info >= (3, 9):
+            self.assertEqual(Range(10).index(ALWAYS_EQ), 0)
+
+        else:
+
+            class AlwaysEqual(object):
+                def __eq__(self, other):
+                    return True
+
+            always_equal = AlwaysEqual()
+            self.assertEqual(range(10).index(always_equal), 0)
 
     def test_user_index_method(self):
         bignum = 2 * sys.maxsize
@@ -375,7 +389,16 @@ class RangeTest(unittest.TestCase):
         self.assertEqual(Range(1, 2 ** 100, 2).count(2 ** 87), 0)
         self.assertEqual(Range(1, 2 ** 100, 2).count(2 ** 87 + 1), 1)
 
-        self.assertEqual(Range(10).count(ALWAYS_EQ), 10)
+        if sys.version_info >= (3, 9):
+            self.assertEqual(Range(10).count(ALWAYS_EQ), 10)
+        else:
+
+            class AlwaysEqual(object):
+                def __eq__(self, other):
+                    return True
+
+            always_equal = AlwaysEqual()
+            self.assertEqual(range(10).count(always_equal), 10)
 
         self.assertEqual(len(Range(sys.maxsize, sys.maxsize + 10)), 10)
 
@@ -477,7 +500,15 @@ class RangeTest(unittest.TestCase):
         self.assertIn(True, Range(3))
         self.assertIn(1 + 0j, Range(3))
 
-        self.assertIn(ALWAYS_EQ, Range(3))
+        if sys.version_info >= (3, 9):
+            self.assertIn(ALWAYS_EQ, Range(3))
+        else:
+
+            class C1:
+                def __eq__(self, other):
+                    return True
+
+            self.assertIn(C1(), range(3))
 
         # Objects are never coerced into other types for comparison.
         class C2:
