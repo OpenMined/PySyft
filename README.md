@@ -113,7 +113,7 @@ $ pip install syft
 ```
 
 This will auto-install PyTorch and other dependencies as required to run the
-examples and tutorials. For more information on building from source see the contribution guide [here](https://github.com/OpenMined/PySyft/blob/main/CONTRIBUTING.md).
+examples and tutorials. For more information on building from source see the contribution guide [here](https://github.com/OpenMined/PySyft/blob/main/packages/syft/CONTRIBUTING.md).
 
 ## Documentation
 
@@ -153,7 +153,7 @@ This software is in beta. Use at your own risk.
 
 ## A quick note about 0.2.x
 
-The PySyft 0.2.x codebase is now in its own branch [here](https://github.com/OpenMined/PySyft/tree/syft_0.2.x), but OpenMined will not offer official support for this version range. We have compiled a list of [FAQs](docs/FAQ_0.2.x.md) relating to this version.\_
+The PySyft 0.2.x codebase is now in its own branch [here](https://github.com/OpenMined/PySyft/tree/syft_0.2.x), but OpenMined will not offer official support for this version range. We have compiled a list of [FAQs](https://github.com/OpenMined/PySyft/blob/main/packages/syft/docs/FAQ_0.2.x.md) relating to this version.\_
 
 ## Support
 
@@ -172,5 +172,5 @@ We are very grateful for contributions to PySyft from the following organization
 
 ## License
 
-[Apache License 2.0](https://github.com/OpenMined/PySyft/blob/main/LICENSE)
+[Apache License 2.0](https://github.com/OpenMined/PySyft/blob/main/packages/syft/LICENSE)
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FOpenMined%2FPySyft.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2FOpenMined%2FPySyft?ref=badge_large)
