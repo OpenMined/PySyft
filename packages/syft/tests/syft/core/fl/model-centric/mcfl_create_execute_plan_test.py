@@ -82,7 +82,7 @@ def pygrid_domain(xprocess: Any) -> Generator:
 
         # command to start process
         pygrid_path = os.environ.get(
-            "TEST_PYGRID_PATH", f"{here}/../../../../../pygrid"
+            "TEST_PYGRID_PATH", f"{here}/../../../../../../grid"
         )
         domain_path = os.path.abspath(f"{pygrid_path}/apps/domain")
         database_file = f"{domain_path}/src/nodedatabase.db"
