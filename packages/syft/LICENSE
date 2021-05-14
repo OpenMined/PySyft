@@ -210,3 +210,4 @@ tests/syft/lib/python/dict/dict_test.py
 tests/syft/lib/python/float/float_test.py
 tests/syft/lib/python/list/list_test.py
 tests/syft/lib/python/string/string_utils_test.py
+tests/syft/lib/python/range/range_test.py
