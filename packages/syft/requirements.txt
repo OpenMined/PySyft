@@ -1,0 +1,26 @@
+-r ./requirements.torch.txt
+
+aiortc
+cryptography>=3.4.7
+dataclasses # backport to python 3.6
+dpcontracts
+flask>=1.1.2,<2.0.0
+forbiddenfruit>=0.1.3
+loguru
+matplotlib
+names
+nest_asyncio
+packaging
+pandas
+protobuf
+PyJWT==1.7.1
+PyNaCl
+requests
+requests_toolbelt
+scikit-learn
+sqlitedict
+syft-proto
+typeguard
+typing-extensions # backport to older python 3
+websocket-client
+Werkzeug>=1.0.1,<2.0.0
