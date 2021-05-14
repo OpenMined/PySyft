@@ -11,7 +11,7 @@ def test_get_object_action_serde() -> None:
         id_at_location=UID(), address=Address(), reply_to=Address(), msg_id=UID()
     )
     blob = serialize(msg)
-    msg2 = sy.deserialize(blob=blob)
+    msg2 = sy.deserialize(blob)
 
     assert msg.id == msg2.id
     assert msg.id_at_location == msg2.id_at_location

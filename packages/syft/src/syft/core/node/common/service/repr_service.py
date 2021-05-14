@@ -73,8 +73,8 @@ class ReprMessage(ImmediateSyftMessageWithoutReply):
         """
 
         return ReprMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
         )
 
     @staticmethod

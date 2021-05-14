@@ -76,10 +76,10 @@ class LoadObjectMessage(ImmediateSyftMessageWithReply):
         """
 
         return LoadObjectMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             content=json.loads(proto.content),
-            reply_to=_deserialize(blob=proto.reply_to),
+            reply_to=_deserialize(proto.reply_to),
         )
 
     @staticmethod
@@ -148,8 +148,8 @@ class LoadObjectResponse(ImmediateSyftMessageWithoutReply):
         """
 
         return LoadObjectResponse(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             status_code=proto.status_code,
             content=json.loads(proto.content),
         )
@@ -217,8 +217,8 @@ class SaveObjectMessage(ImmediateSyftMessageWithoutReply):
         """
 
         return SaveObjectMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             content=json.loads(proto.content),
         )
 
@@ -288,8 +288,8 @@ class SaveObjectResponse(ImmediateSyftMessageWithoutReply):
         """
 
         return SaveObjectResponse(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             status_code=proto.status_code,
             content=json.loads(proto.content),
         )

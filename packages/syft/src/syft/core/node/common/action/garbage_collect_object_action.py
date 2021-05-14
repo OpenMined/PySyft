@@ -51,8 +51,8 @@ class GarbageCollectObjectAction(EventualActionWithoutReply):
         proto: GarbageCollectObjectAction_PB,
     ) -> "GarbageCollectObjectAction":
 
-        id_at_location = _deserialize(blob=proto.id_at_location)
-        addr = _deserialize(blob=proto.address)
+        id_at_location = _deserialize(proto.id_at_location)
+        addr = _deserialize(proto.address)
 
         return GarbageCollectObjectAction(
             id_at_location=id_at_location,

@@ -231,7 +231,7 @@ class Float(float, PyPrimitive):
 
     @staticmethod
     def _proto2object(proto: Float_PB) -> "Float":
-        return Float(value=proto.data, id=deserialize(blob=proto.id))
+        return Float(value=proto.data, id=deserialize(proto.id))
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:

@@ -59,7 +59,7 @@ def test_torch_serde() -> None:
 
     blob = sy.serialize(x)
 
-    x2 = sy.deserialize(blob=blob)
+    x2 = sy.deserialize(blob)
 
     assert (x == x2).all()
 

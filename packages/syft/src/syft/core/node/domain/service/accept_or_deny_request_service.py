@@ -88,10 +88,10 @@ class AcceptOrDenyRequestMessage(ImmediateSyftMessageWithoutReply):
         """
 
         return AcceptOrDenyRequestMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             accept=proto.accept,
-            request_id=_deserialize(blob=proto.request_id),
+            request_id=_deserialize(proto.request_id),
         )
 
     @staticmethod

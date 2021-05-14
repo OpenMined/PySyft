@@ -15,7 +15,7 @@ def test_request_answer_message() -> None:
     msg = RequestAnswerMessage(request_id=UID(), address=addr, reply_to=addr)
 
     serialized = serialize(obj=msg)
-    new_msg = deserialize(blob=serialized)
+    new_msg = deserialize(serialized)
 
     assert msg.request_id == new_msg.request_id
     assert msg.address == new_msg.address
@@ -31,7 +31,7 @@ def test_request_answer_response() -> None:
     )
 
     serialized = serialize(obj=msg)
-    new_msg = deserialize(blob=serialized)
+    new_msg = deserialize(serialized)
 
     assert msg.request_id == new_msg.request_id
     assert msg.address == new_msg.address

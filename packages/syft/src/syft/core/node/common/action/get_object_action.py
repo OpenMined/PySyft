@@ -84,9 +84,9 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
             if you wish to deserialize an object.
         """
         return GetObjectResponseMessage(
-            obj=_deserialize(blob=proto.obj),
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            obj=_deserialize(proto.obj),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
         )
 
     @property
@@ -251,10 +251,10 @@ class GetObjectAction(ImmediateActionWithReply):
         """
 
         return GetObjectAction(
-            id_at_location=_deserialize(blob=proto.id_at_location),
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
-            reply_to=_deserialize(blob=proto.reply_to),
+            id_at_location=_deserialize(proto.id_at_location),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
+            reply_to=_deserialize(proto.reply_to),
             delete_obj=proto.delete_obj,
         )
 

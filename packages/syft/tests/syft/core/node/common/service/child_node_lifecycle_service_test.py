@@ -24,7 +24,7 @@ def test_child_node_lifecycle_message_serde(
     )
 
     blob = serialize(msg)
-    msg2 = sy.deserialize(blob=blob)
+    msg2 = sy.deserialize(blob)
 
     assert msg.id == msg2.id
     assert msg.address == msg2.address

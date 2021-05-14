@@ -90,8 +90,8 @@ class UpdateRequestHandlerMessage(ImmediateSyftMessageWithoutReply):
         """
 
         return UpdateRequestHandlerMessage(
-            msg_id=deserialize(blob=proto.msg_id),
-            address=deserialize(blob=proto.address),
+            msg_id=deserialize(proto.msg_id),
+            address=deserialize(proto.address),
             handler=upcast(value=Dict._proto2object(proto=proto.handler)),
             keep=proto.keep,
         )
@@ -163,9 +163,9 @@ class GetAllRequestHandlersMessage(ImmediateSyftMessageWithReply):
         """
 
         return GetAllRequestHandlersMessage(
-            msg_id=deserialize(blob=proto.msg_id),
-            address=deserialize(blob=proto.address),
-            reply_to=deserialize(blob=proto.reply_to),
+            msg_id=deserialize(proto.msg_id),
+            address=deserialize(proto.address),
+            reply_to=deserialize(proto.reply_to),
         )
 
     @staticmethod
@@ -250,8 +250,8 @@ class GetAllRequestHandlersResponseMessage(ImmediateSyftMessageWithoutReply):
                 handler["created_time"] = float(handler["created_time"])
 
         return GetAllRequestHandlersResponseMessage(
-            msg_id=deserialize(blob=proto.msg_id),
-            address=deserialize(blob=proto.address),
+            msg_id=deserialize(proto.msg_id),
+            address=deserialize(proto.address),
             handlers=handlers,
         )
 

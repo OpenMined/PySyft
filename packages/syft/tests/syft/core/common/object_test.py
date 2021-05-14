@@ -103,7 +103,7 @@ def test_object_with_id_default_deserialization() -> None:
 
     blob = ObjectWithID.get_protobuf_schema()(id=sy.serialize(uid))
 
-    obj2 = sy.deserialize(blob=blob)
+    obj2 = sy.deserialize(blob)
     assert obj == obj2
 
 
@@ -128,7 +128,7 @@ def test_object_with_id_proto_deserialization() -> None:
 
     blob = ObjectWithID.get_protobuf_schema()(id=sy.serialize(uid))
 
-    obj2 = sy.deserialize(blob=blob, from_proto=True)
+    obj2 = sy.deserialize(blob)
     assert obj == obj2
 
 
@@ -155,7 +155,7 @@ def test_object_with_id_binary_deserialization() -> None:
         b"\n$syft.core.common.object.ObjectWithID\x12\x14\n\x12\n\x10\xfb\x1b\xb0"
         + b"g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15\x14"
     )
-    obj = sy.deserialize(blob=blob, from_bytes=True)
+    obj = sy.deserialize(blob)
     assert obj == ObjectWithID(
         id=UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     )

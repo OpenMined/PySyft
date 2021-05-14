@@ -19,8 +19,8 @@ def object2proto(obj: zk.base.NIZK) -> NIZK_PB:
 
 def proto2object(proto: NIZK_PB) -> zk.expr.Secret:
     return zk.base.NIZK(
-        challenge=deserialize(proto.challenge, from_proto=True),
-        responses=deserialize(proto.responses, from_proto=True).upcast(),
+        challenge=deserialize(proto.challenge),
+        responses=deserialize(proto.responses).upcast(),
         stmt_hash=proto.stmt_hash,
     )
 

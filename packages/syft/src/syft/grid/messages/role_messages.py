@@ -94,10 +94,10 @@ class CreateRoleMessage(ImmediateSyftMessageWithReply):
         """
 
         return CreateRoleMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             content=json.loads(proto.content),
-            reply_to=_deserialize(blob=proto.reply_to),
+            reply_to=_deserialize(proto.reply_to),
         )
 
     @staticmethod
@@ -166,8 +166,8 @@ class CreateRoleResponse(ImmediateSyftMessageWithoutReply):
         """
 
         return CreateRoleResponse(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             status_code=proto.status_code,
             content=json.loads(proto.content),
         )
@@ -237,10 +237,10 @@ class GetRoleMessage(ImmediateSyftMessageWithReply):
         """
 
         return GetRoleMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             content=json.loads(proto.content),
-            reply_to=_deserialize(blob=proto.reply_to),
+            reply_to=_deserialize(proto.reply_to),
         )
 
     @staticmethod
@@ -309,8 +309,8 @@ class GetRoleResponse(ImmediateSyftMessageWithoutReply):
         """
 
         return GetRoleResponse(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             status_code=proto.status_code,
             content=json.loads(proto.content),
         )
@@ -380,10 +380,10 @@ class GetRolesMessage(ImmediateSyftMessageWithReply):
         """
 
         return GetRolesMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             content=json.loads(proto.content),
-            reply_to=_deserialize(blob=proto.reply_to),
+            reply_to=_deserialize(proto.reply_to),
         )
 
     @staticmethod
@@ -452,8 +452,8 @@ class GetRolesResponse(ImmediateSyftMessageWithoutReply):
         """
 
         return GetRolesResponse(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             status_code=proto.status_code,
             content=json.loads(proto.content),
         )
@@ -523,10 +523,10 @@ class UpdateRoleMessage(ImmediateSyftMessageWithReply):
         """
 
         return UpdateRoleMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             content=json.loads(proto.content),
-            reply_to=_deserialize(blob=proto.reply_to),
+            reply_to=_deserialize(proto.reply_to),
         )
 
     @staticmethod
@@ -595,8 +595,8 @@ class UpdateRoleResponse(ImmediateSyftMessageWithoutReply):
         """
 
         return UpdateRoleResponse(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             status_code=proto.status_code,
             content=json.loads(proto.content),
         )
@@ -666,10 +666,10 @@ class DeleteRoleMessage(ImmediateSyftMessageWithReply):
         """
 
         return DeleteRoleMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             content=json.loads(proto.content),
-            reply_to=_deserialize(blob=proto.reply_to),
+            reply_to=_deserialize(proto.reply_to),
         )
 
     @staticmethod
@@ -738,8 +738,8 @@ class DeleteRoleResponse(ImmediateSyftMessageWithoutReply):
         """
 
         return DeleteRoleResponse(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             status_code=proto.status_code,
             content=json.loads(proto.content),
         )

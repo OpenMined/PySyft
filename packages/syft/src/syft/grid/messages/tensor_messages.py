@@ -94,10 +94,10 @@ class CreateTensorMessage(ImmediateSyftMessageWithReply):
         """
 
         return CreateTensorMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             content=json.loads(proto.content),
-            reply_to=_deserialize(blob=proto.reply_to),
+            reply_to=_deserialize(proto.reply_to),
         )
 
     @staticmethod
@@ -166,8 +166,8 @@ class CreateTensorResponse(ImmediateSyftMessageWithoutReply):
         """
 
         return CreateTensorResponse(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             status_code=proto.status_code,
             content=json.loads(proto.content),
         )
@@ -237,10 +237,10 @@ class GetTensorMessage(ImmediateSyftMessageWithReply):
         """
 
         return GetTensorMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             content=json.loads(proto.content),
-            reply_to=_deserialize(blob=proto.reply_to),
+            reply_to=_deserialize(proto.reply_to),
         )
 
     @staticmethod
@@ -309,8 +309,8 @@ class GetTensorResponse(ImmediateSyftMessageWithoutReply):
         """
 
         return GetTensorResponse(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             status_code=proto.status_code,
             content=json.loads(proto.content),
         )
@@ -380,10 +380,10 @@ class GetTensorsMessage(ImmediateSyftMessageWithReply):
         """
 
         return GetTensorsMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             content=json.loads(proto.content),
-            reply_to=_deserialize(blob=proto.reply_to),
+            reply_to=_deserialize(proto.reply_to),
         )
 
     @staticmethod
@@ -452,8 +452,8 @@ class GetTensorsResponse(ImmediateSyftMessageWithoutReply):
         """
 
         return GetTensorsResponse(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             status_code=proto.status_code,
             content=json.loads(proto.content),
         )
@@ -523,10 +523,10 @@ class UpdateTensorMessage(ImmediateSyftMessageWithReply):
         """
 
         return UpdateTensorMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             content=json.loads(proto.content),
-            reply_to=_deserialize(blob=proto.reply_to),
+            reply_to=_deserialize(proto.reply_to),
         )
 
     @staticmethod
@@ -595,8 +595,8 @@ class UpdateTensorResponse(ImmediateSyftMessageWithoutReply):
         """
 
         return UpdateTensorResponse(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             status_code=proto.status_code,
             content=json.loads(proto.content),
         )
@@ -666,10 +666,10 @@ class DeleteTensorMessage(ImmediateSyftMessageWithReply):
         """
 
         return DeleteTensorMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             content=json.loads(proto.content),
-            reply_to=_deserialize(blob=proto.reply_to),
+            reply_to=_deserialize(proto.reply_to),
         )
 
     @staticmethod
@@ -738,8 +738,8 @@ class DeleteTensorResponse(ImmediateSyftMessageWithoutReply):
         """
 
         return DeleteTensorResponse(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             status_code=proto.status_code,
             content=json.loads(proto.content),
         )

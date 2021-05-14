@@ -76,10 +76,10 @@ class GetSetUpMessage(ImmediateSyftMessageWithReply):
         """
 
         return GetSetUpMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             content=json.loads(proto.content),
-            reply_to=_deserialize(blob=proto.reply_to),
+            reply_to=_deserialize(proto.reply_to),
         )
 
     @staticmethod
@@ -148,8 +148,8 @@ class GetSetUpResponse(ImmediateSyftMessageWithoutReply):
         """
 
         return GetSetUpResponse(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             status_code=proto.status_code,
             content=json.loads(proto.content),
         )
@@ -219,10 +219,10 @@ class CreateInitialSetUpMessage(ImmediateSyftMessageWithReply):
         """
 
         return CreateInitialSetUpMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             content=json.loads(proto.content),
-            reply_to=_deserialize(blob=proto.reply_to),
+            reply_to=_deserialize(proto.reply_to),
         )
 
     @staticmethod
@@ -291,8 +291,8 @@ class CreateInitialSetUpResponse(ImmediateSyftMessageWithoutReply):
         """
 
         return CreateInitialSetUpResponse(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             status_code=proto.status_code,
             content=json.loads(proto.content),
         )

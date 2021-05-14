@@ -212,17 +212,11 @@ class Dict(UserDict, PyPrimitive):
 
     @staticmethod
     def _proto2object(proto: Dict_PB) -> "Dict":
-        id_: UID = deserialize(blob=proto.id)
+        id_: UID = deserialize(proto.id)
 
-        values = [
-            upcast(value=deserialize(blob=element, from_bytes=True))
-            for element in proto.values
-        ]
+        values = [upcast(value=deserialize(element)) for element in proto.values]
 
-        keys = [
-            upcast(value=deserialize(blob=element, from_bytes=True))
-            for element in proto.keys
-        ]
+        keys = [upcast(value=deserialize(element)) for element in proto.keys]
         new_dict = Dict(dict(zip(keys, values)))
         new_dict._id = id_
         return new_dict

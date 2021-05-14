@@ -70,10 +70,10 @@ class NetworkSearchMessage(ImmediateSyftMessageWithReply):
         """
 
         return NetworkSearchMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             content=json.loads(proto.content),
-            reply_to=_deserialize(blob=proto.reply_to),
+            reply_to=_deserialize(proto.reply_to),
         )
 
     @staticmethod
@@ -142,8 +142,8 @@ class NetworkSearchResponse(ImmediateSyftMessageWithoutReply):
         """
 
         return NetworkSearchResponse(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             status_code=proto.status_code,
             content=json.loads(proto.content),
         )

@@ -102,10 +102,10 @@ class SendAssociationRequestMessage(ImmediateSyftMessageWithReply):
         """
 
         return SendAssociationRequestMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             content=json.loads(proto.content),
-            reply_to=_deserialize(blob=proto.reply_to),
+            reply_to=_deserialize(proto.reply_to),
         )
 
     @staticmethod
@@ -174,8 +174,8 @@ class SendAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
         """
 
         return SendAssociationRequestResponse(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             status_code=proto.status_code,
             content=json.loads(proto.content),
         )
@@ -245,10 +245,10 @@ class ReceiveAssociationRequestMessage(ImmediateSyftMessageWithReply):
         """
 
         return ReceiveAssociationRequestMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             content=json.loads(proto.content),
-            reply_to=_deserialize(blob=proto.reply_to),
+            reply_to=_deserialize(proto.reply_to),
         )
 
     @staticmethod
@@ -317,8 +317,8 @@ class ReceiveAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
         """
 
         return ReceiveAssociationRequestResponse(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             status_code=proto.status_code,
             content=json.loads(proto.content),
         )
@@ -388,10 +388,10 @@ class RespondAssociationRequestMessage(ImmediateSyftMessageWithReply):
         """
 
         return RespondAssociationRequestMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             content=json.loads(proto.content),
-            reply_to=_deserialize(blob=proto.reply_to),
+            reply_to=_deserialize(proto.reply_to),
         )
 
     @staticmethod
@@ -460,8 +460,8 @@ class RespondAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
         """
 
         return RespondAssociationRequestResponse(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             status_code=proto.status_code,
             content=json.loads(proto.content),
         )
@@ -531,10 +531,10 @@ class GetAssociationRequestMessage(ImmediateSyftMessageWithReply):
         """
 
         return GetAssociationRequestMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             content=json.loads(proto.content),
-            reply_to=_deserialize(blob=proto.reply_to),
+            reply_to=_deserialize(proto.reply_to),
         )
 
     @staticmethod
@@ -603,8 +603,8 @@ class GetAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
         """
 
         return GetAssociationRequestResponse(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             status_code=proto.status_code,
             content=json.loads(proto.content),
         )
@@ -674,10 +674,10 @@ class GetAssociationRequestsMessage(ImmediateSyftMessageWithReply):
         """
 
         return GetAssociationRequestsMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             content=json.loads(proto.content),
-            reply_to=_deserialize(blob=proto.reply_to),
+            reply_to=_deserialize(proto.reply_to),
         )
 
     @staticmethod
@@ -746,8 +746,8 @@ class GetAssociationRequestsResponse(ImmediateSyftMessageWithoutReply):
         """
 
         return GetAssociationRequestsResponse(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             status_code=proto.status_code,
             content=json.loads(proto.content),
         )
@@ -817,10 +817,10 @@ class DeleteAssociationRequestMessage(ImmediateSyftMessageWithReply):
         """
 
         return DeleteAssociationRequestMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             content=json.loads(proto.content),
-            reply_to=_deserialize(blob=proto.reply_to),
+            reply_to=_deserialize(proto.reply_to),
         )
 
     @staticmethod
@@ -889,8 +889,8 @@ class DeleteAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
         """
 
         return DeleteAssociationRequestResponse(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             status_code=proto.status_code,
             content=json.loads(proto.content),
         )

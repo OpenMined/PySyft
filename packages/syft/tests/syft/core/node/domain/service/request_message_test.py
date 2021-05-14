@@ -38,7 +38,7 @@ def test_request_message() -> None:
     )
 
     deserialized_obj = serialize(obj=msg)
-    new_obj = deserialize(blob=deserialized_obj)
+    new_obj = deserialize(deserialized_obj)
 
     assert msg.request_description == new_obj.request_description
     assert msg.address == new_obj.address

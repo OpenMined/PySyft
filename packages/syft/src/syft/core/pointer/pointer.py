@@ -337,8 +337,8 @@ class Pointer(AbstractPointer):
         # WARNING: This is sending a serialized Address back to the constructor
         # which currently depends on a Client for send_immediate_msg_with_reply
         return pointer_type(
-            id_at_location=_deserialize(blob=proto.id_at_location),
-            client=_deserialize(blob=proto.location),
+            id_at_location=_deserialize(proto.id_at_location),
+            client=_deserialize(proto.location),
             tags=proto.tags,
             description=proto.description,
             object_type=proto.object_type,

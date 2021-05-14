@@ -118,8 +118,8 @@ class GridClient(DomainClient):
         self, obj_ptr: Type[Pointer], address: Address, pointable: bool = False
     ) -> None:
         content = {
-            RequestAPIFields.ADDRESS: serialize(address)
-            .SerializeToString()  # type: ignore
+            RequestAPIFields.ADDRESS: address._object2proto()
+            .SerializeToString()
             .decode(PyGridClientEnums.ENCODING),
             RequestAPIFields.UID: str(obj_ptr.id_at_location.value),
             RequestAPIFields.POINTABLE: pointable,

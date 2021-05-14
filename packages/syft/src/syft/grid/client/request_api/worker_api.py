@@ -68,7 +68,7 @@ class WorkerRequestAPI(GridRequestAPI):
             conn_type=self.domain_client.conn.__class__,
             client_type=self.domain_client.client_type,
         )
-        _worker_obj.proxy_address = _deserialize(blob=addr_pb)
+        _worker_obj.proxy_address = _deserialize(addr_pb)
         _worker_obj.domain = _worker_obj.proxy_address.domain
 
         for key, value in result.items():

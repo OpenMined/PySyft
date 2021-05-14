@@ -135,7 +135,7 @@ class Complex(complex, PyPrimitive):
     @staticmethod
     def _proto2object(proto: Complex_PB) -> "Complex":
         return Complex(
-            id=deserialize(blob=proto.id),
+            id=deserialize(proto.id),
             real=proto.real,
             imag=proto.imag,
         )

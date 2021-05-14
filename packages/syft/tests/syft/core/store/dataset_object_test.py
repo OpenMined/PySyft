@@ -228,7 +228,7 @@ def test_serde_storable_obj() -> None:
     dataset_obj = Dataset(id=id, data=data, description=description, tags=tags)
 
     blob = sy.serialize(obj=dataset_obj)
-    sy.deserialize(blob=blob)
+    sy.deserialize(blob)
 
 
 def test_serde_storable_obj_2() -> None:
@@ -257,7 +257,7 @@ def test_serde_storable_obj_2() -> None:
     obj = Dataset(id=id, data=data, description=description, tags=tags)
 
     blob = serialize(obj)
-    ds_obj = sy.deserialize(blob=blob)
+    ds_obj = sy.deserialize(blob)
 
     assert obj.id == ds_obj.id
     assert obj.description == ds_obj.description

@@ -263,7 +263,7 @@ class Bool(int, PyPrimitive):
 
     @staticmethod
     def _proto2object(proto: Bool_PB) -> "Bool":
-        return Bool(id=deserialize(blob=proto.id), value=proto.data)
+        return Bool(id=deserialize(proto.id), value=proto.data)
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:

@@ -13,7 +13,7 @@ def object2proto(obj: pl.ec.EcPt) -> EcPt_PB:
 
 
 def proto2object(proto: EcPt_PB) -> pl.ec.EcPt:
-    eg = deserialize(blob=proto.group, from_proto=True)
+    eg = deserialize(proto.group)
     return pl.ec.EcPt.from_binary(proto.data, eg)
 
 

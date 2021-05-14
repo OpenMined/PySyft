@@ -66,9 +66,9 @@ class Metadata(Serializable):
         """
 
         return Metadata(
-            id=validate_type(_deserialize(blob=proto.id), UID, optional=True),
+            id=validate_type(_deserialize(proto.id), UID, optional=True),
             name=proto.name,
-            node=validate_type(_deserialize(blob=proto.node), Location),
+            node=validate_type(_deserialize(proto.node), Location),
         )
 
     @staticmethod

@@ -20,7 +20,7 @@ def test_save_object_action_serde() -> None:
 
     blob = serialize(msg)
 
-    msg2 = sy.deserialize(blob=blob)
+    msg2 = sy.deserialize(blob)
 
     assert (msg2.obj.data == msg.obj.data).all()
 

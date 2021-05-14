@@ -29,7 +29,6 @@ class DiskObjectStore(ObjectStore):
             db_path = str(Path(f"{tempfile.gettempdir()}") / "test.sqlite")
 
         self.db: Final = SqliteDict(db_path)
-        self.search_engine = None
 
     def get_objects_of_type(self, obj_type: type) -> Iterable[StorableObject]:
         # TODO: this wont fly long term
@@ -42,9 +41,7 @@ class DiskObjectStore(ObjectStore):
     def __getitem__(self, key: UID) -> StorableObject:
         try:
             blob = self.db[str(key.value)]
-            value = validate_type(
-                _deserialize(blob=blob, from_bytes=True), StorableObject
-            )
+            value = validate_type(_deserialize(blob), StorableObject)
             return value
         except Exception as e:
             trace(f"{type(self)} get item error {key} {e}")
@@ -80,7 +77,7 @@ class DiskObjectStore(ObjectStore):
     def values(self) -> Iterable[StorableObject]:
         values = []
         for blob in self.db.values():
-            value = _deserialize(blob=blob, from_bytes=True)
+            value = _deserialize(blob)
             values.append(value)
 
         return values

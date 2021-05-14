@@ -85,9 +85,9 @@ class ObjectSearchMessage(ImmediateSyftMessageWithReply):
         """
 
         return ObjectSearchMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
-            reply_to=_deserialize(blob=proto.reply_to),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
+            reply_to=_deserialize(proto.reply_to),
         )
 
     @staticmethod
@@ -163,9 +163,9 @@ class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
         """
 
         return ObjectSearchReplyMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
-            results=[_deserialize(blob=x) for x in proto.results],
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
+            results=[_deserialize(x) for x in proto.results],
         )
 
     @staticmethod

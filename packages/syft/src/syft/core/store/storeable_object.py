@@ -164,7 +164,7 @@ class StorableObject(AbstractStorableObject):
     @staticmethod
     def _proto2object(proto: StorableObject_PB) -> Serializable:
         # Step 1: deserialize the ID
-        id = _deserialize(blob=proto.id)
+        id = _deserialize(proto.id)
 
         if not isinstance(id, UID):
             traceback_and_raise(ValueError("TODO"))
@@ -193,16 +193,12 @@ class StorableObject(AbstractStorableObject):
         # Step 7: get the read permissions
         read_permissions = None
         if proto.read_permissions is not None and len(proto.read_permissions) > 0:
-            read_permissions = _deserialize(
-                blob=proto.read_permissions, from_bytes=True
-            )
+            read_permissions = _deserialize(proto.read_permissions)
 
         # Step 8: get the search permissions
         search_permissions = None
         if proto.search_permissions is not None and len(proto.search_permissions) > 0:
-            search_permissions = _deserialize(
-                blob=proto.search_permissions, from_bytes=True
-            )
+            search_permissions = _deserialize(proto.search_permissions)
 
         result = StorableObject(
             id=id,

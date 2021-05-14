@@ -44,9 +44,9 @@ class RequestAnswerMessage(ImmediateSyftMessageWithReply):
     @staticmethod
     def _proto2object(proto: RequestAnswerMessage_PB) -> "RequestAnswerMessage":
         return RequestAnswerMessage(
-            request_id=deserialize(blob=proto.request_id),
-            address=deserialize(blob=proto.address),
-            reply_to=deserialize(blob=proto.reply_to),
+            request_id=deserialize(proto.request_id),
+            address=deserialize(proto.address),
+            reply_to=deserialize(proto.reply_to),
         )
 
     @staticmethod
@@ -75,8 +75,8 @@ class RequestAnswerResponse(ImmediateSyftMessageWithoutReply):
     def _proto2object(proto: RequestAnswerResponse_PB) -> "RequestAnswerResponse":
         request_response = RequestAnswerResponse(
             status=RequestStatus(proto.status),
-            request_id=deserialize(blob=proto.request_id),
-            address=deserialize(blob=proto.address),
+            request_id=deserialize(proto.request_id),
+            address=deserialize(proto.address),
         )
         return request_response
 

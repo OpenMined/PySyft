@@ -21,11 +21,6 @@ from ..common.uid import UID
 from ..io.location import Location
 
 
-class Unspecified(object):
-    def __repr__(self) -> str:
-        return "Unspecified"
-
-
 @bind_protobuf
 class Address(Serializable):
     name: Optional[str]
@@ -170,10 +165,10 @@ class Address(Serializable):
         """
         return Address(
             name=proto.name,
-            network=_deserialize(blob=proto.network) if proto.has_network else None,
-            domain=_deserialize(blob=proto.domain) if proto.has_domain else None,
-            device=_deserialize(blob=proto.device) if proto.has_device else None,
-            vm=_deserialize(blob=proto.vm) if proto.has_vm else None,
+            network=_deserialize(proto.network) if proto.has_network else None,
+            domain=_deserialize(proto.domain) if proto.has_domain else None,
+            device=_deserialize(proto.device) if proto.has_device else None,
+            vm=_deserialize(proto.vm) if proto.has_vm else None,
         )
 
     @staticmethod

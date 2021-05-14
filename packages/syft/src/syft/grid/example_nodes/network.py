@@ -43,7 +43,7 @@ def signaling_server(port: int = 5000, host: str = "127.0.0.1") -> None:  # nose
     @app.route("/", methods=["POST"])
     def process_network_msgs() -> flask.Response:
         data = flask.request.get_data()
-        obj_msg = _deserialize(blob=data, from_bytes=True)
+        obj_msg = _deserialize(data)
         if isinstance(obj_msg, SignedImmediateSyftMessageWithReply):
             info(
                 f"Signaling server SignedImmediateSyftMessageWithReply: {obj_msg.message} watch"

@@ -25,7 +25,7 @@ def test_serde_storable_obj() -> None:
 
     blob = sy.serialize(obj=obj)
 
-    sy.deserialize(blob=blob)
+    sy.deserialize(blob)
 
 
 def test_serde_storable_obj_2() -> None:
@@ -35,7 +35,7 @@ def test_serde_storable_obj_2() -> None:
     tags = ["dummy", "test"]
     obj = StorableObject(id=id, data=data, description=description, tags=tags)
     blob = serialize(obj)
-    ds_obj = sy.deserialize(blob=blob)
+    ds_obj = sy.deserialize(blob)
     assert obj.id == ds_obj.id
     assert (obj.data == ds_obj.data).all()
     assert obj.description == ds_obj.description
@@ -53,4 +53,4 @@ def test_serde_storable_obj_2() -> None:
 #
 #     blob = sy.serialize(obj=obj)
 #
-#     sy.deserialize(blob=blob)
+#     sy.deserialize(blob)

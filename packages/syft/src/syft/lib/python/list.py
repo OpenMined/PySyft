@@ -155,12 +155,12 @@ class List(UserList, PyPrimitive):
 
     @staticmethod
     def _proto2object(proto: List_PB) -> "List":
-        id_: UID = deserialize(blob=proto.id)
+        id_: UID = deserialize(proto.id)
         value = []
         # list comprehension doesn't work since it results in a
         # [generator()] which is not equal to an empty list
         for element in proto.data:
-            value.append(upcast(deserialize(blob=element, from_bytes=True)))
+            value.append(upcast(deserialize(element)))
         new_list = List(value=value)
         new_list._id = id_
         return new_list

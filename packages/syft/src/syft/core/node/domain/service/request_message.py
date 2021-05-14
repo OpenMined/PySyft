@@ -152,17 +152,17 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
     @staticmethod
     def _proto2object(proto: RequestMessage_PB) -> "RequestMessage":
         request_msg = RequestMessage(
-            request_id=deserialize(blob=proto.request_id),
+            request_id=deserialize(proto.request_id),
             object_tags=proto.object_tags,
             object_type=proto.object_type,
             request_description=proto.request_description,
-            address=deserialize(blob=proto.target_address),
-            object_id=deserialize(blob=proto.object_id),
-            owner_address=deserialize(blob=proto.owner_address),
+            address=deserialize(proto.target_address),
+            object_id=deserialize(proto.object_id),
+            owner_address=deserialize(proto.owner_address),
             requester_verify_key=VerifyKey(proto.requester_verify_key),
             timeout_secs=proto.timeout_secs,
         )
-        request_msg.request_id = deserialize(blob=proto.request_id)
+        request_msg.request_id = deserialize(proto.request_id)
         return request_msg
 
     @staticmethod

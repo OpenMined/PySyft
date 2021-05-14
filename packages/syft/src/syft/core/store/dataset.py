@@ -145,7 +145,7 @@ class Dataset(Serializable):
     def _proto2object(proto: Dataset_PB) -> Serializable:
 
         # Step 1: deserialize the ID
-        id = _deserialize(blob=proto.id)
+        id = _deserialize(proto.id)
 
         if not isinstance(id, UID):
             raise ValueError("TODO")

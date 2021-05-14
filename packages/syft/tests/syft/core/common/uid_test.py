@@ -110,7 +110,7 @@ def test_uid_default_serialization() -> None:
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     blob = _serialize(obj=uid)
-    _ = _deserialize(blob=blob)
+    _ = _deserialize(blob)
     assert sy.serialize(uid) == blob
 
 
@@ -119,7 +119,7 @@ def test_uid_default_deserialization() -> None:
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     blob = _serialize(obj=uid)
-    obj = sy.deserialize(blob=blob)
+    obj = sy.deserialize(blob)
     assert obj == UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
 
 
@@ -141,7 +141,7 @@ def test_uid_proto_deserialization() -> None:
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     blob = _serialize(obj=uid)
 
-    obj = sy.deserialize(blob=blob, from_proto=True)
+    obj = sy.deserialize(blob)
     assert obj == UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
 
 
@@ -167,5 +167,5 @@ def test_uid_binary_deserialization() -> None:
         + b"g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15\x14"
     )
 
-    obj = sy.deserialize(blob=blob, from_bytes=True)
+    obj = sy.deserialize(blob)
     assert obj == UID(value=uuid.UUID(int=333779996850170035686993356951732753684))

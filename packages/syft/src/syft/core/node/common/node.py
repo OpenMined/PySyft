@@ -296,13 +296,6 @@ class Node(AbstractNode):
         )
 
     @property
-    def known_nodes(self) -> List[Client]:
-        """This is a property which returns a list of all known node
-        by returning the clients we used to interact with them from
-        the object store."""
-        return list(self.in_memory_client_registry.values())
-
-    @property
     def id(self) -> UID:
         traceback_and_raise(NotImplementedError)
 

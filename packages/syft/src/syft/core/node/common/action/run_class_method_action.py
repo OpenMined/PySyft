@@ -286,12 +286,12 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
         return RunClassMethodAction(
             path=proto.path,
-            _self=_deserialize(blob=proto._self),
-            args=list(map(lambda x: _deserialize(blob=x), proto.args)),
-            kwargs={k: _deserialize(blob=v) for k, v in proto.kwargs.items()},
-            id_at_location=_deserialize(blob=proto.id_at_location),
-            address=_deserialize(blob=proto.address),
-            msg_id=_deserialize(blob=proto.msg_id),
+            _self=_deserialize(proto._self),
+            args=list(map(lambda x: _deserialize(x), proto.args)),
+            kwargs={k: _deserialize(v) for k, v in proto.kwargs.items()},
+            id_at_location=_deserialize(proto.id_at_location),
+            address=_deserialize(proto.address),
+            msg_id=_deserialize(proto.msg_id),
         )
 
     @staticmethod

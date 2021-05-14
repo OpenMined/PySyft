@@ -21,7 +21,6 @@ from ...store import ObjectStore
 
 
 class AbstractNode(Address):
-
     name: Optional[str]
     signing_key: Optional[SigningKey]
     verify_key: Optional[VerifyKey]

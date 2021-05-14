@@ -166,21 +166,15 @@ class OrderedDict(PyOrderedDict, PyPrimitive):
 
     @staticmethod
     def _proto2object(proto: OrderedDict_PB) -> "OrderedDict":
-        id_: UID = deserialize(blob=proto.id)
+        id_: UID = deserialize(proto.id)
         # deserialize from bytes so that we can avoid using StorableObject
         # otherwise we get recursion where the permissions of StorableObject
         # themselves utilise OrederedDict
-        values = [
-            deserialize(blob=upcast(value=element), from_bytes=True)
-            for element in proto.values
-        ]
+        values = [deserialize(upcast(value=element)) for element in proto.values]
         # deserialize from bytes so that we can avoid using StorableObject
         # otherwise we get recursion where the permissions of StorableObject
         # themselves utilise OrderedDict
-        keys = [
-            deserialize(blob=upcast(value=element), from_bytes=True)
-            for element in proto.keys
-        ]
+        keys = [deserialize(upcast(value=element)) for element in proto.keys]
         new_dict = OrderedDict(dict(zip(keys, values)))
         new_dict._id = id_
         return new_dict

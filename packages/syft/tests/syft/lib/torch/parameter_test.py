@@ -59,7 +59,7 @@ def test_parameter_serde() -> None:
 
     blob = sy.serialize(param)
 
-    param2 = sy.deserialize(blob=blob)
+    param2 = sy.deserialize(blob)
 
     assert (param == param2).all()
     assert (param2.grad == param2.grad).all()
@@ -82,7 +82,7 @@ def test_linear_grad_serde() -> None:
 
     blob = sy.serialize(param)
 
-    param2 = sy.deserialize(blob=blob)
+    param2 = sy.deserialize(blob)
 
     assert (param == param2).all()
     # assert param == param2

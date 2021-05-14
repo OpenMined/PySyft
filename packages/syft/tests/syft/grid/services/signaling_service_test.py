@@ -46,7 +46,7 @@ def test_signaling_offer_message_serde(node: sy.VirtualMachine) -> None:
     )
 
     blob = serialize(msg)
-    msg2 = sy.deserialize(blob=blob)
+    msg2 = sy.deserialize(blob)
 
     msg_metadata = node.get_metadata_for_client()
     msg2_metadata = msg2.host_metadata
@@ -79,7 +79,7 @@ def test_signaling_answer_message_serde(node: sy.VirtualMachine) -> None:
     msg_metadata = node.get_metadata_for_client()
 
     blob = serialize(msg)
-    msg2 = sy.deserialize(blob=blob)
+    msg2 = sy.deserialize(blob)
     msg2_metadata = msg2.host_metadata
 
     assert msg.id == msg2.id
@@ -109,7 +109,7 @@ def test_signaling_answer_pull_request_message_serde(node: sy.VirtualMachine) ->
     )
 
     blob = serialize(msg)
-    msg2 = sy.deserialize(blob=blob)
+    msg2 = sy.deserialize(blob)
 
     assert msg.id == msg2.id
     assert msg.address == target
@@ -132,7 +132,7 @@ def test_signaling_offer_pull_request_message_serde(node: sy.VirtualMachine) -> 
     )
 
     blob = serialize(msg)
-    msg2 = sy.deserialize(blob=blob)
+    msg2 = sy.deserialize(blob)
 
     assert msg.id == msg2.id
     assert msg.address == target

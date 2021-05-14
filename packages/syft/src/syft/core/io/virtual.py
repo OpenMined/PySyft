@@ -49,7 +49,7 @@ class VirtualServerConnection(ServerConnection):
 
     @staticmethod
     def _proto2object(proto: VirtualServerConnection_PB) -> "VirtualServerConnection":
-        node = _deserialize(blob=proto.node, from_proto=True)
+        node = _deserialize(proto.node)
         return VirtualServerConnection(
             node=node,
         )

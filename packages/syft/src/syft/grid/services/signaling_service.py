@@ -107,11 +107,11 @@ class OfferPullRequestMessage(ImmediateSyftMessageWithReply):
         """
 
         return OfferPullRequestMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             target_peer=proto.target_peer,
             host_peer=proto.host_peer,
-            reply_to=_deserialize(blob=proto.reply_to),
+            reply_to=_deserialize(proto.reply_to),
         )
 
     @staticmethod
@@ -190,11 +190,11 @@ class AnswerPullRequestMessage(ImmediateSyftMessageWithReply):
         """
 
         return AnswerPullRequestMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             target_peer=proto.target_peer,
             host_peer=proto.host_peer,
-            reply_to=_deserialize(blob=proto.reply_to),
+            reply_to=_deserialize(proto.reply_to),
         )
 
     @staticmethod
@@ -267,9 +267,9 @@ class RegisterNewPeerMessage(ImmediateSyftMessageWithReply):
         """
 
         return RegisterNewPeerMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
-            reply_to=_deserialize(blob=proto.reply_to),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
+            reply_to=_deserialize(proto.reply_to),
         )
 
     @staticmethod
@@ -345,8 +345,8 @@ class PeerSuccessfullyRegistered(ImmediateSyftMessageWithoutReply):
         """
 
         return PeerSuccessfullyRegistered(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             peer_id=proto.peer_id,
         )
 
@@ -430,10 +430,10 @@ class SignalingOfferMessage(ImmediateSyftMessageWithoutReply):
         """
 
         return SignalingOfferMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             payload=proto.payload,
-            host_metadata=_deserialize(blob=proto.host_metadata),
+            host_metadata=_deserialize(proto.host_metadata),
             target_peer=proto.target_peer,
             host_peer=proto.host_peer,
         )
@@ -519,10 +519,10 @@ class SignalingAnswerMessage(ImmediateSyftMessageWithoutReply):
         """
 
         return SignalingAnswerMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             payload=proto.payload,
-            host_metadata=_deserialize(blob=proto.host_metadata),
+            host_metadata=_deserialize(proto.host_metadata),
             target_peer=proto.target_peer,
             host_peer=proto.host_peer,
         )
@@ -596,8 +596,8 @@ class SignalingRequestsNotFound(ImmediateSyftMessageWithoutReply):
         """
 
         return SignalingRequestsNotFound(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
         )
 
     @staticmethod
@@ -669,8 +669,8 @@ class InvalidLoopBackRequest(ImmediateSyftMessageWithoutReply):
         """
 
         return InvalidLoopBackRequest(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
         )
 
     @staticmethod
@@ -741,8 +741,8 @@ class CloseConnectionMessage(ImmediateSyftMessageWithoutReply):
         """
 
         return CloseConnectionMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
         )
 
     @staticmethod

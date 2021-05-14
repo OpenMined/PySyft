@@ -117,7 +117,7 @@ class Client(AbstractNodeClient):
         metadata: Metadata_PB,
     ) -> Tuple[SpecificLocation, str, UID]:
         # string of bytes
-        meta = _deserialize(blob=metadata)
+        meta = _deserialize(metadata)
         return meta.node, meta.name, meta.id
 
     def install_supported_frameworks(self) -> None:
@@ -141,9 +141,6 @@ class Client(AbstractNodeClient):
 
             except Exception as e:
                 critical(f"Failed to set python attribute on client. {e}")
-
-    def add_me_to_my_address(self) -> None:
-        traceback_and_raise(NotImplementedError)
 
     def register_in_memory_client(self, client: AbstractNodeClient) -> None:
         # WARNING: Gross hack
@@ -279,12 +276,6 @@ class Client(AbstractNodeClient):
 
     def __repr__(self) -> str:
         return f"<Client pointing to node with id:{self.id}>"
-
-    def register_route(self, route: Route) -> None:
-        self.routes.append(route)
-
-    def set_default_route(self, route_index: int) -> None:
-        self.default_route = route_index
 
     def _object2proto(self) -> Client_PB:
         obj_type = get_fully_qualified_name(obj=self)

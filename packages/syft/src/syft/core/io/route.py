@@ -185,7 +185,7 @@ class SoloRoute(Route):
     @staticmethod
     def _proto2object(proto: SoloRoute_PB) -> "SoloRoute":
         connection = VirtualClientConnection._proto2object(proto.connection)
-        # connection = _deserialize(blob=proto.connection, from_proto=True)
+        # connection = _deserialize(proto.connection)
         return SoloRoute(
             destination=SpecificLocation._proto2object(proto.destination),
             connection=connection,
@@ -194,13 +194,3 @@ class SoloRoute(Route):
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return SoloRoute_PB
-
-
-class BroadcastRoute(SoloRoute):
-    """
-    A route used for pub/sub type systems.
-    """
-
-    def __init__(self, destination: Location, connection: ClientConnection) -> None:
-        super().__init__(destination=destination, connection=connection)
-        # self.connection.topic = destination.topic

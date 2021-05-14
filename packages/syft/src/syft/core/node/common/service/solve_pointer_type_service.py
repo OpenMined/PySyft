@@ -50,10 +50,10 @@ class ResolvePointerTypeMessage(ImmediateSyftMessageWithReply):
         proto: ResolvePointerTypeMessage_PB,
     ) -> "ResolvePointerTypeMessage":
         return ResolvePointerTypeMessage(
-            id_at_location=_deserialize(blob=proto.id_at_location),
-            address=_deserialize(blob=proto.address),
-            msg_id=_deserialize(blob=proto.msg_id),
-            reply_to=_deserialize(blob=proto.reply_to),
+            id_at_location=_deserialize(proto.id_at_location),
+            address=_deserialize(proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            reply_to=_deserialize(proto.reply_to),
         )
 
     @staticmethod
@@ -84,8 +84,8 @@ class ResolvePointerTypeAnswerMessage(ImmediateSyftMessageWithoutReply):
         proto: ResolvePointerTypeAnswerMessage_PB,
     ) -> "ResolvePointerTypeAnswerMessage":
         return ResolvePointerTypeAnswerMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             type_path=proto.type_path,
         )
 

@@ -58,7 +58,7 @@ class _SyNone(PyPrimitive):
 
     @staticmethod
     def _proto2object(proto: None_PB) -> "_SyNone":
-        none_id: UID = deserialize(blob=proto.id)
+        none_id: UID = deserialize(proto.id)
 
         de_none = _SyNone()
         de_none._id = none_id

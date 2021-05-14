@@ -142,7 +142,7 @@ class SignedMessage(SyftMessage):
     def message(self) -> "SyftMessage":
         if self.cached_deseralized_message is None:
             _syft_msg = validate_type(
-                _deserialize(blob=self.serialized_message, from_bytes=True), SyftMessage
+                _deserialize(self.serialized_message), SyftMessage
             )
             self.cached_deseralized_message = _syft_msg
 
@@ -179,9 +179,7 @@ class SignedMessage(SyftMessage):
     @staticmethod
     def _proto2object(proto: SignedMessage_PB) -> SignedMessageT:
         # TODO: horrible temp hack, need to rethink address on SignedMessage
-        sub_message = validate_type(
-            _deserialize(blob=proto.message, from_bytes=True), SyftMessage
-        )
+        sub_message = validate_type(_deserialize(proto.message), SyftMessage)
 
         address = sub_message.address
 
@@ -193,7 +191,7 @@ class SignedMessage(SyftMessage):
         klass = module_parts.pop()
         obj_type = getattr(sys.modules[".".join(module_parts)], klass)
         obj = obj_type.signed_type(
-            msg_id=_deserialize(blob=proto.msg_id),
+            msg_id=_deserialize(proto.msg_id),
             address=address,
             obj_type=proto.obj_type,
             signature=proto.signature,

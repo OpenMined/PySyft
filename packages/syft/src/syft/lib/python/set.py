@@ -178,10 +178,8 @@ class Set(set, PyPrimitive):
 
     @staticmethod
     def _proto2object(proto: Set_PB) -> "Set":
-        id_: UID = deserialize(blob=proto.id)
-        value = [
-            upcast(deserialize(blob=element, from_bytes=True)) for element in proto.data
-        ]
+        id_: UID = deserialize(proto.id)
+        value = [upcast(deserialize(element)) for element in proto.data]
         new_list = Set(value)
         new_list._id = id_
         return new_list

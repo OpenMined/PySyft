@@ -111,7 +111,7 @@ class Slice(PyPrimitive):
 
     @staticmethod
     def _proto2object(proto: Slice_PB) -> "Slice":
-        id_: UID = deserialize(blob=proto.id)
+        id_: UID = deserialize(proto.id)
         start = None
         stop = None
         step = None

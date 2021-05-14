@@ -65,7 +65,7 @@ class SpecificLocation(ObjectWithID, Location):
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
-        _id = validate_type(_deserialize(blob=proto.id), UID, optional=True)
+        _id = validate_type(_deserialize(proto.id), UID, optional=True)
         return SpecificLocation(_id, name=proto.name)
 
     @staticmethod

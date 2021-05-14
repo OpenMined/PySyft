@@ -53,8 +53,8 @@ class GarbageCollectBatchedAction(EventualActionWithoutReply):
 
         ids_at_location = []
         for id_at_location in proto.ids_at_location:
-            ids_at_location.append(_deserialize(blob=id_at_location))
-        addr = _deserialize(blob=proto.address)
+            ids_at_location.append(_deserialize(id_at_location))
+        addr = _deserialize(proto.address)
 
         return GarbageCollectBatchedAction(
             ids_at_location=ids_at_location,

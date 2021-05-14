@@ -41,7 +41,7 @@ class HTTPConnection(ClientConnection):
         # Deserialize node's response
         if response.status_code == requests.codes.ok:
             # Return SignedImmediateSyftMessageWithoutReply
-            return _deserialize(blob=response.content, from_bytes=True)
+            return _deserialize(response.content)
 
         try:
             response_json = json.loads(response.content)

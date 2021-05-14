@@ -375,7 +375,7 @@ def test_default_serialization_and_deserialization() -> None:
     blob = sy.serialize(obj, to_proto=True)
 
     assert sy.serialize(obj) == blob
-    assert obj == sy.deserialize(blob=blob)
+    assert obj == sy.deserialize(blob)
 
 
 def test_partial_serialization_and_deserialization() -> None:
@@ -389,7 +389,7 @@ def test_partial_serialization_and_deserialization() -> None:
         vm=SpecificLocation(id=an_id),
     )
 
-    assert obj == sy.deserialize(blob=sy.serialize(obj))
+    assert obj == sy.deserialize(sy.serialize(obj))
 
     obj = Address(
         network=SpecificLocation(id=an_id),
@@ -399,7 +399,7 @@ def test_partial_serialization_and_deserialization() -> None:
     )
 
     blob = sy.serialize(obj, to_proto=True)
-    assert obj == sy.deserialize(blob=blob)
+    assert obj == sy.deserialize(blob)
 
     obj = Address(
         network=SpecificLocation(id=an_id),
@@ -409,7 +409,7 @@ def test_partial_serialization_and_deserialization() -> None:
     )
 
     blob = sy.serialize(obj, to_proto=True)
-    assert obj == sy.deserialize(blob=blob)
+    assert obj == sy.deserialize(blob)
 
     obj = Address(
         network=SpecificLocation(id=an_id),
@@ -419,7 +419,7 @@ def test_partial_serialization_and_deserialization() -> None:
     )
 
     blob = sy.serialize(obj, to_proto=True)
-    assert obj == sy.deserialize(blob=blob)
+    assert obj == sy.deserialize(blob)
 
 
 def test_proto_serialization() -> None:
@@ -476,5 +476,5 @@ def test_proto_deserialization() -> None:
         vm=sy.serialize(loc),
     )
 
-    obj2 = sy.deserialize(blob=blob, from_proto=True)
+    obj2 = sy.deserialize(blob)
     assert obj == obj2

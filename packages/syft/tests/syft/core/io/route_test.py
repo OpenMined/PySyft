@@ -3,7 +3,6 @@ from syft.core.common.message import SignedEventualSyftMessageWithoutReply
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft.core.io.location.specific import SpecificLocation
-from syft.core.io.route import BroadcastRoute
 from syft.core.io.route import Route
 from syft.core.io.route import RouteSchema
 from syft.core.io.route import SoloRoute
@@ -49,20 +48,6 @@ def test_solo_route_init() -> None:
 
     assert h_solo.schema.destination is destination
     assert h_solo.connection is virtual_client
-
-
-def test_broadcast_route_init() -> None:
-    """
-    Test that BroadcastRoute will use the Location and
-    ClientConnection passed into its constructor.
-    """
-    destination = SpecificLocation()
-    virtual_server = VirtualServerConnection(node=Node())
-    virtual_client = VirtualClientConnection(server=virtual_server)
-    b_route = BroadcastRoute(destination=destination, connection=virtual_client)
-
-    assert b_route.schema.destination is destination
-    assert b_route.connection is virtual_client
 
 
 # --------------------- CLASS & PROPERTY METHODS ---------------------

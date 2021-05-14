@@ -91,12 +91,12 @@ class ObjectSearchPermissionUpdateMessage(ImmediateSyftMessageWithoutReply):
         """
 
         return ObjectSearchPermissionUpdateMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
             target_verify_key=VerifyKey(proto.target_verify_key)
             if proto.target_verify_key
             else None,
-            target_object_id=_deserialize(blob=proto.target_object_id),
+            target_object_id=_deserialize(proto.target_object_id),
             add_instead_of_remove=proto.add_instead_of_remove,
         )
 

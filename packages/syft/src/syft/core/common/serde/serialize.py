@@ -17,7 +17,7 @@ def _serialize(
     obj: object,
     to_proto: bool = True,
     to_bytes: bool = False,
-) -> Union[str, bytes, Message]:
+) -> Union[bytes, Message]:
     """Serialize the object according to the parameters.
 
     This method can be called directly on the syft module::

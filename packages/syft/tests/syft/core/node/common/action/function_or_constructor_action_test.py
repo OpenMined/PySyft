@@ -30,7 +30,7 @@ def test_run_function_or_constructor_action_serde(
 
     blob = sy.serialize(msg)
 
-    msg2 = sy.deserialize(blob=blob)
+    msg2 = sy.deserialize(blob)
 
     assert msg2.path == msg.path
     # FIXME this cannot be checked before we fix the Pointer serde problem (see _proto2object in Pointer)

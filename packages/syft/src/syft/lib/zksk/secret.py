@@ -16,9 +16,7 @@ def object2proto(obj: zk.expr.Secret) -> Secret_PB:
 
 
 def proto2object(proto: Secret_PB) -> zk.expr.Secret:
-    return zk.expr.Secret(
-        name=proto.name, value=deserialize(proto.value, from_bytes=True)
-    )
+    return zk.expr.Secret(name=proto.name, value=deserialize(proto.value))
 
 
 GenerateWrapper(

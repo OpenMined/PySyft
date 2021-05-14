@@ -139,12 +139,10 @@ class GetSetStaticAttributeAction(ImmediateActionWithoutReply):
         """
         return GetSetStaticAttributeAction(
             path=proto.path,
-            id_at_location=_deserialize(blob=proto.id_at_location),
-            address=_deserialize(blob=proto.address),
-            msg_id=_deserialize(blob=proto.msg_id),
-            set_arg=_deserialize(blob=proto.set_arg)
-            if proto.HasField("set_arg")
-            else None,
+            id_at_location=_deserialize(proto.id_at_location),
+            address=_deserialize(proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            set_arg=_deserialize(proto.set_arg) if proto.HasField("set_arg") else None,
             action=StaticAttributeAction(proto.action),
         )
 

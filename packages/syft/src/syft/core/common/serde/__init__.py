@@ -71,7 +71,7 @@ on the object for your convenience::
     # >>> }
 
     # deserialization also assumes you are accepting a protobuf object
-    my_object_again = sy.deserialize(blob=proto_obj)
+    my_object_again = sy.deserialize(proto_obj)
 
     print(my_object_again)
     # >>> <ObjectWithID:fb1bb067-5bb7-4c49-bece-e700ab0a1514>
@@ -102,7 +102,7 @@ Protobuf
     # >>>   value: "23hi23hgo2ih23ih2;o3igh;2oih;iagapwihpag"
     # >>> }
 
-    obj_again = sy.deserialize(blob=proto_obj, from_proto=True)
+    obj_again = sy.deserialize(proto_obj)
 
 Binary
 ******
@@ -118,7 +118,7 @@ Binary
     # >>> "id": {    "objType": "syft.core.common.uid.UID",
     # >>> "value": "+xuwZ1u3TEm+zucAqwoVFA=="  }}'
 
-    obj_again = sy.deserialize(blob=proto_obj, from_bytes=True)
+    obj_again = sy.deserialize(proto_obj)
 
 Now we can continue with the class definition for the Serializable class, which
 is the parent class for all serializable objects within Syft.

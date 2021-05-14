@@ -1,6 +1,5 @@
 # stdlib
 from typing import Any
-from typing import Type
 
 # third party
 from google.protobuf.message import Message
@@ -149,17 +148,6 @@ class Serializable:
         :rtype: GeneratedProtocolMessageType
         """
 
-        traceback_and_raise(NotImplementedError)
-
-    @staticmethod
-    def get_wrapped_type() -> Type:
-        """
-        This static method returns the wrapped type, if the current class is
-        a wrapper over an external object.
-
-        :return: the wrapped type
-        :rtype: type
-        """
         traceback_and_raise(NotImplementedError)
 
     @staticmethod

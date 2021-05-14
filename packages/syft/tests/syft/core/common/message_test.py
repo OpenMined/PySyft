@@ -45,7 +45,7 @@ def get_repr_message_bytes() -> bytes:
 def get_repr_message() -> ReprMessage:
     # return a repr message fixture
     blob = get_repr_message_bytes()
-    return sy.deserialize(blob=blob, from_bytes=True)
+    return sy.deserialize(blob)
 
 
 def get_verify_key() -> VerifyKey:
@@ -79,7 +79,7 @@ def test_deserialize_signed_message() -> None:
     """Tests that SignedMessage can be deserialized"""
 
     sig_msg_blob = get_signed_message_bytes()
-    sig_msg = sy.deserialize(blob=sig_msg_blob, from_bytes=True)
+    sig_msg = sy.deserialize(sig_msg_blob)
 
     msg = get_repr_message()
     signing_key = get_signing_key()
@@ -107,7 +107,7 @@ def test_serde_matches() -> None:
     sig_msg_blob = get_signed_message_bytes()
 
     # deserial should be expected type
-    sig_msg = sy.deserialize(blob=sig_msg_blob, from_bytes=True)
+    sig_msg = sy.deserialize(sig_msg_blob)
     assert type(sig_msg) == SignedImmediateSyftMessageWithoutReply
 
     # reserial should be same as original fixture
@@ -135,7 +135,7 @@ def test_verify_message() -> None:
     """Tests that SignedMessage can be verified"""
 
     blob = get_signed_message_bytes()
-    sig_msg = sy.deserialize(blob=blob, from_bytes=True)
+    sig_msg = sy.deserialize(blob)
 
     veri_msg = sig_msg.message
     obj = get_repr_message()
@@ -147,7 +147,7 @@ def test_verify_message_fails_key() -> None:
     """Tests that SignedMessage cant be verified with the wrong verification key"""
 
     blob = get_signed_message_bytes()
-    sig_msg = sy.deserialize(blob=blob, from_bytes=True)
+    sig_msg = sy.deserialize(blob)
 
     # everything is good
     assert sig_msg.is_valid is True
@@ -164,7 +164,7 @@ def test_verify_message_fails_sig() -> None:
     """Tests that SignedMessage cant be verified with the wrong signature"""
 
     blob = get_signed_message_bytes()
-    sig_msg = sy.deserialize(blob=blob, from_bytes=True)
+    sig_msg = sy.deserialize(blob)
 
     # everything is good
     assert sig_msg.is_valid is True
@@ -180,7 +180,7 @@ def test_verify_message_fails_message() -> None:
     """Tests that SignedMessage cant be verified with the wrong message"""
 
     blob = get_signed_message_bytes()
-    sig_msg = sy.deserialize(blob=blob, from_bytes=True)
+    sig_msg = sy.deserialize(blob)
 
     # everything is good
     assert sig_msg.is_valid is True
@@ -196,7 +196,7 @@ def test_verify_message_fails_empty() -> None:
     """Tests that SignedMessage cant be verified with empty sig"""
 
     blob = get_signed_message_bytes()
-    sig_msg = sy.deserialize(blob=blob, from_bytes=True)
+    sig_msg = sy.deserialize(blob)
 
     # everything is good
     assert sig_msg.is_valid is True
@@ -212,9 +212,9 @@ def test_decode_message() -> None:
     """Tests that SignedMessage serialized_message is not encrypted"""
 
     blob = get_signed_message_bytes()
-    sig_msg = sy.deserialize(blob=blob, from_bytes=True)
+    sig_msg = sy.deserialize(blob)
 
-    nonveri_msg = sy.deserialize(blob=sig_msg.serialized_message, from_bytes=True)
+    nonveri_msg = sy.deserialize(sig_msg.serialized_message)
     obj = get_repr_message()
 
     assert nonveri_msg == obj
@@ -224,7 +224,7 @@ def test_get_message() -> None:
     """Tests that SignedMessage verification can be ignored"""
 
     blob = get_signed_message_bytes()
-    sig_msg = sy.deserialize(blob=blob, from_bytes=True)
+    sig_msg = sy.deserialize(blob)
 
     sig_msg.signature += b"a"
     nonveri_msg = sig_msg.message

@@ -135,15 +135,6 @@ class ObjectStore(ABC):
     def get_object(self, key: UID) -> Optional[StorableObject]:
         traceback_and_raise(NotImplementedError)
 
-    def has_object(self) -> None:
-        traceback_and_raise(NotImplementedError)
-
-    def store_object(self) -> None:
-        traceback_and_raise(NotImplementedError)
-
-    def delete_object(self) -> None:
-        traceback_and_raise(NotImplementedError)
-
     def get_objects_of_type(self, obj_type: Type) -> Iterable[AbstractStorableObject]:
         traceback_and_raise(NotImplementedError)
 

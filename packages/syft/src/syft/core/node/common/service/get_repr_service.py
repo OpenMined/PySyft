@@ -53,10 +53,10 @@ class GetReprMessage(ImmediateSyftMessageWithReply):
     @staticmethod
     def _proto2object(proto: GetReprMessage_PB) -> "GetReprMessage":
         return GetReprMessage(
-            id_at_location=_deserialize(blob=proto.id_at_location),
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
-            reply_to=_deserialize(blob=proto.reply_to),
+            id_at_location=_deserialize(proto.id_at_location),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
+            reply_to=_deserialize(proto.reply_to),
         )
 
     @staticmethod
@@ -86,8 +86,8 @@ class GetReprReplyMessage(ImmediateSyftMessageWithoutReply):
     def _proto2object(proto: GetReprReplyMessage_PB) -> "GetReprReplyMessage":
         return GetReprReplyMessage(
             repr=proto.repr,
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=_deserialize(proto.msg_id),
+            address=_deserialize(proto.address),
         )
 
     @staticmethod

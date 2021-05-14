@@ -275,7 +275,7 @@ class Int(int, PyPrimitive):
 
     @staticmethod
     def _proto2object(proto: Int_PB) -> "Int":
-        int_id: UID = deserialize(blob=proto.id)
+        int_id: UID = deserialize(proto.id)
 
         de_int = Int(value=proto.data)
         de_int._id = int_id  # can't use uid=int_id for some reason

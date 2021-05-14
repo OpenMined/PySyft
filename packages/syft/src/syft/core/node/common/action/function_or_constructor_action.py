@@ -205,11 +205,11 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
 
         return RunFunctionOrConstructorAction(
             path=proto.path,
-            args=tuple(_deserialize(blob=x) for x in proto.args),
-            kwargs={k: _deserialize(blob=v) for k, v in proto.kwargs.items()},
-            id_at_location=_deserialize(blob=proto.id_at_location),
-            address=_deserialize(blob=proto.address),
-            msg_id=_deserialize(blob=proto.msg_id),
+            args=tuple(_deserialize(x) for x in proto.args),
+            kwargs={k: _deserialize(v) for k, v in proto.kwargs.items()},
+            id_at_location=_deserialize(proto.id_at_location),
+            address=_deserialize(proto.address),
+            msg_id=_deserialize(proto.msg_id),
         )
 
     @staticmethod

@@ -17,7 +17,7 @@ def test_garbage_collection_object_action_serde() -> None:
 
     blob = serialize(msg)
 
-    msg2 = sy.deserialize(blob=blob)
+    msg2 = sy.deserialize(blob)
 
     assert msg2.id_at_location == msg.id_at_location
     assert msg2.address == msg.address

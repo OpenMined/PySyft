@@ -125,7 +125,7 @@ class Range(PyPrimitive):
             start=proto.start,
             stop=proto.stop,
             step=proto.step,
-            id=deserialize(blob=proto.id),
+            id=deserialize(proto.id),
         )
 
     @staticmethod

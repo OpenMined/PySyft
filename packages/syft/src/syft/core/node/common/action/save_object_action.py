@@ -56,8 +56,8 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
 
     @staticmethod
     def _proto2object(proto: SaveObjectAction_PB) -> "SaveObjectAction":
-        obj = _deserialize(blob=proto.obj)
-        addr = _deserialize(blob=proto.address)
+        obj = _deserialize(proto.obj)
+        addr = _deserialize(proto.address)
         return SaveObjectAction(obj=obj, address=addr)
 
     @staticmethod

@@ -93,10 +93,10 @@ class ExceptionMessage(ImmediateSyftMessageWithoutReply):
         exception_type = getattr(sys.modules[".".join(module_parts)], klass)
 
         return ExceptionMessage(
-            msg_id=validate_type(_deserialize(blob=proto.msg_id), UID, optional=True),
-            address=validate_type(_deserialize(blob=proto.address), Address),
+            msg_id=validate_type(_deserialize(proto.msg_id), UID, optional=True),
+            address=validate_type(_deserialize(proto.address), Address),
             msg_id_causing_exception=validate_type(
-                _deserialize(blob=proto.msg_id_causing_exception), UID
+                _deserialize(proto.msg_id_causing_exception), UID
             ),
             exception_type=exception_type,
             exception_msg=proto.exception_msg,

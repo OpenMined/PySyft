@@ -70,9 +70,9 @@ class GetAllRequestsMessage(ImmediateSyftMessageWithReply):
         """
 
         return GetAllRequestsMessage(
-            msg_id=deserialize(blob=proto.msg_id),
-            address=deserialize(blob=proto.address),
-            reply_to=deserialize(blob=proto.reply_to),
+            msg_id=deserialize(proto.msg_id),
+            address=deserialize(proto.address),
+            reply_to=deserialize(proto.reply_to),
         )
 
     @staticmethod
@@ -146,9 +146,9 @@ class GetAllRequestsResponseMessage(ImmediateSyftMessageWithoutReply):
         """
 
         return GetAllRequestsResponseMessage(
-            msg_id=deserialize(blob=proto.msg_id),
-            address=deserialize(blob=proto.address),
-            requests=[deserialize(blob=x) for x in proto.requests],
+            msg_id=deserialize(proto.msg_id),
+            address=deserialize(proto.address),
+            requests=[deserialize(x) for x in proto.requests],
         )
 
     @staticmethod

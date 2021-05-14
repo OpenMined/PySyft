@@ -53,12 +53,10 @@ class RegisterChildNodeMessage(ImmediateSyftMessageWithoutReply):
     @staticmethod
     def _proto2object(proto: RegisterChildNodeMessage_PB) -> "RegisterChildNodeMessage":
         msg = RegisterChildNodeMessage(
-            lookup_id=_deserialize(blob=proto.lookup_id),
-            child_node_client_address=_deserialize(
-                blob=proto.child_node_client_address
-            ),
-            address=_deserialize(blob=proto.address),
-            msg_id=_deserialize(blob=proto.msg_id),
+            lookup_id=_deserialize(proto.lookup_id),
+            child_node_client_address=_deserialize(proto.child_node_client_address),
+            address=_deserialize(proto.address),
+            msg_id=_deserialize(proto.msg_id),
         )
         debug(f"> {msg.icon} <- 🔢 Proto")
         return msg

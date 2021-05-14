@@ -515,7 +515,7 @@ def test_message(message_name: str, node: sy.VirtualMachine) -> None:
 
 def message_integrity_test(msg: AbstractMessage, target: Address) -> None:
     blob = sy.serialize(msg)
-    msg2 = sy.deserialize(blob=blob)
+    msg2 = sy.deserialize(blob)
 
     assert msg.id == msg2.id
     assert msg.address == target

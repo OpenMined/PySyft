@@ -390,7 +390,7 @@ class String(UserString, PyPrimitive):
 
     @staticmethod
     def _proto2object(proto: String_PB) -> "String":
-        str_id: UID = deserialize(blob=proto.id)
+        str_id: UID = deserialize(proto.id)
         return String(value=proto.data, id=str_id)
 
     @staticmethod

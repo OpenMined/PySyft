@@ -89,9 +89,9 @@ class EnumAttributeAction(ImmediateActionWithoutReply):
         """
         return EnumAttributeAction(
             path=proto.path,
-            id_at_location=_deserialize(blob=proto.id_at_location),
-            address=_deserialize(blob=proto.address),
-            msg_id=_deserialize(blob=proto.msg_id),
+            id_at_location=_deserialize(proto.id_at_location),
+            address=_deserialize(proto.address),
+            msg_id=_deserialize(proto.msg_id),
         )
 
     @staticmethod

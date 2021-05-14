@@ -114,10 +114,8 @@ class Tuple(tuple, PyPrimitive):
 
     @staticmethod
     def _proto2object(proto: Tuple_PB) -> "Tuple":
-        id_: UID = deserialize(blob=proto.id)
-        value = [
-            upcast(deserialize(blob=element, from_bytes=True)) for element in proto.data
-        ]
+        id_: UID = deserialize(proto.id)
+        value = [upcast(deserialize(element)) for element in proto.data]
         new_list = Tuple(value)
         new_list._id = id_
         return new_list

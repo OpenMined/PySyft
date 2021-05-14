@@ -94,7 +94,7 @@ def test_plan_serialization(client: sy.VirtualMachineClient) -> None:
 
     # serialize / deserialize
     blob = serialize(plan)
-    plan_reconstructed = sy.deserialize(blob=blob)
+    plan_reconstructed = sy.deserialize(blob)
 
     # test
     assert isinstance(plan_reconstructed, Plan)

@@ -31,7 +31,6 @@ class MemoryStore(ObjectStore):
     def __init__(self) -> None:
         super().__init__()
         self._objects: OrderedDict[UID, StorableObject] = OrderedDict()
-        self._search_engine = None
         self.post_init()
 
     def get_object(self, key: UID) -> Optional[StorableObject]:
