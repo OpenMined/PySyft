@@ -740,7 +740,7 @@ class RangeTest(unittest.TestCase):
         self.assertEqual(rangeobj.start, start)
         self.assertEqual(rangeobj.stop, stop)
         self.assertEqual(rangeobj.step, step)
-        if sys.version_info >= (3, 7):
+        if sys.version_info >= (3, 8):
             self.assertIs(type(rangeobj.start), int)
             self.assertIs(type(rangeobj.stop), int)
             self.assertIs(type(rangeobj.step), int)
