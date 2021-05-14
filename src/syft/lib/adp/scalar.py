@@ -39,11 +39,34 @@ scalar_name2obj = {}
 
 
 @lru_cache(maxsize=None)
-def search(run_specific_args: Callable, rranges: Tuple) -> OptimizeResult:
-    print("beginning an epic search...")
-    results = optimize.shgo(run_specific_args, rranges)
-    print("search complete... ")
-    return results
+def search(
+    run_specific_args: Callable, rranges: Tuple, binary: bool = True
+) -> OptimizeResult:
+
+    if binary:
+
+        slices = list()
+        for r in rranges:
+            slices.append(slice(r[0], r[1] + 0.00001, (r[1] - r[0])))
+        all_brute_results = optimize.brute(
+            func=run_specific_args, ranges=slices, finish=None, full_output=True
+        )
+        # print(all_brute_results[0])
+
+        brute_results = float(all_brute_results[1])
+        return brute_results
+
+    else:
+
+        shgo_results = float(optimize.shgo(run_specific_args, rranges).fun)
+        return shgo_results
+
+def create_lookup_tables_for_symbol(polynomial):
+
+    index2symbol = [str(x) for x in polynomial.free_symbols]
+    symbol2index = {sym: i for i, sym in enumerate(index2symbol)}
+
+    return index2symbol, symbol2index
 
 
 @bind_protobuf
@@ -58,6 +81,7 @@ class Scalar(Serializable):
         poly: Optional[Symbol] = None,
         name: Optional[str] = None,
         id: Optional[UID] = None,
+        is_discrete: bool = False
     ):
         self.id = id if id else UID()
         if name is None:
@@ -68,6 +92,7 @@ class Scalar(Serializable):
         self._min_val = min_val
         self._max_val = max_val
         self.entity = entity
+        self.is_discrete = is_discrete
 
         if poly is not None:
             # if this Scalar is being formed as a function of other Scalar objects
@@ -89,7 +114,8 @@ class Scalar(Serializable):
     def value(self) -> float:
         if self._value is not None:
             return self._value
-        run_specific_args, index2symbol, _ = self.create_run_specific_args(f=self.poly)
+        index2symbol, symbol2index = create_lookup_tables_for_symbol(self.poly)
+        run_specific_args = self.create_run_specific_args(f=self.poly, symbol2index=symbol2index)
         inputs = [scalar_name2obj[sym]._value for sym in index2symbol]
         return float(run_specific_args(inputs))
 
@@ -101,12 +127,12 @@ class Scalar(Serializable):
     def max_val(self) -> Optional[float]:
         return self._max_val
 
-    def __rmul__(self, other):
+    def __rmul__(self, other: "Scalar") -> "Scalar":
         return self * other
 
     def __mul__(self, other: "Scalar") -> "Scalar":
 
-        if hasattr(other, 'poly'):
+        if hasattr(other, "poly"):
             result_poly = self.poly * other.poly
         else:
             result_poly = self.poly * other
@@ -114,12 +140,12 @@ class Scalar(Serializable):
         result = Scalar(value=None, poly=result_poly)
         return result
 
-    def __radd__(self, other):
+    def __radd__(self, other: "Scalar") -> "Scalar":
         return self + other
 
     def __add__(self, other: "Scalar") -> "Scalar":
 
-        if hasattr(other, 'poly'):
+        if hasattr(other, "poly"):
             result_poly = self.poly + other.poly
         else:
             result_poly = self.poly + other
@@ -144,16 +170,14 @@ class Scalar(Serializable):
             return self.max_val - self.min_val
         return None
 
-    def neg_deriv(self, name: str) -> Symbol:
-        obj = scalar_name2obj[name]
-        derivative = -diff(self.poly, obj.poly)
-        return derivative
+    # def neg_deriv_wrt_input(self, input_name: str) -> Symbol:
+    #     obj = scalar_name2obj[input_name]
+    #     derivative = -diff(self.poly, obj.poly)
+    #     return derivative
 
     def create_run_specific_args(
-        self, f: Symbol
+        self, f: Symbol, symbol2index:dict
     ) -> Tuple[Callable, List[str], Dict[str, int]]:
-        index2symbol = [str(x) for x in self.poly.free_symbols]
-        symbol2index = {sym: i for i, sym in enumerate(index2symbol)}
 
         # Tudor: Here you weren't using *params
         # Tudor: If I understand correctly, .subs returns
@@ -161,37 +185,104 @@ class Scalar(Serializable):
             kwargs = {sym: tuple_of_args[i] for sym, i in symbol2index.items()}
             return f.subs(kwargs)
 
-        return _run_specific_args, index2symbol, symbol2index
+        return _run_specific_args
 
-    def get_mechanism(
+    def get_mechanism_for_entity(
+        self, entity_name: str, input_symbols: List["Scalar"], sigma: float = 0.1
+    ) -> iDPGaussianMechanism:
+        print(entity_name)
+
+        print(input_symbols)
+        print()
+        # Step 1: create derivative function wrt all inputs
+        all_input_polys = [x.poly for x in input_symbols]
+        print(all_input_polys)
+        print()
+        print(self.poly)
+        print()
+        # NOTE: self.poly is the L2 norm... but since it's only one variable we don't have to
+        # do anything to it (the l2 norm of a variable is itself). Also we negate the derivative
+        # because the search algorithms we use find the global minimum not maximum.
+        output_deriv_wrt_all_inputs = -diff(self.poly, *all_input_polys)
+        print(output_deriv_wrt_all_inputs)
+        print()
+        # Step 2: fix all inputs which come from entity_name
+        output_deriv_wrt_all_inputs.subs({sym.poly: sym.value for sym in input_symbols})
+        print(output_deriv_wrt_all_inputs)
+        print()
+
+        # Step 3: wrap in a function so that scipy optimizer can use it
+        index2symbol, symbol2index = create_lookup_tables_for_symbol(output_deriv_wrt_all_inputs)
+        search_lib_compatible_output_deriv = self.create_run_specific_args(
+            f=output_deriv_wrt_all_inputs,
+            symbol2index=symbol2index
+        )
+
+        # Step 4: Determine search ranges (also check to see if we can use discrete search)
+        discrete_search = True
+        rranges = list()
+        for i, sym in enumerate(index2symbol):
+            obj = scalar_name2obj[sym]
+            if not obj.is_discrete:
+                discrete_search = False
+            rranges.append((obj.min_val, obj.max_val))
+
+        # Step 5: Search over all possible inputs to find the maximum derivative
+        L = search(search_lib_compatible_output_deriv, tuple(rranges), binary=discrete_search)
+
+        # Step 6: Return gaussian mechanism object
+        gm1 = iDPGaussianMechanism(
+            sigma=sigma,
+            value=self.value,
+            L=L,
+            entity=entity_name,
+            name="gm_" + self.symbol_name,
+        )
+        return gm1
+
+
+
+    def get_mechanism_for_symbol(
         self, symbol_name: str = "b", sigma: float = 0.1
     ) -> iDPGaussianMechanism:
 
+        symbol = scalar_name2obj[symbol_name]
+
         # Step 1: get derivative we want to maximize
         z = self.neg_deriv(symbol_name)
-        run_specific_args, index2symbol, symbol2index = self.create_run_specific_args(
-            f=z
+
+        # Step 2: get lookup tables
+        index2symbol, symbol2index = create_lookup_tables_for_symbol(self.poly)
+
+        # # Step 3: substitute out all variables with the same entity as symbol
+        # for i, symbol_name in enumerate(index2symbol):
+        #     sym = scalar_name2obj[symbol_name]
+        #     if sym.entity == symbol.entity:
+        #         z = z.subs(sym.poly, sym.value)
+        #     # else:
+        #     #     print("Entity Mismatch:" + str(sym.split("_")[1]) + " != " + str(symbol.entity.name))
+
+        # index2symbol, symbol2index = create_lookup_tables_for_symbol(z)
+
+        run_specific_args = self.create_run_specific_args(
+            f=z,
+            symbol2index=symbol2index
         )
+
+        discrete_search = True
 
         rranges = list()
         for i, sym in enumerate(index2symbol):
             obj = scalar_name2obj[sym]
+            if not obj.is_discrete:
+                discrete_search = False
             rranges.append((obj.min_val, obj.max_val))
 
+        if not symbol.is_discrete:
+            discrete_search = False
+
         # Step 3: maximize the derivative over a bounded range of <entity_name>
-        resbrute = search(run_specific_args, tuple(rranges))
-
-        L = float(resbrute.fun)
-
-        # if isinstance(resbrute, np.float64):
-        #     L = resbrute
-        # else:
-        #     L = resbrute[symbol2index[symbol_name]]
-
-        if self.value is None:
-            raise ValueError("Tudor: This should be an error, right?")
-
-        symbol = scalar_name2obj[symbol_name]
+        L = search(run_specific_args, tuple(rranges), binary=discrete_search)
 
         # print("New Mechanism(sigma=" + str(sigma) + " value=" + str(symbol.value) + "L=" + str(L) + ")")
         # Step 4: create the gaussian mechanism object
@@ -209,12 +300,26 @@ class Scalar(Serializable):
         self, sigma: float = 0.1
     ) -> Dict[str, List[iDPGaussianMechanism]]:
         sy_names = self.poly.free_symbols
-        entity2mechanisms = defaultdict(list)
+
+        entity2symbols = defaultdict(list)
         for sy_name in sy_names:
-            mechanism = self.get_mechanism(symbol_name=str(sy_name), sigma=sigma)
-            split_name = str(sy_name).split("_")
-            entity_name = split_name[1]
-            entity2mechanisms[entity_name].append(mechanism)
+            symbol = scalar_name2obj[str(sy_name)]
+            entity_name = symbol.entity.name
+
+            if entity_name not in entity2symbols:
+                entity2symbols[entity_name] = list()
+
+            entity2symbols[entity_name].append(symbol)
+
+        entity2mechanisms = defaultdict(list)
+        for entity_name, symbols in entity2symbols.items():
+            entity2mechanisms[entity_name] = [self.get_mechanism_for_entity(entity_name=entity_name, input_symbols=symbols, sigma=sigma)]
+
+        # for sy_name in sy_names:
+        #     mechanism = self.get_mechanism_for_symbol(symbol_name=str(sy_name), sigma=sigma)
+        #     split_name = str(sy_name).split("_")
+        #     entity_name = split_name[1]
+        #     entity2mechanisms[entity_name].append(mechanism)
 
         return entity2mechanisms
 
@@ -239,7 +344,6 @@ class Scalar(Serializable):
         sample = random.gauss(0, sigma)
 
         while len(overbudgeted_entities) > 0:
-
             for sy_name in self.poly.free_symbols:
                 entity_name = str(sy_name).split("_")[1]
                 if entity_name in overbudgeted_entities:

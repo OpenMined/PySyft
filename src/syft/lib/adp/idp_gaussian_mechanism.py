@@ -1,4 +1,5 @@
 # stdlib
+from functools import lru_cache
 from typing import Dict
 
 # third party
@@ -6,6 +7,13 @@ from autodp import dp_bank
 from autodp import fdp_bank
 from autodp.autodp_core import Mechanism
 import numpy as np
+
+
+@lru_cache(maxsize=None)
+def _individual_RDP_gaussian(
+    sigma: float, value: float, L: float, alpha: float
+) -> float:
+    return (alpha * (L ** 2) * (value ** 2)) / (2 * (sigma ** 2))
 
 
 def individual_RDP_gaussian(params: Dict, alpha: float) -> np.float64:
@@ -21,7 +29,7 @@ def individual_RDP_gaussian(params: Dict, alpha: float) -> np.float64:
     assert sigma > 0
     assert alpha >= 0
 
-    return (alpha * (L ** 2) * (value ** 2)) / (2 * (sigma ** 2))
+    return _individual_RDP_gaussian(sigma=sigma, alpha=alpha, value=value, L=L)
 
 
 # Example of a specific mechanism that inherits the Mechanism class

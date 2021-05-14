@@ -41,10 +41,9 @@ class AdversarialAccountant:
 
     def has_budget(self, entity_name: str) -> bool:
         eps = self.get_eps_for_entity(entity_name)
-        value = eps.value
-        if value is not None:
-            return value < self.max_budget
-        return True
+        if eps.value is not None:
+            return eps.value < self.max_budget
+        # return True
 
     @property
     def entities(self) -> TypeKeysView[str]:
