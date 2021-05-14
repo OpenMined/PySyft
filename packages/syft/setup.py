@@ -29,7 +29,7 @@ class PostDevelopCommand(develop):
 if __name__ == "__main__":
     try:
         setup(
-            use_scm_version={"version_scheme": "no-guess-dev"},
+            use_scm_version={"version_scheme": "no-guess-dev", "root": "../.."},
             cmdclass={
                 "develop": PostDevelopCommand,
             },
