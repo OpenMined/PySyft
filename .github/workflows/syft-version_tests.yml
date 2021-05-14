@@ -63,18 +63,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
-      - name: Install PyTorch
+      - name: Install Dependencies
         run: |
           pip install packaging --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
-          pip install . --no-deps -f https://download.pytorch.org/whl/torch_stable.html --default-timeout=60
+          pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
+          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps
 
-      - name: Install packages
-        run: |
-          pip install ."[dev]" --default-timeout=60
-          pip list
-        timeout-minutes: 20
 
       - name: Scan for security issues
         run: |
@@ -84,11 +80,6 @@ jobs:
       - name: Run normal tests
         run: |
           pytest -m 'fast or slow' --cov syft --cov-fail-under 80 -n auto
-
-      - name: Install supported library packages Windows, Linux and MacOS - Ignore Errors
-        run: |
-          pip install .["libs"] --install-option="no-deps" --default-timeout=60 || true
-
 
       - name: Install libomp for XGBoost
         if: startsWith(runner.os, 'macos')
@@ -144,17 +135,17 @@ jobs:
           ref: "dev"
           path: "pygrid"
 
-      - name: Install PyTorch
+      - name: Install Dependencies
         run: |
           pip install packaging --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
-          pip install . --no-deps -f https://download.pytorch.org/whl/torch_stable.html --default-timeout=60
+          pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
+          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps
 
       - name: Test PyGrid
         continue-on-error: true
         run: |
-          pip install ."[grid]" --default-timeout=60
           pytest ./pygrid/apps/domain/tests
           pytest ./pygrid/apps/network/tests
           pytest ./pygrid/apps/worker/tests
@@ -203,24 +194,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
-      - name: Install PyTorch
+      - name: Install Dependencies
         run: |
           pip install packaging --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
-          pip install . --no-deps -f https://download.pytorch.org/whl/torch_stable.html --default-timeout=60
-
-      - name: Install packages
-        run: |
-          pip install .
+          pip install -e .[dev] -f https://download.pytorch.org/whl/torch_stable.html
 
       - name: Check import works without dev packages
         run: |
           python -c "import syft"
-
-      - name: Install dev packages
-        run: |
-          pip install ."[dev]"
 
       - name: Run torch tests
         run: |
