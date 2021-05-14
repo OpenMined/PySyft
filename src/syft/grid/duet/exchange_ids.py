@@ -2,7 +2,6 @@
 import json
 from pathlib import Path
 import tempfile
-import time
 from typing import Any as TypeAny
 from typing import Optional as TypeOptional
 from typing import Tuple as TypeTuple
@@ -155,13 +154,11 @@ class OpenGridTokenFileExchanger(DuetCredentialExchanger):
                         client_id = str(loopback_config["client_id"])
                         break
                 debug("client not ready")
-                time.sleep(0.5)
             except KeyboardInterrupt:
                 debug("Cancelling server connection")
                 break
             except Exception as e:
                 info("server config load failed", self.file_path, e)
-                time.sleep(0.5)
 
         if client_id == "":
             raise Exception("failed to load client ID")
@@ -184,13 +181,11 @@ class OpenGridTokenFileExchanger(DuetCredentialExchanger):
                         server_id = str(loopback_config["server_id"])
                         break
                 debug("server not ready")
-                time.sleep(0.5)
             except KeyboardInterrupt:
                 debug("Cancelling client connection")
                 break
             except Exception as e:
                 info("client config load failed", self.file_path, e)
-                time.sleep(0.5)
 
         if server_id == "":
             raise Exception("failed to load client ID")
