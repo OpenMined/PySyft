@@ -15,8 +15,9 @@
 
 </div>
 
-PySyft is a Python library for secure and private Deep Learning. PySyft decouples
-private data from model training, using
+# PySyft is a Python library for secure and private Deep Learning.
+
+PySyft decouples private data from model training, using
 [Federated Learning](https://ai.googleblog.com/2017/04/federated-learning-collaborative.html),
 [Differential Privacy](https://en.wikipedia.org/wiki/Differential_privacy),
 and Encrypted Computation (like
@@ -30,6 +31,24 @@ within the main Deep Learning frameworks like PyTorch and TensorFlow. Join the m
 Most software libraries let you compute over the information you own and see inside of machines you control. However, this means that you cannot compute on information without first obtaining (at least partial) ownership of that information. It also means that you cannot compute using machines without first obtaining control over those machines. This is very limiting to human collaboration and systematically drives the centralization of data, because you cannot work with a bunch of data without first putting it all in one (central) place.
 
 The Syft ecosystem seeks to change this system, allowing you to write software which can compute over information you do not own on machines you do not have (total) control over. This not only includes servers in the cloud, but also personal desktops, laptops, mobile phones, websites, and edge devices. Wherever your data wants to live in your ownership, the Syft ecosystem exists to help keep it there while allowing it to be used privately for computation.
+
+## Mono Repo 🚝
+
+This repo contains multiple projects which work together, namely PySyft and PyGrid.
+PyGrid will be added soon, in the mean time this is the directory structure.
+
+```
+OpenMined/PySyft
+├── README.md   <-- You are here 📌
+└── packages
+    ├── grid    <-- Coming to this Mono repo 🔜
+    └── syft    <-- The Syft droids you are looking for 👋🏽
+```
+
+_NOTE_ Changing the entire folder structure will likely result in some minor issues.
+If you spot one please let us know or open a PR.
+
+## PySyft
 
 PySyft is the centerpiece of the Syft ecosystem. It has two primary purposes. You can either use PySyft to perform two types of computation:
 
@@ -102,7 +121,7 @@ Coming soon! Until then, please view the Examples below.
 
 ## Examples
 
-A comprehensive list of examples can be found [here](https://github.com/OpenMined/PySyft/tree/main/examples).
+A comprehensive list of examples can be found [here](https://github.com/OpenMined/PySyft/tree/main/packages/syft/examples).
 
 These tutorials cover a variety of Python libraries for data science and machine learning.
 
@@ -114,11 +133,11 @@ $ jupyter notebook
 
 ### Duet
 
-<a href="https://github.com/OpenMined/PySyft/tree/main/examples/duet"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/main/docs/img/logo_duet.png" alt="PySyft" width="350"></a>
+<a href="https://github.com/OpenMined/PySyft/tree/main/packages/syft/examples/duet"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/main/docs/img/logo_duet.png" alt="PySyft" width="350"></a>
 
 Duet is a peer-to-peer tool within PySyft that provides a research-friendly API for a Data Owner to privately expose their data, while a Data Scientist can access or manipulate the data on the owner's side through a zero-knowledge access control mechanism. It's designed to lower the barrier between research and privacy-preserving mechanisms, so that scientific progress can be made on data that is currently inaccessible or tightly controlled. **The main benefit of using Duet is that allows you to get started using PySyft, without needing to manage a full PyGrid deployment. It is the simplest path to using Syft, without needing to install anything (except Syft 😉).**
 
-You can find all [Duet examples](https://github.com/OpenMined/PySyft/tree/main/examples/duet) in the `examples/duet` folder.
+You can find all [Duet examples](https://github.com/OpenMined/PySyft/tree/main/packages/syft/examples/duet) in the `examples/duet` folder.
 
 ## Contributing
 
