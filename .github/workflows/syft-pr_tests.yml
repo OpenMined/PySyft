@@ -299,7 +299,7 @@ jobs:
         with:
           repository: "OpenMined/PyGrid"
           ref: "dev"
-          path: "../grid"
+          path: "packages/grid"
 
       - name: Install PyTorch
         run: |
@@ -355,7 +355,7 @@ jobs:
         with:
           repository: "OpenMined/PyGrid"
           ref: "dev"
-          path: "../grid"
+          path: "packages/grid"
 
       - name: Install PyTorch
         run: |
