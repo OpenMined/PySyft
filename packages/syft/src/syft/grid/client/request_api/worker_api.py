@@ -17,12 +17,13 @@ from ...messages.infra_messages import GetWorkerMessage
 from ...messages.infra_messages import GetWorkersMessage
 from ...messages.infra_messages import UpdateWorkerMessage
 from ...messages.transfer_messages import SaveObjectMessage
+from ..enums import PyGridClientEnums
+from ..enums import RequestAPIFields
+from ..enums import ResponseObjectEnum
 from .request_api import GridRequestAPI
 
 
 class WorkerRequestAPI(GridRequestAPI):
-    response_key = "worker"
-
     def __init__(self, send: Callable, domain_client: Any):
         super().__init__(
             create_msg=CreateWorkerMessage,
@@ -31,7 +32,7 @@ class WorkerRequestAPI(GridRequestAPI):
             update_msg=UpdateWorkerMessage,
             delete_msg=DeleteWorkerMessage,
             send=send,
-            response_key=WorkerRequestAPI.response_key,
+            response_key=ResponseObjectEnum.WORKER,
         )
 
         self.domain_client = domain_client
@@ -56,7 +57,7 @@ class WorkerRequestAPI(GridRequestAPI):
 
     def to_obj(self, result: Any) -> Any:
         _raw_worker = super().to_obj(result)
-        _raw_addr = _raw_worker.syft_address.encode("ISO-8859-1")
+        _raw_addr = _raw_worker.syft_address.encode(PyGridClientEnums.ENCODING)
 
         addr_pb = Address_PB()
         addr_pb.ParseFromString(_raw_addr)
@@ -78,15 +79,16 @@ class WorkerRequestAPI(GridRequestAPI):
 
         def _save(obj_ptr: Type[Pointer]) -> None:
             _content = {
-                "address": _worker_obj.address,
-                "content": {
-                    "uid": str(obj_ptr.id_at_location.value),
-                    "domain_address": self.domain_client.conn.base_url,
+                RequestAPIFields.ADDRESS: _worker_obj.address,
+                RequestAPIFields.CONTENT: {
+                    RequestAPIFields.UID: str(obj_ptr.id_at_location.value),
+                    RequestAPIFields.DOMAIN_ADDRESS: self.domain_client.conn.base_url,
                 },
             }
-            signed_msg = SaveObjectMessage(**_content).sign(
-                signing_key=_worker_obj.signing_key
-            )
+            signed_msg = SaveObjectMessage(
+                address=_content[RequestAPIFields.ADDRESS],
+                content=_content[RequestAPIFields.CONTENT],
+            ).sign(signing_key=_worker_obj.signing_key)
             _worker_obj.send_immediate_msg_without_reply(msg=signed_msg)
 
         _worker_obj.save = _save

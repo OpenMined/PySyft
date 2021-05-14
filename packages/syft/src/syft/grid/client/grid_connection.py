@@ -1,22 +1,30 @@
 # stdlib
+import io
 import json
+import sys
+from typing import Any
 from typing import Dict
 from typing import Optional
 from typing import Tuple
 
 # third party
 import requests
+from requests_toolbelt.multipart import encoder
 
 # syft relative
 from ...core.common.message import SyftMessage
 from ...core.common.serde.serialize import _serialize
 from ...proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
+from ..client.enums import RequestAPIFields
+from ..client.exceptions import RequestAPIException
 from ..connections.http_connection import HTTPConnection
 
 
 class GridHTTPConnection(HTTPConnection):
     LOGIN_ROUTE = "/users/login"
     SYFT_ROUTE = "/pysyft"
+    SYFT_MULTIPART_ROUTE = "/pysyft_multipart"
+    SIZE_THRESHOLD = 20971520  # 20 MB
 
     def __init__(self, url: str) -> None:
         self.base_url = url
@@ -40,11 +48,15 @@ class GridHTTPConnection(HTTPConnection):
 
         # Perform HTTP request using base_url as a root address
         msg_bytes: bytes = _serialize(obj=msg, to_bytes=True)  # type: ignore
-        r = requests.post(
-            url=self.base_url + GridHTTPConnection.SYFT_ROUTE,
-            data=msg_bytes,
-            headers=header,
-        )
+
+        if sys.getsizeof(msg_bytes) < GridHTTPConnection.SIZE_THRESHOLD:
+            r = requests.post(
+                url=self.base_url + GridHTTPConnection.SYFT_ROUTE,
+                data=msg_bytes,
+                headers=header,
+            )
+        else:
+            r = self.send_streamed_messages(blob_message=msg_bytes)
 
         # Return request's response object
         # r.text provides the response body as a str
@@ -87,3 +99,60 @@ class GridHTTPConnection(HTTPConnection):
         metadata_pb.ParseFromString(metadata)
 
         return metadata_pb
+
+    def setup(self, **content: Dict[str, Any]) -> Any:
+        response = json.loads(
+            requests.post(self.base_url + "/setup", json=content).text
+        )
+        if response.get(RequestAPIFields.MESSAGE, None):
+            return response
+        else:
+            raise RequestAPIException(response.get(RequestAPIFields.ERROR))
+
+    def send_files(self, file_path: str) -> Dict[str, Any]:
+        session = requests.Session()
+
+        with open(file_path, "rb") as f:
+
+            form = encoder.MultipartEncoder(
+                {
+                    "file": (file_path, f, "application/octet-stream"),
+                }
+            )
+
+            headers = {
+                "Prefer": "respond-async",
+                "Content-Type": form.content_type,
+                "token": self.session_token,
+            }
+
+            resp = session.post(
+                self.base_url + "/data-centric/datasets", headers=headers, data=form
+            )
+
+        session.close()
+
+        return json.loads(resp.content)
+
+    def send_streamed_messages(self, blob_message: bytes) -> requests.Response:
+        session = requests.Session()
+        with io.BytesIO(blob_message) as msg:
+            form = encoder.MultipartEncoder(
+                {
+                    "file": ("message", msg.read(), "application/octet-stream"),
+                }
+            )
+
+            headers = {
+                "Prefer": "respond-async",
+                "Content-Type": form.content_type,
+            }
+
+            resp = session.post(
+                self.base_url + GridHTTPConnection.SYFT_MULTIPART_ROUTE,
+                headers=headers,
+                data=form,
+            )
+
+        session.close()
+        return resp

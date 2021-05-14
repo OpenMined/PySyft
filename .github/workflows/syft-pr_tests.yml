@@ -267,7 +267,7 @@ jobs:
         with:
           repository: "OpenMined/PyGrid"
           ref: "dev"
-          path: "pygrid"
+          path: "packages/grid"
 
       - name: Install Dependencies
         run: |
@@ -277,14 +277,13 @@ jobs:
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps
 
-
       - name: Test PyGrid
         continue-on-error: true
         run: |
           pip install ."[grid]" --default-timeout=60
-          pytest ./pygrid/apps/domain/tests
-          pytest ./pygrid/apps/network/tests
-          pytest ./pygrid/apps/worker/tests
+          pytest ../grid/apps/domain/tests
+          pytest ../grid/apps/network/tests
+          pytest ../grid/apps/worker/tests
 
   pygrid-integration-tests:
     needs: [python-linting]
@@ -324,7 +323,7 @@ jobs:
         with:
           repository: "OpenMined/PyGrid"
           ref: "dev"
-          path: "pygrid"
+          path: "packages/grid"
 
       - name: Install Dependencies
         run: |
