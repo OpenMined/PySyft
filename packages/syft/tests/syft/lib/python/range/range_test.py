@@ -8,6 +8,7 @@ https://github.com/python/cpython/blob/3.9/Lib/test/test_range.py
 import itertools
 import pickle
 import sys
+import unittest
 
 try:
     # stdlib
@@ -28,9 +29,6 @@ except ImportError:
 
     ALWAYS_EQ = _ALWAYS_EQ()
 
-
-# stdlib
-import unittest
 
 # third party
 import pytest
