@@ -199,7 +199,7 @@ or are still in a state of development.
 
 ## Example Notebooks 📚
 
-The following examples were taken from the official [PyTorch examples](https://github.com/pytorch/examples) repo.
+The following examples were taken from the official [PyTorch examples](https://github.com/pytorch/packages/syft/examples) repo.
 
 Each example is split into two notebooks, one for the data owner who wishes to protect their valuable and private training data and one for the data scientist who has some problem they wish to solve and a test set they can use to determine if the data owner's data will help. Together they are able to collaborate over two notebooks to construct and train models, evaluate and share metrics upon request and do inference on a test or individual data items.
 

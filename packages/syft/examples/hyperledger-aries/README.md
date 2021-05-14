@@ -54,7 +54,7 @@ $ cd -
 
 ## Run
 
-_From inside `/examples/hyperledger-aries`_
+_From inside `/packages/syft/examples/hyperledger-aries`_
 
 - Spin up the docker containers in a terminal
 
