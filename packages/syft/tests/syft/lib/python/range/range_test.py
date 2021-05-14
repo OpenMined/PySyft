@@ -12,11 +12,8 @@ import unittest
 
 try:
     # stdlib
-    print("Try importing ALWAYS_EQ")
-    # stdlib
     from test.support import ALWAYS_EQ
-except Exception as e:
-    print("Are we getting here?", e)
+except ImportError:
 
     class _ALWAYS_EQ:
         """
@@ -32,8 +29,6 @@ except Exception as e:
 
     ALWAYS_EQ = _ALWAYS_EQ()
 
-
-print("do we have ALWAYS_EQ", ALWAYS_EQ, type(ALWAYS_EQ))
 
 # pure Python implementations (3 args only), for comparison
 def pyrange(start, stop, step):
