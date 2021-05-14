@@ -1,3 +1,6 @@
+# stdlib
+import json
+
 # third party
 import requests
 
@@ -10,6 +13,8 @@ from ...core.common.serde.deserialize import _deserialize
 from ...core.common.serde.serialize import _serialize
 from ...core.io.connection import ClientConnection
 from ...proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
+from ..client.enums import RequestAPIFields
+from ..client.exceptions import RequestAPIException
 
 
 class HTTPConnection(ClientConnection):
@@ -31,11 +36,19 @@ class HTTPConnection(ClientConnection):
 
         # Serializes SignedImmediateSyftMessageWithReply
         # and send it using HTTP protocol
-        blob = self._send_msg(msg=msg).content
+        response = self._send_msg(msg=msg)
+
         # Deserialize node's response
-        response = _deserialize(blob=blob, from_bytes=True)
-        # Return SignedImmediateSyftMessageWithoutReply
-        return response
+        if response.status_code == requests.codes.ok:
+            # Return SignedImmediateSyftMessageWithoutReply
+            return _deserialize(blob=response.content, from_bytes=True)
+
+        try:
+            response_json = json.loads(response.content)
+            raise RequestAPIException(response_json[RequestAPIFields.ERROR])
+        except Exception as e:
+            print(f"Unable to json decode message. {e}")
+            raise e
 
     def send_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply

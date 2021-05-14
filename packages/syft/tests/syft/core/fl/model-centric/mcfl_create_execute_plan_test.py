@@ -43,7 +43,6 @@ from syft.federated.model_centric_fl_client import ModelCentricFLClient
 from syft.federated.model_serialization import deserialize_model_params
 from syft.federated.model_serialization import wrap_model_params
 from syft.grid.client.client import connect
-from syft.grid.client.grid_connection import GridHTTPConnection
 from syft.lib.python.int import Int
 from syft.lib.python.list import List
 from syft.lib.torch.module import Module as SyModule
@@ -59,21 +58,20 @@ DOMAIN_PORT = 7000
 def setup_domain() -> None:
     # this ensures that the new PyGrid Domain is setup and will respond to commands
     try:
-        ua_client = connect(
-            url=f"http://localhost:{DOMAIN_PORT}", conn_type=GridHTTPConnection
-        )
+        ua_client = connect(url=f"http://localhost:{DOMAIN_PORT}")
 
-        ua_client.initial_setup(
+        ua_client.setup(
+            domain_name="OpenMined Domain",
             email="owner@myorg.com",
             password="ownerpwd",
-            domain_name="OpenMined Domain",
             token="9G9MJ06OQH",
         )
+
     except Exception as e:
         if "domain already has an owner" not in str(e):
             raise e
         else:
-            print(f"Failed to run initial_setup. {e}")
+            print(f"Failed to run setup. {e}")
 
 
 @pytest.fixture
@@ -84,7 +82,7 @@ def pygrid_domain(xprocess: Any) -> Generator:
 
         # command to start process
         pygrid_path = os.environ.get(
-            "TEST_PYGRID_PATH", f"{here}/../../../../../pygrid"
+            "TEST_PYGRID_PATH", f"{here}/../../../../../../grid"
         )
         domain_path = os.path.abspath(f"{pygrid_path}/apps/domain")
         database_file = f"{domain_path}/src/nodedatabase.db"

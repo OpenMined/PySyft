@@ -8,12 +8,11 @@ from ...messages.user_messages import DeleteUserMessage
 from ...messages.user_messages import GetUserMessage
 from ...messages.user_messages import GetUsersMessage
 from ...messages.user_messages import UpdateUserMessage
+from ..enums import ResponseObjectEnum
 from .request_api import GridRequestAPI
 
 
 class UserRequestAPI(GridRequestAPI):
-    response_key = "user"
-
     def __init__(self, send: Callable):
         super().__init__(
             create_msg=CreateUserMessage,
@@ -22,7 +21,7 @@ class UserRequestAPI(GridRequestAPI):
             update_msg=UpdateUserMessage,
             delete_msg=DeleteUserMessage,
             send=send,
-            response_key=UserRequestAPI.response_key,
+            response_key=ResponseObjectEnum.USER,
         )
 
     def __getitem__(self, key: int) -> Any:

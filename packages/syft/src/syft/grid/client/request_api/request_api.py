@@ -1,15 +1,18 @@
 # stdlib
+import logging
 from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import Optional
 from typing import Type
+from typing import Union
 
 # third party
 from pandas import DataFrame
 
 # syft relative
 from ....core.common.message import SyftMessage
+from ..enums import RequestAPIFields
 
 
 class GridRequestAPI:
@@ -35,24 +38,33 @@ class GridRequestAPI:
     def send(self) -> Callable:
         return self.__send
 
-    def create(self, **kwargs: Any) -> Dict[str, str]:
-        return self.__send(grid_msg=self.__create_message, content=kwargs)
+    def create(self, **kwargs: Any) -> None:
+        response = self.__send(grid_msg=self.__create_message, content=kwargs)
+        try:
+            logging.info(response[RequestAPIFields.MESSAGE])
+        except KeyError:
+            logging.info(response["msg"])
 
     def get(self, **kwargs: Any) -> Any:
         return self.to_obj(self.__send(grid_msg=self.__get_message, content=kwargs))
 
-    def all(self, pandas: bool = False) -> Dict[str, Any]:
+    def all(self, pandas: bool = False) -> Union[DataFrame, Dict[Any, Any]]:
         result = self.__send(grid_msg=self.__get_all_message)
         if pandas:
             result = DataFrame(result)
 
         return result
 
-    def update(self, **kwargs: Any) -> Dict[str, Any]:
-        return self.__send(grid_msg=self.__update_message, content=kwargs)
+    def update(self, **kwargs: Any) -> None:
+        response = self.__send(grid_msg=self.__update_message, content=kwargs)
+        try:
+            logging.info(response[RequestAPIFields.MESSAGE])
+        except KeyError:
+            logging.info(response["msg"])
 
-    def delete(self, **kwargs: Any) -> Dict[str, Any]:
-        return self.__send(grid_msg=self.__delete_message, content=kwargs)
+    def delete(self, **kwargs: Any) -> None:
+        response = self.__send(grid_msg=self.__delete_message, content=kwargs)
+        logging.info(response[RequestAPIFields.MESSAGE])
 
     def to_obj(self, result: Any) -> Any:
         if result:

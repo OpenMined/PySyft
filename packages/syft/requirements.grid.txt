@@ -1,10 +1,12 @@
 bcrypt
 boto3
+flask>=1.1.2,<2.0.0
 flask_cors
 flask_executor
 flask_migrate
 flask_sockets
 flask_sqlalchemy
+names
 PyInquirer
 PyJWT==1.7.1
 pytest
@@ -19,3 +21,4 @@ sympc @ git+https://github.com/OpenMined/SyMPC@main
 tenseal
 tenseal
 terrascript
+Werkzeug>=1.0.1,<2.0.0
