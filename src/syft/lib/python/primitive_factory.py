@@ -12,7 +12,6 @@ from typing import Union
 from .. import python
 from ...core.common import UID
 from ...logger import traceback_and_raise
-from .not_implemented import _SyNotImplemented
 from .primitive_interface import PyPrimitive
 
 NoneType = type(None)
@@ -154,5 +153,5 @@ class PrimitiveFactory(ABC):
         return python.SyNone
 
 
-def notImplementedPrimitive() -> _SyNotImplemented:
+def notImplementedPrimitive() -> "_SyNotImplemented":
     return python.SyNotImplemented
