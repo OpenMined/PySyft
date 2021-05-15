@@ -97,7 +97,7 @@ def test_duet_list_multiprocess(
     benchmark.pedantic(send_get_list_multiprocess, args=(data,), rounds=3, iterations=3)
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
 @pytest.mark.benchmark
 @pytest.mark.parametrize(
     "chunk_size,max_buffer",
