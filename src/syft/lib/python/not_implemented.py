@@ -1,4 +1,5 @@
 # stdlib
+from typing import Any
 from typing import Optional
 
 # third party
@@ -32,6 +33,16 @@ class _SyNotImplemented(PyPrimitive):
         :rtype: UID
         """
         return self._id
+
+    def __eq__(self, other: Any) -> SyPrimitiveRet:
+        if isinstance(other, _SyNotImplemented):
+            return PrimitiveFactory.generate_primitive(value=True)
+
+        if other is NotImplemented:
+            return PrimitiveFactory.generate_primitive(value=True)
+
+        res = NotImplemented.__eq__(other)
+        return PrimitiveFactory.generate_primitive(value=res)
 
     def upcast(self) -> type(NotImplemented):  # type: ignore
         return NotImplemented

@@ -6,36 +6,36 @@ from syft.lib.python.int import Int
 
 binop = [
     "__add__",
-    "__and__",
-    "__divmod__",
-    "__eq__",
-    "__floordiv__",
-    "__ge__",
-    "__gt__",
-    "__le__",
-    "__lshift__",
-    "__lt__",
-    "__mod__",
-    "__mul__",
-    "__ne__",
-    "__or__",
-    "__radd__",
-    "__rand__",
-    "__rdivmod__",
-    "__rfloordiv__",
-    "__rlshift__",
-    "__rmod__",
-    "__rmul__",
-    "__ror__",
-    "__rpow__",
-    "__rrshift__",
-    "__rshift__",
-    "__rsub__",
-    "__rtruediv__",
-    "__rxor__",
-    "__sub__",
-    "__truediv__",
-    "__xor__",
+    # "__and__",
+    # "__divmod__",
+    # "__eq__",
+    # "__floordiv__",
+    # "__ge__",
+    # "__gt__",
+    # "__le__",
+    # "__lshift__",
+    # "__lt__",
+    # "__mod__",
+    # "__mul__",
+    # "__ne__",
+    # "__or__",
+    # "__radd__",
+    # "__rand__",
+    # "__rdivmod__",
+    # "__rfloordiv__",
+    # "__rlshift__",
+    # "__rmod__",
+    # "__rmul__",
+    # "__ror__",
+    # "__rpow__",
+    # "__rrshift__",
+    # "__rshift__",
+    # "__rsub__",
+    # "__rtruediv__",
+    # "__rxor__",
+    # "__sub__",
+    # "__truediv__",
+    # "__xor__",
 ]
 
 
@@ -66,6 +66,8 @@ def test_api_int(op, py_obj):
         sypy = func_sy(py_obj)
     except Exception as e_sysy:
         sypy_err = str(e_sysy)
+
+    print(pypy_err, sypy_err, pypy, sypy)
 
     if any([pypy_err, sypy_err]):
         assert pypy_err == sypy_err
