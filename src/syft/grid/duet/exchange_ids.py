@@ -57,8 +57,7 @@ class OpenGridTokenManualInputExchanger(DuetCredentialExchanger):
         )
         info("\nimport syft as sy", print=True)
         info(
-            'duet = sy.duet("' + bcolors.BOLD +
-            credential + bcolors.ENDC + '")',
+            'duet = sy.duet("' + bcolors.BOLD + credential + bcolors.ENDC + '")',
             print=True,
         )
 

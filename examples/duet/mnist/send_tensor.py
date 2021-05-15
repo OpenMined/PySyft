@@ -23,13 +23,13 @@ def do() -> None:
         level="TRACE",
     )
 
-    duet = sy.launch_duet(loopback=True, network_url="http://localhost:5000"))
+    duet = sy.launch_duet(loopback=True, network_url="http://localhost:5000")
     duet.requests.add_handler(action = "accept")
-    t=th.randn(4000000)
+    t = th.randn(4000000)
     print("DO: Tensor sum:", t.sum())
-    start=time.time()
-    tp=t.send(duet, pointable = True)
-    end=time.time()
+    start = time.time()
+    tp = t.send(duet, pointable = True)
+    end = time.time()
     print("DO: Pointer: ", tp, "serialized in", end - start)
     print("DO: Store: ", duet.store)
     sy.core.common.event_loop.loop.run_forever()
@@ -40,18 +40,18 @@ def ds() -> None:
     # syft absolute
     import syft as sy
 
-    _=sy.logger.add(
+    _ = sy.logger.add(
         sink = "syft_ds.log",
         level = "TRACE",
     )
 
-    duet=sy.join_duet(loopback = True, network_url = "http://localhost:5000")
+    duet = sy.join_duet(loopback = True, network_url = "http://localhost:5000")
     # wait for connection to be established on DO side
     time.sleep(1)
     print("DS: Store: ", duet.store)
-    start=time.time()
-    t=duet.store[0].get(request_block = True, delete_obj = False)
-    end=time.time()
+    start = time.time()
+    t = duet.store[0].get(request_block = True, delete_obj = False)
+    end = time.time()
     print("DS: Received in:", end - start)
     print("DS: Shape: ", t.shape)
     print("DS: Tensor sum:", t.sum())

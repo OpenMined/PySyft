@@ -94,8 +94,7 @@ def test_duet_list_multiprocess(
 
     data = [LIST_TEMPLATE] * list_size
 
-    benchmark.pedantic(send_get_list_multiprocess,
-                       args=(data,), rounds=3, iterations=3)
+    benchmark.pedantic(send_get_list_multiprocess, args=(data,), rounds=3, iterations=3)
 
 
 # @pytest.mark.skip
@@ -112,7 +111,7 @@ def test_duet_list_multiprocess(
 def test_duet_chunk_size(
     chunk_size: int, max_buffer: int, benchmark: Any, signaling_server: Process
 ) -> None:
-
+    # time.sleep(3)
     data = "a" * (60 * MB)
 
     os.environ["DC_MAX_CHUNK_SIZE"] = str(chunk_size)
