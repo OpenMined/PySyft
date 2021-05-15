@@ -11,6 +11,7 @@ from nacl.signing import VerifyKey
 
 # syft absolute
 from syft.core.plan.plan import Plan
+from syft.lib.python.not_implemented import SyNotImplemented
 
 # syft relative
 from ..... import lib
@@ -192,7 +193,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             )
 
             if isinstance(result, type(NotImplemented)):
-                result = lib.python.primitive_factory.notImplementedPrimitive()
+                result = lib.python.not_implemented.SyNotImplemented
         else:
             # TODO: overload all methods to incorporate this automatically
             if hasattr(result, "id"):
