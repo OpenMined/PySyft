@@ -153,5 +153,5 @@ class PrimitiveFactory(ABC):
         return python.SyNone
 
 
-def notImplementedPrimitive():
+def notImplementedPrimitive() -> python._SyNotImplemented:
     return python.SyNotImplemented

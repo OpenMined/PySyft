@@ -1,6 +1,6 @@
 # stdlib
-from typing import Optional
 from typing import Any
+from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
