@@ -139,7 +139,7 @@ You can find all [Duet examples](https://github.com/OpenMined/PySyft/tree/main/p
 
 ## Contributing
 
-The guide for contributors can be found [here](https://github.com/OpenMined/PySyft/blob/main/CONTRIBUTING.md).
+The guide for contributors can be found [here](https://github.com/OpenMined/PySyft/blob/main/packages/syft/CONTRIBUTING.md).
 It covers all that you need to know to start contributing code to PySyft today.
 
 Also, join the rapidly growing community of 12,000+ on [Slack](http://slack.openmined.org).
