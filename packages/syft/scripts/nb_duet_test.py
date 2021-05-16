@@ -84,6 +84,7 @@ PATHS = [
     "examples/duet/mnist",
     "examples/duet/reinforcement_learning",
     "examples/duet/super_resolution",
+    "examples/duet/time_sequence_prediction",
     "examples/homomorphic-encryption",
     "examples/private-ai-series/duet_basics",
     "examples/private-ai-series/duet_iris_classifier",
