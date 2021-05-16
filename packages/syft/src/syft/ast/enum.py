@@ -1,3 +1,5 @@
+"""This module contains `EnumAttribute`, an AST node representing the attributes of a Python Enum which are only gettable, not settable."""
+
 # stdlib
 from enum import Enum
 from typing import Any
@@ -91,7 +93,7 @@ class EnumAttribute(ast.attribute.Attribute):
     def __call__(self, *args: Any, **kwargs: Any) -> None:
         """An `Enum` attribute is not callable.
 
-        Throws:
+        Raises:
             ValueError: If the function is called.
         """
         traceback_and_raise(
@@ -101,7 +103,7 @@ class EnumAttribute(ast.attribute.Attribute):
     def add_path(self, *args: Any, **kwargs: Any) -> None:
         """An `Enum` can no longer have children nodes.
 
-        Throws:
+        Raises:
             ValueError: If the function is called.
         """
         traceback_and_raise(

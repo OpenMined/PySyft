@@ -1,3 +1,5 @@
+"""This module contains utility funtions for Syft's AST submodule"""
+
 # -*- coding: utf-8 -*-
 # stdlib
 from typing import List as TypeList
