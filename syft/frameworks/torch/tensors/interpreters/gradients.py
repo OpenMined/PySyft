@@ -256,7 +256,6 @@ class ReluBackward(GradFunc):
         self.self_ = self_
 
     def gradient(self, grad):
-        print("Backward RELU")
         zero = self.self_ * 0
         gt_zero = self.self_ > zero
         return (gt_zero * grad,)
@@ -310,7 +309,6 @@ class Max_pool2dBackward(GradFunc):
         return result
 
     def gradient(self, grad_output):
-        print("Backward MAXPOOL2D")
         output_size = self.input_shape
         indices = self.indices
         kernel_size = self.kernel_size
@@ -388,8 +386,6 @@ class Conv2dBackward(GradFunc):
                     )
 
             return tuple(input_size[d] - min_sizes[d] for d in range(k))
-
-        print("Backward CONV2D")
 
         # get input, kernel, and sizes:
         input, kernel, padding, stride, dilation, groups = (

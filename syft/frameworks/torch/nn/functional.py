@@ -326,15 +326,26 @@ def _pool2d(
             if return_indices:
                 idx2_0 = idx2[:, :, :, :1]
                 idx2_1 = idx2[:, :, :, 1:]
-                indices = torch.stack(
-                    [
-                        (1 - idx2_0) * (1 - idx1),
-                        (1 - idx2_1) * idx1,
-                        idx2_0 * (1 - idx1),
-                        idx2_1 * idx1,
-                    ],
-                    dim=-1,
-                )
+                if isinstance(idx2_0, torch.BoolTensor):
+                    indices = torch.stack(
+                        [
+                            (~idx2_0) * (~idx1),
+                            (~idx2_1) * idx1,
+                            idx2_0 * (~idx1),
+                            idx2_1 * idx1,
+                        ],
+                        dim=-1,
+                    )
+                else:
+                    indices = torch.stack(
+                        [
+                            (1 - idx2_0) * (1 - idx1),
+                            (1 - idx2_1) * idx1,
+                            idx2_0 * (1 - idx1),
+                            idx2_1 * idx1,
+                        ],
+                        dim=-1,
+                    )
                 assert isinstance(kernel_size, int)
                 indices = indices.reshape(*res.shape, kernel_size, kernel_size)
 
@@ -370,12 +381,20 @@ def _pool2d(
         raise ValueError(f"In pool2d, mode should be avg or max, not {mode}.")
 
     if isinstance(input_fp.child, FrameworkTensor):
-        assert not return_indices, "Not implemented for the moment"  # TODO
-        result = _post_pool(res, *params)
+        if return_indices:
+            result, indices = _post_pool(res, indices, *params)
+        else:
+            result = _post_pool(res, None, *params)
         result_fp = sy.FixedPrecisionTensor(**input_fp.get_class_attributes()).on(
             result, wrap=False
         )
-        return result_fp
+        if return_indices:
+            indices_fp = sy.FixedPrecisionTensor(**input_fp.get_class_attributes()).on(
+                indices, wrap=False
+            )
+            return result_fp, indices_fp
+        else:
+            return result_fp
     else:
         res_shares = {}
         indices_shares = {}
@@ -476,12 +495,15 @@ def _max_pool2d_backward(
         result_size[-1] += c1
 
     # Sum the one-hot gradient blocks at corresponding index locations.
-    result = (
-        torch.zeros(result_size)
-        .fix_prec(**self.get_class_attributes())
-        .share(*self.child.locations, **self.child.get_class_attributes())
-        .child
-    )
+    if isinstance(self.child, FrameworkTensor):
+        result = torch.zeros(result_size).fix_prec(**self.get_class_attributes()).child
+    else:
+        result = (
+            torch.zeros(result_size)
+            .fix_prec(**self.get_class_attributes())
+            .share(*self.child.locations, **self.child.get_class_attributes())
+            .child
+        )
     for i in range(self.shape[2]):
         for j in range(self.shape[3]):
             left_ind = s0 * i
