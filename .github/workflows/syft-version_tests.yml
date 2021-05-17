@@ -69,8 +69,7 @@ jobs:
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
-          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps
-
+          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
 
       - name: Scan for security issues
         run: |
@@ -141,7 +140,7 @@ jobs:
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
-          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps
+          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
 
       - name: Test PyGrid
         continue-on-error: true
