@@ -1,6 +1,5 @@
 # syft absolute
 import syft as sy
-
 from syft.lib.adp.entity import Entity
 from syft.lib.adp.scalar import Scalar
 

@@ -1,7 +1,6 @@
 # stdlib
 from collections import defaultdict
 from copy import deepcopy
-from functools import lru_cache
 import random
 from string import ascii_letters
 from typing import Any
@@ -29,340 +28,28 @@ from syft.core.common.serde import Serializable
 from ...core.common import UID
 from ...core.common.serde.serializable import bind_protobuf
 from ...proto.lib.adp.scalar_pb2 import Scalar as Scalar_PB
+from .adversarial_accountant import publish
 from .entity import Entity
-from .idp_gaussian_mechanism import iDPGaussianMechanism
-
-# scalar_name2obj is used to look and extract value, min_val and max_val
-# if we are able to store these in the name string instead we could extract them
-# at the point of use instead of lookup
-scalar_name2obj = {}
-
-
-@lru_cache(maxsize=None)
-def search(
-    run_specific_args: Callable, rranges: Tuple, binary: bool = True
-) -> OptimizeResult:
-
-    if binary:
-
-        slices = list()
-        for r in rranges:
-            slices.append(slice(r[0], r[1] + 0.00001, (r[1] - r[0])))
-        all_brute_results = optimize.brute(
-            func=run_specific_args, ranges=slices, finish=None, full_output=True
-        )
-        # print(all_brute_results[0])
-
-        brute_results = float(all_brute_results[1])
-        return brute_results
-
-    else:
-
-        shgo_results = float(optimize.shgo(run_specific_args, rranges).fun)
-        return shgo_results
-
-def create_lookup_tables_for_symbol(polynomial):
-
-    index2symbol = [str(x) for x in polynomial.free_symbols]
-    symbol2index = {sym: i for i, sym in enumerate(index2symbol)}
-
-    return index2symbol, symbol2index
+from .search import create_lookup_tables_for_symbol
+from .search import create_searchable_function_from_polynomial
+from .search import flatten_and_maximize_poly
+from .search import max_lipschitz_via_jacobian
+from .search import minimize_function
+from .search import ssid2obj
 
 
 @bind_protobuf
-class Scalar(Serializable):
-    def __init__(
-        self,
-        *,
-        value: Optional[float] = None,
-        min_val: Optional[float] = None,
-        max_val: Optional[float] = None,
-        entity: Optional[Union[str, Entity]] = None,
-        poly: Optional[Symbol] = None,
-        name: Optional[str] = None,
-        id: Optional[UID] = None,
-        is_discrete: bool = False
-    ):
-        self.id = id if id else UID()
-        if name is None:
-            name = "".join([random.choice(ascii_letters) for _ in range(5)])
+class Scalar():
 
-        self.name = name
-        self._value = value
-        self._min_val = min_val
-        self._max_val = max_val
-        self.entity = entity
-        self.is_discrete = is_discrete
-
-        if poly is not None:
-            # if this Scalar is being formed as a function of other Scalar objects
-            self._poly = poly
-            self.entity_name = None
-        elif entity is not None:
-            self.entity_name = entity.name if isinstance(entity, Entity) else entity
-            self.scalar_name = self.name + "_" + self.entity_name
-            self._poly = symbols(self.scalar_name)
-            scalar_name2obj[self.scalar_name] = self
-        else:
-            raise Exception("Poly or entity must be not None")
-
-    @property
-    def poly(self) -> Symbol:
-        return self._poly
-
-    @property
-    def value(self) -> float:
-        if self._value is not None:
-            return self._value
-        index2symbol, symbol2index = create_lookup_tables_for_symbol(self.poly)
-        run_specific_args = self.create_run_specific_args(f=self.poly, symbol2index=symbol2index)
-        inputs = [scalar_name2obj[sym]._value for sym in index2symbol]
-        return float(run_specific_args(inputs))
-
-    @property
-    def min_val(self) -> Optional[float]:
-        return self._min_val
-
-    @property
-    def max_val(self) -> Optional[float]:
-        return self._max_val
-
-    def __rmul__(self, other: "Scalar") -> "Scalar":
-        return self * other
-
-    def __mul__(self, other: "Scalar") -> "Scalar":
-
-        if hasattr(other, "poly"):
-            result_poly = self.poly * other.poly
-        else:
-            result_poly = self.poly * other
-
-        result = Scalar(value=None, poly=result_poly)
-        return result
-
-    def __radd__(self, other: "Scalar") -> "Scalar":
-        return self + other
-
-    def __add__(self, other: "Scalar") -> "Scalar":
-
-        if hasattr(other, "poly"):
-            result_poly = self.poly + other.poly
-        else:
-            result_poly = self.poly + other
-
-        result = Scalar(value=None, poly=result_poly)
-        return result
-
-    def __sub__(self, other: "Scalar") -> "Scalar":
-        result_poly = self.poly - other.poly
-        result = Scalar(value=None, poly=result_poly)
-        return result
+    def publish(self, acc, sigma: float = 1.5) -> float:
+        return publish([self], acc=acc, sigma=sigma)
 
     def __str__(self) -> str:
-        return str(self.poly) + "=" + str(self.value)
+        return "<" + str(type(self).__name__) + ": (" + str(self.min_val) + " < " + str(self.value) + " < " + str(
+            self.max_val) + ")>"
 
     def __repr__(self) -> str:
         return str(self)
-
-    @property
-    def sens(self) -> Optional[float]:
-        if self.min_val and self.max_val:
-            return self.max_val - self.min_val
-        return None
-
-    # def neg_deriv_wrt_input(self, input_name: str) -> Symbol:
-    #     obj = scalar_name2obj[input_name]
-    #     derivative = -diff(self.poly, obj.poly)
-    #     return derivative
-
-    def create_run_specific_args(
-        self, f: Symbol, symbol2index:dict
-    ) -> Tuple[Callable, List[str], Dict[str, int]]:
-
-        # Tudor: Here you weren't using *params
-        # Tudor: If I understand correctly, .subs returns
-        def _run_specific_args(tuple_of_args: tuple) -> Any:
-            kwargs = {sym: tuple_of_args[i] for sym, i in symbol2index.items()}
-            return f.subs(kwargs)
-
-        return _run_specific_args
-
-    def get_mechanism_for_entity(
-        self, entity_name: str, input_symbols: List["Scalar"], sigma: float = 0.1
-    ) -> iDPGaussianMechanism:
-        print(entity_name)
-
-        print(input_symbols)
-        print()
-        # Step 1: create derivative function wrt all inputs
-        all_input_polys = [x.poly for x in input_symbols]
-        print(all_input_polys)
-        print()
-        print(self.poly)
-        print()
-        # NOTE: self.poly is the L2 norm... but since it's only one variable we don't have to
-        # do anything to it (the l2 norm of a variable is itself). Also we negate the derivative
-        # because the search algorithms we use find the global minimum not maximum.
-        output_deriv_wrt_all_inputs = -diff(self.poly, *all_input_polys)
-        print(output_deriv_wrt_all_inputs)
-        print()
-        # Step 2: fix all inputs which come from entity_name
-        output_deriv_wrt_all_inputs.subs({sym.poly: sym.value for sym in input_symbols})
-        print(output_deriv_wrt_all_inputs)
-        print()
-
-        # Step 3: wrap in a function so that scipy optimizer can use it
-        index2symbol, symbol2index = create_lookup_tables_for_symbol(output_deriv_wrt_all_inputs)
-        search_lib_compatible_output_deriv = self.create_run_specific_args(
-            f=output_deriv_wrt_all_inputs,
-            symbol2index=symbol2index
-        )
-
-        # Step 4: Determine search ranges (also check to see if we can use discrete search)
-        discrete_search = True
-        rranges = list()
-        for i, sym in enumerate(index2symbol):
-            obj = scalar_name2obj[sym]
-            if not obj.is_discrete:
-                discrete_search = False
-            rranges.append((obj.min_val, obj.max_val))
-
-        # Step 5: Search over all possible inputs to find the maximum derivative
-        L = search(search_lib_compatible_output_deriv, tuple(rranges), binary=discrete_search)
-
-        # Step 6: Return gaussian mechanism object
-        gm1 = iDPGaussianMechanism(
-            sigma=sigma,
-            value=self.value,
-            L=L,
-            entity=entity_name,
-            name="gm_" + self.symbol_name,
-        )
-        return gm1
-
-
-
-    def get_mechanism_for_symbol(
-        self, symbol_name: str = "b", sigma: float = 0.1
-    ) -> iDPGaussianMechanism:
-
-        symbol = scalar_name2obj[symbol_name]
-
-        # Step 1: get derivative we want to maximize
-        z = self.neg_deriv(symbol_name)
-
-        # Step 2: get lookup tables
-        index2symbol, symbol2index = create_lookup_tables_for_symbol(self.poly)
-
-        # # Step 3: substitute out all variables with the same entity as symbol
-        # for i, symbol_name in enumerate(index2symbol):
-        #     sym = scalar_name2obj[symbol_name]
-        #     if sym.entity == symbol.entity:
-        #         z = z.subs(sym.poly, sym.value)
-        #     # else:
-        #     #     print("Entity Mismatch:" + str(sym.split("_")[1]) + " != " + str(symbol.entity.name))
-
-        # index2symbol, symbol2index = create_lookup_tables_for_symbol(z)
-
-        run_specific_args = self.create_run_specific_args(
-            f=z,
-            symbol2index=symbol2index
-        )
-
-        discrete_search = True
-
-        rranges = list()
-        for i, sym in enumerate(index2symbol):
-            obj = scalar_name2obj[sym]
-            if not obj.is_discrete:
-                discrete_search = False
-            rranges.append((obj.min_val, obj.max_val))
-
-        if not symbol.is_discrete:
-            discrete_search = False
-
-        # Step 3: maximize the derivative over a bounded range of <entity_name>
-        L = search(run_specific_args, tuple(rranges), binary=discrete_search)
-
-        # print("New Mechanism(sigma=" + str(sigma) + " value=" + str(symbol.value) + "L=" + str(L) + ")")
-        # Step 4: create the gaussian mechanism object
-        gm1 = iDPGaussianMechanism(
-            sigma=sigma,
-            value=symbol.value,
-            L=L,
-            entity=symbol_name.split("_")[1],
-            name="gm_" + symbol_name,
-        )
-
-        return gm1
-
-    def get_all_entity_mechanisms(
-        self, sigma: float = 0.1
-    ) -> Dict[str, List[iDPGaussianMechanism]]:
-        sy_names = self.poly.free_symbols
-
-        entity2symbols = defaultdict(list)
-        for sy_name in sy_names:
-            symbol = scalar_name2obj[str(sy_name)]
-            entity_name = symbol.entity.name
-
-            if entity_name not in entity2symbols:
-                entity2symbols[entity_name] = list()
-
-            entity2symbols[entity_name].append(symbol)
-
-        entity2mechanisms = defaultdict(list)
-        for entity_name, symbols in entity2symbols.items():
-            entity2mechanisms[entity_name] = [self.get_mechanism_for_entity(entity_name=entity_name, input_symbols=symbols, sigma=sigma)]
-
-        # for sy_name in sy_names:
-        #     mechanism = self.get_mechanism_for_symbol(symbol_name=str(sy_name), sigma=sigma)
-        #     split_name = str(sy_name).split("_")
-        #     entity_name = split_name[1]
-        #     entity2mechanisms[entity_name].append(mechanism)
-
-        return entity2mechanisms
-
-    @property
-    def entities(self) -> Set[str]:
-        return {str(sy_name).split("_")[1] for sy_name in self.poly.free_symbols}
-
-    # Tudor: remove the typing from Any to an accountant type
-    def publish(self, acc: Any, sigma: float = 1.5) -> float:
-        acc_original = acc
-
-        assert sigma > 0
-
-        acc_temp = deepcopy(acc_original)
-
-        # get mechanisms for new publish event
-        ms = self.get_all_entity_mechanisms(sigma=sigma)
-        acc_temp.append(ms)
-
-        overbudgeted_entities = acc_temp.overbudgeted_entities
-
-        sample = random.gauss(0, sigma)
-
-        while len(overbudgeted_entities) > 0:
-            for sy_name in self.poly.free_symbols:
-                entity_name = str(sy_name).split("_")[1]
-                if entity_name in overbudgeted_entities:
-                    sym = scalar_name2obj[str(sy_name)]
-                    self._poly = self.poly.subs(sym.poly, 0)
-
-            acc_temp = deepcopy(acc_original)
-
-            # get mechanisms for new publish event
-            ms = self.get_all_entity_mechanisms(sigma=sigma)
-            acc_temp.append(ms)
-
-            overbudgeted_entities = acc_temp.overbudgeted_entities
-
-        output = self.value + sample
-
-        acc_original.entity2ledger = deepcopy(acc_temp.entity2ledger)
-
-        return output
 
     def _object2proto(self) -> Scalar_PB:
         return Scalar_PB(
@@ -415,3 +102,287 @@ class Scalar(Serializable):
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return Scalar_PB
+
+
+class IntermediateScalar(Scalar):
+
+    def __init__(self, poly, id=None):
+        self.poly = poly
+        self._gamma = None
+        self.id = id if id else UID()
+
+    def __rmul__(self, other: "Scalar") -> "Scalar":
+        return self * other
+
+    def __radd__(self, other: "Scalar") -> "Scalar":
+        return self + other
+
+    @property
+    def input_scalars(self):
+        phi_scalars = list()
+        for ssid in self.input_polys:
+            phi_scalars.append(ssid2obj[str(ssid)])
+        return phi_scalars
+
+    @property
+    def input_entities(self):
+        return list(set([x.entity for x in self.input_scalars]))
+
+    @property
+    def input_polys(self):
+        return self.poly.free_symbols
+
+    @property
+    def max_val(self):
+        return -flatten_and_maximize_poly(-self.poly)[-1].fun
+
+    @property
+    def min_val(self):
+        return flatten_and_maximize_poly(self.poly)[-1].fun
+
+    @property
+    def value(self):
+        return self.poly.subs({obj.poly: obj.value for obj in self.input_scalars})
+
+
+class IntermediatePhiScalar(IntermediateScalar):
+
+    def __init__(self, poly, entity):
+        super().__init__(poly=poly)
+        self.entity = entity
+
+    def max_lipschitz_wrt_entity(self, *args, **kwargs):
+        return self.gamma.max_lipschitz_wrt_entity(*args, **kwargs)
+
+    @property
+    def max_lipschitz(self):
+        return self.gamma.max_lipschitz
+
+    def __mul__(self, other: "Scalar") -> "Scalar":
+
+        if isinstance(other, IntermediateGammaScalar):
+            return self.gamma * other
+
+        if not isinstance(other, IntermediatePhiScalar):
+            return IntermediatePhiScalar(poly=self.poly * other, entity=self.entity)
+
+        # if other is referencing the same individual
+        if self.entity == other.entity:
+            return IntermediatePhiScalar(poly=self.poly * other.poly, entity=self.entity)
+
+        return self.gamma * other.gamma
+
+    def __add__(self, other: "Scalar") -> "Scalar":
+
+        if isinstance(other, IntermediateGammaScalar):
+            return self.gamma + other
+
+        # if other is a public value
+        if not isinstance(other, Scalar):
+            return IntermediatePhiScalar(poly=self.poly + other, entity=self.entity)
+
+        # if other is referencing the same individual
+        if self.entity == other.entity:
+            return IntermediatePhiScalar(poly=self.poly + other.poly, entity=self.entity)
+
+        return self.gamma + other.gamma
+
+    def __sub__(self, other: "Scalar") -> "Scalar":
+
+        if isinstance(other, IntermediateGammaScalar):
+            return self.gamma - other
+
+        # if other is a public value
+        if not isinstance(other, IntermediatePhiScalar):
+            return IntermediatePhiScalar(poly=self.poly - other, entity=self.entity)
+
+        # if other is referencing the same individual
+        if self.entity == other.entity:
+            return IntermediatePhiScalar(poly=self.poly - other.poly, entity=self.entity)
+
+        return self.gamma - other.gamma
+
+    @property
+    def gamma(self):
+
+        if self._gamma is None:
+            self._gamma = GammaScalar(min_val=self.min_val,
+                                      value=self.value,
+                                      max_val=self.max_val,
+                                      entity=self.entity)
+        return self._gamma
+
+
+class OriginScalar(Scalar):
+    """A scalar which stores the root polynomial values. When this is a superclass of
+    PhiScalar it represents data that was loaded in by a data owner. When this is a superclass
+    of GammaScalar this represents the node at which point data from mulitple entities was combined."""
+
+    def __init__(self, min_val, value, max_val, entity=None, id=None):
+        self.id = id if id else UID()
+        self._value = value
+        self._min_val = min_val
+        self._max_val = max_val
+        self.entity = entity if entity is not None else Entity()
+
+    @property
+    def value(self):
+        return self._value
+
+    @property
+    def max_val(self):
+        return self._max_val
+
+    @property
+    def min_val(self):
+        return self._min_val
+
+
+class PhiScalar(OriginScalar, IntermediatePhiScalar):
+    """A scalar over data from a single entity"""
+
+    def __init__(self, min_val, value, max_val, entity=None, id=None, ssid=None):
+        super().__init__(min_val=min_val, value=value, max_val=max_val, entity=entity, id=id)
+
+        # the scalar string identifier (SSID) - because we're using polynomial libraries
+        # we need to be able to reference this object in string form. the library doesn't
+        # know how to process things that aren't strings
+        if ssid is None:
+            ssid = str(self.id).split(" ")[1][:-1]  # + "_" + str(self.entity.id).split(" ")[1][:-1]
+
+        self.ssid = ssid
+
+        IntermediatePhiScalar.__init__(self, poly=symbols(self.ssid), entity=self.entity)
+
+        ssid2obj[self.ssid] = self
+
+
+class IntermediateGammaScalar(IntermediateScalar):
+    """"""
+
+    def __add__(self, other):
+        if isinstance(other, Scalar):
+            if isinstance(other, IntermediatePhiScalar):
+                other = other.gamma
+            return IntermediateGammaScalar(poly=self.poly + other.poly)
+        return IntermediateGammaScalar(poly=self.poly + other)
+
+    def __sub__(self, other):
+        if isinstance(other, Scalar):
+            if isinstance(other, IntermediatePhiScalar):
+                other = other.gamma
+            return IntermediateGammaScalar(poly=self.poly - other.poly)
+        return IntermediateGammaScalar(poly=self.poly - other)
+
+    def __mul__(self, other):
+        if isinstance(other, Scalar):
+            if isinstance(other, IntermediatePhiScalar):
+                other = other.gamma
+            return IntermediateGammaScalar(poly=self.poly * other.poly)
+        return IntermediateGammaScalar(poly=self.poly * other)
+
+    def max_lipschitz_via_explicit_search(self, force_all_searches=False):
+
+        r1 = np.array([x.poly for x in self.input_scalars])
+
+        r2_diffs = np.array(
+            [GammaScalar(x.min_val, x.value, x.max_val, entity=x.entity).poly for x in self.input_scalars])
+        r2 = r1 + r2_diffs
+
+        fr1 = self.poly
+        fr2 = self.poly.copy().subs({x[0]: x[1] for x in list(zip(r1, r2))})
+
+        left = np.sum(np.square(fr1 - fr2)) ** 0.5
+        right = np.sum(np.square(r1 - r2)) ** 0.5
+
+        C = -left / right
+
+        i2s, s2i = create_lookup_tables_for_symbol(C)
+        search_fun = create_searchable_function_from_polynomial(poly=C, symbol2index=s2i)
+
+        r1r2diff_zip = list(zip(r1, r2_diffs))
+
+        s2range = {}
+        for _input_scalar, _additive_counterpart in r1r2diff_zip:
+            input_scalar = ssid2obj[_input_scalar.name]
+            additive_counterpart = ssid2obj[_additive_counterpart.name]
+
+            s2range[input_scalar.ssid] = (input_scalar.min_val, input_scalar.max_val)
+            s2range[additive_counterpart.ssid] = (input_scalar.min_val, input_scalar.max_val)
+
+        rranges = list()
+        for index, symbol in enumerate(i2s):
+            rranges.append(s2range[symbol])
+
+        r2_indices_list = list()
+        min_max_list = list()
+        for r2_val in r2:
+            r2_syms = [ssid2obj[x.name] for x in r2_val.free_symbols]
+            r2_indices = [s2i[x.ssid] for x in r2_syms]
+
+            r2_indices_list.append(r2_indices)
+            min_max_list.append((r2_syms[0].min_val, r2_syms[0].max_val))
+
+        functions = list()
+        for i in range(2):
+            f1 = lambda x, i=i: x[r2_indices_list[i][0]] + x[r2_indices_list[i][1]] + min_max_list[i][0]
+            f2 = lambda x, i=i: -(x[r2_indices_list[i][0]] + x[r2_indices_list[i][1]]) + min_max_list[i][1]
+
+            functions.append(f1)
+            functions.append(f2)
+
+        constraints = [{'type': 'ineq', 'fun': f} for f in functions]
+
+        def non_negative_additive_terms(symbol_vector):
+            out = 0
+            for index in [s2i[x.name] for x in r2_diffs]:
+                out += (symbol_vector[index] ** 2)
+            # theres a small bit of rounding error from this constraint - this should
+            # only be used as a double check or as a backup!!!
+            return out ** 0.5 - 1 / 2 ** 16
+
+        constraints.append({'type': 'ineq', 'fun': non_negative_additive_terms})
+        results = minimize_function(f=search_fun, rranges=rranges, constraints=constraints,
+                                    force_all_searches=force_all_searches)
+
+        return results, C
+
+    def max_lipschitz_via_jacobian(self, input_entity=None, data_dependent=True, force_all_searches=False,
+                                   try_hessian_shortcut=False):
+        return max_lipschitz_via_jacobian(scalars=[self], input_entity=input_entity, data_dependent=data_dependent,
+                                          force_all_searches=force_all_searches,
+                                          try_hessian_shortcut=try_hessian_shortcut)
+
+    @property
+    def max_lipschitz(self):
+        result = self.max_lipschitz_via_jacobian()[0][-1]
+        if isinstance(result, float):
+            return -result
+        else:
+            return -float(result.fun)
+
+    def max_lipschitz_wrt_entity(self, entity):
+        result = self.max_lipschitz_via_jacobian(input_entity=entity)[0][-1]
+        if isinstance(result, float):
+            return -result
+        else:
+            return -float(result.fun)
+
+
+class GammaScalar(OriginScalar, IntermediateGammaScalar):
+    """A scalar over data from multiple entities"""
+
+    def __init__(self, min_val, value, max_val, entity=None, id=None, ssid=None):
+        super().__init__(min_val=min_val, value=value, max_val=max_val, entity=entity, id=id)
+
+        # the scalar string identifier (SSID) - because we're using polynomial libraries
+        # we need to be able to reference this object in string form. the library doesn't
+        # know how to process things that aren't strings
+        if ssid is None:
+            ssid = str(self.id).split(" ")[1][:-1] + "_" + str(self.entity.id).split(" ")[1][:-1]
+
+        self.ssid = ssid
+
+        IntermediateGammaScalar.__init__(self, poly=symbols(self.ssid))
+
+        ssid2obj[self.ssid] = self

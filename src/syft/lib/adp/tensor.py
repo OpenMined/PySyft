@@ -9,9 +9,9 @@ import syft as sy
 from ..autograd.value import Value
 from ..autograd.value import grad
 from ..autograd.value import to_values
-from .adversarial_accountant import AdversarialAccountant
+from .adversarial_accountant import publish
 from .entity import Entity
-from .scalar import Scalar
+from .scalar import PhiScalar
 
 
 def make_entities(n=100):
@@ -22,7 +22,6 @@ def make_entities(n=100):
 
 
 def private(input_data, min_val, max_val, entities=None, is_discrete=False):
-
     self = input_data
     if entities is None:
         flat_data = self.flatten()
@@ -31,12 +30,12 @@ def private(input_data, min_val, max_val, entities=None, is_discrete=False):
         scalars = list()
         for i in flat_data:
             value = max(min(float(i), max_val), min_val)
-            s = Scalar(
+            s = PhiScalar(
                 value=value,
                 min_val=min_val,
                 max_val=max_val,
                 entity=entities[len(scalars)],
-                is_discrete=is_discrete
+                #                 is_discrete=is_discrete
             )
             scalars.append(s)
 
@@ -48,12 +47,12 @@ def private(input_data, min_val, max_val, entities=None, is_discrete=False):
             for row_i, row in enumerate(self):
                 row_of_entries = list()
                 for item in row.flatten():
-                    s = Scalar(
+                    s = PhiScalar(
                         value=item,
                         min_val=min_val,
                         max_val=max_val,
                         entity=entities[row_i],
-                        is_discrete=is_discrete
+                        #                         is_discrete=is_discrete
                     )
                     row_of_entries.append(s)
                 output_rows.append(np.array(row_of_entries).reshape(row.shape))
@@ -114,10 +113,17 @@ class Tensor(np.ndarray):
             grads.append(val._grad)
         return Tensor(grads).reshape(self.shape)
 
-    def publish(self, **kwargs):
+    def slow_publish(self, **kwargs):
         grads = list()
         for val in self.flatten().tolist():
             grads.append(val.value.publish(**kwargs))
+        return np.array(grads).reshape(self.shape)
+
+    def publish(self, **kwargs):
+        grads = list()
+        for val in self.flatten().tolist():
+            grads.append(val.value)
+        grads = publish(scalars=grads, **kwargs)
         return np.array(grads).reshape(self.shape)
 
     @property
