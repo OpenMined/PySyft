@@ -8,15 +8,15 @@ from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
 
-# syft absolute
-from syft.proto.core.common import (
-    common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
-)
-
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
 
+
+# syft absolute
+from syft.proto.core.common import (
+    common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
+)
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/lib/python/range.proto",
@@ -25,9 +25,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
     serialized_pb=b'\n\x1cproto/lib/python/range.proto\x12\x0fsyft.lib.python\x1a%proto/core/common/common_object.proto"U\n\x05Range\x12\r\n\x05start\x18\x01 \x01(\x03\x12\x0c\n\x04stop\x18\x02 \x01(\x03\x12\x0c\n\x04step\x18\x03 \x01(\x03\x12!\n\x02id\x18\x04 \x01(\x0b\x32\x15.syft.core.common.UIDb\x06proto3',
-    dependencies=[
-        proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
-    ],
+    dependencies=[proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,],
 )
 
 
