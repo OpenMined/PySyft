@@ -134,7 +134,7 @@ jobs:
         with:
           repository: "OpenMined/PyGrid"
           ref: "dev"
-          path: "pygrid"
+          path: "packages/grid"
 
       - name: Install Dependencies
         run: |
@@ -147,9 +147,10 @@ jobs:
       - name: Test PyGrid
         continue-on-error: true
         run: |
-          pytest ./pygrid/apps/domain/tests
-          pytest ./pygrid/apps/network/tests
-          pytest ./pygrid/apps/worker/tests
+          pytest ../grid/apps/domain/tests
+          pytest ../grid/apps/network/tests
+          pytest ../grid/apps/worker/tests
+          python ./scripts/mnist.py
           pytest -m grid
 
   pytorch-tests-all-versions:
