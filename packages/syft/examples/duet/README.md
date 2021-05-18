@@ -22,15 +22,14 @@ Duet is the latest part of the Syft family and is designed to provide you with a
 
 ## Version Support
 
-We support **Linux**, **MacOS** and **Windows** and the following Python and PyTorch versions.
-Other Deep Learning and Data Science libraries are coming very soon.
+We support **Linux**, **MacOS** and **Windows** and the following Python and Torch versions.
+Older versions may work, however we have stopped testing and supporting them.
 
-| Py / Torch | 1.4 | 1.5 | 1.6 | 1.7 | 1.8 |
-| ---------- | --- | --- | --- | --- | --- |
-| 3.6        | ✅  | ✅  | ✅  | ✅  | ✅  |
-| 3.7        | ✅  | ✅  | ✅  | ✅  | ✅  |
-| 3.8        | ✅  | ✅  | ✅  | ✅  | ✅  |
-| 3.9        | ➖  | ➖  | ➖  | ✅  | ✅  |
+| Py / Torch | 1.6 | 1.7 | 1.8 |
+| ---------- | --- | --- | --- |
+| 3.7        | ✅  | ✅  | ✅  |
+| 3.8        | ✅  | ✅  | ✅  |
+| 3.9        | ➖  | ✅  | ✅  |
 
 ## Setup 🐍
 
