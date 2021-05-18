@@ -133,16 +133,22 @@ def max_lipschitz_via_jacobian(
     force_all_searches: bool = False,
     try_hessian_shortcut: bool = False,
 ):
+    # scalars = R^d` representing the d' dimentional output of g
+    # input_entity = the 'i'th entity for which we want to compute a lipschitz bound
+
+
     # polys = [x.poly for x in scalars]  # @Madhava: unused?
     input_scalars = set()
     for s in scalars:
         for i_s in s.input_scalars:
             input_scalars.add(i_s)
 
+    # R^d` representing the d' dimentional output of g
     # the numberator of the partial derivative
     out = sym.Matrix([x.poly for x in scalars])
 
     if input_entity is None:
+                          # X_1 through X_n flattened into a single vector
         j = out.jacobian([x.poly for x in input_scalars])
     else:
 
@@ -159,10 +165,14 @@ def max_lipschitz_via_jacobian(
         # And if we're looking to compute the max parital derivative with respect to
         # input scalars from only one entity, then we select only the variables
         # corresponding to that entity here.
+
+        # X_i scalars
         relevant_scalars = list(
             filter(lambda s: s.entity == input_entity, input_scalars)
         )
         relevant_inputs = [x.poly for x in relevant_scalars]
+
+        # jacobian ONLY with respect to X_i
         j = out.jacobian(relevant_inputs)
 
         # For higher order functions - it's possible that some of the partial
@@ -177,6 +187,7 @@ def max_lipschitz_via_jacobian(
 
     neg_l2_j = -((np.sum(np.square(j))) ** 0.5)
 
+    # if the L2 norm is a constant (flat derivative) - just return it
     if len(np.sum(j).free_symbols) == 0:
         result = -float(np.max(j))
         return [result], neg_l2_j

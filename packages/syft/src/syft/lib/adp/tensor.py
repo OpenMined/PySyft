@@ -61,6 +61,33 @@ def private(input_data, min_val, max_val, entities=None, is_discrete=False):
             print(len(self))
             raise Exception("len(entities) must equal len(self)")
 
+class GradLedger():
+
+    def __init__(self):
+        self.grad_parents = list()
+        self.total_symbols = set()
+
+    def add(self, dict_of_gradient_parents, accumulate_grads=False):
+
+        self.grad_parents.append(dict_of_gradient_parents)
+
+        # if accumulate grads is false, raise exception if any of the results
+        # set gradients for the same variables (which should have been accumulated)
+
+        for symbol_id in dict_of_gradient_parents.keys():
+            if not accumulate_grads:
+                if symbol_id in self.total_symbols:
+                    raise Exception("You had multiple gradients attempting to update the same scalar but "+\
+                                    "accumulate_grads was set to False. This means that some grads were "+\
+                                    "overwritten by new ones and these gradients would be false. Please "+\
+                                    "re-run the computation with accumulate_grads set to True (and don't "+\
+                                    "forget to zero grads out each time you're done.")
+            self.total_symbols.add(symbol_id)
+
+    def zero_grads(self):
+        for x in self.total_symbols:
+            x._grad = 0
+
 
 class Tensor(np.ndarray):
     def __new__(
@@ -111,11 +138,12 @@ class Tensor(np.ndarray):
 
         return output
 
-    def backward(self):
-        if self.shape == ():
-            return grad(self.flatten()[0])
-        else:
-            raise Exception("Can only call .backward() on single-value tensor.")
+    def backward(self, accumulate_grads=False):
+        ledger = GradLedger()
+        for entry in self.flatten():
+            ledger.add(grad(entry), accumulate_grads=accumulate_grads)
+        return ledger
+
 
     @property
     def grad(self):

@@ -9,9 +9,18 @@ import numpy as np
 # syft relative
 from .idp_gaussian_mechanism import iDPGaussianMechanism
 from .search import max_lipschitz_wrt_entity
-
+from .scalar import IntermediatePhiScalar
 
 def publish(scalars, acc: Any, sigma: float = 1.5) -> float:
+
+    _scalars = list()
+    for s in scalars:
+        if isinstance(s, IntermediatePhiScalar):
+            _scalars.append(s.gamma)
+        else:
+            _scalars.append(s)
+    scalars = _scalars
+
     acc_original = acc
 
     acc_temp = deepcopy(acc_original)

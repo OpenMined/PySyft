@@ -131,20 +131,27 @@ def log(a):
 
 
 @lru_cache(maxsize=None)
-def grad(Value):
+def grad(Value, accumulate=False):
     gradients = defaultdict(lambda: 0)
 
     def _inner(Value, weight):
 
         for parent, grad in Value.grads:
             to_par = weight * grad
-            gradients[parent.id] += to_par
+            gradients[parent] += to_par
             _inner(parent, to_par)
 
-        for parent, grad in Value.grads:
-            parent._grad = gradients[parent.id]
-
     _inner(Value, weight=1)
+
+    if accumulate:
+        for parent in gradients.keys():
+            if not hasattr(parent, '_grad'):
+                parent._grad = 0
+            parent._grad += gradients[parent]
+    else:
+        for parent in gradients.keys():
+            parent._grad = gradients[parent]
+
     return dict(gradients)
 
 

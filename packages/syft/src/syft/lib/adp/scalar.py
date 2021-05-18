@@ -21,8 +21,8 @@ from sympy.core.basic import Basic as BasicSymbol
 from ...core.common import UID
 from ...core.common.serde.serializable import bind_protobuf
 from ...proto.lib.adp.scalar_pb2 import Scalar as Scalar_PB
+from .. import adp
 from .entity import Entity
-from .publish import publish
 from .search import create_lookup_tables_for_symbol
 from .search import create_searchable_function_from_polynomial
 from .search import flatten_and_maximize_poly
@@ -34,8 +34,7 @@ from .search import ssid2obj
 @bind_protobuf
 class Scalar:
     def publish(self, acc: Any, sigma: float = 1.5) -> float:
-        return publish([self], acc=acc, sigma=sigma)
-
+        return adp.publish.publish([self], acc=acc, sigma=sigma)
     @property
     def max_val(self) -> float:
         raise NotImplementedError
@@ -294,7 +293,7 @@ class PhiScalar(OriginScalar, IntermediatePhiScalar):
         # we need to be able to reference this object in string form. The library
         # doesn't know how to process things that aren't strings
         if ssid is None:
-            ssid = self.id.nodash()
+            ssid = "_"+self.id.nodash() + "_" + self.entity.id.nodash()
 
         self.ssid = ssid
 
@@ -468,7 +467,7 @@ class GammaScalar(OriginScalar, IntermediateGammaScalar):
         # we need to be able to reference this object in string form. The library
         # doesn't know how to process things that aren't strings
         if ssid is None:
-            ssid = self.id.nodash()
+            ssid = "_"+self.id.nodash() + "_" + self.entity.id.nodash()
 
         self.ssid = ssid
 
