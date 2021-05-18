@@ -1,6 +1,10 @@
 # stdlib
 from functools import lru_cache
+from typing import Any
 from typing import Callable
+from typing import Dict as TypeDict
+from typing import List as TypeList
+from typing import Optional
 
 # third party
 import numpy as np
@@ -9,6 +13,9 @@ import sympy as sym
 from sympy.core.basic import Basic
 from sympy.solvers import solve
 
+# syft relative
+from .entity import Entity
+
 # Leaving this commented out here because I'm pretty sure we can get the
 # lru_cache to be WAY faster through this approach but I can't seem to
 # get it to work (it adds about 10% perf loss).
@@ -16,10 +23,10 @@ from sympy.solvers import solve
 # for i in range(100):
 #     ordered_symbols.append(symbols("s"+str(i)))
 
-# ssid2obj is used to look and extract value, min_val and max_val
-# if we are able to store these in the name string instead we could extract them
-# at the point of use instead of lookup
-ssid2obj = {}
+# ssid2obj is used to lookup value, min_val and max_val. if we are able to store these
+# in the name string instead we could extract them at the point of use instead of lookup
+# TypeDict[str, Union[PhiScalar, GammaScalar]]
+ssid2obj: TypeDict[str, Any] = {}  # TODO: Fix types in circular deps
 
 
 def create_searchable_function_from_polynomial(
@@ -52,13 +59,14 @@ def minimize_poly(poly: Basic, *rranges, force_all_searches: bool = False, **s2i
     return minimize_function(f=search_fun, rranges=rranges, force_all_searches=False)
 
 
-def flatten_and_maximize_poly(poly, force_all_searches=False):
+def flatten_and_maximize_poly(poly, force_all_searches: bool = False):
     i2s = list(poly.free_symbols)
     s2i = {s: i for i, s in enumerate(i2s)}
 
-    # this code seems to make things slower - although there might be a memory improvement (i haven't checked)
-    #     flattened_poly = poly.copy().subs({k:v for k,v in zip(i2s, ordered_symbols[0:len(i2s)])})
-    #     flattened_s2i = {str(ordered_symbols[i]):i for s,i in s2i.items()}
+    # this code seems to make things slower - although there might be a memory
+    # improvement (i haven't checked)
+    # flattened_poly = poly.copy().subs({k:v for k,v in zip(i2s, ordered_symbols[0:len(i2s)])})
+    # flattened_s2i = {str(ordered_symbols[i]):i for s,i in s2i.items()}
 
     flattened_poly = poly
     flattened_s2i = {str(s): i for s, i in s2i.items()}
@@ -80,7 +88,12 @@ def create_lookup_tables_for_symbol(polynomial):
     return index2symbol, symbol2index
 
 
-def minimize_function(f, rranges, constraints=[], force_all_searches=False):
+def minimize_function(
+    f,
+    rranges,
+    constraints: TypeList[TypeDict[str, Any]] = [],
+    force_all_searches: bool = False,
+) -> TypeList[optimize.OptimizeResult]:
     results = list()
 
     # Step 1: try simplicial
@@ -105,7 +118,7 @@ def minimize_function(f, rranges, constraints=[], force_all_searches=False):
     return results
 
 
-def max_lipschitz_wrt_entity(scalars, entity):
+def max_lipschitz_wrt_entity(scalars, entity: Entity):
     result = max_lipschitz_via_jacobian(scalars, input_entity=entity)[0][-1]
     if isinstance(result, float):
         return -result
@@ -114,13 +127,13 @@ def max_lipschitz_wrt_entity(scalars, entity):
 
 
 def max_lipschitz_via_jacobian(
-    scalars,
-    input_entity=None,
-    data_dependent=True,
-    force_all_searches=False,
-    try_hessian_shortcut=False,
+    scalars: TypeList[Any],  # TODO: Fix Scalar type circular
+    input_entity: Optional[Entity] = None,
+    data_dependent: bool = True,
+    force_all_searches: bool = False,
+    try_hessian_shortcut: bool = False,
 ):
-    polys = [x.poly for x in scalars]
+    # polys = [x.poly for x in scalars]  # @Madhava: unused?
     input_scalars = set()
     for s in scalars:
         for i_s in s.input_scalars:
@@ -133,27 +146,32 @@ def max_lipschitz_via_jacobian(
         j = out.jacobian([x.poly for x in input_scalars])
     else:
 
-        # In general it doesn't make sense to consider the max partial derivative over all inputs because we dont' want
-        # the Lipschiptz bound of the entire jacobian, we want the lipschitz bound with respect to entity "i" (see
-        # https://arxiv.org/abs/2008.11193). For example, if I had a polynomial y = a + b**2 + c**3 + d**4 where each
-        # a,b,c,d variable was from a different entity, the fact taht d has a big derivative should change the max
-        # lipschitz bound of y with respect to "a". Thus, we're only interested in searching for the maximum partial
-        # derivative with respect to the variables from the focus entity "i".
+        # In general it doesn't make sense to consider the max partial derivative over
+        # all inputs because we don't want the Lipschitz bound of the entire jacobian,
+        # we want the Lipschitz bound with respect to entity "i" (see Individual Privacy
+        # Accounting via a Renyi Filter: https://arxiv.org/abs/2008.11193). For example,
+        # if I had a polynomial y = a + b**2 + c**3 + d**4 where each a,b,c,d variable
+        # was from a different entity, the fact that d has a big derivative should
+        # change the max Lipschitz bound of y with respect to "a". Thus, we're only
+        # interested in searching for the maximum partial derivative with respect to the
+        # variables from the focus entity "i".
 
-        # And if we're looking to compute the max parital derivative with respect to input scalars from only one entity,
-        # then we select only the variables corresponding to that entity here.
+        # And if we're looking to compute the max parital derivative with respect to
+        # input scalars from only one entity, then we select only the variables
+        # corresponding to that entity here.
         relevant_scalars = list(
             filter(lambda s: s.entity == input_entity, input_scalars)
         )
         relevant_inputs = [x.poly for x in relevant_scalars]
         j = out.jacobian(relevant_inputs)
 
-        # for higher order functions - it's possible that some of the partial derivatives are conditioned
-        # on data from the input entity. The philosophy of input DP is that when producing an epsilon
-        # guarantee for entity[i] that we don't need to search over the possible range of data for that entity
-        # but can instead use the data itself - this results in an epsilon for each entity which is private
-        # but it also means the bound is tighter. So we could skip this step but it would in some cases
-        # make the bound looser than it needs to be.
+        # For higher order functions - it's possible that some of the partial
+        # derivatives are conditioned on data from the input entity. The philosophy of
+        # input DP is that when producing an epsilon guarantee for entity[i] that we
+        # don't need to search over the possible range of data for that entity but can
+        # instead use the data itself - this results in an epsilon for each entity which
+        # is private but it also means the bound is tighter. So we could skip this step
+        # but it would in some cases make the bound looser than it needs to be.
         if data_dependent:
             j = j.subs({x.poly: x.value for x in relevant_scalars})
 
@@ -167,7 +185,7 @@ def max_lipschitz_via_jacobian(
         h = j.jacobian([x.poly for x in input_scalars])
         if len(solve(np.sum(h ** 2), *[x.poly for x in input_scalars], dict=True)) == 0:
             print(
-                "The gradient is linear - solve through brute force search over edges of domain"
+                "Gradient is linear - solve with brute force search over edges of domain"
             )
 
             i2s, s2i = create_lookup_tables_for_symbol(neg_l2_j)

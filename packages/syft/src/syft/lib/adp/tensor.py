@@ -1,21 +1,20 @@
+# stdlib
+from typing import List as TypeList
+
 # third party
 import names
 import numpy as np
 
-# syft absolute
-import syft as sy
-
 # syft relative
-from ..autograd.value import Value
 from ..autograd.value import grad
 from ..autograd.value import to_values
-from .adversarial_accountant import publish
 from .entity import Entity
+from .publish import publish
 from .scalar import PhiScalar
 
 
-def make_entities(n=100):
-    ents = list()
+def make_entities(n: int = 100) -> TypeList[Entity]:
+    ents: TypeList[Entity] = list()
     for i in range(n):
         ents.append(Entity(unique_name=names.get_full_name().replace(" ", "_")))
     return ents

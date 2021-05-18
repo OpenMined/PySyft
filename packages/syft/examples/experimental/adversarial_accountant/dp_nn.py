@@ -2,7 +2,6 @@
 import numpy as np
 
 # syft absolute
-import syft as sy
 from syft.lib.adp.adversarial_accountant import AdversarialAccountant
 from syft.lib.adp.entity import Entity
 from syft.lib.adp.tensor import Tensor
@@ -28,8 +27,11 @@ weights = Tensor(np.random.uniform(size=(2, 1)))
 for i in range(10):
     batch_loss = 0
     for row in range(int(len(x) / 2)):
-        pred = x[row * 2 : row * 2 + 2].dot(weights)
-        loss = np.mean(np.square(y[row * 2 : row * 2 + 2] - pred))
+        start = row * 2
+        end = row * 2 + 2
+
+        pred = x[start:end].dot(weights)
+        loss = np.mean(np.square(y[start:end] - pred))
         loss.backward()
 
         weight_grad = weights.grad * 0.1

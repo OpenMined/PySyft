@@ -12,9 +12,7 @@ import uuid
 
 # third party
 import numpy as np
-from scipy.optimize import shgo
-import sympy as sp
-from sympy.abc import *
+import sympy as sym
 
 
 class Value:
@@ -107,7 +105,7 @@ def power(a, b):
         (a, b.value * (a.value ** (b.value - 1))),
         (
             b,
-            (np.log(a.value) if isinstance(a.value, Number) else sp.log(a.value))
+            (np.log(a.value) if isinstance(a.value, Number) else sym.log(a.value))
             * (a.value ** b.value),
         ),
     )
@@ -121,13 +119,13 @@ def inv(a):
 
 
 def _exp(a):
-    value = np.exp(a.value) if isinstance(a.value, Number) else sp.exp(a.value)
+    value = np.exp(a.value) if isinstance(a.value, Number) else sym.exp(a.value)
     grads = ((a, value),)
     return Value(value, grads)
 
 
 def log(a):
-    value = np.exp(a.value) if isinstance(a.value, Number) else sp.log(a.value)
+    value = np.exp(a.value) if isinstance(a.value, Number) else sym.log(a.value)
     grads = ((a, 1.0 / a.value),)
     return Value(value, grads)
 
@@ -152,4 +150,6 @@ def grad(Value):
 
 to_values = np.vectorize(lambda x: Value(x))
 
-sigmoid = lambda x: 1 / (1 + np.exp(-x))
+
+def sigmoid(x: float) -> float:
+    return 1 / (1 + np.exp(-x))

@@ -1,35 +1,28 @@
+# future
+from __future__ import annotations
+
 # stdlib
-from collections import defaultdict
-from copy import deepcopy
-import random
-from string import ascii_letters
 from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import List
+from typing import List as TypeList
 from typing import Optional
-from typing import Set
-from typing import Tuple
+from typing import Set as TypeSet
+from typing import Tuple as TypeTuple
 from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 from scipy import optimize
-from scipy.optimize import OptimizeResult
-from sympy import Symbol
-from sympy import diff
+import sympy as sym
 from sympy import symbols
-
-# syft absolute
-from syft.core.common.serde import Serializable
+from sympy.core.basic import Basic as BasicSymbol
 
 # syft relative
 from ...core.common import UID
 from ...core.common.serde.serializable import bind_protobuf
 from ...proto.lib.adp.scalar_pb2 import Scalar as Scalar_PB
-from .adversarial_accountant import publish
 from .entity import Entity
+from .publish import publish
 from .search import create_lookup_tables_for_symbol
 from .search import create_searchable_function_from_polynomial
 from .search import flatten_and_maximize_poly
@@ -40,8 +33,20 @@ from .search import ssid2obj
 
 @bind_protobuf
 class Scalar:
-    def publish(self, acc, sigma: float = 1.5) -> float:
+    def publish(self, acc: Any, sigma: float = 1.5) -> float:
         return publish([self], acc=acc, sigma=sigma)
+
+    @property
+    def max_val(self) -> float:
+        raise NotImplementedError
+
+    @property
+    def min_val(self) -> float:
+        raise NotImplementedError
+
+    @property
+    def value(self) -> float:
+        raise NotImplementedError
 
     def __str__(self) -> str:
         return (
@@ -77,7 +82,7 @@ class Scalar:
         )
 
     @staticmethod
-    def _proto2object(proto: Scalar_PB) -> "Scalar":
+    def _proto2object(proto: Scalar_PB) -> Scalar:
         name: Optional[str] = None
         if proto.has_name:
             name = proto.name
@@ -113,58 +118,69 @@ class Scalar:
 
 
 class IntermediateScalar(Scalar):
-    def __init__(self, poly, id=None):
+    def __init__(self, poly: BasicSymbol, id: Optional[UID] = None) -> None:
         self.poly = poly
-        self._gamma = None
+        self._gamma: Optional[GammaScalar] = None
         self.id = id if id else UID()
 
-    def __rmul__(self, other: "Scalar") -> "Scalar":
+    def __rmul__(self, other: Scalar) -> Scalar:
         return self * other
 
-    def __radd__(self, other: "Scalar") -> "Scalar":
+    def __radd__(self, other: Scalar) -> Scalar:
         return self + other
 
     @property
-    def input_scalars(self):
-        phi_scalars = list()
-        for ssid in self.input_polys:
-            phi_scalars.append(ssid2obj[str(ssid)])
-        return phi_scalars
+    def input_scalars(self) -> Union[PhiScalar, GammaScalar]:
+        phi_gamma_scalars: TypeList[Union[PhiScalar, GammaScalar]] = list()
+        for free_symbol in self.input_polys:
+            ssid = str(free_symbol)
+            phi_gamma_scalars.append(ssid2obj[ssid])
+        return phi_gamma_scalars
 
     @property
-    def input_entities(self):
+    def input_entities(self) -> TypeList[Entity]:
         return list(set([x.entity for x in self.input_scalars]))
 
     @property
-    def input_polys(self):
+    def input_polys(self) -> TypeSet[BasicSymbol]:
         return self.poly.free_symbols
 
     @property
-    def max_val(self):
-        return -flatten_and_maximize_poly(-self.poly)[-1].fun
+    def max_val(self) -> np.float64:
+        results = flatten_and_maximize_poly(-self.poly)
+        if len(results) >= 1:
+            return -results[-1].fun
+        raise Exception(
+            f"flatten_and_maximize_poly returned no results for {-self.poly}"
+        )
 
     @property
-    def min_val(self):
-        return flatten_and_maximize_poly(self.poly)[-1].fun
+    def min_val(self) -> np.float64:
+        results = flatten_and_maximize_poly(self.poly)
+        if len(results) >= 1:
+            return results[-1].fun
+        raise Exception(
+            f"flatten_and_maximize_poly returned no results for {self.poly}"
+        )
 
     @property
-    def value(self):
+    def value(self) -> sym.core.numbers.Float:
         return self.poly.subs({obj.poly: obj.value for obj in self.input_scalars})
 
 
 class IntermediatePhiScalar(IntermediateScalar):
-    def __init__(self, poly, entity):
+    def __init__(self, poly: BasicSymbol, entity: Entity) -> None:
         super().__init__(poly=poly)
         self.entity = entity
 
-    def max_lipschitz_wrt_entity(self, *args, **kwargs):
+    def max_lipschitz_wrt_entity(self, *args, **kwargs) -> float:
         return self.gamma.max_lipschitz_wrt_entity(*args, **kwargs)
 
     @property
-    def max_lipschitz(self):
+    def max_lipschitz(self) -> float:
         return self.gamma.max_lipschitz
 
-    def __mul__(self, other: "Scalar") -> "Scalar":
+    def __mul__(self, other: Scalar) -> Scalar:
 
         if isinstance(other, IntermediateGammaScalar):
             return self.gamma * other
@@ -180,7 +196,7 @@ class IntermediatePhiScalar(IntermediateScalar):
 
         return self.gamma * other.gamma
 
-    def __add__(self, other: "Scalar") -> "Scalar":
+    def __add__(self, other: Scalar) -> Scalar:
 
         if isinstance(other, IntermediateGammaScalar):
             return self.gamma + other
@@ -197,7 +213,7 @@ class IntermediatePhiScalar(IntermediateScalar):
 
         return self.gamma + other.gamma
 
-    def __sub__(self, other: "Scalar") -> "Scalar":
+    def __sub__(self, other: Scalar) -> Scalar:
 
         if isinstance(other, IntermediateGammaScalar):
             return self.gamma - other
@@ -215,8 +231,7 @@ class IntermediatePhiScalar(IntermediateScalar):
         return self.gamma - other.gamma
 
     @property
-    def gamma(self):
-
+    def gamma(self) -> GammaScalar:
         if self._gamma is None:
             self._gamma = GammaScalar(
                 min_val=self.min_val,
@@ -229,10 +244,18 @@ class IntermediatePhiScalar(IntermediateScalar):
 
 class OriginScalar(Scalar):
     """A scalar which stores the root polynomial values. When this is a superclass of
-    PhiScalar it represents data that was loaded in by a data owner. When this is a superclass
-    of GammaScalar this represents the node at which point data from mulitple entities was combined."""
+    PhiScalar it represents data that was loaded in by a data owner. When this is a
+    superclass of GammaScalar this represents the node at which point data from multiple
+    entities was combined."""
 
-    def __init__(self, min_val, value, max_val, entity=None, id=None):
+    def __init__(
+        self,
+        min_val: Optional[float],
+        value: Optional[float],
+        max_val: Optional[float],
+        entity: Optional[Entity] = None,
+        id: Optional[UID] = None,
+    ) -> None:
         self.id = id if id else UID()
         self._value = value
         self._min_val = min_val
@@ -240,33 +263,38 @@ class OriginScalar(Scalar):
         self.entity = entity if entity is not None else Entity()
 
     @property
-    def value(self):
+    def value(self) -> Optional[float]:
         return self._value
 
     @property
-    def max_val(self):
+    def max_val(self) -> Optional[float]:
         return self._max_val
 
     @property
-    def min_val(self):
+    def min_val(self) -> Optional[float]:
         return self._min_val
 
 
 class PhiScalar(OriginScalar, IntermediatePhiScalar):
     """A scalar over data from a single entity"""
 
-    def __init__(self, min_val, value, max_val, entity=None, id=None, ssid=None):
+    def __init__(
+        self,
+        min_val: Optional[float],
+        value: Optional[float],
+        max_val: Optional[float],
+        entity: Optional[Entity] = None,
+        id: Optional[UID] = None,
+        ssid: Optional[str] = None,
+    ) -> None:
         super().__init__(
             min_val=min_val, value=value, max_val=max_val, entity=entity, id=id
         )
-
-        # the scalar string identifier (SSID) - because we're using polynomial libraries
-        # we need to be able to reference this object in string form. the library doesn't
-        # know how to process things that aren't strings
+        # The scalar string identifier (SSID) - because we're using polynomial libraries
+        # we need to be able to reference this object in string form. The library
+        # doesn't know how to process things that aren't strings
         if ssid is None:
-            ssid = str(self.id).split(" ")[1][
-                :-1
-            ]  # + "_" + str(self.entity.id).split(" ")[1][:-1]
+            ssid = self.id.nodash()
 
         self.ssid = ssid
 
@@ -280,28 +308,30 @@ class PhiScalar(OriginScalar, IntermediatePhiScalar):
 class IntermediateGammaScalar(IntermediateScalar):
     """ """
 
-    def __add__(self, other):
+    def __add__(self, other) -> IntermediateGammaScalar:
         if isinstance(other, Scalar):
             if isinstance(other, IntermediatePhiScalar):
                 other = other.gamma
             return IntermediateGammaScalar(poly=self.poly + other.poly)
         return IntermediateGammaScalar(poly=self.poly + other)
 
-    def __sub__(self, other):
+    def __sub__(self, other) -> IntermediateGammaScalar:
         if isinstance(other, Scalar):
             if isinstance(other, IntermediatePhiScalar):
                 other = other.gamma
             return IntermediateGammaScalar(poly=self.poly - other.poly)
         return IntermediateGammaScalar(poly=self.poly - other)
 
-    def __mul__(self, other):
+    def __mul__(self, other) -> IntermediateGammaScalar:
         if isinstance(other, Scalar):
             if isinstance(other, IntermediatePhiScalar):
                 other = other.gamma
             return IntermediateGammaScalar(poly=self.poly * other.poly)
         return IntermediateGammaScalar(poly=self.poly * other)
 
-    def max_lipschitz_via_explicit_search(self, force_all_searches=False):
+    def max_lipschitz_via_explicit_search(
+        self, force_all_searches: bool = False
+    ) -> TypeTuple[TypeList[optimize.OptimizeResult], np.float64]:
 
         r1 = np.array([x.poly for x in self.input_scalars])
 
@@ -340,7 +370,7 @@ class IntermediateGammaScalar(IntermediateScalar):
             )
 
         rranges = list()
-        for index, symbol in enumerate(i2s):
+        for _, symbol in enumerate(i2s):
             rranges.append(s2range[symbol])
 
         r2_indices_list = list()
@@ -369,7 +399,7 @@ class IntermediateGammaScalar(IntermediateScalar):
 
         constraints = [{"type": "ineq", "fun": f} for f in functions]
 
-        def non_negative_additive_terms(symbol_vector):
+        def non_negative_additive_terms(symbol_vector: np.ndarray) -> np.float64:
             out = 0
             for index in [s2i[x.name] for x in r2_diffs]:
                 out += symbol_vector[index] ** 2
@@ -389,10 +419,10 @@ class IntermediateGammaScalar(IntermediateScalar):
 
     def max_lipschitz_via_jacobian(
         self,
-        input_entity=None,
-        data_dependent=True,
-        force_all_searches=False,
-        try_hessian_shortcut=False,
+        input_entity: Optional[Entity] = None,
+        data_dependent: bool = True,
+        force_all_searches: bool = False,
+        try_hessian_shortcut: bool = False,
     ):
         return max_lipschitz_via_jacobian(
             scalars=[self],
@@ -403,14 +433,14 @@ class IntermediateGammaScalar(IntermediateScalar):
         )
 
     @property
-    def max_lipschitz(self):
+    def max_lipschitz(self) -> float:
         result = self.max_lipschitz_via_jacobian()[0][-1]
         if isinstance(result, float):
             return -result
         else:
             return -float(result.fun)
 
-    def max_lipschitz_wrt_entity(self, entity):
+    def max_lipschitz_wrt_entity(self, entity) -> float:
         result = self.max_lipschitz_via_jacobian(input_entity=entity)[0][-1]
         if isinstance(result, float):
             return -result
@@ -421,20 +451,24 @@ class IntermediateGammaScalar(IntermediateScalar):
 class GammaScalar(OriginScalar, IntermediateGammaScalar):
     """A scalar over data from multiple entities"""
 
-    def __init__(self, min_val, value, max_val, entity=None, id=None, ssid=None):
+    def __init__(
+        self,
+        min_val: float,
+        value: float,
+        max_val: float,
+        entity: Optional[Entity] = None,
+        id: Optional[UID] = None,
+        ssid: Optional[str] = None,
+    ) -> None:
         super().__init__(
             min_val=min_val, value=value, max_val=max_val, entity=entity, id=id
         )
 
-        # the scalar string identifier (SSID) - because we're using polynomial libraries
-        # we need to be able to reference this object in string form. the library doesn't
-        # know how to process things that aren't strings
+        # The scalar string identifier (SSID) - because we're using polynomial libraries
+        # we need to be able to reference this object in string form. The library
+        # doesn't know how to process things that aren't strings
         if ssid is None:
-            ssid = (
-                str(self.id).split(" ")[1][:-1]
-                + "_"
-                + str(self.entity.id).split(" ")[1][:-1]
-            )
+            ssid = self.id.nodash()
 
         self.ssid = ssid
 
