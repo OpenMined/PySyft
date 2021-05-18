@@ -1,3 +1,0 @@
-torch>=1.4.0,<=1.8.0
-torchcsprng<=0.2.0
-torchvision>=0.5,<=0.9
