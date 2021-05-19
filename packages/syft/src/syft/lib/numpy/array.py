@@ -54,7 +54,9 @@ def arrow_proto2object(proto: NumpyProtoArrow) -> np.ndarray:
     reader = pa.BufferReader(proto.data)
     buf = reader.read_buffer()
     result = pa.ipc.read_tensor(buf)
-    return result.to_numpy()
+    np_array = result.to_numpy()
+    np_array.setflags(write=True)
+    return np_array
 
 
 def protobuf_object2proto(obj: np.ndarray) -> NumpyProto:
@@ -86,7 +88,7 @@ if flags.APACHE_ARROW_TENSOR_SERDE:
     GenerateWrapper(
         wrapped_type=np.ndarray,
         import_path="numpy.ndarray",
-        protobuf_scheme=NumpyProto,
+        protobuf_scheme=NumpyProtoArrow,
         type_object2proto=arrow_object2proto,
         type_proto2object=arrow_proto2object,
     )
