@@ -82,7 +82,7 @@ def protobuf_proto2object(proto: NumpyProto) -> np.ndarray:
     return obj
 
 
-if flags._APACHE_ARROW_TENSOR_SERDE:
+if flags.APACHE_ARROW_TENSOR_SERDE:
     GenerateWrapper(
         wrapped_type=np.ndarray,
         import_path="numpy.ndarray",
