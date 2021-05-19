@@ -277,7 +277,9 @@ _GETORSETPROPERTYACTION = _descriptor.Descriptor(
         ),
     ],
     extensions=[],
-    nested_types=[_GETORSETPROPERTYACTION_KWARGSENTRY,],
+    nested_types=[
+        _GETORSETPROPERTYACTION_KWARGSENTRY,
+    ],
     enum_types=[],
     serialized_options=None,
     is_extendable=False,
