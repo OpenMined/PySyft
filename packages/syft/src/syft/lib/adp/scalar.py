@@ -38,10 +38,12 @@ from .search import max_lipschitz_via_jacobian
 from .search import minimize_function
 from .search import ssid2obj
 
-
+# the most generic class
 class Scalar(Serializable):
+
     def publish(self, acc: Any, sigma: float = 1.5) -> float:
         return adp.publish.publish([self], acc=acc, sigma=sigma)
+
     @property
     def max_val(self) -> float:
         raise NotImplementedError
