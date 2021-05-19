@@ -145,7 +145,7 @@ def grad(Value, accumulate=False):
 
     if accumulate:
         for parent in gradients.keys():
-            if not hasattr(parent, '_grad') or parent._grad is None:
+            if not hasattr(parent, "_grad") or parent._grad is None:
                 parent._grad = gradients[parent]
             else:
                 parent._grad += gradients[parent]

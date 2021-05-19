@@ -61,8 +61,8 @@ def private(input_data, min_val, max_val, entities=None, is_discrete=False):
             print(len(self))
             raise Exception("len(entities) must equal len(self)")
 
-class GradLedger():
 
+class GradLedger:
     def __init__(self):
         self.grad_parents = list()
         self.total_symbols = set()
@@ -77,11 +77,13 @@ class GradLedger():
         for symbol_id in dict_of_gradient_parents.keys():
             if not accumulate_grads:
                 if symbol_id in self.total_symbols:
-                    raise Exception("You had multiple gradients attempting to update the same scalar but "+\
-                                    "accumulate_grads was set to False. This means that some grads were "+\
-                                    "overwritten by new ones and these gradients would be false. Please "+\
-                                    "re-run the computation with accumulate_grads set to True (and don't "+\
-                                    "forget to zero grads out each time you're done.")
+                    raise Exception(
+                        "You had multiple gradients attempting to update the same scalar but "
+                        + "accumulate_grads was set to False. This means that some grads were "
+                        + "overwritten by new ones and these gradients would be false. Please "
+                        + "re-run the computation with accumulate_grads set to True (and don't "
+                        + "forget to zero grads out each time you're done."
+                    )
             self.total_symbols.add(symbol_id)
 
     def zero_grads(self):
@@ -141,9 +143,11 @@ class Tensor(np.ndarray):
     def backward(self, accumulate_grads=False):
         ledger = GradLedger()
         for entry in self.flatten():
-            ledger.add(grad(entry, accumulate=accumulate_grads), accumulate_grads=accumulate_grads)
+            ledger.add(
+                grad(entry, accumulate=accumulate_grads),
+                accumulate_grads=accumulate_grads,
+            )
         return ledger
-
 
     @property
     def grad(self):

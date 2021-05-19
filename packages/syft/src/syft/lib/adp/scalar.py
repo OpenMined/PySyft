@@ -18,17 +18,18 @@ from sympy import symbols
 from sympy.core.basic import Basic as BasicSymbol
 
 # syft relative
+from .. import adp
 from ... import deserialize
 from ... import serialize
 from ...core.common import UID
 from ...core.common.serde.serializable import Serializable
 from ...core.common.serde.serializable import bind_protobuf
-from .. import adp
 from ...proto.lib.adp.scalar_pb2 import (
     IntermediatePhiScalar as IntermediatePhiScalar_PB,
 )
+from ...proto.lib.adp.scalar_pb2 import BaseScalar as BaseScalar_PB
+from ...proto.lib.adp.scalar_pb2 import GammaScalar as GammaScalar_PB
 from ...proto.lib.adp.scalar_pb2 import IntermediateScalar as IntermediateScalar_PB
-from ...proto.lib.adp.scalar_pb2 import OriginScalar as OriginScalar_PB
 from ...proto.lib.adp.scalar_pb2 import PhiScalar as PhiScalar_PB
 from .entity import Entity
 from .search import create_lookup_tables_for_symbol
@@ -38,9 +39,9 @@ from .search import max_lipschitz_via_jacobian
 from .search import minimize_function
 from .search import ssid2obj
 
+
 # the most generic class
 class Scalar(Serializable):
-
     def publish(self, acc: Any, sigma: float = 1.5) -> float:
         return adp.publish.publish([self], acc=acc, sigma=sigma)
 
@@ -85,8 +86,11 @@ class IntermediateScalar(Scalar):
     def __radd__(self, other: Scalar) -> Scalar:
         return self + other
 
+    def __rsub__(self, other: Scalar) -> Scalar:
+        return self - other
+
     @property
-    def input_scalars(self) -> Union[PhiScalar, GammaScalar]:
+    def input_scalars(self) -> TypeList[Union[PhiScalar, GammaScalar]]:
         phi_gamma_scalars: TypeList[Union[PhiScalar, GammaScalar]] = list()
         for free_symbol in self.input_polys:
             ssid = str(free_symbol)
@@ -102,27 +106,27 @@ class IntermediateScalar(Scalar):
         return self.poly.free_symbols
 
     @property
-    def max_val(self) -> np.float64:
-        results = flatten_and_maximize_poly(-self.poly)
-        if len(results) >= 1:
-            return -results[-1].fun
-        raise Exception(
-            f"flatten_and_maximize_poly returned no results for {-self.poly}"
-        )
+    def max_val(self) -> Optional[np.float64]:
+        if self.poly is not None:
+            results = flatten_and_maximize_poly(-self.poly)
+            if len(results) >= 1:
+                return -results[-1].fun
+        return None
 
     @property
-    def min_val(self) -> np.float64:
-        results = flatten_and_maximize_poly(self.poly)
-        if len(results) >= 1:
-            return results[-1].fun
-        raise Exception(
-            f"flatten_and_maximize_poly returned no results for {self.poly}"
-        )
+    def min_val(self) -> Optional[np.float64]:
+        if self.poly is not None:
+            results = flatten_and_maximize_poly(self.poly)
+            if len(results) >= 1:
+                return results[-1].fun
+        return None
 
     @property
-    def value(self) -> float:
-        result = self.poly.subs({obj.poly: obj.value for obj in self.input_scalars})
-        return float(result)
+    def value(self) -> Optional[float]:
+        if self.poly is not None:
+            result = self.poly.subs({obj.poly: obj.value for obj in self.input_scalars})
+            return float(result)
+        return None
 
     def _object2proto(self) -> IntermediateScalar_PB:
         return IntermediateScalar_PB(
@@ -185,10 +189,11 @@ class IntermediatePhiScalar(IntermediateScalar):
 
         # if other is referencing the same individual
         if self.entity == other.entity:
+            res = IntermediatePhiScalar(poly=self.poly + other.poly, entity=self.entity)
+
             return IntermediatePhiScalar(
                 poly=self.poly + other.poly, entity=self.entity
             )
-
         return self.gamma + other.gamma
 
     def __sub__(self, other: Scalar) -> Scalar:
@@ -244,7 +249,7 @@ class IntermediatePhiScalar(IntermediateScalar):
 
 
 @bind_protobuf
-class OriginScalar(Scalar):
+class BaseScalar(Scalar):
     """A scalar which stores the root polynomial values. When this is a superclass of
     PhiScalar it represents data that was loaded in by a data owner. When this is a
     superclass of GammaScalar this represents the node at which point data from multiple
@@ -259,9 +264,9 @@ class OriginScalar(Scalar):
         id: Optional[UID] = None,
     ) -> None:
         self.id = id if id else UID()
-        self._value = value
-        self._min_val = min_val
-        self._max_val = max_val
+        self._min_val = float(min_val) if min_val is not None else None
+        self._value = float(value) if value is not None else None
+        self._max_val = float(max_val) if max_val is not None else None
         self.entity = entity if entity is not None else Entity()
 
     @property
@@ -276,7 +281,7 @@ class OriginScalar(Scalar):
     def min_val(self) -> Optional[float]:
         return self._min_val
 
-    def _object2proto(self) -> OriginScalar_PB:
+    def _object2proto(self) -> BaseScalar_PB:
         kwargs = {
             "id": serialize(self.id, to_proto=True),
             "entity": serialize(self.entity, to_proto=True),
@@ -286,27 +291,25 @@ class OriginScalar(Scalar):
             if getattr(self, field):
                 kwargs[field] = getattr(self, field)
 
-        return OriginScalar_PB(**kwargs)
+        return BaseScalar_PB(**kwargs)
 
     @staticmethod
-    def _proto2object(proto: OriginScalar_PB) -> "OriginScalar":
-        origin_scalar = OriginScalar(
+    def _proto2object(proto: BaseScalar_PB) -> BaseScalar:
+        return BaseScalar(
             min_val=proto.min_val if proto.HasField("min_val") else None,
             max_val=proto.max_val if proto.HasField("max_val") else None,
             value=proto.value if proto.HasField("value") else None,
-            entity=deserialize(proto.entity),
+            entity=deserialize(proto.entity, from_proto=True),
+            id=deserialize(proto.id, from_proto=True),
         )
-        origin_scalar.id = deserialize(proto.id, from_proto=True)
-        # intermediate_phi_scalar._gamma = deserialize(proto.gamma)
-        return origin_scalar
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return OriginScalar_PB
+        return BaseScalar_PB
 
 
 @bind_protobuf
-class PhiScalar(OriginScalar, IntermediatePhiScalar):
+class PhiScalar(BaseScalar, IntermediatePhiScalar):
     """A scalar over data from a single entity"""
 
     def __init__(
@@ -325,7 +328,7 @@ class PhiScalar(OriginScalar, IntermediatePhiScalar):
         # we need to be able to reference this object in string form. The library
         # doesn't know how to process things that aren't strings
         if ssid is None:
-            ssid = "_"+self.id.nodash() + "_" + self.entity.id.nodash()
+            ssid = "_" + self.id.nodash() + "_" + self.entity.id.nodash()
 
         self.ssid = ssid
 
@@ -507,7 +510,8 @@ class IntermediateGammaScalar(IntermediateScalar):
             return -float(result.fun)
 
 
-class GammaScalar(OriginScalar, IntermediateGammaScalar):
+@bind_protobuf
+class GammaScalar(BaseScalar, IntermediateGammaScalar):
     """A scalar over data from multiple entities"""
 
     def __init__(
@@ -527,10 +531,36 @@ class GammaScalar(OriginScalar, IntermediateGammaScalar):
         # we need to be able to reference this object in string form. The library
         # doesn't know how to process things that aren't strings
         if ssid is None:
-            ssid = "_"+self.id.nodash() + "_" + self.entity.id.nodash()
+            ssid = "_" + self.id.nodash() + "_" + self.entity.id.nodash()
 
         self.ssid = ssid
 
         IntermediateGammaScalar.__init__(self, poly=symbols(self.ssid))
 
         ssid2obj[self.ssid] = self
+
+    def _object2proto(self) -> GammaScalar_PB:
+        kwargs = {
+            "id": serialize(self.id, to_proto=True),
+            "entity": serialize(self.entity, to_proto=True),
+        }
+
+        for field in ["max_val", "min_val", "value"]:
+            if getattr(self, field):
+                kwargs[field] = getattr(self, field)
+        return GammaScalar_PB(**kwargs)
+
+    @staticmethod
+    def _proto2object(proto: GammaScalar_PB) -> GammaScalar:
+        scalar = GammaScalar(
+            min_val=proto.min_val if proto.HasField("min_val") else None,
+            max_val=proto.max_val if proto.HasField("max_val") else None,
+            value=proto.value if proto.HasField("value") else None,
+            entity=deserialize(proto.entity),
+        )
+        scalar.id = deserialize(proto.id, from_proto=True)
+        return scalar
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return GammaScalar_PB

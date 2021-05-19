@@ -136,7 +136,6 @@ def max_lipschitz_via_jacobian(
     # scalars = R^d` representing the d' dimentional output of g
     # input_entity = the 'i'th entity for which we want to compute a lipschitz bound
 
-
     # polys = [x.poly for x in scalars]  # @Madhava: unused?
     input_scalars = set()
     for s in scalars:
@@ -148,7 +147,7 @@ def max_lipschitz_via_jacobian(
     out = sym.Matrix([x.poly for x in scalars])
 
     if input_entity is None:
-                          # X_1 through X_n flattened into a single vector
+        # X_1 through X_n flattened into a single vector
         j = out.jacobian([x.poly for x in input_scalars])
     else:
 

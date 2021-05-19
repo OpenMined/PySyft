@@ -8,8 +8,9 @@ import numpy as np
 
 # syft relative
 from .idp_gaussian_mechanism import iDPGaussianMechanism
-from .search import max_lipschitz_wrt_entity
 from .scalar import IntermediatePhiScalar
+from .search import max_lipschitz_wrt_entity
+
 
 def publish(scalars, acc: Any, sigma: float = 1.5) -> float:
 

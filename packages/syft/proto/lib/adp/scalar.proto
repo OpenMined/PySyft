@@ -9,7 +9,7 @@ message IntermediateScalar {
   // poly
 }
 
-message OriginScalar {
+message BaseScalar {
   syft.core.common.UID id = 1;
   optional float min_val = 2;
   optional float value = 3;
@@ -37,7 +37,6 @@ message IntermediatePhiScalar {
   optional syft.lib.adp.GammaScalar gamma = 3;
 }
 
-
 message PhiScalar {
   syft.core.common.UID id = 1;
   optional float min_val = 2;
@@ -47,4 +46,3 @@ message PhiScalar {
   optional syft.lib.adp.GammaScalar gamma = 6;
   // poly
 }
-
