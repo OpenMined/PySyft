@@ -239,7 +239,9 @@ _RUNFUNCTIONORCONSTRUCTORACTION = _descriptor.Descriptor(
         ),
     ],
     extensions=[],
-    nested_types=[_RUNFUNCTIONORCONSTRUCTORACTION_KWARGSENTRY,],
+    nested_types=[
+        _RUNFUNCTIONORCONSTRUCTORACTION_KWARGSENTRY,
+    ],
     enum_types=[],
     serialized_options=None,
     is_extendable=False,

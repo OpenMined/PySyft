@@ -239,7 +239,10 @@ _PLAN = _descriptor.Descriptor(
         ),
     ],
     extensions=[],
-    nested_types=[_PLAN_INPUTSENTRY, _PLAN_I2OMAPENTRY,],
+    nested_types=[
+        _PLAN_INPUTSENTRY,
+        _PLAN_I2OMAPENTRY,
+    ],
     enum_types=[],
     serialized_options=None,
     is_extendable=False,
