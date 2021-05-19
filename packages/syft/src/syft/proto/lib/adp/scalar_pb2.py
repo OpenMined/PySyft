@@ -25,7 +25,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x1aproto/lib/adp/scalar.proto\x12\x0csyft.lib.adp\x1a%proto/core/common/common_object.proto\x1a\x1aproto/lib/adp/entity.proto"7\n\x12IntermediateScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID"\xb9\x01\n\x0cOriginScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x14\n\x07min_val\x18\x02 \x01(\x02H\x00\x88\x01\x01\x12\x12\n\x05value\x18\x03 \x01(\x02H\x01\x88\x01\x01\x12\x14\n\x07max_val\x18\x04 \x01(\x02H\x02\x88\x01\x01\x12$\n\x06\x65ntity\x18\x05 \x01(\x0b\x32\x14.syft.lib.adp.EntityB\n\n\x08_min_valB\x08\n\x06_valueB\n\n\x08_max_val"<\n\x17IntermediateGammaScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID"\xb8\x01\n\x0bGammaScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x14\n\x07min_val\x18\x02 \x01(\x02H\x00\x88\x01\x01\x12\x12\n\x05value\x18\x03 \x01(\x02H\x01\x88\x01\x01\x12\x14\n\x07max_val\x18\x04 \x01(\x02H\x02\x88\x01\x01\x12$\n\x06\x65ntity\x18\x05 \x01(\x0b\x32\x14.syft.lib.adp.EntityB\n\n\x08_min_valB\x08\n\x06_valueB\n\n\x08_max_val"\x99\x01\n\x15IntermediatePhiScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12$\n\x06\x65ntity\x18\x02 \x01(\x0b\x32\x14.syft.lib.adp.Entity\x12-\n\x05gamma\x18\x03 \x01(\x0b\x32\x19.syft.lib.adp.GammaScalarH\x00\x88\x01\x01\x42\x08\n\x06_gamma"\xef\x01\n\tPhiScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x14\n\x07min_val\x18\x02 \x01(\x02H\x00\x88\x01\x01\x12\x12\n\x05value\x18\x03 \x01(\x02H\x01\x88\x01\x01\x12\x14\n\x07max_val\x18\x04 \x01(\x02H\x02\x88\x01\x01\x12$\n\x06\x65ntity\x18\x05 \x01(\x0b\x32\x14.syft.lib.adp.Entity\x12-\n\x05gamma\x18\x06 \x01(\x0b\x32\x19.syft.lib.adp.GammaScalarH\x03\x88\x01\x01\x42\n\n\x08_min_valB\x08\n\x06_valueB\n\n\x08_max_valB\x08\n\x06_gammab\x06proto3',
+    serialized_pb=b'\n\x1aproto/lib/adp/scalar.proto\x12\x0csyft.lib.adp\x1a%proto/core/common/common_object.proto\x1a\x1aproto/lib/adp/entity.proto"7\n\x12IntermediateScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID"\xb7\x01\n\nBaseScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x14\n\x07min_val\x18\x02 \x01(\x02H\x00\x88\x01\x01\x12\x12\n\x05value\x18\x03 \x01(\x02H\x01\x88\x01\x01\x12\x14\n\x07max_val\x18\x04 \x01(\x02H\x02\x88\x01\x01\x12$\n\x06\x65ntity\x18\x05 \x01(\x0b\x32\x14.syft.lib.adp.EntityB\n\n\x08_min_valB\x08\n\x06_valueB\n\n\x08_max_val"<\n\x17IntermediateGammaScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID"\xb8\x01\n\x0bGammaScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x14\n\x07min_val\x18\x02 \x01(\x02H\x00\x88\x01\x01\x12\x12\n\x05value\x18\x03 \x01(\x02H\x01\x88\x01\x01\x12\x14\n\x07max_val\x18\x04 \x01(\x02H\x02\x88\x01\x01\x12$\n\x06\x65ntity\x18\x05 \x01(\x0b\x32\x14.syft.lib.adp.EntityB\n\n\x08_min_valB\x08\n\x06_valueB\n\n\x08_max_val"\x99\x01\n\x15IntermediatePhiScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12$\n\x06\x65ntity\x18\x02 \x01(\x0b\x32\x14.syft.lib.adp.Entity\x12-\n\x05gamma\x18\x03 \x01(\x0b\x32\x19.syft.lib.adp.GammaScalarH\x00\x88\x01\x01\x42\x08\n\x06_gamma"\xef\x01\n\tPhiScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x14\n\x07min_val\x18\x02 \x01(\x02H\x00\x88\x01\x01\x12\x12\n\x05value\x18\x03 \x01(\x02H\x01\x88\x01\x01\x12\x14\n\x07max_val\x18\x04 \x01(\x02H\x02\x88\x01\x01\x12$\n\x06\x65ntity\x18\x05 \x01(\x0b\x32\x14.syft.lib.adp.Entity\x12-\n\x05gamma\x18\x06 \x01(\x0b\x32\x19.syft.lib.adp.GammaScalarH\x03\x88\x01\x01\x42\n\n\x08_min_valB\x08\n\x06_valueB\n\n\x08_max_valB\x08\n\x06_gammab\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_lib_dot_adp_dot_entity__pb2.DESCRIPTOR,
@@ -74,9 +74,9 @@ _INTERMEDIATESCALAR = _descriptor.Descriptor(
 )
 
 
-_ORIGINSCALAR = _descriptor.Descriptor(
-    name="OriginScalar",
-    full_name="syft.lib.adp.OriginScalar",
+_BASESCALAR = _descriptor.Descriptor(
+    name="BaseScalar",
+    full_name="syft.lib.adp.BaseScalar",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -84,7 +84,7 @@ _ORIGINSCALAR = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="id",
-            full_name="syft.lib.adp.OriginScalar.id",
+            full_name="syft.lib.adp.BaseScalar.id",
             index=0,
             number=1,
             type=11,
@@ -103,7 +103,7 @@ _ORIGINSCALAR = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="min_val",
-            full_name="syft.lib.adp.OriginScalar.min_val",
+            full_name="syft.lib.adp.BaseScalar.min_val",
             index=1,
             number=2,
             type=2,
@@ -122,7 +122,7 @@ _ORIGINSCALAR = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="value",
-            full_name="syft.lib.adp.OriginScalar.value",
+            full_name="syft.lib.adp.BaseScalar.value",
             index=2,
             number=3,
             type=2,
@@ -141,7 +141,7 @@ _ORIGINSCALAR = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="max_val",
-            full_name="syft.lib.adp.OriginScalar.max_val",
+            full_name="syft.lib.adp.BaseScalar.max_val",
             index=3,
             number=4,
             type=2,
@@ -160,7 +160,7 @@ _ORIGINSCALAR = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="entity",
-            full_name="syft.lib.adp.OriginScalar.entity",
+            full_name="syft.lib.adp.BaseScalar.entity",
             index=4,
             number=5,
             type=11,
@@ -188,7 +188,7 @@ _ORIGINSCALAR = _descriptor.Descriptor(
     oneofs=[
         _descriptor.OneofDescriptor(
             name="_min_val",
-            full_name="syft.lib.adp.OriginScalar._min_val",
+            full_name="syft.lib.adp.BaseScalar._min_val",
             index=0,
             containing_type=None,
             create_key=_descriptor._internal_create_key,
@@ -196,7 +196,7 @@ _ORIGINSCALAR = _descriptor.Descriptor(
         ),
         _descriptor.OneofDescriptor(
             name="_value",
-            full_name="syft.lib.adp.OriginScalar._value",
+            full_name="syft.lib.adp.BaseScalar._value",
             index=1,
             containing_type=None,
             create_key=_descriptor._internal_create_key,
@@ -204,7 +204,7 @@ _ORIGINSCALAR = _descriptor.Descriptor(
         ),
         _descriptor.OneofDescriptor(
             name="_max_val",
-            full_name="syft.lib.adp.OriginScalar._max_val",
+            full_name="syft.lib.adp.BaseScalar._max_val",
             index=2,
             containing_type=None,
             create_key=_descriptor._internal_create_key,
@@ -212,7 +212,7 @@ _ORIGINSCALAR = _descriptor.Descriptor(
         ),
     ],
     serialized_start=169,
-    serialized_end=354,
+    serialized_end=352,
 )
 
 
@@ -252,8 +252,8 @@ _INTERMEDIATEGAMMASCALAR = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=356,
-    serialized_end=416,
+    serialized_start=354,
+    serialized_end=414,
 )
 
 
@@ -394,8 +394,8 @@ _GAMMASCALAR = _descriptor.Descriptor(
             fields=[],
         ),
     ],
-    serialized_start=419,
-    serialized_end=603,
+    serialized_start=417,
+    serialized_end=601,
 )
 
 
@@ -482,8 +482,8 @@ _INTERMEDIATEPHISCALAR = _descriptor.Descriptor(
             fields=[],
         ),
     ],
-    serialized_start=606,
-    serialized_end=759,
+    serialized_start=604,
+    serialized_end=757,
 )
 
 
@@ -651,35 +651,33 @@ _PHISCALAR = _descriptor.Descriptor(
             fields=[],
         ),
     ],
-    serialized_start=762,
-    serialized_end=1001,
+    serialized_start=760,
+    serialized_end=999,
 )
 
 _INTERMEDIATESCALAR.fields_by_name[
     "id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_ORIGINSCALAR.fields_by_name[
+_BASESCALAR.fields_by_name[
     "id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_ORIGINSCALAR.fields_by_name[
+_BASESCALAR.fields_by_name[
     "entity"
 ].message_type = proto_dot_lib_dot_adp_dot_entity__pb2._ENTITY
-_ORIGINSCALAR.oneofs_by_name["_min_val"].fields.append(
-    _ORIGINSCALAR.fields_by_name["min_val"]
+_BASESCALAR.oneofs_by_name["_min_val"].fields.append(
+    _BASESCALAR.fields_by_name["min_val"]
 )
-_ORIGINSCALAR.fields_by_name["min_val"].containing_oneof = _ORIGINSCALAR.oneofs_by_name[
+_BASESCALAR.fields_by_name["min_val"].containing_oneof = _BASESCALAR.oneofs_by_name[
     "_min_val"
 ]
-_ORIGINSCALAR.oneofs_by_name["_value"].fields.append(
-    _ORIGINSCALAR.fields_by_name["value"]
-)
-_ORIGINSCALAR.fields_by_name["value"].containing_oneof = _ORIGINSCALAR.oneofs_by_name[
+_BASESCALAR.oneofs_by_name["_value"].fields.append(_BASESCALAR.fields_by_name["value"])
+_BASESCALAR.fields_by_name["value"].containing_oneof = _BASESCALAR.oneofs_by_name[
     "_value"
 ]
-_ORIGINSCALAR.oneofs_by_name["_max_val"].fields.append(
-    _ORIGINSCALAR.fields_by_name["max_val"]
+_BASESCALAR.oneofs_by_name["_max_val"].fields.append(
+    _BASESCALAR.fields_by_name["max_val"]
 )
-_ORIGINSCALAR.fields_by_name["max_val"].containing_oneof = _ORIGINSCALAR.oneofs_by_name[
+_BASESCALAR.fields_by_name["max_val"].containing_oneof = _BASESCALAR.oneofs_by_name[
     "_max_val"
 ]
 _INTERMEDIATEGAMMASCALAR.fields_by_name[
@@ -750,7 +748,7 @@ _PHISCALAR.fields_by_name["gamma"].containing_oneof = _PHISCALAR.oneofs_by_name[
     "_gamma"
 ]
 DESCRIPTOR.message_types_by_name["IntermediateScalar"] = _INTERMEDIATESCALAR
-DESCRIPTOR.message_types_by_name["OriginScalar"] = _ORIGINSCALAR
+DESCRIPTOR.message_types_by_name["BaseScalar"] = _BASESCALAR
 DESCRIPTOR.message_types_by_name["IntermediateGammaScalar"] = _INTERMEDIATEGAMMASCALAR
 DESCRIPTOR.message_types_by_name["GammaScalar"] = _GAMMASCALAR
 DESCRIPTOR.message_types_by_name["IntermediatePhiScalar"] = _INTERMEDIATEPHISCALAR
@@ -768,16 +766,16 @@ IntermediateScalar = _reflection.GeneratedProtocolMessageType(
 )
 _sym_db.RegisterMessage(IntermediateScalar)
 
-OriginScalar = _reflection.GeneratedProtocolMessageType(
-    "OriginScalar",
+BaseScalar = _reflection.GeneratedProtocolMessageType(
+    "BaseScalar",
     (_message.Message,),
     {
-        "DESCRIPTOR": _ORIGINSCALAR,
+        "DESCRIPTOR": _BASESCALAR,
         "__module__": "proto.lib.adp.scalar_pb2"
-        # @@protoc_insertion_point(class_scope:syft.lib.adp.OriginScalar)
+        # @@protoc_insertion_point(class_scope:syft.lib.adp.BaseScalar)
     },
 )
-_sym_db.RegisterMessage(OriginScalar)
+_sym_db.RegisterMessage(BaseScalar)
 
 IntermediateGammaScalar = _reflection.GeneratedProtocolMessageType(
     "IntermediateGammaScalar",

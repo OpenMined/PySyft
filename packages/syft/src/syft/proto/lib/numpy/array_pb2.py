@@ -23,7 +23,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
     serialized_pb=b'\n\x1bproto/lib/numpy/array.proto\x12\x0esyft.lib.numpy\x1a\x1cproto/lib/torch/tensor.proto"G\n\nNumpyProto\x12*\n\x06tensor\x18\x01 \x01(\x0b\x32\x1a.syft.lib.torch.TensorData\x12\r\n\x05\x64type\x18\x02 \x01(\tb\x06proto3',
-    dependencies=[proto_dot_lib_dot_torch_dot_tensor__pb2.DESCRIPTOR,],
+    dependencies=[
+        proto_dot_lib_dot_torch_dot_tensor__pb2.DESCRIPTOR,
+    ],
 )
 
 
