@@ -33,7 +33,7 @@ from .util import upcast
 class Dict(UserDict, PyPrimitive):
     # the incoming types to UserDict __init__ are overloaded and weird
     # see https://github.com/python/cpython/blob/master/Lib/collections/__init__.py
-    # this is the version from python 3.7 because we need to support 3.6 and 3.7
+    # this is the version from python 3.7 because we need to support 3.7
     # python 3.8 signature includes a new PEP 570 (args, /, kwargs) syntax:
     # https://www.python.org/dev/peps/pep-0570/
 

@@ -1,6 +1,6 @@
 <h1 align="center">
   <br>
-  <a href="http://duet.openmined.org/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/logo_duet.png" alt="PySyft" width="350"></a>
+  <a href="http://duet.openmined.org/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/main/packages/syft/docs/img/logo_duet.png" alt="PySyft" width="350"></a>
   <br>
   <br>
   Syft in a Notebook
@@ -10,7 +10,7 @@
 </div>
 
 <h2 align="center">
-  <a href="http://duet.openmined.org/"><img src="../../docs/img/mini_notebooks.png" alt="Duet" width="800"></a>
+  <a href="http://duet.openmined.org/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/main/packages/syft/docs/img/mini_notebooks.png" alt="Duet" width="800"></a>
   <br>
    🎸 Data Owner ⚡️ Data Scientist 🥁
   <br>
@@ -22,15 +22,14 @@ Duet is the latest part of the Syft family and is designed to provide you with a
 
 ## Version Support
 
-We support **Linux**, **MacOS** and **Windows** and the following Python and PyTorch versions.
-Other Deep Learning and Data Science libraries are coming very soon.
+We support **Linux**, **MacOS** and **Windows** and the following Python and Torch versions.
+Older versions may work, however we have stopped testing and supporting them.
 
-| Py / Torch | 1.4 | 1.5 | 1.6 | 1.7 | 1.8 |
-| ---------- | --- | --- | --- | --- | --- |
-| 3.6        | ✅  | ✅  | ✅  | ✅  | ✅  |
-| 3.7        | ✅  | ✅  | ✅  | ✅  | ✅  |
-| 3.8        | ✅  | ✅  | ✅  | ✅  | ✅  |
-| 3.9        | ➖  | ➖  | ➖  | ✅  | ✅  |
+| Py / Torch | 1.6 | 1.7 | 1.8 |
+| ---------- | --- | --- | --- |
+| 3.7        | ✅  | ✅  | ✅  |
+| 3.8        | ✅  | ✅  | ✅  |
+| 3.9        | ➖  | ✅  | ✅  |
 
 ## Setup 🐍
 
@@ -199,7 +198,7 @@ or are still in a state of development.
 
 ## Example Notebooks 📚
 
-The following examples were taken from the official [PyTorch examples](https://github.com/pytorch/packages/syft/examples) repo.
+The following examples were taken from the official [PyTorch examples](https://github.com/pytorch/examples) repo.
 
 Each example is split into two notebooks, one for the data owner who wishes to protect their valuable and private training data and one for the data scientist who has some problem they wish to solve and a test set they can use to determine if the data owner's data will help. Together they are able to collaborate over two notebooks to construct and train models, evaluate and share metrics upon request and do inference on a test or individual data items.
 
