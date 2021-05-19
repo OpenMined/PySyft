@@ -163,8 +163,9 @@ class IntermediateScalar(Scalar):
         )
 
     @property
-    def value(self) -> sym.core.numbers.Float:
-        return self.poly.subs({obj.poly: obj.value for obj in self.input_scalars})
+    def value(self) -> float:
+        result = self.poly.subs({obj.poly: obj.value for obj in self.input_scalars})
+        return float(result)
 
 
 class IntermediatePhiScalar(IntermediateScalar):

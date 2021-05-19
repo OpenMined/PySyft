@@ -86,7 +86,7 @@ class GradLedger():
 
     def zero_grads(self):
         for x in self.total_symbols:
-            x._grad = 0
+            x._grad = None
 
 
 class Tensor(np.ndarray):
@@ -141,7 +141,7 @@ class Tensor(np.ndarray):
     def backward(self, accumulate_grads=False):
         ledger = GradLedger()
         for entry in self.flatten():
-            ledger.add(grad(entry), accumulate_grads=accumulate_grads)
+            ledger.add(grad(entry, accumulate=accumulate_grads), accumulate_grads=accumulate_grads)
         return ledger
 
 

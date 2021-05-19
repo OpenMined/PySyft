@@ -38,14 +38,25 @@ def publish(scalars, acc: Any, sigma: float = 1.5) -> float:
     while len(overbudgeted_entities) > 0:
 
         input_scalars = set()
-        for s in scalars:
-            for i_s in s.input_scalars:
-                input_scalars.add(i_s)
+        for output_scalar in scalars:
 
-        for symbol in input_scalars:
-            if symbol.entity in overbudgeted_entities:
-                symbol.poly = symbol.poly.subs(symbol.poly, 0)
-                break
+            # output_scalar.input_scalars is a @property which determines
+            # what inputs are still contributing to the output scalar
+            # given that we may have just removed some
+            for input_scalar in output_scalar.input_scalars:
+                input_scalars.add(input_scalar)
+
+        for input_scalar in input_scalars:
+            if input_scalar.entity in overbudgeted_entities:
+                for output_scalar in scalars:
+
+                    # remove input_scalar from the computation that creates
+                    # output scalar because this input_scalar is causing
+                    # the budget spend to be too high.
+                    output_scalar.poly = output_scalar.poly.subs(input_scalar.poly, 0)
+
+                    # try one at a time
+                    break
 
         acc_temp = deepcopy(acc_original)
 
@@ -67,9 +78,11 @@ def get_mechanism_for_entity(scalars, entity, sigma=1.5):
     for s in scalars:
         m_id += str(s.id).split(" ")[1][:-1] + "_"
 
+    value = np.sqrt(np.sum(np.square(np.array([float(s.value) for s in scalars]))))
+
     return iDPGaussianMechanism(
         sigma=sigma,
-        value=np.sqrt(np.sum(np.square(np.array([float(s.value) for s in scalars])))),
+        value=value,
         L=float(max_lipschitz_wrt_entity(scalars, entity=entity)),
         entity=entity.unique_name,
         name=m_id,
