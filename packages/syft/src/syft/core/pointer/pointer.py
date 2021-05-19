@@ -243,6 +243,20 @@ class Pointer(AbstractPointer):
 
         return self
 
+    def publish(self, client: Any, sigma: float = 1.5) -> Any:
+        # syft relative
+        from ..node.domain.service.publish_service import (
+            PublishScalarsAction,  # TODO: fix circular imports
+        )
+
+        obj_msg = PublishScalarsAction(
+            address=self.client.address,
+            reply_to=self.client.address,
+            sigma=sigma,
+            scalar_ids_at_location=[self.id_at_location],
+        )
+        return client.send_immediate_msg_with_reply(msg=obj_msg)
+
     def get(
         self,
         request_block: bool = False,

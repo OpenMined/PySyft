@@ -9,29 +9,22 @@ from syft.lib.adp.publish import publish
 from syft.lib.adp.scalar import PhiScalar
 from syft.lib.adp.tensor import Tensor
 
-# def test_autodp_phiscalar_publish_domain(client: sy.VirtualMachineClient) -> None:
-#     x_ptr = PhiScalar(0, 0.01, 1).send(client, tags=["x"])
-#     y_ptr = PhiScalar(0, 0.02, 1).send(client, tags=["y"])
-#     z_ptr = PhiScalar(0, 0.02, 1).send(client, tags=["z"])
 
-#     assert x_ptr.__class__.__name__ == "PhiScalarPointer"
+def test_autodp_phiscalar_publish_domain() -> None:
+    bob_domain = sy.Domain(name="Bob's Domain")
+    client = bob_domain.get_root_client()
 
-#     print(client.store)
+    x = PhiScalar(0, 0.01, 1).send(client, tags=["x"])
+    y = PhiScalar(0, 0.02, 1).send(client, tags=["y"])
+    z = PhiScalar(0, 0.02, 1).send(client, tags=["z"])
 
-#     o_ptr = x_ptr * x_ptr + y_ptr * y_ptr + z_ptr
-#     p_ptr = o_ptr * o_ptr * o_ptr
+    p = x * x
+    o = p + (y * y) + z
+    z = o * o * o
 
-#     o = o_ptr.get()
-#     p = p_ptr.get()
+    x_pub = z.publish(client, sigma=0.00001)
 
-#     print("o", o)
-#     print("p", p)
+    print(x_pub, type(x_pub))
+    print(x_pub.result)
 
-#     # acc = AdversarialAccountant(max_budget=10)
-#     # z.publish(acc=acc, sigma=0.2)
-
-#     # publish([z, z], acc=acc, sigma=0.2)
-
-#     # acc.print_ledger()
-#     # assert len(acc.entities) == 3
-#     # assert True is False
+    assert True is False  # to show output from errors

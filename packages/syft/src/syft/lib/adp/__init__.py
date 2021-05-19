@@ -80,6 +80,30 @@ def create_adp_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.lib.adp.PhiScalar.publish", "syft.lib.python.Float"),
         # IntermediatePhiScalar
         ("syft.lib.adp.IntermediatePhiScalar.gamma", "syft.lib.adp.GammaScalar"),
+        (
+            "syft.lib.adp.IntermediatePhiScalar.__add__",
+            "syft.lib.adp.IntermediatePhiScalar",
+        ),  # Union?
+        (
+            "syft.lib.adp.IntermediatePhiScalar.__mul__",
+            "syft.lib.adp.IntermediatePhiScalar",
+        ),  # Union?
+        (
+            "syft.lib.adp.IntermediatePhiScalar.__radd__",
+            "syft.lib.adp.IntermediatePhiScalar",
+        ),  # Union?
+        (
+            "syft.lib.adp.IntermediatePhiScalar.__rmul__",
+            "syft.lib.adp.IntermediatePhiScalar",
+        ),  # Union?
+        (
+            "syft.lib.adp.IntermediatePhiScalar.__rsub__",
+            "syft.lib.adp.IntermediatePhiScalar",
+        ),  # Union?
+        (
+            "syft.lib.adp.IntermediatePhiScalar.__sub__",
+            "syft.lib.adp.IntermediatePhiScalar",
+        ),  # Union?
     ]
 
     add_modules(ast, modules)

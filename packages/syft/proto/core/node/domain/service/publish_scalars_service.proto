@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package syft.core.node.domain.service;
+
+import "proto/core/common/common_object.proto";
+import "proto/core/io/address.proto";
+
+message PublishScalarsAction {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  syft.core.io.Address reply_to = 3;
+  repeated syft.core.common.UID scalar_ids_at_location = 4;
+  float sigma = 5;
+}
+
+message PublishScalarsResultMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  float result = 3;
+}
