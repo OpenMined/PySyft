@@ -10,8 +10,8 @@ class ExperimentalFlags:
         self.apache_arrow_modules: Set[ModuleType] = set()
 
     @property
-    def APACHE_ARROW_TENSOR_SERDE(self) -> None:
-        pass
+    def APACHE_ARROW_TENSOR_SERDE(self) -> bool:
+        return self._APACHE_ARROW_TENSOR_SERDE
 
     @APACHE_ARROW_TENSOR_SERDE.getter
     def APACHE_ARROW_TENSOR_SERDE(self) -> bool:
