@@ -2,19 +2,49 @@ syntax = "proto3";
 
 package syft.lib.adp;
 import "proto/core/common/common_object.proto";
+import "proto/lib/adp/entity.proto";
 
-message Scalar {
+message IntermediateScalar {
   syft.core.common.UID id = 1;
-  bool has_name = 2;
-  string name = 3;
-  bool has_value = 4;
-  float value = 5;
-  bool has_min_val = 6;
-  float min_val = 7;
-  bool has_max_val = 8;
-  float max_val = 9;
-  // bool has_poly = 10;
-  // Symbol poly = 11;
-  bool has_entity_name = 12;
-  string entity_name = 13;
+  // poly
 }
+
+message OriginScalar {
+  syft.core.common.UID id = 1;
+  optional float min_val = 2;
+  optional float value = 3;
+  optional float max_val = 4;
+  syft.lib.adp.Entity entity = 5;
+}
+
+message IntermediateGammaScalar {
+  syft.core.common.UID id = 1;
+  // poly
+}
+
+message GammaScalar {
+  syft.core.common.UID id = 1;
+  optional float min_val = 2;
+  optional float value = 3;
+  optional float max_val = 4;
+  syft.lib.adp.Entity entity = 5;
+  // poly
+}
+
+message IntermediatePhiScalar {
+  syft.core.common.UID id = 1;
+  syft.lib.adp.Entity entity = 2;
+  optional syft.lib.adp.GammaScalar gamma = 3;
+}
+
+
+message PhiScalar {
+  syft.core.common.UID id = 1;
+  optional float min_val = 2;
+  optional float value = 3;
+  optional float max_val = 4;
+  syft.lib.adp.Entity entity = 5;
+  optional syft.lib.adp.GammaScalar gamma = 6;
+  // poly
+}
+

@@ -17,6 +17,7 @@ _sym_db = _symbol_database.Default()
 from syft.proto.core.common import (
     common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
 )
+from syft.proto.lib.adp import entity_pb2 as proto_dot_lib_dot_adp_dot_entity__pb2
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/lib/adp/scalar.proto",
@@ -24,16 +25,17 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x1aproto/lib/adp/scalar.proto\x12\x0csyft.lib.adp\x1a%proto/core/common/common_object.proto"\xe7\x01\n\x06Scalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x10\n\x08has_name\x18\x02 \x01(\x08\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x11\n\thas_value\x18\x04 \x01(\x08\x12\r\n\x05value\x18\x05 \x01(\x02\x12\x13\n\x0bhas_min_val\x18\x06 \x01(\x08\x12\x0f\n\x07min_val\x18\x07 \x01(\x02\x12\x13\n\x0bhas_max_val\x18\x08 \x01(\x08\x12\x0f\n\x07max_val\x18\t \x01(\x02\x12\x17\n\x0fhas_entity_name\x18\x0c \x01(\x08\x12\x13\n\x0b\x65ntity_name\x18\r \x01(\tb\x06proto3',
+    serialized_pb=b'\n\x1aproto/lib/adp/scalar.proto\x12\x0csyft.lib.adp\x1a%proto/core/common/common_object.proto\x1a\x1aproto/lib/adp/entity.proto"7\n\x12IntermediateScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID"\xb9\x01\n\x0cOriginScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x14\n\x07min_val\x18\x02 \x01(\x02H\x00\x88\x01\x01\x12\x12\n\x05value\x18\x03 \x01(\x02H\x01\x88\x01\x01\x12\x14\n\x07max_val\x18\x04 \x01(\x02H\x02\x88\x01\x01\x12$\n\x06\x65ntity\x18\x05 \x01(\x0b\x32\x14.syft.lib.adp.EntityB\n\n\x08_min_valB\x08\n\x06_valueB\n\n\x08_max_val"<\n\x17IntermediateGammaScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID"\xb8\x01\n\x0bGammaScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x14\n\x07min_val\x18\x02 \x01(\x02H\x00\x88\x01\x01\x12\x12\n\x05value\x18\x03 \x01(\x02H\x01\x88\x01\x01\x12\x14\n\x07max_val\x18\x04 \x01(\x02H\x02\x88\x01\x01\x12$\n\x06\x65ntity\x18\x05 \x01(\x0b\x32\x14.syft.lib.adp.EntityB\n\n\x08_min_valB\x08\n\x06_valueB\n\n\x08_max_val"\x99\x01\n\x15IntermediatePhiScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12$\n\x06\x65ntity\x18\x02 \x01(\x0b\x32\x14.syft.lib.adp.Entity\x12-\n\x05gamma\x18\x03 \x01(\x0b\x32\x19.syft.lib.adp.GammaScalarH\x00\x88\x01\x01\x42\x08\n\x06_gamma"\xef\x01\n\tPhiScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x14\n\x07min_val\x18\x02 \x01(\x02H\x00\x88\x01\x01\x12\x12\n\x05value\x18\x03 \x01(\x02H\x01\x88\x01\x01\x12\x14\n\x07max_val\x18\x04 \x01(\x02H\x02\x88\x01\x01\x12$\n\x06\x65ntity\x18\x05 \x01(\x0b\x32\x14.syft.lib.adp.Entity\x12-\n\x05gamma\x18\x06 \x01(\x0b\x32\x19.syft.lib.adp.GammaScalarH\x03\x88\x01\x01\x42\n\n\x08_min_valB\x08\n\x06_valueB\n\n\x08_max_valB\x08\n\x06_gammab\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
+        proto_dot_lib_dot_adp_dot_entity__pb2.DESCRIPTOR,
     ],
 )
 
 
-_SCALAR = _descriptor.Descriptor(
-    name="Scalar",
-    full_name="syft.lib.adp.Scalar",
+_INTERMEDIATESCALAR = _descriptor.Descriptor(
+    name="IntermediateScalar",
+    full_name="syft.lib.adp.IntermediateScalar",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -41,7 +43,7 @@ _SCALAR = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="id",
-            full_name="syft.lib.adp.Scalar.id",
+            full_name="syft.lib.adp.IntermediateScalar.id",
             index=0,
             number=1,
             type=11,
@@ -49,196 +51,6 @@ _SCALAR = _descriptor.Descriptor(
             label=1,
             has_default_value=False,
             default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="has_name",
-            full_name="syft.lib.adp.Scalar.has_name",
-            index=1,
-            number=2,
-            type=8,
-            cpp_type=7,
-            label=1,
-            has_default_value=False,
-            default_value=False,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="name",
-            full_name="syft.lib.adp.Scalar.name",
-            index=2,
-            number=3,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=b"".decode("utf-8"),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="has_value",
-            full_name="syft.lib.adp.Scalar.has_value",
-            index=3,
-            number=4,
-            type=8,
-            cpp_type=7,
-            label=1,
-            has_default_value=False,
-            default_value=False,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="value",
-            full_name="syft.lib.adp.Scalar.value",
-            index=4,
-            number=5,
-            type=2,
-            cpp_type=6,
-            label=1,
-            has_default_value=False,
-            default_value=float(0),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="has_min_val",
-            full_name="syft.lib.adp.Scalar.has_min_val",
-            index=5,
-            number=6,
-            type=8,
-            cpp_type=7,
-            label=1,
-            has_default_value=False,
-            default_value=False,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="min_val",
-            full_name="syft.lib.adp.Scalar.min_val",
-            index=6,
-            number=7,
-            type=2,
-            cpp_type=6,
-            label=1,
-            has_default_value=False,
-            default_value=float(0),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="has_max_val",
-            full_name="syft.lib.adp.Scalar.has_max_val",
-            index=7,
-            number=8,
-            type=8,
-            cpp_type=7,
-            label=1,
-            has_default_value=False,
-            default_value=False,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="max_val",
-            full_name="syft.lib.adp.Scalar.max_val",
-            index=8,
-            number=9,
-            type=2,
-            cpp_type=6,
-            label=1,
-            has_default_value=False,
-            default_value=float(0),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="has_entity_name",
-            full_name="syft.lib.adp.Scalar.has_entity_name",
-            index=9,
-            number=12,
-            type=8,
-            cpp_type=7,
-            label=1,
-            has_default_value=False,
-            default_value=False,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="entity_name",
-            full_name="syft.lib.adp.Scalar.entity_name",
-            index=10,
-            number=13,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=b"".decode("utf-8"),
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -257,26 +69,759 @@ _SCALAR = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=84,
-    serialized_end=315,
+    serialized_start=111,
+    serialized_end=166,
 )
 
-_SCALAR.fields_by_name[
+
+_ORIGINSCALAR = _descriptor.Descriptor(
+    name="OriginScalar",
+    full_name="syft.lib.adp.OriginScalar",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="id",
+            full_name="syft.lib.adp.OriginScalar.id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="min_val",
+            full_name="syft.lib.adp.OriginScalar.min_val",
+            index=1,
+            number=2,
+            type=2,
+            cpp_type=6,
+            label=1,
+            has_default_value=False,
+            default_value=float(0),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="value",
+            full_name="syft.lib.adp.OriginScalar.value",
+            index=2,
+            number=3,
+            type=2,
+            cpp_type=6,
+            label=1,
+            has_default_value=False,
+            default_value=float(0),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="max_val",
+            full_name="syft.lib.adp.OriginScalar.max_val",
+            index=3,
+            number=4,
+            type=2,
+            cpp_type=6,
+            label=1,
+            has_default_value=False,
+            default_value=float(0),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="entity",
+            full_name="syft.lib.adp.OriginScalar.entity",
+            index=4,
+            number=5,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[
+        _descriptor.OneofDescriptor(
+            name="_min_val",
+            full_name="syft.lib.adp.OriginScalar._min_val",
+            index=0,
+            containing_type=None,
+            create_key=_descriptor._internal_create_key,
+            fields=[],
+        ),
+        _descriptor.OneofDescriptor(
+            name="_value",
+            full_name="syft.lib.adp.OriginScalar._value",
+            index=1,
+            containing_type=None,
+            create_key=_descriptor._internal_create_key,
+            fields=[],
+        ),
+        _descriptor.OneofDescriptor(
+            name="_max_val",
+            full_name="syft.lib.adp.OriginScalar._max_val",
+            index=2,
+            containing_type=None,
+            create_key=_descriptor._internal_create_key,
+            fields=[],
+        ),
+    ],
+    serialized_start=169,
+    serialized_end=354,
+)
+
+
+_INTERMEDIATEGAMMASCALAR = _descriptor.Descriptor(
+    name="IntermediateGammaScalar",
+    full_name="syft.lib.adp.IntermediateGammaScalar",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="id",
+            full_name="syft.lib.adp.IntermediateGammaScalar.id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=356,
+    serialized_end=416,
+)
+
+
+_GAMMASCALAR = _descriptor.Descriptor(
+    name="GammaScalar",
+    full_name="syft.lib.adp.GammaScalar",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="id",
+            full_name="syft.lib.adp.GammaScalar.id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="min_val",
+            full_name="syft.lib.adp.GammaScalar.min_val",
+            index=1,
+            number=2,
+            type=2,
+            cpp_type=6,
+            label=1,
+            has_default_value=False,
+            default_value=float(0),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="value",
+            full_name="syft.lib.adp.GammaScalar.value",
+            index=2,
+            number=3,
+            type=2,
+            cpp_type=6,
+            label=1,
+            has_default_value=False,
+            default_value=float(0),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="max_val",
+            full_name="syft.lib.adp.GammaScalar.max_val",
+            index=3,
+            number=4,
+            type=2,
+            cpp_type=6,
+            label=1,
+            has_default_value=False,
+            default_value=float(0),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="entity",
+            full_name="syft.lib.adp.GammaScalar.entity",
+            index=4,
+            number=5,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[
+        _descriptor.OneofDescriptor(
+            name="_min_val",
+            full_name="syft.lib.adp.GammaScalar._min_val",
+            index=0,
+            containing_type=None,
+            create_key=_descriptor._internal_create_key,
+            fields=[],
+        ),
+        _descriptor.OneofDescriptor(
+            name="_value",
+            full_name="syft.lib.adp.GammaScalar._value",
+            index=1,
+            containing_type=None,
+            create_key=_descriptor._internal_create_key,
+            fields=[],
+        ),
+        _descriptor.OneofDescriptor(
+            name="_max_val",
+            full_name="syft.lib.adp.GammaScalar._max_val",
+            index=2,
+            containing_type=None,
+            create_key=_descriptor._internal_create_key,
+            fields=[],
+        ),
+    ],
+    serialized_start=419,
+    serialized_end=603,
+)
+
+
+_INTERMEDIATEPHISCALAR = _descriptor.Descriptor(
+    name="IntermediatePhiScalar",
+    full_name="syft.lib.adp.IntermediatePhiScalar",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="id",
+            full_name="syft.lib.adp.IntermediatePhiScalar.id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="entity",
+            full_name="syft.lib.adp.IntermediatePhiScalar.entity",
+            index=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="gamma",
+            full_name="syft.lib.adp.IntermediatePhiScalar.gamma",
+            index=2,
+            number=3,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[
+        _descriptor.OneofDescriptor(
+            name="_gamma",
+            full_name="syft.lib.adp.IntermediatePhiScalar._gamma",
+            index=0,
+            containing_type=None,
+            create_key=_descriptor._internal_create_key,
+            fields=[],
+        ),
+    ],
+    serialized_start=606,
+    serialized_end=759,
+)
+
+
+_PHISCALAR = _descriptor.Descriptor(
+    name="PhiScalar",
+    full_name="syft.lib.adp.PhiScalar",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="id",
+            full_name="syft.lib.adp.PhiScalar.id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="min_val",
+            full_name="syft.lib.adp.PhiScalar.min_val",
+            index=1,
+            number=2,
+            type=2,
+            cpp_type=6,
+            label=1,
+            has_default_value=False,
+            default_value=float(0),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="value",
+            full_name="syft.lib.adp.PhiScalar.value",
+            index=2,
+            number=3,
+            type=2,
+            cpp_type=6,
+            label=1,
+            has_default_value=False,
+            default_value=float(0),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="max_val",
+            full_name="syft.lib.adp.PhiScalar.max_val",
+            index=3,
+            number=4,
+            type=2,
+            cpp_type=6,
+            label=1,
+            has_default_value=False,
+            default_value=float(0),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="entity",
+            full_name="syft.lib.adp.PhiScalar.entity",
+            index=4,
+            number=5,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="gamma",
+            full_name="syft.lib.adp.PhiScalar.gamma",
+            index=5,
+            number=6,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[
+        _descriptor.OneofDescriptor(
+            name="_min_val",
+            full_name="syft.lib.adp.PhiScalar._min_val",
+            index=0,
+            containing_type=None,
+            create_key=_descriptor._internal_create_key,
+            fields=[],
+        ),
+        _descriptor.OneofDescriptor(
+            name="_value",
+            full_name="syft.lib.adp.PhiScalar._value",
+            index=1,
+            containing_type=None,
+            create_key=_descriptor._internal_create_key,
+            fields=[],
+        ),
+        _descriptor.OneofDescriptor(
+            name="_max_val",
+            full_name="syft.lib.adp.PhiScalar._max_val",
+            index=2,
+            containing_type=None,
+            create_key=_descriptor._internal_create_key,
+            fields=[],
+        ),
+        _descriptor.OneofDescriptor(
+            name="_gamma",
+            full_name="syft.lib.adp.PhiScalar._gamma",
+            index=3,
+            containing_type=None,
+            create_key=_descriptor._internal_create_key,
+            fields=[],
+        ),
+    ],
+    serialized_start=762,
+    serialized_end=1001,
+)
+
+_INTERMEDIATESCALAR.fields_by_name[
     "id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-DESCRIPTOR.message_types_by_name["Scalar"] = _SCALAR
+_ORIGINSCALAR.fields_by_name[
+    "id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_ORIGINSCALAR.fields_by_name[
+    "entity"
+].message_type = proto_dot_lib_dot_adp_dot_entity__pb2._ENTITY
+_ORIGINSCALAR.oneofs_by_name["_min_val"].fields.append(
+    _ORIGINSCALAR.fields_by_name["min_val"]
+)
+_ORIGINSCALAR.fields_by_name["min_val"].containing_oneof = _ORIGINSCALAR.oneofs_by_name[
+    "_min_val"
+]
+_ORIGINSCALAR.oneofs_by_name["_value"].fields.append(
+    _ORIGINSCALAR.fields_by_name["value"]
+)
+_ORIGINSCALAR.fields_by_name["value"].containing_oneof = _ORIGINSCALAR.oneofs_by_name[
+    "_value"
+]
+_ORIGINSCALAR.oneofs_by_name["_max_val"].fields.append(
+    _ORIGINSCALAR.fields_by_name["max_val"]
+)
+_ORIGINSCALAR.fields_by_name["max_val"].containing_oneof = _ORIGINSCALAR.oneofs_by_name[
+    "_max_val"
+]
+_INTERMEDIATEGAMMASCALAR.fields_by_name[
+    "id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_GAMMASCALAR.fields_by_name[
+    "id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_GAMMASCALAR.fields_by_name[
+    "entity"
+].message_type = proto_dot_lib_dot_adp_dot_entity__pb2._ENTITY
+_GAMMASCALAR.oneofs_by_name["_min_val"].fields.append(
+    _GAMMASCALAR.fields_by_name["min_val"]
+)
+_GAMMASCALAR.fields_by_name["min_val"].containing_oneof = _GAMMASCALAR.oneofs_by_name[
+    "_min_val"
+]
+_GAMMASCALAR.oneofs_by_name["_value"].fields.append(
+    _GAMMASCALAR.fields_by_name["value"]
+)
+_GAMMASCALAR.fields_by_name["value"].containing_oneof = _GAMMASCALAR.oneofs_by_name[
+    "_value"
+]
+_GAMMASCALAR.oneofs_by_name["_max_val"].fields.append(
+    _GAMMASCALAR.fields_by_name["max_val"]
+)
+_GAMMASCALAR.fields_by_name["max_val"].containing_oneof = _GAMMASCALAR.oneofs_by_name[
+    "_max_val"
+]
+_INTERMEDIATEPHISCALAR.fields_by_name[
+    "id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_INTERMEDIATEPHISCALAR.fields_by_name[
+    "entity"
+].message_type = proto_dot_lib_dot_adp_dot_entity__pb2._ENTITY
+_INTERMEDIATEPHISCALAR.fields_by_name["gamma"].message_type = _GAMMASCALAR
+_INTERMEDIATEPHISCALAR.oneofs_by_name["_gamma"].fields.append(
+    _INTERMEDIATEPHISCALAR.fields_by_name["gamma"]
+)
+_INTERMEDIATEPHISCALAR.fields_by_name[
+    "gamma"
+].containing_oneof = _INTERMEDIATEPHISCALAR.oneofs_by_name["_gamma"]
+_PHISCALAR.fields_by_name[
+    "id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_PHISCALAR.fields_by_name[
+    "entity"
+].message_type = proto_dot_lib_dot_adp_dot_entity__pb2._ENTITY
+_PHISCALAR.fields_by_name["gamma"].message_type = _GAMMASCALAR
+_PHISCALAR.oneofs_by_name["_min_val"].fields.append(
+    _PHISCALAR.fields_by_name["min_val"]
+)
+_PHISCALAR.fields_by_name["min_val"].containing_oneof = _PHISCALAR.oneofs_by_name[
+    "_min_val"
+]
+_PHISCALAR.oneofs_by_name["_value"].fields.append(_PHISCALAR.fields_by_name["value"])
+_PHISCALAR.fields_by_name["value"].containing_oneof = _PHISCALAR.oneofs_by_name[
+    "_value"
+]
+_PHISCALAR.oneofs_by_name["_max_val"].fields.append(
+    _PHISCALAR.fields_by_name["max_val"]
+)
+_PHISCALAR.fields_by_name["max_val"].containing_oneof = _PHISCALAR.oneofs_by_name[
+    "_max_val"
+]
+_PHISCALAR.oneofs_by_name["_gamma"].fields.append(_PHISCALAR.fields_by_name["gamma"])
+_PHISCALAR.fields_by_name["gamma"].containing_oneof = _PHISCALAR.oneofs_by_name[
+    "_gamma"
+]
+DESCRIPTOR.message_types_by_name["IntermediateScalar"] = _INTERMEDIATESCALAR
+DESCRIPTOR.message_types_by_name["OriginScalar"] = _ORIGINSCALAR
+DESCRIPTOR.message_types_by_name["IntermediateGammaScalar"] = _INTERMEDIATEGAMMASCALAR
+DESCRIPTOR.message_types_by_name["GammaScalar"] = _GAMMASCALAR
+DESCRIPTOR.message_types_by_name["IntermediatePhiScalar"] = _INTERMEDIATEPHISCALAR
+DESCRIPTOR.message_types_by_name["PhiScalar"] = _PHISCALAR
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-Scalar = _reflection.GeneratedProtocolMessageType(
-    "Scalar",
+IntermediateScalar = _reflection.GeneratedProtocolMessageType(
+    "IntermediateScalar",
     (_message.Message,),
     {
-        "DESCRIPTOR": _SCALAR,
+        "DESCRIPTOR": _INTERMEDIATESCALAR,
         "__module__": "proto.lib.adp.scalar_pb2"
-        # @@protoc_insertion_point(class_scope:syft.lib.adp.Scalar)
+        # @@protoc_insertion_point(class_scope:syft.lib.adp.IntermediateScalar)
     },
 )
-_sym_db.RegisterMessage(Scalar)
+_sym_db.RegisterMessage(IntermediateScalar)
+
+OriginScalar = _reflection.GeneratedProtocolMessageType(
+    "OriginScalar",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _ORIGINSCALAR,
+        "__module__": "proto.lib.adp.scalar_pb2"
+        # @@protoc_insertion_point(class_scope:syft.lib.adp.OriginScalar)
+    },
+)
+_sym_db.RegisterMessage(OriginScalar)
+
+IntermediateGammaScalar = _reflection.GeneratedProtocolMessageType(
+    "IntermediateGammaScalar",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _INTERMEDIATEGAMMASCALAR,
+        "__module__": "proto.lib.adp.scalar_pb2"
+        # @@protoc_insertion_point(class_scope:syft.lib.adp.IntermediateGammaScalar)
+    },
+)
+_sym_db.RegisterMessage(IntermediateGammaScalar)
+
+GammaScalar = _reflection.GeneratedProtocolMessageType(
+    "GammaScalar",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _GAMMASCALAR,
+        "__module__": "proto.lib.adp.scalar_pb2"
+        # @@protoc_insertion_point(class_scope:syft.lib.adp.GammaScalar)
+    },
+)
+_sym_db.RegisterMessage(GammaScalar)
+
+IntermediatePhiScalar = _reflection.GeneratedProtocolMessageType(
+    "IntermediatePhiScalar",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _INTERMEDIATEPHISCALAR,
+        "__module__": "proto.lib.adp.scalar_pb2"
+        # @@protoc_insertion_point(class_scope:syft.lib.adp.IntermediatePhiScalar)
+    },
+)
+_sym_db.RegisterMessage(IntermediatePhiScalar)
+
+PhiScalar = _reflection.GeneratedProtocolMessageType(
+    "PhiScalar",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _PHISCALAR,
+        "__module__": "proto.lib.adp.scalar_pb2"
+        # @@protoc_insertion_point(class_scope:syft.lib.adp.PhiScalar)
+    },
+)
+_sym_db.RegisterMessage(PhiScalar)
 
 
 # @@protoc_insertion_point(module_scope)

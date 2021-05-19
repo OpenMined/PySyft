@@ -239,9 +239,7 @@ _RUNCLASSMETHODACTION = _descriptor.Descriptor(
         ),
     ],
     extensions=[],
-    nested_types=[
-        _RUNCLASSMETHODACTION_KWARGSENTRY,
-    ],
+    nested_types=[_RUNCLASSMETHODACTION_KWARGSENTRY,],
     enum_types=[],
     serialized_options=None,
     is_extendable=False,
