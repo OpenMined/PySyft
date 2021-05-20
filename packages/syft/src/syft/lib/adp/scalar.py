@@ -16,6 +16,7 @@ from scipy import optimize
 import sympy as sym
 from sympy import symbols
 from sympy.core.basic import Basic as BasicSymbol
+from symengine import var
 
 # syft relative
 from .. import adp
@@ -333,7 +334,7 @@ class PhiScalar(BaseScalar, IntermediatePhiScalar):
         self.ssid = ssid
 
         IntermediatePhiScalar.__init__(
-            self, poly=symbols(self.ssid), entity=self.entity
+            self, poly=var(self.ssid), entity=self.entity
         )
 
         ssid2obj[self.ssid] = self
@@ -535,7 +536,7 @@ class GammaScalar(BaseScalar, IntermediateGammaScalar):
 
         self.ssid = ssid
 
-        IntermediateGammaScalar.__init__(self, poly=symbols(self.ssid))
+        IntermediateGammaScalar.__init__(self, poly=var(self.ssid))
 
         ssid2obj[self.ssid] = self
 

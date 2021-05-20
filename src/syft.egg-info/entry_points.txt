@@ -1,0 +1,6 @@
+[console_scripts]
+syft-device = syft.grid.example_nodes.device:run
+syft-domain = syft.grid.example_nodes.domain:run
+syft-network = syft.grid.example_nodes.network:run
+syft-proto = syft.protobuf_setuptools:run
+

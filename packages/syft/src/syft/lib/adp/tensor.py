@@ -14,14 +14,19 @@ from .scalar import PhiScalar
 
 
 def make_entities(n: int = 100) -> TypeList[Entity]:
+    print("making entities")
     ents: TypeList[Entity] = list()
     for i in range(n):
         ents.append(Entity(unique_name=names.get_full_name().replace(" ", "_")))
     return ents
 
 
-def private(input_data, min_val, max_val, entities=None, is_discrete=False):
+def private(input_data, min_val, max_val, entities=None, one_entity_per_row=True, is_discrete=False):
     self = input_data
+
+    if one_entity_per_row and entities is None:
+        entities = make_entities(n=len(input_data))
+
     if entities is None:
         flat_data = self.flatten()
         entities = make_entities(n=len(flat_data))
