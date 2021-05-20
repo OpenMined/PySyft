@@ -240,3 +240,4 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
 
 
 lib_ast = create_lib_ast(None)
+load("pymbolic")  # needed for adp
