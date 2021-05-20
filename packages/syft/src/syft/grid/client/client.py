@@ -208,7 +208,7 @@ class GridClient(DomainClient):
             content = {}
         signed_msg = self.__build_msg(grid_msg=grid_msg, content=content)
         response = self.send_immediate_msg_with_reply(msg=signed_msg)
-        print("got this intermediary", response, type(response))
+        # print("got this intermediary", response, type(response))
         return self.__process_response(response=response)
 
     def __build_msg(self, grid_msg: Any, content: Dict[Any, Any]) -> Any:
@@ -220,7 +220,7 @@ class GridClient(DomainClient):
         return grid_msg(**args).sign(signing_key=self.signing_key)
 
     def __process_response(self, response: SyftMessage) -> Dict[Any, Any]:
-        print("calling __process_response", response, type(response))
+        # print("calling __process_response", response, type(response))
         if response.status_code == 200:  # type: ignore
             return response.content  # type: ignore
         else:
