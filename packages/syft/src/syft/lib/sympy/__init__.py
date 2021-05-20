@@ -3,17 +3,17 @@ import functools
 from typing import Any as TypeAny
 
 # third party
-import pymbolic as pmbl
+import sympy as sym
 
 # syft relative
-from . import primitives  # 401
+from . import core  # 401
 from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
 from ..util import generic_update_ast
 
-LIB_NAME = "pymbolic"
+LIB_NAME = "sympy"
 PACKAGE_SUPPORT = {
     "lib": LIB_NAME,
     "python": {"max_version": (3, 9, 99)},
@@ -23,24 +23,32 @@ PACKAGE_SUPPORT = {
 def create_ast(client: TypeAny) -> Globals:
     ast = Globals(client=client)
 
-    modules = ["pymbolic", "pymbolic.primitives"]
+    modules = [
+        "sympy",
+        "sympy.core",
+        "sympy.core.mul",
+        "sympy.core.add",
+        "sympy.core.symbol",
+    ]
     classes = [
         (
-            "pymbolic.primitives.Variable",
-            "pymbolic.primitives.Variable",
-            pmbl.primitives.Variable,
+            "sympy.core.symbol.Symbol",
+            "sympy.core.symbol.Symbol",
+            sym.core.symbol.Symbol,
         ),
         (
-            "pymbolic.primitives.Product",
-            "pymbolic.primitives.Product",
-            pmbl.primitives.Product,
+            "sympy.core.mul.Mul",
+            "sympy.core.mul.Mul",
+            sym.core.mul.Mul,
+        ),
+        (
+            "sympy.core.mul.Add",
+            "sympy.core.mul.Add",
+            sym.core.mul.Mul,
         ),
     ]
 
-    methods = [
-        # Variable
-        # ("pymbolic.primitives.Variable.name", "syft.lib.python.String"), # object attr
-    ]
+    methods = []
 
     add_modules(ast, modules)
     add_classes(ast, classes)

@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package syft.lib.sympy;
+
+message Expression {
+  string obj_type = 1;
+  string name = 2;
+  repeated Expression args = 4;
+}

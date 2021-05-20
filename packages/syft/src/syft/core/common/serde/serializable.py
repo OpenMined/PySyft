@@ -13,13 +13,22 @@ from ....util import random_name
 
 def bind_protobuf(cls: Any) -> Any:
     protobuf_schema = cls.get_protobuf_schema()
-    # If protobuf already has schema2type, means it's related to multiple types.
-    # Set it's schema2type to None, becuase we can't take use of it anymore.
+    # overloading a protobuf by adding multiple classes and we will check the
+    # obj_type string later to dispatch to the correct one
+    if hasattr(cls, "wrapped_type"):
+        print("binding protobuf", cls.wrapped_type())
     if hasattr(protobuf_schema, "schema2type"):
-        protobuf_schema.schema2type = None
+        print("protobuf already has schema2type")
+        print("type of protobuf_schema.schema2type", type(protobuf_schema.schema2type))
+        if isinstance(protobuf_schema.schema2type, list):
+            protobuf_schema.schema2type.append(cls)
+        else:
+            protobuf_schema.schema2type = [protobuf_schema.schema2type, cls]
     else:
+        print("setting first schema2type", cls)
         protobuf_schema.schema2type = cls
 
+    print("after schema2type", protobuf_schema.schema2type)
     return cls
 
 

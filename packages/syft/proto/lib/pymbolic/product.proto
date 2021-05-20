@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-package syft.lib.pymbolic;
-import "proto/lib/pymbolic/variable.proto";
-
-message Product { repeated Variable children = 1; }
