@@ -6,4 +6,6 @@ message Expression {
   string obj_type = 1;
   string name = 2;
   repeated Expression args = 3;
+  int64 p = 4;
+  int64 q = 5;
 }

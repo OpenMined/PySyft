@@ -61,3 +61,40 @@ def test_mul_serde() -> None:
     assert z == deserialized
     assert z._args == (x, y)
     assert Mul(x, y) == z
+
+
+@pytest.mark.vendor(lib="sympy")
+def test_integer_serde() -> None:
+    # third party
+    from sympy.core.numbers import Integer
+
+    sy.load("sympy")
+
+    python_x = 2
+    x = Integer(python_x)
+
+    protobuf_obj = serialize(x)
+    deserialized = deserialize(protobuf_obj)
+
+    assert x == deserialized
+    assert x.p == python_x
+    assert Integer(python_x) == x
+
+
+@pytest.mark.vendor(lib="sympy")
+def test_rational_serde() -> None:
+    # third party
+    from sympy.core.numbers import Rational
+
+    sy.load("sympy")
+
+    python_x = 1 / 3
+    x = Rational(1, q=3)
+
+    protobuf_obj = serialize(x)
+    print("type", protobuf_obj, type(protobuf_obj))
+    deserialized = deserialize(protobuf_obj)
+
+    assert x == deserialized
+    assert (x.p / x.q) == python_x
+    assert Rational(1, q=3) == x
