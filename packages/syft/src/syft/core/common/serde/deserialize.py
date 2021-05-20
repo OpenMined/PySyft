@@ -9,8 +9,8 @@ from google.protobuf.message import Message
 # syft relative
 from ....logger import traceback_and_raise
 from ....proto.util.data_message_pb2 import DataMessage
-from ....util import index_syft_by_module_name
 from ....util import get_fully_qualified_name
+from ....util import index_syft_by_module_name
 
 
 def _deserialize(
@@ -72,8 +72,6 @@ def _deserialize(
 
     # lets try to lookup the type we are deserializing
     obj_type = getattr(type(blob), "schema2type", None)
-    found_type = None
-    # print("got obj type for type(blob)", obj_type, type(blob), obj_type.wrapped_type())
     if obj_type is None:
         obj_type = getattr(blob, "obj_type", None)
         if obj_type is None:
@@ -81,29 +79,22 @@ def _deserialize(
         obj_type = index_syft_by_module_name(fully_qualified_name=obj_type)  # type: ignore
         obj_type = getattr(obj_type, "_sy_serializable_wrapper_type", obj_type)
     elif isinstance(obj_type, list):
-        # lets figure out which one in the list
+        # this means we have multiple classes that use the same proto but differentiate
+        # with an obj_type field, so lets figure out which one in the list
         obj_type_re = r'obj_type: "(.+)"'
+        # the first obj_type in the protobuf will be the main outer type
         obj_types = re.findall(obj_type_re, str(blob))
         if len(obj_types) > 0:
             real_obj_type = obj_types[0]
-
             for possible_type in obj_type:
                 if hasattr(possible_type, "wrapped_type"):
-                    # print("real thing is", real_obj_type)
-                    # print(
-                    #     "got a possible type",
-                    #     get_fully_qualified_name(possible_type.wrapped_type()),
-                    # )
-                    # print("got a blob", str(blob))
-                    if real_obj_type == get_fully_qualified_name(
-                        possible_type.wrapped_type()
-                    ):
-                        found_type = possible_type.wrapped_type()
+                    # get the str inside <class ...>, fqn in sympy is different
+                    real_obj_type_str = str(possible_type.wrapped_type()).split("'")[1]
+                    if real_obj_type == real_obj_type_str:
+                        # found it, lets overwrite obj_type and break
+                        obj_type = possible_type
                         break
-            if found_type is not None:
-                obj_type = found_type
 
-    print("what do we have now", obj_type, found_type)
     if not isinstance(obj_type, type):
         traceback_and_raise(deserialization_error)
 

@@ -8,7 +8,7 @@ from syft import serialize
 
 
 @pytest.mark.vendor(lib="sympy")
-def test_variable_serde() -> None:
+def test_symbol_serde() -> None:
     # third party
     from sympy.core.symbol import Symbol
 
@@ -23,28 +23,41 @@ def test_variable_serde() -> None:
     assert x.name == deserialized.name
 
 
-# @pytest.mark.vendor(lib="sympy")
-# def test_multi_child_serde() -> None:
-#     # third party
-#     from sympy.core.symbol import Symbol
-#     from sympy.core.add import Add
-#     from sympy.core.mul import Mul
+@pytest.mark.vendor(lib="sympy")
+def test_add_serde() -> None:
+    # third party
+    from sympy.core.add import Add
+    from sympy.core.symbol import Symbol
 
-#     sy.load("sympy")
+    sy.load("sympy")
 
-#     x = Symbol("x")
+    x = Symbol("x")
+    y = Symbol("y")
+    z = x + y
 
-#     multi_child_types = [
-#         (x + x, Sum),
-#         (x * x, Product),
-#     ]
+    protobuf_obj = serialize(z)
+    deserialized = deserialize(protobuf_obj)
 
-#     for result, result_type in multi_child_types:
-#         assert isinstance(result, result_type)
+    assert z == deserialized
+    assert z._args == (x, y)
+    assert Add(x, y) == z
 
-#         protobuf_obj = serialize(result)
-#         deserialized = deserialize(protobuf_obj)
 
-#         assert result == deserialized
+@pytest.mark.vendor(lib="sympy")
+def test_mul_serde() -> None:
+    # third party
+    from sympy.core.mul import Mul
+    from sympy.core.symbol import Symbol
 
-#     assert True is False
+    sy.load("sympy")
+
+    x = Symbol("x")
+    y = Symbol("y")
+    z = x * y
+
+    protobuf_obj = serialize(z)
+    deserialized = deserialize(protobuf_obj)
+
+    assert z == deserialized
+    assert z._args == (x, y)
+    assert Mul(x, y) == z

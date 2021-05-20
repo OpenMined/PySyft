@@ -2,6 +2,6 @@
 from sympy.core.mul import Mul
 
 # syft relative
-from .multi_child_expression import generate_children_type
+from .args_expression import generate_args_expression_type
 
-generate_children_type(real_type=Mul)
+generate_args_expression_type(real_type=Mul)

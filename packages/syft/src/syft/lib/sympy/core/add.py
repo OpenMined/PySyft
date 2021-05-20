@@ -1,7 +1,7 @@
 # third party
-from symbolic.core.add import Add
+from sympy.core.add import Add
 
 # syft relative
-from .multi_child_expression import generate_children_type
+from .args_expression import generate_args_expression_type
 
-generate_children_type(real_type=Add)
+generate_args_expression_type(real_type=Add)
