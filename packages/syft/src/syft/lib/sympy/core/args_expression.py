@@ -17,7 +17,7 @@ def generate_args_expression_type(real_type: Expr) -> None:
     def object2proto(obj: real_type) -> Expression_PB:
         return Expression_PB(
             obj_type=full_name_with_name(klass=type(obj)),
-            args=[serialize(child) for child in obj._args],
+            args=[serialize(child) for child in obj.args],
         )
 
     def proto2object(proto: Expression_PB) -> real_type:
