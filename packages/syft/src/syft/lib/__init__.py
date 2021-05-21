@@ -238,3 +238,4 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
 
 lib_ast = create_lib_ast(None)
 load("sympy")  # needed for adp
+load("pymbolic")  # needed for adp

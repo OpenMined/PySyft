@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package syft.lib.pymbolic;
+
+message PymbolicExpression {
+  string obj_type = 1;
+  string name = 2;
+  bool child_only = 3;
+  repeated PymbolicExpression children = 4;
+}

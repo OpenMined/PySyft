@@ -8,28 +8,32 @@ from sympy.core.expr import Expr
 from .... import deserialize
 from .... import serialize
 from ....generate_wrapper import GenerateWrapper
-from ....proto.lib.sympy.expression_pb2 import SympyExpression as SympyExpression_PB
+from ....proto.lib.pymbolic.expression_pb2 import (
+    PymbolicExpression as PymbolicExpression_PB,
+)
 from ...util import full_name_with_name
 
 
-# this is a subclass for Expression with .args: [Expression]
-def generate_args_expression_type(real_type: Expr) -> None:
-    def object2proto(obj: real_type) -> SympyExpression_PB:
-        return SympyExpression_PB(
+# this is a subclass for Expression with .children: [Expression]
+def generate_multi_child_expression_type(real_type: Expr) -> None:
+    def object2proto(obj: real_type) -> PymbolicExpression_PB:
+        return PymbolicExpression_PB(
             obj_type=full_name_with_name(klass=type(obj)),
-            args=[serialize(child) for child in obj.args],
+            children=[serialize(child) for child in obj.children],
         )
 
-    def proto2object(proto: SympyExpression_PB) -> real_type:
+    def proto2object(proto: PymbolicExpression_PB) -> real_type:
         module_parts = proto.obj_type.split(".")
         klass = module_parts.pop()
         obj_type = getattr(sys.modules[".".join(module_parts)], klass)
-        return obj_type(*[deserialize(child) for child in proto.args])
+        return obj_type(
+            children=tuple([deserialize(child) for child in proto.children])
+        )
 
     GenerateWrapper(
         wrapped_type=real_type,
         import_path=full_name_with_name(klass=real_type),
-        protobuf_scheme=SympyExpression_PB,
+        protobuf_scheme=PymbolicExpression_PB,
         type_object2proto=object2proto,
         type_proto2object=proto2object,
     )
