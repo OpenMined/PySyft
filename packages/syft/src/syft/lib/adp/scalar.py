@@ -47,15 +47,15 @@ class Scalar(Serializable):
         return adp.publish.publish([self], acc=acc, sigma=sigma)
 
     @property
-    def max_val(self) -> float:
+    def max_val(self) -> Optional[float]:
         raise NotImplementedError
 
     @property
-    def min_val(self) -> float:
+    def min_val(self) -> Optional[float]:
         raise NotImplementedError
 
     @property
-    def value(self) -> float:
+    def value(self) -> Optional[float]:
         raise NotImplementedError
 
     def __str__(self) -> str:
@@ -82,19 +82,28 @@ class IntermediateScalar(Scalar):
         self.id = id if id else UID()
 
     @property
-    def sympoly(self):
+    def sympoly(self) -> BasicSymbol:
         """Sympy version of self.poly"""
         if not hasattr(self, "_sympoly"):
             self._sympoly = PymbolicToSympyMapper()(self.poly)
         return self._sympoly
 
-    def __rmul__(self, other: Scalar) -> Scalar:
+    def __mul__(self, other: IntermediateScalar) -> IntermediateScalar:
+        raise NotImplementedError
+
+    def __rmul__(self, other: IntermediateScalar) -> IntermediateScalar:
         return self * other
 
-    def __radd__(self, other: Scalar) -> Scalar:
+    def __add__(self, other: IntermediateScalar) -> IntermediateScalar:
+        raise NotImplementedError
+
+    def __radd__(self, other: IntermediateScalar) -> IntermediateScalar:
         return self + other
 
-    def __rsub__(self, other: Scalar) -> Scalar:
+    def __sub__(self, other: IntermediateScalar) -> IntermediateScalar:
+        raise NotImplementedError
+
+    def __rsub__(self, other: IntermediateScalar) -> IntermediateScalar:
         return other - self  # subtraction is not commutative
 
     @property
@@ -111,7 +120,7 @@ class IntermediateScalar(Scalar):
 
     @property
     def input_polys(self) -> TypeSet[BasicSymbol]:
-        mapper = GetSymbolsMapper()
+        mapper = GetSymbolsMapper()  # type: ignore
         mapper(self.poly)
         return mapper.free_symbols
 
@@ -167,14 +176,16 @@ class IntermediatePhiScalar(IntermediateScalar):
         self._gamma: Optional[GammaScalar] = None
         self.entity = entity
 
-    def max_lipschitz_wrt_entity(self, *args, **kwargs) -> float:
+    def max_lipschitz_wrt_entity(
+        self, *args: TypeTuple[Any, ...], **kwargs: Any
+    ) -> float:
         return self.gamma.max_lipschitz_wrt_entity(*args, **kwargs)
 
     @property
     def max_lipschitz(self) -> float:
         return self.gamma.max_lipschitz
 
-    def __mul__(self, other: Scalar) -> Scalar:
+    def __mul__(self, other: IntermediateScalar) -> IntermediateScalar:
 
         if isinstance(other, IntermediateGammaScalar):
             return self.gamma * other
@@ -190,13 +201,13 @@ class IntermediatePhiScalar(IntermediateScalar):
 
         return self.gamma * other.gamma
 
-    def __add__(self, other: Scalar) -> Scalar:
+    def __add__(self, other: IntermediateScalar) -> IntermediateScalar:
 
         if isinstance(other, IntermediateGammaScalar):
             return self.gamma + other
 
         # if other is a public value
-        if not isinstance(other, Scalar):
+        if not isinstance(other, IntermediatePhiScalar):
             return IntermediatePhiScalar(poly=self.poly + other, entity=self.entity)
 
         # if other is referencing the same individual
@@ -206,7 +217,7 @@ class IntermediatePhiScalar(IntermediateScalar):
             )
         return self.gamma + other.gamma
 
-    def __sub__(self, other: Scalar) -> Scalar:
+    def __sub__(self, other: IntermediateScalar) -> IntermediateScalar:
 
         if isinstance(other, IntermediateGammaScalar):
             return self.gamma - other
@@ -493,7 +504,7 @@ class IntermediateGammaScalar(IntermediateScalar):
         data_dependent: bool = True,
         force_all_searches: bool = False,
         try_hessian_shortcut: bool = False,
-    ):
+    ) -> TypeList[optimize.OptimizeResult]:
         return max_lipschitz_via_jacobian(
             scalars=[self],
             input_entity=input_entity,

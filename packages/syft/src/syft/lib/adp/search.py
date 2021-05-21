@@ -5,6 +5,7 @@ from typing import Callable
 from typing import Dict as TypeDict
 from typing import List as TypeList
 from typing import Optional
+from typing import Tuple as TypeTuple
 
 # third party
 import numpy as np
@@ -136,7 +137,9 @@ def flatten_and_maximize_poly(poly, force_all_searches: bool = False):
     )
 
 
-def create_lookup_tables_for_symbol(polynomial):
+def create_lookup_tables_for_symbol(
+    polynomial,
+) -> TypeTuple[TypeList[str], TypeDict[str, int]]:
 
     mapper = GetSymbolsMapper()
     mapper(polynomial)

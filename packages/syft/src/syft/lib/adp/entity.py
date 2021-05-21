@@ -1,3 +1,10 @@
+# future
+from __future__ import annotations
+
+# stdlib
+from typing import Any
+from typing import Optional
+
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import names
@@ -13,7 +20,9 @@ from ...proto.lib.adp.entity_pb2 import Entity as Entity_PB
 
 @bind_protobuf
 class Entity(Serializable):
-    def __init__(self, unique_name: str = None, id=None):
+    def __init__(
+        self, unique_name: Optional[str] = None, id: Optional[UID] = None
+    ) -> None:
 
         # If someone doesn't provide a unique name - make one up!
         if unique_name is None:
@@ -22,25 +31,25 @@ class Entity(Serializable):
         self.unique_name = unique_name
         self.id = id if id else UID()
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.id)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return hash(self) == hash(other)
 
-    def __ne__(self, other):
+    def __ne__(self, other: Any) -> bool:
         # Not strictly necessary, but to avoid having both x==y and x!=y
         # True at the same time
         return hash(self) != hash(other)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<Entity:" + self.unique_name + ">"
 
     def _object2proto(self) -> Entity_PB:
         return Entity_PB(unique_name=self.unique_name, id=self.id._object2proto())
 
     @staticmethod
-    def _proto2object(proto: Entity_PB) -> "Entity":
+    def _proto2object(proto: Entity_PB) -> Entity:
         return Entity(unique_name=proto.unique_name, id=UID._proto2object(proto.id))
 
     @staticmethod
