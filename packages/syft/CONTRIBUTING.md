@@ -81,7 +81,7 @@ If you are new to the project and want to get into the code, we recommend pickin
 Before you get started you will need a few things installed depending on your operating system.
 
 - OS Package Manager
-- Python 3.6+
+- Python 3.7+
 - git
 - protobuf (protoc)
 
@@ -150,7 +150,7 @@ $ sudo apt install protobuf-compiler
 
 ## Python Versions
 
-This project supports Python 3.6+, however, if you are contributing it can help to be able to switch between python versions to fix issues or bugs that relate to a specific python version. Depending on your operating system there are a number of ways to install different versions of python however one of the easiest is with the `pyenv` tool. Additionally, as we will be frequently be installing and changing python packages for this project we should isolate it from your system python and other projects you have using a virtualenv.
+This project supports Python 3.7+, however, if you are contributing it can help to be able to switch between python versions to fix issues or bugs that relate to a specific python version. Depending on your operating system there are a number of ways to install different versions of python however one of the easiest is with the `pyenv` tool. Additionally, as we will be frequently be installing and changing python packages for this project we should isolate it from your system python and other projects you have using a virtualenv.
 
 ### MacOS
 
@@ -172,34 +172,33 @@ Running the command will give you help:
 $ pyenv
 ```
 
-Lets say you wanted to install python 3.6.9 because its the version that Google Colab uses and you want to debug a Colab issue.
+Lets say you wanted to install python 3.7.10 because its the version that Google Colab uses and you want to debug a Colab issue.
 
 First, search for available python versions:
 
 ```
-$  pyenv install --list | grep 3.6
+$  pyenv install --list | grep 3.7
 ...
-3.6.7
-3.6.8
-3.6.9
-3.6.10
-3.6.11
-3.6.12
+3.7.5
+3.7.6
+3.7.7
+3.7.8
+3.7.9
+3.7.10
 ```
 
-Wow, there are lots of options, lets install 3.6.
+Wow, there are lots of options, lets install 3.7.10.
 
 ```
-$ pyenv install 3.6.9
+$ pyenv install 3.7.10
 ```
 
 Now, lets see what versions are installed:
 
 ```
 $ pyenv versions
-3.5.9
-3.6.9
-3.7.8
+3.7.10
+3.8.9
 3.9.0
 ```
 
@@ -332,10 +331,10 @@ Lets create a virtualenv and install the required packages so that we can start 
 Using pipenv you would do the following:
 
 ```
-$ pipenv --python=3.6
+$ pipenv --python=3.7
 ```
 
-We installed python 3.6 earlier so here we can just specify the version and we will get a virtualenv with that version. If you want to use a different version make sure to install it to your system with your system package manager or `pyenv` first.
+We installed python 3.7 earlier so here we can just specify the version and we will get a virtualenv with that version. If you want to use a different version make sure to install it to your system with your system package manager or `pyenv` first.
 
 We have created the virtualenv but it is not active yet.
 If you type the following:
@@ -552,9 +551,6 @@ $ pytest -m slow -n auto
   This script will re-generate all of the protobuf files using the `protoc` protobuf compiler.
 - nb_test.sh
   This converts notebooks that have asserts into tests so they can be run with pytest.
-- colab.sh
-  This fixes some issues in Colab with python 3.6.9 and our code and helps to clone the
-  repo if you want to test code which is not on PyPI yet.
 
 ### Creating a Pull Request
 

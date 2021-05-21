@@ -103,11 +103,8 @@ def _add_lib(
     *, vendor_ast: ModuleType, ast_or_client: TypeUnion[Globals, AbstractNodeClient]
 ) -> None:
     update_ast = getattr(vendor_ast, "update_ast", None)
-    post_update_ast = getattr(vendor_ast, "post_update_ast", None)
     if update_ast is not None:
         update_ast(ast_or_client=ast_or_client)
-        if post_update_ast is not None:
-            post_update_ast(ast_or_client=ast_or_client)
 
 
 def _regenerate_unions(*, lib_ast: Globals, client: TypeAny = None) -> None:
