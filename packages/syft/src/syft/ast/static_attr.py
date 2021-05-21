@@ -1,4 +1,5 @@
-"""This module contains `StaticAttribute`, an AST node representing a method, function, or constructor which can be directly executed."""
+"""This module contains `StaticAttribute`, an AST node representing a method,
+ function, or constructor which can be directly executed."""
 
 # stdlib
 from typing import Any

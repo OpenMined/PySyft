@@ -1,4 +1,5 @@
-"""This module contains `EnumAttribute`, an AST node representing the attributes of a Python Enum which are only gettable, not settable."""
+"""This module contains `EnumAttribute`, an AST node representing the
+ attributes of a Python Enum which are only gettable, not settable."""
 
 # stdlib
 from enum import Enum

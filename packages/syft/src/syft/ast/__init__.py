@@ -90,7 +90,7 @@ def get_parent(
 
     Raises:
         ValueError: If parent is not a class or module
-    
+
     Examples:
         For instance, given the syft project root directory, the parent to the path `syft.lib.python.Int` is `python`.
     """

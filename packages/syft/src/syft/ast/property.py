@@ -1,4 +1,6 @@
-"""This module contains `Property` attribute representing property objects which implements getter and setter objects."""
+"""This module contains `Property` attribute representing property objects which 
+implements getter and setter objects."""
+
 # stdlib
 from typing import Any
 from typing import Callable as CallableT

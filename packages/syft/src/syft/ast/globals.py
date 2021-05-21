@@ -1,4 +1,5 @@
-"""This module contains Global, an AST node representing the collection of frameworks held in the global namespace."""
+"""This module contains Global, an AST node representing the collection
+of frameworks held in the global namespace."""
 
 # stdlib
 from types import ModuleType
