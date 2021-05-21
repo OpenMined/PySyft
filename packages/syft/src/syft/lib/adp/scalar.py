@@ -372,12 +372,12 @@ class PhiScalar(BaseScalar, IntermediatePhiScalar):
     @staticmethod
     def _proto2object(proto: PhiScalar_PB) -> "PhiScalar":
         phi_scalar = PhiScalar(
+            id=deserialize(proto.id),
+            entity=deserialize(proto.entity),
             min_val=proto.min_val if proto.HasField("min_val") else None,
             max_val=proto.max_val if proto.HasField("max_val") else None,
             value=proto.value if proto.HasField("value") else None,
-            entity=deserialize(proto.entity),
         )
-        phi_scalar.id = deserialize(proto.id, from_proto=True)
         # intermediate_phi_scalar._gamma = deserialize(proto.gamma)
         return phi_scalar
 
