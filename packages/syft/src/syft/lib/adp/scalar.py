@@ -202,8 +202,6 @@ class IntermediatePhiScalar(IntermediateScalar):
 
         # if other is referencing the same individual
         if self.entity == other.entity:
-            res = IntermediatePhiScalar(poly=self.poly + other.poly, entity=self.entity)
-
             return IntermediatePhiScalar(
                 poly=self.poly + other.poly, entity=self.entity
             )
