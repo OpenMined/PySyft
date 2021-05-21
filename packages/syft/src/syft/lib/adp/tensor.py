@@ -134,6 +134,7 @@ class Tensor(np.ndarray):
         self.is_private = getattr(obj, "is_private", None)
 
     def __array_wrap__(self, out_arr, context=None):
+
         output = out_arr.view(Tensor)
 
         is_private = False
@@ -141,6 +142,7 @@ class Tensor(np.ndarray):
             for arg in context[1]:
                 if hasattr(arg, "is_private") and arg.is_private:
                     is_private = True
+
         output.is_private = is_private
 
         return output

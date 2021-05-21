@@ -8,6 +8,8 @@ from typing import Optional
 
 # third party
 import numpy as np
+from pymbolic.mapper import WalkMapper
+from pymbolic.primitives import Variable
 from scipy import optimize
 import sympy as sym
 from sympy.core.basic import Basic
@@ -27,6 +29,18 @@ from .entity import Entity
 # in the name string instead we could extract them at the point of use instead of lookup
 # TypeDict[str, Union[PhiScalar, GammaScalar]]
 ssid2obj: TypeDict[str, Any] = {}  # TODO: Fix types in circular deps
+
+
+class GetSymbolsMapper(WalkMapper):
+
+    def __init__(self, *args, **kwargs):
+        self.free_symbols = list()
+
+    def visit(self, *args, **kwargs):
+        for arg in args:
+            if isinstance(arg, Variable):
+                self.free_symbols.append(arg)
+        return True
 
 
 def create_searchable_function_from_polynomial(
@@ -60,6 +74,7 @@ def minimize_poly(poly: Basic, *rranges, force_all_searches: bool = False, **s2i
 
 
 def flatten_and_maximize_poly(poly, force_all_searches: bool = False):
+
     i2s = list(poly.free_symbols)
     s2i = {s: i for i, s in enumerate(i2s)}
 
@@ -82,7 +97,11 @@ def flatten_and_maximize_poly(poly, force_all_searches: bool = False):
 
 
 def create_lookup_tables_for_symbol(polynomial):
-    index2symbol = [str(x) for x in polynomial.free_symbols]
+
+    mapper = GetSymbolsMapper()
+    mapper(polynomial)
+
+    index2symbol = [str(x) for x in mapper.free_symbols]
     symbol2index = {sym: i for i, sym in enumerate(index2symbol)}
 
     return index2symbol, symbol2index
@@ -144,11 +163,11 @@ def max_lipschitz_via_jacobian(
 
     # R^d` representing the d' dimentional output of g
     # the numberator of the partial derivative
-    out = sym.Matrix([x.poly for x in scalars])
+    out = sym.Matrix([x.sympoly for x in scalars])
 
     if input_entity is None:
         # X_1 through X_n flattened into a single vector
-        j = out.jacobian([x.poly for x in input_scalars])
+        j = out.jacobian([x.sympoly for x in input_scalars])
     else:
 
         # In general it doesn't make sense to consider the max partial derivative over
@@ -169,7 +188,7 @@ def max_lipschitz_via_jacobian(
         relevant_scalars = list(
             filter(lambda s: s.entity == input_entity, input_scalars)
         )
-        relevant_inputs = [x.poly for x in relevant_scalars]
+        relevant_inputs = [x.sympoly for x in relevant_scalars]
 
         # jacobian ONLY with respect to X_i
         j = out.jacobian(relevant_inputs)
@@ -182,7 +201,7 @@ def max_lipschitz_via_jacobian(
         # is private but it also means the bound is tighter. So we could skip this step
         # but it would in some cases make the bound looser than it needs to be.
         if data_dependent:
-            j = j.subs({x.poly: x.value for x in relevant_scalars})
+            j = j.subs({x.sympoly: x.value for x in relevant_scalars})
 
     neg_l2_j = -((np.sum(np.square(j))) ** 0.5)
 
@@ -192,8 +211,8 @@ def max_lipschitz_via_jacobian(
         return [result], neg_l2_j
 
     if try_hessian_shortcut:
-        h = j.jacobian([x.poly for x in input_scalars])
-        if len(solve(np.sum(h ** 2), *[x.poly for x in input_scalars], dict=True)) == 0:
+        h = j.jacobian([x.sympoly for x in input_scalars])
+        if len(solve(np.sum(h ** 2), *[x.sympoly for x in input_scalars], dict=True)) == 0:
             print(
                 "Gradient is linear - solve with brute force search over edges of domain"
             )

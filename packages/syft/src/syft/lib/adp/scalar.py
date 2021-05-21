@@ -12,11 +12,12 @@ from typing import Union
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
+from pymbolic import var
+from pymbolic.interop.sympy import PymbolicToSympyMapper
 from scipy import optimize
 import sympy as sym
 from sympy import symbols
 from sympy.core.basic import Basic as BasicSymbol
-from symengine import var
 
 # syft relative
 from .. import adp
@@ -39,6 +40,7 @@ from .search import flatten_and_maximize_poly
 from .search import max_lipschitz_via_jacobian
 from .search import minimize_function
 from .search import ssid2obj
+from .search import GetSymbolsMapper
 
 
 # the most generic class
@@ -81,6 +83,11 @@ class IntermediateScalar(Scalar):
         self.poly = poly
         self.id = id if id else UID()
 
+    @property
+    def sympoly(self):
+        """Sympy version of self.poly"""
+        return PymbolicToSympyMapper()(self.poly)
+
     def __rmul__(self, other: Scalar) -> Scalar:
         return self * other
 
@@ -104,12 +111,15 @@ class IntermediateScalar(Scalar):
 
     @property
     def input_polys(self) -> TypeSet[BasicSymbol]:
-        return self.poly.free_symbols
+        mapper = GetSymbolsMapper()
+        mapper(self.poly)
+        return mapper.free_symbols
+
 
     @property
     def max_val(self) -> Optional[np.float64]:
         if self.poly is not None:
-            results = flatten_and_maximize_poly(-self.poly)
+            results = flatten_and_maximize_poly(-self.sympoly)
             if len(results) >= 1:
                 return -results[-1].fun
         return None
@@ -117,7 +127,7 @@ class IntermediateScalar(Scalar):
     @property
     def min_val(self) -> Optional[np.float64]:
         if self.poly is not None:
-            results = flatten_and_maximize_poly(self.poly)
+            results = flatten_and_maximize_poly(self.sympoly)
             if len(results) >= 1:
                 return results[-1].fun
         return None
@@ -125,7 +135,7 @@ class IntermediateScalar(Scalar):
     @property
     def value(self) -> Optional[float]:
         if self.poly is not None:
-            result = self.poly.subs({obj.poly: obj.value for obj in self.input_scalars})
+            result = self.sympoly.subs({obj.sympoly: obj.value for obj in self.input_scalars})
             return float(result)
         return None
 

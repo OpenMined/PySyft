@@ -8,10 +8,18 @@ def inputs2child(*args, **kwargs):
     return args,kwargs
 
 class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
+    """A simple tensor class which passes method/function calls to self.child"""
     
     def __init__(self, child):
         self.child = child
 
+    def __len__(self):
+        return len(self.child)
+        
+    @property
+    def shape(self):
+        return self.child.shape
+        
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         if method == '__call__':
             
@@ -37,6 +45,8 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     def __repr__(self):
         return f"{self.__class__.__name__}(child={self.child})"
 
+
+    
     
 def implements(tensor_type, np_function):
         "Register an __array_function__ implementation for DiagonalArray objects."
