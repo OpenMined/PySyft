@@ -9,6 +9,7 @@ from typing import Optional
 # third party
 import numpy as np
 from pymbolic.mapper import WalkMapper
+from pymbolic.mapper.evaluator import EvaluationMapper as EM
 from pymbolic.primitives import Variable
 from scipy import optimize
 import sympy as sym
@@ -34,12 +35,12 @@ ssid2obj: TypeDict[str, Any] = {}  # TODO: Fix types in circular deps
 class GetSymbolsMapper(WalkMapper):
 
     def __init__(self, *args, **kwargs):
-        self.free_symbols = list()
+        self.free_symbols = set()
 
     def visit(self, *args, **kwargs):
         for arg in args:
             if isinstance(arg, Variable):
-                self.free_symbols.append(arg)
+                self.free_symbols.add(arg)
         return True
 
 
@@ -53,11 +54,25 @@ def create_searchable_function_from_polynomial(
     wraps sympy's approach in a method which accepts a tuple of args ordered
     according to symbol2index lookup table
     """
+    if 'pymbolic' in str(type(poly)):
 
-    def _run_specific_args(tuple_of_args: tuple):
-        kwargs = {sym: tuple_of_args[i] for sym, i in symbol2index.items()}
-        output = poly.subs(kwargs)
-        return output
+        def _run_specific_args(tuple_of_args: tuple):
+            # kwargs = {sym: tuple_of_args[i] for sym, i in symbol2index.items()}
+            # output = poly.subs(kwargs)
+
+            kwargs = {sym: tuple_of_args[i] for sym, i in symbol2index.items()}
+            output = EM(context=kwargs)(poly)
+            return output
+
+    else:
+
+        def _run_specific_args(tuple_of_args: tuple):
+            kwargs = {sym: tuple_of_args[i] for sym, i in symbol2index.items()}
+            output = poly.subs(kwargs)
+
+            # kwargs = {sym: tuple_of_args[i] for sym, i in symbol2index.items()}
+            # output = EM(context=kwargs)(poly)
+            return output
 
     return _run_specific_args
 
@@ -73,9 +88,34 @@ def minimize_poly(poly: Basic, *rranges, force_all_searches: bool = False, **s2i
     return minimize_function(f=search_fun, rranges=rranges, force_all_searches=False)
 
 
-def flatten_and_maximize_poly(poly, force_all_searches: bool = False):
+def flatten_and_maximize_sympoly(poly, force_all_searches: bool = False):
 
     i2s = list(poly.free_symbols)
+    s2i = {s: i for i, s in enumerate(i2s)}
+
+    # this code seems to make things slower - although there might be a memory
+    # improvement (i haven't checked)
+    # flattened_poly = poly.copy().subs({k:v for k,v in zip(i2s, ordered_symbols[0:len(i2s)])})
+    # flattened_s2i = {str(ordered_symbols[i]):i for s,i in s2i.items()}
+
+    flattened_poly = poly
+    flattened_s2i = {str(s): i for s, i in s2i.items()}
+
+    rranges = [
+        (ssid2obj[i2s[i].name].min_val, ssid2obj[i2s[i].name].max_val)
+        for i in range(len(s2i))
+    ]
+
+    return minimize_poly(
+        flattened_poly, *rranges, force_all_searches=force_all_searches, **flattened_s2i
+    )
+
+def flatten_and_maximize_poly(poly, force_all_searches: bool = False):
+
+    mapper = GetSymbolsMapper()
+    mapper(poly)
+
+    i2s = list(mapper.free_symbols)
     s2i = {s: i for i, s in enumerate(i2s)}
 
     # this code seems to make things slower - although there might be a memory
@@ -233,4 +273,4 @@ def max_lipschitz_via_jacobian(
             result_output = search_fun(result_inputs)
             return [float(result_output)], neg_l2_j
 
-    return flatten_and_maximize_poly(neg_l2_j), neg_l2_j
+    return flatten_and_maximize_sympoly(neg_l2_j), neg_l2_j

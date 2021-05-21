@@ -86,7 +86,9 @@ class IntermediateScalar(Scalar):
     @property
     def sympoly(self):
         """Sympy version of self.poly"""
-        return PymbolicToSympyMapper()(self.poly)
+        if not hasattr(self, '_sympoly'):
+            self._sympoly = PymbolicToSympyMapper()(self.poly)
+        return self._sympoly
 
     def __rmul__(self, other: Scalar) -> Scalar:
         return self * other
@@ -119,7 +121,7 @@ class IntermediateScalar(Scalar):
     @property
     def max_val(self) -> Optional[np.float64]:
         if self.poly is not None:
-            results = flatten_and_maximize_poly(-self.sympoly)
+            results = flatten_and_maximize_poly(-self.poly)
             if len(results) >= 1:
                 return -results[-1].fun
         return None
@@ -127,7 +129,7 @@ class IntermediateScalar(Scalar):
     @property
     def min_val(self) -> Optional[np.float64]:
         if self.poly is not None:
-            results = flatten_and_maximize_poly(self.sympoly)
+            results = flatten_and_maximize_poly(self.poly)
             if len(results) >= 1:
                 return results[-1].fun
         return None
