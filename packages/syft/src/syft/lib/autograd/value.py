@@ -154,7 +154,10 @@ def grad(value: Value, accumulate: bool = False) -> TypeDict[Value, float]:
     if accumulate:
         for parent in gradients.keys():
             _grad = getattr(parent, "_grad", 0)
-            setattr(parent, "_grad", _grad + gradients[parent])
+            if _grad is not None:
+                setattr(parent, "_grad", _grad + gradients[parent])
+            else:
+                setattr(parent, "_grad", gradients[parent])
     else:
         for parent in gradients.keys():
             setattr(parent, "_grad", gradients[parent])
