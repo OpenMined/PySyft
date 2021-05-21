@@ -33,7 +33,6 @@ ssid2obj: TypeDict[str, Any] = {}  # TODO: Fix types in circular deps
 
 
 class GetSymbolsMapper(WalkMapper):
-
     def __init__(self, *args, **kwargs):
         self.free_symbols = set()
 
@@ -54,7 +53,7 @@ def create_searchable_function_from_polynomial(
     wraps sympy's approach in a method which accepts a tuple of args ordered
     according to symbol2index lookup table
     """
-    if 'pymbolic' in str(type(poly)):
+    if "pymbolic" in str(type(poly)):
 
         def _run_specific_args(tuple_of_args: tuple):
             # kwargs = {sym: tuple_of_args[i] for sym, i in symbol2index.items()}
@@ -109,6 +108,7 @@ def flatten_and_maximize_sympoly(poly, force_all_searches: bool = False):
     return minimize_poly(
         flattened_poly, *rranges, force_all_searches=force_all_searches, **flattened_s2i
     )
+
 
 def flatten_and_maximize_poly(poly, force_all_searches: bool = False):
 
@@ -252,7 +252,10 @@ def max_lipschitz_via_jacobian(
 
     if try_hessian_shortcut:
         h = j.jacobian([x.sympoly for x in input_scalars])
-        if len(solve(np.sum(h ** 2), *[x.sympoly for x in input_scalars], dict=True)) == 0:
+        if (
+            len(solve(np.sum(h ** 2), *[x.sympoly for x in input_scalars], dict=True))
+            == 0
+        ):
             print(
                 "Gradient is linear - solve with brute force search over edges of domain"
             )

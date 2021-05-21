@@ -34,13 +34,13 @@ from ...proto.lib.adp.scalar_pb2 import GammaScalar as GammaScalar_PB
 from ...proto.lib.adp.scalar_pb2 import IntermediateScalar as IntermediateScalar_PB
 from ...proto.lib.adp.scalar_pb2 import PhiScalar as PhiScalar_PB
 from .entity import Entity
+from .search import GetSymbolsMapper
 from .search import create_lookup_tables_for_symbol
 from .search import create_searchable_function_from_polynomial
 from .search import flatten_and_maximize_poly
 from .search import max_lipschitz_via_jacobian
 from .search import minimize_function
 from .search import ssid2obj
-from .search import GetSymbolsMapper
 
 
 # the most generic class
@@ -86,7 +86,7 @@ class IntermediateScalar(Scalar):
     @property
     def sympoly(self):
         """Sympy version of self.poly"""
-        if not hasattr(self, '_sympoly'):
+        if not hasattr(self, "_sympoly"):
             self._sympoly = PymbolicToSympyMapper()(self.poly)
         return self._sympoly
 
@@ -117,7 +117,6 @@ class IntermediateScalar(Scalar):
         mapper(self.poly)
         return mapper.free_symbols
 
-
     @property
     def max_val(self) -> Optional[np.float64]:
         if self.poly is not None:
@@ -137,7 +136,9 @@ class IntermediateScalar(Scalar):
     @property
     def value(self) -> Optional[float]:
         if self.poly is not None:
-            result = self.sympoly.subs({obj.sympoly: obj.value for obj in self.input_scalars})
+            result = self.sympoly.subs(
+                {obj.sympoly: obj.value for obj in self.input_scalars}
+            )
             return float(result)
         return None
 
@@ -343,9 +344,7 @@ class PhiScalar(BaseScalar, IntermediatePhiScalar):
 
         self.ssid = ssid
 
-        IntermediatePhiScalar.__init__(
-            self, poly=var(self.ssid), entity=self.entity
-        )
+        IntermediatePhiScalar.__init__(self, poly=var(self.ssid), entity=self.entity)
 
         ssid2obj[self.ssid] = self
 

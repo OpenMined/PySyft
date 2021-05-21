@@ -21,7 +21,14 @@ def make_entities(n: int = 100) -> TypeList[Entity]:
     return ents
 
 
-def private(input_data, min_val, max_val, entities=None, one_entity_per_row=True, is_discrete=False):
+def private(
+    input_data,
+    min_val,
+    max_val,
+    entities=None,
+    one_entity_per_row=True,
+    is_discrete=False,
+):
     self = input_data
 
     if one_entity_per_row and entities is None:
