@@ -6,7 +6,7 @@ from typing import Any as TypeAny
 import sympy as sym
 
 # syft relative
-from . import core  # 401
+from . import core  # noqa: 401
 from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules

@@ -1,13 +1,6 @@
-# third party
-import numpy as np
-
 # syft absolute
 import syft as sy
-from syft.lib.adp.adversarial_accountant import AdversarialAccountant
-from syft.lib.adp.entity import Entity
-from syft.lib.adp.publish import publish
 from syft.lib.adp.scalar import PhiScalar
-from syft.lib.adp.tensor import Tensor
 
 
 def test_autodp_phiscalar_publish_domain() -> None:

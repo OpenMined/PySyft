@@ -9,7 +9,6 @@ from google.protobuf.message import Message
 # syft relative
 from ....logger import traceback_and_raise
 from ....proto.util.data_message_pb2 import DataMessage
-from ....util import get_fully_qualified_name
 from ....util import index_syft_by_module_name
 
 

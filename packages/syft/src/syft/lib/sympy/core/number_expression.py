@@ -7,8 +7,6 @@ from sympy.core.numbers import Integer
 from sympy.core.numbers import Rational
 
 # syft relative
-from .... import deserialize
-from .... import serialize
 from ....generate_wrapper import GenerateWrapper
 from ....proto.lib.sympy.expression_pb2 import Expression as Expression_PB
 from ...util import full_name_with_name

@@ -15,8 +15,6 @@ import numpy as np
 from pymbolic import var
 from pymbolic.interop.sympy import PymbolicToSympyMapper
 from scipy import optimize
-import sympy as sym
-from sympy import symbols
 from sympy.core.basic import Basic as BasicSymbol
 
 # syft relative
@@ -97,7 +95,7 @@ class IntermediateScalar(Scalar):
         return self + other
 
     def __rsub__(self, other: Scalar) -> Scalar:
-        return self - other
+        return other - self  # subtraction is not commutative
 
     @property
     def input_scalars(self) -> TypeList[Union[PhiScalar, GammaScalar]]:

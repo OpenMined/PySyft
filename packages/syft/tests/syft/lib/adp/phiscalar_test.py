@@ -3,11 +3,8 @@ from pytest import approx
 
 # syft absolute
 import syft as sy
-from syft import deserialize
-from syft import serialize
 from syft.lib.adp.entity import Entity
 from syft.lib.adp.scalar import GammaScalar
-from syft.lib.adp.scalar import IntermediatePhiScalar
 from syft.lib.adp.scalar import PhiScalar
 
 

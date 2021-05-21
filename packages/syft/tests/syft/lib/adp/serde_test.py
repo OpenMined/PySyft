@@ -25,7 +25,7 @@ scalar_object_tests = [
 
 
 @pytest.mark.parametrize("scalar", scalar_object_tests)
-def test_serde_scalar(scalar):
+def test_serde_scalar(scalar: BaseScalar) -> None:
     protobuf_obj = serialize(scalar)
 
     deserialized = deserialize(protobuf_obj, from_proto=True)
@@ -40,7 +40,9 @@ def test_serde_scalar(scalar):
     ]:  # add poly support it
         if hasattr(scalar, field):
             assert getattr(scalar, field) == getattr(deserialized, field)
-            assert type(getattr(scalar, field)) == type(getattr(deserialized, field))
+            assert isinstance(
+                getattr(scalar, field), type(getattr(deserialized, field))
+            )
 
     if hasattr(scalar, "entity"):
         assert scalar.entity.unique_name == deserialized.entity.unique_name
