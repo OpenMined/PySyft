@@ -1,8 +1,10 @@
 # stdlib
 import dataclasses
+from typing import Optional
 from uuid import UUID
 
 # third party
+import sympc
 from sympc.config import Config
 from sympc.session import Session
 from sympc.store import CryptoStore
@@ -29,8 +31,10 @@ def protobuf_session_serializer(session: Session) -> MPCSession_PB:
     protocol = session.protocol.__name__
     protocol_serialized = str.encode(protocol)
 
+    uuid = str(session.uuid)
+
     return MPCSession_PB(
-        uuid=session.uuid.bytes,
+        uuid=uuid,
         config=conf_proto,
         ring_size=rs_bytes,
         nr_parties=nr_parties_bytes,
@@ -40,7 +44,15 @@ def protobuf_session_serializer(session: Session) -> MPCSession_PB:
 
 
 def protobuf_session_deserializer(proto: MPCSession_PB) -> Session:
-    id_session = UUID(bytes=proto.uuid)
+
+    id_session: Optional[str] = None
+
+    if proto.uuid:
+        id_session = proto.uuid
+        saved_session = sympc.session.get_session(id_session)
+        if saved_session and id_session == str(saved_session.uuid):
+            return saved_session
+
     rank = proto.rank
     conf_dict = Dict._proto2object(proto=proto.config)
     _conf_dict = {key: value for key, value in conf_dict.items()}
@@ -51,16 +63,18 @@ def protobuf_session_deserializer(proto: MPCSession_PB) -> Session:
 
     session = Session(
         config=conf,
-        uuid=id_session,
         ring_size=ring_size,
         protocol=protocol_deserialized,
     )
+
     session.rank = rank
     session.crypto_store = CryptoStore()
     session.nr_parties = nr_parties
 
-    if "session" in globals():
-        warning("Overwritting session for MPC")
-        globals()["session"] = session
+    if id_session is not None:
+        session.uuid = UUID(id_session)
+        if saved_session and id_session != str(saved_session.uuid):
+            warning("Changing already set session")
+        sympc.session.set_session(session)
 
     return session
