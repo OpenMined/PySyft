@@ -1,3 +1,5 @@
+"""This module contains `Modlue` attribute representing a module which contains other models or callables."""
+
 # stdlib
 import inspect
 import sys
@@ -15,6 +17,7 @@ from ..logger import traceback_and_raise
 
 
 def is_static_method(host_object, attr):  # type: ignore
+    """Check if attribute `attr` of an object is a static method."""
     value = getattr(host_object, attr)
 
     # Host object must contain the method resolution order attribute (mro)
@@ -41,7 +44,7 @@ class Module(ast.attribute.Attribute):
         object_ref: Optional[Union[CallableT, ModuleType]] = None,
         return_type_name: Optional[str] = None,
     ):
-        """Base constructor.
+        """Base constructor for Module Attribute.
 
         Args:
             client: The client for which all computation is being executed.
@@ -69,8 +72,7 @@ class Module(ast.attribute.Attribute):
         attr: Optional[Union[Callable, CallableT]],
         is_static: bool = False,
     ) -> None:
-        """
-        Add an attribute to the current module.
+        """Add an attribute to the current module.
 
         Args:
             attr_name: The name of the attribute, e.g. `List` of the path `syft.lib.python.List`.
@@ -124,6 +126,7 @@ class Module(ast.attribute.Attribute):
         return resolved
 
     def __repr__(self) -> str:
+        """String representation of the object."""
         out = "Module:\n"
         for name, module in self.attrs.items():
             out += "\t." + name + " -> " + str(module).replace("\t.", "\t\t.") + "\n"
@@ -138,6 +141,15 @@ class Module(ast.attribute.Attribute):
         framework_reference: Optional[ModuleType] = None,
         is_static: bool = False,
     ) -> None:
+        """The add_path method adds new nodes in AST based on type of current node and type of object to be added.
+
+        Args:
+            path: The node path added in AST, e.g. `syft.lib.python.List` or ["syft", "lib", "python", "List].
+            index: The associated position in the path for the current node.
+            framework_reference: The Python framework in which we can resolve same path to obtain Python object.
+            return_type_name: The return type name of the given action as a string with its full path.
+            is_static: If the queried object is static, it has to be found on AST itself, not on an existing pointer.
+        """
         if index >= len(path):
             return
 
@@ -211,12 +223,14 @@ class Module(ast.attribute.Attribute):
         attr.add_path(path=path, index=index + 1, return_type_name=return_type_name)
 
     def __getattribute__(self, item: str) -> Any:
+        """Get Attribute of a `module`."""
         target_object = super().__getattribute__(item)
         if isinstance(target_object, ast.static_attr.StaticAttribute):
             return target_object.get_remote_value()
         return target_object
 
     def __setattr__(self, key: str, value: Any) -> None:
+        """Set atttribute of a module."""
         if hasattr(super(), "attrs"):
             attrs = super().__getattribute__("attrs")
             if key in attrs:
@@ -227,6 +241,7 @@ class Module(ast.attribute.Attribute):
         return super().__setattr__(key, value)
 
     def fetch_live_object(self) -> object:
+        """Get the new object and its attributes from the client."""
         try:
             return sys.modules[self.path_and_name if self.path_and_name else ""]
         except Exception:

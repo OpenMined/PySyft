@@ -1,4 +1,4 @@
-"""This module contains `Property` attribute representing property objects which 
+"""This module contains `Property` attribute representing property objects which
 implements getter and setter objects."""
 
 # stdlib

@@ -292,6 +292,8 @@ def attach_description(obj: object, description: str) -> None:
 
 
 class Class(Callable):
+    """A Class attribute represents a python class"""
+
     def __init__(
         self,
         path_and_name: str,
@@ -299,7 +301,16 @@ class Class(Callable):
         object_ref: Union[Callable, CallableT],
         return_type_name: Optional[str],
         client: Optional[Any],
-    ):
+    ) -> None:
+        """Base constructor for Class Attribute.
+
+        Args:
+            path_and_name: The path for the current node, e.g. `syft.lib.python.List`.
+            parent: The parent node is needed when solving `EnumAttributes`.
+            object_ref: The actual python object for which the computation is being made.
+            return_type_name: The return type name of given action as a string with its full path.
+            client: The client for which all computation is being executed.
+        """
         super().__init__(
             path_and_name=path_and_name,
             object_ref=object_ref,
@@ -312,6 +323,7 @@ class Class(Callable):
 
     @property
     def pointer_type(self) -> Union[Callable, CallableT]:
+        """Get pointer type of Class Attribute"""
         return getattr(self, self.pointer_name)
 
     def create_pointer_class(self) -> None:
@@ -461,7 +473,15 @@ class Class(Callable):
         framework_reference: Optional[ModuleType] = None,
         is_static: bool = False,
     ) -> None:
+        """The add_path method adds new nodes in AST based on type of current node and type of object to be added.
 
+        Args:
+            path: The node path added in AST, e.g. `syft.lib.python.List` or ["syft", "lib", "python", "List].
+            index: The associated position in the path for the current node.
+            framework_reference: The Python framework in which we can resolve same path to obtain Python object.
+            return_type_name: The return type name of the given action as a string with its full path.
+            is_static: If the queried object is static, it has to be found on AST itself, not on an existing pointer.
+        """
         if index >= len(path) or path[index] in self.attrs:
             return
 
