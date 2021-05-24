@@ -5,8 +5,8 @@ package syft.lib.torch;
 import "proto/lib/torch/tensor.proto";
 
 message ParameterProto {
-  syft.lib.torch.TensorData tensor = 1;
+  bytes tensor = 1;
   bool requires_grad = 2;
-  syft.lib.torch.TensorData grad = 3;
-  syft.lib.torch.TensorData grad_sample = 4; // opacus
+  optional bytes grad = 3;
+  optional bytes grad_sample = 4; // opacus
 }

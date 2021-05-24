@@ -12,8 +12,8 @@ import torch
 from ...generate_wrapper import GenerateWrapper
 from ...lib.util import full_name_with_name
 from ...proto.lib.torch.returntypes_pb2 import ReturnTypes as ReturnTypes_PB
-from ..torch.tensor_util import protobuf_tensor_deserializer
-from ..torch.tensor_util import protobuf_tensor_serializer
+from ..torch.tensor_util import tensor_deserializer
+from ..torch.tensor_util import tensor_serializer
 
 # TODO: a better way. Loot at https://github.com/OpenMined/PySyft/issues/5249
 module_type = type(torch)
@@ -105,12 +105,12 @@ def wrap_type(typ: type, fields: List[str]) -> None:
         proto.obj_type = obj_type
 
         values = [getattr(obj, field, None) for field in fields]
-        proto.values.extend(list(map(lambda x: protobuf_tensor_serializer(x), values)))
+        proto.values.extend(list(map(lambda x: tensor_serializer(x), values)))
 
         return proto
 
     def proto2object(proto: ReturnTypes_PB) -> "typ":  # type: ignore
-        values = [protobuf_tensor_deserializer(x) for x in proto.values]
+        values = [tensor_deserializer(x) for x in proto.values]
         return typ(values)
 
     GenerateWrapper(

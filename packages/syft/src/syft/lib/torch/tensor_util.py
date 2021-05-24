@@ -1,7 +1,10 @@
 # third party
+import pyarrow as pa
 import torch as th
 
 # syft relative
+from ...experimental_flags import flags
+from ...proto.lib.torch.tensor_pb2 import ProtobufContent
 from ...proto.lib.torch.tensor_pb2 import TensorData
 
 # Torch dtypes to string (and back) mappers
@@ -26,9 +29,35 @@ TORCH_DTYPE_STR = {
 TORCH_STR_DTYPE = {name: cls for cls, name in TORCH_DTYPE_STR.items()}
 
 
-def protobuf_tensor_serializer(tensor: th.Tensor) -> TensorData:
-    """Strategy to serialize a tensor using Protobuf"""
+def protobuf_data_encoding(tensor: th.Tensor) -> bytes:
+    protobuf_tensor_data = ProtobufContent()
+
+    if tensor.is_quantized:
+        data = th.flatten(tensor).int_repr().tolist()
+    else:
+        data = th.flatten(tensor).int_repr().tolist()
     dtype = TORCH_DTYPE_STR[tensor.dtype]
+
+    protobuf_tensor_data.dtype = dtype
+    protobuf_tensor_data.shape.extend(tensor.size())
+    getattr(protobuf_tensor_data, "contents_" + dtype).extend(data)
+    return protobuf_tensor_data.SerializeToString()
+
+
+def arrow_data_encoding(tensor: th.Tensor) -> bytes:
+    if tensor.is_quantized:
+        numpy_tensor = tensor.detach().int_repr().numpy()
+    else:
+        numpy_tensor = tensor.detach().numpy()
+
+    apache_arrow = pa.Tensor.from_numpy(obj=numpy_tensor)
+    sink = pa.BufferOutputStream()
+    pa.ipc.write_tensor(apache_arrow, sink)
+    return sink.getvalue().to_pybytes()
+
+
+def tensor_serializer(tensor: th.Tensor) -> TensorData:
+    """Strategy to serialize a tensor using Protobuf"""
 
     protobuf_tensor = TensorData()
 
@@ -36,30 +65,52 @@ def protobuf_tensor_serializer(tensor: th.Tensor) -> TensorData:
         protobuf_tensor.is_quantized = True
         protobuf_tensor.scale = tensor.q_scale()
         protobuf_tensor.zero_point = tensor.q_zero_point()
-        data = th.flatten(tensor).int_repr().tolist()
+
+    if flags.APACHE_ARROW_TENSOR_SERDE:
+        protobuf_tensor.arrow_data = arrow_data_encoding(tensor)
     else:
-        data = th.flatten(tensor).tolist()
+        protobuf_tensor.proto_data = protobuf_data_encoding(tensor)
 
-    protobuf_tensor.dtype = dtype
-    protobuf_tensor.shape.extend(tensor.size())
-    getattr(protobuf_tensor, "contents_" + dtype).extend(data)
-
-    return protobuf_tensor
+    return protobuf_tensor.SerializeToString()
 
 
-def protobuf_tensor_deserializer(protobuf_tensor: TensorData) -> th.Tensor:
-    """Strategy to deserialize a binary input using Protobuf"""
-    size = tuple(protobuf_tensor.shape)
-    data = getattr(protobuf_tensor, "contents_" + protobuf_tensor.dtype)
+def protobuf_data_decoding(protobuf_tensor: TensorData) -> th.Tensor:
+    size = tuple(protobuf_tensor.proto_data.shape)
+    data = getattr(protobuf_tensor.proto_data, "contents_" + protobuf_tensor.dtype)
 
     if protobuf_tensor.is_quantized:
         # Drop the 'q' from the beginning of the quantized dtype to get the int type
-        dtype = TORCH_STR_DTYPE[protobuf_tensor.dtype[1:]]
+        dtype = TORCH_STR_DTYPE[protobuf_tensor.proto_data.dtype[1:]]
         int_tensor = th.tensor(data, dtype=dtype).reshape(size)
         # Automatically converts int types to quantized types
         return th._make_per_tensor_quantized_tensor(
             int_tensor, protobuf_tensor.scale, protobuf_tensor.zero_point
         )
     else:
-        dtype = TORCH_STR_DTYPE[protobuf_tensor.dtype]
+        dtype = TORCH_STR_DTYPE[protobuf_tensor.proto_data.dtype]
         return th.tensor(data, dtype=dtype).reshape(size)
+
+
+def arrow_data_decoding(tensor_data: TensorData) -> th.Tensor:
+    reader = pa.BufferReader(tensor_data.arrow_data)
+    buf = reader.read_buffer()
+    result = pa.ipc.read_tensor(buf)
+    np_array = result.to_numpy()
+    np_array.setflags(write=True)
+    data = th.from_numpy(np_array)
+
+    if tensor_data.is_quantized:
+        return th._make_per_tensor_quantized_tensor(
+            data, tensor_data.scale, tensor_data.zero_point
+        )
+    else:
+        return data
+
+
+def tensor_deserializer(buf: bytes) -> th.Tensor:
+    protobuf_tensor = TensorData()
+    protobuf_tensor.ParseFromString(buf)
+    if protobuf_tensor.HasField("arrow_data"):
+        return arrow_data_decoding(protobuf_tensor)
+    elif protobuf_tensor.HasField("proto_data"):
+        return protobuf_data_decoding(protobuf_tensor)
