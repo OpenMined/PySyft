@@ -9,6 +9,7 @@ from syft.experimental_flags import flags
 
 
 @pytest.mark.vendor(lib="sklearn")
+@pytest.mark.vendor(lib="numpy")
 @pytest.mark.parametrize("arrow_backend", [False, True])
 def test_logistic_model_serde(
     arrow_backend: bool, root_client: sy.VirtualMachineClient
