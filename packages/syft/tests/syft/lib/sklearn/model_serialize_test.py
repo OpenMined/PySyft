@@ -7,33 +7,31 @@ from sklearn.linear_model import LogisticRegression
 import syft as sy
 from syft.experimental_flags import flags
 
+sy.load("sklearn")
+sy.load("numpy")
+
 
 @pytest.mark.vendor(lib="sklearn")
 @pytest.mark.vendor(lib="numpy")
-@pytest.mark.parametrize("arrow_backend", [False, True])
-def test_logistic_model_serde(
-    arrow_backend: bool, root_client: sy.VirtualMachineClient
-) -> None:
-    flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
-    sy.load("numpy")
-    sy.load("sklearn")
+def test_logistic_model_serde(root_client: sy.VirtualMachineClient) -> None:
+    for apache_arrow_backend in [True, False]:
+        flags.APACHE_ARROW_TENSOR_SERDE = apache_arrow_backend
+        X = np.array([[-1, -1], [-2, -1], [1, 1], [2, 1]])
+        y = np.array([0, 0, 1, 1])
 
-    X = np.array([[-1, -1], [-2, -1], [1, 1], [2, 1]])
-    y = np.array([0, 0, 1, 1])
+        clf = LogisticRegression(random_state=0).fit(X, y)
 
-    clf = LogisticRegression(random_state=0).fit(X, y)
+        clf_remote = clf.send(root_client)
 
-    clf_remote = clf.send(root_client)
+        clf_2 = clf_remote.get()
 
-    clf_2 = clf_remote.get()
+        dict_1 = vars(clf)
+        dict_2 = vars(clf_2)
 
-    dict_1 = vars(clf)
-    dict_2 = vars(clf_2)
-
-    for key in dict_1.keys():
-        if type(dict_1[key]) == float:
-            assert abs(dict_1[key] - dict_2[key]) < 0.0001
-        elif type(dict_1[key]) == np.ndarray:
-            assert dict_1[key].all() == dict_2[key].all()
-        else:
-            assert dict_1[key] == dict_2[key]
+        for key in dict_1.keys():
+            if type(dict_1[key]) == float:
+                assert abs(dict_1[key] - dict_2[key]) < 0.0001
+            elif type(dict_1[key]) == np.ndarray:
+                assert dict_1[key].all() == dict_2[key].all()
+            else:
+                assert dict_1[key] == dict_2[key]
