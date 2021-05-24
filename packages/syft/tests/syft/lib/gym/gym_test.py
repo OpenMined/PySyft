@@ -3,10 +3,14 @@ import pytest
 
 # syft absolute
 import syft as sy
+from syft.experimental_flags import flags
 
 
 @pytest.mark.vendor(lib="gym")
-def test_remote_gym(root_client: sy.VirtualMachineClient) -> None:
+@pytest.mark.vendor(lib="numpy")
+@pytest.mark.parametrize("arrow_backend", [True, False])
+def test_remote_gym(arrow_backend: bool, root_client: sy.VirtualMachineClient) -> None:
+    flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
     sy.load("gym")
     sy.load("numpy")
 
