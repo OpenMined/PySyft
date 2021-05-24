@@ -1,30 +1,23 @@
-.mypy_cache
-.DS_Store
-build/
-_build/
-dist/
+# dot files / folders
 .cache/
 .coverage
+.DS_Store
 .eggs/
 .idea/
+.mypy_cache
 .python-version
+.vscode/
+
+# python stuff
 *__pycache__*
 *.pyc
-syft.egg-info/
 *.swp
 *.swo
 *.ipynb_checkpoints*
-venv/
 **.pytest_cache/
-docs/_modules
-.coverage
-.vscode/
 **/pip-wheel-metadata
-allowlist_test_errors_*.jsonl
-allowlist_report_*.html
-allowlist_test_support*.jsonl
-examples/duet/data/*
-examples/duet/mnist/data/*
+
+# logs and database files
 **/*.log
 **/*.sqlite
 **/*.sqlite-journal

@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package syft.lib.python;
+import "proto/core/common/common_object.proto";
+
+message Tuple {
+  repeated bytes data = 1;
+  syft.core.common.UID id = 2;
+}

@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package syft.core.pointer;
+
+import "proto/core/common/common_object.proto";
+import "proto/core/io/address.proto";
+
+message Pointer {
+  string points_to_object_with_path = 1;
+  string pointer_name = 2;
+  syft.core.common.UID id_at_location = 3;
+  syft.core.io.Address location = 4;
+  repeated string tags = 5;
+  string description = 6;
+  string object_type = 7;
+  string attribute_name = 8;
+}

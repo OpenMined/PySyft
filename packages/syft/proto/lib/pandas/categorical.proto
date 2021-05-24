@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package syft.lib.pandas;
+
+import "proto/core/common/common_object.proto";
+import "proto/lib/python/list.proto";
+
+message PandasCategoricalDtype{
+  syft.core.common.UID id = 1;
+  syft.lib.python.List categories = 2;
+  bool ordered = 3;
+}
+message PandasCategorical {
+  syft.core.common.UID id = 1;
+  syft.lib.python.List codes = 2;
+  syft.lib.python.List categories = 3;
+  bool ordered = 4;
+}

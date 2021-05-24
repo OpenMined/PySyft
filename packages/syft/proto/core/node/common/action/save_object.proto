@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package syft.core.node.common.action;
+
+import "proto/core/store/store_object.proto";
+import "proto/core/io/address.proto";
+
+message SaveObjectAction {
+  syft.core.store.StorableObject obj = 1;
+  syft.core.io.Address address = 2;
+}
