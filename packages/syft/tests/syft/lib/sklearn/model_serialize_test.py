@@ -1,19 +1,20 @@
 # third party
-import numpy as np
 import pytest
-from sklearn.linear_model import LogisticRegression
 
 # syft absolute
 import syft as sy
 from syft.experimental_flags import flags
 
-sy.load("sklearn")
-sy.load("numpy")
-
 
 @pytest.mark.vendor(lib="sklearn")
-@pytest.mark.vendor(lib="numpy")
 def test_logistic_model_serde(root_client: sy.VirtualMachineClient) -> None:
+    # third party
+    import numpy as np
+    from sklearn.linear_model import LogisticRegression
+
+    sy.load("sklearn")
+    sy.load("numpy")
+
     for apache_arrow_backend in [True, False]:
         flags.APACHE_ARROW_TENSOR_SERDE = apache_arrow_backend
         X = np.array([[-1, -1], [-2, -1], [1, 1], [2, 1]])
