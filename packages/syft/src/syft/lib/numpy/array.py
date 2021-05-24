@@ -1,6 +1,3 @@
-# stdlib
-import sys
-
 # third party
 import numpy as np
 import pyarrow as pa
@@ -84,21 +81,26 @@ def protobuf_proto2object(proto: NumpyProto) -> np.ndarray:
     return obj
 
 
-if flags.APACHE_ARROW_TENSOR_SERDE:
-    GenerateWrapper(
-        wrapped_type=np.ndarray,
-        import_path="numpy.ndarray",
-        protobuf_scheme=NumpyProtoArrow,
-        type_object2proto=arrow_object2proto,
-        type_proto2object=arrow_proto2object,
-    )
-else:
-    GenerateWrapper(
-        wrapped_type=np.ndarray,
-        import_path="numpy.ndarray",
-        protobuf_scheme=NumpyProto,
-        type_object2proto=protobuf_object2proto,
-        type_proto2object=protobuf_proto2object,
-    )
+def _generate_serde() -> None:
+    if flags.APACHE_ARROW_TENSOR_SERDE:
+        NumpyProtoArrow.schema2type = None
+        GenerateWrapper(
+            wrapped_type=np.ndarray,
+            import_path="numpy.ndarray",
+            protobuf_scheme=NumpyProtoArrow,
+            type_object2proto=arrow_object2proto,
+            type_proto2object=arrow_proto2object,
+        )
+    else:
+        NumpyProto.schema2type = None
+        GenerateWrapper(
+            wrapped_type=np.ndarray,
+            import_path="numpy.ndarray",
+            protobuf_scheme=NumpyProto,
+            type_object2proto=protobuf_object2proto,
+            type_proto2object=protobuf_proto2object,
+        )
 
-flags.apache_arrow_modules.add(sys.modules[__name__])
+
+_generate_serde()
+flags._regenerate_numpy_serde = _generate_serde

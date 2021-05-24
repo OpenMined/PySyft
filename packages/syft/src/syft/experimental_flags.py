@@ -1,13 +1,12 @@
 # stdlib
-import importlib
-from types import ModuleType
-from typing import Set
+from typing import Callable
+from typing import Optional
 
 
 class ExperimentalFlags:
     def __init__(self) -> None:
         self._APACHE_ARROW_TENSOR_SERDE = True
-        self.apache_arrow_modules: Set[ModuleType] = set()
+        self._regenerate_numpy_serde: Optional[Callable] = None
 
     @property
     def APACHE_ARROW_TENSOR_SERDE(self) -> bool:
@@ -23,8 +22,8 @@ class ExperimentalFlags:
             return
 
         self._APACHE_ARROW_TENSOR_SERDE = value
-        for module in self.apache_arrow_modules:
-            importlib.reload(module)
+        if self._regenerate_numpy_serde:
+            self._regenerate_numpy_serde()
 
 
 flags = ExperimentalFlags()
