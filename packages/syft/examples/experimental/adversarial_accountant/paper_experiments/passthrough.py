@@ -32,6 +32,9 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     def __neg__(self):
         return self * -1
     
+    def copy(self):
+        return self.__class__(self.child.copy())
+    
     def __mul__(self, other):
         
         if is_acceptable_simple_type(other):

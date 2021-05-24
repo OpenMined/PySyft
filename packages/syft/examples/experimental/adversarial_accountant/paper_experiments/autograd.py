@@ -63,6 +63,10 @@ class AutogradTensor(PassthroughTensor):
         op = ReshapeOp()       
         return op(self, *shape)
     
+    def copy(self):
+        op = CopyOp()
+        return op(self)
+    
     def sum(self, *args, **kwargs):
         op = SumOp()
         return op(self, *args, **kwargs)
@@ -110,9 +114,16 @@ class AutogradTensor(PassthroughTensor):
             raise Exception('This tensor is not backpropagated')
         
         print(self.n_backwards[backprop_id],len(self.ops))
+        
+        # if all gradients are accounted for - backprop
         if self.n_backwards[backprop_id] >= len(self.ops):
+            
             self.grad_fn.backward(grad, backprop_id=backprop_id)
+        
+        # if some gradietns appear to be missing - parse forward in
+        # the graph to double check
         else:
+            
             # investigate whether any of the missing ops are actually
             # going to get used.
             found_id = False
@@ -397,7 +408,26 @@ class ReshapeOp(Op):
             self.x.add_grad(AutogradTensor(grad.child.reshape(self.backward_shape)))
                 
             if self.x.grad_fn:
-                self.x.backward(backprop_id=backprop_id)             
+                self.x.backward(backprop_id=backprop_id) 
+                
+                
+class CopyOp(Op):
+
+    '''Copy a tensor'''
+
+    def forward(self, x: AutogradTensor):
+        self.x = x
+
+        return AutogradTensor(x.child.copy(), requires_grad=x.requires_grad)
+
+    def _backward(self, grad, backprop_id):
+        
+        if self.x.requires_grad:
+            
+            self.x.add_grad(AutogradTensor(grad.child.copy()))
+                
+            if self.x.grad_fn:
+                self.x.backward(backprop_id=backprop_id) 
                                 
                 
 class RepeatOp(Op):
