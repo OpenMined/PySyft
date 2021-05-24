@@ -26,7 +26,7 @@ def create_tensor(current_user):
         content = {}
 
     status_code, response_msg = error_handler(
-        route_logic, CreateTensorMessage, current_user, content
+        route_logic, 201, CreateTensorMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -49,7 +49,7 @@ def get_tensor(current_user, tensor_id):
     content["tensor_id"] = tensor_id
 
     status_code, response_msg = error_handler(
-        route_logic, GetTensorMessage, current_user, content
+        route_logic, 200, GetTensorMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -69,7 +69,7 @@ def get_all_tensors():
         content = {}
 
     status_code, response_msg = error_handler(
-        route_logic, GetTensorsMessage, None, content
+        route_logic, 200, GetTensorsMessage, None, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -92,7 +92,7 @@ def update_tensor(current_user, tensor_id):
     content["tensor_id"] = tensor_id
 
     status_code, response_msg = error_handler(
-        route_logic, UpdateTensorMessage, current_user, content
+        route_logic, 204, UpdateTensorMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -115,7 +115,7 @@ def delete_tensor(current_user, tensor_id):
     content["tensor_id"] = tensor_id
 
     status_code, response_msg = error_handler(
-        route_logic, DeleteTensorMessage, current_user, content
+        route_logic, 204, DeleteTensorMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content

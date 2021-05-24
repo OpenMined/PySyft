@@ -26,7 +26,7 @@ def create_role_route(current_user):
         content = {}
 
     status_code, response_msg = error_handler(
-        route_logic, CreateRoleMessage, current_user, content
+        route_logic, 204, CreateRoleMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -48,7 +48,7 @@ def get_role_route(current_user, role_id):
     content["role_id"] = role_id
 
     status_code, response_msg = error_handler(
-        route_logic, GetRoleMessage, current_user, content
+        route_logic, 200, GetRoleMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -69,7 +69,7 @@ def get_all_roles_route(current_user):
         content = {}
 
     status_code, response_msg = error_handler(
-        route_logic, GetRolesMessage, current_user, content
+        route_logic, 200, GetRolesMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -91,7 +91,7 @@ def put_role_route(current_user, role_id):
     content["role_id"] = role_id
 
     status_code, response_msg = error_handler(
-        route_logic, UpdateRoleMessage, current_user, content
+        route_logic, 204, UpdateRoleMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -113,7 +113,7 @@ def delete_role_route(current_user, role_id):
     content["role_id"] = role_id
 
     status_code, response_msg = error_handler(
-        route_logic, DeleteRoleMessage, current_user, content
+        route_logic, 204, DeleteRoleMessage, current_user, content
     )
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
 

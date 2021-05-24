@@ -27,7 +27,7 @@ def create_group_route(current_user):
     content["current_user"] = current_user
 
     status_code, response_msg = error_handler(
-        route_logic, CreateGroupMessage, current_user, content
+        route_logic, 200, CreateGroupMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -49,7 +49,7 @@ def get_all_groups_routes(current_user):
     content["current_user"] = current_user
 
     status_code, response_msg = error_handler(
-        route_logic, GetGroupsMessage, current_user, content
+        route_logic, 200, GetGroupsMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -72,7 +72,7 @@ def get_specific_group_route(current_user, group_id):
     content["group_id"] = group_id
 
     status_code, response_msg = error_handler(
-        route_logic, GetGroupMessage, current_user, content
+        route_logic, 200, GetGroupMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -95,7 +95,7 @@ def update_group_route(current_user, group_id):
     content["group_id"] = group_id
 
     status_code, response_msg = error_handler(
-        route_logic, UpdateGroupMessage, current_user, content
+        route_logic, 204, UpdateGroupMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -118,7 +118,7 @@ def delete_group_route(current_user, group_id):
     content["group_id"] = group_id
 
     status_code, response_msg = error_handler(
-        route_logic, DeleteGroupMessage, current_user, content
+        route_logic, 204, DeleteGroupMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content

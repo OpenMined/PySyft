@@ -17,7 +17,6 @@ from syft.core.common.serde.serialize import _serialize
 # grid relative
 from ...core.exceptions import AuthorizationError
 from ...core.exceptions import UserNotFoundError
-from ..auth import error_handler
 from ..auth import token_required
 from .blueprint import root_blueprint as root_route
 

@@ -85,7 +85,7 @@ def get_dataset_info(current_user, dataset_id):
     content["current_user"] = current_user
     content["dataset_id"] = dataset_id
     status_code, response_msg = error_handler(
-        route_logic, GetDatasetMessage, current_user, content
+        route_logic, 200, GetDatasetMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -103,7 +103,7 @@ def get_all_datasets_info(current_user):
     content = {}
     content["current_user"] = current_user
     status_code, response_msg = error_handler(
-        route_logic, GetDatasetsMessage, current_user, content
+        route_logic, 200, GetDatasetsMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -123,7 +123,7 @@ def update_dataset(current_user, dataset_id):
     content["current_user"] = current_user
     content["dataset_id"] = dataset_id
     status_code, response_msg = error_handler(
-        route_logic, UpdateDatasetMessage, current_user, content
+        route_logic, 204, UpdateDatasetMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -144,12 +144,10 @@ def delete_dataset(current_user, dataset_id):
     content["dataset_id"] = dataset_id
 
     status_code, response_msg = error_handler(
-        route_logic, DeleteDatasetMessage, current_user, content
+        route_logic, 204, DeleteDatasetMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
-    if status_code == 200:
-        status_code = 204
 
     return Response(
         dumps(response),

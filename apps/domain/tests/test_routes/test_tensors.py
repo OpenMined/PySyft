@@ -136,7 +136,8 @@ def test_create_tensor(client, database, cleanup):
         },
         headers=headers,
     )
-    assert result.status_code == 200
+
+    assert result.status_code == 201
     assert result.get_json()["msg"] == "Tensor created succesfully!"
 
 
@@ -227,8 +228,7 @@ def test_update_tensor(client, database, cleanup):
         },
         headers=headers,
     )
-    assert result.status_code == 200
-    assert result.get_json()["msg"] == "Tensor modified succesfully!"
+    assert result.status_code == 204
 
     # Assert updated tensor metadata
     result = client.get("/data-centric/tensors/" + tensor_id, headers=headers)
@@ -270,5 +270,4 @@ def test_delete_tensor(client, database, cleanup):
 
     result = client.delete("/data-centric/tensors/" + tensor_id, headers=headers)
 
-    assert result.status_code == 200
-    assert result.get_json() == {"msg": "Tensor deleted successfully!"}
+    assert result.status_code == 204

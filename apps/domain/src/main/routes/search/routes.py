@@ -23,7 +23,7 @@ def broadcast_search(current_user):
         content = {}
 
     status_code, response_msg = error_handler(
-        route_logic, NetworkSearchMessage, current_user, content
+        route_logic, 200, NetworkSearchMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content

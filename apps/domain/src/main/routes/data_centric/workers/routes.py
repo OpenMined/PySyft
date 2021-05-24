@@ -28,7 +28,7 @@ def get_worker_instance_types(current_user):
         content = {}
 
     status_code, response_msg = error_handler(
-        route_logic, GetWorkerInstanceTypesMessage, current_user, content
+        route_logic, 200, GetWorkerInstanceTypesMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -47,7 +47,7 @@ def create_worker(current_user):
         content = {}
 
     status_code, response_msg = error_handler(
-        route_logic, CreateWorkerMessage, current_user, content
+        route_logic, 200, CreateWorkerMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -77,7 +77,7 @@ def get_all_workers(current_user):
         }
 
     status_code, response_msg = error_handler(
-        route_logic, GetWorkersMessage, current_user, content
+        route_logic, 200, GetWorkersMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -96,7 +96,7 @@ def get_worker(current_user, worker_id):
     content["worker_id"] = worker_id
 
     status_code, response_msg = error_handler(
-        route_logic, GetWorkerMessage, current_user, content
+        route_logic, 200, GetWorkerMessage, current_user, content
     )
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
     return Response(
@@ -114,7 +114,7 @@ def delete_worker(current_user, worker_id):
     content["worker_id"] = worker_id
 
     status_code, response_msg = error_handler(
-        route_logic, DeleteWorkerMessage, current_user, content
+        route_logic, 204, DeleteWorkerMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content

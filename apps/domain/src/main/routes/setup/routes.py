@@ -24,7 +24,7 @@ def initial_setup(current_user):
         content = {}
 
     status_code, response_msg = error_handler(
-        route_logic, CreateInitialSetUpMessage, current_user, content
+        route_logic, 200, CreateInitialSetUpMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -45,7 +45,7 @@ def get_setup(current_user):
         content = {}
 
     status_code, response_msg = error_handler(
-        route_logic, GetSetUpMessage, current_user, content
+        route_logic, 200, GetSetUpMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content

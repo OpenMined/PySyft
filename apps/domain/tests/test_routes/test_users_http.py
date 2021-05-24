@@ -62,7 +62,7 @@ def cleanup(database):
 # POST USER
 
 
-def test_post_role_user_data_no_key(client):
+def test_post_user_bad_data_no_key(client):
     result = client.post("/users", data="{bad", content_type="application/json")
     assert result.status_code == 400
 
@@ -92,8 +92,7 @@ def test_post_std_user_success(client, database, cleanup):
     payload = {"email": "someemail@email.com", "password": "123secretpassword"}
     result = client.post("/users", data=dumps(payload), content_type="application/json")
 
-    assert result.status_code == 200
-    assert result.get_json() == {"message": "User created successfully!"}
+    assert result.status_code == 204
 
 
 def test_post_std_user_missing_role(client, database, cleanup):
@@ -120,6 +119,7 @@ def test_post_std_user_missing_role(client, database, cleanup):
         "/users", data=dumps(payload), headers=headers, content_type="application/json"
     )
 
+    assert result.status_code == 404
     assert result.get_json() == {"error": "Role ID not found!"}
 
 
@@ -146,8 +146,7 @@ def test_post_user_with_role(client, database, cleanup):
         "/users", data=dumps(payload), headers=headers, content_type="application/json"
     )
 
-    assert result.status_code == 200
-    assert result.get_json() == {"message": "User created successfully!"}
+    assert result.status_code == 204
 
 
 def test_login_user_valid_credentials(client, database, cleanup):
@@ -462,8 +461,7 @@ def test_put_other_user_email_success(client, database, cleanup):
         content_type="application/json",
     )
 
-    assert result.status_code == 200
-    assert result.get_json() == {"message": "User updated successfully!"}
+    assert result.status_code == 204
 
 
 def test_put_other_user_email_missing_token(client, database, cleanup):
@@ -577,8 +575,7 @@ def test_put_own_user_email_success(client, database, cleanup):
         content_type="application/json",
     )
 
-    assert result.status_code == 200
-    assert result.get_json() == {"message": "User updated successfully!"}
+    assert result.status_code == 204
 
 
 def test_put_user_email_missing_role(client, database, cleanup):
@@ -605,8 +602,7 @@ def test_put_user_email_missing_role(client, database, cleanup):
         content_type="application/json",
     )
 
-    assert result.status_code == 200
-    assert result.get_json() == {"message": "User updated successfully!"}
+    assert result.status_code == 204
 
 
 def test_put_other_user_email_missing_user(client, database, cleanup):
@@ -664,8 +660,7 @@ def test_put_other_user_role_success(client, database, cleanup):
         content_type="application/json",
     )
 
-    assert result.status_code == 200
-    assert result.get_json() == {"message": "User updated successfully!"}
+    assert result.status_code == 204
 
 
 def test_put_other_user_role_missing_token(client, database, cleanup):
@@ -785,8 +780,7 @@ def test_put_own_user_role_sucess(client, database, cleanup):
         content_type="application/json",
     )
 
-    assert result.status_code == 200
-    assert result.get_json() == {"message": "User updated successfully!"}
+    assert result.status_code == 204
 
 
 def test_put_first_user_unauthorized(client, database, cleanup):
@@ -1005,8 +999,7 @@ def test_put_other_user_password_success(client, database, cleanup):
         content_type="application/json",
     )
 
-    assert result.status_code == 200
-    assert result.get_json() == {"message": "User updated successfully!"}
+    assert result.status_code == 204
     assert checkpw(
         new_password.encode("UTF-8"),
         user.salt.encode("UTF-8") + user.hashed_password.encode("UTF-8"),
@@ -1144,8 +1137,7 @@ def test_put_own_user_password_success(client, database, cleanup):
         content_type="application/json",
     )
 
-    assert result.status_code == 200
-    assert result.get_json() == {"message": "User updated successfully!"}
+    assert result.status_code == 204
     assert checkpw(
         new_password.encode("UTF-8"),
         user.salt.encode("UTF-8") + user.hashed_password.encode("UTF-8"),
@@ -1226,8 +1218,7 @@ def test_put_other_user_groups_success(client, database, cleanup):
     )
     user_groups = database.session.query(UserGroup).filter_by(user=2).all()
 
-    assert result.status_code == 200
-    assert result.get_json() == {"message": "User updated successfully!"}
+    assert result.status_code == 204
 
     assert len(user_groups) == 2
     assert user_groups[0].group == 2
@@ -1394,8 +1385,7 @@ def test_put_user_groups_success(client, database, cleanup):
     )
     user_groups = database.session.query(UserGroup).filter_by(user=3).all()
 
-    assert result.status_code == 200
-    assert result.get_json() == {"message": "User updated successfully!"}
+    assert result.status_code == 204
 
     assert len(user_groups) == 1
     assert user_groups[0].group == 1
@@ -1522,8 +1512,7 @@ def test_delete_other_user_success(client, database, cleanup):
     }
     result = client.delete("/users/2", headers=headers, content_type="application/json")
 
-    assert result.status_code == 200
-    assert result.get_json() == {"message": "User deleted successfully!"}
+    assert result.status_code == 204
     assert database.session.query(User).get(2) is None
 
 

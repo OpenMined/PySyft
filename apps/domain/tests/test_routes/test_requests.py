@@ -329,6 +329,4 @@ def test_delete_request(client, database, cleanup):
         content_type="application/json",
     )
 
-    response = result.get_json()
-    assert result.status_code == 200
-    assert response["msg"] == "Request deleted!"
+    assert result.status_code == 204

@@ -31,7 +31,7 @@ def create_request(current_user):
         content = {}
 
     status_code, response_msg = error_handler(
-        route_logic, CreateRequestMessage, current_user, content
+        route_logic, 200, CreateRequestMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -50,7 +50,7 @@ def get_specific_request(current_user, request_id):
     content["request_id"] = request_id
 
     status_code, response_msg = error_handler(
-        route_logic, GetRequestMessage, current_user, content
+        route_logic, 200, GetRequestMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -68,7 +68,7 @@ def get_all_requests(current_user):
     content = {}
 
     status_code, response_msg = error_handler(
-        route_logic, GetRequestsMessage, current_user, content
+        route_logic, 200, GetRequestsMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -91,7 +91,7 @@ def update_request(current_user, request_id):
     content["request_id"] = request_id
 
     status_code, response_msg = error_handler(
-        route_logic, UpdateRequestMessage, current_user, content
+        route_logic, 200, UpdateRequestMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -110,7 +110,7 @@ def delete_request(current_user, request_id):
     content["request_id"] = request_id
 
     status_code, response_msg = error_handler(
-        route_logic, DeleteRequestMessage, current_user, content
+        route_logic, 204, DeleteRequestMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content

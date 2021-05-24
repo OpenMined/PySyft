@@ -175,8 +175,7 @@ def test_post_role_success(client, database, cleanup):
     expected_role = payload.copy()
     expected_role["id"] = 3  # Two roles already inserted
 
-    assert result.status_code == 200
-    assert result.get_json() == {"msg": "Role created successfully!"}
+    assert result.status_code == 204
 
 
 # GET ALL ROLES
@@ -594,8 +593,7 @@ def test_put_role_success(client, database, cleanup):
         headers=headers,
     )
 
-    assert result.status_code == 200
-    assert result.get_json() == {"msg": "Role updated successfully!"}
+    assert result.status_code == 204
 
 
 # DELETE ROLE
@@ -714,5 +712,4 @@ def test_delete_role_success(client, database, cleanup):
     }
     result = client.delete("/roles/2", headers=headers)
 
-    assert result.status_code == 200
-    assert result.get_json() == {"msg": "Role has been deleted!"}
+    assert result.status_code == 204

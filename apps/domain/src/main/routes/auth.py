@@ -75,8 +75,8 @@ token_required = token_required_factory(get_token, format_result)
 optional_token = token_required_factory(get_token, format_result, optional=True)
 
 
-def error_handler(f, *args, **kwargs):
-    status_code = 200  # Success
+def error_handler(f, success_code, *args, **kwargs):
+    status_code = success_code  # Success
     response_body = {}
 
     try:
