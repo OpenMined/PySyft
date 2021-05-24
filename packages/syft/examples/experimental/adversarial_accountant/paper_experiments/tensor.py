@@ -44,3 +44,8 @@ def npmin(*args, **kwargs):
 @implements(Tensor, np.square)
 def square(x):
     return x*x
+
+@implements(Tensor, np.expand_dims)
+def expand_dims(*args, **kwargs):
+    args, kwargs = inputs2child(*args, **kwargs)
+    return np.expand_dims(*args, **kwargs)

@@ -8,7 +8,7 @@ def inputs2child(*args, **kwargs):
     return args,kwargs
 
 def is_acceptable_simple_type(obj):
-    return isinstance(obj, (int,bool,float))
+    return isinstance(obj, (int,bool,float, np.ndarray))
 
 class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     """A simple tensor class which passes method/function calls to self.child"""
@@ -28,6 +28,9 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     
     def __sub__(self, other):
         return self.__class__(self.child - other.child)    
+    
+    def __neg__(self):
+        return self * -1
     
     def __mul__(self, other):
         
@@ -54,11 +57,11 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         return result    
     
     def dot(self, other):
-        
-        if isinstance(other, self.__class__):
-            return self.__class__(self.child.dot(other.child))
+        return self.manual_dot(other)
+#         if isinstance(other, self.__class__):
+#             return self.__class__(self.child.dot(other.child))
 
-        return self.__class__(self.child.dot(other))
+#         return self.__class__(self.child.dot(other))
 
     def __ge__(self, other):
         return self.__class__(self.child >= other.child)    
@@ -69,14 +72,14 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     def reshape(self, *dims):
         return self.__class__(self.child.reshape(*dims))
     
-    def repeat(self, n):
-        return self.__class__(self.child.repeat(n))
+    def repeat(self, *args, **kwargs):
+        return self.__class__(self.child.repeat(*args, **kwargs))
     
     def sum(self, dim):
         return self.__class__(self.child.sum(dim))
     
     def transpose(self, *args, **kwargs):
-        return self.child.transpose(*args, **kwargs)
+        return self.__class__(self.child.transpose(*args, **kwargs))
         
     def __array_function__(self, func, types, args, kwargs):
 #         args, kwargs = inputs2child(*args, **kwargs)
@@ -137,3 +140,4 @@ def implements(tensor_type, np_function):
 @implements(PassthroughTensor, np.square)
 def square(x):
     return x*x
+

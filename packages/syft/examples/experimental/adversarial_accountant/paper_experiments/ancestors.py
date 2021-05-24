@@ -1,6 +1,7 @@
 from manager import TensorChainManager
 from autograd import AutogradTensor
-# from single_entity_phi import SingleEntityPhiTensor
+from passthrough import is_acceptable_simple_type
+import uuid
 
 _SingleEntityPhiTensorRef = None
 def _SingleEntityPhiTensor():
@@ -25,7 +26,11 @@ class AutogradTensorAncestor(TensorChainManager):
     def backward(self, grad=None):
         
         if isinstance(self.child, AutogradTensorAncestor) or isinstance(self.child, AutogradTensor):
-            return self.child.backward(grad.child if grad is not None else None)
+            
+            if grad is not None and not is_acceptable_simple_type(grad):
+                grad = grad.child
+            
+            return self.child.backward(grad,backprop_id=uuid.uuid4())
         else:
             raise Exception("No AutogradTensor found in chain, but backward() method called.")
     
