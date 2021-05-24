@@ -7,31 +7,32 @@ import pytest
 import syft as sy
 from syft.experimental_flags import flags
 
+sy.load("gym")
+sy.load("numpy")
+
 
 @pytest.mark.vendor(lib="gym")
-@pytest.mark.parametrize("arrow_backend", [True, False])
-def test_remote_gym(arrow_backend: bool, root_client: sy.VirtualMachineClient) -> None:
-    sy.load("gym")
-    sy.load("numpy")
-    flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
+def test_remote_gym(root_client: sy.VirtualMachineClient) -> None:
+    for arrow_backend in [True, False]:
+        flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
 
-    remote_gym = root_client.gym
+        remote_gym = root_client.gym
 
-    env = gym.make("CartPole-v0")
-    remote_env = remote_gym.make("CartPole-v0")
+        env = gym.make("CartPole-v0")
+        remote_env = remote_gym.make("CartPole-v0")
 
-    env.seed(42)
-    remote_env.seed(42)
-    assert remote_env.__name__ == "TimeLimitPointer"
+        env.seed(42)
+        remote_env.seed(42)
+        assert remote_env.__name__ == "TimeLimitPointer"
 
-    initial_state = env.reset()
-    remote_initial_state = remote_env.reset().get()
-    assert np.array_equal(initial_state, remote_initial_state)
+        initial_state = env.reset()
+        remote_initial_state = remote_env.reset().get()
+        assert np.array_equal(initial_state, remote_initial_state)
 
-    state, reward, done, info = env.step(0)
-    remote_state, remote_reward, remote_done, remote_info = remote_env.step(0).get()
+        state, reward, done, info = env.step(0)
+        remote_state, remote_reward, remote_done, remote_info = remote_env.step(0).get()
 
-    assert np.array_equal(state, remote_state)
-    assert reward == remote_reward
-    assert done == remote_done
-    assert info == remote_info
+        assert np.array_equal(state, remote_state)
+        assert reward == remote_reward
+        assert done == remote_done
+        assert info == remote_info
