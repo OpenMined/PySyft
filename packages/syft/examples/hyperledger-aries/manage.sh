@@ -46,7 +46,6 @@ usage() {
 
             Examples:
             $0 start
-            $0 start faber-agent
 
       logs - Display the logs from the docker compose run (ctrl-c to exit).
 

@@ -18,15 +18,6 @@ logger.setLevel(logging.INFO)
 # logger.setLevel(logging.INFO)
 
 
-WEBHOOK_HOST = os.getenv("WEBHOOK_HOST")
-WEBHOOK_PORT = os.getenv("WEBHOOK_PORT")
-WEBHOOK_BASE = os.getenv("WEBHOOK_BASE")
-ADMIN_URL = os.getenv("ADMIN_URL")
-API_KEY = os.getenv("API_KEY")
-
-
-# logger.info(f"Initialising Agent. Webhook URL {WEBHOOK_HOST}:{WEBHOOK_PORT}{WEBHOOK_BASE}. ADMIN_URL - {ADMIN_URL}")
-
 
 class OMAuthorityAgent:
     def __init__(
@@ -37,8 +28,6 @@ class OMAuthorityAgent:
     ) -> None:
 
         self.agent_controller = agent_controller
-
-        asyncio.get_event_loop().run_until_complete(agent_controller.listen_webhooks())
 
         self.agent_listeners = [
             {"topic": "connections", "handler": self._connections_handler},
