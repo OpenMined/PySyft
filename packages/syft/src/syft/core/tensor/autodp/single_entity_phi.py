@@ -177,11 +177,11 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor):
                                      min_vals=min_vals,
                                      max_vals=max_vals)
     
-    def sum(self, *args):
+    def sum(self, *args, **kwargs):
         
-        data = self.child.sum(*args)
-        min_vals = self.min_vals.sum(*args)
-        max_vals = self.max_vals.sum(*args)
+        data = self.child.sum(*args, **kwargs)
+        min_vals = self.min_vals.sum(*args, **kwargs)
+        max_vals = self.max_vals.sum(*args, **kwargs)
         entity = self.entity
         
         return SingleEntityPhiTensor(child=data,
@@ -234,3 +234,19 @@ def mean(*args, **kwargs):
                              entity=entity,
                              min_vals=min_vals,
                              max_vals=max_vals)
+
+
+@implements(SingleEntityPhiTensor, np.expand_dims)
+def expand_dims(a, axis):
+
+    entity = a.entity
+
+    min_vals = np.expand_dims(a=a.min_vals, axis=axis)
+    max_vals = np.expand_dims(a=a.max_vals, axis=axis)
+
+    data = np.expand_dims(a.child, axis=axis)
+
+    return SingleEntityPhiTensor(child=data,
+                                 entity=entity,
+                                 min_vals=min_vals,
+                                 max_vals=max_vals)

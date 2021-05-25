@@ -33,7 +33,7 @@ class RepeatOp(Op):
             intermediate_shape.insert(axis + 1, -1)
 
             grad = grad.child.reshape(intermediate_shape)
-
+            print(grad)
             grad = grad.sum(axis=axis + 1)
 
             self.x.add_grad(AutogradTensor(grad, requires_grad=requires_grad))
