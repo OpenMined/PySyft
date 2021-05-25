@@ -4,12 +4,12 @@ import pytest
 # syft absolute
 from syft import deserialize
 from syft import serialize
-from syft.lib.adp.entity import Entity
-from syft.lib.adp.scalar import BaseScalar
-from syft.lib.adp.scalar import GammaScalar
-from syft.lib.adp.scalar import IntermediatePhiScalar
-from syft.lib.adp.scalar import IntermediateScalar
-from syft.lib.adp.scalar import PhiScalar
+from syft.core.adp.entity import Entity
+from syft.core.adp.scalar import BaseScalar
+from syft.core.adp.scalar import GammaScalar
+from syft.core.adp.scalar import IntermediatePhiScalar
+from syft.core.adp.scalar import IntermediateScalar
+from syft.core.adp.scalar import PhiScalar
 
 scalar_object_tests = [
     IntermediateScalar(poly=None),

@@ -12,8 +12,8 @@ from nacl.signing import VerifyKey
 import pandas as pd
 
 # syft relative
-from ....lib.adp.adversarial_accountant import AdversarialAccountant
-from ....lib.adp.approximate_budget import ApproximateBudget
+from ....core.adp.adversarial_accountant import AdversarialAccountant
+from ....core.adp.approximate_budget import ApproximateBudget
 from ....logger import traceback_and_raise
 from ....util import validate_field
 from ...common.uid import UID

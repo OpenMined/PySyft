@@ -13,7 +13,7 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
 # syft relative
-from ....lib.adp.adversarial_accountant import AdversarialAccountant
+from ....core.adp.adversarial_accountant import AdversarialAccountant
 from ....lib.python import String
 from ....logger import critical
 from ....logger import debug

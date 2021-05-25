@@ -1,6 +1,6 @@
 # syft absolute
-from syft.lib.adp.entity import Entity
-from syft.lib.adp.scalar import GammaScalar
+from syft.core.adp.entity import Entity
+from syft.core.adp.scalar import GammaScalar
 
 
 def test_scalar() -> None:

@@ -2,9 +2,9 @@
 import numpy as np
 
 # syft absolute
-from syft.lib.adp.adversarial_accountant import AdversarialAccountant
-from syft.lib.adp.entity import Entity
-from syft.lib.adp.tensor import Tensor
+from syft.core.adp.adversarial_accountant import AdversarialAccountant
+from syft.core.adp.entity import Entity
+from syft.core.adp.tensor import Tensor
 
 entities = [
     Entity(unique_name="Tudor"),

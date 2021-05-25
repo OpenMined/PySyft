@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package syft.lib.adp;
+package syft.core.adp;
 import "proto/core/common/common_object.proto";
-import "proto/lib/adp/entity.proto";
+import "proto/core/adp/entity.proto";
 
 message IntermediateScalar {
   syft.core.common.UID id = 1;
@@ -14,7 +14,7 @@ message BaseScalar {
   optional float min_val = 2;
   optional float value = 3;
   optional float max_val = 4;
-  syft.lib.adp.Entity entity = 5;
+  syft.core.adp.Entity entity = 5;
 }
 
 message IntermediateGammaScalar {
@@ -27,14 +27,14 @@ message GammaScalar {
   optional float min_val = 2;
   optional float value = 3;
   optional float max_val = 4;
-  syft.lib.adp.Entity entity = 5;
+  syft.core.adp.Entity entity = 5;
   // poly
 }
 
 message IntermediatePhiScalar {
   syft.core.common.UID id = 1;
-  syft.lib.adp.Entity entity = 2;
-  optional syft.lib.adp.GammaScalar gamma = 3;
+  syft.core.adp.Entity entity = 2;
+  optional syft.core.adp.GammaScalar gamma = 3;
 }
 
 message PhiScalar {
@@ -42,7 +42,7 @@ message PhiScalar {
   optional float min_val = 2;
   optional float value = 3;
   optional float max_val = 4;
-  syft.lib.adp.Entity entity = 5;
-  optional syft.lib.adp.GammaScalar gamma = 6;
+  syft.core.adp.Entity entity = 5;
+  optional syft.core.adp.GammaScalar gamma = 6;
   // poly
 }

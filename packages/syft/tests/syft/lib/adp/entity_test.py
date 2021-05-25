@@ -1,7 +1,7 @@
 # syft absolute
 from syft import deserialize
 from syft import serialize
-from syft.lib.adp.entity import Entity
+from syft.core.adp.entity import Entity
 
 
 def test_serde() -> None:

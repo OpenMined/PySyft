@@ -9,7 +9,7 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # syft relative
-from .....lib.adp.publish import publish
+from .....core.adp.publish import publish
 from .....logger import traceback_and_raise
 from .....proto.core.node.domain.service.publish_scalars_service_pb2 import (
     PublishScalarsAction as PublishScalarsAction_PB,

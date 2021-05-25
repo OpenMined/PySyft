@@ -2,11 +2,11 @@
 import numpy as np
 
 # syft absolute
-from syft.lib.adp.adversarial_accountant import AdversarialAccountant
-from syft.lib.adp.entity import Entity
-from syft.lib.adp.publish import publish
-from syft.lib.adp.scalar import PhiScalar
-from syft.lib.adp.tensor import Tensor
+from syft.core.adp.adversarial_accountant import AdversarialAccountant
+from syft.core.adp.entity import Entity
+from syft.core.adp.publish import publish
+from syft.core.adp.scalar import PhiScalar
+from syft.core.adp.tensor import Tensor
 
 
 def test_autodp_phiscalar_publish() -> None:

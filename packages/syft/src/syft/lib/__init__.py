@@ -18,6 +18,7 @@ from packaging import version
 
 # syft relative
 from ..ast.globals import Globals
+from ..core.adp import create_adp_ast
 from ..core.node.abstract.node import AbstractNodeClient
 from ..lib.plan import create_plan_ast
 from ..lib.python import create_python_ast
@@ -214,10 +215,11 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
     torchvision_ast = create_torchvision_ast(client=client)
     plan_ast = create_plan_ast(client=client)
     remote_dataloader_ast = create_remote_dataloader_ast(client=client)
+    adp_ast = create_adp_ast(client=client)
 
     lib_ast = Globals(client=client)
     lib_ast.add_attr(attr_name="syft", attr=python_ast.attrs["syft"])
-    lib_ast.syft.lib.add_attr("adp", attr=adp_ast.syft.lib.adp)
+    lib_ast.syft.lib.add_attr("adp", attr=adp_ast.syft.core.adp)
 
     lib_ast.add_attr(attr_name="torch", attr=torch_ast.attrs["torch"])
     lib_ast.add_attr(attr_name="torchvision", attr=torchvision_ast.attrs["torchvision"])

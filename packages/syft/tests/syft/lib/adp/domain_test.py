@@ -1,6 +1,6 @@
 # syft absolute
 import syft as sy
-from syft.lib.adp.scalar import PhiScalar
+from syft.core.adp.scalar import PhiScalar
 
 
 # TODO @Tudor fix

@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package syft.lib.adp;
+package syft.core.adp;
 import "proto/core/common/common_object.proto";
 
 message Entity {
