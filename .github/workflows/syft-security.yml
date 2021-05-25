@@ -67,6 +67,7 @@ jobs:
           sed -n '/syft =/,/^$/p' setup.cfg | tail -n +3 > requirements.txt
           ls
           mv requirements.txt ${{ github.workspace }}
+          mv .snyk ${{ github.workspace }}
 
       - name: Synk security check
         uses: snyk/actions/python-3.8@master
