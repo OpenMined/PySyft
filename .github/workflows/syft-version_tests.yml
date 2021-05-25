@@ -14,6 +14,11 @@ on:
       - dev
     paths:
       - "packages/syft/tests/trigger/version_tests"
+  workflow_dispatch:
+    inputs:
+      none:
+        description: "Run Version Tests Manually"
+        required: false
 
 defaults:
   run:
@@ -27,7 +32,7 @@ jobs:
       matrix:
         branches: ["dev"]
         os: [windows-latest, ubuntu-latest, macos-latest]
-        python-version: [3.6, 3.7, 3.8, 3.9]
+        python-version: [3.7, 3.8, 3.9]
         torch-version: [1.6.0, 1.7.1, 1.8.1]
         exclude:
           - python-version: 3.9
@@ -99,7 +104,7 @@ jobs:
       max-parallel: 4
       matrix:
         branches: ["dev"]
-        python-version: [3.6, 3.7, 3.8, 3.9]
+        python-version: [3.7, 3.8, 3.9]
         torch-version: [1.8.1]
 
     steps:
@@ -160,7 +165,7 @@ jobs:
       matrix:
         branches: ["dev"]
         os: [windows-latest, ubuntu-latest, macos-latest]
-        python-version: [3.6, 3.7, 3.8, 3.9]
+        python-version: [3.7, 3.8, 3.9]
         torch-version: [1.6.0, 1.7.1, 1.8.1]
         exclude:
           - python-version: 3.9

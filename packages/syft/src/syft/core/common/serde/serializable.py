@@ -15,7 +15,7 @@ def bind_protobuf(cls: Any) -> Any:
     protobuf_schema = cls.get_protobuf_schema()
     # If protobuf already has schema2type, means it's related to multiple types.
     # Set it's schema2type to None, becuase we can't take use of it anymore.
-    if hasattr(protobuf_schema, "schema2type"):
+    if getattr(protobuf_schema, "schema2type", None):
         protobuf_schema.schema2type = None
     else:
         protobuf_schema.schema2type = cls
