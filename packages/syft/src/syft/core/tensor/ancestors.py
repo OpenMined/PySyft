@@ -21,7 +21,7 @@ class AutogradTensorAncestor(TensorChainManager):
     
     @property
     def grad(self):
-        return self.child.grad
+        return self.__class__(self.child.grad)
     
     @property
     def requires_grad(self):

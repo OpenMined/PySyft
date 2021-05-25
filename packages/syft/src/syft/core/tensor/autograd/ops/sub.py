@@ -38,7 +38,7 @@ class SubOp(Op):
 
                 self.x.add_grad(grad)
 
-            if self.x.grad_fn and self.y.grad_fn:
+            if self.x.grad_fn:
                 self.x.backward(backprop_id=backprop_id)
 
         if self.y.requires_grad:
@@ -52,5 +52,6 @@ class SubOp(Op):
             else:
                 self.y.add_grad(-grad)
 
-            if self.y.grad_fn and self.x.grad_fn:
+            if self.y.grad_fn:
                 self.y.backward(backprop_id=backprop_id)
+

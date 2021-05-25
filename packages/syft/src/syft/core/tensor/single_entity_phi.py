@@ -136,11 +136,11 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor):
         else:
             return self * (1 / other)         
         
-    def repeat(self, n):
+    def repeat(self, repeats, axis=None):
         
-        data = self.child.repeat(n)
-        min_vals = self.min_vals.repeat(n)
-        max_vals = self.max_vals.repeat(n)
+        data = self.child.repeat(repeats, axis=axis)
+        min_vals = self.min_vals.repeat(repeats, axis=axis)
+        max_vals = self.max_vals.repeat(repeats, axis=axis)
         entity = self.entity
         
         return SingleEntityPhiTensor(child=data,
