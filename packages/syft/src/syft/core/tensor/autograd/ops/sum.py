@@ -21,11 +21,7 @@ class SumOp(Op):
 
         if result.shape == ():
             result = result.reshape(1)
-
-        print("has type:")
-        print(type(result))
-        print(result.shape)
-
+            
         return AutogradTensor(result, requires_grad=x.requires_grad)
 
     def _backward(self, grad, backprop_id):
