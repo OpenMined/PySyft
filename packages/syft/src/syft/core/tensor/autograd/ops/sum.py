@@ -21,7 +21,7 @@ class SumOp(Op):
 
         if result.shape == ():
             result = result.reshape(1)
-            
+
         return AutogradTensor(result, requires_grad=x.requires_grad)
 
     def _backward(self, grad, backprop_id):
@@ -35,9 +35,8 @@ class SumOp(Op):
                 grad = grad.repeat(self.dim_at_axis, axis=self.axis)
             else:
                 n_times = np.prod(self.backward_shape)
-                print(n_times)
-                print(grad)
-                grad = grad.repeat(n_times, axis=0)
+
+                grad = grad.repeat(n_times, axis=0).reshape(self.backward_shape)
 
             self.x.add_grad(AutogradTensor(grad, requires_grad=requires_grad))
 
