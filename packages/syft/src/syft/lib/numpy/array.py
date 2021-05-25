@@ -83,7 +83,7 @@ def protobuf_proto2object(proto: NumpyProto) -> np.ndarray:
 
 def _generate_serde() -> None:
     if flags.APACHE_ARROW_TENSOR_SERDE:
-        NumpyProtoArrow.schema2type = None
+        NumpyProtoArrow.schema2type = []
         GenerateWrapper(
             wrapped_type=np.ndarray,
             import_path="numpy.ndarray",
@@ -92,7 +92,7 @@ def _generate_serde() -> None:
             type_proto2object=arrow_proto2object,
         )
     else:
-        NumpyProto.schema2type = None
+        NumpyProto.schema2type = []
         GenerateWrapper(
             wrapped_type=np.ndarray,
             import_path="numpy.ndarray",

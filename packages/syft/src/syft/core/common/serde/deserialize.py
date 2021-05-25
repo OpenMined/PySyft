@@ -79,27 +79,35 @@ def _deserialize(
         obj_type = index_syft_by_module_name(fully_qualified_name=obj_type)  # type: ignore
         obj_type = getattr(obj_type, "_sy_serializable_wrapper_type", obj_type)
     elif isinstance(obj_type, list):
-        # this means we have multiple classes that use the same proto but differentiate
-        # with an obj_type field, so lets figure out which one in the list
-        obj_type_re = r'obj_type: "(.+)"'
-        # the first obj_type in the protobuf will be the main outer type
-        obj_types = re.findall(obj_type_re, str(blob))
-        if len(obj_types) > 0:
-            real_obj_type = obj_types[0]
-            for possible_type in obj_type:
-                if hasattr(possible_type, "wrapped_type"):
-                    # get the str inside <class ...>, fqn in sympy is different
-                    real_obj_type_str = str(possible_type.wrapped_type()).split("'")[1]
-                    # TODO: This needs to be cleaned up in GenerateWrapper and
-                    # made more consistent
-                    if real_obj_type.endswith("Wrapper"):
-                        real_obj_type = real_obj_type.replace("Wrapper", "")
-                    if real_obj_type == real_obj_type_str or real_obj_type.endswith(
-                        real_obj_type_str
-                    ):
-                        # found it, lets overwrite obj_type and break
-                        obj_type = possible_type
-                        break
+        if len(obj_type) == 1:
+            obj_type = obj_type[0]
+        else:
+            # this means we have multiple classes that use the same proto but use the
+            # obj_type field to differentiate, so lets figure out which one in the list
+            obj_type_re = r'obj_type: "(.+)"'
+            # the first obj_type in the protobuf will be the main outer type
+            obj_types = re.findall(obj_type_re, str(blob))
+            if len(obj_types) > 0:
+                real_obj_type = obj_types[0]
+                for possible_type in obj_type:
+                    if hasattr(possible_type, "wrapped_type"):
+                        # get the str inside <class ...>, fqn in sympy is different
+                        real_obj_type_str = str(possible_type.wrapped_type()).split(
+                            "'"
+                        )[1]
+                        # TODO: This needs to be cleaned up in GenerateWrapper and
+                        # made more consistent
+                        if real_obj_type.endswith("Wrapper"):
+                            real_obj_type = real_obj_type[
+                                :-7
+                            ]  # remove the last Wrapper
+                        if (
+                            real_obj_type == real_obj_type_str
+                            or real_obj_type.endswith(real_obj_type_str)
+                        ):
+                            # found it, lets overwrite obj_type and break
+                            obj_type = possible_type
+                            break
 
     if not isinstance(obj_type, type):
         traceback_and_raise(deserialization_error)
