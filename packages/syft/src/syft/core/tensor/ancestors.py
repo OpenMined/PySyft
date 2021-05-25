@@ -10,7 +10,7 @@ def _SingleEntityPhiTensor():
     global _SingleEntityPhiTensorRef
     if _SingleEntityPhiTensorRef is None:
         # syft relative
-        from .single_entity_phi import SingleEntityPhiTensor
+        from .autodp.single_entity_phi import SingleEntityPhiTensor
         _SingleEntityPhiTensorRef = SingleEntityPhiTensor
     return _SingleEntityPhiTensorRef
 

@@ -2,11 +2,11 @@
 import numpy as np
 
 # syft relative
-from .ancestors import AutogradTensorAncestor
-from .passthrough import PassthroughTensor
-from .passthrough import implements
-from .passthrough import inputs2child
-from .passthrough import is_acceptable_simple_type
+from ..ancestors import AutogradTensorAncestor
+from ..passthrough import PassthroughTensor
+from ..passthrough import implements
+from ..passthrough import inputs2child
+from ..passthrough import is_acceptable_simple_type
 
 
 class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor):
