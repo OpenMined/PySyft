@@ -53,9 +53,6 @@ def create_ast(client: TypeAny = None) -> Globals:
 
     add_modules(ast, modules)
     add_classes(ast, classes)
-
-    sy.load("numpy")  # needed for the numpy.ndarray return type
-
     add_methods(ast, methods)
 
     for klass in ast.classes:
