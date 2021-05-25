@@ -57,7 +57,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         return self.__class__(self.child + other.child)
 
     def __radd__(self, other):
-        return self.__class__(self + other)
+        return other.__class__(other.child + self.child)
 
     def __sub__(self, other):
         if is_acceptable_simple_type(other):
@@ -65,7 +65,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         return self.__class__(self.child - other.child)
 
     def __rsub__(self, other):
-        return self.__class__(self.__neg__() + other)
+        return self.__class__(-((self - other).child))
 
     def __gt__(
         self,
@@ -184,6 +184,12 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
         return self.__class__(self.child.__pow__(other.child))
 
+    def __rpow__(self, other: Union[PassthroughTensor, AcceptableSimpleType]):
+        if is_acceptable_simple_type(other):
+            return self.__class__(self.child.__rpow__(other))
+        return self.__class__(self.child.__rpow__(other.child))
+
+
     def __divmod__(
         self,
         other: Union[PassthroughTensor, AcceptableSimpleType],
@@ -212,20 +218,17 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         return self.__class__(self.child * other.child)
 
     def __rmul__(self, other):
-        return self * other
+        return other * self
 
     def __matmul__(
         self, other: Union[PassthroughTensor, np.ndarray]
     ) -> PassthroughTensor:
-        # use manual_mut
-        if isinstance(other, np.ndarray):
-            return self.__class__(self.child @ other)
-        return self.__class__(self.child @ other.child)
+        return self.manual_dot(other)
 
     def __rmatmul__(
         self, other: Union[PassthroughTensor, np.ndarray]
     ) -> PassthroughTensor:
-        return other @ self
+        return other.manual_dot(self)
 
     def __truediv__(self, other):
         if is_acceptable_simple_type(other):

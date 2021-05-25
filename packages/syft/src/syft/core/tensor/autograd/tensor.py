@@ -66,6 +66,14 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor):
             return self * (1 / other)
         return NotImplemented
 
+    def __pow__(self, other) -> AutogradTensorAncestor:
+        op = autograd.backward_ops.PowOp()
+        return op(self, other)
+
+    def __rpow__(self, other) -> AutogradTensorAncestor:
+        op = autograd.backward_ops.RPowOp()
+        return op(self, other)
+
     def reshape(self, *shape) -> AutogradTensorAncestor:
         op = autograd.backward_ops.ReshapeOp()
         return op(self, *shape)

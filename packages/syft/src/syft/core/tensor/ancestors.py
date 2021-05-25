@@ -50,7 +50,10 @@ class AutogradTensorAncestor(TensorChainManager):
 
     @property
     def grad(self):
-        return self.__class__(self.child.grad)
+        child_gradient = self.child.grad
+        if child_gradient is None:
+            return None
+        return self.__class__(child_gradient)
 
     @property
     def requires_grad(self):
