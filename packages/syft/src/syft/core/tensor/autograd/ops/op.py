@@ -14,7 +14,7 @@ class Op:
         raise NotImplemented
 
     def backward(self, grad, backprop_id):
-        print(grad)
+
         self.backprop_id = backprop_id
 
         for t in self.parent_tensors:
