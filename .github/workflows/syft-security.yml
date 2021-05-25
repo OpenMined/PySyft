@@ -61,6 +61,10 @@ jobs:
           bandit -r src
           safety check
 
+      - name: Generate requirements.txt for synk
+        run: |
+          sed -n '/syft =/,/^$/p' setup.cfg | tail -n +3 > requirements.txt
+
       - name: Synk security check
         uses: snyk/actions/python-3.8@master
         env:
