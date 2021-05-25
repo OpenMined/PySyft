@@ -11,7 +11,7 @@ from .op import Op
 
 
 class ArgMaxOp(Op):
-    def forward(self, x: AutogradTensor, y: AutogradTensor) -> AutogradTensor:
+    def forward(self, x: AutogradTensor, axis=None) -> AutogradTensor:
         self.x = x
         self.y = y
 
