@@ -1,0 +1,38 @@
+class MulOp(Op):
+    '''Multiplication operation with 2 tensors'''
+
+    def forward(self, x: AutogradTensor, y: AutogradTensor):
+        self.x = x
+        self.y = y
+
+        requires_grad = x.requires_grad
+
+        if is_acceptable_simple_type(y):
+            return AutogradTensor(x.child * y, requires_grad=requires_grad)
+
+        requires_grad = requires_grad or y.requires_grad
+        return AutogradTensor(x.child * y.child, requires_grad=requires_grad)
+
+    def _backward(self, grad, backprop_id):
+
+        print("Sub backward grad:")
+        print("Backprop id:" + str(len(self.x.ops)))
+        print("Backprop id:" + str(len(self.y.ops)))
+        print(grad)
+
+        y_is_simple = is_acceptable_simple_type(self.y)
+
+        if self.x.requires_grad:
+
+            if y_is_simple:
+                self.x.add_grad(AutogradTensor(grad.child * self.y, False))
+            else:
+                self.x.add_grad(AutogradTensor(grad.child * self.y.child, False))
+
+            if self.x.grad_fn:
+                self.x.backward(backprop_id=backprop_id)
+
+        if not y_is_simple and self.y.requires_grad:
+            self.y.add_grad(AutogradTensor(grad.child * self.x.child, False))
+            if self.y.grad_fn:
+                self.y.backward(backprop_id=backprop_id)
