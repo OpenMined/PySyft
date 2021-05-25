@@ -1,10 +1,11 @@
 # stdlib
 from collections import Counter
+from collections import defaultdict
 import uuid
 
 # syft relative
 from . import ops
-
+from ..passthrough import PassthroughTensor
 
 class AutogradTensor(PassthroughTensor):
 
