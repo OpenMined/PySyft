@@ -109,7 +109,7 @@ jobs:
       #     git diff --name-only $(git merge-base ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }}) | xargs docstr-coverage --accept-empty
 
   python-tests-latest-versions:
-    needs: [python-linting]
+    # needs: [python-linting]
     strategy:
       max-parallel: 3
       matrix:
@@ -171,169 +171,169 @@ jobs:
           pytest -m libs -n auto -k "not tenseal" --suppress-no-test-exit-code
           pytest -m libs -n 1 -k "tenseal" --suppress-no-test-exit-code
 
-  python-nb-examples:
-    needs: [python-linting]
-    runs-on: ${{ matrix.os }}
-    strategy:
-      max-parallel: 1
-      matrix:
-        python-version: [3.8]
-        torch-version: [1.8.1]
-        os: [ubuntu-latest]
-    steps:
-      - uses: actions/checkout@v2
+  # python-nb-examples:
+  #   needs: [python-linting]
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     max-parallel: 1
+  #     matrix:
+  #       python-version: [3.8]
+  #       torch-version: [1.8.1]
+  #       os: [ubuntu-latest]
+  #   steps:
+  #     - uses: actions/checkout@v2
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
+  #     - name: Set up Python ${{ matrix.python-version }}
+  #       uses: actions/setup-python@v2
+  #       with:
+  #         python-version: ${{ matrix.python-version }}
 
-      - name: Upgrade pip
-        run: |
-          pip install --upgrade --user pip
+  #     - name: Upgrade pip
+  #       run: |
+  #         pip install --upgrade --user pip
 
-      - name: Get pip cache dir
-        id: pip-cache
-        run: |
-          echo "::set-output name=dir::$(pip cache dir)"
+  #     - name: Get pip cache dir
+  #       id: pip-cache
+  #       run: |
+  #         echo "::set-output name=dir::$(pip cache dir)"
 
-      - name: pip cache
-        uses: actions/cache@v2
-        with:
-          path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('./setup.cfg') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+  #     - name: pip cache
+  #       uses: actions/cache@v2
+  #       with:
+  #         path: ${{ steps.pip-cache.outputs.dir }}
+  #         key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('./setup.cfg') }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
-      - name: Install Dependencies
-        run: |
-          pip install packaging --default-timeout=60
-          python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
-          grep -A 3 "torch_ecosystem" setup.cfg
-          pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
-          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
+  #     - name: Install Dependencies
+  #       run: |
+  #         pip install packaging --default-timeout=60
+  #         python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
+  #         grep -A 3 "torch_ecosystem" setup.cfg
+  #         pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
+  #         python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
 
-      - name: Run notebook API examples
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: |
-          ./scripts/nb_test.sh
-          pytest examples/api -n auto
+  #     - name: Run notebook API examples
+  #       if: ${{ matrix.os == 'ubuntu-latest' }}
+  #       run: |
+  #         ./scripts/nb_test.sh
+  #         pytest examples/api -n auto
 
-      - name: Test syft-network
-        run: |
-          python ./scripts/start_signaling_server.py --dry_run=True
+  #     - name: Test syft-network
+  #       run: |
+  #         python ./scripts/start_signaling_server.py --dry_run=True
 
-      - name: Run notebook Duet examples
-        run: |
-          python ./scripts/mnist.py
-          python ./scripts/nb_duet_test.py
-          pytest -m duet -n 1 --suppress-no-test-exit-code
+  #     - name: Run notebook Duet examples
+  #       run: |
+  #         python ./scripts/mnist.py
+  #         python ./scripts/nb_duet_test.py
+  #         pytest -m duet -n 1 --suppress-no-test-exit-code
 
-  pygrid-unit-tests:
-    needs: [python-linting]
-    runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 1
-      matrix:
-        python-version: [3.8]
-        torch-version: [1.8.1]
+  # pygrid-unit-tests:
+  #   needs: [python-linting]
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     max-parallel: 1
+  #     matrix:
+  #       python-version: [3.8]
+  #       torch-version: [1.8.1]
 
-    steps:
-      - uses: actions/checkout@v2
+  #   steps:
+  #     - uses: actions/checkout@v2
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
+  #     - name: Set up Python ${{ matrix.python-version }}
+  #       uses: actions/setup-python@v2
+  #       with:
+  #         python-version: ${{ matrix.python-version }}
 
-      - name: Upgrade pip
-        run: |
-          pip install --upgrade --user pip
+  #     - name: Upgrade pip
+  #       run: |
+  #         pip install --upgrade --user pip
 
-      - name: Get pip cache dir
-        id: pip-cache
-        run: |
-          echo "::set-output name=dir::$(pip cache dir)"
+  #     - name: Get pip cache dir
+  #       id: pip-cache
+  #       run: |
+  #         echo "::set-output name=dir::$(pip cache dir)"
 
-      - name: pip cache
-        uses: actions/cache@v2
-        with:
-          path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('/setup.cfg') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+  #     - name: pip cache
+  #       uses: actions/cache@v2
+  #       with:
+  #         path: ${{ steps.pip-cache.outputs.dir }}
+  #         key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('/setup.cfg') }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
-      - uses: actions/checkout@v2
-        with:
-          repository: "OpenMined/PyGrid"
-          ref: "dev"
-          path: "packages/grid"
+  #     - uses: actions/checkout@v2
+  #       with:
+  #         repository: "OpenMined/PyGrid"
+  #         ref: "dev"
+  #         path: "packages/grid"
 
-      - name: Install Dependencies
-        run: |
-          pip install packaging --default-timeout=60
-          python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
-          grep -A 3 "torch_ecosystem" setup.cfg
-          pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
-          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
+  #     - name: Install Dependencies
+  #       run: |
+  #         pip install packaging --default-timeout=60
+  #         python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
+  #         grep -A 3 "torch_ecosystem" setup.cfg
+  #         pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
+  #         python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
 
-      - name: Test PyGrid
-        continue-on-error: true
-        run: |
-          pytest ../grid/apps/domain/tests
-          pytest ../grid/apps/network/tests
-          pytest ../grid/apps/worker/tests
+  #     - name: Test PyGrid
+  #       continue-on-error: true
+  #       run: |
+  #         pytest ../grid/apps/domain/tests
+  #         pytest ../grid/apps/network/tests
+  #         pytest ../grid/apps/worker/tests
 
-  pygrid-integration-tests:
-    needs: [python-linting]
-    runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 1
-      matrix:
-        python-version: [3.8]
-        torch-version: [1.8.1]
+  # pygrid-integration-tests:
+  #   needs: [python-linting]
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     max-parallel: 1
+  #     matrix:
+  #       python-version: [3.8]
+  #       torch-version: [1.8.1]
 
-    steps:
-      - uses: actions/checkout@v2
+  #   steps:
+  #     - uses: actions/checkout@v2
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
+  #     - name: Set up Python ${{ matrix.python-version }}
+  #       uses: actions/setup-python@v2
+  #       with:
+  #         python-version: ${{ matrix.python-version }}
 
-      - name: Upgrade pip
-        run: |
-          pip install --upgrade --user pip --default-timeout=60
+  #     - name: Upgrade pip
+  #       run: |
+  #         pip install --upgrade --user pip --default-timeout=60
 
-      - name: Get pip cache dir
-        id: pip-cache
-        run: |
-          echo "::set-output name=dir::$(pip cache dir)"
+  #     - name: Get pip cache dir
+  #       id: pip-cache
+  #       run: |
+  #         echo "::set-output name=dir::$(pip cache dir)"
 
-      - name: pip cache
-        uses: actions/cache@v2
-        with:
-          path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('./setup.cfg') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+  #     - name: pip cache
+  #       uses: actions/cache@v2
+  #       with:
+  #         path: ${{ steps.pip-cache.outputs.dir }}
+  #         key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('./setup.cfg') }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
-      - uses: actions/checkout@v2
-        with:
-          repository: "OpenMined/PyGrid"
-          ref: "dev"
-          path: "packages/grid"
+  #     - uses: actions/checkout@v2
+  #       with:
+  #         repository: "OpenMined/PyGrid"
+  #         ref: "dev"
+  #         path: "packages/grid"
 
-      - name: Install Dependencies
-        run: |
-          pip install packaging --default-timeout=60
-          python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
-          grep -A 3 "torch_ecosystem" setup.cfg
-          pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
-          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
+  #     - name: Install Dependencies
+  #       run: |
+  #         pip install packaging --default-timeout=60
+  #         python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
+  #         grep -A 3 "torch_ecosystem" setup.cfg
+  #         pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
+  #         python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
 
-      - name: Test PyGrid
-        continue-on-error: true
-        run: |
-          python ./scripts/mnist.py
-          pytest -m grid
+  #     - name: Test PyGrid
+  #       continue-on-error: true
+  #       run: |
+  #         python ./scripts/mnist.py
+  #         pytest -m grid
