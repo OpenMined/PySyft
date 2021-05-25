@@ -19,7 +19,6 @@ from packaging import version
 # syft relative
 from ..ast.globals import Globals
 from ..core.node.abstract.node import AbstractNodeClient
-from ..lib.adp import create_adp_ast
 from ..lib.plan import create_plan_ast
 from ..lib.python import create_python_ast
 from ..lib.remote_dataloader import create_remote_dataloader_ast
@@ -211,7 +210,6 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
 
     """
     python_ast = create_python_ast(client=client)
-    adp_ast = create_adp_ast(client=client)
     torch_ast = create_torch_ast(client=client)
     torchvision_ast = create_torchvision_ast(client=client)
     plan_ast = create_plan_ast(client=client)
