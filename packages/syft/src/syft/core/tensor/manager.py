@@ -9,3 +9,6 @@ class TensorChainManager:
     def push_abstraction_top(self, tensor_type, *args, **kwargs):
         """ """
         self.child = tensor_type(self.child, *args, **kwargs)
+
+    def replace_abstraction_top(self, tensor_type, *args, **kwargs):
+        self.child = tensor_type(*args, **kwargs)

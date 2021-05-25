@@ -18,6 +18,19 @@ def _SingleEntityPhiTensor():
     return _SingleEntityPhiTensorRef
 
 
+_RowEntityPhiTensorRef = None
+
+
+def _RowEntityPhiTensor():
+    global _RowEntityPhiTensorRef
+    if _RowEntityPhiTensorRef is None:
+        # syft relative
+        from .autodp.row_entity_phi import RowEntityPhiTensor
+
+        _RowEntityPhiTensorRef = RowEntityPhiTensor
+    return _RowEntityPhiTensorRef
+
+
 _AutogradTensorRef = None
 
 
@@ -69,7 +82,7 @@ class AutogradTensorAncestor(TensorChainManager):
         return self
 
 
-class SingleEntityPhiTensorAncestor:
+class PhiTensorAncestor(TensorChainManager):
     """Inherited by any class which might have or like to have SingleEntityPhiTensor in its chain
     of .child objects"""
 
@@ -84,30 +97,61 @@ class SingleEntityPhiTensorAncestor:
     def private(self, min_val, max_val, entities=None, entity=None):
         """ """
 
-        # if there's only one entity - push a SingleEntityPhiTensor
-        child_type = _SingleEntityPhiTensor()
-        entity = entity
+        if entity is not None:
+            # if there's only one entity - push a SingleEntityPhiTensor
 
-        if isinstance(min_val, (float, int)):
-            min_vals = (self.child * 0) + min_val
-        else:
-            raise Exception(
-                "min_val should be a float, got " + str(type(min_val)) + " instead."
+            if isinstance(min_val, (float, int)):
+                min_vals = (self.child * 0) + min_val
+            else:
+                raise Exception(
+                    "min_val should be a float, got " + str(type(min_val)) + " instead."
+                )
+
+            if isinstance(max_val, (float, int)):
+                max_vals = (self.child * 0) + max_val
+            else:
+                raise Exception(
+                    "min_val should be a float, got " + str(type(min_val)) + " instead."
+                )
+
+            self.push_abstraction_top(
+                _SingleEntityPhiTensor(), entity=entity, min_vals=min_vals, max_vals=max_vals
             )
 
-        if isinstance(max_val, (float, int)):
-            max_vals = (self.child * 0) + max_val
-        else:
-            raise Exception(
-                "min_val should be a float, got " + str(type(min_val)) + " instead."
+        # if there's row-level entities - push a RowEntityPhiTensor
+        elif entities is not None and len(entities) == self.shape[0]:
+
+            class_type = _SingleEntityPhiTensor()
+
+            new_list = list()
+            for i, entity in enumerate(entities):
+
+                if isinstance(min_val, (float, int)):
+                    min_vals = (self.child[i] * 0) + min_val
+                else:
+                    raise Exception(
+                        "min_val should be a float, got " + str(type(min_val)) + " instead."
+                    )
+
+                if isinstance(max_val, (float, int)):
+                    max_vals = (self.child[i] * 0) + max_val
+                else:
+                    raise Exception(
+                        "min_val should be a float, got " + str(type(min_val)) + " instead."
+                    )
+
+                new_list.append(class_type(child=self.child[i:i+1], entity=entity, min_vals=min_vals, max_vals=max_vals))
+
+            self.replace_abstraction_top(
+                _RowEntityPhiTensor(),
+                rows=new_list
             )
 
-        self.push_abstraction_top(
-            child_type, entity=entity, min_vals=min_vals, max_vals=max_vals
-        )
+        # TODO: if there's element-level entities - push all elements with PhiScalars
+        else:
 
-        # if there's row-level entities - push a MultiEntityPhiTensor
+            raise Exception("If you're passing in mulitple entities, please pass in one entity per row.")
 
-        # if there's element-level entities - push all elements with PhiScalars
+
 
         return self

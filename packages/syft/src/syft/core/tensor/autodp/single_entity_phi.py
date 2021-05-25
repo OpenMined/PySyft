@@ -25,6 +25,9 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor):
     def max_vals(self):
         return self._max_vals
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}(entity={self.entity.unique_name}, child={self.child})"
+
     def __add__(self, other):
 
         if isinstance(other, SingleEntityPhiTensor):

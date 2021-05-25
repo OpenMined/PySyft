@@ -19,7 +19,7 @@ class SumOp(Op):
             self.dim_at_axis = None
         self.backward_shape = self.x.shape
 
-        result = x.child.sum(axis)
+        result = x.child.sum(axis=axis)
 
         if result.shape == ():
             result = result.reshape(1)

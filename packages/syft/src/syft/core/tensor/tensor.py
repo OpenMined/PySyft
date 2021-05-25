@@ -4,12 +4,12 @@ import torch as th
 
 # syft relative
 from .ancestors import AutogradTensorAncestor
-from .ancestors import SingleEntityPhiTensorAncestor
+from .ancestors import PhiTensorAncestor
 from .passthrough import HANDLED_FUNCTIONS
 from .passthrough import PassthroughTensor
 
 
-class Tensor(PassthroughTensor, AutogradTensorAncestor, SingleEntityPhiTensorAncestor):
+class Tensor(PassthroughTensor, AutogradTensorAncestor, PhiTensorAncestor):
     def __init__(self, child):
         """data must be a list of numpy array"""
 

@@ -7,12 +7,12 @@ import uuid
 # syft relative
 from .. import autograd
 from ..ancestors import AutogradTensorAncestor
-from ..ancestors import SingleEntityPhiTensorAncestor
+from ..ancestors import PhiTensorAncestor
 from ..passthrough import PassthroughTensor
 from ..passthrough import is_acceptable_simple_type
 
 
-class AutogradTensor(PassthroughTensor, SingleEntityPhiTensorAncestor):
+class AutogradTensor(PassthroughTensor, PhiTensorAncestor):
     def __init__(self, child, requires_grad=False):
         super().__init__(child)
 
