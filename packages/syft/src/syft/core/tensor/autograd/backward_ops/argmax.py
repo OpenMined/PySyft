@@ -10,7 +10,7 @@ from ..tensor import AutogradTensor
 from .op import Op
 
 
-class GtOp(Op):
+class ArgMaxOp(Op):
     def forward(self, x: AutogradTensor, y: AutogradTensor) -> AutogradTensor:
         self.x = x
         self.y = y
