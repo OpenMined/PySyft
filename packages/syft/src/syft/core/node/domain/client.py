@@ -269,6 +269,19 @@ class DomainClient(Client):
         return self.domain.id
 
     @property
+    def accountant(self):
+        """Queries some service that returns a pointer to the ONLY real accountant for this
+        user that actually affects object permissions when used in a .publish() method. Other accountant
+        objects might exist in the object store but .publish() is just for simulation and won't change
+        the permissions on the object it's called on."""
+
+    def create_simulated_accountant(self, init_with_budget_remaining=True):
+        """Creates an accountant in the remote store. If init_with_budget_remaining=True then the accountant
+        is a copy of an existing accountant. If init_with_budget_remaining=False then it is a fresh accountant
+        with the sam max budget."""
+
+
+    @property
     def device(self) -> Optional[Location]:
         """This client points to a node, if that node lives within a device
         or is a device itself, this property will return the Location of that device

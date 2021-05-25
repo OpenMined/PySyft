@@ -11,6 +11,11 @@ from .idp_gaussian_mechanism import iDPGaussianMechanism
 from .scalar import IntermediatePhiScalar
 from .search import max_lipschitz_wrt_entity
 
+def publish_private_tensor(tensor_obj, acc:Any, sigma=1.5) -> float:
+    """"""
+    # step 1: convert tensor to big list of scalars
+    # step 2: call publish(scalars, acc:Any)
+    # step 3: return result
 
 def publish(scalars, acc: Any, sigma: float = 1.5) -> float:
 

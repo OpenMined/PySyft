@@ -66,3 +66,108 @@ def test_train_mnist() -> None:
         weights = -wdiff + weights
 
     assert loss.data_child < 10.0
+
+
+# def test_basic_publish_event() -> None:
+#     domain = sy.Domain("My Amazing Domain", max_budget=10)
+#     root_client = domain.get_root_client()
+#
+#     data_batch = np.random.rand(4, 28 * 28)
+#     label_batch = np.random.rand(4, 10)
+#
+#     bob = Entity(unique_name="Bob")
+#
+#     # Step 1: upload a private dataset as the root owner
+#     data = Tensor(data_batch).private(0.01, 1, entity=bob).autograd(requires_grad=True).tag("data")
+#     target = (
+#         Tensor(label_batch).private(0.01, 1, entity=bob).autograd(requires_grad=True)
+#     ).tag("target")
+#
+#     root_client.send(data)
+#     root_client.send(target)
+#
+#     # Step 2: user connects to domain
+#
+#     # (this has a new verify key)
+#     client = domain.get_client()
+#
+#     data = client.store['data']
+#     target = client.store['target']
+#
+#     weights = Tensor(np.random.rand(28 * 28, 10)).autograd(requires_grad=True)
+#     weights_ptr = weights.send(client)
+#
+#     for i in range(10):
+#         pred = data.dot(weights_ptr)
+#         diff = target - pred
+#         pre_loss = np.square(diff)
+#         loss = np.mean(pre_loss)
+#         extraneous_thing = -diff
+#         loss.backward()
+#
+#         wdiff = weights_ptr.grad * 0.01
+#         weights_ptr = -wdiff + weights_ptr
+#
+#     # acc should default to client.accountant
+#     weights_ptr_downloadable = weights_ptr.publish(acc=client.accountant, sigma=0.1)
+#     weights = weights_ptr_downloadable.get()
+#     print(weights)
+#
+#
+# def test_simulated_publish_event() -> None:
+#     domain = sy.Domain("My Amazing Domain", max_budget=10)
+#     root_client = domain.get_root_client()
+#
+#     data_batch = np.random.rand(4, 28 * 28)
+#     label_batch = np.random.rand(4, 10)
+#
+#     bob = Entity(unique_name="Bob")
+#
+#     # Step 1: upload a private dataset as the root owner
+#     data = Tensor(data_batch).private(0.01, 1, entity=bob).autograd(requires_grad=True).tag("data")
+#     target = (
+#         Tensor(label_batch).private(0.01, 1, entity=bob).autograd(requires_grad=True)
+#     ).tag("target")
+#
+#     root_client.send(data)
+#     root_client.send(target)
+#
+#     # Step 2: user connects to domain
+#
+#     # (this has a new verify key)
+#     client = domain.get_client()
+#
+#     data = client.store['data']
+#     target = client.store['target']
+#
+#     weights = Tensor(np.random.rand(28 * 28, 10)).autograd(requires_grad=True)
+#     weights_ptr = weights.send(client)
+#
+#     for i in range(10):
+#         pred = data.dot(weights_ptr)
+#         diff = target - pred
+#         pre_loss = np.square(diff)
+#         loss = np.mean(pre_loss)
+#         extraneous_thing = -diff
+#         loss.backward()
+#
+#         wdiff = weights_ptr.grad * 0.01
+#         weights_ptr = -wdiff + weights_ptr
+#
+#     # init_with_budget_remaining shoudl default to true
+#     simulated_accountant = client.create_simulated_accountant(init_with_budget_remaining=True)
+#
+#     weights_ptr_downloadable = weights_ptr.publish(acc=simulated_accountant, sigma=0.1)
+#
+#     # return pointer to GammaScalar
+#     ptr_to_budget = simulated_accountant.calculate_remaining_budget()
+#
+#     # publish GammaScalar like you would normally
+#     downloadable_budget = ptr_to_budget.publish(acc=client.accountant, sigma=0.1)
+#     print(downloadable_budget.get())
+
+
+
+
+
+

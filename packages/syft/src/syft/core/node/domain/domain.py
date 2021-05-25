@@ -7,6 +7,8 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
+from collections import defaultdict
+
 
 # third party
 from nacl.signing import SigningKey
@@ -41,6 +43,7 @@ from .service.request_handler_service import GetAllRequestHandlersService
 from .service.request_handler_service import UpdateRequestHandlerService
 
 
+
 class Domain(Node):
     domain: SpecificLocation
     root_key: Optional[VerifyKey]
@@ -60,6 +63,7 @@ class Domain(Node):
         verify_key: Optional[VerifyKey] = None,
         root_key: Optional[VerifyKey] = None,
         db_path: Optional[str] = None,
+        max_budget: Optional[int] = 10
     ):
         super().__init__(
             name=name,
@@ -69,7 +73,7 @@ class Domain(Node):
             vm=vm,
             signing_key=signing_key,
             verify_key=verify_key,
-            db_path=db_path,
+            db_path=db_path
         )
         # specific location with name
         self.domain = SpecificLocation(name=self.name)
@@ -84,7 +88,8 @@ class Domain(Node):
         self.immediate_services_with_reply.append(GetAllRequestHandlersService)
         self.immediate_services_with_reply.append(PublishScalarsService)
 
-        self.acc = AdversarialAccountant(max_budget=10)
+        # maps verify keys to accountant ids in the object store
+        self.acc = defaultdict(None)
 
         self.requests: List[RequestMessage] = list()
         # available_device_types = set()
