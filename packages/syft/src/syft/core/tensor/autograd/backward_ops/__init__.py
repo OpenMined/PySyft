@@ -8,11 +8,10 @@ from .copy import CopyOp  # noqa: 401
 from .dot import DotOp  # noqa: 401
 from .getitem import GetItemOp  # noqa: 401
 from .invert import InvertOp  # noqa: 401
-from .matmul import MatMulOp  # noqa: 401
 from .mul import MulOp  # noqa: 401
-from .neg import NegOp  # noqa: 401
 from .op import Op  # noqa: 401
 from .pow import PowOp  # noqa: 401
+from .rpow import RPowOp  # noqa: 401
 from .repeat import RepeatOp  # noqa: 401
 from .reshape import ReshapeOp  # noqa: 401
 from .resize import ResizeOp  # noqa: 401
