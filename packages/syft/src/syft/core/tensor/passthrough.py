@@ -255,6 +255,12 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     def repeat(self, *args, **kwargs):
         return self.__class__(self.child.repeat(*args, **kwargs))
 
+    # TODO: why does this version of repeat fail but the *args **kwargs one works?
+    # def repeat(
+    #     self, repeats: Union[int, TypeTuple[int, ...]], axis: Optional[int] = None
+    # ) -> PassthroughTensor:
+    #     return self.__class__(self.child.repeat(repeats, axis=axis))
+
     # numpy.resize(a, new_shape)
     def resize(self, new_shape: Union[int, TypeTuple[int, ...]]) -> PassthroughTensor:
         return self.__class__(self.child.resize(new_shape))
@@ -344,7 +350,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     def prod(
         self, axis: Optional[Union[int, TypeTuple[int, ...]]] = None
     ) -> Union[PassthroughTensor, np.number]:
-        return self.child.prod(axis=axis)
+        return self.__class__(self.child.prod(axis=axis))
 
     # numpy.squeeze(a, axis=None)
     def squeeze(
@@ -356,30 +362,22 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     def std(
         self, axis: Optional[Union[int, TypeTuple[int, ...]]] = None
     ) -> Union[PassthroughTensor, np.number]:
-        return self.child.std(axis=axis)
+        return self.__class__(self.child.std(axis=axis))
 
     # numpy.sum(a, axis=None, dtype=None, out=None, keepdims=<no value>, initial=<no value>, where=<no value>)
     def sum(
         self, axis: Optional[Union[int, TypeTuple[int, ...]]] = None
     ) -> Union[PassthroughTensor, np.number]:
-        return self.child.sum(axis=axis)
+        return self.__class__(self.child.sum(axis=axis))
 
     # numpy.take(a, indices, axis=None, out=None, mode='raise')
     def take(
         self, indices: Optional[Union[int, TypeTuple[int, ...]]] = None
     ) -> Union[PassthroughTensor, np.number]:
-        return self.child.take(indices=indices)
-
-    # numpy.repeat(a, repeats, axis=None)
-    # def repeat(
-    #     self, repeats: Union[int, TypeTuple[int, ...]], axis: Optional[int] = None
-    # ) -> PassthroughTensor:
-    #     return self.__class__(self.child.repeat(repeats=repeats, axis=axis))
+        return self.__class__(self.child.take(indices=indices))
 
     def __array_function__(self, func, types, args, kwargs):
         #         args, kwargs = inputs2child(*args, **kwargs)
-
-        print(func)
 
         # Note: this allows subclasses that don't override
         # __array_function__ to handle PassthroughTensor objects.
@@ -391,31 +389,11 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         else:
             return self.__class__(func(*args, **kwargs))
 
-    #     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-    #         print(ufunc)
-    #         print(method)
-    #         print(inputs)
-    #         print(kwargs)
-    #         return NotImplemented
-    #         print()
-    #         if method == '__call__':
-    #             N = None
-    #             scalars = []
-    #             for input in inputs:
-    #                 if isinstance(input, Number):
-    #                     scalars.append(input)
-    #                 elif isinstance(input, self.__class__):
-    #                     scalars.append(input._i)
-    #                     if N is not None:
-    #                         if N != self._N:
-    #                             raise TypeError("inconsistent sizes")
-    #                     else:
-    #                         N = self._N
-    #                 else:
-    #                     return NotImplemented
-    #             return self.__class__(N, ufunc(*scalars, **kwargs))
-    #         else:
-    #             return NotImplemented
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        if ufunc in HANDLED_FUNCTIONS[self.__class__]:
+            return HANDLED_FUNCTIONS[self.__class__][ufunc](*inputs, **kwargs)
+        else:
+            return self.__class__(ufunc(*inputs, **kwargs))
 
     def __repr__(self):
         return f"{self.__class__.__name__}(child={self.child})"

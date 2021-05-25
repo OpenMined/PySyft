@@ -40,7 +40,8 @@ class SubOp(Op):
 
             if self.x.grad_fn and self.y.grad_fn:
                 self.x.backward(backprop_id=backprop_id)
-
+        print(self.y)
+        print(type(self.y))
         if self.y.requires_grad:
             if self.y.shape != grad.shape:
                 print("shapes don't match")

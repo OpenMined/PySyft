@@ -198,7 +198,7 @@ def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
 
 
 # now we need to load the relevant frameworks onto the node
-def create_lib_ast(client: Optional[Any] = None) -> Globals:
+def create_lib_ast(client: Optional[TypeAny] = None) -> Globals:
     """
     Create AST and load the relevant frameworks onto the node
 

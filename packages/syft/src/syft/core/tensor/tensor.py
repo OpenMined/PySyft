@@ -1,12 +1,12 @@
 # third party
-from ancestors import AutogradTensorAncestor
-from ancestors import SingleEntityPhiTensorAncestor
 import numpy as np
-from passthrough import PassthroughTensor
-from passthrough import implements
-from passthrough import inputs2child
 import torch as th
 
+# syft relative
+from .ancestors import AutogradTensorAncestor
+from .ancestors import SingleEntityPhiTensorAncestor
+from .passthrough import PassthroughTensor
+from .passthrough import HANDLED_FUNCTIONS
 
 class Tensor(PassthroughTensor, AutogradTensorAncestor, SingleEntityPhiTensorAncestor):
     def __init__(self, child):
@@ -25,34 +25,17 @@ class Tensor(PassthroughTensor, AutogradTensorAncestor, SingleEntityPhiTensorAnc
 
         super().__init__(child=child)
 
+    def __array_function__(self, func, types, args, kwargs):
+        #         args, kwargs = inputs2child(*args, **kwargs)
 
-@implements(Tensor, np.mean)
-def mean(*args, **kwargs):
-    print("meaning")
-    args, kwargs = inputs2child(*args, **kwargs)
-    return np.mean(*args, **kwargs)
+        print(func)
+        print("handling function")
+        # Note: this allows subclasses that don't override
+        # __array_function__ to handle PassthroughTensor objects.
+        if not all(issubclass(t, self.__class__) for t in types):
+            return NotImplemented
 
-
-@implements(Tensor, np.max)
-def npmax(*args, **kwargs):
-    print("maxing1")
-    args, kwargs = inputs2child(*args, **kwargs)
-    return np.max(*args, **kwargs)
-
-
-@implements(Tensor, np.min)
-def npmin(*args, **kwargs):
-    print("mining1")
-    args, kwargs = inputs2child(*args, **kwargs)
-    return np.min(*args, **kwargs)
-
-
-@implements(Tensor, np.square)
-def square(x):
-    return x * x
-
-
-@implements(Tensor, np.expand_dims)
-def expand_dims(*args, **kwargs):
-    args, kwargs = inputs2child(*args, **kwargs)
-    return np.expand_dims(*args, **kwargs)
+        if func in HANDLED_FUNCTIONS[self.__class__]:
+            return HANDLED_FUNCTIONS[self.__class__][func](*args, **kwargs)
+        else:
+            return self.__class__(func(*args, **kwargs))
