@@ -20,6 +20,10 @@ class SubOp(Op):
             return AutogradTensor(x.child - y, requires_grad=requires_grad)
 
         requires_grad = requires_grad or y.requires_grad
+        # print()
+        # print(x)
+        # print(y)
+
         return AutogradTensor(x.child - y.child, requires_grad=requires_grad)
 
     def _backward(self, grad, backprop_id):
