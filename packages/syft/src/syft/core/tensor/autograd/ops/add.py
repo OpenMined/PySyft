@@ -8,7 +8,7 @@ from .op import Op
 
 
 class AddOp(Op):
-    '''Sumation operation with 2 tensors'''
+    """Sumation operation with 2 tensors"""
 
     def forward(self, x: AutogradTensor, y: AutogradTensor):
         self.x = x
@@ -28,10 +28,10 @@ class AddOp(Op):
             # have partial shape in such scenarion we need to sum
             # gradient values by missed axis
             if self.x.shape != grad.shape:
-                axis = np.argmax(np.abs(np.array(self.x.shape) -
-                                        np.array(grad.shape)))
-                self.x.add_grad(AutogradTensor(grad.child.sum(axis=axis,
-                                                              keepdims=True)))
+                axis = np.argmax(np.abs(np.array(self.x.shape) - np.array(grad.shape)))
+                self.x.add_grad(
+                    AutogradTensor(grad.child.sum(axis=axis, keepdims=True))
+                )
             else:
                 self.x.add_grad(grad)
             if self.x.grad_fn:
@@ -39,10 +39,10 @@ class AddOp(Op):
 
         if self.y.requires_grad:
             if self.y.shape != grad.shape:
-                axis = np.argmax(np.abs(np.array(self.y.shape) -
-                                        np.array(grad.shape)))
-                self.y.add_grad(AutogradTensor(grad.child.sum(axis=axis,
-                                                              keepdims=True)))
+                axis = np.argmax(np.abs(np.array(self.y.shape) - np.array(grad.shape)))
+                self.y.add_grad(
+                    AutogradTensor(grad.child.sum(axis=axis, keepdims=True))
+                )
             else:
                 self.y.add_grad(grad)
             if self.y.grad_fn:

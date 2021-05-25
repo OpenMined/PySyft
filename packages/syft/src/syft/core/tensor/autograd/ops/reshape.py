@@ -4,7 +4,7 @@ from .op import Op
 
 
 class ReshapeOp(Op):
-    '''Multiplication operation with 2 tensors'''
+    """Multiplication operation with 2 tensors"""
 
     def forward(self, x: AutogradTensor, *shape):
         self.x = x

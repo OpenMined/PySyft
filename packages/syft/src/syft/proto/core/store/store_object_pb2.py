@@ -3,23 +3,23 @@
 # source: proto/core/store/store_object.proto
 """Generated protocol buffer code."""
 # third party
-from google.protobuf import any_pb2 as google_dot_protobuf_dot_any__pb2
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
-
-# syft absolute
-from syft.proto.core.common import (
-    common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
-)
 
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
 
 
+# third party
+from google.protobuf import any_pb2 as google_dot_protobuf_dot_any__pb2
 
+# syft absolute
+from syft.proto.core.common import (
+    common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
+)
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/core/store/store_object.proto",

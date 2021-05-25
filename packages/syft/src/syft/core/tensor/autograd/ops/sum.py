@@ -1,11 +1,13 @@
+# third party
+import numpy as np
+
 # syft relative
 from ..tensor import AutogradTensor
 from .op import Op
-import numpy as np
 
 
 class SumOp(Op):
-    '''Sum operation across a dimension'''
+    """Sum operation across a dimension"""
 
     def forward(self, x: AutogradTensor, axis):
         self.x = x

@@ -49,17 +49,17 @@ def GenerateWrapper(
             return wrapped_type
 
     # TODO: refactor like proxy class to get correct name
-    new_class_name = f"syft.wrappers.{import_path}Wrapper"
-    parts = new_class_name.split(".")
-    name = parts.pop(-1)
-    Wrapper.__name__ = name
-    Wrapper.__module__ = ".".join(parts)
+    # WARNING: Changing this can break the Wrapper lookup during deserialize
+    module_parts = import_path.split(".")
+    klass = module_parts.pop()
+    Wrapper.__name__ = f"{klass}Wrapper"
+    Wrapper.__module__ = f"syft.wrappers.{'.'.join(module_parts)}"
     # create a fake module `wrappers` under `syft`
     if "wrappers" not in syft.__dict__:
         syft.__dict__["wrappers"] = module_type(name="wrappers")
     # for each part of the path, create a fake module and add it to it's parent
     parent = syft.__dict__["wrappers"]
-    for n in parts:
+    for n in module_parts:
         if n not in parent.__dict__:
             parent.__dict__[n] = module_type(name=n)
         parent = parent.__dict__[n]

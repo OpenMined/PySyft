@@ -3,15 +3,14 @@ from ..tensor import AutogradTensor
 
 
 class Op:
-
     def __init__(self):
         self.backprop_id = None
 
     def forward(self):
-        raise NotImplemented
+        raise NotImplementedError
 
     def _backward(self, grad, backprop_id):
-        raise NotImplemented
+        raise NotImplementedError
 
     def backward(self, grad, backprop_id):
 

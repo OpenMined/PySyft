@@ -8,7 +8,7 @@ from .op import Op
 
 
 class SubOp(Op):
-    '''Substraction operation with 2 tensors'''
+    """Substraction operation with 2 tensors"""
 
     def forward(self, x: AutogradTensor, y: AutogradTensor):
         self.x = x
@@ -34,10 +34,10 @@ class SubOp(Op):
             # gradient values by missed axis
             if self.x.shape != grad.shape:
                 print("shapes don't match")
-                axis = np.argmax(np.abs(np.array(self.x.shape) -
-                                        np.array(grad.shape)))
-                self.x.add_grad(AutogradTensor(grad.child.sum(axis=axis,
-                                                              keepdims=True)))
+                axis = np.argmax(np.abs(np.array(self.x.shape) - np.array(grad.shape)))
+                self.x.add_grad(
+                    AutogradTensor(grad.child.sum(axis=axis, keepdims=True))
+                )
             else:
 
                 self.x.add_grad(grad)
@@ -49,13 +49,12 @@ class SubOp(Op):
             if self.y.shape != grad.shape:
                 print("shapes don't match")
 
-                axis = np.argmax(np.abs(np.array(self.y.shape) -
-                                        np.array(grad.shape)))
-                self.y.add_grad(AutogradTensor(-(grad.child.sum(axis=axis,
-                                                                keepdims=True))))
+                axis = np.argmax(np.abs(np.array(self.y.shape) - np.array(grad.shape)))
+                self.y.add_grad(
+                    AutogradTensor(-(grad.child.sum(axis=axis, keepdims=True)))
+                )
             else:
                 self.y.add_grad(-grad)
 
             if self.y.grad_fn:
                 self.y.backward(backprop_id=backprop_id)
-

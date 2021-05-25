@@ -18,7 +18,6 @@ from scipy import optimize
 from sympy.core.basic import Basic as BasicSymbol
 
 # syft relative
-from .. import adp
 from ... import deserialize
 from ... import serialize
 from ...core.common import UID
@@ -44,7 +43,10 @@ from .search import ssid2obj
 # the most generic class
 class Scalar(Serializable):
     def publish(self, acc: Any, sigma: float = 1.5) -> float:
-        return adp.publish.publish([self], acc=acc, sigma=sigma)
+        # syft relative
+        from .publish import publish
+
+        return publish([self], acc=acc, sigma=sigma)
 
     @property
     def max_val(self) -> Optional[float]:
@@ -171,8 +173,10 @@ class IntermediateScalar(Scalar):
 
 @bind_protobuf
 class IntermediatePhiScalar(IntermediateScalar):
-    def __init__(self, poly: BasicSymbol, entity: Entity) -> None:
-        super().__init__(poly=poly)
+    def __init__(
+        self, poly: BasicSymbol, entity: Entity, id: Optional[UID] = None
+    ) -> None:
+        super().__init__(poly=poly, id=id)
         self._gamma: Optional[GammaScalar] = None
         self.entity = entity
 
@@ -353,7 +357,9 @@ class PhiScalar(BaseScalar, IntermediatePhiScalar):
 
         self.ssid = ssid
 
-        IntermediatePhiScalar.__init__(self, poly=var(self.ssid), entity=self.entity)
+        IntermediatePhiScalar.__init__(
+            self, poly=var(self.ssid), entity=self.entity, id=id
+        )
 
         ssid2obj[self.ssid] = self
 
@@ -371,15 +377,13 @@ class PhiScalar(BaseScalar, IntermediatePhiScalar):
 
     @staticmethod
     def _proto2object(proto: PhiScalar_PB) -> "PhiScalar":
-        phi_scalar = PhiScalar(
+        return PhiScalar(
             id=deserialize(proto.id),
             entity=deserialize(proto.entity),
             min_val=proto.min_val if proto.HasField("min_val") else None,
             max_val=proto.max_val if proto.HasField("max_val") else None,
             value=proto.value if proto.HasField("value") else None,
         )
-        # intermediate_phi_scalar._gamma = deserialize(proto.gamma)
-        return phi_scalar
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
@@ -554,7 +558,7 @@ class GammaScalar(BaseScalar, IntermediateGammaScalar):
 
         self.ssid = ssid
 
-        IntermediateGammaScalar.__init__(self, poly=var(self.ssid))
+        IntermediateGammaScalar.__init__(self, poly=var(self.ssid), id=id)
 
         ssid2obj[self.ssid] = self
 

@@ -2,15 +2,14 @@
 from collections import Counter
 from collections import defaultdict
 import uuid
-import numpy as np
 
 # syft relative
+from ..ancestors import SingleEntityPhiTensorAncestor
 from ..passthrough import PassthroughTensor
 from ..passthrough import is_acceptable_simple_type
-from ..ancestors import SingleEntityPhiTensorAncestor
+
 
 class AutogradTensor(PassthroughTensor, SingleEntityPhiTensorAncestor):
-
     def __init__(self, child, requires_grad=False):
         super().__init__(child)
 
@@ -39,7 +38,7 @@ class AutogradTensor(PassthroughTensor, SingleEntityPhiTensorAncestor):
     @property
     def grad_fn(self):
         if not self.requires_grad:
-            raise Exception('This tensor is not backpropagated')
+            raise Exception("This tensor is not backpropagated")
         return self._grad_fn
 
     #     def __ge__(self, other):
@@ -49,47 +48,63 @@ class AutogradTensor(PassthroughTensor, SingleEntityPhiTensorAncestor):
     #         return AutogradTensor(self.child <= other.child, requires_grad=False)
 
     def __add__(self, other):
+        # syft relative
         from .ops import add
+
         op = add.AddOp()
         return op(self, other)
 
     def __sub__(self, other):
+        # syft relative
         from .ops import sub
+
         op = sub.SubOp()
         return op(self, other)
 
     def __mul__(self, other):
+        # syft relative
         from .ops import mul
+
         op = mul.MulOp()
         return op(self, other)
 
     def __truediv__(self, other):
         if is_acceptable_simple_type(other):
-            return self * (1/other)
+            return self * (1 / other)
         return NotImplemented
 
     def reshape(self, *shape):
+        # syft relative
         from .ops import reshape
+
         op = reshape.ReshapeOp()
         return op(self, *shape)
 
     def copy(self):
+        # syft relative
         from .ops import copy
+
         op = copy.CopyOp()
         return op(self)
 
     def sum(self, *args, **kwargs):
+        # syft relative
         from .ops import sum
+
         op = sum.SumOp()
         return op(self, *args, **kwargs)
 
     def repeat(self, *args, **kwargs):
+        # syft relative
         from .ops import repeat
+
         op = repeat.RepeatOp()
         return op(self, *args, **kwargs)
 
     def transpose(self, *dims):
+        # syft relative
         from .ops import transpose
+
         op = transpose.TransposeOp()
         return op(self, *dims)
 
@@ -125,7 +140,7 @@ class AutogradTensor(PassthroughTensor, SingleEntityPhiTensorAncestor):
             grad = self._grad[self.backprop_id]
 
         if not self.requires_grad:
-            raise Exception('This tensor is not backpropagated')
+            raise Exception("This tensor is not backpropagated")
 
         # if all gradients are accounted for - backprop
         if self.n_backwards[backprop_id] >= len(self.ops):

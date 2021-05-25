@@ -1,1 +1,2 @@
-from . import functions #noqa 401
+# syft relative
+from . import functions  # noqa: 401

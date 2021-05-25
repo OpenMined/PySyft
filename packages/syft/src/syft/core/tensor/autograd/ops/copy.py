@@ -4,7 +4,7 @@ from .op import Op
 
 
 class CopyOp(Op):
-    '''Copy a tensor'''
+    """Copy a tensor"""
 
     def forward(self, x: AutogradTensor):
         self.x = x
@@ -18,4 +18,4 @@ class CopyOp(Op):
             self.x.add_grad(AutogradTensor(grad.child.copy()))
 
             if self.x.grad_fn:
-                self.x.backward(backprop_id=backprop_id) 
+                self.x.backward(backprop_id=backprop_id)

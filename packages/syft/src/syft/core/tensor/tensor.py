@@ -5,8 +5,9 @@ import torch as th
 # syft relative
 from .ancestors import AutogradTensorAncestor
 from .ancestors import SingleEntityPhiTensorAncestor
-from .passthrough import PassthroughTensor
 from .passthrough import HANDLED_FUNCTIONS
+from .passthrough import PassthroughTensor
+
 
 class Tensor(PassthroughTensor, AutogradTensorAncestor, SingleEntityPhiTensorAncestor):
     def __init__(self, child):

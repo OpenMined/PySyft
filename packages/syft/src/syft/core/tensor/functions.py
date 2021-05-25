@@ -1,7 +1,11 @@
-from .tensor import Tensor
+# third party
 import numpy as np
+
+# syft relative
 from .passthrough import implements
 from .passthrough import inputs2child
+from .tensor import Tensor
+
 
 @implements(Tensor, np.mean)
 def mean(array, axis=None, **kwargs):
@@ -12,6 +16,7 @@ def mean(array, axis=None, **kwargs):
         den = array.shape[axis]
 
     return array.sum(axis=axis) / den
+
 
 @implements(Tensor, np.max)
 def npmax(*args, **kwargs):
@@ -28,6 +33,7 @@ def npmin(*args, **kwargs):
 @implements(Tensor, np.square)
 def square(x):
     return x * x
+
 
 @implements(Tensor, np.expand_dims)
 def expand_dims(*args, **kwargs):

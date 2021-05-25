@@ -8,6 +8,7 @@ from typing import Tuple
 
 # third party
 import pytest
+import torch
 import torch as th
 
 # syft absolute

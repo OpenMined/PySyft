@@ -6,7 +6,7 @@ from typing import Any as TypeAny
 import pymbolic as pmbl
 
 # syft relative
-from . import primitives  # 401
+from . import primitives  # noqa: 401
 from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules

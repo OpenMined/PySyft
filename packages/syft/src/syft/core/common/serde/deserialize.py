@@ -72,6 +72,7 @@ def _deserialize(
     # lets try to lookup the type we are deserializing
     obj_type = getattr(type(blob), "schema2type", None)
     if obj_type is None:
+        # TODO: This can probably be removed now we have lists of obj_types
         obj_type = getattr(blob, "obj_type", None)
         if obj_type is None:
             traceback_and_raise(deserialization_error)
@@ -89,7 +90,13 @@ def _deserialize(
                 if hasattr(possible_type, "wrapped_type"):
                     # get the str inside <class ...>, fqn in sympy is different
                     real_obj_type_str = str(possible_type.wrapped_type()).split("'")[1]
-                    if real_obj_type == real_obj_type_str:
+                    # TODO: This needs to be cleaned up in GenerateWrapper and
+                    # made more consistent
+                    if real_obj_type.endswith("Wrapper"):
+                        real_obj_type = real_obj_type.replace("Wrapper", "")
+                    if real_obj_type == real_obj_type_str or real_obj_type.endswith(
+                        real_obj_type_str
+                    ):
                         # found it, lets overwrite obj_type and break
                         obj_type = possible_type
                         break

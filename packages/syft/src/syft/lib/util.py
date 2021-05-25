@@ -129,7 +129,7 @@ def replace_classes_in_module(
     visited_modules = []
 
     def recursive_update(
-        module: ModuleType, attr_name: Union[str, None] = None
+        module: ModuleType, attr_name: TypeUnion[str, None] = None
     ) -> None:
 
         # check if we need to skip this attribute to preserve our unmodified

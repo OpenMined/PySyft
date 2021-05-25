@@ -8,6 +8,11 @@ from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
 
+# @@protoc_insertion_point(imports)
+
+_sym_db = _symbol_database.Default()
+
+
 # syft absolute
 from syft.proto.core.common import (
     common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
@@ -16,12 +21,6 @@ from syft.proto.core.io import address_pb2 as proto_dot_core_dot_io_dot_address_
 from syft.proto.core.node.domain.service import (
     request_message_pb2 as proto_dot_core_dot_node_dot_domain_dot_service_dot_request__message__pb2,
 )
-
-# @@protoc_insertion_point(imports)
-
-_sym_db = _symbol_database.Default()
-
-
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/core/node/domain/service/get_all_requests_message.proto",

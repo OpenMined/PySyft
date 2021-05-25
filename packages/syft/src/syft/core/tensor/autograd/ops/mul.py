@@ -5,7 +5,7 @@ from .op import Op
 
 
 class MulOp(Op):
-    '''Multiplication operation with 2 tensors'''
+    """Multiplication operation with 2 tensors"""
 
     def forward(self, x: AutogradTensor, y: AutogradTensor):
         self.x = x

@@ -7,10 +7,10 @@ from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
 from ...core.node.abstract.node import AbstractNodeClient
-from .scalar import GammaScalar  # 401
-from .scalar import IntermediatePhiScalar  # 401
-from .scalar import PhiScalar  # 401
-from .scalar import Scalar  # 401
+from .scalar import GammaScalar  # noqa: 401
+from .scalar import IntermediatePhiScalar  # noqa: 401
+from .scalar import PhiScalar  # noqa: 401
+from .scalar import Scalar  # noqa: 401
 
 
 def create_adp_ast(client: Optional[AbstractNodeClient] = None) -> Globals:

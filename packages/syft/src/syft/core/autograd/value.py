@@ -23,7 +23,6 @@ from sympy.core.basic import Basic
 __author__ = ["Georgios Kaissis", "Alexander Ziller"]
 
 
-
 Numeric = Any  # numbers.Number doesn't work as desired
 
 

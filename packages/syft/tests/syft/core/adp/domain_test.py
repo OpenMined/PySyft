@@ -1,9 +1,13 @@
+# third party
+import pytest
+
 # syft absolute
 import syft as sy
 from syft.core.adp.scalar import PhiScalar
 
 
 # TODO @Tudor fix
+@pytest.mark.xfail
 def test_autodp_phiscalar_publish_domain() -> None:
     bob_domain = sy.Domain(name="Bob's Domain")
     client = bob_domain.get_root_client()

@@ -12,10 +12,12 @@ def npmax(*args, **kwargs):
     args, kwargs = inputs2child(*args, **kwargs)
     return np.max(*args, **kwargs)
 
+
 @implements(AutogradTensor, np.min)
 def npmin(*args, **kwargs):
     args, kwargs = inputs2child(*args, **kwargs)
     return np.min(*args, **kwargs)
+
 
 @implements(AutogradTensor, np.expand_dims)
 def expand_dims(*args, **kwargs):

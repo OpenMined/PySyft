@@ -218,11 +218,10 @@ def create_lib_ast(client: Optional[TypeAny] = None) -> Globals:
 
     lib_ast = Globals(client=client)
     lib_ast.add_attr(attr_name="syft", attr=python_ast.attrs["syft"])
-    lib_ast.syft.lib.add_attr("adp", attr=adp_ast.syft.core.adp)
-
     lib_ast.add_attr(attr_name="torch", attr=torch_ast.attrs["torch"])
     lib_ast.add_attr(attr_name="torchvision", attr=torchvision_ast.attrs["torchvision"])
     lib_ast.syft.add_attr("core", attr=plan_ast.syft.core)
+    lib_ast.syft.core.add_attr("adp", attr=adp_ast.syft.core.adp)
     lib_ast.syft.core.add_attr(
         "remote_dataloader", remote_dataloader_ast.syft.core.remote_dataloader
     )

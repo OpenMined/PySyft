@@ -8,6 +8,11 @@ from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
 
+# @@protoc_insertion_point(imports)
+
+_sym_db = _symbol_database.Default()
+
+
 # syft absolute
 from syft.proto.core.node.common.action import (
     garbage_collect_object_pb2 as proto_dot_core_dot_node_dot_common_dot_action_dot_garbage__collect__object__pb2,
@@ -33,12 +38,6 @@ from syft.proto.core.node.common.action import (
 from syft.proto.core.node.common.action import (
     save_object_pb2 as proto_dot_core_dot_node_dot_common_dot_action_dot_save__object__pb2,
 )
-
-# @@protoc_insertion_point(imports)
-
-_sym_db = _symbol_database.Default()
-
-
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/core/node/common/action/action.proto",

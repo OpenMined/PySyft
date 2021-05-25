@@ -4,7 +4,7 @@ from .op import Op
 
 
 class RepeatOp(Op):
-    '''Repeat operation across a dimension'''
+    """Repeat operation across a dimension"""
 
     def forward(self, x: AutogradTensor, repeats, axis=None):
         self.x = x
