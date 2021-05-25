@@ -25,8 +25,8 @@ def test_variable_serde() -> None:
 @pytest.mark.vendor(lib="pymbolic")
 def test_product_serde() -> None:
     # third party
-    from pymbolic.primitives import Variable
     from pymbolic.primitives import Product
+    from pymbolic.primitives import Variable
 
     sy.load("pymbolic")
 
@@ -43,8 +43,8 @@ def test_product_serde() -> None:
 @pytest.mark.vendor(lib="pymbolic")
 def test_sum_serde() -> None:
     # third party
-    from pymbolic.primitives import Variable
     from pymbolic.primitives import Sum
+    from pymbolic.primitives import Variable
 
     sy.load("pymbolic")
 

@@ -11,10 +11,12 @@ from .....logger import critical
 from .....logger import debug
 from .....logger import traceback_and_raise
 from .....logger import warning
-from .....proto.core.node.common.action.get_object_pb2 import \
-    GetObjectAction as GetObjectAction_PB
-from .....proto.core.node.common.action.get_object_pb2 import \
-    GetObjectResponseMessage as GetObjectResponseMessage_PB
+from .....proto.core.node.common.action.get_object_pb2 import (
+    GetObjectAction as GetObjectAction_PB,
+)
+from .....proto.core.node.common.action.get_object_pb2 import (
+    GetObjectResponseMessage as GetObjectResponseMessage_PB,
+)
 from .....util import get_fully_qualified_name
 from .....util import validate_type
 from ....common.message import ImmediateSyftMessageWithoutReply

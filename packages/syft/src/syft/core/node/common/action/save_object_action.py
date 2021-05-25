@@ -7,8 +7,9 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from ..... import serialize
-from .....proto.core.node.common.action.save_object_pb2 import \
-    SaveObjectAction as SaveObjectAction_PB
+from .....proto.core.node.common.action.save_object_pb2 import (
+    SaveObjectAction as SaveObjectAction_PB,
+)
 from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import Serializable
 from ....common.serde.serializable import bind_protobuf

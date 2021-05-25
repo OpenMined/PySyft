@@ -1,9 +1,11 @@
 # third party
-from ancestors import AutogradTensorAncestor
 import numpy as np
-from passthrough import PassthroughTensor
-from passthrough import implements
-from passthrough import inputs2child
+
+# syft relative
+from .ancestors import AutogradTensorAncestor
+from .passthrough import PassthroughTensor
+from .passthrough import implements
+from .passthrough import inputs2child
 
 
 class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor):

@@ -8,8 +8,8 @@ from nacl.signing import VerifyKey
 
 # syft absolute
 from syft.core.common.message import SignedEventualSyftMessageWithoutReply
-from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
+from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
 from syft.core.io.location.specific import SpecificLocation

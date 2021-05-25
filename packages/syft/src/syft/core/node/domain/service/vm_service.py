@@ -8,8 +8,8 @@ from nacl.signing import VerifyKey
 # syft relative
 from .....util import traceback_and_raise
 from ...abstract.node import AbstractNode
-from ...common.service.node_service import ImmediateNodeServiceWithoutReply
 from ...common.service.node_service import ImmediateNodeServiceWithReply
+from ...common.service.node_service import ImmediateNodeServiceWithoutReply
 from .request_answer_message import RequestAnswerMessage
 from .request_answer_message import RequestAnswerResponse
 from .request_message import RequestMessage

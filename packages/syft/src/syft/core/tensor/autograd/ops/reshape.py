@@ -1,5 +1,7 @@
-from .op import Op
+# syft relative
 from ..tensor import AutogradTensor
+from .op import Op
+
 
 class ReshapeOp(Op):
     '''Multiplication operation with 2 tensors'''

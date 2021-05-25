@@ -9,10 +9,12 @@ from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
 
 # syft absolute
-from syft.proto.core.node.common.action import \
-    action_pb2 as proto_dot_core_dot_node_dot_common_dot_action_dot_action__pb2
-from syft.proto.core.pointer import \
-    pointer_pb2 as proto_dot_core_dot_pointer_dot_pointer__pb2
+from syft.proto.core.node.common.action import (
+    action_pb2 as proto_dot_core_dot_node_dot_common_dot_action_dot_action__pb2,
+)
+from syft.proto.core.pointer import (
+    pointer_pb2 as proto_dot_core_dot_pointer_dot_pointer__pb2,
+)
 
 # @@protoc_insertion_point(imports)
 

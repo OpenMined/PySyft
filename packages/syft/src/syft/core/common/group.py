@@ -9,8 +9,7 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from ...generate_wrapper import GenerateWrapper
-from ...proto.core.auth.signed_message_pb2 import \
-    VerifyAll as VerifyAllWrapper_PB
+from ...proto.core.auth.signed_message_pb2 import VerifyAll as VerifyAllWrapper_PB
 from ...proto.core.auth.signed_message_pb2 import VerifyKey as VerifyKey_PB
 from .serde.serializable import Serializable
 from .serde.serializable import bind_protobuf

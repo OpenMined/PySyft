@@ -1,5 +1,7 @@
-from .op import Op
+# syft relative
 from ..tensor import AutogradTensor
+from .op import Op
+
 
 class SumOp(Op):
     '''Sum operation across a dimension'''

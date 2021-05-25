@@ -15,8 +15,7 @@ import pytest
 # syft absolute
 import syft as sy
 from syft import logger
-from syft.grid.example_nodes.network import \
-    signaling_server as start_signaling_server
+from syft.grid.example_nodes.network import signaling_server as start_signaling_server
 from syft.lib import VendorLibraryImportException
 from syft.lib import _load_lib
 from syft.lib import vendor_requirements_available

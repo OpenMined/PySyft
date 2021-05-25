@@ -13,10 +13,12 @@ from torch.utils.data import Dataset
 from ... import deserialize
 from ... import serialize
 from ...logger import traceback_and_raise
-from ...proto.core.remote_dataloader.remote_dataset_pb2 import \
-    RemoteDataLoader as RemoteDataLoader_PB
-from ...proto.core.remote_dataloader.remote_dataset_pb2 import \
-    RemoteDataset as RemoteDataset_PB
+from ...proto.core.remote_dataloader.remote_dataset_pb2 import (
+    RemoteDataLoader as RemoteDataLoader_PB,
+)
+from ...proto.core.remote_dataloader.remote_dataset_pb2 import (
+    RemoteDataset as RemoteDataset_PB,
+)
 from ..common.serde.serializable import Serializable
 from ..common.serde.serializable import bind_protobuf
 

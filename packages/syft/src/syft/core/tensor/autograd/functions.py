@@ -1,7 +1,11 @@
+# third party
 import numpy as np
-from .tensor import AutogradTensor
-from ..passthrough import inputs2child
+
+# syft relative
 from ..passthrough import implements
+from ..passthrough import inputs2child
+from .tensor import AutogradTensor
+
 
 @implements(AutogradTensor, np.max)
 def npmax(*args, **kwargs):

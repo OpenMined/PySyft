@@ -1,12 +1,6 @@
 # future
 from __future__ import annotations
 
-# May 5th, 2020
-# APACHE 2.0 License
-# Some code modified/reused from https://github.com/sradc/SmallPebble under APACHE 2.0 License terms
-
-__author__ = ["Georgios Kaissis", "Alexander Ziller"]
-
 # stdlib
 from collections import defaultdict
 from functools import lru_cache
@@ -21,6 +15,14 @@ import uuid
 import numpy as np
 import sympy as sym
 from sympy.core.basic import Basic
+
+# May 5th, 2020
+# APACHE 2.0 License
+# Some code modified/reused from https://github.com/sradc/SmallPebble under APACHE 2.0 License terms
+
+__author__ = ["Georgios Kaissis", "Alexander Ziller"]
+
+
 
 Numeric = Any  # numbers.Number doesn't work as desired
 

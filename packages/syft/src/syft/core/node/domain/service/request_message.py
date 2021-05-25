@@ -15,8 +15,9 @@ from .....logger import critical
 from .....logger import debug
 from .....logger import traceback
 from .....logger import traceback_and_raise
-from .....proto.core.node.domain.service.request_message_pb2 import \
-    RequestMessage as RequestMessage_PB
+from .....proto.core.node.domain.service.request_message_pb2 import (
+    RequestMessage as RequestMessage_PB,
+)
 from ....common import UID
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.serializable import bind_protobuf
@@ -26,8 +27,7 @@ from ....node.common.node import DuplicateRequestException
 from ...abstract.node import AbstractNode
 from ...common.node import Node
 from ...common.service.node_service import ImmediateNodeServiceWithoutReply
-from ...domain.service.accept_or_deny_request_service import \
-    AcceptOrDenyRequestMessage
+from ...domain.service.accept_or_deny_request_service import AcceptOrDenyRequestMessage
 
 
 class RequestStatus(Enum):

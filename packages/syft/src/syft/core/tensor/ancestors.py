@@ -1,16 +1,17 @@
 # stdlib
 import uuid
 
-# third party
-from autograd import AutogradTensor
-from manager import TensorChainManager
-from passthrough import is_acceptable_simple_type
+# syft relative
+from .autograd.tensor import AutogradTensor
+from .manager import TensorChainManager
+from .passthrough import is_acceptable_simple_type
 
 _SingleEntityPhiTensorRef = None
 def _SingleEntityPhiTensor():
     global _SingleEntityPhiTensorRef
     if _SingleEntityPhiTensorRef is None:
-        from single_entity_phi import SingleEntityPhiTensor
+        # syft relative
+        from .single_entity_phi import SingleEntityPhiTensor
         _SingleEntityPhiTensorRef = SingleEntityPhiTensor
     return _SingleEntityPhiTensorRef
 

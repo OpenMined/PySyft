@@ -8,8 +8,9 @@ from nacl.signing import VerifyKey
 # syft relative
 from ..... import serialize
 from .....logger import critical
-from .....proto.core.node.common.action.garbage_collect_object_pb2 import \
-    GarbageCollectObjectAction as GarbageCollectObjectAction_PB
+from .....proto.core.node.common.action.garbage_collect_object_pb2 import (
+    GarbageCollectObjectAction as GarbageCollectObjectAction_PB,
+)
 from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID

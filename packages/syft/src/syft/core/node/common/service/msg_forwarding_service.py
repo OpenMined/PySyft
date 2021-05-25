@@ -9,14 +9,14 @@ from nacl.signing import VerifyKey
 from .....logger import debug
 from .....logger import error
 from .....logger import traceback_and_raise
-from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.message import ImmediateSyftMessageWithReply
-from ....common.message import SignedImmediateSyftMessageWithoutReply
+from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.message import SignedImmediateSyftMessageWithReply
+from ....common.message import SignedImmediateSyftMessageWithoutReply
 from ....common.message import SignedMessageT
 from ...abstract.node import AbstractNode
-from .node_service import SignedNodeServiceWithoutReply
 from .node_service import SignedNodeServiceWithReply
+from .node_service import SignedNodeServiceWithoutReply
 
 
 class SignedMessageWithoutReplyForwardingService(SignedNodeServiceWithoutReply):

@@ -4,8 +4,9 @@ import torch as th
 # syft absolute
 import syft as sy
 from syft.core.common.uid import UID
-from syft.core.node.common.action.function_or_constructor_action import \
-    RunFunctionOrConstructorAction
+from syft.core.node.common.action.function_or_constructor_action import (
+    RunFunctionOrConstructorAction,
+)
 
 
 # TODO test execution

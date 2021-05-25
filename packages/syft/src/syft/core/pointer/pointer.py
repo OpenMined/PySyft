@@ -111,8 +111,9 @@ from ..io.address import Address
 from ..node.abstract.node import AbstractNode
 from ..node.common.action.get_object_action import GetObjectAction
 from ..node.common.service.get_repr_service import GetReprMessage
-from ..node.common.service.obj_search_permission_service import \
-    ObjectSearchPermissionUpdateMessage
+from ..node.common.service.obj_search_permission_service import (
+    ObjectSearchPermissionUpdateMessage,
+)
 from ..store.storeable_object import StorableObject
 
 

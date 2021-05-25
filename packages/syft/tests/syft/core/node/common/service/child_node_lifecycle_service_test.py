@@ -4,8 +4,9 @@ import pytest
 # syft absolute
 import syft as sy
 from syft import serialize
-from syft.core.node.common.service.child_node_lifecycle_service import \
-    RegisterChildNodeMessage
+from syft.core.node.common.service.child_node_lifecycle_service import (
+    RegisterChildNodeMessage,
+)
 
 
 @pytest.mark.slow

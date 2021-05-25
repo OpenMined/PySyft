@@ -1,7 +1,7 @@
 # syft absolute
 from syft.core.common.message import SignedEventualSyftMessageWithoutReply
-from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
+from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft.core.io.location.specific import SpecificLocation
 from syft.core.io.route import BroadcastRoute
 from syft.core.io.route import Route

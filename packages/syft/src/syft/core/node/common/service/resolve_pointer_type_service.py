@@ -10,12 +10,14 @@ from nacl.signing import VerifyKey
 # syft relative
 from ..... import serialize
 from .....core.common.serde.serializable import bind_protobuf
-from .....proto.core.node.common.service.resolve_pointer_type_service_pb2 import \
-    ResolvePointerTypeAnswerMessage as ResolvePointerTypeAnswerMessage_PB
-from .....proto.core.node.common.service.resolve_pointer_type_service_pb2 import \
-    ResolvePointerTypeMessage as ResolvePointerTypeMessage_PB
-from ....common.message import ImmediateSyftMessageWithoutReply
+from .....proto.core.node.common.service.resolve_pointer_type_service_pb2 import (
+    ResolvePointerTypeAnswerMessage as ResolvePointerTypeAnswerMessage_PB,
+)
+from .....proto.core.node.common.service.resolve_pointer_type_service_pb2 import (
+    ResolvePointerTypeMessage as ResolvePointerTypeMessage_PB,
+)
 from ....common.message import ImmediateSyftMessageWithReply
+from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
 from ....common.uid import UID
 from ....io.address import Address

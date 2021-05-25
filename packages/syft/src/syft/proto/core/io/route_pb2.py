@@ -9,10 +9,10 @@ from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
 
 # syft absolute
-from syft.proto.core.io import \
-    connection_pb2 as proto_dot_core_dot_io_dot_connection__pb2
-from syft.proto.core.io import \
-    location_pb2 as proto_dot_core_dot_io_dot_location__pb2
+from syft.proto.core.io import (
+    connection_pb2 as proto_dot_core_dot_io_dot_connection__pb2,
+)
+from syft.proto.core.io import location_pb2 as proto_dot_core_dot_io_dot_location__pb2
 
 # @@protoc_insertion_point(imports)
 

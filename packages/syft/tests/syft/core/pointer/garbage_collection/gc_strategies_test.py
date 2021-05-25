@@ -3,9 +3,9 @@ import torch
 
 # syft absolute
 import syft as sy
-from syft.core.pointer.garbage_collection import GarbageCollection
 from syft.core.pointer.garbage_collection import GCBatched
 from syft.core.pointer.garbage_collection import GCSimple
+from syft.core.pointer.garbage_collection import GarbageCollection
 from syft.core.pointer.garbage_collection import gc_get_default_strategy
 from syft.core.pointer.garbage_collection import gc_set_default_strategy
 

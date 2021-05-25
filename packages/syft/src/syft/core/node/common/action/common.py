@@ -6,8 +6,8 @@ from nacl.signing import VerifyKey
 
 # syft relative
 from ....common.message import EventualSyftMessageWithoutReply
-from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.message import ImmediateSyftMessageWithReply
+from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.message import SyftMessage
 from ...abstract.node import AbstractNode
 

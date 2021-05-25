@@ -14,23 +14,25 @@ from syft import serialize
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
 from syft.core.node.common.action.common import Action
-from syft.core.node.common.action.function_or_constructor_action import \
-    RunFunctionOrConstructorAction
-from syft.core.node.common.action.garbage_collect_object_action import \
-    GarbageCollectObjectAction
-from syft.core.node.common.action.get_enum_attribute_action import \
-    EnumAttributeAction
+from syft.core.node.common.action.function_or_constructor_action import (
+    RunFunctionOrConstructorAction,
+)
+from syft.core.node.common.action.garbage_collect_object_action import (
+    GarbageCollectObjectAction,
+)
+from syft.core.node.common.action.get_enum_attribute_action import EnumAttributeAction
 from syft.core.node.common.action.get_object_action import GetObjectAction
-from syft.core.node.common.action.get_or_set_property_action import \
-    GetOrSetPropertyAction
-from syft.core.node.common.action.get_or_set_property_action import \
-    PropertyActions
-from syft.core.node.common.action.get_or_set_static_attribute_action import \
-    GetSetStaticAttributeAction
-from syft.core.node.common.action.get_or_set_static_attribute_action import \
-    StaticAttributeAction
-from syft.core.node.common.action.run_class_method_action import \
-    RunClassMethodAction
+from syft.core.node.common.action.get_or_set_property_action import (
+    GetOrSetPropertyAction,
+)
+from syft.core.node.common.action.get_or_set_property_action import PropertyActions
+from syft.core.node.common.action.get_or_set_static_attribute_action import (
+    GetSetStaticAttributeAction,
+)
+from syft.core.node.common.action.get_or_set_static_attribute_action import (
+    StaticAttributeAction,
+)
+from syft.core.node.common.action.run_class_method_action import RunClassMethodAction
 from syft.core.node.common.action.save_object_action import SaveObjectAction
 from syft.core.plan.plan_builder import ROOT_CLIENT
 from syft.core.store.storeable_object import StorableObject

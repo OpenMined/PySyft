@@ -6,8 +6,7 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft relative
-from ...proto.core.common.common_object_pb2 import \
-    ObjectWithID as ObjectWithID_PB
+from ...proto.core.common.common_object_pb2 import ObjectWithID as ObjectWithID_PB
 from ...util import validate_type
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable

@@ -3,7 +3,6 @@ import inspect
 from types import ModuleType
 from typing import Callable
 from typing import Optional
-from typing import Union
 from typing import Union as TypeUnion
 
 # syft relative

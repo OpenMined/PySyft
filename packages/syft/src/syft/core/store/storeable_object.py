@@ -11,8 +11,7 @@ import syft as sy
 
 # syft relative
 from ...logger import traceback_and_raise
-from ...proto.core.store.store_object_pb2 import \
-    StorableObject as StorableObject_PB
+from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
 from ...util import get_fully_qualified_name
 from ...util import index_syft_by_module_name
 from ...util import key_emoji

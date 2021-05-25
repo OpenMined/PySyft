@@ -18,8 +18,7 @@ from ...core.common.uid import UID
 from ...core.io.address import Address
 from ...logger import debug
 from ...logger import traceback_and_raise
-from ...proto.core.auth.signed_message_pb2 import \
-    SignedMessage as SignedMessage_PB
+from ...proto.core.auth.signed_message_pb2 import SignedMessage as SignedMessage_PB
 from ...util import get_fully_qualified_name
 from ...util import validate_type
 from ..common.serde.deserialize import _deserialize

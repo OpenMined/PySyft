@@ -18,8 +18,9 @@ from typing_extensions import final
 from ..... import serialize
 from .....logger import debug
 from .....logger import traceback_and_raise
-from .....proto.core.node.domain.service.accept_or_deny_request_message_pb2 import \
-    AcceptOrDenyRequestMessage as AcceptOrDenyRequestMessage_PB
+from .....proto.core.node.domain.service.accept_or_deny_request_message_pb2 import (
+    AcceptOrDenyRequestMessage as AcceptOrDenyRequestMessage_PB,
+)
 from .....util import key_emoji
 from .....util import validate_type
 from ....common.message import ImmediateSyftMessageWithoutReply

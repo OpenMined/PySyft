@@ -15,14 +15,14 @@ import pytest
 import syft as sy
 
 # syft relative
-from ..pytest_benchmarks.benchmark_send_get_local_test import \
-    send_get_list_local
-from ..pytest_benchmarks.benchmark_send_get_local_test import \
-    send_get_string_local
-from ..pytest_benchmarks.benchmark_send_get_multiprocess_test import \
-    send_get_list_multiprocess
-from ..pytest_benchmarks.benchmark_send_get_multiprocess_test import \
-    send_get_string_multiprocess
+from ..pytest_benchmarks.benchmark_send_get_local_test import send_get_list_local
+from ..pytest_benchmarks.benchmark_send_get_local_test import send_get_string_local
+from ..pytest_benchmarks.benchmark_send_get_multiprocess_test import (
+    send_get_list_multiprocess,
+)
+from ..pytest_benchmarks.benchmark_send_get_multiprocess_test import (
+    send_get_string_multiprocess,
+)
 from ..pytest_benchmarks.benchmarks_functions_test import list_serde
 from ..pytest_benchmarks.benchmarks_functions_test import string_serde
 

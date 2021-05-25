@@ -11,8 +11,9 @@ from nacl.signing import VerifyKey
 # syft relative
 from ..... import lib
 from ..... import serialize
-from .....proto.core.node.common.action.get_set_static_attribute_pb2 import \
-    GetSetStaticAttributeAction as GetSetStaticAttributeAction_PB
+from .....proto.core.node.common.action.get_set_static_attribute_pb2 import (
+    GetSetStaticAttributeAction as GetSetStaticAttributeAction_PB,
+)
 from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID

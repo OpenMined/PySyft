@@ -11,12 +11,14 @@ from typing_extensions import final
 # syft relative
 from .....core.adp.publish import publish
 from .....logger import traceback_and_raise
-from .....proto.core.node.domain.service.publish_scalars_service_pb2 import \
-    PublishScalarsAction as PublishScalarsAction_PB
-from .....proto.core.node.domain.service.publish_scalars_service_pb2 import \
-    PublishScalarsResultMessage as PublishScalarsResultMessage_PB
-from ....common.message import ImmediateSyftMessageWithoutReply
+from .....proto.core.node.domain.service.publish_scalars_service_pb2 import (
+    PublishScalarsAction as PublishScalarsAction_PB,
+)
+from .....proto.core.node.domain.service.publish_scalars_service_pb2 import (
+    PublishScalarsResultMessage as PublishScalarsResultMessage_PB,
+)
 from ....common.message import ImmediateSyftMessageWithReply
+from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import bind_protobuf
 from ....common.serde.serialize import _serialize as serialize

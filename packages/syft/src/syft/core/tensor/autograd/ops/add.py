@@ -1,7 +1,11 @@
-from .op import Op
-from ..tensor import AutogradTensor
+# third party
 import numpy as np
+
+# syft relative
 from ...passthrough import is_acceptable_simple_type
+from ..tensor import AutogradTensor
+from .op import Op
+
 
 class AddOp(Op):
     '''Sumation operation with 2 tensors'''

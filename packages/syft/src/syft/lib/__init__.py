@@ -2,7 +2,6 @@
 import importlib
 import sys
 from types import ModuleType
-from typing import Any
 from typing import Any as TypeAny
 from typing import Dict as TypeDict
 from typing import Iterable

@@ -18,8 +18,9 @@ from ..... import serialize
 from .....logger import critical
 from .....logger import traceback_and_raise
 from .....logger import warning
-from .....proto.core.node.common.action.run_class_method_pb2 import \
-    RunClassMethodAction as RunClassMethodAction_PB
+from .....proto.core.node.common.action.run_class_method_pb2 import (
+    RunClassMethodAction as RunClassMethodAction_PB,
+)
 from .....util import inherit_tags
 from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import bind_protobuf

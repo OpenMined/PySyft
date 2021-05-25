@@ -10,11 +10,11 @@ from nacl.signing import VerifyKey
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ...abstract.node import AbstractNode
 from ...common.service.node_service import EventualNodeServiceWithoutReply
-from ...common.service.node_service import ImmediateNodeServiceWithoutReply
 from ...common.service.node_service import ImmediateNodeServiceWithReply
+from ...common.service.node_service import ImmediateNodeServiceWithoutReply
 from ..action.common import EventualActionWithoutReply
-from ..action.common import ImmediateActionWithoutReply
 from ..action.common import ImmediateActionWithReply
+from ..action.common import ImmediateActionWithoutReply
 
 
 class ImmediateObjectActionServiceWithoutReply(ImmediateNodeServiceWithoutReply):

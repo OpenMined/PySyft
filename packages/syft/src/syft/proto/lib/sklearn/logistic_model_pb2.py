@@ -8,16 +8,17 @@ from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
 
-# @@protoc_insertion_point(imports)
-
-_sym_db = _symbol_database.Default()
-
-
 # syft absolute
 from syft.proto.core.common import (
     common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
 )
 from syft.proto.lib.python import dict_pb2 as proto_dot_lib_dot_python_dot_dict__pb2
+
+# @@protoc_insertion_point(imports)
+
+_sym_db = _symbol_database.Default()
+
+
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/lib/sklearn/logistic_model.proto",

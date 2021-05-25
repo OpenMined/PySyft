@@ -16,8 +16,9 @@ from nacl.signing import VerifyKey
 from ..... import serialize
 from .....logger import debug
 from .....logger import traceback
-from .....proto.core.node.common.service.heritage_update_service_pb2 import \
-    HeritageUpdateMessage as HeritageUpdateMessage_PB
+from .....proto.core.node.common.service.heritage_update_service_pb2 import (
+    HeritageUpdateMessage as HeritageUpdateMessage_PB,
+)
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import bind_protobuf

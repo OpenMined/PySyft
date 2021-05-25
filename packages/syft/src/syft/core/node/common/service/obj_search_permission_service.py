@@ -16,9 +16,9 @@ from typing_extensions import final
 
 # syft relative
 from ..... import serialize
-from .....proto.core.node.common.service.object_search_permission_update_message_pb2 import \
-    ObjectSearchPermissionUpdateMessage as \
-    ObjectSearchPermissionUpdateMessage_PB
+from .....proto.core.node.common.service.object_search_permission_update_message_pb2 import (
+    ObjectSearchPermissionUpdateMessage as ObjectSearchPermissionUpdateMessage_PB,
+)
 from ....common.group import VERIFYALL
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
