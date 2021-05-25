@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+from typing import Any
 from typing import Optional
 from typing import Tuple as TypeTuple
 from typing import Union
@@ -32,6 +33,13 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
     def __init__(self, child):
         self.child = child
+
+    @property
+    def data_child(self) -> Any:
+        data = self
+        while hasattr(data, "child"):
+            data = data.child
+        return data
 
     def __len__(self):
         return len(self.child)
