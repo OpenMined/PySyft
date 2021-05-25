@@ -41,7 +41,7 @@ def tensor_pairs():
 # 2. you can pass a dict specifying the **kwargs
 
 test_methods = [
-    # (["__abs__"], None),
+    (["__abs__"], None),
     (["__add__"], [(other,)]),
     # (["__divmod__", "__divmod__", None], [(other,)]),  # no backward
     (["__eq__"], [(other,)]),  # no backward
@@ -77,9 +77,9 @@ test_methods = [
     # # (["__str__"], unknown),  # no backward
     (["__sub__"], [(other,)]),
     # # (["__truediv__"], unknown),
-    # (["argmax"], [(0,)]),
-    # (["argmin"], [(0,)]),
-    # (["argsort"], [(-1,)]),  # no backward
+    (["argmax"], [(0,)]),  # no backward
+    (["argmin"], [(0,)]),  # no backward
+    (["argsort"], [(-1,)]),  # no backward
     # # (["choose"], unknown), # no backward
     # (["clip"], [(-2,)]),  # no backward
     # (["copy", "copy", "clone"], None),
