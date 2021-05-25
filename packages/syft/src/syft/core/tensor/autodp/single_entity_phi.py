@@ -102,22 +102,26 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor):
                                          entity=entity,
                                          min_vals=min_vals,
                                          max_vals=max_vals)
-        else:
-            
-            
-            data = self.child * other
-            
-            min_min = self.min_vals * other
-            max_max = self.max_vals * other            
+        elif is_acceptable_simple_type(other):
 
-            min_vals = np.min([min_min, max_max], axis=0)
-            max_vals = np.max([min_min, max_max], axis=0)
+            data = self.child * other
+
+            min_min = self.min_vals * other
+            min_max = self.min_vals * other
+            max_min = self.max_vals * other
+            max_max = self.max_vals * other
+
+            min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)
+            max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)
             entity = self.entity
             
             return SingleEntityPhiTensor(child=data,
                                          entity=entity,
                                          min_vals=min_vals,
                                          max_vals=max_vals)
+
+        else:
+            return NotImplemented
             
         
     def __truediv__(self, other):

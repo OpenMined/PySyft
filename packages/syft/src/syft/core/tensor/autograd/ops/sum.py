@@ -36,7 +36,7 @@ class SumOp(Op):
             else:
                 n_times = np.prod(self.backward_shape)
 
-                grad = grad.repeat(n_times, axis=0).reshape(self.backward_shape)
+                grad = grad.child.repeat(n_times, axis=0).reshape(self.backward_shape)
 
             self.x.add_grad(AutogradTensor(grad, requires_grad=requires_grad))
 
