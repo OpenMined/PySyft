@@ -86,9 +86,6 @@ class AutogradTensor(PassthroughTensor):
     def repeat(self, *args, **kwargs):
         from .ops import repeat
         op = repeat.RepeatOp()
-        print("in repeat op")
-        print(args)
-        print(kwargs)
         return op(self, *args, **kwargs)
 
     def transpose(self, *dims):
