@@ -217,6 +217,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     def __matmul__(
         self, other: Union[PassthroughTensor, np.ndarray]
     ) -> PassthroughTensor:
+        # use manual_mut
         if isinstance(other, np.ndarray):
             return self.__class__(self.child @ other)
         return self.__class__(self.child @ other.child)

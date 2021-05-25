@@ -45,27 +45,20 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor):
         return self._grad_fn
 
     # Autograd Tensor Operations
-
-    #     def __ge__(self, other):
-    #         return AutogradTensor(self.child >= other.child, requires_grad=False)
-
-    #     def __le__(self, other):
-    #         return AutogradTensor(self.child <= other.child, requires_grad=False)
-
     def __abs__(self) -> AutogradTensorAncestor:
-        op = autograd.ops.AbsOp()
+        op = autograd.backward_ops.AbsOp()
         return op(self)
 
     def __add__(self, other) -> AutogradTensorAncestor:
-        op = autograd.ops.AddOp()
+        op = autograd.backward_ops.AddOp()
         return op(self, other)
 
     def __sub__(self, other) -> AutogradTensorAncestor:
-        op = autograd.ops.SubOp()
+        op = autograd.backward_ops.SubOp()
         return op(self, other)
 
     def __mul__(self, other) -> AutogradTensorAncestor:
-        op = autograd.ops.MulOp()
+        op = autograd.backward_ops.MulOp()
         return op(self, other)
 
     def __truediv__(self, other) -> AutogradTensorAncestor:
@@ -74,23 +67,23 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor):
         return NotImplemented
 
     def reshape(self, *shape) -> AutogradTensorAncestor:
-        op = autograd.ops.ReshapeOp()
+        op = autograd.backward_ops.ReshapeOp()
         return op(self, *shape)
 
     def repeat(self, *args, **kwargs) -> AutogradTensorAncestor:
-        op = autograd.ops.RepeatOp()
+        op = autograd.backward_ops.RepeatOp()
         return op(self, *args, **kwargs)
 
     def copy(self) -> AutogradTensorAncestor:
-        op = autograd.ops.CopyOp()
+        op = autograd.backward_ops.CopyOp()
         return op(self)
 
     def sum(self, *args, **kwargs) -> AutogradTensorAncestor:
-        op = autograd.ops.SumOp()
+        op = autograd.backward_ops.SumOp()
         return op(self, *args, **kwargs)
 
     def transpose(self, *dims) -> AutogradTensorAncestor:
-        op = autograd.ops.TransposeOp()
+        op = autograd.backward_ops.TransposeOp()
         return op(self, *dims)
 
     # End Autograd Tensor Operations

@@ -8,26 +8,29 @@ from inspect import isdatadescriptor, isgetsetdescriptor
 other = type("Other", tuple(), {})
 unknown = type("Unknown", tuple(), {})
 
-@pytest.fixture(scope="module")
-def numpy_tensor_pair() -> Tuple[np.ndarray, np.ndarray]:
-    a = np.array([[1., 2., 3.], [4., 5., 6.], [7., 8., 9.]])
+def generate_numpy_pair():
+    a = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]])
     return (a, np.array(np.flip(a)))
 
-@pytest.fixture(scope="module")
-def torch_tensor_pair(numpy_tensor_pair: Tuple[np.ndarray, np.ndarray]) -> Tuple[th.Tensor,
-                                                                                 th.Tensor]:
-    return (th.tensor(numpy_tensor_pair[0]), th.tensor(numpy_tensor_pair[1]))
+
+def generate_torch_pair():
+    numpy_tensor_pair = generate_numpy_pair()
+    a = th.tensor(numpy_tensor_pair[0], requires_grad=True)
+    b = th.tensor(numpy_tensor_pair[1], requires_grad=True)
+    return (a, b)
 
 
-@pytest.fixture(scope="module")
-def syft_tensor_pair(numpy_tensor_pair: Tuple[np.ndarray, np.ndarray]) -> Tuple[Tensor, Tensor]:
-    return (Tensor(numpy_tensor_pair[0]).autograd(requires_grad=True), Tensor(numpy_tensor_pair[
-                                                                                  1]).autograd(requires_grad=True))
+def generate_syft_pair():
+    numpy_tensor_pair = generate_numpy_pair()
+    return (
+        Tensor(numpy_tensor_pair[0]).autograd(requires_grad=True),
+        Tensor(numpy_tensor_pair[1]).autograd(requires_grad=True),
+    )
 
 
 @pytest.fixture(scope="function")
-def tensor_pairs(syft_tensor_pair, numpy_tensor_pair, torch_tensor_pair):
-    return (syft_tensor_pair, numpy_tensor_pair, torch_tensor_pair)
+def tensor_pairs():
+    return (generate_syft_pair(), generate_numpy_pair(), generate_torch_pair())
 
 
 # Example on how to add tests:
@@ -40,58 +43,58 @@ def tensor_pairs(syft_tensor_pair, numpy_tensor_pair, torch_tensor_pair):
 test_methods = [
     (["__abs__"], None),
     (["__add__"], [(other,)]),
-    (["__divmod__", "__divmod__", None], [(other,)]),
-    (["__eq__"], [(other,)]),
-    (["__floordiv__"], [(other,)]),
-    (["__ge__"], [(other,)]),
-    (["__getitem__"], [(0,)]),
-    (["__gt__"], [(other,)]),
-    # (["__index__"], unknown),
+    (["__divmod__", "__divmod__", None], [(other,)]),  # no backward
+    (["__eq__"], [(other,)]),  # no backward
+    (["__floordiv__"], [(other,)]),  # no backward
+    (["__ge__"], [(other,)]),  # no backward
+    (["__getitem__"], [(0,), (range(0, 2),)]),
+    (["__gt__"], [(other,)]),  # no backward
+    # (["__index__"], unknown), # delete_later
     # (["__invert__"], unknown),
-    # (["__iter__"], unknown),
-    (["__le__"], [(other,)]),
-    (["__len__"], None),
-    # (["__lshift__"], [(3,)]),
-    (["__lt__"], [(other,)]),
+    # (["__iter__"], unknown),  # use getitem
+    (["__le__"], [(other,)]),  # no backward
+    (["__len__"], None),  # no backward
+    # (["__lshift__"], [(3,)]),  # no backward
+    (["__lt__"], [(other,)]),  # no backward
     (["__matmul__"], [(other,)]),
     (["__mul__"], [(other,)]),
-    (["__ne__"], [(other,)]),
+    (["__ne__"], [(other,)]),  # no backward
     (["__neg__"], None),
     (["__pow__"], [(other,)]),
     (["__radd__"], [(other,)]),
-    # (["__repr__"], None),
-    (["__rfloordiv__"], [(other,)]),
-    # (["__rlshift__", "__rlshift__", None], unknown),
+    # (["__repr__"], None),  # no backward
+    (["__rfloordiv__"], [(other,)]),  # no backward
+    # (["__rlshift__", "__rlshift__", None], unknown),  # no backward
     # (["__rmatmul__", "__rmatmul__", None], unknown),
     (["__rmul__"], [(other,)]),
     # (["__rpow__"], [(2,)]),
-    # (["__rrshift__", "__rrshift__", None], unknown),
-    # (["__rshift__"], unknown),
+    # (["__rrshift__", "__rrshift__", None], unknown),  # no backward
+    # (["__rshift__"], unknown),  # no backward
     (["__rsub__"], [(other,)]),
     # (["__rtruediv__"], unknown),
-    # (["__sizeof__"], unknown),
-    # (["__str__"], unknown),
+    # (["__sizeof__"], unknown),  # no backward
+    # (["__str__"], unknown),  # no backward
     (["__sub__"], [(other,)]),
     # (["__truediv__"], unknown),
     (["argmax"], [(0,)]),
     (["argmin"], [(0,)]),
-    (["argsort"], [(-1,)]),
-    # (["choose"], unknown),
-    (["clip"], [(-2,)]),
+    (["argsort"], [(-1,)]),  # no backward
+    # (["choose"], unknown), # no backward
+    (["clip"], [(-2,)]),  # no backward
     (["copy", "copy", "clone"], None),
     (["cumprod"], [(0,)]),
     (["cumsum"], [(0,)]),
-    (["diagonal"], [(0, )]),
-    # (["dot"], unknown),
-    # (["flat"], unknown),
-    (["flatten"], None),
-    # (["item"], unknown),
-    # (["itemset"], unknown),
-    # (["itemsize"], unknown),
+    (["diagonal"], [(0,)]),
+    # (["dot"], unknown),  # no backward
+    # (["flat"], unknown),  # no backward
+    (["flatten"], None),  # no backward
+    # (["item"], unknown),  # no backward
+    # (["itemset"], unknown),  # no backward
+    # (["itemsize"], unknown),  # no backward
     (["max"], None),
     (["mean"], None),
     (["min"], None),
-    (["ndim"], None),
+    (["ndim"], None),  # no backward
     (["prod"], None),
     # (["repeat"], unknown),
     (["reshape"], [(-1,)]),
@@ -100,13 +103,14 @@ test_methods = [
     # (["squeeze"], unknown),
     # (["std"], unknown),
     # (["sum"], unknown),
-    # (["swapaxes"], unknown),
-    (["T"], None),
+    # (["swapaxes"], unknown),  # no backward
+    (["T"], None), # no backward
     # (["take"], unknown),
     # (["transpose"], unknown),
 ]
 
 __test_methods = [(fname[0], fname, args) for (fname, args) in test_methods]
+
 
 def convert_other(input_structure, other_tensor):
     def replace_other(input):
@@ -117,7 +121,9 @@ def convert_other(input_structure, other_tensor):
         if isinstance(input, tuple):
             new_input_structure.append(tuple(replace_other(elem) for elem in input))
         elif isinstance(input, dict):
-            new_input_structure.append({k: replace_other(input) for k, v in input.items()})
+            new_input_structure.append(
+                {k: replace_other(input) for k, v in input.items()}
+            )
         else:
             raise ValueError("Not the right parameter structure")
 
@@ -126,6 +132,9 @@ def convert_other(input_structure, other_tensor):
 
 # handle converting collections of th.Tensor to numpy
 def th_as_np(t):
+    if hasattr(t, "requires_grad"):
+        t = t.detach()
+
     if isinstance(t, (int, bool, float)):
         return t
     if isinstance(t, th.Tensor):
@@ -139,8 +148,9 @@ def th_as_np(t):
 
     raise Exception(f"unknown type {type(t)} {t}")
 
+
 @pytest.mark.parametrize("_test_name, fcall_list, args", __test_methods)
-def test_ops(_test_name, fcall_list, args, tensor_pairs):
+def test_forward_pass(_test_name, fcall_list, args, tensor_pairs):
     if args is unknown:
         raise ValueError("Please specify a list of args for the function!")
 
@@ -170,7 +180,9 @@ def test_ops(_test_name, fcall_list, args, tensor_pairs):
             elif isgetsetdescriptor(method) or isdatadescriptor(method):
                 result = getattr(a, fcall)
             else:
-                raise ValueError("Please provide the right type of arguments for the fcall")
+                raise ValueError(
+                    "Please provide the right type of arguments for the fcall"
+                )
             results.append([result])
         else:
             tensor_specific_args = convert_other(args, b)
@@ -187,6 +199,9 @@ def test_ops(_test_name, fcall_list, args, tensor_pairs):
 
             results.append(sub_results)
 
+    if _test_name == "__ge__":
+        pass
+
     SYFT_RESULT = 0
     NUMPY_RESULT = 1
     TORCH_RESULT = 2
@@ -196,9 +211,9 @@ def test_ops(_test_name, fcall_list, args, tensor_pairs):
         numpy_result = results[NUMPY_RESULT][i]
         torch_result = results[TORCH_RESULT][i]
 
+        syft_original_result = syft_result
         while hasattr(syft_result, "child"):
             syft_result = syft_result.child
-
 
         assert syft_result is not None
 
@@ -207,3 +222,12 @@ def test_ops(_test_name, fcall_list, args, tensor_pairs):
 
         if torch_result is not None:
             assert np.array_equal(syft_result, th_as_np(torch_result))
+
+        # backward pass tests
+        if not hasattr(syft_original_result, "requires_grad"):
+            continue
+
+        assert syft_original_result.requires_grad == torch_result.requires_grad
+
+        if syft_original_result.requires_grad:
+            assert np.array_equal(syft_original_result.grad, th_as_np(torch_result.grad))
