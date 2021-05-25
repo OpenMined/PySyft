@@ -28,8 +28,6 @@ class Tensor(PassthroughTensor, AutogradTensorAncestor, SingleEntityPhiTensorAnc
     def __array_function__(self, func, types, args, kwargs):
         #         args, kwargs = inputs2child(*args, **kwargs)
 
-        print(func)
-        print("handling function")
         # Note: this allows subclasses that don't override
         # __array_function__ to handle PassthroughTensor objects.
         if not all(issubclass(t, self.__class__) for t in types):

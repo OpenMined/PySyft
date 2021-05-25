@@ -95,7 +95,7 @@ class AutogradTensor(PassthroughTensor):
 
     def add_grad(self, grad):
 
-        print("Adding grad:" + str(type(grad)) + " w/ backprop_id:" + str(self.backprop_id))
+        # print("Adding grad:" + str(type(grad)) + " w/ backprop_id:" + str(self.backprop_id))
 
         if self._grad[self.backprop_id] is None:
             self._grad[self.backprop_id] = grad
@@ -111,8 +111,6 @@ class AutogradTensor(PassthroughTensor):
 
         self.backprop_id = backprop_id
 
-        print("called backward on:" + str(self.grad_fn) + " " + str(self.n_backwards) + " " + str(self.ops))
-
         if not self.grad_fn:
             return False
 
@@ -126,8 +124,6 @@ class AutogradTensor(PassthroughTensor):
 
         if not self.requires_grad:
             raise Exception('This tensor is not backpropagated')
-
-        print(self.n_backwards[backprop_id], len(self.ops))
 
         # if all gradients are accounted for - backprop
         if self.n_backwards[backprop_id] >= len(self.ops):
@@ -151,8 +147,6 @@ class AutogradTensor(PassthroughTensor):
             # exceeds the number of times we've been backpropgated into - then we know
             # we need to wait.
             if n_direct_ops > self.n_backwards[backprop_id]:
-                print(str(n_direct_ops) + " > " + str(self.n_backwards[backprop_id]))
-                print(len(self.ops))
                 found_id = True
 
             else:
@@ -163,7 +157,6 @@ class AutogradTensor(PassthroughTensor):
                             found_id = True
                             break
 
-            print("Found id:" + str(found_id))
             if found_id:
                 "do nothing - we're going to get another gradient"
             else:

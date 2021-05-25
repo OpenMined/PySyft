@@ -9,14 +9,11 @@ from .tensor import AutogradTensor
 
 @implements(AutogradTensor, np.max)
 def npmax(*args, **kwargs):
-    print("maxing")
     args, kwargs = inputs2child(*args, **kwargs)
     return np.max(*args, **kwargs)
 
 @implements(AutogradTensor, np.min)
 def npmin(*args, **kwargs):
-    print("mining")
-    print(args)
     args, kwargs = inputs2child(*args, **kwargs)
     return np.min(*args, **kwargs)
 
