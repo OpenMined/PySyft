@@ -69,3 +69,5 @@ jobs:
         uses: snyk/actions/python-3.8@master
         env:
           SNYK_TOKEN: 3106d1f2-a045-4bc6-8695-d899ab653448 # to be changed to ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --file=requirements.txt
