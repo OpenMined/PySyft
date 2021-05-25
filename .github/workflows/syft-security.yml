@@ -63,7 +63,9 @@ jobs:
 
       - name: Generate requirements.txt for synk
         run: |
+          pwd
           sed -n '/syft =/,/^$/p' setup.cfg | tail -n +3 > requirements.txt
+          ls
 
       - name: Synk security check
         uses: snyk/actions/python-3.8@master
@@ -71,3 +73,6 @@ jobs:
           SNYK_TOKEN: 3106d1f2-a045-4bc6-8695-d899ab653448 # to be changed to ${{ secrets.SNYK_TOKEN }}
         with:
           args: --file=requirements.txt
+        run: |
+          pwd
+          ls
