@@ -7,7 +7,7 @@
 name: Syft PR Tests
 
 on:
-  push: # Change to pull_request before pushing
+  pull_request:
     branches:
       - dev
     paths:
