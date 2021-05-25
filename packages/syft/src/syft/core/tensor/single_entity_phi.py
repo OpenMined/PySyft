@@ -71,9 +71,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor):
             min_max = self.min_vals * other.max_vals
             max_min = self.max_vals * other.min_vals
             max_max = self.max_vals * other.max_vals            
-            
-            print(min_min)
-            
+
             min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)
             max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)
             entity = self.entity
@@ -89,10 +87,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor):
             
             min_min = self.min_vals * other
             max_max = self.max_vals * other            
-            
-            print(min_min)
-            print(max_max)
-            
+
             min_vals = np.min([min_min, max_max], axis=0)
             max_vals = np.max([min_min, max_max], axis=0)
             entity = self.entity
