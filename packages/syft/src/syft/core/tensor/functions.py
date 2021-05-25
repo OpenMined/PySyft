@@ -4,10 +4,14 @@ from .passthrough import implements
 from .passthrough import inputs2child
 
 @implements(Tensor, np.mean)
-def mean(*args, **kwargs):
-    args, kwargs = inputs2child(*args, **kwargs)
-    return np.mean(*args, **kwargs)
+def mean(array, axis=None, **kwargs):
 
+    if axis is None:
+        den = array.shape.prod()
+    else:
+        den = array.shape[axis]
+
+    return array.sum(axis=axis)# / den
 
 @implements(Tensor, np.max)
 def npmax(*args, **kwargs):

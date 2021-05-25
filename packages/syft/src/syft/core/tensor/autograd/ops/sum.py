@@ -1,6 +1,7 @@
 # syft relative
 from ..tensor import AutogradTensor
 from .op import Op
+import numpy as np
 
 
 class SumOp(Op):
@@ -9,10 +10,16 @@ class SumOp(Op):
     def forward(self, x: AutogradTensor, axis):
         self.x = x
         self.axis = axis
-        self.dim_at_axis = self.x.shape[self.axis]
+        if axis is not None:
+            # obj.sum() can be called without dims
+            self.dim_at_axis = self.x.shape[self.axis]
+        else:
+            self.dim_at_axis = None
         self.backward_shape = self.x.shape
 
-        return AutogradTensor(x.child.sum(axis), requires_grad=x.requires_grad)
+        result = x.child.sum(axis)
+
+        return AutogradTensor(result, requires_grad=x.requires_grad)
 
     def _backward(self, grad, backprop_id):
 

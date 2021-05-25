@@ -21,11 +21,6 @@ class MulOp(Op):
 
     def _backward(self, grad, backprop_id):
 
-        print("Sub backward grad:")
-        print("Backprop id:" + str(len(self.x.ops)))
-        print("Backprop id:" + str(len(self.y.ops)))
-        print(grad)
-
         y_is_simple = is_acceptable_simple_type(self.y)
 
         if self.x.requires_grad:

@@ -44,6 +44,7 @@ from pkg_resources import get_distribution  # noqa: F401
 # Convenience Objects
 
 from syft.core.tensor import functions
+from syft.core.tensor.autograd import functions
 from syft.core import common  # noqa: F401
 from syft.core.common import event_loop  # noqa: F401
 from syft.core.common.serde.deserialize import _deserialize as deserialize  # noqa: F401
