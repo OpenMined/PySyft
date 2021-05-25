@@ -6,6 +6,7 @@ import numpy as np
 
 # syft relative
 from ..passthrough import PassthroughTensor
+from ..passthrough import is_acceptable_simple_type
 
 
 class AutogradTensor(PassthroughTensor):
@@ -62,6 +63,11 @@ class AutogradTensor(PassthroughTensor):
         op = mul.MulOp()
         return op(self, other)
 
+    def __truediv__(self, other):
+        if is_acceptable_simple_type(other):
+            return self * (1/other)
+        return NotImplemented
+
     def reshape(self, *shape):
         from .ops import reshape
         op = reshape.ReshapeOp()
@@ -80,7 +86,10 @@ class AutogradTensor(PassthroughTensor):
     def repeat(self, *args, **kwargs):
         from .ops import repeat
         op = repeat.RepeatOp()
-        return op(self, *args, *kwargs)
+        print("in repeat op")
+        print(args)
+        print(kwargs)
+        return op(self, *args, **kwargs)
 
     def transpose(self, *dims):
         from .ops import transpose

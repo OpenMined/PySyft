@@ -12,7 +12,8 @@ class RepeatOp(Op):
         self.axis = axis
 
         self.input_shape = self.x.shape
-
+        print(repeats)
+        print(axis)
         output = x.child.repeat(repeats=repeats, axis=axis)
 
         self.output_shape = output.shape

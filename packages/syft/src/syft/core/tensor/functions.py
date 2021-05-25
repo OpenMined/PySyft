@@ -7,11 +7,11 @@ from .passthrough import inputs2child
 def mean(array, axis=None, **kwargs):
 
     if axis is None:
-        den = array.shape.prod()
+        den = float(np.prod(array.shape))
     else:
         den = array.shape[axis]
 
-    return array.sum(axis=axis)# / den
+    return array.sum(axis=axis) / den
 
 @implements(Tensor, np.max)
 def npmax(*args, **kwargs):

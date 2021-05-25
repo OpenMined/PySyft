@@ -19,6 +19,13 @@ class SumOp(Op):
 
         result = x.child.sum(axis)
 
+        if result.shape == ():
+            result = result.reshape(1)
+
+        print("has type:")
+        print(type(result))
+        print(result.shape)
+
         return AutogradTensor(result, requires_grad=x.requires_grad)
 
     def _backward(self, grad, backprop_id):
@@ -27,9 +34,14 @@ class SumOp(Op):
 
             requires_grad = grad.requires_grad
 
-            grad = np.expand_dims(grad.child, self.axis)
-
-            grad = grad.repeat(self.dim_at_axis, axis=self.axis)
+            if self.axis is not None:
+                grad = np.expand_dims(grad.child, self.axis)
+                grad = grad.repeat(self.dim_at_axis, axis=self.axis)
+            else:
+                n_times = np.prod(self.backward_shape)
+                print(n_times)
+                print(grad)
+                grad = grad.repeat(n_times, axis=0)
 
             self.x.add_grad(AutogradTensor(grad, requires_grad=requires_grad))
 
