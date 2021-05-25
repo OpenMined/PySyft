@@ -13,6 +13,7 @@
 *.pyc
 *.swp
 *.swo
+*.egg
 *.ipynb_checkpoints*
 **.pytest_cache/
 **/pip-wheel-metadata
