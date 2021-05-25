@@ -16,6 +16,7 @@ class MulOp(Op):
         if is_acceptable_simple_type(y):
             return AutogradTensor(x.child * y, requires_grad=requires_grad)
 
+        # print(y)
         requires_grad = requires_grad or y.requires_grad
         return AutogradTensor(x.child * y.child, requires_grad=requires_grad)
 

@@ -116,8 +116,10 @@ class AutogradTensor(PassthroughTensor, SingleEntityPhiTensorAncestor):
 
         if grad is None and self._grad[self.backprop_id] is None:
             # in case if this is last loss tensor
-            grad = np.ones(self.shape)
-            grad = self.__class__(grad, requires_grad=False)
+            # grad = np.ones(self.shape)
+            # grad = self.__class__(grad, requires_grad=False)
+            # this more or less ensures it has the right tensor chain
+            grad = (self * 0) + 1
 
         elif self.grad is not None:
             grad = self._grad[self.backprop_id]

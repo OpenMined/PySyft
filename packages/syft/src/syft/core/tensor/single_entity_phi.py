@@ -6,6 +6,7 @@ from .ancestors import AutogradTensorAncestor
 from .passthrough import PassthroughTensor
 from .passthrough import implements
 from .passthrough import inputs2child
+from .passthrough import is_acceptable_simple_type
 
 
 class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor):
@@ -42,6 +43,19 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor):
                                          entity=entity,
                                          min_vals=min_vals,
                                          max_vals=max_vals)
+
+        elif is_acceptable_simple_type(other):
+
+            data = self.child + other
+            min_vals = self.min_vals + other
+            max_vals = self.max_vals + other
+            entity = self.entity
+
+            return SingleEntityPhiTensor(child=data,
+                                         entity=entity,
+                                         min_vals=min_vals,
+                                         max_vals=max_vals)
+
         else:
             return NotImplemented
         
