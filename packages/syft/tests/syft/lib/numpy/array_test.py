@@ -7,10 +7,6 @@ import pytest
 # syft absolute
 import syft as sy
 from syft.experimental_flags import flags
-from syft.lib.numpy.array import SUPPORTED_BOOL_TYPES
-from syft.lib.numpy.array import SUPPORTED_DTYPES
-from syft.lib.numpy.array import SUPPORTED_FLOAT_TYPES
-from syft.lib.numpy.array import SUPPORTED_INT_TYPES
 
 
 @pytest.mark.vendor(lib="numpy")
@@ -20,6 +16,12 @@ def test_remote_numpy_array(
 ) -> None:
     # third party
     import numpy as np
+
+    # syft absolute
+    from syft.lib.numpy.array import SUPPORTED_BOOL_TYPES
+    from syft.lib.numpy.array import SUPPORTED_DTYPES
+    from syft.lib.numpy.array import SUPPORTED_FLOAT_TYPES
+    from syft.lib.numpy.array import SUPPORTED_INT_TYPES
 
     sy.load("numpy")
     flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend

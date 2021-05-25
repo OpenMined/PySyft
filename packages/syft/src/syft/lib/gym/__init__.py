@@ -7,6 +7,9 @@ from typing import Tuple as TypeTuple
 # third party
 import gym
 
+# syft absolute
+import syft as sy
+
 # syft relative
 from ...ast import add_classes
 from ...ast import add_methods
@@ -50,6 +53,9 @@ def create_ast(client: TypeAny = None) -> Globals:
 
     add_modules(ast, modules)
     add_classes(ast, classes)
+
+    sy.load("numpy")  # needed for the numpy.ndarray return type
+
     add_methods(ast, methods)
 
     for klass in ast.classes:

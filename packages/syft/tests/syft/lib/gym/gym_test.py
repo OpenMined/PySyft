@@ -14,7 +14,6 @@ def test_remote_gym(arrow_backend: bool, root_client: sy.VirtualMachineClient) -
     import numpy as np
 
     sy.load("gym")
-    sy.load("numpy")
 
     flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
 
