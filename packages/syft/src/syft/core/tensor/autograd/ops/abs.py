@@ -13,6 +13,8 @@ from .op import Op
 class AbsOp(Op):
     def forward(self, x: AutogradTensor) -> AutogradTensor:
         self.x = x
+        return AutogradTensor(x.child.abs(), requires_grad=x.requires_grad)
+
 
     def _backward(self, grad: AutogradTensor, backprop_id: uuid.uuid4):
         if self.x.requires_grad:

@@ -15,6 +15,7 @@ class ArgMaxOp(Op):
         self.x = x
         self.y = y
 
+
     def _backward(self, grad: AutogradTensor, backprop_id: uuid.uuid4):
         if self.x.requires_grad:
             pass

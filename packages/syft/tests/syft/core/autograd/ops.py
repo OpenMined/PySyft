@@ -46,65 +46,67 @@ test_methods = [
     (["__ge__"], [(other,)]),
     (["__getitem__"], [(0,)]),
     (["__gt__"], [(other,)]),
-    (["__index__"], unknown),
-    (["__invert__"], unknown),
-    (["__iter__"], unknown),
+    # (["__index__"], unknown),
+    # (["__invert__"], unknown),
+    # (["__iter__"], unknown),
     (["__le__"], [(other,)]),
     (["__len__"], None),
-    (["__lshift__"], [(other,)]),
+    # (["__lshift__"], [(3,)]),
     (["__lt__"], [(other,)]),
     (["__matmul__"], [(other,)]),
     (["__mul__"], [(other,)]),
     (["__ne__"], [(other,)]),
-    (["__neg__"], [(other,)]),
+    (["__neg__"], None),
     (["__pow__"], [(other,)]),
     (["__radd__"], [(other,)]),
     # (["__repr__"], None),
-    # (["__rfloordiv__"], [(other,)]),
+    (["__rfloordiv__"], [(other,)]),
     # (["__rlshift__", "__rlshift__", None], unknown),
     # (["__rmatmul__", "__rmatmul__", None], unknown),
-    # (["__rmul__"], [(other,)]),
-    # (["__rpow__"], [(other,)]),
+    (["__rmul__"], [(other,)]),
+    # (["__rpow__"], [(2,)]),
     # (["__rrshift__", "__rrshift__", None], unknown),
     # (["__rshift__"], unknown),
-    # (["__rsub__"], [(other,)]),
+    (["__rsub__"], [(other,)]),
     # (["__rtruediv__"], unknown),
     # (["__sizeof__"], unknown),
     # (["__str__"], unknown),
-    # (["__sub__"], [(other,)]),
+    (["__sub__"], [(other,)]),
     # (["__truediv__"], unknown),
-    # (["argmax"], [(0,)]),
-    # (["argmin"], [(0,)]),
-    # (["argsort"], [(-1,)]),
+    (["argmax"], [(0,)]),
+    (["argmin"], [(0,)]),
+    (["argsort"], [(-1,)]),
     # (["choose"], unknown),
-    # (["clip"], [(-2,)]),
-    # (["copy", "copy", "clone"], None),
-    # (["cumprod"], [(0,)]),
-    # (["cumsum"], [(0,)]),
-    # (["diagonal"], [(0, )]),
+    (["clip"], [(-2,)]),
+    (["copy", "copy", "clone"], None),
+    (["cumprod"], [(0,)]),
+    (["cumsum"], [(0,)]),
+    (["diagonal"], [(0, )]),
     # (["dot"], unknown),
     # (["flat"], unknown),
-    # (["flatten"], None),
+    (["flatten"], None),
     # (["item"], unknown),
     # (["itemset"], unknown),
     # (["itemsize"], unknown),
-    # (["max"], None),
-    # (["mean"], None),
-    # (["min"], None),
-    # (["ndim"], None),
-    # (["prod"], [(other,)]),
+    (["max"], None),
+    (["mean"], None),
+    (["min"], None),
+    (["ndim"], None),
+    (["prod"], None),
     # (["repeat"], unknown),
-    # (["reshape"], [(-1,)]),
+    (["reshape"], [(-1,)]),
     # (["resize"], [(-1, )]),
     # (["sort"], unknown),
     # (["squeeze"], unknown),
     # (["std"], unknown),
     # (["sum"], unknown),
     # (["swapaxes"], unknown),
-    # (["T"], None),
+    (["T"], None),
     # (["take"], unknown),
     # (["transpose"], unknown),
 ]
+
+__test_methods = [(fname[0], fname, args) for (fname, args) in test_methods]
 
 def convert_other(input_structure, other_tensor):
     def replace_other(input):
@@ -121,8 +123,24 @@ def convert_other(input_structure, other_tensor):
 
     return new_input_structure
 
-@pytest.mark.parametrize("fcall_list, args", test_methods)
-def test_ops(fcall_list, args, tensor_pairs):
+
+# handle converting collections of th.Tensor to numpy
+def th_as_np(t):
+    if isinstance(t, (int, bool, float)):
+        return t
+    if isinstance(t, th.Tensor):
+        return t.numpy()
+    if isinstance(t, tuple):
+        return tuple([x.numpy() for x in t])
+    if isinstance(t, set):
+        return set([x.numpy() for x in t])
+    if isinstance(t, list):
+        return list([x.numpy() for x in t])
+
+    raise Exception(f"unknown type {type(t)} {t}")
+
+@pytest.mark.parametrize("_test_name, fcall_list, args", __test_methods)
+def test_ops(_test_name, fcall_list, args, tensor_pairs):
     if args is unknown:
         raise ValueError("Please specify a list of args for the function!")
 
@@ -188,4 +206,4 @@ def test_ops(fcall_list, args, tensor_pairs):
             assert np.array_equal(syft_result, numpy_result)
 
         if torch_result is not None:
-            assert np.array_equal(syft_result, torch_result.numpy())
+            assert np.array_equal(syft_result, th_as_np(torch_result))
