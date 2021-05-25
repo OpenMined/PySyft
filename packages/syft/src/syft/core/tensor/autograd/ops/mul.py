@@ -1,3 +1,7 @@
+from .op import Op
+from ..tensor import AutogradTensor
+from ...passthrough import is_acceptable_simple_type
+
 class MulOp(Op):
     '''Multiplication operation with 2 tensors'''
 

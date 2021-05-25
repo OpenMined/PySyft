@@ -1,3 +1,5 @@
+from ..tensor import AutogradTensor
+
 class Op:
 
     def __init__(self):

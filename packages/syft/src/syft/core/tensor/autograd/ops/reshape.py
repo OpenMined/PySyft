@@ -1,3 +1,6 @@
+from .op import Op
+from ..tensor import AutogradTensor
+
 class ReshapeOp(Op):
     '''Multiplication operation with 2 tensors'''
 

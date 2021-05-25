@@ -1,3 +1,9 @@
+from .op import Op
+from ..tensor import AutogradTensor
+from ...passthrough import is_acceptable_simple_type
+import numpy as np
+
+
 class SubOp(Op):
     '''Substraction operation with 2 tensors'''
 

@@ -1,3 +1,6 @@
+from .op import Op
+from ..tensor import AutogradTensor
+
 class SumOp(Op):
     '''Sum operation across a dimension'''
 

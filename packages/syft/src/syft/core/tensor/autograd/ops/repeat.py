@@ -1,3 +1,6 @@
+from .op import Op
+from ..tensor import AutogradTensor
+
 class RepeatOp(Op):
     '''Repeat operation across a dimension'''
 

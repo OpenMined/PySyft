@@ -1,3 +1,7 @@
+import numpy as np
+from .tensor import AutogradTensor
+from ..passthrough import inputs2child
+from ..passthrough import implements
 
 @implements(AutogradTensor, np.max)
 def npmax(*args, **kwargs):

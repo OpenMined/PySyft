@@ -1,3 +1,6 @@
+from .op import Op
+from ..tensor import AutogradTensor
+
 class TransposeOp(Op):
     '''Repeat operation across a dimension'''
 
@@ -18,12 +21,11 @@ class TransposeOp(Op):
 
         if self.x.requires_grad:
 
-            if y_is_simple:
-                requires_grad = grad.requires_grad
+            requires_grad = grad.requires_grad
 
-                grad = grad.child.transpose(*self.reverse_dims)
+            grad = grad.child.transpose(*self.reverse_dims)
 
-                self.x.add_grad(AutogradTensor(grad, requires_grad=requires_grad))
+            self.x.add_grad(AutogradTensor(grad, requires_grad=requires_grad))
 
             if self.x.grad_fn:
                 self.x.backward(backprop_id=backprop_id)
