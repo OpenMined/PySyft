@@ -26,8 +26,10 @@ def individual_RDP_gaussian(params: Dict, alpha: float) -> np.float64:
     sigma = params["sigma"]
     value = params["value"]
     L = params["L"]
-    assert sigma > 0
-    assert alpha >= 0
+    if sigma <= 0:
+        raise Exception("Sigma should be above 0")
+    if alpha < 0:
+        raise Exception("Sigma should not be below 0")
 
     return _individual_RDP_gaussian(sigma=sigma, alpha=alpha, value=value, L=L)
 

@@ -89,13 +89,15 @@ class GradLedger:
         for symbol_id in dict_of_gradient_parents.keys():
             if not accumulate_grads:
                 if symbol_id in self.total_symbols:
-                    raise Exception(
-                        "You had multiple gradients attempting to update the same scalar but "
-                        + "accumulate_grads was set to False. This means that some grads were "
-                        + "overwritten by new ones and these gradients would be false. Please "
-                        + "re-run the computation with accumulate_grads set to True (and don't "
-                        + "forget to zero grads out each time you're done."
+                    exception_msg = (  # nosec
+                        "You had multiple gradients attempting to update the same"
+                        + "scalar but accumulate_grads was set to False. This means that"
+                        + "some grads were overwritten by new ones and these gradients"
+                        + "would be false. Please re-run the computation with"
+                        + "accumulate_grads set to True and don't forget to zero grads"
+                        + "out each time you're done."
                     )
+                    raise Exception(exception_msg)
             self.total_symbols.add(symbol_id)
 
     def zero_grads(self):
