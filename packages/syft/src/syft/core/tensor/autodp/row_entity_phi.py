@@ -1,6 +1,9 @@
 from ..passthrough import PassthroughTensor
 from ..passthrough import is_acceptable_simple_type
+from ..passthrough import implements
+
 import numpy as np
+
 
 class RowEntityPhiTensor(PassthroughTensor):
 
@@ -133,3 +136,16 @@ class RowEntityPhiTensor(PassthroughTensor):
             new_list.append(row.transpose(*new_dims))
 
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+
+@implements(RowEntityPhiTensor, np.expand_dims)
+def expand_dims(a, axis):
+
+    if axis == 0:
+        raise Exception("Currently, we don't have functionality for axis=0 but we could with a bit more work.")
+
+    new_rows = list()
+    for row in a.child:
+        new_rows.append(np.expand_dims(a, axis))
+
+    return RowEntityPhiTensor(rows=new_rows, check_shape=False)
