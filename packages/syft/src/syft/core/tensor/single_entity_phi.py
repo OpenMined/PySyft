@@ -14,9 +14,17 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor):
         super().__init__(child)
         
         self.entity = entity
-        self.min_vals = min_vals
-        self.max_vals = max_vals
-  
+        self._min_vals = min_vals
+        self._max_vals = max_vals
+
+    @property
+    def min_vals(self):
+        return self._min_vals
+
+    @property
+    def max_vals(self):
+        return self._max_vals
+
     def __add__(self, other):
 
         if isinstance(other, SingleEntityPhiTensor):

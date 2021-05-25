@@ -7,9 +7,9 @@ import numpy as np
 # syft relative
 from ..passthrough import PassthroughTensor
 from ..passthrough import is_acceptable_simple_type
+from ..ancestors import SingleEntityPhiTensorAncestor
 
-
-class AutogradTensor(PassthroughTensor):
+class AutogradTensor(PassthroughTensor, SingleEntityPhiTensorAncestor):
 
     def __init__(self, child, requires_grad=False):
         super().__init__(child)
