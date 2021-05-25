@@ -15,9 +15,8 @@ from nacl.signing import VerifyKey
 # syft relative
 from ..... import lib
 from ..... import serialize
-from .....proto.core.node.common.action.get_set_property_pb2 import (
-    GetOrSetPropertyAction as GetOrSetPropertyAction_PB,
-)
+from .....proto.core.node.common.action.get_set_property_pb2 import \
+    GetOrSetPropertyAction as GetOrSetPropertyAction_PB
 from .....util import inherit_tags
 from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import bind_protobuf

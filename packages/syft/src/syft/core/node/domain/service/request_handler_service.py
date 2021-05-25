@@ -17,19 +17,17 @@ from .....lib.python.util import downcast
 from .....lib.python.util import upcast
 from .....logger import debug
 from .....logger import error
-from .....proto.core.node.domain.service.request_handler_message_pb2 import (
-    GetAllRequestHandlersMessage as GetAllRequestHandlersMessage_PB,
-)
-from .....proto.core.node.domain.service.request_handler_message_pb2 import (
-    GetAllRequestHandlersResponseMessage as GetAllRequestHandlersResponseMessage_PB,
-)
-from .....proto.core.node.domain.service.request_handler_message_pb2 import (
-    UpdateRequestHandlerMessage as UpdateRequestHandlerMessage_PB,
-)
+from .....proto.core.node.domain.service.request_handler_message_pb2 import \
+    GetAllRequestHandlersMessage as GetAllRequestHandlersMessage_PB
+from .....proto.core.node.domain.service.request_handler_message_pb2 import \
+    GetAllRequestHandlersResponseMessage as \
+    GetAllRequestHandlersResponseMessage_PB
+from .....proto.core.node.domain.service.request_handler_message_pb2 import \
+    UpdateRequestHandlerMessage as UpdateRequestHandlerMessage_PB
 from .....util import traceback_and_raise
 from ....common import UID
-from ....common.message import ImmediateSyftMessageWithReply
 from ....common.message import ImmediateSyftMessageWithoutReply
+from ....common.message import ImmediateSyftMessageWithReply
 from ....common.serde.serializable import bind_protobuf
 from ....io.address import Address
 from ...abstract.node import AbstractNode

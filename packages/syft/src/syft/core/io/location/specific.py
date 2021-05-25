@@ -5,7 +5,8 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft relative
-from ....proto.core.io.location_pb2 import SpecificLocation as SpecificLocation_PB
+from ....proto.core.io.location_pb2 import \
+    SpecificLocation as SpecificLocation_PB
 from ....util import validate_type
 from ...common.object import ObjectWithID
 from ...common.serde.deserialize import _deserialize

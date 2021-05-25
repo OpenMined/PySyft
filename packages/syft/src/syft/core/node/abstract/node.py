@@ -12,8 +12,8 @@ from nacl.signing import VerifyKey
 # syft relative
 from ....logger import traceback_and_raise
 from ...common.message import SignedEventualSyftMessageWithoutReply
-from ...common.message import SignedImmediateSyftMessageWithReply
 from ...common.message import SignedImmediateSyftMessageWithoutReply
+from ...common.message import SignedImmediateSyftMessageWithReply
 from ...common.uid import UID
 from ...io.address import Address
 from ...io.location import Location

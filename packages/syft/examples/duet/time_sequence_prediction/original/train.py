@@ -6,14 +6,13 @@ import argparse
 
 # third party
 import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 
 matplotlib.use("Agg")
-# third party
-import matplotlib.pyplot as plt
 
 
 class Sequence(nn.Module):

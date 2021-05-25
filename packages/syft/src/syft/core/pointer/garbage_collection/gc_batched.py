@@ -1,17 +1,16 @@
 """A simple garbage collection heuritics."""
 # stdlib
+from typing import TYPE_CHECKING
 from typing import List
 from typing import Optional
-from typing import TYPE_CHECKING
 
 # third party
 from typing_extensions import final
 
 # syft relative
 from ...common.uid import UID
-from ...node.common.action.garbage_collect_batched_action import (
-    GarbageCollectBatchedAction,
-)
+from ...node.common.action.garbage_collect_batched_action import \
+    GarbageCollectBatchedAction
 from ..pointer import Pointer
 from .gc_strategy import GCStrategy
 

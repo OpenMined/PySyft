@@ -17,9 +17,8 @@ from typing_extensions import final
 # syft relative
 from ..... import serialize
 from .....logger import critical
-from .....proto.core.node.common.service.repr_service_pb2 import (
-    ReprMessage as ReprMessage_PB,
-)
+from .....proto.core.node.common.service.repr_service_pb2 import \
+    ReprMessage as ReprMessage_PB
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import bind_protobuf

@@ -3,8 +3,8 @@ from __future__ import annotations
 
 # stdlib
 from typing import Optional
-from typing import Union
 from typing import Tuple as TypeTuple
+from typing import Union
 
 # third party
 import numpy as np

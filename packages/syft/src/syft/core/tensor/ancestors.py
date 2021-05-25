@@ -1,7 +1,10 @@
-from manager import TensorChainManager
-from autograd import AutogradTensor
-from passthrough import is_acceptable_simple_type
+# stdlib
 import uuid
+
+# third party
+from autograd import AutogradTensor
+from manager import TensorChainManager
+from passthrough import is_acceptable_simple_type
 
 _SingleEntityPhiTensorRef = None
 def _SingleEntityPhiTensor():
@@ -71,5 +74,3 @@ class SingleEntityPhiTensorAncestor():
         # if there's element-level entities - push all elements with PhiScalars
         
         return self
-    
-    

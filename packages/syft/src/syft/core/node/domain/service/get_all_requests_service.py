@@ -10,15 +10,13 @@ from nacl.signing import VerifyKey
 from ..... import deserialize
 from ..... import serialize
 from .....logger import traceback_and_raise
-from .....proto.core.node.domain.service.get_all_requests_message_pb2 import (
-    GetAllRequestsMessage as GetAllRequestsMessage_PB,
-)
-from .....proto.core.node.domain.service.get_all_requests_message_pb2 import (
-    GetAllRequestsResponseMessage as GetAllRequestsResponseMessage_PB,
-)
+from .....proto.core.node.domain.service.get_all_requests_message_pb2 import \
+    GetAllRequestsMessage as GetAllRequestsMessage_PB
+from .....proto.core.node.domain.service.get_all_requests_message_pb2 import \
+    GetAllRequestsResponseMessage as GetAllRequestsResponseMessage_PB
 from ....common import UID
-from ....common.message import ImmediateSyftMessageWithReply
 from ....common.message import ImmediateSyftMessageWithoutReply
+from ....common.message import ImmediateSyftMessageWithReply
 from ....common.serde.serializable import bind_protobuf
 from ....io.address import Address
 from ...abstract.node import AbstractNode

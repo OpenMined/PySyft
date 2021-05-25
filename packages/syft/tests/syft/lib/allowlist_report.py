@@ -13,17 +13,17 @@ from typing import Union
 # third party
 from jinja2 import Template
 from packaging import version
+import torch as th  # noqa: E402
+
+# syft absolute
+from syft.lib.torch import allowlist  # noqa: E402
 
 # this forces the import priority to use site-packages first and current dir last
 # this allows us to import torch when calling this file directly since there is a
 # subdir here also called torch
 del sys.path[0]
 sys.path.append("")
-# third party
-import torch as th  # noqa: E402
 
-# syft absolute
-from syft.lib.torch import allowlist  # noqa: E402
 
 TORCH_VERSION = version.parse(th.__version__.split("+")[0])
 py_ver = sys.version_info

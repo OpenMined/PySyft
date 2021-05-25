@@ -95,8 +95,8 @@ from ...logger import debug
 from ...logger import traceback_and_raise
 from ...proto.core.io.route_pb2 import SoloRoute as SoloRoute_PB
 from ..common.message import SignedEventualSyftMessageWithoutReply
-from ..common.message import SignedImmediateSyftMessageWithReply
 from ..common.message import SignedImmediateSyftMessageWithoutReply
+from ..common.message import SignedImmediateSyftMessageWithReply
 from ..common.object import ObjectWithID
 from .connection import BidirectionalConnection
 from .connection import ClientConnection

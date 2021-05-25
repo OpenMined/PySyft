@@ -3,8 +3,8 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft relative
 from ...core.common.message import SignedEventualSyftMessageWithoutReply
-from ...core.common.message import SignedImmediateSyftMessageWithReply
 from ...core.common.message import SignedImmediateSyftMessageWithoutReply
+from ...core.common.message import SignedImmediateSyftMessageWithReply
 from ...logger import traceback_and_raise
 
 

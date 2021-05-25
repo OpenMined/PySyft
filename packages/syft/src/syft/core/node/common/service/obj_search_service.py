@@ -18,17 +18,15 @@ from typing_extensions import final
 from ..... import serialize
 from .....core.common.serde.serializable import bind_protobuf
 from .....logger import error
-from .....proto.core.node.common.service.object_search_message_pb2 import (
-    ObjectSearchMessage as ObjectSearchMessage_PB,
-)
-from .....proto.core.node.common.service.object_search_message_pb2 import (
-    ObjectSearchReplyMessage as ObjectSearchReplyMessage_PB,
-)
+from .....proto.core.node.common.service.object_search_message_pb2 import \
+    ObjectSearchMessage as ObjectSearchMessage_PB
+from .....proto.core.node.common.service.object_search_message_pb2 import \
+    ObjectSearchReplyMessage as ObjectSearchReplyMessage_PB
 from .....util import obj2pointer_type
 from .....util import traceback_and_raise
 from ....common.group import VERIFYALL
-from ....common.message import ImmediateSyftMessageWithReply
 from ....common.message import ImmediateSyftMessageWithoutReply
+from ....common.message import ImmediateSyftMessageWithReply
 from ....common.serde.deserialize import _deserialize
 from ....common.uid import UID
 from ....io.address import Address

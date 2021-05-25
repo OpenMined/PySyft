@@ -14,9 +14,8 @@ from nacl.signing import VerifyKey
 from ..... import lib
 from ..... import serialize
 from .....logger import traceback_and_raise
-from .....proto.core.node.common.action.run_function_or_constructor_pb2 import (
-    RunFunctionOrConstructorAction as RunFunctionOrConstructorAction_PB,
-)
+from .....proto.core.node.common.action.run_function_or_constructor_pb2 import \
+    RunFunctionOrConstructorAction as RunFunctionOrConstructorAction_PB
 from .....util import inherit_tags
 from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import bind_protobuf

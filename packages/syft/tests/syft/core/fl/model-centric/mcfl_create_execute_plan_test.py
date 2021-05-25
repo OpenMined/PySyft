@@ -33,9 +33,8 @@ from syft.core.plan.plan_builder import PLAN_BUILDER_VM
 from syft.core.plan.plan_builder import ROOT_CLIENT
 from syft.core.plan.plan_builder import make_plan
 from syft.core.plan.translation.torchscript.plan import PlanTorchscript
-from syft.core.plan.translation.torchscript.plan_translate import (
-    translate as translate_to_ts,
-)
+from syft.core.plan.translation.torchscript.plan_translate import \
+    translate as translate_to_ts
 from syft.federated import JSONDict
 from syft.federated.fl_client import FLClient
 from syft.federated.fl_job import FLJob

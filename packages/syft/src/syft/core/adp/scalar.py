@@ -24,12 +24,12 @@ from ... import serialize
 from ...core.common import UID
 from ...core.common.serde.serializable import Serializable
 from ...core.common.serde.serializable import bind_protobuf
-from ...proto.core.adp.scalar_pb2 import (
-    IntermediatePhiScalar as IntermediatePhiScalar_PB,
-)
 from ...proto.core.adp.scalar_pb2 import BaseScalar as BaseScalar_PB
 from ...proto.core.adp.scalar_pb2 import GammaScalar as GammaScalar_PB
-from ...proto.core.adp.scalar_pb2 import IntermediateScalar as IntermediateScalar_PB
+from ...proto.core.adp.scalar_pb2 import \
+    IntermediatePhiScalar as IntermediatePhiScalar_PB
+from ...proto.core.adp.scalar_pb2 import \
+    IntermediateScalar as IntermediateScalar_PB
 from ...proto.core.adp.scalar_pb2 import PhiScalar as PhiScalar_PB
 from .entity import Entity
 from .search import GetSymbolsMapper

@@ -9,15 +9,13 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import final
 
 # syft relative
-from ...proto.core.io.connection_pb2 import (
-    VirtualClientConnection as VirtualClientConnection_PB,
-)
-from ...proto.core.io.connection_pb2 import (
-    VirtualServerConnection as VirtualServerConnection_PB,
-)
+from ...proto.core.io.connection_pb2 import \
+    VirtualClientConnection as VirtualClientConnection_PB
+from ...proto.core.io.connection_pb2 import \
+    VirtualServerConnection as VirtualServerConnection_PB
 from ..common.message import SignedEventualSyftMessageWithoutReply
-from ..common.message import SignedImmediateSyftMessageWithReply
 from ..common.message import SignedImmediateSyftMessageWithoutReply
+from ..common.message import SignedImmediateSyftMessageWithReply
 from ..common.serde.deserialize import _deserialize
 from ..node.abstract.node import AbstractNode
 from .connection import ClientConnection

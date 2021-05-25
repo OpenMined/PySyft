@@ -3,9 +3,8 @@
 from typing_extensions import final
 
 # syft relative
-from ...node.common.action.garbage_collect_object_action import (
-    GarbageCollectObjectAction,
-)
+from ...node.common.action.garbage_collect_object_action import \
+    GarbageCollectObjectAction
 from ..pointer import Pointer
 from .gc_strategy import GCStrategy
 

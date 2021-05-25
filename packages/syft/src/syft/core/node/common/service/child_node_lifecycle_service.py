@@ -11,9 +11,8 @@ from nacl.signing import VerifyKey
 from ..... import serialize
 from .....logger import debug
 from .....logger import error
-from .....proto.core.node.common.service.child_node_lifecycle_service_pb2 import (
-    RegisterChildNodeMessage as RegisterChildNodeMessage_PB,
-)
+from .....proto.core.node.common.service.child_node_lifecycle_service_pb2 import \
+    RegisterChildNodeMessage as RegisterChildNodeMessage_PB
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import bind_protobuf

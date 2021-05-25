@@ -18,8 +18,8 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.core.common import ObjectWithID
 from syft.core.common import UID
+from syft.core.common import ObjectWithID
 from syft.util import get_subclasses
 
 # --------------------- INITIALIZATION ---------------------

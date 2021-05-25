@@ -8,12 +8,13 @@
 import asyncio
 import os
 
+# syft absolute
+import syft as sy
+
 os.environ["SYFT_USE_EVENT_LOOP_THREAD"] = "0"
 loop = asyncio.new_event_loop()
 asyncio._set_running_loop(loop)
 
-# syft absolute
-import syft as sy
 
 duet = sy.join_duet(loopback=True)
 

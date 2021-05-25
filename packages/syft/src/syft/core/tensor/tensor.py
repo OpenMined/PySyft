@@ -1,10 +1,11 @@
+# third party
+from ancestors import AutogradTensorAncestor
+from ancestors import SingleEntityPhiTensorAncestor
 import numpy as np
-import torch as th
 from passthrough import PassthroughTensor
 from passthrough import implements
 from passthrough import inputs2child
-from ancestors import AutogradTensorAncestor
-from ancestors import SingleEntityPhiTensorAncestor
+import torch as th
 
 
 class Tensor(PassthroughTensor, AutogradTensorAncestor, SingleEntityPhiTensorAncestor):

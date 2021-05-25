@@ -1,3 +1,11 @@
+# stdlib
+from collections import Counter
+import uuid
+
+# syft relative
+from . import ops
+
+
 class AutogradTensor(PassthroughTensor):
 
     def __init__(self, child, requires_grad=False):
@@ -39,35 +47,35 @@ class AutogradTensor(PassthroughTensor):
 
     def __add__(self, other):
 
-        op = AddOp()
+        op = ops.add.AddOp()
         return op(self, other)
 
     def __sub__(self, other):
-        op = SubOp()
+        op = ops.sub.SubOp()
         return op(self, other)
 
     def __mul__(self, other):
-        op = MulOp()
+        op = ops.mul.MulOp()
         return op(self, other)
 
     def reshape(self, *shape):
-        op = ReshapeOp()
+        op = ops.reshape.ReshapeOp()
         return op(self, *shape)
 
     def copy(self):
-        op = CopyOp()
+        op = ops.copy.CopyOp()
         return op(self)
 
     def sum(self, *args, **kwargs):
-        op = SumOp()
+        op = ops.sum.SumOp()
         return op(self, *args, **kwargs)
 
     def repeat(self, *args, **kwargs):
-        op = RepeatOp()
+        op = ops.repeat.RepeatOp()
         return op(self, *args, *kwargs)
 
     def transpose(self, *dims):
-        op = TransposeOp()
+        op = ops.transpose.TransposeOp()
         return op(self, *dims)
 
     def add_grad(self, grad):

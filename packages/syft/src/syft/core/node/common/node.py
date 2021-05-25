@@ -29,11 +29,11 @@ from ....logger import error
 from ....logger import traceback_and_raise
 from ....util import get_subclasses
 from ...common.message import EventualSyftMessageWithoutReply
-from ...common.message import ImmediateSyftMessageWithReply
 from ...common.message import ImmediateSyftMessageWithoutReply
+from ...common.message import ImmediateSyftMessageWithReply
 from ...common.message import SignedEventualSyftMessageWithoutReply
-from ...common.message import SignedImmediateSyftMessageWithReply
 from ...common.message import SignedImmediateSyftMessageWithoutReply
+from ...common.message import SignedImmediateSyftMessageWithReply
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage
 from ...common.uid import UID
@@ -53,16 +53,18 @@ from .service.auth import AuthorizationException
 from .service.child_node_lifecycle_service import ChildNodeLifecycleService
 from .service.get_repr_service import GetReprService
 from .service.heritage_update_service import HeritageUpdateService
-from .service.msg_forwarding_service import SignedMessageWithReplyForwardingService
-from .service.msg_forwarding_service import SignedMessageWithoutReplyForwardingService
+from .service.msg_forwarding_service import \
+    SignedMessageWithoutReplyForwardingService
+from .service.msg_forwarding_service import \
+    SignedMessageWithReplyForwardingService
 from .service.node_service import EventualNodeServiceWithoutReply
 from .service.node_service import ImmediateNodeServiceWithReply
 from .service.obj_action_service import EventualObjectActionServiceWithoutReply
+from .service.obj_action_service import \
+    ImmediateObjectActionServiceWithoutReply
 from .service.obj_action_service import ImmediateObjectActionServiceWithReply
-from .service.obj_action_service import ImmediateObjectActionServiceWithoutReply
-from .service.obj_search_permission_service import (
-    ImmediateObjectSearchPermissionUpdateService,
-)
+from .service.obj_search_permission_service import \
+    ImmediateObjectSearchPermissionUpdateService
 from .service.obj_search_service import ImmediateObjectSearchService
 from .service.repr_service import ReprService
 from .service.resolve_pointer_type_service import ResolvePointerTypeService

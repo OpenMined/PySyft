@@ -10,6 +10,14 @@ import pickle
 import sys
 import unittest
 
+# third party
+import pytest
+
+# syft absolute
+from syft.lib.python.bool import Bool
+from syft.lib.python.int import Int
+from syft.lib.python.range import Range
+
 try:
     # stdlib
     from test.support import ALWAYS_EQ
@@ -30,13 +38,7 @@ except ImportError:
     ALWAYS_EQ = _ALWAYS_EQ()
 
 
-# third party
-import pytest
 
-# syft absolute
-from syft.lib.python.bool import Bool
-from syft.lib.python.int import Int
-from syft.lib.python.range import Range
 
 
 # pure Python implementations (3 args only), for comparison
