@@ -6,6 +6,7 @@ import syft as sy
 from syft.experimental_flags import flags
 
 
+@pytest.mark.xfail
 @pytest.mark.vendor(lib="gym")
 @pytest.mark.parametrize("arrow_backend", [False, True])
 def test_remote_gym(arrow_backend: bool, root_client: sy.VirtualMachineClient) -> None:
