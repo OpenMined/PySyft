@@ -1,6 +1,7 @@
 # stdlib
 from collections import Counter
 from collections import defaultdict
+from typing import Optional
 import uuid
 
 # syft relative
@@ -27,7 +28,7 @@ class AutogradTensor(PassthroughTensor, SingleEntityPhiTensorAncestor):
         # list of ops which use this tensor
         self.ops = list()
 
-        self.backprop_id = None
+        self.backprop_id: Optional[uuid.uuid4] = None
 
         self.n_backwards = Counter()
 
@@ -43,6 +44,8 @@ class AutogradTensor(PassthroughTensor, SingleEntityPhiTensorAncestor):
             raise Exception("This tensor is not backpropagated")
         return self._grad_fn
 
+    # Autograd Tensor Operations
+
     #     def __ge__(self, other):
     #         return AutogradTensor(self.child >= other.child, requires_grad=False)
 
@@ -50,44 +53,47 @@ class AutogradTensor(PassthroughTensor, SingleEntityPhiTensorAncestor):
     #         return AutogradTensor(self.child <= other.child, requires_grad=False)
 
     def __abs__(self) -> AutogradTensorAncestor:
-        pass
+        op = autograd.ops.AbsOp()
+        return op(self)
 
-    def __add__(self, other):
+    def __add__(self, other) -> AutogradTensorAncestor:
         op = autograd.ops.AddOp()
         return op(self, other)
 
-    def __sub__(self, other):
+    def __sub__(self, other) -> AutogradTensorAncestor:
         op = autograd.ops.SubOp()
         return op(self, other)
 
-    def __mul__(self, other):
+    def __mul__(self, other) -> AutogradTensorAncestor:
         op = autograd.ops.MulOp()
         return op(self, other)
 
-    def __truediv__(self, other):
+    def __truediv__(self, other) -> AutogradTensorAncestor:
         if is_acceptable_simple_type(other):
             return self * (1 / other)
         return NotImplemented
 
-    def reshape(self, *shape):
+    def reshape(self, *shape) -> AutogradTensorAncestor:
         op = autograd.ops.ReshapeOp()
         return op(self, *shape)
 
-    def repeat(self, *args, **kwargs):
+    def repeat(self, *args, **kwargs) -> AutogradTensorAncestor:
         op = autograd.ops.RepeatOp()
         return op(self, *args, **kwargs)
 
-    def copy(self):
+    def copy(self) -> AutogradTensorAncestor:
         op = autograd.ops.CopyOp()
         return op(self)
 
-    def sum(self, *args, **kwargs):
+    def sum(self, *args, **kwargs) -> AutogradTensorAncestor:
         op = autograd.ops.SumOp()
         return op(self, *args, **kwargs)
 
-    def transpose(self, *dims):
+    def transpose(self, *dims) -> AutogradTensorAncestor:
         op = autograd.ops.TransposeOp()
         return op(self, *dims)
+
+    # End Autograd Tensor Operations
 
     def add_grad(self, grad):
 
@@ -98,7 +104,7 @@ class AutogradTensor(PassthroughTensor, SingleEntityPhiTensorAncestor):
         else:
             self._grad[self.backprop_id] = grad + self._grad[self.backprop_id]
 
-    def backward(self, grad=None, backprop_id=None):
+    def backward(self, grad=None, backprop_id: Optional[uuid.uuid4] = None):
 
         if backprop_id is None:
             backprop_id = uuid.uuid4()
