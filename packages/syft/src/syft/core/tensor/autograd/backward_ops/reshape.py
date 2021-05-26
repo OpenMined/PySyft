@@ -16,7 +16,6 @@ class ReshapeOp(Op):
     def _backward(self, grad, backprop_id):
 
         if self.x.requires_grad:
-
             self.x.add_grad(grad.reshape(*self.backward_shape))
 
             if self.x.grad_fn:

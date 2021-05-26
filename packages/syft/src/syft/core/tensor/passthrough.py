@@ -46,7 +46,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
     @property
     def shape(self):
-        return self.child.shape
+        return tuple(self.child.shape)
 
     def __abs__(self) -> PassthroughTensor:
         return self.__class__(self.child.__abs__())
@@ -245,7 +245,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         expanded_self = expanded_self.reshape(
             self.shape[0], self.shape[1], other.shape[1]
         )
-        expanded_other = np.expand_dims(other, axis=0).repeat(self.shape[0], axis=0)
+        expanded_other = other.reshape([1] + list(other.shape)).repeat(self.shape[0], axis=0)
 
         prod = expanded_self * expanded_other
         result = prod.sum(axis=1)
@@ -402,7 +402,8 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         if ufunc in HANDLED_FUNCTIONS[self.__class__]:
             return HANDLED_FUNCTIONS[self.__class__][ufunc](*inputs, **kwargs)
         else:
-            return self.__class__(ufunc(*inputs, **kwargs))
+            return NotImplemented
+            # return self.__class__(ufunc(*inputs, **kwargs))
 
     def __repr__(self):
         return f"{self.__class__.__name__}(child={self.child})"

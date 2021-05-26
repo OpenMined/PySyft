@@ -18,7 +18,17 @@ class MulOp(Op):
 
         # print(y)
         requires_grad = requires_grad or y.requires_grad
-        return AutogradTensor(x.child * y.child, requires_grad=requires_grad)
+
+        # print()
+        # print()
+        # print("mul._backward")
+        # print(x.child)
+        # print()
+        # print(y.child)
+        if is_acceptable_simple_type(y.child):
+            return AutogradTensor(x.child * y.child, requires_grad=requires_grad)
+
+        return AutogradTensor(y.child * x.child, requires_grad=requires_grad)
 
     def _backward(self, grad, backprop_id):
 

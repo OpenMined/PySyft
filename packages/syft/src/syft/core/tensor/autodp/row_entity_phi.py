@@ -106,8 +106,6 @@ class RowEntityPhiTensor(PassthroughTensor):
     def reshape(self, *shape):
 
         if shape[0] != self.shape[0]:
-            print(shape)
-            print(self.shape)
             raise Exception(
                 "For now, you can't reshape the first dimension because that would probably require creating a gamma tensor.")
 

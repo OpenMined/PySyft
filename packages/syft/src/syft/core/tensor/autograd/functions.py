@@ -6,8 +6,6 @@ from ..passthrough import implements
 from ..passthrough import inputs2child
 from .tensor import AutogradTensor
 
-print("Making some autograd functions")
-
 @implements(AutogradTensor, np.max)
 def npmax(*args, **kwargs):
     args, kwargs = inputs2child(*args, **kwargs)
@@ -22,6 +20,7 @@ def npmin(*args, **kwargs):
 
 @implements(AutogradTensor, np.expand_dims)
 def expand_dims(*args, **kwargs):
-
+    requires_grad = args[0].requires_grad
+    output_type = args[0].__class__
     args, kwargs = inputs2child(*args, **kwargs)
-    return np.expand_dims(*args, **kwargs)
+    return output_type(np.expand_dims(*args, **kwargs), requires_grad=requires_grad)
