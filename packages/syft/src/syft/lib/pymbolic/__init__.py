@@ -37,10 +37,7 @@ def create_ast(client: TypeAny) -> Globals:
         ),
     ]
 
-    methods = [
-        # Variable
-        # ("pymbolic.primitives.Variable.name", "syft.lib.python.String"), # object attr
-    ]
+    methods = []  # type: ignore
 
     add_modules(ast, modules)
     add_classes(ast, classes)

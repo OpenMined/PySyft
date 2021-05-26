@@ -11,7 +11,7 @@ class SortOp(Op):
         self.x = x
         self.y = y
 
-    def _backward(self, grad: AutogradTensor, backprop_id: uuid.uuid4):
+    def _backward(self, grad: AutogradTensor, backprop_id: uuid.UUID):
         if self.x.requires_grad:
             pass
 

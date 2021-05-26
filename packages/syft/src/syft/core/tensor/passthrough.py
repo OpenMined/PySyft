@@ -31,7 +31,7 @@ def is_acceptable_simple_type(obj):
 class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     """A simple tensor class which passes method/function calls to self.child"""
 
-    def __init__(self, child):
+    def __init__(self, child) -> None:
         self.child = child
 
     @property
@@ -41,7 +41,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
             data = data.child
         return data
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.child)
 
     @property
@@ -51,20 +51,20 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     def __abs__(self) -> PassthroughTensor:
         return self.new_with_child(self.child.__abs__())
 
-    def __add__(self, other):
+    def __add__(self, other) -> PassthroughTensor:
         if is_acceptable_simple_type(other):
             return self.new_with_child(self.child + other)
         return self.new_with_child(self.child + other.child)
 
-    def __radd__(self, other):
+    def __radd__(self, other) -> PassthroughTensor:
         return other.__class__(other.child + self.child)
 
-    def __sub__(self, other):
+    def __sub__(self, other) -> PassthroughTensor:
         if is_acceptable_simple_type(other):
             return self.new_with_child(self.child - other)
         return self.new_with_child(self.child - other.child)
 
-    def __rsub__(self, other):
+    def __rsub__(self, other) -> PassthroughTensor:
         return self.new_with_child(-((self - other).child))
 
     def __gt__(
@@ -207,16 +207,16 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     def __invert__(self) -> PassthroughTensor:
         return self.child.__invert__()
 
-    def copy(self):
+    def copy(self) -> PassthroughTensor:
         return self.new_with_child(self.child.copy())
 
-    def __mul__(self, other):
+    def __mul__(self, other) -> PassthroughTensor:
         if is_acceptable_simple_type(other):
             return self.new_with_child(self.child * other)
 
         return self.new_with_child(self.child * other.child)
 
-    def __rmul__(self, other):
+    def __rmul__(self, other) -> PassthroughTensor:
         return other * self
 
     def __matmul__(
@@ -229,16 +229,16 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     ) -> PassthroughTensor:
         return other.manual_dot(self)
 
-    def __truediv__(self, other):
+    def __truediv__(self, other) -> PassthroughTensor:
         if is_acceptable_simple_type(other):
             return self.new_with_child(self.child * (1 / other))
 
         return self.new_with_child(self.child / other.child)
 
-    def __rtruediv__(self, other):
+    def __rtruediv__(self, other) -> PassthroughTensor:
         return other.__truediv__(self)
 
-    def manual_dot(self, other):
+    def manual_dot(self, other) -> PassthroughTensor:
 
         expanded_self = self.repeat(other.shape[1], axis=1)
         expanded_self = expanded_self.reshape(
@@ -252,16 +252,16 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         result = prod.sum(axis=1)
         return result
 
-    def dot(self, other):
+    def dot(self, other) -> PassthroughTensor:
         return self.manual_dot(other)
         # if isinstance(other, self.__class__):
         #     return self.new_with_child(self.child.dot(other.child))
         # return self.new_with_child(self.child.dot(other))
 
-    def reshape(self, *dims):
+    def reshape(self, *dims) -> PassthroughTensor:
         return self.new_with_child(self.child.reshape(*dims))
 
-    def repeat(self, *args, **kwargs):
+    def repeat(self, *args, **kwargs) -> PassthroughTensor:
         return self.new_with_child(self.child.repeat(*args, **kwargs))
 
     # TODO: why does this version of repeat fail but the *args **kwargs one works?
@@ -293,10 +293,10 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         return self.new_with_child(self.child.__getitem__(other))
 
     # numpy.argmax(a, axis=None, out=None)
-    def argmax(self, axis: Optional[int]) -> Union[PassthroughTensor, int]:
+    def argmax(self, axis: Optional[int]) -> PassthroughTensor:
         return self.new_with_child(self.child.argmax(axis))
 
-    def argmin(self, axis: Optional[int]) -> Union[PassthroughTensor, int]:
+    def argmin(self, axis: Optional[int]) -> PassthroughTensor:
         return self.new_with_child(self.child.argmin(axis))
 
     # numpy.argsort(a, axis=-1, kind=None, order=None)
@@ -342,13 +342,13 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     # ndarray.max(axis=None, out=None, keepdims=False, initial=<no value>, where=True)
     def max(
         self, axis: Optional[Union[int, TypeTuple[int, ...]]] = None
-    ) -> Union[PassthroughTensor, np.number]:
+    ) -> PassthroughTensor:
         return self.new_with_child(self.child.max(axis=axis))
 
     # ndarray.min(axis=None, out=None, keepdims=False, initial=<no value>, where=True)
     def min(
         self, axis: Optional[Union[int, TypeTuple[int, ...]]] = None
-    ) -> Union[PassthroughTensor, np.number]:
+    ) -> PassthroughTensor:
         return self.new_with_child(self.child.min(axis=axis))
 
     @property
@@ -358,7 +358,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     # ndarray.prod(axis=None, dtype=None, out=None, keepdims=False, initial=1, where=True)
     def prod(
         self, axis: Optional[Union[int, TypeTuple[int, ...]]] = None
-    ) -> Union[PassthroughTensor, np.number]:
+    ) -> PassthroughTensor:
         return self.new_with_child(self.child.prod(axis=axis))
 
     # numpy.squeeze(a, axis=None)
@@ -370,22 +370,21 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     # numpy.std(a, axis=None, dtype=None, out=None, ddof=0, keepdims=<no value>, *, where=<no value>)
     def std(
         self, axis: Optional[Union[int, TypeTuple[int, ...]]] = None
-    ) -> Union[PassthroughTensor, np.number]:
+    ) -> PassthroughTensor:
         return self.new_with_child(self.child.std(axis=axis))
 
     # numpy.sum(a, axis=None, dtype=None, out=None, keepdims=<no value>, initial=<no value>, where=<no value>)
     def sum(
         self, axis: Optional[Union[int, TypeTuple[int, ...]]] = None
-    ) -> Union[PassthroughTensor, np.number]:
+    ) -> PassthroughTensor:
         result = self.child.sum(axis=axis)
         return self.new_with_child(result)
 
     # numpy.take(a, indices, axis=None, out=None, mode='raise')
     def take(
         self, indices: Optional[Union[int, TypeTuple[int, ...]]] = None
-    ) -> Union[PassthroughTensor, np.number]:
+    ) -> PassthroughTensor:
         return self.new_with_child(self.child.take(indices=indices))
-
 
     def __array_function__(self, func, types, args, kwargs):
         #         args, kwargs = inputs2child(*args, **kwargs)

@@ -159,7 +159,7 @@ class Tensor(np.ndarray):
 
         return output
 
-    def backward(self, accumulate_grads=False):
+    def backward(self, accumulate_grads=False) -> GradLedger:
         ledger = GradLedger()
         for entry in self.flatten():
             ledger.add(

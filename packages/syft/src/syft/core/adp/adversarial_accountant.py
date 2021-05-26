@@ -27,7 +27,7 @@ class AdversarialAccountant:
                 self.entity2ledger[key].append(m)
 
     def get_eps_for_entity(self, entity: Entity) -> PhiScalar:
-        # compose them with the transformation: compose.
+        # compose them with the transformation: compose
         compose = Composition()
         mechanisms = self.entity2ledger[entity]
         composed_mech = compose(mechanisms, [1] * len(mechanisms))
@@ -53,9 +53,9 @@ class AdversarialAccountant:
     def overbudgeted_entities(self) -> TypeSet[str]:
         entities = set()
 
-        for ent in self.entities:
-            if not self.has_budget(ent):
-                entities.add(ent)
+        for entity_name in self.entities:
+            if not self.has_budget(entity_name):
+                entities.add(entity_name)
 
         return entities
 
