@@ -23,7 +23,6 @@ class PowOp(Op):
         requires_grad = requires_grad or y.requires_grad
         return AutogradTensor(x.child ** y.child, requires_grad=requires_grad)
 
-
     def _backward(self, grad: AutogradTensor, backprop_id: uuid.uuid4):
 
         y_is_simple = is_acceptable_simple_type(self.y)
@@ -37,6 +36,8 @@ class PowOp(Op):
                 self.x.backward(backprop_id=backprop_id)
 
         if not y_is_simple and self.y.requires_grad:
+
             self.y.add_grad(np.log(self.x) * grad * self.x ** self.y)
+
             if self.y.grad_fn:
                 self.y.backward(backprop_id=backprop_id)

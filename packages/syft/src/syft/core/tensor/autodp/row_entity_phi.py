@@ -1,20 +1,23 @@
-from ..passthrough import PassthroughTensor
-from ..passthrough import is_acceptable_simple_type
-from ..passthrough import implements
-
+# third party
 import numpy as np
+
+# syft relative
+from ..passthrough import PassthroughTensor
+from ..passthrough import implements
+from ..passthrough import is_acceptable_simple_type
 
 
 class RowEntityPhiTensor(PassthroughTensor):
-
     def __init__(self, rows, check_shape=True):
         super().__init__(rows)
 
         if check_shape:
             shape = rows[0].shape
             for row in rows[1:]:
-                if (shape != row.shape):
-                    raise Exception(f"All rows in RowEntityPhiTensor must match: {shape} != {row.shape}")
+                if shape != row.shape:
+                    raise Exception(
+                        f"All rows in RowEntityPhiTensor must match: {shape} != {row.shape}"
+                    )
 
     @property
     def shape(self):
@@ -31,7 +34,9 @@ class RowEntityPhiTensor(PassthroughTensor):
                     new_list.append(self.child[i] + other.child[i])
             return RowEntityPhiTensor(rows=new_list, check_shape=False)
         else:
-            raise Exception(f"Tensor dims do not match for __add__: {len(self.child)} != {len(other.child)}")
+            raise Exception(
+                f"Tensor dims do not match for __add__: {len(self.child)} != {len(other.child)}"
+            )
 
     def __sub__(self, other):
 
@@ -44,7 +49,9 @@ class RowEntityPhiTensor(PassthroughTensor):
                     new_list.append(self.child[i] - other.child[i])
             return RowEntityPhiTensor(rows=new_list, check_shape=False)
         else:
-            raise Exception(f"Tensor dims do not match for __sub__: {len(self.child)} != {len(other.child)}")
+            raise Exception(
+                f"Tensor dims do not match for __sub__: {len(self.child)} != {len(other.child)}"
+            )
 
     def __mul__(self, other):
 
@@ -60,7 +67,9 @@ class RowEntityPhiTensor(PassthroughTensor):
                     new_list.append(self.child[i] * other.child[i])
             return RowEntityPhiTensor(rows=new_list, check_shape=False)
         else:
-            raise Exception(f"Tensor dims do not match for __mul__: {len(self.child)} != {len(other.child)}")
+            raise Exception(
+                f"Tensor dims do not match for __mul__: {len(self.child)} != {len(other.child)}"
+            )
 
     def __truediv__(self, other):
 
@@ -73,12 +82,16 @@ class RowEntityPhiTensor(PassthroughTensor):
                     new_list.append(self.child[i] / other.child[i])
             return RowEntityPhiTensor(rows=new_list, check_shape=False)
         else:
-            raise Exception(f"Tensor dims do not match for __truediv__: {len(self.child)} != {len(other.child)}")
+            raise Exception(
+                f"Tensor dims do not match for __truediv__: {len(self.child)} != {len(other.child)}"
+            )
 
     def repeat(self, repeats, axis=None):
 
         if axis == None:
-            raise Exception("Conservatively, RowEntityPhiTensor doesn't yet support repeat(axis=None)")
+            raise Exception(
+                "Conservatively, RowEntityPhiTensor doesn't yet support repeat(axis=None)"
+            )
 
         if axis == 0 or axis == -len(self.shape):
             new_list = list()
@@ -101,13 +114,16 @@ class RowEntityPhiTensor(PassthroughTensor):
             return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
         else:
-            raise Exception("'axis' arg is negative and strangely large... not sure what to do.")
+            raise Exception(
+                "'axis' arg is negative and strangely large... not sure what to do."
+            )
 
     def reshape(self, *shape):
 
         if shape[0] != self.shape[0]:
             raise Exception(
-                "For now, you can't reshape the first dimension because that would probably require creating a gamma tensor.")
+                "For now, you can't reshape the first dimension because that would probably require creating a gamma tensor."
+            )
 
         new_list = list()
         for row in self.child:
@@ -119,7 +135,8 @@ class RowEntityPhiTensor(PassthroughTensor):
 
         if axis is None or axis == 0:
             raise Exception(
-                "For now, you can't sum the entire vector into a scalar or sum across dim 0 without needing a GammaTensor.")
+                "For now, you can't sum the entire vector into a scalar or sum across dim 0 without needing a GammaTensor."
+            )
 
         new_list = list()
         for row in self.child:
@@ -132,7 +149,7 @@ class RowEntityPhiTensor(PassthroughTensor):
         if dims[0] != 0:
             raise Exception("Can't move dim 0 in RowEntityPhiTensor at this time")
 
-        new_dims = list(np.array(dims[1:]) )
+        new_dims = list(np.array(dims[1:]))
 
         new_list = list()
         for row in self.child:
@@ -145,7 +162,9 @@ class RowEntityPhiTensor(PassthroughTensor):
 def expand_dims(a, axis):
 
     if axis == 0:
-        raise Exception("Currently, we don't have functionality for axis=0 but we could with a bit more work.")
+        raise Exception(
+            "Currently, we don't have functionality for axis=0 but we could with a bit more work."
+        )
 
     new_rows = list()
     for row in a.child:

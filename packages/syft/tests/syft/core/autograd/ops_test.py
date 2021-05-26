@@ -1,12 +1,19 @@
-import pytest
-from syft.core.tensor.tensor import Tensor
-import numpy as np
-import torch as th
+# stdlib
+from inspect import isdatadescriptor
+from inspect import isgetsetdescriptor
 from typing import Tuple
-from inspect import isdatadescriptor, isgetsetdescriptor
+
+# third party
+import numpy as np
+import pytest
+import torch as th
+
+# syft absolute
+from syft.core.tensor.tensor import Tensor
 
 other = type("Other", tuple(), {})
 unknown = type("Unknown", tuple(), {})
+
 
 def generate_numpy_pair():
     a = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]])
@@ -68,7 +75,7 @@ test_methods = [
     # (["__rmatmul__", "__rmatmul__", "__matmul__"], [(other,)]),
     (["__rmul__"], [(other,)]),
     # Tudor: fix multiple test arguments (reset gradients)
-    (["__rpow__"], [(2, )]), # add (other,)
+    (["__rpow__"], [(2,)]),  # add (other,)
     # (["__rrshift__", "__rrshift__", None], unknown),  # no backward
     # # (["__rshift__"], unknown),  # no backward
     (["__rsub__"], [(other,)]),
@@ -160,7 +167,6 @@ def test_forward_pass(_test_name, fcall_list, args, tensor_pairs):
     else:
         no_of_arg_tests = len(args)
 
-
     results = []
     for i, (a, b) in enumerate(tensor_pairs):
         if len(fcall_list) == 1:
@@ -201,8 +207,6 @@ def test_forward_pass(_test_name, fcall_list, args, tensor_pairs):
                 sub_results.append(result)
 
             results.append(sub_results)
-
-
 
     SYFT_RESULT = 0
     NUMPY_RESULT = 1

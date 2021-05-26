@@ -25,6 +25,7 @@ from ....common.serde.serialize import _serialize as serialize
 from ....common.uid import UID
 from ....io.address import Address
 from ...abstract.node import AbstractNode
+from ...common.service.node_service import ImmediateNodeServiceWithReply
 from ...common.service.node_service import ImmediateNodeServiceWithoutReply
 
 
@@ -145,7 +146,7 @@ class PublishScalarsResultMessage(ImmediateSyftMessageWithoutReply):
         return PublishScalarsResultMessage_PB
 
 
-class PublishScalarsService(ImmediateNodeServiceWithoutReply):
+class PublishScalarsService(ImmediateNodeServiceWithReply):
     @staticmethod
     def process(
         node: AbstractNode, msg: PublishScalarsAction, verify_key: VerifyKey
@@ -163,14 +164,13 @@ class PublishScalarsService(ImmediateNodeServiceWithoutReply):
                 )
                 traceback_and_raise(Exception(log))
 
+        result = publish(scalars, node.acc, msg.sigma)
+        return PublishScalarsResultMessage(address=msg.reply_to, result=result)
 
-        result = publish(scalars, node.acc[verify_key], msg.sigma)
-        # TODO: add verify_key to result view permissions so that it can be automatically downloadedd
-
-        # return <pointer to result>
-
+        # TODO: Change to no reply and store the result in store with the incoming UID
+        # TODO: add verify_key to result view permissions so that it can be automatically downloaded
+        # result = publish(scalars, node.acc[verify_key], msg.sigma)
         # node.acc[verify_key].get_budget() # returns a float
-        # return PublishScalarsResultMessage(address=msg.reply_to, result=result)
 
     @staticmethod
     def message_handler_types() -> List[Type[PublishScalarsAction]]:

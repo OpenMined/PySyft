@@ -118,7 +118,10 @@ class PhiTensorAncestor(TensorChainManager):
                 )
 
             self.push_abstraction_top(
-                _SingleEntityPhiTensor(), entity=entity, min_vals=min_vals, max_vals=max_vals
+                _SingleEntityPhiTensor(),
+                entity=entity,
+                min_vals=min_vals,
+                max_vals=max_vals,
             )
 
         # if there's row-level entities - push a RowEntityPhiTensor
@@ -133,28 +136,30 @@ class PhiTensorAncestor(TensorChainManager):
                     min_vals = (self.child[i] * 0) + min_val
                 else:
                     raise Exception(
-                        "min_val should be a float, got " + str(type(min_val)) + " instead."
+                        "min_val should be a float, got "
+                        + str(type(min_val))
+                        + " instead."
                     )
 
                 if isinstance(max_val, (float, int)):
                     max_vals = (self.child[i] * 0) + max_val
                 else:
                     raise Exception(
-                        "min_val should be a float, got " + str(type(min_val)) + " instead."
+                        "min_val should be a float, got "
+                        + str(type(min_val))
+                        + " instead."
                     )
 
                 new_list.append(class_type(child=self.child[i], entity=entity, min_vals=min_vals, max_vals=max_vals))
 
-            self.replace_abstraction_top(
-                _RowEntityPhiTensor(),
-                rows=new_list
-            )
+
+            self.replace_abstraction_top(_RowEntityPhiTensor(), rows=new_list)
 
         # TODO: if there's element-level entities - push all elements with PhiScalars
         else:
 
-            raise Exception("If you're passing in mulitple entities, please pass in one entity per row.")
-
-
+            raise Exception(
+                "If you're passing in mulitple entities, please pass in one entity per row."
+            )
 
         return self
