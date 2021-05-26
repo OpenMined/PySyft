@@ -51,7 +51,7 @@ GenerateWrapper(
 )
 
 
-def object2proto_rst(obj: object) -> ReplicatedSharedTensor_PB:
+def object2proto(obj: object) -> ReplicatedSharedTensor_PB:
 
     share: ReplicatedSharedTensor = obj
 
@@ -69,7 +69,7 @@ def object2proto_rst(obj: object) -> ReplicatedSharedTensor_PB:
     return proto
 
 
-def proto2object_rst(proto: ReplicatedSharedTensor_PB) -> ReplicatedSharedTensor:
+def proto2object(proto: ReplicatedSharedTensor_PB) -> ReplicatedSharedTensor:
     session = protobuf_session_deserializer(proto=proto.session)
 
     data = protobuf_tensor_deserializer(proto.tensor.tensor)
@@ -85,6 +85,6 @@ GenerateWrapper(
     wrapped_type=ReplicatedSharedTensor_PB,
     import_path="sympc.tensor.ReplicatedSharedTensor",
     protobuf_scheme=ReplicatedSharedTensor_PB,
-    type_object2proto=object2proto_rst,
-    type_proto2object=proto2object_rst,
+    type_object2proto=object2proto,
+    type_proto2object=proto2object,
 )
