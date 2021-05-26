@@ -36,8 +36,6 @@ from typing import Dict
 from pkg_resources import DistributionNotFound  # noqa: F401
 from pkg_resources import get_distribution  # noqa: F401
 
-# syft absolute
-from syft.core.tensor.autograd import functions
 
 # ASTRACT OBJECT IMPORTS
 from syft.core import common  # noqa: F401
@@ -75,6 +73,7 @@ from syft.lib import load_lib  # noqa: F401
 from syft.lib.torch.module import Module  # noqa: F401
 from syft.lib.torch.module import SyModule  # noqa: F401
 from syft.lib.torch.module import SySequential  # noqa: F401
+from syft.core.tensor.autograd import functions
 
 # syft relative
 # Package Imports
