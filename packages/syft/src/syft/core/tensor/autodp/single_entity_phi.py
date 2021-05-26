@@ -216,7 +216,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializa
         )
 
     def _object2proto(self) -> Tensor_PB:
-        print(f"Serializing SingleEntityPhiTensor")
+        print("Serializing SingleEntityPhiTensor")
         print(f"Child {type(self.child)}")
         print(f"min_vals {type(self.min_vals)}")
         print(f"max_vals {type(self.max_vals)}")
@@ -261,7 +261,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializa
 
         entity = deserialize(blob=proto.entity)
 
-        print(f"Deserializing SingleEntityPhiTensor")
+        print("Deserializing SingleEntityPhiTensor")
         print(f"Child {type(child)}")
         print(f"min_vals {type(min_vals)}")
         print(f"max_vals {type(max_vals)}")

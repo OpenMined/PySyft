@@ -26,7 +26,6 @@ from ....common.uid import UID
 from ....io.address import Address
 from ...abstract.node import AbstractNode
 from ...common.service.node_service import ImmediateNodeServiceWithReply
-from ...common.service.node_service import ImmediateNodeServiceWithoutReply
 
 
 @bind_protobuf

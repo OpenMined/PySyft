@@ -23,7 +23,7 @@ from ..ancestors import AutogradTensorAncestor
 from ..ancestors import PhiTensorAncestor
 from ..passthrough import PassthroughTensor
 from ..passthrough import is_acceptable_simple_type
-import numpy as np
+
 
 @bind_protobuf
 class AutogradTensor(PassthroughTensor, PhiTensorAncestor, Serializable):
@@ -204,7 +204,7 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor, Serializable):
         return found_id
 
     def _object2proto(self) -> Tensor_PB:
-        print(f"Serializing AutogradTensor")
+        print("Serializing AutogradTensor")
         print(f"Child {type(self.child)}")
         arrays = []
         tensors = []
@@ -233,7 +233,7 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor, Serializable):
             child = [deserialize(array) for array in proto.arrays]
 
         child = child[0]
-        print(f"Deserializing AutogradTensor")
+        print("Deserializing AutogradTensor")
         print(f"Child {type(child)}")
         return AutogradTensor(child, requires_grad=proto.requires_grad)
 

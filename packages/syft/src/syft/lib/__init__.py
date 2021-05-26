@@ -18,8 +18,8 @@ from packaging import version
 # syft relative
 from ..ast.globals import Globals
 from ..core.adp import create_adp_ast
-from ..core.tensor import create_tensor_ast
 from ..core.node.abstract.node import AbstractNodeClient
+from ..core.tensor import create_tensor_ast
 from ..lib.plan import create_plan_ast
 from ..lib.python import create_python_ast
 from ..lib.remote_dataloader import create_remote_dataloader_ast

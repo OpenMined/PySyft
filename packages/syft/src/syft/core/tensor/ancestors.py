@@ -150,8 +150,14 @@ class PhiTensorAncestor(TensorChainManager):
                         + " instead."
                     )
 
-                new_list.append(class_type(child=self.child[i], entity=entity, min_vals=min_vals, max_vals=max_vals))
-
+                new_list.append(
+                    class_type(
+                        child=self.child[i],
+                        entity=entity,
+                        min_vals=min_vals,
+                        max_vals=max_vals,
+                    )
+                )
 
             self.replace_abstraction_top(_RowEntityPhiTensor(), rows=new_list)
 

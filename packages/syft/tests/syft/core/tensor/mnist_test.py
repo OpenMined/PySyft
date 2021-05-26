@@ -4,10 +4,10 @@ import torch as th
 
 # syft absolute
 import syft as sy
-from syft.core.adp.entity import Entity
-from syft.core.tensor.tensor import Tensor
 from syft import deserialize
 from syft import serialize
+from syft.core.adp.entity import Entity
+from syft.core.tensor.tensor import Tensor
 
 
 def test_vs_torch() -> None:
@@ -60,7 +60,7 @@ def test_train_mnist() -> None:
         diff = target - pred
         pre_loss = np.square(diff)
         loss = np.mean(pre_loss)
-        extraneous_thing = -diff
+        _ = -diff
         loss.backward()
 
         wdiff = weights.grad * 0.01

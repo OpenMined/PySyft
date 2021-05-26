@@ -244,7 +244,9 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         expanded_self = expanded_self.reshape(
             self.shape[0], self.shape[1], other.shape[1]
         )
-        expanded_other = other.reshape([1] + list(other.shape)).repeat(self.shape[0], axis=0)
+        expanded_other = other.reshape([1] + list(other.shape)).repeat(
+            self.shape[0], axis=0
+        )
 
         prod = expanded_self * expanded_other
         result = prod.sum(axis=1)
@@ -383,6 +385,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         self, indices: Optional[Union[int, TypeTuple[int, ...]]] = None
     ) -> Union[PassthroughTensor, np.number]:
         return self.new_with_child(self.child.take(indices=indices))
+
 
     def __array_function__(self, func, types, args, kwargs):
         #         args, kwargs = inputs2child(*args, **kwargs)

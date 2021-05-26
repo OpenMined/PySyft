@@ -1,11 +1,11 @@
 # stdlib
 from collections import OrderedDict
+from typing import ItemsView
 from typing import Iterable
 from typing import KeysView
 from typing import Optional
-from typing import ValuesView
 from typing import Tuple as TypeTuple
-from typing import ItemsView
+from typing import ValuesView
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType

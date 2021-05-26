@@ -31,20 +31,12 @@ class RPowOp(Op):
 
             y_form = self.y
 
-            self.x.add_grad(
-
-                    np.log(y_form) * grad * y_form ** self.x
-
-            )
+            self.x.add_grad(np.log(y_form) * grad * y_form ** self.x)
 
             if self.x.grad_fn:
                 self.x.backward(backprop_id=backprop_id)
 
         if not y_is_simple and self.y.requires_grad:
-            self.y.add_grad(
-
-                    grad * self.x * self.y ** (self.x - 1)
-
-            )
+            self.y.add_grad(grad * self.x * self.y ** (self.x - 1))
             if self.y.grad_fn:
                 self.y.backward(backprop_id=backprop_id)

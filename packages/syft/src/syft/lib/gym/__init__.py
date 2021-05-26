@@ -7,9 +7,6 @@ from typing import Tuple as TypeTuple
 # third party
 import gym
 
-# syft absolute
-import syft as sy
-
 # syft relative
 from ...ast import add_classes
 from ...ast import add_methods

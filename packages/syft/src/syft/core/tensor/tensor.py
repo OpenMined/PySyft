@@ -1,21 +1,18 @@
 # future
 from __future__ import annotations
 
-# stdlib
-import sys
-
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 import torch as th
 
 # syft relative
+from ...core.common.serde.serializable import Serializable
 from ...lib.util import full_name_with_name
 from ...proto.core.tensor.tensor_pb2 import Tensor as Tensor_PB
 from ..common.serde.deserialize import _deserialize as deserialize
 from ..common.serde.serializable import bind_protobuf
 from ..common.serde.serialize import _serialize as serialize
-from ...core.common.serde.serializable import Serializable
 from .ancestors import AutogradTensorAncestor
 from .ancestors import PhiTensorAncestor
 from .passthrough import HANDLED_FUNCTIONS
@@ -59,7 +56,7 @@ class Tensor(
             return self.__class__(func(*args, **kwargs))
 
     def _object2proto(self) -> Tensor_PB:
-        print(f"Serializing Tensor")
+        print("Serializing Tensor")
         print(f"Child {type(self.child)}")
         arrays = []
         tensors = []
@@ -87,7 +84,7 @@ class Tensor(
             child = [deserialize(array) for array in proto.arrays]
 
         child = child[0]
-        print(f"Deserializing Tensor")
+        print("Deserializing Tensor")
         print(f"Child {type(child)}")
         return Tensor(child)
 
