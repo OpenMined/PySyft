@@ -64,7 +64,7 @@ def object2proto(obj: object) -> ReplicatedSharedTensor_PB:
         tensor_list.append(getattr(share_tensor, "data", None))
 
     if tensor_list is not None:
-        proto.tensor.tensor.CopyFrom(protobuf_tensor_serializer(tensor_list))
+        proto.tensor.shares.CopyFrom(protobuf_tensor_serializer(tensor_list))
 
     return proto
 
