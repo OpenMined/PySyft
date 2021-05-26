@@ -1,7 +1,7 @@
 # stdlib
 
 # third party
-from symc.tensor import ReplicatedSharedTensor
+from sympc.tensor import ReplicatedSharedTensor
 from sympc.tensor import ShareTensor
 
 # syft relative
