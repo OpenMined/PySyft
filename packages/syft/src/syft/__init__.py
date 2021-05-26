@@ -37,8 +37,6 @@ from pkg_resources import DistributionNotFound  # noqa: F401
 from pkg_resources import get_distribution  # noqa: F401
 
 # syft absolute
-from syft.core.tensor.autograd import functions
-
 # ASTRACT OBJECT IMPORTS
 from syft.core import common  # noqa: F401
 from syft.core.common import event_loop  # noqa: F401
@@ -59,7 +57,8 @@ from syft.core.node.vm.vm import VirtualMachine  # noqa: F401
 from syft.core.node.vm.vm import VirtualMachineClient  # noqa: F401
 from syft.core.plan.plan import Plan  # noqa: F401
 from syft.core.plan.plan_builder import make_plan  # noqa: F401
-from syft.core.tensor import functions  # noqa: F401
+from syft.core.tensor import functions as tensor_functions  # noqa: F401
+from syft.core.tensor.autograd import functions as autograd_functions  # noqa: F401
 from syft.grid.client.client import login  # noqa: F401
 
 # Convenience Functions

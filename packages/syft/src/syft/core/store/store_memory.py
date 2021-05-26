@@ -1,8 +1,10 @@
 # stdlib
 from collections import OrderedDict
+from typing import ItemsView
 from typing import Iterable
 from typing import KeysView
 from typing import Optional
+from typing import Tuple as TypeTuple
 from typing import ValuesView
 
 # third party
@@ -37,8 +39,10 @@ class MemoryStore(ObjectStore):
     def get_object(self, key: UID) -> Optional[StorableObject]:
         return self._objects.get(key, None)
 
-    def get_objects_of_type(self, obj_type: type) -> Iterable[StorableObject]:
-        return [obj for obj in self.values() if isinstance(obj.data, obj_type)]
+    def get_objects_of_type(
+        self, obj_type: type
+    ) -> Iterable[TypeTuple[UID, StorableObject]]:
+        return [(id, obj) for id, obj in self.items() if isinstance(obj.data, obj_type)]
 
     def __sizeof__(self) -> int:
         return self._objects.__sizeof__()
@@ -54,6 +58,9 @@ class MemoryStore(ObjectStore):
 
     def values(self) -> ValuesView[StorableObject]:
         return self._objects.values()
+
+    def items(self) -> ItemsView[UID, StorableObject]:
+        return self._objects.items()
 
     def __contains__(self, key: UID) -> bool:
         return key in self._objects.keys()

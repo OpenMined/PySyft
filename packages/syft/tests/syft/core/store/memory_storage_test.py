@@ -100,8 +100,12 @@ def test_get_objects_of_type() -> None:
     store[id1] = obj1
     store[id2] = obj2
     store[id3] = obj3
-    assert all(x in store.get_objects_of_type(th.Tensor) for x in [obj1, obj2])
-    assert obj3 in store.get_objects_of_type(ObjectWithID)
+    store_dict = {id1: obj1, id2: obj2}
+    assert all(
+        (id, x) in store.get_objects_of_type(th.Tensor)
+        for (id, x) in store_dict.items()
+    )
+    assert id3, obj3 in store.get_objects_of_type(ObjectWithID)
 
 
 def test_keys_values() -> None:

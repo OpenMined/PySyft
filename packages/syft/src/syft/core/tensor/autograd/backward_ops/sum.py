@@ -39,7 +39,6 @@ class SumOp(Op):
                 n_times = np.prod(self.backward_shape)
                 grad = grad.repeat(n_times, axis=0).reshape(self.backward_shape)
 
-
             self.x.add_grad(grad)
 
             if self.x.grad_fn:

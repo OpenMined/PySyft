@@ -35,9 +35,7 @@ class SubOp(Op):
             if self.x.shape != grad.shape:
                 print("shapes don't match")
                 axis = np.argmax(np.abs(np.array(self.x.shape) - np.array(grad.shape)))
-                self.x.add_grad(
-                    grad.sum(axis=axis, keepdims=True)
-                )
+                self.x.add_grad(grad.sum(axis=axis, keepdims=True))
             else:
 
                 self.x.add_grad(grad)
@@ -50,9 +48,7 @@ class SubOp(Op):
                 print("shapes don't match")
 
                 axis = np.argmax(np.abs(np.array(self.y.shape) - np.array(grad.shape)))
-                self.y.add_grad(
-                    -(grad.sum(axis=axis, keepdims=True))
-                )
+                self.y.add_grad(-(grad.sum(axis=axis, keepdims=True)))
             else:
                 self.y.add_grad(-grad)
 

@@ -1,3 +1,6 @@
+# future
+from __future__ import annotations
+
 # stdlib
 from typing import List as TypeList
 
@@ -156,7 +159,7 @@ class ScalarTensor(np.ndarray):
 
         return output
 
-    def backward(self, accumulate_grads=False):
+    def backward(self, accumulate_grads=False) -> GradLedger:
         ledger = GradLedger()
         for entry in self.flatten():
             ledger.add(

@@ -1,7 +1,6 @@
 # stdlib
 from inspect import isdatadescriptor
 from inspect import isgetsetdescriptor
-from typing import Tuple
 
 # third party
 import numpy as np

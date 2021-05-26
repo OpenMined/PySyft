@@ -48,7 +48,7 @@ def create_ast(client: TypeAny) -> Globals:
         ),
     ]
 
-    methods = []
+    methods = []  # type: ignore
 
     add_modules(ast, modules)
     add_classes(ast, classes)

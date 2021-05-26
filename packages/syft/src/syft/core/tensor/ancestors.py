@@ -53,7 +53,7 @@ class AutogradTensorAncestor(TensorChainManager):
         child_gradient = self.child.grad
         if child_gradient is None:
             return None
-        return self.__class__(child_gradient)
+        return self.new_with_child(child_gradient)
 
     @property
     def requires_grad(self):
@@ -91,11 +91,11 @@ class PhiTensorAncestor(TensorChainManager):
 
     @property
     def min_vals(self):
-        return self.__class__(self.child.min_vals)
+        return self.new_with_child(self.child.min_vals)
 
     @property
     def max_vals(self):
-        return self.__class__(self.child.max_vals)
+        return self.new_with_child(self.child.max_vals)
 
     def private(self, min_val, max_val, entities=None, entity=None):
         """ """
@@ -150,8 +150,14 @@ class PhiTensorAncestor(TensorChainManager):
                         + " instead."
                     )
 
-                new_list.append(class_type(child=self.child[i], entity=entity, min_vals=min_vals, max_vals=max_vals))
-
+                new_list.append(
+                    class_type(
+                        child=self.child[i],
+                        entity=entity,
+                        min_vals=min_vals,
+                        max_vals=max_vals,
+                    )
+                )
 
             self.replace_abstraction_top(_RowEntityPhiTensor(), rows=new_list)
 

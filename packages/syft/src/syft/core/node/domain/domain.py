@@ -60,7 +60,7 @@ class Domain(Node):
         verify_key: Optional[VerifyKey] = None,
         root_key: Optional[VerifyKey] = None,
         db_path: Optional[str] = None,
-        max_budget: Optional[float] = 10.0,
+        max_budget: float = 10.0,
     ):
         super().__init__(
             name=name,

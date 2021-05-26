@@ -1,13 +1,24 @@
+# future
+from __future__ import annotations
+
 # third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 
 # syft relative
+from ....core.common.serde.serializable import Serializable
+from ....lib.util import full_name_with_name
+from ....proto.core.tensor.tensor_pb2 import Tensor as Tensor_PB
+from ...common.serde.deserialize import _deserialize as deserialize
+from ...common.serde.serializable import bind_protobuf
+from ...common.serde.serialize import _serialize as serialize
 from ..passthrough import PassthroughTensor
 from ..passthrough import implements
 from ..passthrough import is_acceptable_simple_type
 
 
-class RowEntityPhiTensor(PassthroughTensor):
+@bind_protobuf
+class RowEntityPhiTensor(PassthroughTensor, Serializable):
     def __init__(self, rows, check_shape=True):
         super().__init__(rows)
 
@@ -18,6 +29,9 @@ class RowEntityPhiTensor(PassthroughTensor):
                     raise Exception(
                         f"All rows in RowEntityPhiTensor must match: {shape} != {row.shape}"
                     )
+
+    def new_with_child(self, child) -> RowEntityPhiTensor:
+        return RowEntityPhiTensor(child)
 
     @property
     def shape(self):
@@ -59,7 +73,7 @@ class RowEntityPhiTensor(PassthroughTensor):
             new_list = list()
             for i in range(len(self.child)):
                 if is_acceptable_simple_type(other):
-                    if isinstance(other, (int,bool,float)):
+                    if isinstance(other, (int, bool, float)):
                         new_list.append(self.child[i] * other)
                     else:
                         new_list.append(self.child[i] * other[i])
@@ -88,7 +102,7 @@ class RowEntityPhiTensor(PassthroughTensor):
 
     def repeat(self, repeats, axis=None):
 
-        if axis == None:
+        if axis is None:
             raise Exception(
                 "Conservatively, RowEntityPhiTensor doesn't yet support repeat(axis=None)"
             )
@@ -122,7 +136,8 @@ class RowEntityPhiTensor(PassthroughTensor):
 
         if shape[0] != self.shape[0]:
             raise Exception(
-                "For now, you can't reshape the first dimension because that would probably require creating a gamma tensor."
+                "For now, you can't reshape the first dimension because that would"
+                + "probably require creating a gamma tensor."
             )
 
         new_list = list()
@@ -135,12 +150,13 @@ class RowEntityPhiTensor(PassthroughTensor):
 
         if axis is None or axis == 0:
             raise Exception(
-                "For now, you can't sum the entire vector into a scalar or sum across dim 0 without needing a GammaTensor."
+                "For now, you can't sum the entire vector into a scalar or sum across "
+                + "dim 0 without needing a GammaTensor."
             )
 
         new_list = list()
         for row in self.child:
-            new_list.append(row.sum(*args, axis=axis-1, **kwargs))
+            new_list.append(row.sum(*args, axis=axis - 1, **kwargs))
 
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
@@ -157,6 +173,42 @@ class RowEntityPhiTensor(PassthroughTensor):
 
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
+    def _object2proto(self) -> Tensor_PB:
+        print("Serializing RowEntityPhiTensor")
+        print(f"Children {type(self.child)}")
+        arrays = []
+        tensors = []
+        if len(self.child) > 0 and isinstance(self.child[0], np.ndarray):
+            use_tensors = False
+            arrays = [serialize(child) for child in self.child]
+        else:
+            use_tensors = True
+            tensors = [serialize(child) for child in self.child]
+
+        return Tensor_PB(
+            obj_type=full_name_with_name(klass=type(self)),
+            use_tensors=use_tensors,
+            arrays=arrays,
+            tensors=tensors,
+        )
+
+    @staticmethod
+    def _proto2object(proto: Tensor_PB) -> RowEntityPhiTensor:
+        use_tensors = proto.use_tensors
+        child = []
+        if use_tensors:
+            child = [deserialize(tensor) for tensor in proto.tensors]
+        else:
+            child = [deserialize(array) for array in proto.arrays]
+
+        print("Serializing RowEntityPhiTensor")
+        print(f"Children {type(child)}")
+        return RowEntityPhiTensor(child)
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return Tensor_PB
+
 
 @implements(RowEntityPhiTensor, np.expand_dims)
 def expand_dims(a, axis):
@@ -168,6 +220,6 @@ def expand_dims(a, axis):
 
     new_rows = list()
     for row in a.child:
-        new_rows.append(np.expand_dims(row, axis-1))
+        new_rows.append(np.expand_dims(row, axis - 1))
 
     return RowEntityPhiTensor(rows=new_rows, check_shape=False)

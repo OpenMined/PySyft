@@ -205,7 +205,7 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
             )
 
         try:
-            for obj in node.store.get_objects_of_type(obj_type=object):
+            for id, obj in node.store.get_objects_of_type(obj_type=object):
                 # if this tensor allows anyone to search for it, then one of its keys
                 # has a VERIFYALL in it.
                 contains_all_in_permissions = any(
@@ -217,9 +217,12 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
                     or contains_all_in_permissions
                 ):
                     ptr_type = obj2pointer_type(obj=obj.data)
+                    # use the nested value if it exists
+                    if hasattr(obj, "id"):
+                        id = obj.id
                     ptr = ptr_type(
                         client=node,
-                        id_at_location=obj.id,
+                        id_at_location=id,
                         object_type=obj.object_type,
                         tags=obj.tags,
                         description=obj.description,
