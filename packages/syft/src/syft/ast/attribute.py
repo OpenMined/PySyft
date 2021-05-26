@@ -1,4 +1,4 @@
-""" This module contains Attribute, an interface of a generic node in the AST"""
+"""This module contains Attribute, an interface of a generic node in the AST."""
 
 # stdlib
 from types import ModuleType
@@ -211,6 +211,9 @@ class Attribute:
     @property
     def parent(self) -> "Attribute":
         """Check if all the nodes have a parent node.
+
+        Returns:
+            Attribute: parent node
 
         Raises:
             AttributeError: If node has no parent attribute.

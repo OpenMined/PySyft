@@ -1,4 +1,4 @@
-"""This module contains Global, an AST node representing the collection
+"""This module contains `Global`, an AST node representing the collection
 of frameworks held in the global namespace."""
 
 # stdlib

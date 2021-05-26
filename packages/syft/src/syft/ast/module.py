@@ -48,7 +48,8 @@ class Module(ast.attribute.Attribute):
 
         Args:
             client: The client for which all computation is being executed.
-            path_and_name: The path for the current node, e.g. `syft.lib.python.List`
+            path_and_name: The path for the current node, e.g. `syft.lib.python.List`.
+            parent: The parent node of the module.
             object_ref: The actual python object for which the computation is being made.
             return_type_name: The given action's return type name, with its full path, in string format.
         """
@@ -126,7 +127,7 @@ class Module(ast.attribute.Attribute):
         return resolved
 
     def __repr__(self) -> str:
-        """String representation of the object."""
+        """Tree view of the `module`."""
         out = "Module:\n"
         for name, module in self.attrs.items():
             out += "\t." + name + " -> " + str(module).replace("\t.", "\t\t.") + "\n"

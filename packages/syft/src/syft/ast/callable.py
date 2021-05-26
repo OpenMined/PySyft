@@ -1,5 +1,5 @@
-"""This module contains Callable, an AST node representing a method (can be static),
- global function, or constructor which can be directly executed."""
+"""This module contains `Callable`, an AST node representing a method (can be static),
+global function, or constructor which can be directly executed."""
 
 # stdlib
 from types import ModuleType
@@ -34,7 +34,7 @@ class Callable(ast.attribute.Attribute):
         client: Optional[AbstractNodeClient] = None,
         is_static: Optional[bool] = False,
     ):
-        """Base constructor.
+        """Base constructor for Callable.
 
         Args:
             path_and_name: The path for the current node, e.g. `syft.lib.python.List`.
