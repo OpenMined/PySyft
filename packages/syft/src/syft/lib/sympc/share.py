@@ -53,14 +53,18 @@ GenerateWrapper(
 
 def object2proto_rst(obj: object) -> ReplicatedSharedTensor_PB:
 
-    share: ShareTensor = obj
+    share: ReplicatedSharedTensor = obj
 
     session = protobuf_session_serializer(share.session)
     proto = ReplicatedSharedTensor_PB(session=session)
 
-    tensor_data = getattr(share.tensor, "data", None)
-    if tensor_data is not None:
-        proto.tensor.tensor.CopyFrom(protobuf_tensor_serializer(tensor_data))
+    tensor_list = []
+
+    for share_tensor in share.shares:
+        tensor_list.append(getattr(share_tensor, "data", None))
+
+    if tensor_list is not None:
+        proto.tensor.tensor.CopyFrom(protobuf_tensor_serializer(tensor_list))
 
     return proto
 
@@ -72,7 +76,7 @@ def proto2object_rst(proto: ReplicatedSharedTensor_PB) -> ReplicatedSharedTensor
     share = ReplicatedSharedTensor(data=None, session=session)
 
     # Manually put the tensor since we do not want to re-encode it
-    share.tensor = data.type(session.tensor_type)
+    share.shares = data.type(session.tensor_type)
 
     return share
 
