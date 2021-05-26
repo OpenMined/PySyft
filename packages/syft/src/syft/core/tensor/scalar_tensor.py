@@ -8,9 +8,9 @@ import numpy as np
 # syft relative
 from ..autograd.value import grad
 from ..autograd.value import to_values
-from .entity import Entity
-from .publish import publish
-from .scalar import PhiScalar
+from ..adp.entity import Entity
+from ..adp.publish import publish
+from ..adp.scalar import PhiScalar
 
 
 def make_entities(n: int = 100) -> TypeList[Entity]:
@@ -105,7 +105,7 @@ class GradLedger:
             x._grad = None
 
 
-class Tensor(np.ndarray):
+class ScalarTensor(np.ndarray):
     def __new__(
         cls,
         input_array,
@@ -144,7 +144,7 @@ class Tensor(np.ndarray):
 
     def __array_wrap__(self, out_arr, context=None):
 
-        output = out_arr.view(Tensor)
+        output = out_arr.view(ScalarTensor)
 
         is_private = False
         if context is not None:
@@ -170,7 +170,7 @@ class Tensor(np.ndarray):
         grads = list()
         for val in self.flatten().tolist():
             grads.append(val._grad)
-        return Tensor(grads).reshape(self.shape)
+        return ScalarTensor(grads).reshape(self.shape)
 
     def slow_publish(self, **kwargs):
         grads = list()
@@ -199,7 +199,7 @@ class Tensor(np.ndarray):
         if self.is_private:
             raise Exception("Cannot call .private() on tensor which is already private")
 
-        return Tensor(
+        return ScalarTensor(
             self.value,
             min_val=min_val,
             max_val=max_val,
