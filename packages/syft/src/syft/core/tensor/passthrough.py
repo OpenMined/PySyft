@@ -241,18 +241,14 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
     def manual_dot(self, other):
 
-        expanded_self = self.repeat(other.shape[1], axis=1).reshape(
+        expanded_self = self.repeat(other.shape[1], axis=1)
+        expanded_self = expanded_self.reshape(
             self.shape[0], self.shape[1], other.shape[1]
         )
-        expanded_other = (
-            other.repeat(self.shape[0], axis=1)
-            .reshape(other.shape[0], other.shape[1], self.shape[0])
-            .transpose(2, 0, 1)
-        )
+        expanded_other = np.expand_dims(other, axis=0).repeat(self.shape[0], axis=0)
 
         prod = expanded_self * expanded_other
         result = prod.sum(axis=1)
-
         return result
 
     def dot(self, other):

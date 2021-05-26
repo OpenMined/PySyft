@@ -27,9 +27,10 @@ class MulOp(Op):
         if self.x.requires_grad:
 
             if y_is_simple:
-                self.x.add_grad(AutogradTensor(grad.child * self.y, False))
+                self.x.add_grad(grad * self.y)
             else:
-                self.x.add_grad(AutogradTensor(grad.child * self.y.child, False))
+                temp = self.y * grad
+                self.x.add_grad(temp)
 
             if self.x.grad_fn:
                 self.x.backward(backprop_id=backprop_id)
@@ -37,6 +38,6 @@ class MulOp(Op):
         # if y_is_simple then it's definitely not an autograd tensor (doesn't need to be
         # backpropagated into. also if it doesn't .requires_grad
         if not y_is_simple and self.y.requires_grad:
-            self.y.add_grad(AutogradTensor(grad.child * self.x.child, False))
+            self.y.add_grad(self.x * grad)
             if self.y.grad_fn:
                 self.y.backward(backprop_id=backprop_id)

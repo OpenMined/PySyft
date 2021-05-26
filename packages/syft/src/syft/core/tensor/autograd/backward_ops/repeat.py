@@ -23,8 +23,6 @@ class RepeatOp(Op):
 
         if self.x.requires_grad:
 
-            requires_grad = grad.requires_grad
-
             axis = self.axis
             if axis is None:
                 axis = len(self.input_shape) - 1
@@ -32,11 +30,11 @@ class RepeatOp(Op):
             intermediate_shape = list(self.input_shape)
             intermediate_shape.insert(axis + 1, -1)
 
-            grad = grad.child.reshape(intermediate_shape)
+            grad = grad.reshape(*intermediate_shape)
 
             grad = grad.sum(axis=axis + 1)
 
-            self.x.add_grad(AutogradTensor(grad, requires_grad=requires_grad))
+            self.x.add_grad(grad)
 
             if self.x.grad_fn:
                 self.x.backward(backprop_id=backprop_id)

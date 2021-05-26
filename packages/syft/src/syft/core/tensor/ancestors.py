@@ -143,7 +143,7 @@ class PhiTensorAncestor(TensorChainManager):
                         "min_val should be a float, got " + str(type(min_val)) + " instead."
                     )
 
-                new_list.append(class_type(child=self.child[i:i+1], entity=entity, min_vals=min_vals, max_vals=max_vals))
+                new_list.append(class_type(child=self.child[i], entity=entity, min_vals=min_vals, max_vals=max_vals))
 
             self.replace_abstraction_top(
                 _RowEntityPhiTensor(),

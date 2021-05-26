@@ -15,7 +15,7 @@ class CopyOp(Op):
 
         if self.x.requires_grad:
 
-            self.x.add_grad(AutogradTensor(grad.child.copy()))
+            self.x.add_grad(grad.copy())
 
             if self.x.grad_fn:
                 self.x.backward(backprop_id=backprop_id)

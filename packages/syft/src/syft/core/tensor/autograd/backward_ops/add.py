@@ -30,7 +30,7 @@ class AddOp(Op):
             if self.x.shape != grad.shape:
                 axis = np.argmax(np.abs(np.array(self.x.shape) - np.array(grad.shape)))
                 self.x.add_grad(
-                    AutogradTensor(grad.child.sum(axis=axis, keepdims=True))
+                    grad.sum(axis=axis, keepdims=True)
                 )
             else:
                 self.x.add_grad(grad)
@@ -41,7 +41,7 @@ class AddOp(Op):
             if self.y.shape != grad.shape:
                 axis = np.argmax(np.abs(np.array(self.y.shape) - np.array(grad.shape)))
                 self.y.add_grad(
-                    AutogradTensor(grad.child.sum(axis=axis, keepdims=True))
+                    grad.sum(axis=axis, keepdims=True)
                 )
             else:
                 self.y.add_grad(grad)

@@ -17,7 +17,7 @@ class ReshapeOp(Op):
 
         if self.x.requires_grad:
 
-            self.x.add_grad(AutogradTensor(grad.child.reshape(self.backward_shape)))
+            self.x.add_grad(grad.reshape(*self.backward_shape))
 
             if self.x.grad_fn:
                 self.x.backward(backprop_id=backprop_id)

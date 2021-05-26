@@ -10,7 +10,7 @@ from ..ancestors import AutogradTensorAncestor
 from ..ancestors import PhiTensorAncestor
 from ..passthrough import PassthroughTensor
 from ..passthrough import is_acceptable_simple_type
-
+import numpy as np
 
 class AutogradTensor(PassthroughTensor, PhiTensorAncestor):
     def __init__(self, child, requires_grad=False):
@@ -103,7 +103,8 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor):
         if self._grad[self.backprop_id] is None:
             self._grad[self.backprop_id] = grad
         else:
-            self._grad[self.backprop_id] = grad + self._grad[self.backprop_id]
+
+            self._grad[self.backprop_id] = self._grad[self.backprop_id] + grad
 
     def backward(self, grad=None, backprop_id: Optional[uuid.uuid4] = None):
 
@@ -119,10 +120,10 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor):
 
         if grad is None and self._grad[self.backprop_id] is None:
             # in case if this is last loss tensor
-            # grad = np.ones(self.shape)
+            grad = np.ones(self.shape)
             # grad = self.__class__(grad, requires_grad=False)
             # this more or less ensures it has the right tensor chain
-            grad = (self * 0) + 1
+            # grad = (self * 0) + 1
 
         elif self.grad is not None:
             grad = self._grad[self.backprop_id]

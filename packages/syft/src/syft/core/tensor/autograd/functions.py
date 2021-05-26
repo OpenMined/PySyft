@@ -6,6 +6,7 @@ from ..passthrough import implements
 from ..passthrough import inputs2child
 from .tensor import AutogradTensor
 
+print("Making some autograd functions")
 
 @implements(AutogradTensor, np.max)
 def npmax(*args, **kwargs):

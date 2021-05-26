@@ -37,6 +37,8 @@ from pkg_resources import DistributionNotFound  # noqa: F401
 from pkg_resources import get_distribution  # noqa: F401
 
 # syft absolute
+from syft.core.tensor.autograd import functions
+
 # ASTRACT OBJECT IMPORTS
 from syft.core import common  # noqa: F401
 from syft.core.common import event_loop  # noqa: F401

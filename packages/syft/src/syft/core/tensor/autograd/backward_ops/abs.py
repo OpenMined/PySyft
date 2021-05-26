@@ -20,12 +20,12 @@ class AbsOp(Op):
 
         if self.x.requires_grad:
 
-            _grad = self.x.child > 0 # returns 0s and 1s
+            _grad = self.x > 0 # returns 0s and 1s
             _grad = (_grad * 2) - 1 # returns -1s and 1s
 
-            grad = _grad * grad.child
+            grad = _grad * grad
 
-            self.x.add_grad(AutogradTensor(grad))
+            self.x.add_grad(grad)
 
             if self.x.grad_fn:
                 self.x.backward(backprop_id=backprop_id)

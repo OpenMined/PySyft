@@ -25,11 +25,9 @@ class TransposeOp(Op):
 
         if self.x.requires_grad:
 
-            requires_grad = grad.requires_grad
+            grad = grad.transpose(*self.reverse_dims)
 
-            grad = grad.child.transpose(*self.reverse_dims)
-
-            self.x.add_grad(AutogradTensor(grad, requires_grad=requires_grad))
+            self.x.add_grad(grad)
 
             if self.x.grad_fn:
                 self.x.backward(backprop_id=backprop_id)

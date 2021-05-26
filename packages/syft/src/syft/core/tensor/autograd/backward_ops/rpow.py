@@ -28,15 +28,13 @@ class RPowOp(Op):
         y_is_simple = is_acceptable_simple_type(self.y)
 
         if self.x.requires_grad:
-            if y_is_simple:
-                y_form = self.y
-            else:
-                y_form = self.y.child
+
+            y_form = self.y
 
             self.x.add_grad(
-                AutogradTensor(
-                    np.log(y_form) * grad.child * y_form ** self.x.child, False
-                )
+
+                    np.log(y_form) * grad * y_form ** self.x
+
             )
 
             if self.x.grad_fn:
@@ -44,10 +42,9 @@ class RPowOp(Op):
 
         if not y_is_simple and self.y.requires_grad:
             self.y.add_grad(
-                AutogradTensor(
-                    grad.child * self.x.child * self.y.child ** (self.x.child - 1),
-                    False,
-                )
+
+                    grad * self.x * self.y ** (self.x - 1)
+
             )
             if self.y.grad_fn:
                 self.y.backward(backprop_id=backprop_id)

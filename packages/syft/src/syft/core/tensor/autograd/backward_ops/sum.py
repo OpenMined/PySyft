@@ -30,17 +30,17 @@ class SumOp(Op):
 
         if self.x.requires_grad:
 
-            requires_grad = grad.requires_grad
-
             if self.axis is not None:
-                grad = np.expand_dims(grad.child, self.axis)
+
+                grad = np.expand_dims(grad, self.axis)
                 grad = grad.repeat(self.dim_at_axis, axis=self.axis)
+
             else:
                 n_times = np.prod(self.backward_shape)
+                grad = grad.repeat(n_times, axis=0).reshape(self.backward_shape)
 
-                grad = grad.child.repeat(n_times, axis=0).reshape(self.backward_shape)
 
-            self.x.add_grad(AutogradTensor(grad, requires_grad=requires_grad))
+            self.x.add_grad(grad)
 
             if self.x.grad_fn:
                 self.x.backward(backprop_id=backprop_id)

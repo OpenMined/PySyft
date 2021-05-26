@@ -18,7 +18,7 @@ class RowEntityPhiTensor(PassthroughTensor):
 
     @property
     def shape(self):
-        return [len(self.child)] + list(self.child[0].shape[1:])
+        return [len(self.child)] + list(self.child[0].shape)
 
     def __add__(self, other):
 
@@ -52,7 +52,10 @@ class RowEntityPhiTensor(PassthroughTensor):
             new_list = list()
             for i in range(len(self.child)):
                 if is_acceptable_simple_type(other):
-                    new_list.append(self.child[i] * other)
+                    if isinstance(other, (int,bool,float)):
+                        new_list.append(self.child[i] * other)
+                    else:
+                        new_list.append(self.child[i] * other[i])
                 else:
                     new_list.append(self.child[i] * other.child[i])
             return RowEntityPhiTensor(rows=new_list, check_shape=False)
@@ -103,6 +106,8 @@ class RowEntityPhiTensor(PassthroughTensor):
     def reshape(self, *shape):
 
         if shape[0] != self.shape[0]:
+            print(shape)
+            print(self.shape)
             raise Exception(
                 "For now, you can't reshape the first dimension because that would probably require creating a gamma tensor.")
 
@@ -120,12 +125,12 @@ class RowEntityPhiTensor(PassthroughTensor):
 
         new_list = list()
         for row in self.child:
-            new_list.append(row.sum(*args, axis=axis, **kwargs))
+            new_list.append(row.sum(*args, axis=axis-1, **kwargs))
 
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
     def transpose(self, *dims):
-
+        print(dims)
         if dims[0] != 0:
             raise Exception("Can't move dim 0 in RowEntityPhiTensor at this time")
 
@@ -146,6 +151,6 @@ def expand_dims(a, axis):
 
     new_rows = list()
     for row in a.child:
-        new_rows.append(np.expand_dims(a, axis))
+        new_rows.append(np.expand_dims(row, axis-1))
 
     return RowEntityPhiTensor(rows=new_rows, check_shape=False)

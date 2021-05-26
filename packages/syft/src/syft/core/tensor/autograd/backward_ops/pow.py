@@ -29,17 +29,14 @@ class PowOp(Op):
         y_is_simple = is_acceptable_simple_type(self.y)
 
         if self.x.requires_grad:
-            if y_is_simple:
-                y_form = self.y
-            else:
-                y_form = self.y.child
+            y_form = self.y
 
-            self.x.add_grad(AutogradTensor(grad.child * y_form * (self.x.child ** (y_form - 1)), False))
+            self.x.add_grad(grad * y_form * (self.x ** (y_form - 1)))
 
             if self.x.grad_fn:
                 self.x.backward(backprop_id=backprop_id)
 
         if not y_is_simple and self.y.requires_grad:
-            self.y.add_grad(AutogradTensor(np.log(self.x.child) * grad.child * self.x.child ** self.y.child, False))
+            self.y.add_grad(np.log(self.x) * grad * self.x ** self.y)
             if self.y.grad_fn:
                 self.y.backward(backprop_id=backprop_id)
