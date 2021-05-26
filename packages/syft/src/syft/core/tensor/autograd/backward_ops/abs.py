@@ -20,8 +20,8 @@ class AbsOp(Op):
 
         if self.x.requires_grad:
 
-            _grad = self.x.child > 0 # returns 0s and 1s
-            _grad = (_grad * 2) - 1 # returns -1s and 1s
+            _grad = self.x.child > 0  # returns 0s and 1s
+            _grad = (_grad * 2) - 1  # returns -1s and 1s
 
             grad = _grad * grad.child
 

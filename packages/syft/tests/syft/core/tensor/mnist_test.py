@@ -68,6 +68,7 @@ def test_train_mnist() -> None:
     assert loss.data_child < 10.0
 
 
+# TODO: @Madhava Make work
 # def test_basic_publish_event() -> None:
 #     domain = sy.Domain("My Amazing Domain", max_budget=10)
 #     root_client = domain.get_root_client()
@@ -113,7 +114,8 @@ def test_train_mnist() -> None:
 #     weights = weights_ptr_downloadable.get()
 #     print(weights)
 #
-#
+
+# TODO: @Madhava Make work
 # def test_simulated_publish_event() -> None:
 #     domain = sy.Domain("My Amazing Domain", max_budget=10)
 #     root_client = domain.get_root_client()
@@ -165,9 +167,3 @@ def test_train_mnist() -> None:
 #     # publish GammaScalar like you would normally
 #     downloadable_budget = ptr_to_budget.publish(acc=client.accountant, sigma=0.1)
 #     print(downloadable_budget.get())
-
-
-
-
-
-
