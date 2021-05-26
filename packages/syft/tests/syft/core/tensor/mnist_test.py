@@ -124,85 +124,59 @@ def test_send_tensors(root_client: sy.VirtualMachineClient) -> None:
     assert (res.data_child == data.data_child).all()
 
 
-# def test_remote_grad_fn(root_client: sy.VirtualMachineClient) -> None:
-#     data_batch = np.random.rand(3 * 3)
-#     bob = Entity(unique_name="Bob")
-#     data = Tensor(data_batch).private(0.01, 1, entity=bob).autograd(requires_grad=True)
+def test_basic_publish_event() -> None:
+    domain = sy.Domain("My Amazing Domain", max_budget=10)
+    root_client = domain.get_root_client()
 
-#     basic = data * data
-#     basic.backward()
+    data_batch = np.random.rand(4, 28 * 28)
+    label_batch = np.random.rand(4, 10)
 
-#     print("----- remote -----")
-#     data_ptr = data.send(root_client)
-#     basic_ptr = data_ptr * data_ptr
-#     basic_ptr.backward()
+    bob = Entity(unique_name="Bob")
 
-#     assert True is False
+    # Step 1: upload a private dataset as the root owner
+    data = (
+        Tensor(data_batch)
+        .private(0.01, 1, entity=bob)
+        .autograd(requires_grad=True)
+        .tag("data")
+    )
 
+    target = (
+        Tensor(label_batch).private(0.01, 1, entity=bob).autograd(requires_grad=True)
+    ).tag("target")
 
-# def test_basic_publish_event() -> None:
-#     domain = sy.Domain("My Amazing Domain", max_budget=10)
-#     root_client = domain.get_root_client()
+    data.send(root_client)
+    target.send(root_client)
 
-#     data_batch = np.random.rand(4, 28 * 28)
-#     label_batch = np.random.rand(4, 10)
+    # Step 2: user connects to domain with a new verify_key
+    client = domain.get_client()
 
-#     bob = Entity(unique_name="Bob")
+    data_ptr = client.store["data"]
+    target_ptr = client.store["target"]
 
-#     # Step 1: upload a private dataset as the root owner
-#     data = (
-#         Tensor(data_batch)
-#         .private(0.01, 1, entity=bob)
-#         .autograd(requires_grad=True)
-#         .tag("data")
-#     )
+    weights = Tensor(np.random.rand(28 * 28, 10)).autograd(requires_grad=True)
+    weights_ptr = weights.send(client)
 
-#     target = (
-#         Tensor(label_batch).private(0.01, 1, entity=bob).autograd(requires_grad=True)
-#     ).tag("target")
+    for i in range(1):
+        pred = data_ptr.dot(weights_ptr)
+        diff = target_ptr - pred
 
-#     data.send(root_client)
-#     target.send(root_client)
+        # pre_loss = np.square(diff)  # cant use
+        pre_loss = diff * diff
 
-#     # Step 2: user connects to domain with a new verify_key
-#     client = domain.get_client()
+        # loss = np.mean(pre_loss)  # cant use
+        loss = pre_loss.sum() / pre_loss.len()
+        loss.backward()
 
-#     print("whats in the store", client.store)
+        wdiff = weights_ptr.grad * 0.01
+        weights_ptr = -wdiff + weights_ptr
 
-#     data_ptr = client.store["data"]
-#     target_ptr = client.store["target"]
-
-#     weights = Tensor(np.random.rand(28 * 28, 10)).autograd(requires_grad=True)
-#     weights_ptr = weights.send(client)
-
-#     for i in range(1):
-#         pred = data_ptr.dot(weights_ptr)
-#         diff = target_ptr - pred
-
-#         pre_loss = diff * diff  # faster on remote tensors
-#         # pre_loss = np.square(diff)
-
-#         loss = np.mean(pre_loss)
-#         loss.backward()
-
-#         assert True is False
-#         print("what is loss", loss, type(loss))
-
-#         loss.backward()
-
-#         assert True is False
-
-#         print("did we get to here?")
-#         wdiff = weights_ptr.grad * 0.01
-#         print("wdiff", type(wdiff))
-#         weights_ptr = -wdiff + weights_ptr
-#         print("weights_ptr", type(weights_ptr))
-
-#     assert True is False
-#     # # acc should default to client.accountant
-#     # weights_ptr_downloadable = weights_ptr.publish(acc=client.accountant, sigma=0.1)
-#     # weights = weights_ptr_downloadable.get()
-#     # print(weights)
+    # acc should default to client.accountant
+    # TODO: @Madhava implement
+    # weights_ptr_downloadable = weights_ptr.publish(acc=client.accountant, sigma=0.1)
+    # weights = weights_ptr_downloadable.get()
+    updated_weights = weights_ptr.get()
+    assert not (updated_weights.data_child == weights.data_child).all()
 
 
 # TODO: @Madhava Make work
