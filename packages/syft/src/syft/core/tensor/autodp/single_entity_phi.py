@@ -1,7 +1,17 @@
+# future
+from __future__ import annotations
+
 # third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 
 # syft relative
+from ....core.common.serde.serializable import Serializable
+from ....lib.util import full_name_with_name
+from ....proto.core.tensor.tensor_pb2 import Tensor as Tensor_PB
+from ...common.serde.deserialize import _deserialize as deserialize
+from ...common.serde.serializable import bind_protobuf
+from ...common.serde.serialize import _serialize as serialize
 from ..ancestors import AutogradTensorAncestor
 from ..passthrough import PassthroughTensor
 from ..passthrough import implements
@@ -9,13 +19,17 @@ from ..passthrough import inputs2child
 from ..passthrough import is_acceptable_simple_type
 
 
-class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor):
+@bind_protobuf
+class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializable):
     def __init__(self, child, entity, min_vals, max_vals):
         super().__init__(child)
 
         self.entity = entity
         self._min_vals = min_vals
         self._max_vals = max_vals
+
+    def new_with_child(self, child) -> SingleEntityPhiTensor:
+        return SingleEntityPhiTensor(child, self.entity, self.min_vals, self.max_vals)
 
     @property
     def min_vals(self):
@@ -201,6 +215,64 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor):
             child=data, entity=entity, min_vals=min_vals, max_vals=max_vals
         )
 
+    def _object2proto(self) -> Tensor_PB:
+        print(f"Serializing SingleEntityPhiTensor")
+        print(f"Child {type(self.child)}")
+        print(f"min_vals {type(self.min_vals)}")
+        print(f"max_vals {type(self.max_vals)}")
+
+        arrays = []
+        tensors = []
+        if isinstance(self.child, np.ndarray):
+            use_tensors = False
+            arrays = [
+                serialize(self.child),
+                serialize(self.min_vals),
+                serialize(self.max_vals),
+            ]
+        else:
+            use_tensors = True
+            tensors = [
+                serialize(self.child),
+                serialize(self.min_vals),
+                serialize(self.max_vals),
+            ]
+
+        return Tensor_PB(
+            obj_type=full_name_with_name(klass=type(self)),
+            use_tensors=use_tensors,
+            arrays=arrays,
+            tensors=tensors,
+            entity=serialize(self.entity),
+        )
+
+    @staticmethod
+    def _proto2object(proto: Tensor_PB) -> SingleEntityPhiTensor:
+        use_tensors = proto.use_tensors
+        children = []
+        if use_tensors:
+            children = [deserialize(tensor) for tensor in proto.tensors]
+        else:
+            children = [deserialize(array) for array in proto.arrays]
+
+        child = children.pop(0)
+        min_vals = children.pop(0)
+        max_vals = children.pop(0)
+
+        entity = deserialize(blob=proto.entity)
+
+        print(f"Deserializing SingleEntityPhiTensor")
+        print(f"Child {type(child)}")
+        print(f"min_vals {type(min_vals)}")
+        print(f"max_vals {type(max_vals)}")
+        return SingleEntityPhiTensor(
+            child=child, entity=entity, min_vals=min_vals, max_vals=max_vals
+        )
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return Tensor_PB
+
 
 # @implements(SingleEntityPhiTensor, np.min)
 # def npmax(*args, **kwargs):
@@ -211,7 +283,6 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor):
 
 @implements(SingleEntityPhiTensor, np.mean)
 def mean(*args, **kwargs):
-
     entity = args[0].entity
 
     for arg in args[1:]:

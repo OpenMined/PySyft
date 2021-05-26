@@ -1,18 +1,32 @@
+# future
+from __future__ import annotations
+
 # stdlib
 from collections import Counter
 from collections import defaultdict
 from typing import Optional
 import uuid
 
+# third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
+import numpy as np
+
 # syft relative
 from .. import autograd
+from ....core.common.serde.serializable import Serializable
+from ....lib.util import full_name_with_name
+from ....proto.core.tensor.tensor_pb2 import Tensor as Tensor_PB
+from ...common.serde.deserialize import _deserialize as deserialize
+from ...common.serde.serializable import bind_protobuf
+from ...common.serde.serialize import _serialize as serialize
 from ..ancestors import AutogradTensorAncestor
 from ..ancestors import PhiTensorAncestor
 from ..passthrough import PassthroughTensor
 from ..passthrough import is_acceptable_simple_type
 import numpy as np
 
-class AutogradTensor(PassthroughTensor, PhiTensorAncestor):
+@bind_protobuf
+class AutogradTensor(PassthroughTensor, PhiTensorAncestor, Serializable):
     def __init__(self, child, requires_grad=False):
         super().__init__(child)
 
@@ -31,6 +45,11 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor):
         self.backprop_id: Optional[uuid.uuid4] = None
 
         self.n_backwards = Counter()
+
+    def new_with_child(self, child) -> AutogradTensor:
+        # TODO: @Madhava why does this break the ops_test for grad?
+        # return AutogradTensor(child, requires_grad=self.requires_grad)
+        return AutogradTensor(child)
 
     @property
     def grad(self):
@@ -183,3 +202,41 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor):
                 break
 
         return found_id
+
+    def _object2proto(self) -> Tensor_PB:
+        print(f"Serializing AutogradTensor")
+        print(f"Child {type(self.child)}")
+        arrays = []
+        tensors = []
+        if isinstance(self.child, np.ndarray):
+            use_tensors = False
+            arrays = [serialize(self.child)]
+        else:
+            use_tensors = True
+            tensors = [serialize(self.child)]
+
+        return Tensor_PB(
+            obj_type=full_name_with_name(klass=type(self)),
+            use_tensors=use_tensors,
+            arrays=arrays,
+            tensors=tensors,
+            requires_grad=self.requires_grad,
+        )
+
+    @staticmethod
+    def _proto2object(proto: Tensor_PB) -> AutogradTensor:
+        use_tensors = proto.use_tensors
+        child = []
+        if use_tensors:
+            child = [deserialize(tensor) for tensor in proto.tensors]
+        else:
+            child = [deserialize(array) for array in proto.arrays]
+
+        child = child[0]
+        print(f"Deserializing AutogradTensor")
+        print(f"Child {type(child)}")
+        return AutogradTensor(child, requires_grad=proto.requires_grad)
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return Tensor_PB

@@ -9,7 +9,6 @@ from .tensor import Tensor
 
 @implements(Tensor, np.mean)
 def mean(array, axis=None, **kwargs):
-
     if axis is None:
         den = float(np.prod(array.shape))
     else:

@@ -1,13 +1,24 @@
+# future
+from __future__ import annotations
+
 # third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 
 # syft relative
+from ....core.common.serde.serializable import Serializable
+from ....lib.util import full_name_with_name
+from ....proto.core.tensor.tensor_pb2 import Tensor as Tensor_PB
+from ...common.serde.deserialize import _deserialize as deserialize
+from ...common.serde.serializable import bind_protobuf
+from ...common.serde.serialize import _serialize as serialize
 from ..passthrough import PassthroughTensor
 from ..passthrough import implements
 from ..passthrough import is_acceptable_simple_type
 
 
-class RowEntityPhiTensor(PassthroughTensor):
+@bind_protobuf
+class RowEntityPhiTensor(PassthroughTensor, Serializable):
     def __init__(self, rows, check_shape=True):
         super().__init__(rows)
 
@@ -18,6 +29,9 @@ class RowEntityPhiTensor(PassthroughTensor):
                     raise Exception(
                         f"All rows in RowEntityPhiTensor must match: {shape} != {row.shape}"
                     )
+
+    def new_with_child(self, child) -> RowEntityPhiTensor:
+        return RowEntityPhiTensor(child)
 
     @property
     def shape(self):
@@ -156,6 +170,42 @@ class RowEntityPhiTensor(PassthroughTensor):
             new_list.append(row.transpose(*new_dims))
 
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+    def _object2proto(self) -> Tensor_PB:
+        print(f"Serializing RowEntityPhiTensor")
+        print(f"Children {type(self.child)}")
+        arrays = []
+        tensors = []
+        if len(self.child) > 0 and isinstance(self.child[0], np.ndarray):
+            use_tensors = False
+            arrays = [serialize(child) for child in self.child]
+        else:
+            use_tensors = True
+            tensors = [serialize(child) for child in self.child]
+
+        return Tensor_PB(
+            obj_type=full_name_with_name(klass=type(self)),
+            use_tensors=use_tensors,
+            arrays=arrays,
+            tensors=tensors,
+        )
+
+    @staticmethod
+    def _proto2object(proto: Tensor_PB) -> RowEntityPhiTensor:
+        use_tensors = proto.use_tensors
+        child = []
+        if use_tensors:
+            child = [deserialize(tensor) for tensor in proto.tensors]
+        else:
+            child = [deserialize(array) for array in proto.arrays]
+
+        print(f"Serializing RowEntityPhiTensor")
+        print(f"Children {type(child)}")
+        return RowEntityPhiTensor(child)
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return Tensor_PB
 
 
 @implements(RowEntityPhiTensor, np.expand_dims)

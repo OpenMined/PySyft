@@ -6,6 +6,8 @@ import torch as th
 import syft as sy
 from syft.core.adp.entity import Entity
 from syft.core.tensor.tensor import Tensor
+from syft import deserialize
+from syft import serialize
 
 
 def test_vs_torch() -> None:
@@ -54,7 +56,6 @@ def test_train_mnist() -> None:
     weights = Tensor(np.random.rand(28 * 28, 10)).autograd(requires_grad=True)
 
     for i in range(10):
-
         pred = data.dot(weights)
         diff = target - pred
         pre_loss = np.square(diff)
@@ -68,52 +69,141 @@ def test_train_mnist() -> None:
     assert loss.data_child < 10.0
 
 
-# TODO: @Madhava Make work
+def test_serde_tensors() -> None:
+    data = np.random.rand(4, 10)
+    bob = Entity(unique_name="Bob")
+
+    # Step 1: upload a private dataset as the root owner
+    data = (
+        Tensor(data)
+        .private(0.01, 1, entity=bob)
+        .autograd(requires_grad=True)
+        .tag("data")
+    )
+
+    ser = serialize(data)
+
+    de = deserialize(ser)
+
+    comp_left = data
+    comp_right = de
+
+    assert type(comp_left) == type(comp_right)
+    while hasattr(comp_left, "child"):
+        comp_left = comp_left.child
+        comp_right = comp_right.child
+    assert not hasattr(comp_left, "child")
+    assert not hasattr(comp_right, "child")
+    assert type(comp_left) == type(comp_right)
+
+    assert (de.data_child == data.data_child).all()
+
+
+def test_send_tensors(root_client: sy.VirtualMachineClient) -> None:
+    data = np.random.rand(4, 10)
+    bob = Entity(unique_name="Bob")
+
+    # Step 1: upload a private dataset as the root owner
+    data = Tensor(data).private(0.01, 1, entity=bob).autograd(requires_grad=True)
+    data_ptr = data.send(root_client, tags=["data"])
+    assert len(root_client.store) == 1
+
+    res = data_ptr.get()
+
+    comp_left = data
+    comp_right = res
+
+    assert type(comp_left) == type(comp_right)
+    while hasattr(comp_left, "child"):
+        comp_left = comp_left.child
+        comp_right = comp_right.child
+    assert not hasattr(comp_left, "child")
+    assert not hasattr(comp_right, "child")
+    assert type(comp_left) == type(comp_right)
+
+    assert (res.data_child == data.data_child).all()
+
+
+# def test_remote_grad_fn(root_client: sy.VirtualMachineClient) -> None:
+#     data_batch = np.random.rand(3 * 3)
+#     bob = Entity(unique_name="Bob")
+#     data = Tensor(data_batch).private(0.01, 1, entity=bob).autograd(requires_grad=True)
+
+#     basic = data * data
+#     basic.backward()
+
+#     print("----- remote -----")
+#     data_ptr = data.send(root_client)
+#     basic_ptr = data_ptr * data_ptr
+#     basic_ptr.backward()
+
+#     assert True is False
+
+
 # def test_basic_publish_event() -> None:
 #     domain = sy.Domain("My Amazing Domain", max_budget=10)
 #     root_client = domain.get_root_client()
-#
+
 #     data_batch = np.random.rand(4, 28 * 28)
 #     label_batch = np.random.rand(4, 10)
-#
+
 #     bob = Entity(unique_name="Bob")
-#
+
 #     # Step 1: upload a private dataset as the root owner
-#     data = Tensor(data_batch).private(0.01, 1, entity=bob).autograd(requires_grad=True).tag("data")
+#     data = (
+#         Tensor(data_batch)
+#         .private(0.01, 1, entity=bob)
+#         .autograd(requires_grad=True)
+#         .tag("data")
+#     )
+
 #     target = (
 #         Tensor(label_batch).private(0.01, 1, entity=bob).autograd(requires_grad=True)
 #     ).tag("target")
-#
-#     root_client.send(data)
-#     root_client.send(target)
-#
-#     # Step 2: user connects to domain
-#
-#     # (this has a new verify key)
+
+#     data.send(root_client)
+#     target.send(root_client)
+
+#     # Step 2: user connects to domain with a new verify_key
 #     client = domain.get_client()
-#
-#     data = client.store['data']
-#     target = client.store['target']
-#
+
+#     print("whats in the store", client.store)
+
+#     data_ptr = client.store["data"]
+#     target_ptr = client.store["target"]
+
 #     weights = Tensor(np.random.rand(28 * 28, 10)).autograd(requires_grad=True)
 #     weights_ptr = weights.send(client)
-#
-#     for i in range(10):
-#         pred = data.dot(weights_ptr)
-#         diff = target - pred
-#         pre_loss = np.square(diff)
+
+#     for i in range(1):
+#         pred = data_ptr.dot(weights_ptr)
+#         diff = target_ptr - pred
+
+#         pre_loss = diff * diff  # faster on remote tensors
+#         # pre_loss = np.square(diff)
+
 #         loss = np.mean(pre_loss)
-#         extraneous_thing = -diff
 #         loss.backward()
-#
+
+#         assert True is False
+#         print("what is loss", loss, type(loss))
+
+#         loss.backward()
+
+#         assert True is False
+
+#         print("did we get to here?")
 #         wdiff = weights_ptr.grad * 0.01
+#         print("wdiff", type(wdiff))
 #         weights_ptr = -wdiff + weights_ptr
-#
-#     # acc should default to client.accountant
-#     weights_ptr_downloadable = weights_ptr.publish(acc=client.accountant, sigma=0.1)
-#     weights = weights_ptr_downloadable.get()
-#     print(weights)
-#
+#         print("weights_ptr", type(weights_ptr))
+
+#     assert True is False
+#     # # acc should default to client.accountant
+#     # weights_ptr_downloadable = weights_ptr.publish(acc=client.accountant, sigma=0.1)
+#     # weights = weights_ptr_downloadable.get()
+#     # print(weights)
+
 
 # TODO: @Madhava Make work
 # def test_simulated_publish_event() -> None:
