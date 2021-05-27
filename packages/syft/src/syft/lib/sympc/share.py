@@ -1,16 +1,12 @@
 # stdlib
 
 # third party
-from sympc.tensor import ReplicatedSharedTensor
 from sympc.tensor import ShareTensor
 
 # syft relative
 from ...generate_wrapper import GenerateWrapper
 from ...lib.torch.tensor_util import protobuf_tensor_deserializer
 from ...lib.torch.tensor_util import protobuf_tensor_serializer
-from ...proto.lib.sympc.replicatedshared_tensor_pb2 import (
-    ReplicatedSharedTensor as ReplicatedSharedTensor_PB,
-)
 from ...proto.lib.sympc.share_tensor_pb2 import ShareTensor as ShareTensor_PB
 from .session_util import protobuf_session_deserializer
 from .session_util import protobuf_session_serializer
@@ -49,4 +45,3 @@ GenerateWrapper(
     type_object2proto=object2proto,
     type_proto2object=proto2object,
 )
-

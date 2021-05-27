@@ -1,3 +1,4 @@
+# third party
 from sympc.tensor import ReplicatedSharedTensor
 
 # syft relative
@@ -7,10 +8,8 @@ from ...lib.torch.tensor_util import protobuf_tensor_serializer
 from ...proto.lib.sympc.replicatedshared_tensor_pb2 import (
     ReplicatedSharedTensor as ReplicatedSharedTensor_PB,
 )
-from ...proto.lib.sympc.share_tensor_pb2 import ShareTensor as ShareTensor_PB
 from .session_util import protobuf_session_deserializer
 from .session_util import protobuf_session_serializer
-
 
 
 def object2proto(obj: object) -> ReplicatedSharedTensor_PB:

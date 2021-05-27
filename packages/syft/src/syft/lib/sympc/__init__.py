@@ -39,7 +39,7 @@ def create_ast(client: TypeAny = None) -> Globals:
     # syft relative
     from . import session  # noqa: 401
     from . import share  # noqa: 401
-    
+
     ast = Globals(client=client)
 
     modules: TypeList[TypeTuple[str, TypeAny]] = sympc.api.allowed_external_modules
