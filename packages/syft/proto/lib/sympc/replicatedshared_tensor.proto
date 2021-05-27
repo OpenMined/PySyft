@@ -6,6 +6,6 @@ import "proto/lib/torch/tensor.proto";
 import "proto/lib/sympc/session.proto";
 
 message ReplicatedSharedTensor {
-  repeated syft.lib.torch.TensorProto tensor = 1;
+  syft.lib.torch.TensorProto tensor = 1;
   syft.lib.sympc.MPCSession session = 2;
 }
