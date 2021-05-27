@@ -31,7 +31,7 @@ class InitialGammaTensor(IntermediateGammaTensor):
         self.max_vals = max_vals
         self.entities = entities
 
-        if symbol_factory == None:
+        if symbol_factory is None:
             symbol_factory = PrimeFactory()
 
         self.symbol_factory = symbol_factory
