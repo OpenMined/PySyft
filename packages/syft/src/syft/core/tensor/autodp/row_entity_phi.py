@@ -34,6 +34,26 @@ class RowEntityPhiTensor(PassthroughTensor, Serializable):
         return RowEntityPhiTensor(child)
 
     @property
+    def min_vals(self):
+        return np.concatenate([x.min_vals for x in self.child]).reshape(self.shape)
+
+    @property
+    def max_vals(self):
+        return np.concatenate([x.max_vals for x in self.child]).reshape(self.shape)
+
+    @property
+    def value(self):
+        return np.concatenate([x.child for x in self.child]).reshape(self.shape)
+
+    @property
+    def entities(self):
+        return np.array([[x.entity]*np.array(x.shape).prod() for x in self.child]).reshape(self.shape)
+    #
+    # @property
+    # def gamma(self):
+    #
+
+    @property
     def shape(self):
         return [len(self.child)] + list(self.child[0].shape)
 

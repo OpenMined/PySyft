@@ -12,7 +12,6 @@ from autodp.transformer_zoo import Composition
 from .entity import Entity
 from .scalar import PhiScalar
 
-
 class AdversarialAccountant:
     def __init__(self, max_budget: float = 10, delta: float = 1e-6) -> None:
         self.entity2ledger: TypeDict[Entity, Mechanism] = {}
