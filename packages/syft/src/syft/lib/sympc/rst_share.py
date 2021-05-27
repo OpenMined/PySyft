@@ -38,7 +38,7 @@ def proto2object(proto: ReplicatedSharedTensor_PB) -> ReplicatedSharedTensor:
 
 
 GenerateWrapper(
-    wrapped_type=ReplicatedSharedTensor_PB,
+    wrapped_type=ReplicatedSharedTensor,
     import_path="sympc.tensor.ReplicatedSharedTensor",
     protobuf_scheme=ReplicatedSharedTensor_PB,
     type_object2proto=object2proto,
