@@ -48,7 +48,7 @@ class DiskObjectStore(ObjectStore):
 
     def get_object(self, key: UID) -> Optional[StorableObject]:
         try:
-            self.__getitem__(key)
+            return self.__getitem__(key)
         except:
             return None
 
