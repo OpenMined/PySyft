@@ -7,7 +7,7 @@ from syft.core.adp.adversarial_accountant import AdversarialAccountant
 from syft.core.adp.entity import Entity
 from syft.core.adp.publish import publish
 from syft.core.adp.scalar import PhiScalar
-from syft.core.adp.tensor import Tensor
+from syft.core.tensor.tensor import Tensor
 
 
 def test_autodp_phiscalar_publish() -> None:
@@ -30,10 +30,10 @@ def test_autodp_phiscalar_publish() -> None:
 @pytest.mark.xfail
 def test_autodp_train_linear_model() -> None:
     entities = [
-        Entity(unique_name="Tudor"),
-        Entity(unique_name="Madhava"),
-        Entity(unique_name="Kritika"),
-        Entity(unique_name="George"),
+        Entity(name="Tudor"),
+        Entity(name="Madhava"),
+        Entity(name="Kritika"),
+        Entity(name="George"),
     ]
 
     x = Tensor(np.array([[1, 1], [1, 0], [0, 1], [0, 0]])).private(

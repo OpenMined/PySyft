@@ -20,20 +20,18 @@ from ...proto.core.adp.entity_pb2 import Entity as Entity_PB
 
 @bind_protobuf
 class Entity(Serializable):
-    def __init__(
-        self, id: Optional[UID] = None, **attributes
-    ) -> None:
+    def __init__(self, *, id: Optional[UID] = None, **attributes) -> None:
 
         # If someone doesn't provide a unique name - make one up!
-        if 'name' not in attributes.keys():
-            attributes['name'] = names.get_full_name().replace(" ", "_") + "_g"
+        if "name" not in attributes.keys():
+            attributes["name"] = names.get_full_name().replace(" ", "_") + "_g"
 
         self.attributes = attributes
         self.id = id if id else UID()
 
     @property
     def name(self):
-        return self.attributes['name']
+        return self.attributes["name"]
 
     def __hash__(self) -> int:
         return hash(self.id)
@@ -47,14 +45,14 @@ class Entity(Serializable):
         return hash(self) != hash(other)
 
     def __repr__(self) -> str:
-        return "<Entity:" + self.attributes['name'] + ">"
+        return "<Entity:" + self.attributes["name"] + ">"
 
     def _object2proto(self) -> Entity_PB:
-        return Entity_PB(unique_name=self.unique_name, id=self.id._object2proto())
+        return Entity_PB(name=self.attributes["name"], id=self.id._object2proto())
 
     @staticmethod
     def _proto2object(proto: Entity_PB) -> Entity:
-        return Entity(unique_name=proto.unique_name, id=UID._proto2object(proto.id))
+        return Entity(name=proto.name, id=UID._proto2object(proto.id))
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:

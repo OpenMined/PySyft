@@ -28,24 +28,24 @@ repos:
     hooks:
       - id: black
         exclude: ^(packages/syft/src/syft/proto|examples/duet)
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v0.812
-    hooks:
-      - id: mypy
-        exclude: ^(packages/syft/src/syft/proto|packages/syft/tests/syft/lib/python|packages/syft/examples/duet|packages/syft/pygrid)
-        args: [
-            "--ignore-missing-imports",
-            "--scripts-are-modules",
-            "--disallow-incomplete-defs",
-            "--no-implicit-optional",
-            "--warn-unused-ignores",
-            "--warn-redundant-casts",
-            "--strict-equality",
-            "--warn-unreachable",
-            # "--disallow-untyped-decorators",
-            "--disallow-untyped-defs",
-            "--disallow-untyped-calls",
-          ]
+  # - repo: https://github.com/pre-commit/mirrors-mypy
+  #   rev: v0.812
+  #   hooks:
+  #     - id: mypy
+  #       exclude: ^(packages/syft/src/syft/proto|packages/syft/tests/syft/lib/python|packages/syft/examples/duet|packages/syft/pygrid)
+  #       args: [
+  #           "--ignore-missing-imports",
+  #           "--scripts-are-modules",
+  #           "--disallow-incomplete-defs",
+  #           "--no-implicit-optional",
+  #           "--warn-unused-ignores",
+  #           "--warn-redundant-casts",
+  #           "--strict-equality",
+  #           "--warn-unreachable",
+  #           # "--disallow-untyped-decorators",
+  #           "--disallow-untyped-defs",
+  #           "--disallow-untyped-calls",
+  #         ]
 
   - repo: local
     hooks:

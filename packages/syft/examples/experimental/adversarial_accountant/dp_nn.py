@@ -7,10 +7,10 @@ from syft.core.adp.entity import Entity
 from syft.core.adp.tensor import Tensor
 
 entities = [
-    Entity(unique_name="Tudor"),
-    Entity(unique_name="Madhava"),
-    Entity(unique_name="Kritika"),
-    Entity(unique_name="George"),
+    Entity(name="Tudor"),
+    Entity(name="Madhava"),
+    Entity(name="Kritika"),
+    Entity(name="George"),
 ]
 
 x = Tensor(np.array([[1, 1], [1, 0], [0, 1], [0, 0]]) * 0.01).private(

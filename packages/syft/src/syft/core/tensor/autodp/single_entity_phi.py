@@ -9,6 +9,7 @@ import numpy as np
 from ....core.common.serde.serializable import Serializable
 from ....lib.util import full_name_with_name
 from ....proto.core.tensor.tensor_pb2 import Tensor as Tensor_PB
+from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import bind_protobuf
 from ...common.serde.serialize import _serialize as serialize
@@ -21,16 +22,20 @@ from ..passthrough import is_acceptable_simple_type
 
 @bind_protobuf
 class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializable):
-    def __init__(self, child, entity, min_vals, max_vals, scalar_manager):
+    def __init__(
+        self,
+        child,
+        entity,
+        min_vals,
+        max_vals,
+        scalar_manager=VirtualMachinePrivateScalarManager(),
+    ):
         super().__init__(child)
 
         self.entity = entity
         self._min_vals = min_vals
         self._max_vals = max_vals
         self.scalar_manager = scalar_manager
-
-    def new_with_child(self, child) -> SingleEntityPhiTensor:
-        return SingleEntityPhiTensor(child, self.entity, self.min_vals, self.max_vals)
 
     @property
     def min_vals(self):

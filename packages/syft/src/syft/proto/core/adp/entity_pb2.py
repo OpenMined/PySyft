@@ -24,7 +24,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x1bproto/core/adp/entity.proto\x12\rsyft.core.adp\x1a%proto/core/common/common_object.proto"@\n\x06\x45ntity\x12\x13\n\x0bunique_name\x18\x01 \x01(\t\x12!\n\x02id\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UIDb\x06proto3',
+    serialized_pb=b'\n\x1bproto/core/adp/entity.proto\x12\rsyft.core.adp\x1a%proto/core/common/common_object.proto"9\n\x06\x45ntity\x12\x0c\n\x04name\x18\x01 \x01(\t\x12!\n\x02id\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UIDb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
     ],
@@ -40,8 +40,8 @@ _ENTITY = _descriptor.Descriptor(
     create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
-            name="unique_name",
-            full_name="syft.core.adp.Entity.unique_name",
+            name="name",
+            full_name="syft.core.adp.Entity.name",
             index=0,
             number=1,
             type=9,
@@ -87,7 +87,7 @@ _ENTITY = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=85,
-    serialized_end=149,
+    serialized_end=142,
 )
 
 _ENTITY.fields_by_name[

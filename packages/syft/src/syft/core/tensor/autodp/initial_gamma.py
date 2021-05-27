@@ -1,16 +1,23 @@
 # stdlib
-from collections import defaultdict
 import uuid
 
 # third party
 import numpy as np
 
 # syft relative
+from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from .intermediate_gamma import IntermediateGammaTensor
 
 
 class InitialGammaTensor(IntermediateGammaTensor):
-    def __init__(self, values, min_vals, max_vals, entities, scalar_manager):
+    def __init__(
+        self,
+        values,
+        min_vals,
+        max_vals,
+        entities,
+        scalar_manager=VirtualMachinePrivateScalarManager(),
+    ):
         self.uid = uuid.uuid4()
         self.values = values  # child
         self.min_vals = min_vals
@@ -25,11 +32,12 @@ class InitialGammaTensor(IntermediateGammaTensor):
 
         some_symbols = list()
         for i in range(flat_values.shape[0]):
-            prime = self.scalar_manager.get_symbol(min_val=flat_min_vals[i],
-                                           value=flat_values[i],
-                                           max_val=flat_max_vals[i],
-                                           entity=flat_entities[i]
-                                           )
+            prime = self.scalar_manager.get_symbol(
+                min_val=flat_min_vals[i],
+                value=flat_values[i],
+                max_val=flat_max_vals[i],
+                entity=flat_entities[i],
+            )
             some_symbols.append(prime)
 
         term_tensor = np.array(some_symbols).reshape(list(self.values.shape) + [1])

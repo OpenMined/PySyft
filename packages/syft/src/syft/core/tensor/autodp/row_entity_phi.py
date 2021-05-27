@@ -35,9 +35,6 @@ class RowEntityPhiTensor(PassthroughTensor, Serializable):
     def scalar_manager(self):
         return self.child[0].scalar_manager
 
-    def new_with_child(self, child) -> RowEntityPhiTensor:
-        return RowEntityPhiTensor(child)
-
     @property
     def min_vals(self):
         return np.concatenate([x.min_vals for x in self.child]).reshape(self.shape)

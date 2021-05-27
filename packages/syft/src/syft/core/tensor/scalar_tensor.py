@@ -17,10 +17,9 @@ from ..autograd.value import to_values
 
 
 def make_entities(n: int = 100) -> TypeList[Entity]:
-    print("making entities")
     ents: TypeList[Entity] = list()
     for i in range(n):
-        ents.append(Entity(unique_name=names.get_full_name().replace(" ", "_")))
+        ents.append(Entity(name=names.get_full_name().replace(" ", "_")))
     return ents
 
 

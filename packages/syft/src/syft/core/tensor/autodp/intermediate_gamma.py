@@ -2,12 +2,19 @@
 import numpy as np
 
 # syft relative
+from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...tensor.passthrough import PassthroughTensor
 from ...tensor.passthrough import is_acceptable_simple_type
 
 
 class IntermediateGammaTensor(PassthroughTensor):
-    def __init__(self, term_tensor, coeff_tensor, scalar_manager, bias_tensor):
+    def __init__(
+        self,
+        term_tensor,
+        coeff_tensor,
+        bias_tensor,
+        scalar_manager=VirtualMachinePrivateScalarManager(),
+    ):
         super().__init__(term_tensor)
         self.term_tensor = term_tensor
         self.coeff_tensor = coeff_tensor

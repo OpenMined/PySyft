@@ -17,7 +17,7 @@ def test_phiscalar() -> None:
     assert x.max_val == 1
     assert x.ssid == str(x.poly)
 
-    ent = Entity(unique_name="test")
+    ent = Entity(name="test")
     y = PhiScalar(0, 0.01, 1, entity=ent)
 
     assert y.min_val == 0

@@ -4,6 +4,6 @@ package syft.core.adp;
 import "proto/core/common/common_object.proto";
 
 message Entity {
-  string unique_name = 1;
+  string name = 1;
   syft.core.common.UID id = 2;
 }

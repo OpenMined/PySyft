@@ -2,7 +2,7 @@
 import uuid
 
 # syft relative
-from .autodp.initial_gamma import PrimeFactory
+from ..adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from .manager import TensorChainManager
 from .passthrough import is_acceptable_simple_type
 
@@ -54,7 +54,7 @@ class AutogradTensorAncestor(TensorChainManager):
         child_gradient = self.child.grad
         if child_gradient is None:
             return None
-        return self.new_with_child(child_gradient)
+        return self.__class__(child_gradient)
 
     @property
     def requires_grad(self):
@@ -102,7 +102,14 @@ class PhiTensorAncestor(TensorChainManager):
     def gamma(self):
         return self.__class__(self.child.gamma)
 
-    def private(self, min_val, max_val, scalar_manager, entities=None, entity=None):
+    def private(
+        self,
+        min_val,
+        max_val,
+        scalar_manager=VirtualMachinePrivateScalarManager(),
+        entities=None,
+        entity=None,
+    ):
         """ """
 
         if entity is not None:
