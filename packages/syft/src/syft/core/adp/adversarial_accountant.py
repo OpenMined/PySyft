@@ -32,18 +32,22 @@ class AdversarialAccountant:
         mechanisms = self.entity2ledger[entity]
         composed_mech = compose(mechanisms, [1] * len(mechanisms))
 
-        # Query for eps given delta
-        return PhiScalar(
-            value=composed_mech.get_approxDP(self.delta),
-            min_val=0,
-            max_val=self.max_budget,
-            entity=entity,
-        )
+        return composed_mech.get_approxDP(self.delta)
+
+        # # Query for eps given delta
+        # return PhiScalar(
+        #     value=composed_mech.get_approxDP(self.delta),
+        #     min_val=0,
+        #     max_val=self.max_budget,
+        #     entity=entity,
+        # )
 
     def has_budget(self, entity_name: str) -> bool:
         eps = self.get_eps_for_entity(entity_name)
-        if eps.value is not None:
-            return eps.value < self.max_budget
+        if eps is not None:
+            return eps < self.max_budget
+        # if eps.value is not None:
+        #     return eps.value < self.max_budget
 
     @property
     def entities(self) -> TypeKeysView[str]:
@@ -61,4 +65,4 @@ class AdversarialAccountant:
 
     def print_ledger(self, delta: float = 1e-6) -> None:
         for entity, mechanisms in self.entity2ledger.items():
-            print(str(entity) + "\t" + str(self.get_eps_for_entity(entity)._value))
+            print(str(entity) + "\t" + str(self.get_eps_for_entity(entity)))

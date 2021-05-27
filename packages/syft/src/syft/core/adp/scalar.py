@@ -39,6 +39,7 @@ from .search import max_lipschitz_via_jacobian
 from .search import minimize_function
 from .search import ssid2obj
 
+from pymbolic.mapper.evaluator import EvaluationMapper as EM
 
 # the most generic class
 class Scalar(Serializable):
@@ -86,9 +87,7 @@ class IntermediateScalar(Scalar):
     @property
     def sympoly(self) -> BasicSymbol:
         """Sympy version of self.poly"""
-        if not hasattr(self, "_sympoly"):
-            self._sympoly = PymbolicToSympyMapper()(self.poly)
-        return self._sympoly
+        return PymbolicToSympyMapper()(self.poly)
 
     def __mul__(self, other: IntermediateScalar) -> IntermediateScalar:
         raise NotImplementedError
@@ -145,9 +144,7 @@ class IntermediateScalar(Scalar):
     @property
     def value(self) -> Optional[float]:
         if self.poly is not None:
-            result = self.sympoly.subs(
-                {obj.sympoly: obj.value for obj in self.input_scalars}
-            )
+            result = EM(context={obj.poly.name: obj.value for obj in self.input_scalars})(self.poly)
             return float(result)
         return None
 

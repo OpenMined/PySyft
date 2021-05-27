@@ -13,7 +13,8 @@ from .scalar import IntermediatePhiScalar
 from .scalar import PhiScalar
 from .search import max_lipschitz_wrt_entity
 
-from pymbolic.mapper.evaluator import EvaluationMapper as EM
+from pymbolic.mapper.substitutor import make_subst_func
+from pymbolic.mapper.substitutor import SubstitutionMapper
 
 
 # TODO: @Madhava make work
@@ -34,17 +35,17 @@ def convert_tensors_to_scalars(tensor_obj):
 
 
 def publish(scalars, acc: Any, sigma: float = 1.5) -> float:
-    _scalars = list()
-
-    for s in scalars:
-        if isinstance(s, Tensor):
-            _scalars += convert_tensors_to_scalars(s)
-        elif isinstance(s, IntermediatePhiScalar):
-            _scalars.append(s.gamma)
-        else:
-            _scalars.append(s)
-
-    scalars = _scalars
+    # _scalars = list()
+    #
+    # for s in scalars:
+    #     if isinstance(s, Tensor):
+    #         _scalars += convert_tensors_to_scalars(s)
+    #     elif isinstance(s, IntermediatePhiScalar):
+    #         _scalars.append(s.gamma)
+    #     else:
+    #         _scalars.append(s)
+    #
+    # scalars = _scalars
 
     acc_original = acc
 
@@ -59,7 +60,9 @@ def publish(scalars, acc: Any, sigma: float = 1.5) -> float:
     if len(overbudgeted_entities) > 0:
         scalars = deepcopy(scalars)
 
-    while len(overbudgeted_entities) > 0:
+    iterator = 0
+    while len(overbudgeted_entities) > 0 and iterator < 3:
+        iterator += 1
 
         input_scalars = set()
         for output_scalar in scalars:
@@ -70,6 +73,8 @@ def publish(scalars, acc: Any, sigma: float = 1.5) -> float:
             for input_scalar in output_scalar.input_scalars:
                 input_scalars.add(input_scalar)
 
+        should_break = False
+
         for input_scalar in input_scalars:
             if input_scalar.entity in overbudgeted_entities:
                 for output_scalar in scalars:
@@ -77,14 +82,11 @@ def publish(scalars, acc: Any, sigma: float = 1.5) -> float:
                     # remove input_scalar from the computation that creates
                     # output scalar because this input_scalar is causing
                     # the budget spend to be too high.
-                    # output_scalar.poly = output_scalar.poly.subs(
-                    #     input_scalar.poly, 0
-                    # )
+                    output_scalar.poly = SubstitutionMapper(make_subst_func({input_scalar.poly.name:0}))(output_scalar.poly)
 
-                    output_scalar.poly = EM(context={input_scalar.poly.name:0})(output_scalar.poly)
+            if should_break:
+                break
 
-                    # try one at a time
-                    break
 
         acc_temp = deepcopy(acc_original)
 
@@ -93,6 +95,7 @@ def publish(scalars, acc: Any, sigma: float = 1.5) -> float:
         acc_temp.append(ms)
 
         overbudgeted_entities = acc_temp.overbudgeted_entities
+
 
     output = [s.value + random.gauss(0, sigma) for s in scalars]
 
@@ -108,10 +111,12 @@ def get_mechanism_for_entity(scalars, entity, sigma=1.5):
 
     value = np.sqrt(np.sum(np.square(np.array([float(s.value) for s in scalars]))))
 
+    L = float(max_lipschitz_wrt_entity(scalars, entity=entity))
+
     return iDPGaussianMechanism(
         sigma=sigma,
         value=value,
-        L=float(max_lipschitz_wrt_entity(scalars, entity=entity)),
+        L=L,
         entity=entity.name,
         name=m_id,
     )
