@@ -31,8 +31,8 @@ class RowEntityPhiTensor(PassthroughTensor, Serializable):
                     )
 
     @property
-    def symbol_factory(self):
-        return self.child[0].symbol_factory
+    def scalar_manager(self):
+        return self.child[0].scalar_manager
 
     def new_with_child(self, child) -> RowEntityPhiTensor:
         return RowEntityPhiTensor(child)
@@ -59,16 +59,16 @@ class RowEntityPhiTensor(PassthroughTensor, Serializable):
     def gamma(self):
         return self.create_gamma()
 
-    def create_gamma(self, symbol_factory=None):
+    def create_gamma(self, scalar_manager=None):
 
-        if symbol_factory is None:
-            symbol_factory = self.symbol_factory
+        if scalar_manager is None:
+            scalar_manager = self.scalar_manager
 
         return InitialGammaTensor(values=self.value,
                                   min_vals=self.min_vals,
                                   max_vals=self.max_vals,
                                   entities=self.entities,
-                                  symbol_factory=symbol_factory)
+                                  scalar_manager=scalar_manager)
 
     @property
     def shape(self):

@@ -21,15 +21,19 @@ from ...proto.core.adp.entity_pb2 import Entity as Entity_PB
 @bind_protobuf
 class Entity(Serializable):
     def __init__(
-        self, unique_name: Optional[str] = None, id: Optional[UID] = None
+        self, id: Optional[UID] = None, **attributes
     ) -> None:
 
         # If someone doesn't provide a unique name - make one up!
-        if unique_name is None:
-            unique_name = names.get_full_name().replace(" ", "_")
+        if 'name' not in attributes.keys():
+            attributes['name'] = names.get_full_name().replace(" ", "_") + "_g"
 
-        self.unique_name = unique_name
+        self.attributes = attributes
         self.id = id if id else UID()
+
+    @property
+    def name(self):
+        return self.attributes['name']
 
     def __hash__(self) -> int:
         return hash(self.id)
@@ -43,7 +47,7 @@ class Entity(Serializable):
         return hash(self) != hash(other)
 
     def __repr__(self) -> str:
-        return "<Entity:" + self.unique_name + ">"
+        return "<Entity:" + self.attributes['name'] + ">"
 
     def _object2proto(self) -> Entity_PB:
         return Entity_PB(unique_name=self.unique_name, id=self.id._object2proto())

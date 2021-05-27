@@ -7,12 +7,12 @@ from ...tensor.passthrough import is_acceptable_simple_type
 
 
 class IntermediateGammaTensor(PassthroughTensor):
-    def __init__(self, term_tensor, coeff_tensor, symbol_factory, bias_tensor):
+    def __init__(self, term_tensor, coeff_tensor, scalar_manager, bias_tensor):
         super().__init__(term_tensor)
         self.term_tensor = term_tensor
         self.coeff_tensor = coeff_tensor
         self.bias_tensor = bias_tensor
-        self.symbol_factory = symbol_factory
+        self.scalar_manager = scalar_manager
 
     @property
     def shape(self):
@@ -25,13 +25,13 @@ class IntermediateGammaTensor(PassthroughTensor):
     def sum(self, axis):
         new_term_tensor = np.swapaxes(self.term_tensor, axis, -1).squeeze(axis)
         new_coeff_tensor = np.swapaxes(self.coeff_tensor, axis, -1).squeeze(axis)
-        new_bias_tensor = np.sum(axis)
+        new_bias_tensor = self.bias_tensor.sum(axis)
 
         return IntermediateGammaTensor(
             term_tensor=new_term_tensor,
             coeff_tensor=new_coeff_tensor,
             bias_tensor=new_bias_tensor,
-            symbol_factory=self.symbol_factory,
+            scalar_manager=self.scalar_manager,
         )
 
     def prod(self, axis):
@@ -42,7 +42,7 @@ class IntermediateGammaTensor(PassthroughTensor):
             term_tensor=new_term_tensor,
             coeff_tensor=new_coeff_tensor,
             bias_Tensor=new_bias_tensor,
-            symbol_factory=self.symbol_factory,
+            scalar_manager=self.scalar_manager,
         )
 
     def __add__(self, other):
@@ -55,7 +55,7 @@ class IntermediateGammaTensor(PassthroughTensor):
 
         else:
 
-            if self.symbol_factory != other.symbol_factory:
+            if self.scalar_manager != other.scalar_manager:
                 # TODO: come up with a method for combining symbol factories
                 raise Exception(
                     "Cannot add two tensors with different symbol encodings"
@@ -73,7 +73,7 @@ class IntermediateGammaTensor(PassthroughTensor):
             term_tensor=term_tensor,
             coeff_tensor=coeff_tensor,
             bias_tensor=bias_tensor,
-            symbol_factory=self.symbol_factory,
+            scalar_manager=self.scalar_manager,
         )
 
     def __mul__(self, other):
@@ -85,7 +85,7 @@ class IntermediateGammaTensor(PassthroughTensor):
             bias_tensor = self.bias_tensor * other
 
         else:
-            if self.symbol_factory != other.symbol_factory:
+            if self.scalar_manager != other.scalar_manager:
                 # TODO: come up with a method for combining symbol factories
                 raise Exception(
                     "Cannot add two tensors with different symbol encodings"
@@ -142,5 +142,5 @@ class IntermediateGammaTensor(PassthroughTensor):
             term_tensor=term_tensor,
             coeff_tensor=coeff_tensor,
             bias_tensor=bias_tensor,
-            symbol_factory=self.symbol_factory,
+            scalar_manager=self.scalar_manager,
         )

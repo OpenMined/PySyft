@@ -92,7 +92,7 @@ def get_mechanism_for_entity(scalars, entity, sigma=1.5):
         sigma=sigma,
         value=value,
         L=float(max_lipschitz_wrt_entity(scalars, entity=entity)),
-        entity=entity.unique_name,
+        entity=entity.name,
         name=m_id,
     )
 
