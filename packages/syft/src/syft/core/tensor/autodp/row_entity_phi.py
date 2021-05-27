@@ -47,7 +47,10 @@ class RowEntityPhiTensor(PassthroughTensor, Serializable):
 
     @property
     def entities(self):
-        return np.array([[x.entity]*np.array(x.shape).prod() for x in self.child]).reshape(self.shape)
+        return np.array(
+            [[x.entity] * np.array(x.shape).prod() for x in self.child]
+        ).reshape(self.shape)
+
     #
     # @property
     # def gamma(self):

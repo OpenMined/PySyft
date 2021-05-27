@@ -1,11 +1,16 @@
-import sympy as sp
-import uuid
-import numpy as np
+# stdlib
 from collections import defaultdict
+import uuid
+
+# third party
+import numpy as np
+import sympy as sp
+
+# syft relative
 from .intermediate_gamma import IntermediateGammaTensor
 
-class PrimeFactory():
 
+class PrimeFactory:
     def __init__(self):
         self.prev_prime = 1
         self.placement2prime = defaultdict(dict)
@@ -19,7 +24,6 @@ class PrimeFactory():
 
 
 class InitialGammaTensor(IntermediateGammaTensor):
-
     def __init__(self, values, min_vals, max_vals, entities, symbol_factory=None):
         self.uid = uuid.uuid4()
         self.values = values  # child
@@ -38,9 +42,11 @@ class InitialGammaTensor(IntermediateGammaTensor):
 
         term_tensor = np.array(some_symbols).reshape(list(self.values.shape) + [1])
         coeff_tensor = (term_tensor * 0) + 1
-        bias_tensor = (self.values * 0)
+        bias_tensor = self.values * 0
 
-        super().__init__(term_tensor=term_tensor,
-                         coeff_tensor=coeff_tensor,
-                         bias_tensor=bias_tensor,
-                         symbol_factory=self.symbol_factory)
+        super().__init__(
+            term_tensor=term_tensor,
+            coeff_tensor=coeff_tensor,
+            bias_tensor=bias_tensor,
+            symbol_factory=self.symbol_factory,
+        )

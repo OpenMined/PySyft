@@ -9,11 +9,11 @@ import names
 import numpy as np
 
 # syft relative
-from ..autograd.value import grad
-from ..autograd.value import to_values
 from ..adp.entity import Entity
 from ..adp.publish import publish
 from ..adp.scalar import PhiScalar
+from ..autograd.value import grad
+from ..autograd.value import to_values
 
 
 def make_entities(n: int = 100) -> TypeList[Entity]:
