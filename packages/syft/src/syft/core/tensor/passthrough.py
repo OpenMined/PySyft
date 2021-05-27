@@ -9,9 +9,8 @@ from typing import Union
 
 # third party
 import numpy as np
-
-HANDLED_FUNCTIONS = {}
-
+from .util import implements
+from .util import query_implementation
 AcceptableSimpleType = Union[int, bool, float, np.ndarray]
 
 
@@ -22,7 +21,6 @@ def inputs2child(*args, **kwargs):
         for x in kwargs.items()
     }
     return args, kwargs
-
 
 def is_acceptable_simple_type(obj):
     return isinstance(obj, (int, bool, float, np.ndarray))
@@ -228,7 +226,9 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         return self.__class__(self.child * other.child)
 
     def __rmul__(self, other) -> PassthroughTensor:
-        return other * self
+        if is_acceptable_simple_type(other):
+            return self.__class__(self.child.__rmul__(other))
+        return self.__class__(self.child.__rmul__(other.child))
 
     def __matmul__(
         self, other: Union[PassthroughTensor, np.ndarray]
@@ -401,40 +401,26 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         return self.__class__(self.child.take(indices=indices))
 
     def __array_function__(self, func, types, args, kwargs):
-        #         args, kwargs = inputs2child(*args, **kwargs)
-
         # Note: this allows subclasses that don't override
         # __array_function__ to handle PassthroughTensor objects.
         if not all(issubclass(t, self.__class__) for t in types):
             return NotImplemented
 
-        if func in HANDLED_FUNCTIONS[self.__class__]:
-            return HANDLED_FUNCTIONS[self.__class__][func](*args, **kwargs)
-        else:
-            return self.__class__(func(*args, **kwargs))
+        implementation = query_implementation(self.__class__, func)
+        if implementation:
+            return implementation(*args, **kwargs)
+        return self.__class__(func(*args, **kwargs))
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-        if ufunc in HANDLED_FUNCTIONS[self.__class__]:
-            return HANDLED_FUNCTIONS[self.__class__][ufunc](*inputs, **kwargs)
-        else:
-            return NotImplemented
-            # return self.__class__(ufunc(*inputs, **kwargs))
+        implementation = query_implementation(self.__class__, ufunc)
+        if implementation:
+            return implementation(*inputs, **kwargs)
+        return self.__class__(ufunc(*inputs, **kwargs))
 
     def __repr__(self):
         return f"{self.__class__.__name__}(child={self.child})"
 
 
-def implements(tensor_type, np_function):
-    "Register an __array_function__ implementation for DiagonalArray objects."
-
-    def decorator(func):
-        if tensor_type not in HANDLED_FUNCTIONS:
-            HANDLED_FUNCTIONS[tensor_type] = {}
-
-        HANDLED_FUNCTIONS[tensor_type][np_function] = func
-        return func
-
-    return decorator
 
 
 @implements(PassthroughTensor, np.square)

@@ -23,6 +23,7 @@ from ..ancestors import AutogradTensorAncestor
 from ..ancestors import PhiTensorAncestor
 from ..passthrough import PassthroughTensor
 from ..passthrough import is_acceptable_simple_type
+from ..util import implements
 
 
 @bind_protobuf
@@ -72,6 +73,10 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor, Serializable):
         return op(self, other)
 
     def __mul__(self, other) -> AutogradTensorAncestor:
+        op = autograd.backward_ops.MulOp()
+        return op(self, other)
+
+    def __rmul__(self, other) -> AutogradTensorAncestor:
         op = autograd.backward_ops.MulOp()
         return op(self, other)
 

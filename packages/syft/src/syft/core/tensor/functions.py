@@ -38,3 +38,17 @@ def square(x):
 def expand_dims(*args, **kwargs):
     args, kwargs = inputs2child(*args, **kwargs)
     return Tensor(np.expand_dims(*args, **kwargs))
+
+@implements(Tensor, np.multiply)
+def multiply(a, b):
+    if isinstance(a, Tensor):
+        result = a.__mul__(b)
+        if result is not NotImplementedError:
+            return result
+
+    if isinstance(b, Tensor):
+        result = b.__rmul__(a)
+        if result is not NotImplementedError:
+            return result
+
+    return TypeError(f"Can't multiply {type(a)} with {type(b)}")
