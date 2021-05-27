@@ -4,6 +4,7 @@ import uuid
 # syft relative
 from .manager import TensorChainManager
 from .passthrough import is_acceptable_simple_type
+
 _SingleEntityPhiTensorRef = None
 
 
@@ -125,7 +126,7 @@ class PhiTensorAncestor(TensorChainManager):
                 entity=entity,
                 min_vals=min_vals,
                 max_vals=max_vals,
-                scalar_manager=scalar_manager
+                scalar_manager=scalar_manager,
             )
 
         # if there's row-level entities - push a RowEntityPhiTensor
@@ -160,7 +161,7 @@ class PhiTensorAncestor(TensorChainManager):
                         entity=entity,
                         min_vals=min_vals,
                         max_vals=max_vals,
-                        scalar_manager=scalar_manager
+                        scalar_manager=scalar_manager,
                     )
                 )
 

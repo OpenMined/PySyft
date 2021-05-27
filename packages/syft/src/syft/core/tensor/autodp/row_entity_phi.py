@@ -17,6 +17,7 @@ from ..passthrough import implements
 from ..passthrough import is_acceptable_simple_type
 from .initial_gamma import InitialGammaTensor
 
+
 @bind_protobuf
 class RowEntityPhiTensor(PassthroughTensor, Serializable):
     def __init__(self, rows, check_shape=True):
@@ -64,11 +65,13 @@ class RowEntityPhiTensor(PassthroughTensor, Serializable):
         if scalar_manager is None:
             scalar_manager = self.scalar_manager
 
-        return InitialGammaTensor(values=self.value,
-                                  min_vals=self.min_vals,
-                                  max_vals=self.max_vals,
-                                  entities=self.entities,
-                                  scalar_manager=scalar_manager)
+        return InitialGammaTensor(
+            values=self.value,
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
+            entities=self.entities,
+            scalar_manager=scalar_manager,
+        )
 
     @property
     def shape(self):
@@ -208,8 +211,6 @@ class RowEntityPhiTensor(PassthroughTensor, Serializable):
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
     def _object2proto(self) -> Tensor_PB:
-        print("Serializing RowEntityPhiTensor")
-        print(f"Children {type(self.child)}")
         arrays = []
         tensors = []
         if len(self.child) > 0 and isinstance(self.child[0], np.ndarray):
@@ -235,8 +236,6 @@ class RowEntityPhiTensor(PassthroughTensor, Serializable):
         else:
             child = [deserialize(array) for array in proto.arrays]
 
-        print("Serializing RowEntityPhiTensor")
-        print(f"Children {type(child)}")
         return RowEntityPhiTensor(child)
 
     @staticmethod

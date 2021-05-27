@@ -46,11 +46,6 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor, Serializable):
 
         self.n_backwards = Counter()
 
-    def new_with_child(self, child) -> AutogradTensor:
-        # TODO: @Madhava why does this break the ops_test for grad?
-        # return AutogradTensor(child, requires_grad=self.requires_grad)
-        return AutogradTensor(child)
-
     @property
     def grad(self):
         if self.backprop_id not in self._grad:

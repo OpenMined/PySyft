@@ -39,22 +39,6 @@ class Tensor(
 
         super().__init__(child=child)
 
-    def new_with_child(self, child) -> Tensor:
-        return Tensor(child)
-
-    def __array_function__(self, func, types, args, kwargs):
-        #         args, kwargs = inputs2child(*args, **kwargs)
-
-        # Note: this allows subclasses that don't override
-        # __array_function__ to handle PassthroughTensor objects.
-        if not all(issubclass(t, self.__class__) for t in types):
-            return NotImplemented
-
-        if func in HANDLED_FUNCTIONS[self.__class__]:
-            return HANDLED_FUNCTIONS[self.__class__][func](*args, **kwargs)
-        else:
-            return self.__class__(func(*args, **kwargs))
-
     def _object2proto(self) -> Tensor_PB:
         print("Serializing Tensor")
         print(f"Child {type(self.child)}")

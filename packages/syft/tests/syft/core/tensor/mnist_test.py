@@ -161,11 +161,11 @@ def test_basic_publish_event() -> None:
         pred = data_ptr.dot(weights_ptr)
         diff = target_ptr - pred
 
-        # pre_loss = np.square(diff)  # cant use
-        pre_loss = diff * diff
+        pre_loss = np.square(diff)  # cant use
+        # pre_loss = diff * diff
 
-        # loss = np.mean(pre_loss)  # cant use
-        loss = pre_loss.sum() / pre_loss.len()
+        loss = np.mean(pre_loss)  # cant use
+        # loss = pre_loss.sum() / pre_loss.len()
         loss.backward()
 
         wdiff = weights_ptr.grad * 0.01
