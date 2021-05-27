@@ -4,7 +4,7 @@ import uuid
 # syft relative
 from .manager import TensorChainManager
 from .passthrough import is_acceptable_simple_type
-
+from .autodp.initial_gamma import PrimeFactory
 _SingleEntityPhiTensorRef = None
 
 
@@ -91,14 +91,21 @@ class PhiTensorAncestor(TensorChainManager):
 
     @property
     def min_vals(self):
-        return self.new_with_child(self.child.min_vals)
+        return self.__class__(self.child.min_vals)
 
     @property
     def max_vals(self):
-        return self.new_with_child(self.child.max_vals)
+        return self.__class__(self.child.max_vals)
 
-    def private(self, min_val, max_val, entities=None, entity=None):
+    @property
+    def gamma(self):
+        return self.__class__(self.child.gamma)
+
+    def private(self, min_val, max_val, entities=None, entity=None, symbol_factory=None):
         """ """
+
+        if symbol_factory is None:
+            symbol_factory = PrimeFactory()
 
         if entity is not None:
             # if there's only one entity - push a SingleEntityPhiTensor
@@ -122,6 +129,7 @@ class PhiTensorAncestor(TensorChainManager):
                 entity=entity,
                 min_vals=min_vals,
                 max_vals=max_vals,
+                symbol_factory=symbol_factory
             )
 
         # if there's row-level entities - push a RowEntityPhiTensor
@@ -156,6 +164,7 @@ class PhiTensorAncestor(TensorChainManager):
                         entity=entity,
                         min_vals=min_vals,
                         max_vals=max_vals,
+                        symbol_factory=symbol_factory
                     )
                 )
 

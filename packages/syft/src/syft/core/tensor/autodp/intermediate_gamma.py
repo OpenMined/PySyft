@@ -22,10 +22,10 @@ class IntermediateGammaTensor(PassthroughTensor):
     def full_shape(self):
         return self.term_tensor.shape
 
-    def sum(self, dim):
-        new_term_tensor = np.swapaxes(self.term_tensor, dim, -1).squeeze(dim)
-        new_coeff_tensor = np.swapaxes(self.coeff_tensor, dim, -1).squeeze(dim)
-        new_bias_tensor = np.sum(dim)
+    def sum(self, axis):
+        new_term_tensor = np.swapaxes(self.term_tensor, axis, -1).squeeze(axis)
+        new_coeff_tensor = np.swapaxes(self.coeff_tensor, axis, -1).squeeze(axis)
+        new_bias_tensor = np.sum(axis)
 
         return IntermediateGammaTensor(
             term_tensor=new_term_tensor,
@@ -34,10 +34,10 @@ class IntermediateGammaTensor(PassthroughTensor):
             symbol_factory=self.symbol_factory,
         )
 
-    def prod(self, dim):
-        new_term_tensor = self.term_tensor.prod(dim)
-        new_coeff_tensor = self.coeff_tensor.prod(dim)
-        new_bias_tensor = self.bias_tensor.prod(dim)
+    def prod(self, axis):
+        new_term_tensor = self.term_tensor.prod(axis)
+        new_coeff_tensor = self.coeff_tensor.prod(axis)
+        new_bias_tensor = self.bias_tensor.prod(axis)
         return IntermediateGammaTensor(
             term_tensor=new_term_tensor,
             coeff_tensor=new_coeff_tensor,

@@ -15,7 +15,7 @@ from ...common.serde.serialize import _serialize as serialize
 from ..passthrough import PassthroughTensor
 from ..passthrough import implements
 from ..passthrough import is_acceptable_simple_type
-
+from .initial_gamma import InitialGammaTensor
 
 @bind_protobuf
 class RowEntityPhiTensor(PassthroughTensor, Serializable):
@@ -29,6 +29,10 @@ class RowEntityPhiTensor(PassthroughTensor, Serializable):
                     raise Exception(
                         f"All rows in RowEntityPhiTensor must match: {shape} != {row.shape}"
                     )
+
+    @property
+    def symbol_factory(self):
+        return self.child[0].symbol_factory
 
     def new_with_child(self, child) -> RowEntityPhiTensor:
         return RowEntityPhiTensor(child)
@@ -51,10 +55,20 @@ class RowEntityPhiTensor(PassthroughTensor, Serializable):
             [[x.entity] * np.array(x.shape).prod() for x in self.child]
         ).reshape(self.shape)
 
-    #
-    # @property
-    # def gamma(self):
-    #
+    @property
+    def gamma(self):
+        return self.create_gamma()
+
+    def create_gamma(self, symbol_factory=None):
+
+        if symbol_factory is None:
+            symbol_factory = self.symbol_factory
+
+        return InitialGammaTensor(values=self.value,
+                                  min_vals=self.min_vals,
+                                  max_vals=self.max_vals,
+                                  entities=self.entities,
+                                  symbol_factory=symbol_factory)
 
     @property
     def shape(self):
@@ -172,10 +186,7 @@ class RowEntityPhiTensor(PassthroughTensor, Serializable):
     def sum(self, *args, axis=None, **kwargs):
 
         if axis is None or axis == 0:
-            raise Exception(
-                "For now, you can't sum the entire vector into a scalar or sum across "
-                + "dim 0 without needing a GammaTensor."
-            )
+            return self.gamma.sum(axis=axis)
 
         new_list = list()
         for row in self.child:

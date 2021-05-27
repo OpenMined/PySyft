@@ -11,6 +11,15 @@ from .intermediate_gamma import IntermediateGammaTensor
 
 
 class PrimeFactory:
+
+    """IMPORTANT: it's very important that two tensors be able to tell that
+    they are indeed referencing the EXACT same PrimeFactory. At present this is done
+    by ensuring that it is literally the same python object. In the future, we will probaby
+    need to formalize this. However, the main way this could go wrong is if we created some
+    alternate way for checking to see if two prime factories 'sortof looked the same' but which
+    in fact weren't the EXACT same object. This could lead to security leaks wherein two tensors
+    think two different symbols in fact are the same symbol."""
+
     def __init__(self):
         self.prev_prime = 1
         self.placement2prime = defaultdict(dict)
