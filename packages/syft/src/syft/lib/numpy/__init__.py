@@ -32,6 +32,25 @@ def create_ast(client: TypeAny = None) -> Globals:
     ]
 
     methods: TypeList[TypeTuple[str, str]] = [
+        # functions
+        (
+            "numpy.expand_dims",
+            UnionGenerator["numpy.ndarray", "syft.core.tensor.tensor.Tensor"],
+        ),
+        (
+            "numpy.max",
+            UnionGenerator["numpy.ndarray", "syft.core.tensor.tensor.Tensor"],
+        ),
+        (
+            "numpy.mean",
+            UnionGenerator["numpy.ndarray", "syft.core.tensor.tensor.Tensor"],
+        ),
+        (
+            "numpy.min",
+            UnionGenerator["numpy.ndarray", "syft.core.tensor.tensor.Tensor"],
+        ),
+        # ("numpy.square", "numpy.ndarray"),  # TODO: support special numpy ufuncs
+        # ndarray
         ("numpy.ndarray.shape", "syft.lib.python.Tuple"),
         ("numpy.ndarray.strides", "syft.lib.python.Tuple"),
         ("numpy.ndarray.ndim", "syft.lib.python.Int"),

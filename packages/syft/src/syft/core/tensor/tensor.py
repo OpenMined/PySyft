@@ -65,8 +65,6 @@ class Tensor(
             child = [deserialize(array) for array in proto.arrays]
 
         child = child[0]
-        print("Deserializing Tensor")
-        print(f"Child {type(child)}")
         return Tensor(child)
 
     @staticmethod

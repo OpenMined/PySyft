@@ -159,7 +159,7 @@ jobs:
 
       - name: Run normal tests
         run: |
-          pytest -m 'fast or slow' --cov syft --cov-fail-under 80 -n auto
+          pytest -m 'fast or slow' --cov syft --cov-fail-under 70 -n auto
 
       - name: Install libomp for XGBoost
         if: startsWith(runner.os, 'macos')

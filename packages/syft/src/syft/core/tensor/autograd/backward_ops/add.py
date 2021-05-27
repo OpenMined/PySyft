@@ -35,6 +35,8 @@ class AddOp(Op):
             if self.x.grad_fn:
                 self.x.backward(backprop_id=backprop_id)
 
+        # TODO: @Madhava do we need to use this check everywhere?
+        # if isinstance(self.y, AutogradTensor) and self.y.requires_grad:
         if self.y.requires_grad:
             if self.y.shape != grad.shape:
                 axis = np.argmax(np.abs(np.array(self.y.shape) - np.array(grad.shape)))

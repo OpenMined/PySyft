@@ -103,6 +103,7 @@ from ...logger import debug
 from ...logger import error
 from ...logger import warning
 from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
+from ...util import obj2pointer_type
 from ..common.pointer import AbstractPointer
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import bind_protobuf
@@ -249,13 +250,28 @@ class Pointer(AbstractPointer):
             PublishScalarsAction,  # TODO: fix circular imports
         )
 
+        id_at_location = UID()
+
         obj_msg = PublishScalarsAction(
+            id_at_location=id_at_location,
             address=self.client.address,
-            reply_to=self.client.address,
+            publish_ids_at_location=[self.id_at_location],
             sigma=sigma,
-            scalar_ids_at_location=[self.id_at_location],
         )
-        return client.send_immediate_msg_with_reply(msg=obj_msg)
+
+        client.send_immediate_msg_without_reply(msg=obj_msg)
+
+        # create pointer which will point to float result
+        afloat = 0.0
+        ptr_type = obj2pointer_type(obj=afloat)
+        ptr = ptr_type(
+            client=client,
+            id_at_location=id_at_location,
+        )
+        ptr._pointable = True
+
+        # return pointer
+        return ptr
 
     def get(
         self,

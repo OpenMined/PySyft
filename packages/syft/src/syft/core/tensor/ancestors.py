@@ -64,6 +64,9 @@ class AutogradTensorAncestor(TensorChainManager):
 
         AutogradTensor = _AutogradTensor()
 
+        # TODO: @Madhava question, if autograd(requires_grad=True) is not set
+        # we still end up in here from AutogradTensorAncestor but child.backward
+        # has no backprop_id
         if isinstance(self.child, AutogradTensorAncestor) or isinstance(
             self.child, AutogradTensor
         ):

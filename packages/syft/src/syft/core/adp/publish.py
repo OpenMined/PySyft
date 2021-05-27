@@ -7,26 +7,32 @@ from typing import Any
 import numpy as np
 
 # syft relative
+from ..tensor.passthrough import PassthroughTensor
 from .idp_gaussian_mechanism import iDPGaussianMechanism
 from .scalar import IntermediatePhiScalar
 from .search import max_lipschitz_wrt_entity
 
+
 # TODO: @Madhava make work
-# def publish_private_tensor(tensor_obj, acc:Any, sigma=1.5) -> float:
-#     """"""
 #     # step 1: convert tensor to big list of scalars
 #     # step 2: call publish(scalars, acc:Any)
 #     # step 3: return result
+def convert_tensors_to_scalars(tensor_obj):
+    print("convert_tensors_to_scalars", tensor_obj)
+    return []
 
 
 def publish(scalars, acc: Any, sigma: float = 1.5) -> float:
-
     _scalars = list()
+
     for s in scalars:
+        if isinstance(s, PassthroughTensor):
+            _scalars += convert_tensors_to_scalars(s)
         if isinstance(s, IntermediatePhiScalar):
             _scalars.append(s.gamma)
         else:
             _scalars.append(s)
+
     scalars = _scalars
 
     acc_original = acc

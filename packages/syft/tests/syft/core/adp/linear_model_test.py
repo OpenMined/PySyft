@@ -29,23 +29,30 @@ def test_autodp_phiscalar_publish() -> None:
 
 @pytest.mark.xfail
 def test_autodp_train_linear_model() -> None:
-    entities = [
-        Entity(name="Tudor"),
-        Entity(name="Madhava"),
-        Entity(name="Kritika"),
-        Entity(name="George"),
-    ]
+    # entities = [
+    #     Entity(name="Tudor"),
+    #     Entity(name="Madhava"),
+    #     Entity(name="Kritika"),
+    #     Entity(name="George"),
+    # ]
 
-    x = Tensor(np.array([[1, 1], [1, 0], [0, 1], [0, 0]])).private(
-        min_val=0, max_val=1, entities=entities, is_discrete=True
+    entity = Entity(name="Trask")
+
+    x = (
+        Tensor(np.array([[1, 1], [1, 0], [0, 1], [0, 0]]))
+        .private(min_val=0, max_val=1, entity=entity)
+        .autograd(requires_grad=True)
     )
-    y = Tensor(np.array([[1], [1], [0], [0]])).private(
-        min_val=0, max_val=1, entities=entities, is_discrete=False
+    y = (
+        Tensor(np.array([[1], [1], [0], [0]]))
+        .private(min_val=0, max_val=1, entity=entity)
+        .autograd(requires_grad=True)
     )
 
-    _weights = Tensor(np.random.uniform(size=(2, 1)))
+    weights = Tensor(np.random.uniform(size=(2, 1))).autograd(requires_grad=True)
+    # print("type _weights ", type(_weights))
+    # weights = _weights + 0
 
-    weights = _weights + 0
     acc = AdversarialAccountant(max_budget=7)
 
     for _ in range(1):
@@ -65,3 +72,11 @@ def test_autodp_train_linear_model() -> None:
 
     assert len(acc.entities) == 4
     assert batch_loss > 0
+    assert True is False
+
+
+@pytest.mark.xfail
+def test_adding_scalars() -> None:
+    weights = Tensor(np.random.uniform(size=(2, 1))).autograd(requires_grad=True)
+    weights = weights + 0  # 0 has no requires_grad so this fails in the add op
+    weights.backward()

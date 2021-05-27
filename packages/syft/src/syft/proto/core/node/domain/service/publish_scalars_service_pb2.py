@@ -25,7 +25,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n<proto/core/node/domain/service/publish_scalars_service.proto\x12\x1dsyft.core.node.domain.service\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\xd4\x01\n\x14PublishScalarsAction\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x35\n\x16scalar_ids_at_location\x18\x04 \x03(\x0b\x32\x15.syft.core.common.UID\x12\r\n\x05sigma\x18\x05 \x01(\x02"|\n\x1bPublishScalarsResultMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0e\n\x06result\x18\x03 \x01(\x02\x62\x06proto3',
+    serialized_pb=b'\n<proto/core/node/domain/service/publish_scalars_service.proto\x12\x1dsyft.core.node.domain.service\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\xdb\x01\n\x14PublishScalarsAction\x12-\n\x0eid_at_location\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12%\n\x06msg_id\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x36\n\x17publish_ids_at_location\x18\x04 \x03(\x0b\x32\x15.syft.core.common.UID\x12\r\n\x05sigma\x18\x05 \x01(\x02\x62\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
@@ -42,8 +42,8 @@ _PUBLISHSCALARSACTION = _descriptor.Descriptor(
     create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
-            name="msg_id",
-            full_name="syft.core.node.domain.service.PublishScalarsAction.msg_id",
+            name="id_at_location",
+            full_name="syft.core.node.domain.service.PublishScalarsAction.id_at_location",
             index=0,
             number=1,
             type=11,
@@ -61,8 +61,8 @@ _PUBLISHSCALARSACTION = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.core.node.domain.service.PublishScalarsAction.address",
+            name="msg_id",
+            full_name="syft.core.node.domain.service.PublishScalarsAction.msg_id",
             index=1,
             number=2,
             type=11,
@@ -80,8 +80,8 @@ _PUBLISHSCALARSACTION = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="reply_to",
-            full_name="syft.core.node.domain.service.PublishScalarsAction.reply_to",
+            name="address",
+            full_name="syft.core.node.domain.service.PublishScalarsAction.address",
             index=2,
             number=3,
             type=11,
@@ -99,8 +99,8 @@ _PUBLISHSCALARSACTION = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="scalar_ids_at_location",
-            full_name="syft.core.node.domain.service.PublishScalarsAction.scalar_ids_at_location",
+            name="publish_ids_at_location",
+            full_name="syft.core.node.domain.service.PublishScalarsAction.publish_ids_at_location",
             index=3,
             number=4,
             type=11,
@@ -146,88 +146,12 @@ _PUBLISHSCALARSACTION = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=164,
-    serialized_end=376,
+    serialized_end=383,
 )
 
-
-_PUBLISHSCALARSRESULTMESSAGE = _descriptor.Descriptor(
-    name="PublishScalarsResultMessage",
-    full_name="syft.core.node.domain.service.PublishScalarsResultMessage",
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    create_key=_descriptor._internal_create_key,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name="msg_id",
-            full_name="syft.core.node.domain.service.PublishScalarsResultMessage.msg_id",
-            index=0,
-            number=1,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.core.node.domain.service.PublishScalarsResultMessage.address",
-            index=1,
-            number=2,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="result",
-            full_name="syft.core.node.domain.service.PublishScalarsResultMessage.result",
-            index=2,
-            number=3,
-            type=2,
-            cpp_type=6,
-            label=1,
-            has_default_value=False,
-            default_value=float(0),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax="proto3",
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=378,
-    serialized_end=502,
-)
-
+_PUBLISHSCALARSACTION.fields_by_name[
+    "id_at_location"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
 _PUBLISHSCALARSACTION.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
@@ -235,21 +159,9 @@ _PUBLISHSCALARSACTION.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 _PUBLISHSCALARSACTION.fields_by_name[
-    "reply_to"
-].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_PUBLISHSCALARSACTION.fields_by_name[
-    "scalar_ids_at_location"
+    "publish_ids_at_location"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_PUBLISHSCALARSRESULTMESSAGE.fields_by_name[
-    "msg_id"
-].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_PUBLISHSCALARSRESULTMESSAGE.fields_by_name[
-    "address"
-].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 DESCRIPTOR.message_types_by_name["PublishScalarsAction"] = _PUBLISHSCALARSACTION
-DESCRIPTOR.message_types_by_name[
-    "PublishScalarsResultMessage"
-] = _PUBLISHSCALARSRESULTMESSAGE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 PublishScalarsAction = _reflection.GeneratedProtocolMessageType(
@@ -262,17 +174,6 @@ PublishScalarsAction = _reflection.GeneratedProtocolMessageType(
     },
 )
 _sym_db.RegisterMessage(PublishScalarsAction)
-
-PublishScalarsResultMessage = _reflection.GeneratedProtocolMessageType(
-    "PublishScalarsResultMessage",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _PUBLISHSCALARSRESULTMESSAGE,
-        "__module__": "proto.core.node.domain.service.publish_scalars_service_pb2"
-        # @@protoc_insertion_point(class_scope:syft.core.node.domain.service.PublishScalarsResultMessage)
-    },
-)
-_sym_db.RegisterMessage(PublishScalarsResultMessage)
 
 
 # @@protoc_insertion_point(module_scope)
