@@ -25,3 +25,7 @@ def expand_dims(*args, **kwargs):
     output_type = args[0].__class__
     args, kwargs = inputs2child(*args, **kwargs)
     return output_type(np.expand_dims(*args, **kwargs), requires_grad=requires_grad)
+
+@implements(AutogradTensor, np.multiply)
+def multiply(a, b):
+    return a * b
