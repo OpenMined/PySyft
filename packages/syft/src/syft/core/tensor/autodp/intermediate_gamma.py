@@ -6,6 +6,9 @@ from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...tensor.passthrough import PassthroughTensor
 from ...tensor.passthrough import is_acceptable_simple_type
 
+from ...adp.publish import publish
+
+from sympy.ntheory.factor_ import factorint
 
 class IntermediateGammaTensor(PassthroughTensor):
     def __init__(
@@ -28,6 +31,37 @@ class IntermediateGammaTensor(PassthroughTensor):
     @property
     def full_shape(self):
         return self.term_tensor.shape
+
+    def publish(self, acc, sigma):
+        return np.array(publish(scalars=self.flat_scalars, acc=acc, sigma=sigma)).reshape(self.shape)
+
+    @property
+    def flat_scalars(self):
+        flattened_terms = self.term_tensor.reshape(-1, self.term_tensor.shape[-1])
+        flattened_coeffs = self.coeff_tensor.reshape(-1, self.coeff_tensor.shape[-1])
+        flattened_bias = self.bias_tensor.reshape(-1)
+
+        scalars = list()
+
+        for i in range(len(flattened_terms)):
+            single_poly_terms = flattened_terms[i]
+            single_poly_coeffs = flattened_coeffs[i]
+            single_poly_bias = flattened_bias[i]
+
+            scalar = single_poly_bias
+
+            for j in range(len(single_poly_terms)):
+                term = single_poly_terms[j]
+                coeff = single_poly_coeffs[j]
+
+                for prime, n_times in factorint(term).items():
+                    input_scalar = self.scalar_manager.prime2symbol[prime]
+
+                    scalar = scalar + (input_scalar * n_times * coeff)
+
+            scalars.append(scalar)
+
+        return scalars
 
     def sum(self, axis):
         new_term_tensor = np.swapaxes(self.term_tensor, axis, -1).squeeze(axis)

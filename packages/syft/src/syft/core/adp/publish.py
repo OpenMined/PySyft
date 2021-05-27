@@ -13,6 +13,8 @@ from .scalar import IntermediatePhiScalar
 from .scalar import PhiScalar
 from .search import max_lipschitz_wrt_entity
 
+from pymbolic.mapper.evaluator import EvaluationMapper as EM
+
 
 # TODO: @Madhava make work
 #     # step 1: convert tensor to big list of scalars
@@ -75,9 +77,11 @@ def publish(scalars, acc: Any, sigma: float = 1.5) -> float:
                     # remove input_scalar from the computation that creates
                     # output scalar because this input_scalar is causing
                     # the budget spend to be too high.
-                    output_scalar.poly = output_scalar.sympoly.subs(
-                        input_scalar.sympoly, 0
-                    )
+                    # output_scalar.poly = output_scalar.poly.subs(
+                    #     input_scalar.poly, 0
+                    # )
+
+                    output_scalar.poly = EM(context={input_scalar.poly.name:0})(output_scalar.poly)
 
                     # try one at a time
                     break

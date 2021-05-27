@@ -105,6 +105,9 @@ class PhiTensorAncestor(TensorChainManager):
     def gamma(self):
         return self.__class__(self.child.gamma)
 
+    def publish(self, acc, sigma):
+        return self.__class__(self.child.publish(acc=acc, sigma=sigma))
+
     def private(
         self,
         min_val,
