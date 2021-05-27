@@ -124,7 +124,7 @@ class PublishScalarsService(ImmediateNodeServiceWithoutReply):
         for publish_id in msg.publish_ids_at_location:
             try:
                 publish_object = node.store[publish_id]
-                publish_objects.append(publish_object)
+                publish_objects.append(publish_object.data)
             except Exception as e:
                 log = (
                     f"Unable to Get Object with ID {publish_id} from store. "

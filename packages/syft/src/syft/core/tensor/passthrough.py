@@ -41,6 +41,17 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
             data = data.child
         return data
 
+    @property
+    def tensor_child(self) -> Any:
+        tensor = self
+        while hasattr(tensor, "child"):
+            child = tensor.child
+            if issubclass(type(child), PassthroughTensor):
+                tensor = child
+            else:
+                break
+        return tensor
+
     def __len__(self) -> int:
         return len(self.child)
 
@@ -285,12 +296,12 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         return self.__class__(self.child.transpose(*args, **kwargs))
 
     def __getitem__(
-        self, other: Union[int, bool, np.array, PassthroughTensor, slice, Ellipsis]
+        self, key: Union[int, bool, np.array, PassthroughTensor, slice, Ellipsis]
     ) -> Union[PassthroughTensor, AcceptableSimpleType]:
-        if isinstance(other, PassthroughTensor):
-            return self.__class__(self.child.__getitem__(other.child))
+        if isinstance(key, PassthroughTensor):
+            return self.__class__(self.child.__getitem__(key.child))
 
-        return self.__class__(self.child.__getitem__(other))
+        return self.__class__(self.child.__getitem__(key))
 
     # numpy.argmax(a, axis=None, out=None)
     def argmax(self, axis: Optional[int]) -> PassthroughTensor:
@@ -328,6 +339,9 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         self, offset: int = 0, axis1: int = 0, axis2: int = 1
     ) -> PassthroughTensor:
         return self.__class__(self.child.diagonal(offset, axis1, axis2))
+
+    def tolist(self) -> PassthroughTensor:
+        return self.__class__(self.child.tolist())
 
     # ndarray.flatten(order='C')
     def flatten(self, order: str = "C") -> PassthroughTensor:

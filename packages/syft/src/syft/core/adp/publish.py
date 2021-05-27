@@ -7,9 +7,10 @@ from typing import Any
 import numpy as np
 
 # syft relative
-from ..tensor.passthrough import PassthroughTensor
+from ..tensor.tensor import Tensor
 from .idp_gaussian_mechanism import iDPGaussianMechanism
 from .scalar import IntermediatePhiScalar
+from .scalar import PhiScalar
 from .search import max_lipschitz_wrt_entity
 
 
@@ -18,17 +19,25 @@ from .search import max_lipschitz_wrt_entity
 #     # step 2: call publish(scalars, acc:Any)
 #     # step 3: return result
 def convert_tensors_to_scalars(tensor_obj):
-    print("convert_tensors_to_scalars", tensor_obj)
-    return []
+    scalars = list()
+    for tensor_scalar in tensor_obj.flatten():
+        entity_scalar = PhiScalar(
+            min_val=tensor_scalar.child.min_vals.item(),
+            value=tensor_scalar.data_child.item(),
+            max_val=tensor_scalar.max_vals.data_child.item(),
+            entity=tensor_scalar.tensor_child.entity,
+        )
+        scalars.append(entity_scalar.gamma)
+    return scalars
 
 
 def publish(scalars, acc: Any, sigma: float = 1.5) -> float:
     _scalars = list()
 
     for s in scalars:
-        if isinstance(s, PassthroughTensor):
+        if isinstance(s, Tensor):
             _scalars += convert_tensors_to_scalars(s)
-        if isinstance(s, IntermediatePhiScalar):
+        elif isinstance(s, IntermediatePhiScalar):
             _scalars.append(s.gamma)
         else:
             _scalars.append(s)
@@ -43,7 +52,6 @@ def publish(scalars, acc: Any, sigma: float = 1.5) -> float:
     acc_temp.append(ms)
 
     overbudgeted_entities = acc_temp.overbudgeted_entities
-
     # so that we don't modify the original polynomial
     # it might be fine to do so but just playing it safe
     if len(overbudgeted_entities) > 0:
@@ -67,7 +75,9 @@ def publish(scalars, acc: Any, sigma: float = 1.5) -> float:
                     # remove input_scalar from the computation that creates
                     # output scalar because this input_scalar is causing
                     # the budget spend to be too high.
-                    output_scalar.poly = output_scalar.poly.subs(input_scalar.poly, 0)
+                    output_scalar.poly = output_scalar.sympoly.subs(
+                        input_scalar.sympoly, 0
+                    )
 
                     # try one at a time
                     break

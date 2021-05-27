@@ -230,6 +230,43 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializa
             scalar_manager=self.scalar_manager,
         )
 
+    # ndarray.flatten(order='C')
+    def flatten(self, order: str = "C") -> SingleEntityPhiTensor:
+        data = self.child.flatten(order=order)
+        min_vals = self.min_vals.flatten(order=order)
+        max_vals = self.max_vals.flatten(order=order)
+        entity = self.entity
+
+        return SingleEntityPhiTensor(
+            child=data,
+            entity=entity,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            scalar_manager=self.scalar_manager,
+        )
+
+    def __getitem__(self, key) -> SingleEntityPhiTensor:
+        data = self.child.__getitem__(key)
+        min_vals = self.min_vals.__getitem__(key)
+        max_vals = self.max_vals.__getitem__(key)
+
+        if isinstance(data, (np.number, bool, int, float)):
+            data = np.array([data])  # 1 dimensional np.array
+        if isinstance(min_vals, (np.number, bool, int, float)):
+            min_vals = np.array(min_vals)  # 1 dimensional np.array
+        if isinstance(max_vals, (np.number, bool, int, float)):
+            max_vals = np.array(max_vals)  # 1 dimensional np.array
+
+        entity = self.entity
+
+        return SingleEntityPhiTensor(
+            child=data,
+            entity=entity,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            scalar_manager=self.scalar_manager,
+        )
+
     def sum(self, *args, **kwargs):
 
         data = self.child.sum(*args, **kwargs)
