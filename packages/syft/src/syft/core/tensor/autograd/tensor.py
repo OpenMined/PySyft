@@ -199,8 +199,6 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor, Serializable):
         return found_id
 
     def _object2proto(self) -> Tensor_PB:
-        print("Serializing AutogradTensor")
-        print(f"Child {type(self.child)}")
         arrays = []
         tensors = []
         if isinstance(self.child, np.ndarray):
@@ -228,8 +226,6 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor, Serializable):
             child = [deserialize(array) for array in proto.arrays]
 
         child = child[0]
-        print("Deserializing AutogradTensor")
-        print(f"Child {type(child)}")
         return AutogradTensor(child, requires_grad=proto.requires_grad)
 
     @staticmethod

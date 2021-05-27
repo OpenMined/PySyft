@@ -15,7 +15,6 @@ from ..common.serde.serializable import bind_protobuf
 from ..common.serde.serialize import _serialize as serialize
 from .ancestors import AutogradTensorAncestor
 from .ancestors import PhiTensorAncestor
-from .passthrough import HANDLED_FUNCTIONS
 from .passthrough import PassthroughTensor
 
 
@@ -40,8 +39,6 @@ class Tensor(
         super().__init__(child=child)
 
     def _object2proto(self) -> Tensor_PB:
-        print("Serializing Tensor")
-        print(f"Child {type(self.child)}")
         arrays = []
         tensors = []
         if isinstance(self.child, np.ndarray):

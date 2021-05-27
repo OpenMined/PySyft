@@ -2,6 +2,7 @@
 import uuid
 
 # syft relative
+from .autodp.initial_gamma import PrimeFactory
 from .manager import TensorChainManager
 from .passthrough import is_acceptable_simple_type
 
