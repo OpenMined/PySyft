@@ -246,6 +246,10 @@ class TorchHook(FrameworkHook):
         syft.local_worker = self.local_worker
         syft.hook = self
 
+        torch.Tensor.cross_entropy = None
+        new_method = self._get_hooked_method(torch.Tensor, "cross_entropy")
+        setattr(torch.Tensor, "cross_entropy", new_method)
+
     def create_shape(cls, shape_dims):
         return torch.Size(shape_dims)
 

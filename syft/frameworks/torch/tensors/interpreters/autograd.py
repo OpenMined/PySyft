@@ -155,6 +155,10 @@ class AutogradTensor(AbstractTensor):
     def conv_transpose2d(self, self_, *args, **kwargs):
         return self_.conv_transpose2d(*args, **kwargs)
 
+    @overloaded.method
+    def conv_transpose2d(self, self_, *args, **kwargs):
+        return self_.conv_transpose2d(*args, **kwargs)
+
     def __getattribute__(self, name):
         # Automatically attaching gradient functions if they are defined in the
         # gradients module.

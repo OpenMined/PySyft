@@ -538,7 +538,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
         if method == "nr":
             new_self = self.modulus()
-            result = 3 * (0.5 - new_self).exp() + 0.003
+            result = 3 * (1 - 2 * new_self).exp() + 0.003
             for i in range(nr_iters):
                 result = 2 * result - result * result * new_self
             return result * self.signum()
@@ -692,7 +692,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
         return sigmoid_f(tensor)
 
-    def log(self, iterations=2, exp_iterations=8):
+    def log(self, iterations=2, exp_iterations=8, input_in_01=False):
         """Approximates the natural logarithm using 8th order modified Householder iterations.
         Recall that Householder method is an algorithm to solve a non linear equation f(x) = 0.
         Here  f: x -> 1 - C * exp(-x)  with C = self
@@ -708,17 +708,23 @@ class FixedPrecisionTensor(AbstractTensor):
             exp_iterations (int): number of iterations for limit approximation of exp
 
         Ref: https://github.com/LaRiffle/approximate-models
+             https://github.com/facebookresearch/CrypTen
         """
 
-        y = self / 31 + 1.59 - 20 * (-2 * self - 1.4).exp(iterations=exp_iterations)
+        if input_in_01:
+            return self.mul(100).log() - 4.605170
 
-        # 6th order Householder iterations
+        y = self / 120 + 3.0 - 20 * (-(2 * self + 1.0)).exp(iterations=exp_iterations)
+
+        # 8th order Householder iterations
         for i in range(iterations):
             h = [1 - self * (-y).refresh().exp(iterations=exp_iterations)]
-            for i in range(1, 5):
+            for i in range(1, 7):
                 h.append(h[-1] * h[0])
 
-            y -= h[0] * (1 + h[0] / 2 + h[1] / 3 + h[2] / 4 + h[3] / 5 + h[4] / 6)
+            y -= h[0] * (
+                1 + h[0] / 2 + h[1] / 3 + h[2] / 4 + h[3] / 5 + h[4] / 6 + h[5] / 7 + h[6] / 8
+            )
 
         return y
 

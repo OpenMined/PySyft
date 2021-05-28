@@ -3,6 +3,8 @@ from .gradients_core import apply_dim_transformations
 
 import torch
 
+import syft as sy
+
 
 class AddBackward(GradFunc):
     def __init__(self, self_, other):
@@ -44,15 +46,32 @@ class SubBackward(GradFunc):
 class SumBackward(GradFunc):
     """Tensor Sum backward gradient class"""
 
-    def __init__(self, self_, dim=None, **kwargs):
-        super().__init__(self, self_)
-        self.self_ = self_
+    def __init__(self, *args, **kwargs):
+        super().__init__(self, args[0])
+
+        # preprocess inputs:
+        assert len(args) >= 1
+        if len(args) == 1:
+            (input,) = args  # no dimension to sum over in args
+            dim = kwargs.get("dim", None)
+        else:
+            assert len(args) == 2
+            assert "dim" not in kwargs
+            input, dim = args  # dimension to sum over in args
+
+        keepdim = kwargs.get("keepdim", False)
+
+        self.self_ = input
         self.dim = dim
-        self.kwargs = kwargs
+        self.keepdim = keepdim
 
     def gradient(self, grad):
-        if self.dim is not None:
-            raise NotImplementedError("dim arg in sum() is not supported in autograd currently")
+        if self.keepdim:
+            raise NotImplementedError("keepdim arg in sum() is not supported in autograd currently")
+
+        if not self.keepdim and self.dim is not None:
+            grad = grad.unsqueeze(self.dim)
+
         if grad.shape != self.self_.shape:
             grad = grad.reshape([-1, 1])
         r = ((self.self_ * 0 + 1) * grad,)
@@ -258,7 +277,147 @@ class ReluBackward(GradFunc):
     def gradient(self, grad):
         zero = self.self_ * 0
         gt_zero = self.self_ > zero
-        return (gt_zero * grad,)
+        result = gt_zero * grad
+        return (result,)
+
+
+# class Log_softmaxBackward(GradFunc):
+#     """Log Softmax backward gradient class"""
+#
+#     def __init__(self, output, target):
+#         super().__init__(self, output, target)
+#         self.output = output
+#         self.other = target
+#
+#     def forward(self, output, target):
+#         assert False
+#         maximum_value = output.max()
+#         x = output - maximum_value
+#         exp_x = torch.exp(x)
+#         sum_x = torch.sum(exp_x, dim=1)
+#         x_klass = (x * target).sum(dim=1)
+#         probs = x_klass - torch.log(sum_x)
+#         self.probs = probs
+#         return probs
+#
+#     def gradient(self, grad):
+#         raise NotImplementedError
+#
+#
+# class SoftmaxBackward(GradFunc):
+#     """Softmax backward gradient class"""
+#
+#     def __init__(self, input, dim):
+#         super().__init__(self, input)
+#
+#     def forward(self, input, dim):
+#         maximum_value = input.max(dim, keepdim=True)[0]
+#         logits = input - maximum_value
+#         numerator = logits.exp()
+#         inv_denominator = numerator.sum(dim, keepdim=True).reciprocal()
+#         probs = numerator * inv_denominator
+#         self.probs = probs
+#         return probs
+#
+#     def gradient(self, grad):
+#         probs = self.probs
+#         dim = self.dim
+#         result = grad.add(-probs.mul(grad).sum(dim, keepdim=True)).mul(probs)
+#         return (result,)
+
+
+class Cross_entropyBackward(GradFunc):
+    """Cross Entropy backward gradient class"""
+
+    def __init__(self, output, target):
+        super().__init__(self, output, target)
+        self.output = output
+        self.other = target
+
+    def forward(self, pred, target):
+        def softmax(input, dim):
+            ast_mode = isinstance(input.child, sy.AdditiveSharingTensor)
+            fp_mode = not ast_mode and isinstance(input, sy.FixedPrecisionTensor)
+
+            fp_kwargs = input.get_class_attributes()
+            ast_kwargs = input.child.get_class_attributes()
+            ast_locations = input.child.locations
+
+            def decode(x):
+                if ast_mode:
+                    return x.copy().get().float_prec()
+                elif fp_mode:
+                    return x.copy().float_precision()
+                else:
+                    return x.copy()
+
+            def encode(x):
+                return x.fix_precision(**fp_kwargs).share(*ast_locations, **ast_kwargs).child
+
+            i = decode(input)
+            print("\n#0  input softmax", i.shape, i.abs().mean(), i.abs().max())
+
+            zeros = [torch.tensor([1.0])]
+
+            while (zeros[0] != 0).any():
+
+                if ast_mode:
+                    maximum_value = input.max(dim, keepdim=True)
+                else:
+                    maximum_value = input.max(dim, keepdim=True)[0]
+
+                a = decode(maximum_value)
+                print("#$ maximum", a.shape, a.mean(), a.min(), a.max())
+
+                logits = input - maximum_value
+                l = decode(logits)
+                print("#1 logits", l.shape, l.mean(), l.min(), l.max())
+
+                zeros[0] = decode(logits.max(dim, keepdim=True))
+
+                if (zeros[0] != 0).any():
+                    print(
+                        "********************************************* RETRY LOGITS ***********************************************"  # noqa
+                    )
+                    n = input.shape[dim]
+                    scaler = (100 + torch.tensor(range(n)).float().reshape(1, -1) / n) / 100
+                    input *= encode(scaler)
+
+            numerator = logits.exp()
+
+            b = decode(numerator)
+            print("#2 numerator", b.shape, b.mean(), b.min(), b.max())
+
+            numerator_sum = numerator.sum(dim, keepdim=True)
+
+            bs = decode(numerator_sum)
+            print("#* numerator sum", bs.shape, bs.mean(), bs.min(), bs.max())
+
+            inv_denominator = numerator_sum.reciprocal()
+            c = decode(inv_denominator)
+            print("#3 inv_den", c.shape, c.mean(), c.min(), c.max())
+
+            probs = numerator * inv_denominator
+            return probs
+
+        softmax = softmax(pred, 1)
+        loss_values = -softmax.log(input_in_01=True).mul(target)
+
+        self.softmax = softmax
+        self.target = target
+
+        return loss_values.sum() / target.shape[0]
+
+    def gradient(self, grad):
+        softmax = sy.AutogradTensor()
+        softmax.child = self.softmax
+        target = sy.AutogradTensor()
+        target.child = self.target
+
+        loss_grad = softmax.sub(target)
+        batch_size = target.shape[0]
+        result = loss_grad / batch_size * grad
+        return (result,)
 
 
 class Max_pool2dBackward(GradFunc):
