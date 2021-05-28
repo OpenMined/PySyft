@@ -1065,7 +1065,8 @@ allowlist["torch.Tensor.grad"] = "torch.Tensor"  # need an example with grad
 allowlist["torch.Size"] = "torch.Size"  # requires protobuf serialization
 allowlist["torch.Size.__len__"] = "syft.lib.python.Int"
 allowlist["torch.Size.__iter__"] = "syft.lib.python.Iterator"
-allowlist["torch.Tensor.size"] = "torch.Size"  # requires torch.Size
+allowlist["torch.Size.__getitem__"] = "syft.lib.python.Int"
+allowlist["torch.Tensor.size"] = UnionGenerator["torch.Size", "syft.lib.python.Int"]
 allowlist["torch.Tensor.shape"] = "torch.Size"  # requires torch.Size
 # allowlist["torch.Tensor.__iter__"] = "unknown"  # How to handle return iterator?
 # allowlist["torch.Tensor.imag"] = "torch.Tensor"  # requires dtype complex
@@ -1112,6 +1113,7 @@ allowlist["torch.zeros"] = "torch.Tensor"
 allowlist["torch.randn"] = "torch.Tensor"
 allowlist["torch.ones_like"] = "torch.Tensor"
 allowlist["torch.Tensor.__len__"] = "syft.lib.python.Int"
+allowlist["torch.arange"] = "torch.Tensor"
 
 # --------------------------------------------------------------------------------------
 # SECTION - Torch functions enabled as torch.Tensor methods above
