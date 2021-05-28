@@ -37,11 +37,8 @@ from pkg_resources import DistributionNotFound  # noqa: F401
 from pkg_resources import get_distribution  # noqa: F401
 
 # syft absolute
-# ASTRACT OBJECT IMPORTS
 from syft.core import common  # noqa: F401
 from syft.core.common import event_loop  # noqa: F401
-
-# Convenience Methods
 from syft.core.common.serde.deserialize import _deserialize as deserialize  # noqa: F401
 from syft.core.common.serde.serialize import _serialize as serialize  # noqa: F401
 from syft.core.node.common.service.repr_service import ReprMessage  # noqa: F401
@@ -51,23 +48,18 @@ from syft.core.node.domain.domain import Domain  # noqa: F401
 from syft.core.node.domain.domain import DomainClient  # noqa: F401
 from syft.core.node.network.network import Network  # noqa: F401
 from syft.core.node.network.network import NetworkClient  # noqa: F401
-
-# Convenience Constructors
 from syft.core.node.vm.vm import VirtualMachine  # noqa: F401
 from syft.core.node.vm.vm import VirtualMachineClient  # noqa: F401
 from syft.core.plan.plan import Plan  # noqa: F401
 from syft.core.plan.plan_builder import make_plan  # noqa: F401
 from syft.core.tensor import functions as tensor_functions  # noqa: F401
 from syft.core.tensor.autograd import functions as autograd_functions  # noqa: F401
+from syft.core.tensor.tensor import Tensor  # noqa: F401
 from syft.grid.client.client import login  # noqa: F401
-
-# Convenience Functions
 from syft.grid.duet import bcolors  # noqa: F401
 from syft.grid.duet import duet  # noqa: F401
 from syft.grid.duet import join_duet  # noqa: F401
 from syft.grid.duet import launch_duet  # noqa: F401
-
-# Convenience Objects
 from syft.lib import lib_ast  # noqa: F401
 from syft.lib import load  # noqa: F401
 from syft.lib import load_lib  # noqa: F401
@@ -76,7 +68,6 @@ from syft.lib.torch.module import SyModule  # noqa: F401
 from syft.lib.torch.module import SySequential  # noqa: F401
 
 # syft relative
-# Package Imports
 from . import lib  # noqa: F401
 from . import logger  # noqa: F401
 

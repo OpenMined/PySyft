@@ -147,7 +147,7 @@ class PublishScalarsService(ImmediateNodeServiceWithoutReply):
         storable = StorableObject(
             id=msg.id_at_location,
             data=results,
-            description=f"Published Scalars: {msg.id_at_location}",
+            description=f"Approved AutoDP Result: {msg.id_at_location}",
             read_permissions=read_permissions,
             search_permissions=search_permissions,
         )
