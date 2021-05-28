@@ -20,7 +20,9 @@ from .bcolors import bcolors
 from .exchange_ids import DuetCredentialExchanger
 from .exchange_ids import OpenGridTokenFileExchanger
 from .exchange_ids import OpenGridTokenManualInputExchanger
+from .exchange_ids import get_loopback_path
 from .om_signaling_client import register
+from .om_signaling_client import WebRTC_HOST
 from .ui import LOGO_URL
 from .webrtc_duet import Duet as WebRTCDuet  # noqa: F811
 
@@ -296,3 +298,49 @@ def join_duet(
     # begin_duet_client_logger(duet.node)
 
     return duet
+
+def test_duet_network(loopback=False):
+    if not loopback:
+        def check_url(url, url_description):
+            try:
+                r = requests.head(url, timeout=5)
+                if r.status_code == 200:
+                    info('Successfully able to reach ' + url_description, print=True)
+                    return True
+                else:
+                    info('Unable to reach ' + url_description + ' HTTP status code: ' + str(r.status_code), print=True)
+            except requests.exceptions.Timeout:
+                info('Unable to reach ' + url_description + ' Connection timed out.', print=True)
+            except requests.exceptions.ConnectTimeout:
+                info('Unable to reach ' + url_description + ' Connection timed out.', print=True)
+            except requests.exceptions.TooManyRedirects:
+                info('Unable to reach ' + url_description + ' Too many redirects.', print=True)
+            except requests.exceptions.RequestException as e:
+                info('Unable to reac ' + url_description + ' ' + e.strerror, print=True)
+            return False
+
+        # testing github domain reachability
+        if not check_url('https://github.com/', 'Github domain.'):
+            return
+
+        # testing Github network_address
+        if not check_url(ADDR_REPOSITORY, 'Github signaling servers list.'):
+            return
+
+        # testing signaling (STUN) servers
+        check_url(WebRTC_HOST + '/metadata', 'default signaling server.')
+        network_addr = json.loads(requests.get(ADDR_REPOSITORY).content)
+        for num, addr in enumerate(network_addr):
+            check_url(addr + '/metadata', 'signaling sever #' + str(num) + '.')
+
+    else:
+        info("Testing loopback connection process using default filepath.")
+        file_path = get_loopback_path()
+        try:
+            with open(file_path) as f:
+                pass
+        except IOError:
+            if IOError.errno == errno.EACCES:
+                info("File permission error.\n", IOError.strerror, print=True)
+            else:
+                info(IOError.strerror, print=True)
