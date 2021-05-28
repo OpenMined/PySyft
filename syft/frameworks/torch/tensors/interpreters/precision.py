@@ -537,11 +537,11 @@ class FixedPrecisionTensor(AbstractTensor):
         method = method.lower()
 
         if method == "nr":
-            new_self = self.modulus()
+            new_self = self  # .modulus()
             result = 3 * (1 - 2 * new_self).exp() + 0.003
             for i in range(nr_iters):
                 result = 2 * result - result * result * new_self
-            return result * self.signum()
+            return result  # * self.signum()
         elif method == "newton":
             # Note: this computes the SQRT of the reciprocal !!
             # it is assumed here that input values are taken in [-20, 20]
