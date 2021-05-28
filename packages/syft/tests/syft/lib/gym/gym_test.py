@@ -6,6 +6,8 @@ import pytest
 # syft absolute
 import syft as sy
 from syft.experimental_flags import flags
+from syft.lib.gym.env import object2proto
+from syft.lib.gym.env import proto2object
 
 sy.load("gym")
 sy.load("numpy")
@@ -36,3 +38,31 @@ def test_remote_gym(arrow_backend: bool, root_client: sy.VirtualMachineClient) -
     assert reward == remote_reward
     assert done == remote_done
     assert info == remote_info
+
+
+@pytest.mark.vendor(lib="gym")
+def test_protobuf(root_client: sy.VirtualMachineClient) -> None:
+    env = gym.make("CartPole-v0")
+    env.seed(42)
+    pb = object2proto(env)
+    deserialized_env = proto2object(pb)
+    assert deserialized_env.unwrapped.spec.id == "CartPole-v0"
+
+    env.seed(42)
+    deserialized_env.seed(42)
+
+    initial_state = env.reset()
+    deserialized_initial_state = deserialized_env.reset()
+    assert np.array_equal(initial_state, deserialized_initial_state)
+
+    state, reward, done, info = env.step(0)
+    (
+        deserialized_state,
+        deserialized_reward,
+        deserialized_done,
+        deserialized_info,
+    ) = deserialized_env.step(0)
+    assert np.array_equal(state, deserialized_state)
+    assert reward == deserialized_reward
+    assert done == deserialized_done
+    assert info == deserialized_info
