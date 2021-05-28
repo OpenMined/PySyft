@@ -5,7 +5,6 @@ import os
 import sys
 from typing import Any
 from typing import Generator
-from typing import NoReturn
 from typing import Optional
 
 # third party
@@ -302,10 +301,10 @@ def join_duet(
     return duet
 
 
-def test_duet_network(loopback=False) -> None:
+def test_duet_network(loopback: bool = False) -> None:
     if not loopback:
 
-        def check_url(url, url_description) -> bool:
+        def check_url(url: str, url_description: str) -> bool:
             try:
                 r = requests.head(url, timeout=5)
                 if r.status_code == 200:
