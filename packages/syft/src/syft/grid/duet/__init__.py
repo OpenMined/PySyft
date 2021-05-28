@@ -1,9 +1,11 @@
 # stdlib
+import errno
 import json
 import os
 import sys
 from typing import Any
 from typing import Generator
+from typing import NoReturn
 from typing import Optional
 
 # third party
@@ -21,8 +23,8 @@ from .exchange_ids import DuetCredentialExchanger
 from .exchange_ids import OpenGridTokenFileExchanger
 from .exchange_ids import OpenGridTokenManualInputExchanger
 from .exchange_ids import get_loopback_path
-from .om_signaling_client import register
 from .om_signaling_client import WebRTC_HOST
+from .om_signaling_client import register
 from .ui import LOGO_URL
 from .webrtc_duet import Duet as WebRTCDuet  # noqa: F811
 
@@ -299,45 +301,62 @@ def join_duet(
 
     return duet
 
-def test_duet_network(loopback=False):
+
+def test_duet_network(loopback=False) -> None:
     if not loopback:
-        def check_url(url, url_description):
+
+        def check_url(url, url_description) -> bool:
             try:
                 r = requests.head(url, timeout=5)
                 if r.status_code == 200:
-                    info('Successfully able to reach ' + url_description, print=True)
+                    info("Successfully able to reach " + url_description, print=True)
                     return True
                 else:
-                    info('Unable to reach ' + url_description + ' HTTP status code: ' + str(r.status_code), print=True)
+                    info(
+                        "Unable to reach "
+                        + url_description
+                        + " HTTP status code: "
+                        + str(r.status_code),
+                        print=True,
+                    )
             except requests.exceptions.Timeout:
-                info('Unable to reach ' + url_description + ' Connection timed out.', print=True)
+                info(
+                    "Unable to reach " + url_description + " Connection timed out.",
+                    print=True,
+                )
             except requests.exceptions.ConnectTimeout:
-                info('Unable to reach ' + url_description + ' Connection timed out.', print=True)
+                info(
+                    "Unable to reach " + url_description + " Connection timed out.",
+                    print=True,
+                )
             except requests.exceptions.TooManyRedirects:
-                info('Unable to reach ' + url_description + ' Too many redirects.', print=True)
+                info(
+                    "Unable to reach " + url_description + " Too many redirects.",
+                    print=True,
+                )
             except requests.exceptions.RequestException as e:
-                info('Unable to reac ' + url_description + ' ' + e.strerror, print=True)
+                info("Unable to reac " + url_description + " " + e.strerror, print=True)
             return False
 
         # testing github domain reachability
-        if not check_url('https://github.com/', 'Github domain.'):
-            return
+        if not check_url("https://github.com/", "Github domain."):
+            return None
 
         # testing Github network_address
-        if not check_url(ADDR_REPOSITORY, 'Github signaling servers list.'):
-            return
+        if not check_url(ADDR_REPOSITORY, "Github signaling servers list."):
+            return None
 
         # testing signaling (STUN) servers
-        check_url(WebRTC_HOST + '/metadata', 'default signaling server.')
+        check_url(WebRTC_HOST + "/metadata", "default signaling server.")
         network_addr = json.loads(requests.get(ADDR_REPOSITORY).content)
         for num, addr in enumerate(network_addr):
-            check_url(addr + '/metadata', 'signaling sever #' + str(num) + '.')
+            check_url(addr + "/metadata", "signaling sever #" + str(num) + ".")
 
     else:
         info("Testing loopback connection process using default filepath.")
         file_path = get_loopback_path()
         try:
-            with open(file_path) as f:
+            with open(file_path):
                 pass
         except IOError:
             if IOError.errno == errno.EACCES:
