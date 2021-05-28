@@ -354,8 +354,8 @@ class Cross_entropyBackward(GradFunc):
             def encode(x):
                 return x.fix_precision(**fp_kwargs).share(*ast_locations, **ast_kwargs).child
 
-            i = decode(input)
-            print("\n#0  input softmax", i.shape, i.abs().mean(), i.abs().max())
+            # i = decode(input)
+            # print("\n#0  input softmax", i.shape, i.abs().mean(), i.abs().max())
 
             zeros = [torch.tensor([1.0])]
 
@@ -366,36 +366,36 @@ class Cross_entropyBackward(GradFunc):
                 else:
                     maximum_value = input.max(dim, keepdim=True)[0]
 
-                a = decode(maximum_value)
-                print("#$ maximum", a.shape, a.mean(), a.min(), a.max())
+                # a = decode(maximum_value)
+                # print("#$ maximum", a.shape, a.mean(), a.min(), a.max())
 
                 logits = input - maximum_value
-                l = decode(logits)
-                print("#1 logits", l.shape, l.mean(), l.min(), l.max())
+                # l = decode(logits)
+                # print("#1 logits", l.shape, l.mean(), l.min(), l.max())
 
                 zeros[0] = decode(logits.max(dim, keepdim=True))
 
                 if (zeros[0] != 0).any():
-                    print(
-                        "********************************************* RETRY LOGITS ***********************************************"  # noqa
-                    )
+                    # print(
+                    #     "********************************************* RETRY LOGITS ***********************************************"  # noqa
+                    # )
                     n = input.shape[dim]
                     scaler = (100 + torch.tensor(range(n)).float().reshape(1, -1) / n) / 100
                     input *= encode(scaler)
 
             numerator = logits.exp()
 
-            b = decode(numerator)
-            print("#2 numerator", b.shape, b.mean(), b.min(), b.max())
+            # b = decode(numerator)
+            # print("#2 numerator", b.shape, b.mean(), b.min(), b.max())
 
             numerator_sum = numerator.sum(dim, keepdim=True)
 
-            bs = decode(numerator_sum)
-            print("#* numerator sum", bs.shape, bs.mean(), bs.min(), bs.max())
+            # bs = decode(numerator_sum)
+            # print("#* numerator sum", bs.shape, bs.mean(), bs.min(), bs.max())
 
             inv_denominator = numerator_sum.reciprocal()
-            c = decode(inv_denominator)
-            print("#3 inv_den", c.shape, c.mean(), c.min(), c.max())
+            # c = decode(inv_denominator)
+            # print("#3 inv_den", c.shape, c.mean(), c.min(), c.max())
 
             probs = numerator * inv_denominator
             return probs
