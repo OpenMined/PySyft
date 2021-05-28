@@ -1,14 +1,13 @@
 # third party
 import numpy as np
+from sympy.ntheory.factor_ import factorint
 
 # syft relative
+from ...adp.publish import publish
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...tensor.passthrough import PassthroughTensor
 from ...tensor.passthrough import is_acceptable_simple_type
 
-from ...adp.publish import publish
-
-from sympy.ntheory.factor_ import factorint
 
 class IntermediateGammaTensor(PassthroughTensor):
     def __init__(
@@ -33,7 +32,9 @@ class IntermediateGammaTensor(PassthroughTensor):
         return self.term_tensor.shape
 
     def publish(self, acc, sigma):
-        return np.array(publish(scalars=self.flat_scalars, acc=acc, sigma=sigma)).reshape(self.shape)
+        return np.array(
+            publish(scalars=self.flat_scalars, acc=acc, sigma=sigma)
+        ).reshape(self.shape)
 
     @property
     def flat_scalars(self):

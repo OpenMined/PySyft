@@ -14,6 +14,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 from pymbolic import var
 from pymbolic.interop.sympy import PymbolicToSympyMapper
+from pymbolic.mapper.evaluator import EvaluationMapper as EM
 from scipy import optimize
 from sympy.core.basic import Basic as BasicSymbol
 
@@ -39,7 +40,6 @@ from .search import max_lipschitz_via_jacobian
 from .search import minimize_function
 from .search import ssid2obj
 
-from pymbolic.mapper.evaluator import EvaluationMapper as EM
 
 # the most generic class
 class Scalar(Serializable):
@@ -144,7 +144,9 @@ class IntermediateScalar(Scalar):
     @property
     def value(self) -> Optional[float]:
         if self.poly is not None:
-            result = EM(context={obj.poly.name: obj.value for obj in self.input_scalars})(self.poly)
+            result = EM(
+                context={obj.poly.name: obj.value for obj in self.input_scalars}
+            )(self.poly)
             return float(result)
         return None
 

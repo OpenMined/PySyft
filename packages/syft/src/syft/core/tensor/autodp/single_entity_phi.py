@@ -18,6 +18,7 @@ from ..passthrough import PassthroughTensor
 from ..passthrough import implements
 from ..passthrough import inputs2child
 from ..passthrough import is_acceptable_simple_type
+from .initial_gamma import InitialGammaTensor
 
 
 @bind_protobuf
@@ -44,6 +45,28 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializa
     @property
     def max_vals(self):
         return self._max_vals
+
+    @property
+    def gamma(self):
+        return self.create_gamma()
+
+    def create_gamma(self, scalar_manager=None):
+
+        if scalar_manager is None:
+            scalar_manager = self.scalar_manager
+
+        # Gamma expects an entity for each scalar
+        entities = np.array([self.entity] * np.array(self.child.shape).prod()).reshape(
+            self.shape
+        )
+
+        return InitialGammaTensor(
+            values=self.child,
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
+            entities=entities,
+            scalar_manager=scalar_manager,
+        )
 
     def __repr__(self):
         return (
@@ -92,7 +115,6 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializa
     def __sub__(self, other):
 
         if isinstance(other, SingleEntityPhiTensor):
-
             if self.entity != other.entity:
                 # this should return a GammaTensor
                 return NotImplemented

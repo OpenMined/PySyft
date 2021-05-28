@@ -1,12 +1,12 @@
 # stdlib
 from inspect import isdatadescriptor
 from inspect import isgetsetdescriptor
+import operator
 
 # third party
 import numpy as np
 import pytest
 import torch as th
-import operator
 
 # syft absolute
 from syft.core.tensor.tensor import Tensor
@@ -15,6 +15,7 @@ other = type("Other", tuple(), {})
 unknown = type("Unknown", tuple(), {})
 
 constant_numpy_3_3 = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]])
+
 
 def generate_numpy_pair():
     a = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]])
@@ -130,11 +131,14 @@ def generate_test_methods(test_methods):
                 if type(fname[0]) is str:
                     new_test_methods.append((fname[0], fname, arg))
                 else:
-                    new_test_methods.append((fname[0].__name__ + "_" + fname[1], fname, arg))
+                    new_test_methods.append(
+                        (fname[0].__name__ + "_" + fname[1], fname, arg)
+                    )
         else:
             new_test_methods.append((fname[0] + "_None", fname, None))
 
     return new_test_methods
+
 
 __test_methods = generate_test_methods(test_methods=test_methods)
 
@@ -149,6 +153,7 @@ def convert_other(input_structure, other_tensor):
         return {k: replace_other(v) for k, v in input_structure.items()}
     else:
         raise ValueError("Not the right parameter structure")
+
 
 # handle converting collections of th.Tensor to numpy
 def th_as_np(t):
@@ -257,8 +262,9 @@ def test_forward_pass(_test_name, fcall_list, args, tensor_pairs):
         return
 
     # backward pass tests
-    if not hasattr(syft_original_result, "requires_grad") or not hasattr(torch_result,
-                                                                         "requires_grad"):
+    if not hasattr(syft_original_result, "requires_grad") or not hasattr(
+        torch_result, "requires_grad"
+    ):
         return
 
     assert syft_original_result.requires_grad == torch_result.requires_grad
@@ -277,4 +283,4 @@ def test_forward_pass(_test_name, fcall_list, args, tensor_pairs):
         if torch_tensor_grad is None:
             continue
         torch_tensor_grad = th_as_np(torch_tensor_grad)
-        assert np.array_equal(syft_tensor_grad.data_child, torch_tensor_grad)
+        assert np.array_equal(syft_tensor_grad._data_child, torch_tensor_grad)

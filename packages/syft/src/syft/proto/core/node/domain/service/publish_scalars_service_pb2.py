@@ -25,7 +25,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n<proto/core/node/domain/service/publish_scalars_service.proto\x12\x1dsyft.core.node.domain.service\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\xdb\x01\n\x14PublishScalarsAction\x12-\n\x0eid_at_location\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12%\n\x06msg_id\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x36\n\x17publish_ids_at_location\x18\x04 \x03(\x0b\x32\x15.syft.core.common.UID\x12\r\n\x05sigma\x18\x05 \x01(\x02\x62\x06proto3',
+    serialized_pb=b'\n<proto/core/node/domain/service/publish_scalars_service.proto\x12\x1dsyft.core.node.domain.service\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\xb4\x01\n\x14PublishScalarsAction\x12-\n\x0eid_at_location\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x36\n\x17publish_ids_at_location\x18\x04 \x03(\x0b\x32\x15.syft.core.common.UID\x12\r\n\x05sigma\x18\x05 \x01(\x02\x62\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
@@ -61,28 +61,9 @@ _PUBLISHSCALARSACTION = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="msg_id",
-            full_name="syft.core.node.domain.service.PublishScalarsAction.msg_id",
-            index=1,
-            number=2,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
             name="address",
             full_name="syft.core.node.domain.service.PublishScalarsAction.address",
-            index=2,
+            index=1,
             number=3,
             type=11,
             cpp_type=10,
@@ -101,7 +82,7 @@ _PUBLISHSCALARSACTION = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name="publish_ids_at_location",
             full_name="syft.core.node.domain.service.PublishScalarsAction.publish_ids_at_location",
-            index=3,
+            index=2,
             number=4,
             type=11,
             cpp_type=10,
@@ -120,7 +101,7 @@ _PUBLISHSCALARSACTION = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name="sigma",
             full_name="syft.core.node.domain.service.PublishScalarsAction.sigma",
-            index=4,
+            index=3,
             number=5,
             type=2,
             cpp_type=6,
@@ -146,14 +127,11 @@ _PUBLISHSCALARSACTION = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=164,
-    serialized_end=383,
+    serialized_end=344,
 )
 
 _PUBLISHSCALARSACTION.fields_by_name[
     "id_at_location"
-].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_PUBLISHSCALARSACTION.fields_by_name[
-    "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
 _PUBLISHSCALARSACTION.fields_by_name[
     "address"

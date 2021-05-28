@@ -39,6 +39,7 @@ def expand_dims(*args, **kwargs):
     args, kwargs = inputs2child(*args, **kwargs)
     return Tensor(np.expand_dims(*args, **kwargs))
 
+
 @implements(Tensor, np.multiply)
 def multiply(a, b):
     if isinstance(a, Tensor):

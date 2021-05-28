@@ -1,5 +1,6 @@
 # third party
 import numpy as np
+import pytest
 import torch as th
 
 # syft absolute
@@ -66,7 +67,7 @@ def test_train_mnist() -> None:
         wdiff = weights.grad * 0.01
         weights = -wdiff + weights
 
-    assert loss.data_child < 10.0
+    assert loss._data_child < 10.0
 
 
 def test_serde_tensors() -> None:
@@ -96,7 +97,7 @@ def test_serde_tensors() -> None:
     assert not hasattr(comp_right, "child")
     assert type(comp_left) == type(comp_right)
 
-    assert (de.data_child == data.data_child).all()
+    assert (de._data_child == data._data_child).all()
 
 
 def test_send_tensors(root_client: sy.VirtualMachineClient) -> None:
@@ -121,40 +122,123 @@ def test_send_tensors(root_client: sy.VirtualMachineClient) -> None:
     assert not hasattr(comp_right, "child")
     assert type(comp_left) == type(comp_right)
 
-    assert (res.data_child == data.data_child).all()
+    assert (res._data_child == data._data_child).all()
 
 
-def test_basic_publish_event() -> None:
+def test_basic_publish_entities_event() -> None:
     domain = sy.Domain("My Amazing Domain", max_budget=10)
     root_client = domain.get_root_client()
 
-    data_batch = np.random.rand(4, 28 * 28)
-    label_batch = np.random.rand(4, 10)
+    data_batch = np.random.rand(4, 10)
 
-    bob = Entity(name="Bob")
+    trask = Entity(name="Trask")
+    kritika = Entity(name="Kritika")
+    madhava = Entity(name="Madhava")
+    tudor = Entity(name="Tudor")
+
+    entities = [trask, kritika, madhava, tudor]
 
     # Step 1: upload a private dataset as the root owner
     data = (
         Tensor(data_batch)
-        .private(0.01, 1, entity=bob)
+        .private(0.01, 1, entities=entities)
+        .autograd(requires_grad=True)
+        .tag("data")
+    )
+
+    data.send(root_client)
+
+    # # Step 2: user connects to domain with a new verify_key
+    client = domain.get_client()
+
+    data_ptr = client.store["data"]
+
+    y_ptr = data_ptr.sum(0)
+
+    # can't get the private data
+    with pytest.raises(Exception):
+        y_ptr.get()
+
+    y_pub_ptr = y_ptr.publish(client=client, sigma=0.1)
+    y_pub = y_pub_ptr.get()
+    assert y_pub._data_child.ndim == 1
+    assert len(y_pub._data_child) == 10
+
+
+def test_basic_publish_entity_event() -> None:
+    domain = sy.Domain("My Amazing Domain", max_budget=10)
+    root_client = domain.get_root_client()
+
+    data_batch = np.random.rand(4, 10)
+
+    thanos = Entity(name="Thanos")
+
+    # Step 1: upload a private dataset as the root owner
+    data = (
+        Tensor(data_batch)
+        .private(0.01, 1, entity=thanos)
+        .autograd(requires_grad=True)
+        .tag("data")
+    )
+
+    data.send(root_client)
+
+    # # Step 2: user connects to domain with a new verify_key
+    client = domain.get_client()
+
+    data_ptr = client.store["data"]
+
+    y_ptr = data_ptr.gamma  # no sum op so just convert
+    y_ptr = y_ptr.sum(0)
+
+    # can't get the private data
+    with pytest.raises(Exception):
+        y_ptr.get()
+
+    y_pub_ptr = y_ptr.publish(client=client, sigma=0.1)
+    y_pub = y_pub_ptr.get()
+    assert y_pub._data_child.ndim == 1
+    assert len(y_pub._data_child) == 10
+
+
+def test_train_publish_entities_event() -> None:
+    domain = sy.Domain("My Amazing Domain", max_budget=10)
+    root_client = domain.get_root_client()
+
+    data_batch = np.random.rand(1, 3)
+    label_batch = np.random.rand(1, 3)
+
+    thanos = Entity(name="Thanos")
+
+    # trask = Entity(name="Trask")
+    # kritika = Entity(name="Kritika")
+    # madhava = Entity(name="Madhava")
+    # tudor = Entity(name="Tudor")
+
+    # entities = [trask, kritika, madhava, tudor]
+
+    # Step 1: upload a private dataset as the root owner
+    data = (
+        Tensor(data_batch)
+        .private(0.01, 1, entity=thanos)
         .autograd(requires_grad=True)
         .tag("data")
     )
 
     target = (
-        Tensor(label_batch).private(0.01, 1, entity=bob).autograd(requires_grad=True)
+        Tensor(label_batch).private(0.01, 1, entity=thanos).autograd(requires_grad=True)
     ).tag("target")
 
     data.send(root_client)
     target.send(root_client)
 
-    # Step 2: user connects to domain with a new verify_key
+    # # Step 2: user connects to domain with a new verify_key
     client = domain.get_client()
 
     data_ptr = client.store["data"]
     target_ptr = client.store["target"]
 
-    weights = Tensor(np.random.rand(28 * 28, 10)).autograd(requires_grad=True)
+    weights = Tensor(np.random.rand(3, 3)).autograd(requires_grad=True)
     weights_ptr = weights.send(client)
 
     for i in range(1):
@@ -171,18 +255,12 @@ def test_basic_publish_event() -> None:
         wdiff = weights_ptr.grad * 0.01
         weights_ptr = -wdiff + weights_ptr
 
-    # acc should default to client.accountant
-    # TODO: @Madhava implement
-    # weights_ptr_downloadable = weights_ptr.publish(acc=client.accountant, sigma=0.1)
-    # weights = weights_ptr_downloadable.get()
+    gamma_ptr = weights_ptr.gamma
+    weights_pub_ptr = gamma_ptr.publish(client=client, sigma=0.1)
+    updated_weights = weights_pub_ptr.get()
 
-    # weights_ptr_downloadable = weights_ptr.publish(client=client, sigma=0.1)
-    # weights = weights_ptr_downloadable.get()
-
-    updated_weights = weights_ptr.get()
-    assert not (updated_weights.data_child == weights.data_child).all()
-
-    # assert True is False
+    assert updated_weights._data_child.ndim == weights._data_child.ndim
+    assert not (updated_weights._data_child == weights._data_child).all()
 
 
 # TODO: @Madhava Make work

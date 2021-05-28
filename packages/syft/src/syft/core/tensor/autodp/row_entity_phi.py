@@ -16,6 +16,7 @@ from ..passthrough import PassthroughTensor
 from ..passthrough import implements
 from ..passthrough import is_acceptable_simple_type
 from .initial_gamma import InitialGammaTensor
+from .single_entity_phi import SingleEntityPhiTensor
 
 
 @bind_protobuf
@@ -90,7 +91,6 @@ class RowEntityPhiTensor(PassthroughTensor, Serializable):
             )
 
     def __sub__(self, other):
-
         if is_acceptable_simple_type(other) or len(self.child) == len(other.child):
             new_list = list()
             for i in range(len(self.child)):

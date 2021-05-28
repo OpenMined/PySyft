@@ -246,6 +246,7 @@ class Pointer(AbstractPointer):
 
     def publish(self, client: Any, sigma: float = 1.5) -> Any:
         # syft relative
+        from ...lib.python import Float
         from ..node.domain.service.publish_service import (
             PublishScalarsAction,  # TODO: fix circular imports
         )
@@ -260,9 +261,9 @@ class Pointer(AbstractPointer):
         )
 
         client.send_immediate_msg_without_reply(msg=obj_msg)
-
         # create pointer which will point to float result
-        afloat = 0.0
+
+        afloat = Float(0.0)
         ptr_type = obj2pointer_type(obj=afloat)
         ptr = ptr_type(
             client=client,

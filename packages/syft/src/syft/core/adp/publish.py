@@ -5,47 +5,16 @@ from typing import Any
 
 # third party
 import numpy as np
+from pymbolic.mapper.substitutor import SubstitutionMapper
+from pymbolic.mapper.substitutor import make_subst_func
 
 # syft relative
-from ..tensor.tensor import Tensor
 from .idp_gaussian_mechanism import iDPGaussianMechanism
-from .scalar import IntermediatePhiScalar
 from .scalar import PhiScalar
 from .search import max_lipschitz_wrt_entity
 
-from pymbolic.mapper.substitutor import make_subst_func
-from pymbolic.mapper.substitutor import SubstitutionMapper
-
-
-# TODO: @Madhava make work
-#     # step 1: convert tensor to big list of scalars
-#     # step 2: call publish(scalars, acc:Any)
-#     # step 3: return result
-def convert_tensors_to_scalars(tensor_obj):
-    scalars = list()
-    for tensor_scalar in tensor_obj.flatten():
-        entity_scalar = PhiScalar(
-            min_val=tensor_scalar.child.min_vals.item(),
-            value=tensor_scalar.data_child.item(),
-            max_val=tensor_scalar.max_vals.data_child.item(),
-            entity=tensor_scalar.tensor_child.entity,
-        )
-        scalars.append(entity_scalar.gamma)
-    return scalars
-
 
 def publish(scalars, acc: Any, sigma: float = 1.5) -> float:
-    # _scalars = list()
-    #
-    # for s in scalars:
-    #     if isinstance(s, Tensor):
-    #         _scalars += convert_tensors_to_scalars(s)
-    #     elif isinstance(s, IntermediatePhiScalar):
-    #         _scalars.append(s.gamma)
-    #     else:
-    #         _scalars.append(s)
-    #
-    # scalars = _scalars
 
     acc_original = acc
 
@@ -82,11 +51,12 @@ def publish(scalars, acc: Any, sigma: float = 1.5) -> float:
                     # remove input_scalar from the computation that creates
                     # output scalar because this input_scalar is causing
                     # the budget spend to be too high.
-                    output_scalar.poly = SubstitutionMapper(make_subst_func({input_scalar.poly.name:0}))(output_scalar.poly)
+                    output_scalar.poly = SubstitutionMapper(
+                        make_subst_func({input_scalar.poly.name: 0})
+                    )(output_scalar.poly)
 
             if should_break:
                 break
-
 
         acc_temp = deepcopy(acc_original)
 
@@ -95,7 +65,6 @@ def publish(scalars, acc: Any, sigma: float = 1.5) -> float:
         acc_temp.append(ms)
 
         overbudgeted_entities = acc_temp.overbudgeted_entities
-
 
     output = [s.value + random.gauss(0, sigma) for s in scalars]
 

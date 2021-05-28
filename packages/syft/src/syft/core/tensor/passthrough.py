@@ -9,8 +9,11 @@ from typing import Union
 
 # third party
 import numpy as np
+
+# syft relative
 from .util import implements
 from .util import query_implementation
+
 AcceptableSimpleType = Union[int, bool, float, np.ndarray]
 
 
@@ -22,6 +25,7 @@ def inputs2child(*args, **kwargs):
     }
     return args, kwargs
 
+
 def is_acceptable_simple_type(obj):
     return isinstance(obj, (int, bool, float, np.ndarray))
 
@@ -32,23 +36,13 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     def __init__(self, child) -> None:
         self.child = child
 
+    # TODO: Remove
     @property
-    def data_child(self) -> Any:
+    def _data_child(self) -> Any:
         data = self
         while hasattr(data, "child"):
             data = data.child
         return data
-
-    @property
-    def tensor_child(self) -> Any:
-        tensor = self
-        while hasattr(tensor, "child"):
-            child = tensor.child
-            if issubclass(type(child), PassthroughTensor):
-                tensor = child
-            else:
-                break
-        return tensor
 
     def __len__(self) -> int:
         return len(self.child)
@@ -419,8 +413,6 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
     def __repr__(self):
         return f"{self.__class__.__name__}(child={self.child})"
-
-
 
 
 @implements(PassthroughTensor, np.square)
