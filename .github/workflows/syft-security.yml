@@ -1,7 +1,7 @@
 name: Security-check
 
 on:
-  pull_request: # change to push before merging code
+  push:
     branches:
       - dev
     paths:
@@ -61,7 +61,7 @@ jobs:
           bandit -r src
           safety check
 
-      - name: Generate requirements.txt for synk
+      - name: Generate requirements.txt for snyk
         run: |
           pwd
           sed -n '/syft =/,/^$/p' setup.cfg | tail -n +3 > requirements.txt
@@ -69,7 +69,7 @@ jobs:
           mv requirements.txt ${{ github.workspace }}
           mv .snyk ${{ github.workspace }}
 
-      - name: Synk security check
+      - name: Snyk security check
         uses: snyk/actions/python-3.8@master
         env:
-          SNYK_TOKEN: 3106d1f2-a045-4bc6-8695-d899ab653448 # to be changed to ${{ secrets.SNYK_TOKEN }}
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
