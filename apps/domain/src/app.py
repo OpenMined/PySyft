@@ -32,7 +32,6 @@ from main.routes import users_blueprint  # noqa: 401
 from main.utils.monkey_patch import mask_payload_fast
 
 DEFAULT_SECRET_KEY = "justasecretkeythatishouldputhere"
-DEFAULT_SETUP_SECRET_KEY = "9G9MJ06OQH"
 # Masking/Unmasking is a process used to guarantee some level of security
 # during the transportation of the messages across proxies (as described in WebSocket RFC).
 # Since the masking process needs to iterate over the message payload,
@@ -56,7 +55,6 @@ logger = logging.getLogger()
 def create_app(
     args,
     secret_key=DEFAULT_SECRET_KEY,
-    setup_secret_key=DEFAULT_SETUP_SECRET_KEY,
     debug=False,
     testing=False,
 ) -> Flask:
@@ -80,7 +78,6 @@ def create_app(
 
     app.debug = debug
     app.config["SECRET_KEY"] = secret_key
-    app.config["SETUP_SECRET_KEY"] = setup_secret_key
 
     # Send app instance
     return app

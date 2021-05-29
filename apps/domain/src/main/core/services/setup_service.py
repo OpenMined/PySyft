@@ -33,7 +33,6 @@ from ..database.utils import model_to_json
 from ..exceptions import AuthorizationError
 from ..exceptions import InvalidParameterValueError
 from ..exceptions import MissingRequestKeyError
-from ..exceptions import MissingSetupKeyError
 from ..exceptions import OwnerAlreadyExistsError
 
 
@@ -46,12 +45,6 @@ def create_initial_setup(
 
     _email = msg.content.get("email", None)
     _password = msg.content.get("password", None)
-    _token = msg.content.get("token", None)
-
-    if not _token:
-        raise MissingSetupKeyError
-    if _token != app.config["SETUP_SECRET_KEY"]:
-        raise MissingSetupKeyError
 
     # Get Payload Content
     configs = {

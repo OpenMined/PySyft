@@ -70,7 +70,6 @@ def test_initial_setup(client, database, cleanup):
             "email": "owner@openmined.org",
             "password": "12345",
             "domain_name": "OpenMined Domain",
-            "token": "9G9MJ06OQH",
         },
     )
 
@@ -90,7 +89,6 @@ def test_get_setup(client, database, cleanup):
             "email": "owner@openmined.org",
             "password": "12345",
             "domain_name": "OpenMined Domain",
-            "token": "9G9MJ06OQH",
         },
     )
     # assert result.status_code == 200
