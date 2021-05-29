@@ -16,8 +16,16 @@ from ..ast.callable import Callable
 from ..logger import traceback_and_raise
 
 
-def is_static_method(host_object, attr):  # type: ignore
-    """Check if attribute `attr` of an object is a static method."""
+def is_static_method(host_object, attr) -> bool:  # type: ignore
+    """Check if attribute `attr` of an object is a static method.
+
+    Args:
+        host_object: The object.
+        attr: The attribute of the object.
+
+    Returns:
+        bool: `True` if `host_object[attr]` is a static method.
+    """
     value = getattr(host_object, attr)
 
     # Host object must contain the method resolution order attribute (mro)
@@ -127,7 +135,11 @@ class Module(ast.attribute.Attribute):
         return resolved
 
     def __repr__(self) -> str:
-        """Tree view of the `module`."""
+        """Tree view of the `module`.
+
+        Returns:
+            The string representation of the `Module` Attribute.
+        """
         out = "Module:\n"
         for name, module in self.attrs.items():
             out += "\t." + name + " -> " + str(module).replace("\t.", "\t\t.") + "\n"
@@ -181,7 +193,7 @@ class Module(ast.attribute.Attribute):
                     attr=klass,
                 )
             elif inspect.isfunction(attr_ref) or inspect.isbuiltin(attr_ref):
-                is_static = is_static_method(self.object_ref, path[index])  # type: ignore
+                is_static = is_static_method(self.object_ref, path[index])
 
                 self.add_attr(
                     attr_name=path[index],
@@ -224,25 +236,40 @@ class Module(ast.attribute.Attribute):
         attr.add_path(path=path, index=index + 1, return_type_name=return_type_name)
 
     def __getattribute__(self, item: str) -> Any:
-        """Get Attribute of a `module`."""
+        """Get Attribute of a `module`.
+
+        Args:
+            item: Attribute.
+
+        Returns:
+            The value of the attribute.
+        """
         target_object = super().__getattribute__(item)
         if isinstance(target_object, ast.static_attr.StaticAttribute):
             return target_object.get_remote_value()
         return target_object
 
     def __setattr__(self, key: str, value: Any) -> None:
-        """Set atttribute of a module."""
+        """Set atttribute of a module.
+
+        Args:
+            key: name of attribute to change.
+            value: value to change attribute `key` to.
+        """
         if hasattr(super(), "attrs"):
             attrs = super().__getattribute__("attrs")
             if key in attrs:
                 target_object = self.attrs[key]
                 if isinstance(target_object, ast.static_attr.StaticAttribute):
                     return target_object.set_remote_value(value)
-
         return super().__setattr__(key, value)
 
     def fetch_live_object(self) -> object:
-        """Get the new object and its attributes from the client."""
+        """Get the new object and its attributes from the client.
+
+        Returns:
+            The updated object from the client.
+        """
         try:
             return sys.modules[self.path_and_name if self.path_and_name else ""]
         except Exception:

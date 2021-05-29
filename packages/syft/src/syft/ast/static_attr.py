@@ -177,6 +177,10 @@ class StaticAttribute(ast.attribute.Attribute):
     def add_path(self, *args: List[Any], **kwargs: Dict[Any, Any]) -> None:  # type: ignore
         """An `StaticAttribute` can no longer have children nodes.
 
+        Args:
+            *args: List of arguments.
+            **kwargs: Dict of Keyword arguments.
+
         Raises:
             ValueError: If the function is called.
 

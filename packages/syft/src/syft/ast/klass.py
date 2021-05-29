@@ -530,7 +530,6 @@ class Class(Callable):
                 pointable:
                 description: Description for the object to send.
                 tags: Tags for the object to send.
-                searchable:
 
             Returns:
                 Pointer to sent object.

@@ -53,6 +53,10 @@ class Property(ast.attribute.Attribute):
     ) -> Optional[Union[Any, CallableT]]:
         """`Property` attribute is not callable.
 
+        Args:
+            *args: List of arguments.
+            **kwargs: Keyword arguments.
+
         Raises:
             ValueError: If the function is called.
         """
