@@ -20,7 +20,7 @@ def object2proto(obj: object) -> ReplicatedSharedTensor_PB:
 
     tensor_data = getattr(share.shares, "data", None)
     if tensor_data is not None:
-        proto.tensor.tensor.CopyFrom(protobuf_tensor_serializer(tensor_data))
+        proto.tensor.tensor.CopyFrom(protobuf_tensor_serializer([tensor_data]))
 
     return proto
 
