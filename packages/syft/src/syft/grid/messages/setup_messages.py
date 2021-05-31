@@ -28,10 +28,10 @@ from syft.proto.grid.messages.setup_messages_pb2 import (
     GetSetUpResponse as GetSetUpResponse_PB,
 )
 from syft.proto.grid.messages.setup_messages_pb2 import (
-    UpdateSetUpMessage as UpdateSetUpMessage_PB,
+    UpdateSetupMessage as UpdateSetupMessage_PB,
 )
 from syft.proto.grid.messages.setup_messages_pb2 import (
-    UpdateSetUpResponse as UpdateSetUpResponse_PB,
+    UpdateSetupResponse as UpdateSetupResponse_PB,
 )
 
 
@@ -323,7 +323,7 @@ class CreateInitialSetUpResponse(ImmediateSyftMessageWithoutReply):
 
 @bind_protobuf
 @final
-class UpdateSetUpMessage(ImmediateSyftMessageWithReply):
+class UpdateSetupMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
         address: Address,
@@ -334,19 +334,19 @@ class UpdateSetUpMessage(ImmediateSyftMessageWithReply):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.content = content
 
-    def _object2proto(self) -> UpdateSetUpMessage_PB:
+    def _object2proto(self) -> UpdateSetupMessage_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
         this method transforms the current object into the corresponding
         Protobuf object so that it can be further serialized.
         :return: returns a protobuf object
-        :rtype: UpdateSetUpMessage_PB
+        :rtype: UpdateSetupMessage_PB
         .. note::
             This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
-        return UpdateSetUpMessage_PB(
+        return UpdateSetupMessage_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
             content=json.dumps(self.content),
@@ -355,19 +355,19 @@ class UpdateSetUpMessage(ImmediateSyftMessageWithReply):
 
     @staticmethod
     def _proto2object(
-        proto: UpdateSetUpMessage_PB,
-    ) -> "UpdateSetUpMessage":
-        """Creates a UpdateSetUpMessage from a protobuf
+        proto: UpdateSetupMessage_PB,
+    ) -> "UpdateSetupMessage":
+        """Creates a UpdateSetupMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
         :return: returns an instance of SignalingOfferMessage
-        :rtype: UpdateSetUpMessage
+        :rtype: UpdateSetupMessage
         .. note::
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
 
-        return UpdateSetUpMessage(
+        return UpdateSetupMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             content=json.loads(proto.content),
@@ -389,12 +389,12 @@ class UpdateSetUpMessage(ImmediateSyftMessageWithReply):
         :rtype: GeneratedProtocolMessageType
         """
 
-        return UpdateSetUpMessage_PB
+        return UpdateSetupMessage_PB
 
 
 @bind_protobuf
 @final
-class UpdateSetUpResponse(ImmediateSyftMessageWithoutReply):
+class UpdateSetupResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
@@ -406,7 +406,7 @@ class UpdateSetUpResponse(ImmediateSyftMessageWithoutReply):
         self.status_code = status_code
         self.content = content
 
-    def _object2proto(self) -> UpdateSetUpResponse_PB:
+    def _object2proto(self) -> UpdateSetupResponse_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
         this method transforms the current object into the corresponding
@@ -418,7 +418,7 @@ class UpdateSetUpResponse(ImmediateSyftMessageWithoutReply):
             the other public serialization methods if you wish to serialize an
             object.
         """
-        return UpdateSetUpResponse_PB(
+        return UpdateSetupResponse_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
             status_code=self.status_code,
@@ -427,8 +427,8 @@ class UpdateSetUpResponse(ImmediateSyftMessageWithoutReply):
 
     @staticmethod
     def _proto2object(
-        proto: UpdateSetUpResponse_PB,
-    ) -> "UpdateSetUpResponse":
+        proto: UpdateSetupResponse_PB,
+    ) -> "UpdateSetupResponse":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -439,7 +439,7 @@ class UpdateSetUpResponse(ImmediateSyftMessageWithoutReply):
             if you wish to deserialize an object.
         """
 
-        return UpdateSetUpResponse(
+        return UpdateSetupResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             status_code=proto.status_code,
@@ -461,4 +461,4 @@ class UpdateSetUpResponse(ImmediateSyftMessageWithoutReply):
         :rtype: GeneratedProtocolMessageType
         """
 
-        return UpdateSetUpResponse_PB
+        return UpdateSetupResponse_PB
