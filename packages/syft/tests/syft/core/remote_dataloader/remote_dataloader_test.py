@@ -28,27 +28,26 @@ ds = ExampleDataset(ten)
 
 
 @pytest.mark.slow
-def test_remote_dataset(
-    node: sy.VirtualMachine, client: sy.VirtualMachineClient
-) -> None:
-    th.save(ds, "ds.pt")
+def test_remote_dataset(client: sy.VirtualMachineClient) -> None:
+    filename = "ds1.pt"
+    th.save(ds, filename)
 
-    rds = RemoteDataset(path="ds.pt", data_type="torch_tensor")
+    rds = RemoteDataset(path=filename, data_type="torch_tensor")
     rds_ptr = rds.send(client)
     rds_ptr.load_dataset()
 
     assert rds_ptr.len().get() == 1000
     for tp in rds_ptr:
         assert isinstance(tp.get(), th.Tensor)
-
-    os.system("rm ds.pt")
+    os.unlink(filename)
 
 
 @pytest.mark.slow
 def test_remote_dataloader(root_client: sy.VirtualMachineClient) -> None:
-    th.save(ds, "ds.pt")
+    filename = "ds2.pt"
+    th.save(ds, filename)
 
-    rds = RemoteDataset(path="ds.pt", data_type="torch_tensor")
+    rds = RemoteDataset(path=filename, data_type="torch_tensor")
     rdl = RemoteDataLoader(remote_dataset=rds, batch_size=4)
     rdl_ptr = rdl.send(root_client)
 
@@ -58,4 +57,4 @@ def test_remote_dataloader(root_client: sy.VirtualMachineClient) -> None:
     assert rdl_ptr.len().get() == 250
     for tp in rdl_ptr:
         assert isinstance(tp.get(), th.Tensor)
-    os.system("rm ds.pt")
+    os.unlink(filename)
