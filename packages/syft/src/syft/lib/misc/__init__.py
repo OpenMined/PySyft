@@ -8,6 +8,10 @@ from typing import KeysView
 from typing import List as TypeList
 from typing import Set
 
+# third party
+from cachetools import cached
+from cachetools.keys import hashkey
+
 # syft relative
 from ...ast import add_classes
 from ...ast import add_methods
@@ -15,6 +19,14 @@ from ...ast import add_modules
 from ...ast import globals
 from ...logger import traceback_and_raise
 from .union import lazy_pairing
+
+
+@cached(cache={}, key=lambda path, lib_ast: hashkey(path))
+def solve_ast_type_functions(path: str, lib_ast: globals.Globals) -> KeysView:
+    root = lib_ast
+    for path_element in path.split("."):
+        root = getattr(root, path_element)
+    return root.attrs.keys()
 
 
 def get_allowed_functions(
@@ -37,12 +49,6 @@ def get_allowed_functions(
     """
     allowed_functions: Dict[str, bool] = defaultdict(lambda: True)
 
-    def solve_ast_type_functions(path: str) -> KeysView:
-        root = lib_ast
-        for path_element in path.split("."):
-            root = getattr(root, path_element)
-        return root.attrs.keys()
-
     def solve_real_type_functions(path: str) -> Set[str]:
         parts = path.split(".")
         klass_name = parts[-1]
@@ -58,7 +64,7 @@ def get_allowed_functions(
 
     for union_type in union_types:
         real_type_function_set = solve_real_type_functions(union_type)
-        ast_type_function_set = solve_ast_type_functions(union_type)
+        ast_type_function_set = solve_ast_type_functions(union_type, lib_ast)
         rejected_function_set = real_type_function_set - ast_type_function_set
         for accepted_function in ast_type_function_set:
             allowed_functions[accepted_function] &= True

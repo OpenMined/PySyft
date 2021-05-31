@@ -9,11 +9,16 @@ name: Syft Version Tests
 on:
   schedule:
     - cron: "0 22 * * *" # 7pm Brazil, 10pm UTC, 8am AEST
-  pull_request:
+  push:
     branches:
       - dev
     paths:
       - "packages/syft/tests/trigger/version_tests"
+  workflow_dispatch:
+    inputs:
+      none:
+        description: "Run Version Tests Manually"
+        required: false
 
 defaults:
   run:
@@ -22,11 +27,12 @@ defaults:
 jobs:
   python-tests-all-versions:
     strategy:
+      fail-fast: false
       max-parallel: 99
       matrix:
         branches: ["dev"]
         os: [windows-latest, ubuntu-latest, macos-latest]
-        python-version: [3.6, 3.7, 3.8, 3.9]
+        python-version: [3.7, 3.8, 3.9]
         torch-version: [1.6.0, 1.7.1, 1.8.1]
         exclude:
           - python-version: 3.9
@@ -69,8 +75,7 @@ jobs:
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
-          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps
-
+          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
 
       - name: Scan for security issues
         run: |
@@ -95,10 +100,11 @@ jobs:
   pygrid-integration-tests:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       max-parallel: 4
       matrix:
         branches: ["dev"]
-        python-version: [3.6, 3.7, 3.8, 3.9]
+        python-version: [3.7, 3.8, 3.9]
         torch-version: [1.8.1]
 
     steps:
@@ -133,7 +139,7 @@ jobs:
         with:
           repository: "OpenMined/PyGrid"
           ref: "dev"
-          path: "pygrid"
+          path: "packages/grid"
 
       - name: Install Dependencies
         run: |
@@ -141,23 +147,25 @@ jobs:
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
-          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps
+          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
 
       - name: Test PyGrid
         continue-on-error: true
         run: |
-          pytest ./pygrid/apps/domain/tests
-          pytest ./pygrid/apps/network/tests
-          pytest ./pygrid/apps/worker/tests
+          pytest ../grid/apps/domain/tests
+          pytest ../grid/apps/network/tests
+          pytest ../grid/apps/worker/tests
+          python ./scripts/mnist.py
           pytest -m grid
 
   pytorch-tests-all-versions:
     strategy:
+      fail-fast: false
       max-parallel: 99
       matrix:
         branches: ["dev"]
         os: [windows-latest, ubuntu-latest, macos-latest]
-        python-version: [3.6, 3.7, 3.8, 3.9]
+        python-version: [3.7, 3.8, 3.9]
         torch-version: [1.6.0, 1.7.1, 1.8.1]
         exclude:
           - python-version: 3.9

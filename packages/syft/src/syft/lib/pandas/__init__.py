@@ -76,7 +76,8 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("pandas.DataFrame.__truediv__", "pandas.DataFrame"),
         ("pandas.DataFrame.dropna", "pandas.DataFrame"),
         ("pandas.DataFrame.apply", "pandas.DataFrame"),
-        ("pandas.DataFrame.loc", "pandas.DataFrame"),  # TODO replace with Union below
+        ("pandas.DataFrame.loc", UnionGenerator["pandas.DataFrame", "pandas.Series"]),
+        ("pandas.DataFrame.iloc", UnionGenerator["pandas.DataFrame", "pandas.Series"]),
         ("pandas.Series.__getitem__", "pandas.Series"),
         ("pandas.Series.__setitem__", "pandas.Series"),
         ("pandas.Series.__len__", "syft.lib.python.Int"),
@@ -130,7 +131,8 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("pandas.Series.rfloordiv", "pandas.Series"),
         ("pandas.Series.rmod", "pandas.Series"),
         ("pandas.Series.rpow", "pandas.Series"),
-        ("pandas.Series.loc", "pandas.Series"),  # TODO replace with Union below
+        ("pandas.Series.loc", UnionGenerator["pandas.DataFrame", "pandas.Series"]),
+        ("pandas.Series.iloc", UnionGenerator["pandas.DataFrame", "pandas.Series"]),
         ("pandas.Series.lt", "pandas.Series"),
         ("pandas.Series.gt", "pandas.Series"),
         ("pandas.Series.le", "pandas.Series"),
@@ -305,28 +307,9 @@ def create_ast(client: TypeAny = None) -> Globals:
     for klass in ast.classes:
         klass.create_pointer_class()
         klass.create_send_method()
-        # TODO: Pandas can't have tags and description because they break the dict
         # klass.create_storable_object_attr_convenience_methods()
 
     return ast
 
 
-# we cant create Unions that refer to the package itself until the create_ast
-# has completed first so we can call again into post_update_ast to finish these
-# TODO: add support for self referential unions using some kind of post update
-# Issue: https://github.com/OpenMined/PySyft/issues/5323
-def post_create_ast(ast: Globals) -> Globals:
-    self_referencing_methods = [
-        ("pandas.Series.loc", UnionGenerator["pandas.DataFrame", "pandas.Series"]),
-        ("pandas.Series.iloc", UnionGenerator["pandas.DataFrame", "pandas.Series"]),
-        ("pandas.DataFrame.loc", UnionGenerator["pandas.DataFrame", "pandas.Series"]),
-        ("pandas.DataFrame.iloc", UnionGenerator["pandas.DataFrame", "pandas.Series"]),
-    ]
-
-    add_methods(ast, self_referencing_methods)
-
-    return ast
-
-
 update_ast = functools.partial(generic_update_ast, LIB_NAME, create_ast)
-# post_update_ast = functools.partial(generic_update_ast, LIB_NAME, post_create_ast)

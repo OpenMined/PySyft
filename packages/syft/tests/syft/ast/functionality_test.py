@@ -16,6 +16,7 @@ import pytest
 
 # syft absolute
 import syft
+from syft.ast import add_dynamic_objects
 from syft.ast.globals import Globals
 from syft.core.node.abstract.node import AbstractNodeClient
 from syft.core.node.common.client import Client
@@ -45,19 +46,26 @@ module_test_methods = [
     ("module_test.global_function", "syft.lib.python.Int"),
 ]
 
+dynamic_objects = [("module_test.C.dynamic_object", "syft.lib.python.Int")]
+
 
 def update_ast_test(
     ast_or_client: TypeUnion[Globals, AbstractNodeClient],
     methods: List[Tuple[str, str]],
+    dynamic_objects: Optional[List[Tuple[str, str]]] = None,
 ) -> None:
     """Checks functionality of update_ast, uses create_ast"""
     if isinstance(ast_or_client, Globals):
         ast = ast_or_client
-        test_ast = create_ast_test(client=None, methods=methods)
+        test_ast = create_ast_test(
+            client=None, methods=methods, dynamic_objects=dynamic_objects
+        )
         ast.add_attr(attr_name="module_test", attr=test_ast.attrs["module_test"])
     elif isinstance(ast_or_client, AbstractNodeClient):
         client = ast_or_client
-        test_ast = create_ast_test(client=client, methods=methods)
+        test_ast = create_ast_test(
+            client=client, methods=methods, dynamic_objects=dynamic_objects
+        )
         client.lib_ast.attrs["module_test"] = test_ast.attrs["module_test"]
         setattr(client, "module_test", test_ast.attrs["module_test"])
     else:
@@ -67,7 +75,9 @@ def update_ast_test(
 
 
 def create_ast_test(
-    client: Optional[AbstractNodeClient], methods: List[Tuple[str, str]]
+    client: Optional[AbstractNodeClient],
+    methods: List[Tuple[str, str]],
+    dynamic_objects: Optional[List[Tuple[str, str]]],
 ) -> Globals:
     """Unit test for create_ast functionality"""
     ast = Globals(client)
@@ -76,6 +86,9 @@ def create_ast_test(
         ast.add_path(
             path=method, framework_reference=module_test, return_type_name=return_type
         )
+
+    if dynamic_objects:
+        add_dynamic_objects(ast, dynamic_objects)
 
     for klass in ast.classes:
         klass.create_pointer_class()
@@ -89,11 +102,15 @@ def create_ast_test(
 def register_module_test() -> None:
     """Test which is required for every other tests (runs first even in random execution)"""
     # Make lib_ast contain the specific methods/attributes
-    update_ast_test(ast_or_client=syft.lib_ast, methods=module_test_methods)
+    update_ast_test(
+        ast_or_client=syft.lib_ast,
+        methods=module_test_methods,
+        dynamic_objects=dynamic_objects,
+    )
 
     # Make sure that when we register a new client it would update the specific AST
     lib_ast.loaded_lib_constructors["module_test"] = partial(
-        update_ast_test, methods=module_test_methods
+        update_ast_test, methods=module_test_methods, dynamic_objects=dynamic_objects
     )
 
 
@@ -275,3 +292,18 @@ def test_dynamic_ast_obj(custom_client: Client) -> None:
     result_ptr = obj_ptr.dummy_reloadable_func()
 
     assert result_ptr.get() == 2
+
+
+def test_dynamic_object_get(custom_client: Client) -> None:
+    obj_ptr = custom_client.module_test.C().dynamic_object
+    obj = module_test.C().dynamic_object
+
+    assert obj_ptr.get() == obj
+
+
+def test_dynamic_object_set(custom_client: Client) -> None:
+    value = 0
+    obj_ptr = custom_client.module_test.C()
+    obj_ptr.dynamic_object = value
+
+    assert obj_ptr.dynamic_object.get() == 0  # type: ignore
