@@ -112,7 +112,16 @@ class Module(ast.attribute.Attribute):
         index: int = 0,
         obj_type: Optional[type] = None,
     ) -> Optional[Union[Callable, CallableT]]:
+        """Execute the given node object reference.
 
+        Args:
+            path: The node path in module to execute, e.g. `syft.lib.python.List` or ["syft", "lib", "python", "List"].
+            index : The associated position in the path for the current node.
+            obj_type: The type of the object to be called, whose path is resolved from `lookup_cache`.
+
+        Returns:
+            The results of running the computation on the object reference.
+        """
         self.apply_node_changes()
 
         if obj_type is not None:

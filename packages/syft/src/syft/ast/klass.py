@@ -525,8 +525,8 @@ class Class(Callable):
             """Send obj to client and return pointer to the object.
 
             Args:
-                self: object to be sent.
-                client: client to send object to.
+                self: Object to be sent.
+                client: Client to send object to.
                 pointable:
                 description: Description for the object to send.
                 tags: Tags for the object to send.
@@ -535,7 +535,7 @@ class Class(Callable):
                 Pointer to sent object.
 
             Note:
-                `searchable` is deprecated please use `pointable` in future
+                `searchable` is deprecated please use `pointable` in the future.
             """
             if searchable is not None:
                 msg = "`searchable` is deprecated please use `pointable` in future"
