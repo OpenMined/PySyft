@@ -28,7 +28,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n4proto/core/node/common/action/get_set_property.proto\x12\x1csyft.core.node.common.action\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto\x1a proto/core/pointer/pointer.proto"\xd3\x03\n\x16GetOrSetPropertyAction\x12\x0c\n\x04path\x18\x01 \x01(\t\x12)\n\x05_self\x18\x02 \x01(\x0b\x32\x1a.syft.core.pointer.Pointer\x12(\n\x04\x61rgs\x18\x03 \x03(\x0b\x32\x1a.syft.core.pointer.Pointer\x12P\n\x06kwargs\x18\x04 \x03(\x0b\x32@.syft.core.node.common.action.GetOrSetPropertyAction.KwargsEntry\x12-\n\x0eid_at_location\x18\x05 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x06 \x01(\x0b\x32\x15.syft.core.io.Address\x12+\n\x07set_arg\x18\x07 \x01(\x0b\x32\x1a.syft.core.pointer.Pointer\x12%\n\x06msg_id\x18\x08 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0e\n\x06\x61\x63tion\x18\t \x01(\x05\x1aI\n\x0bKwargsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12)\n\x05value\x18\x02 \x01(\x0b\x32\x1a.syft.core.pointer.Pointer:\x02\x38\x01\x62\x06proto3',
+    serialized_pb=b'\n4proto/core/node/common/action/get_set_property.proto\x12\x1csyft.core.node.common.action\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto\x1a proto/core/pointer/pointer.proto"\xe7\x03\n\x16GetOrSetPropertyAction\x12\x0c\n\x04path\x18\x01 \x01(\t\x12)\n\x05_self\x18\x02 \x01(\x0b\x32\x1a.syft.core.pointer.Pointer\x12(\n\x04\x61rgs\x18\x03 \x03(\x0b\x32\x1a.syft.core.pointer.Pointer\x12P\n\x06kwargs\x18\x04 \x03(\x0b\x32@.syft.core.node.common.action.GetOrSetPropertyAction.KwargsEntry\x12-\n\x0eid_at_location\x18\x05 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x06 \x01(\x0b\x32\x15.syft.core.io.Address\x12+\n\x07set_arg\x18\x07 \x01(\x0b\x32\x1a.syft.core.pointer.Pointer\x12%\n\x06msg_id\x18\x08 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0e\n\x06\x61\x63tion\x18\t \x01(\x05\x12\x12\n\nmap_to_dyn\x18\n \x01(\x08\x1aI\n\x0bKwargsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12)\n\x05value\x18\x02 \x01(\x0b\x32\x1a.syft.core.pointer.Pointer:\x02\x38\x01\x62\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
@@ -92,8 +92,8 @@ _GETORSETPROPERTYACTION_KWARGSENTRY = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=583,
-    serialized_end=656,
+    serialized_start=603,
+    serialized_end=676,
 )
 
 _GETORSETPROPERTYACTION = _descriptor.Descriptor(
@@ -275,6 +275,25 @@ _GETORSETPROPERTYACTION = _descriptor.Descriptor(
             file=DESCRIPTOR,
             create_key=_descriptor._internal_create_key,
         ),
+        _descriptor.FieldDescriptor(
+            name="map_to_dyn",
+            full_name="syft.core.node.common.action.GetOrSetPropertyAction.map_to_dyn",
+            index=9,
+            number=10,
+            type=8,
+            cpp_type=7,
+            label=1,
+            has_default_value=False,
+            default_value=False,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
     ],
     extensions=[],
     nested_types=[
@@ -287,7 +306,7 @@ _GETORSETPROPERTYACTION = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=189,
-    serialized_end=656,
+    serialized_end=676,
 )
 
 _GETORSETPROPERTYACTION_KWARGSENTRY.fields_by_name[

@@ -33,6 +33,7 @@ class Bool(int, PyPrimitive):
     def __init__(self, value: Any = None, id: Optional[UID] = None):
         self.value: bool = bool(value)
         self._id: UID = id if id else UID()
+        self.my_field: int = 0
 
     @property
     def id(self) -> UID:
