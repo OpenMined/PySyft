@@ -8,9 +8,12 @@ from syft.experimental_flags import flags
 
 @pytest.mark.vendor(lib="sklearn")
 @pytest.mark.parametrize("arrow_backend", [True, False])
-def test_logistic_model_serde(
-    arrow_backend: bool, root_client: sy.VirtualMachineClient
-) -> None:
+def test_logistic_model_serde(arrow_backend: bool) -> None:
+    # Don't share with other tests due to the _regenerate_numpy_serde that occurs with
+    # flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
+    vm = sy.VirtualMachine()
+    root_client = vm.get_root_client()
+
     # third party
     import numpy as np
     from sklearn.linear_model import LogisticRegression
