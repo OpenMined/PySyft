@@ -1,7 +1,6 @@
 name: Syft Benchmark
 on:
   push:
-#    change to push
     pull_request:
       - dev
     paths:
