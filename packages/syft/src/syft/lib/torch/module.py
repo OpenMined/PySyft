@@ -507,7 +507,7 @@ def recompile(sy_module: "SyModule") -> None:
     Args:
         sy_module (SyModule): the module to compile
     """
-    print(f"RECOMPILING {sy_module.__name__}")
+    print(f"RECOMPILING {type(sy_module).__name__}")
     if hasattr(sy_module, "_forward_plan"):
         for action in sy_module._forward_plan.actions:  # type: ignore
             if (

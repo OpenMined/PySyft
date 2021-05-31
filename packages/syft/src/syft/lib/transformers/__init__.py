@@ -7,7 +7,7 @@ from typing import Tuple as TypeTuple
 import functools
 
 # syft relative
-# from . import batchencoding # noqa: 401
+from . import batchencoding # noqa: 401
 from . import tokenizer # noqa: 401
 # from .allowlist import allowlist
 from ..util import generic_update_ast
@@ -55,23 +55,13 @@ def create_ast(client: TypeAny = None) -> Globals:
     # Define which methods to add to the AST
     methods: TypeList[TypeTuple[str, str]] = [
         ("transformers.PreTrainedTokenizerFast.__call__",
-         "transformers.tokenization_utils_base.BatchEncoding")
+         "transformers.tokenization_utils_base.BatchEncoding"),
+        ("transformers.activations.gelu", "torch.Tensor")
     ]
 
     add_modules(ast, modules)
     add_classes(ast, classes)
     add_methods(ast, methods)
-
-    # for method, return_type_name_or_dict in allowlist.items():
-    #     # TODO Add version_supported checks.
-
-    #     return_type = get_return_type(support_dict=return_type_name_or_dict)
-    #     if return_type == "unknown":
-    #         # this allows us to import them for testing
-    #         continue
-    #     ast.add_path(
-    #         path=method, framework_reference=transformers, return_type_name=return_type
-    #     )
 
 
     for klass in ast.classes:

@@ -1831,6 +1831,7 @@ allowlist[
 
 # Functional
 allowlist["torch.nn.functional.relu"] = "torch.Tensor"
+allowlist["torch.nn.functional.gelu"] = "torch.Tensor"
 allowlist["torch.nn.functional.max_pool2d"] = "torch.Tensor"
 allowlist["torch.nn.functional.log_softmax"] = "torch.Tensor"
 allowlist["torch.flatten"] = "torch.Tensor"
@@ -2866,6 +2867,8 @@ allowlist["torch.nn.ModuleList.cpu"] = "torch.nn.ModuleList"
 allowlist["torch.nn.ModuleList.state_dict"] = "syft.lib.python.collections.OrderedDict"
 allowlist["torch.nn.ModuleList.load_state_dict"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.ModuleList.extra_repr"] = "syft.lib.python.String"
+allowlist["torch.nn.ModuleList.__len__"] = "syft.lib.python.Int"
+allowlist["torch.nn.ModuleList.__getitem__"] = "torch.nn.Module"
 
 allowlist["torch.nn.MultiheadAttention"] = "torch.nn.MultiheadAttention"
 allowlist["torch.nn.MultiheadAttention.__call__"] = "torch.Tensor"
