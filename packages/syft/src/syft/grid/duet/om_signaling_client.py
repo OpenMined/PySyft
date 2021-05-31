@@ -4,7 +4,7 @@ from ..connections.http_connection import HTTPConnection
 from .signaling_client import SignalingClient
 
 WebRTC_HOST = (
-    "http://ec2-18-191-23-46.us-east-2.compute.amazonaws.com:5000"  # noqa: F811
+    "http://ec2-18-218-7-180.us-east-2.compute.amazonaws.com:5000"  # noqa: F811
 )
 
 

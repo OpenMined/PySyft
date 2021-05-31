@@ -338,11 +338,11 @@ def test_duet_network(loopback: bool = False) -> None:
             return False
 
         # testing github domain reachability
-        if not check_url("https://github.com/", "Github domain."):
+        if not check_url("https://github.com/", "GitHub domain."):
             return None
 
         # testing Github network_address
-        if not check_url(ADDR_REPOSITORY, "Github signaling servers list."):
+        if not check_url(ADDR_REPOSITORY, "GitHub signaling servers list."):
             return None
 
         # testing signaling (STUN) servers
