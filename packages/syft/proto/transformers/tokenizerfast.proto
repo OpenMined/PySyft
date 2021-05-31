@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package syft.lib.transformers;
+
+import "proto/core/common/common_object.proto";
+import "proto/lib/python/dict.proto";
+
+message TokenizerFast {
+  syft.core.common.UID id = 1;
+  syft.lib.python.Dict tokenizer = 2;
+  syft.lib.python.String name_or_path = 3;
+  syft.lib.python.String padding_size = 4;
+  syft.lib.python.Dict special_tokens = 5;
+}

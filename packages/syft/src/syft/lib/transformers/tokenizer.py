@@ -7,7 +7,7 @@ from transformers import PreTrainedTokenizerFast
 from tokenizers import Tokenizer
 
 
-def object2proto(obj: object) -> String_PB:
+def object2proto(obj: PreTrainedTokenizerFast) -> String_PB:
     # TODO Tokenizer.to_str serializes to a json string.
     # Protobuf has protobuf.json_format, which might be better than sending a raw string.
     protobuf_tokenizer = String_PB(data=obj._tokenizer.to_str())
