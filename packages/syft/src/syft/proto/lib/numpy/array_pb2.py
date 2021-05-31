@@ -22,10 +22,51 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x1bproto/lib/numpy/array.proto\x12\x0esyft.lib.numpy\x1a\x1cproto/lib/torch/tensor.proto"G\n\nNumpyProto\x12*\n\x06tensor\x18\x01 \x01(\x0b\x32\x1a.syft.lib.torch.TensorData\x12\r\n\x05\x64type\x18\x02 \x01(\tb\x06proto3',
+    serialized_pb=b'\n\x1bproto/lib/numpy/array.proto\x12\x0esyft.lib.numpy\x1a\x1cproto/lib/torch/tensor.proto"\x1f\n\x0fNumpyProtoArrow\x12\x0c\n\x04\x64\x61ta\x18\x01 \x01(\x0c"G\n\nNumpyProto\x12*\n\x06tensor\x18\x01 \x01(\x0b\x32\x1a.syft.lib.torch.TensorData\x12\r\n\x05\x64type\x18\x02 \x01(\tb\x06proto3',
     dependencies=[
         proto_dot_lib_dot_torch_dot_tensor__pb2.DESCRIPTOR,
     ],
+)
+
+
+_NUMPYPROTOARROW = _descriptor.Descriptor(
+    name="NumpyProtoArrow",
+    full_name="syft.lib.numpy.NumpyProtoArrow",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="data",
+            full_name="syft.lib.numpy.NumpyProtoArrow.data",
+            index=0,
+            number=1,
+            type=12,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"",
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=77,
+    serialized_end=108,
 )
 
 
@@ -84,15 +125,27 @@ _NUMPYPROTO = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=77,
-    serialized_end=148,
+    serialized_start=110,
+    serialized_end=181,
 )
 
 _NUMPYPROTO.fields_by_name[
     "tensor"
 ].message_type = proto_dot_lib_dot_torch_dot_tensor__pb2._TENSORDATA
+DESCRIPTOR.message_types_by_name["NumpyProtoArrow"] = _NUMPYPROTOARROW
 DESCRIPTOR.message_types_by_name["NumpyProto"] = _NUMPYPROTO
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
+
+NumpyProtoArrow = _reflection.GeneratedProtocolMessageType(
+    "NumpyProtoArrow",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _NUMPYPROTOARROW,
+        "__module__": "proto.lib.numpy.array_pb2"
+        # @@protoc_insertion_point(class_scope:syft.lib.numpy.NumpyProtoArrow)
+    },
+)
+_sym_db.RegisterMessage(NumpyProtoArrow)
 
 NumpyProto = _reflection.GeneratedProtocolMessageType(
     "NumpyProto",

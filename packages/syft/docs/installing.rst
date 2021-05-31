@@ -51,8 +51,8 @@ at https://github.com/OpenMined/PySyft. Something like the following:
 Step 2 - Check Python Version
 -----------------------------
 
-PySyft can only run on python versions 3.6 and up. At the time of writing, this is only
-python versions 3.6, 3.7, and 3.8. So, before you proceed, you need to ensure that you
+PySyft can only run on python versions 3.7 and up. At the time of writing, this is only
+python versions 3.7, 3.8 and 3.9. So, before you proceed, you need to ensure that you
 are running one of these versions. Run the following:
 
 .. code:: console
@@ -60,7 +60,7 @@ are running one of these versions. Run the following:
     > python --version
     Python 3.8.1
 
-If the version printed underneath your command is less than 3.6, then you MUST use anaconda
+If the version printed underneath your command is less than 3.7, then you MUST use anaconda
 in the next step (which is recommended). Technically, you could try to upgrade your
 version of python but fair warning (e're be dragons)...
 
@@ -240,8 +240,7 @@ at https://github.com/OpenMined/PySyft. Something like the following:
 Step 2 - Check Python Version
 -----------------------------
 
-PySyft can only run on python versions 3.6 and up. At the time of writing, this is only
-python versions 3.6, 3.7, and 3.8. So, before you proceed, you need to ensure that you
+PySyft can only run on python versions 3.7 and up. So, before you proceed, you need to ensure that you
 are running one of these versions. Run the following:
 
 .. code:: console
@@ -249,7 +248,7 @@ are running one of these versions. Run the following:
     > python --version
     Python 3.8.1
 
-If the version printed underneath your command is less than 3.6, then you MUST use anaconda
+If the version printed underneath your command is less than 3.7, then you MUST use anaconda
 in the next step (which is recommended). Technically, you could try to upgrade your
 version of python but fair warning (e're be dragons)...
 
@@ -439,8 +438,7 @@ at https://github.com/OpenMined/PySyft. Something like the following:
 Step 4 - Check Python Version
 -----------------------------
 
-PySyft can only run on python versions 3.6 and up. At the time of writing, this is only
-python versions 3.6, 3.7, and 3.8. So, before you proceed, you need to ensure that you
+PySyft can only run on python versions 3.7 and up. So, before you proceed, you need to ensure that you
 are running one of these versions. Run the following:
 
 .. code:: console
@@ -448,7 +446,7 @@ are running one of these versions. Run the following:
     > python --version
     Python 3.8.1
 
-If the version printed underneath your command is less than 3.6, then you MUST use anaconda
+If the version printed underneath your command is less than 3.7, then you MUST use anaconda
 in the next step (which is recommended). Technically, you could try to upgrade your
 version of python but fair warning (e're be dragons)...
 
