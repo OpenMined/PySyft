@@ -18,10 +18,14 @@ def object2proto(obj: object) -> ReplicatedSharedTensor_PB:
     session = protobuf_session_serializer(share.session)
     proto = ReplicatedSharedTensor_PB(session=session)
 
-    tensor_data = getattr(share.shares, "data", None)
-    if tensor_data is not None:
-        print(dir(proto.tensor))
-        proto.tensor.CopyFrom(protobuf_tensor_serializer([tensor_data]))
+    tensor_proto_list = []
+
+    for tensor in share.shares:
+        tensor_proto_list.append(protobuf_tensor_serializer(tensor))
+
+    if len(tensor_proto_list) != 0:
+        for tensor in tensor_proto_list:
+            proto.tensor.extend([tensor])
 
     return proto
 
@@ -29,11 +33,15 @@ def object2proto(obj: object) -> ReplicatedSharedTensor_PB:
 def proto2object(proto: ReplicatedSharedTensor_PB) -> ReplicatedSharedTensor:
     session = protobuf_session_deserializer(proto=proto.session)
 
-    data = protobuf_tensor_deserializer(proto.tensor.tensor)
+    output_shares = []
+
+    for tensor in proto.tensor:
+
+        output_shares.append(protobuf_tensor_deserializer(tensor))
+
     share = ReplicatedSharedTensor(shares=None, session=session)
 
-    # Manually put the tensor since we do not want to re-encode it
-    share.shares = data.type(session.tensor_type)
+    share.shares = output_shares
 
     return share
 
