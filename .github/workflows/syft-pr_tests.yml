@@ -337,3 +337,4 @@ jobs:
         run: |
           python ./scripts/mnist.py
           pytest -m grid
+
