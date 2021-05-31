@@ -92,7 +92,7 @@ address of your virtual machine when it comes to accessing the jupyter notebooks
 
 ## Using a deployed Full Stack OM Duet Authority Application
 
-Hosted OM Duet Authority - http://139.162.224.50 
+Hosted OM Duet Authority - http://139.162.224.50
 Repo: https://github.com/wip-abramson/fpc-om-authority-aries-application
 
 This example has been designed to work with a full stack application replacing the
@@ -107,4 +107,4 @@ If so great!
 
 We have designed a playground that should provide you with the perfect starting place when attempting to design and experiment which what such a system might look like.
 
-https://github.com/wip-abramson/aries-jupyter-playground 
+https://github.com/wip-abramson/aries-jupyter-playground

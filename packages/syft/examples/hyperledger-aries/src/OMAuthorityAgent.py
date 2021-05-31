@@ -1,7 +1,6 @@
 # stdlib
 import asyncio
 import logging
-import os
 from typing import Dict as TypeDict
 from typing import List as TypeList
 from typing import Optional
@@ -14,9 +13,6 @@ nest_asyncio.apply()
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-# logger = logging.getLogger("agent_controller")
-# logger.setLevel(logging.INFO)
-
 
 
 class OMAuthorityAgent:
