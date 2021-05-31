@@ -78,6 +78,9 @@ class IterWithoutLen:
 
 
 class C:
+    def __init__(self) -> None:
+        self.dynamic_object = 123
+
     def dummy_reloadable_func(self) -> int:
         return 0
 
