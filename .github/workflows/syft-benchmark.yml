@@ -1,7 +1,7 @@
 name: Syft Benchmark
 on:
   push:
-    pull_request:
+    branches:
       - dev
     paths:
       - ".github/workflows/syft-*.yml"
