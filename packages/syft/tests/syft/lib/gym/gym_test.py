@@ -1,6 +1,4 @@
 # third party
-import gym
-import numpy as np
 import pytest
 
 # syft absolute
@@ -9,15 +7,29 @@ from syft.experimental_flags import flags
 from syft.lib.gym.env import object2proto
 from syft.lib.gym.env import proto2object
 
-sy.load("gym")
-sy.load("numpy")
 
-
+@pytest.mark.xfail
 @pytest.mark.vendor(lib="gym")
 @pytest.mark.parametrize("arrow_backend", [False, True])
-def test_remote_gym(arrow_backend: bool, root_client: sy.VirtualMachineClient) -> None:
+def test_remote_gym(arrow_backend: bool) -> None:
+
+    # Don't share with other tests due to the _regenerate_numpy_serde that occurs with
+    # flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
+    vm = sy.VirtualMachine()
+    root_client = vm.get_root_client()
+
+    # third party
+    import gym
+    import numpy as np
+
+    sy.load("numpy")  # need to load before gym
+    sy.load("gym")
+
     flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
 
+    if not hasattr(root_client, "gym"):
+        vm = sy.VirtualMachine()
+        root_client = vm.get_root_client()
     remote_gym = root_client.gym
 
     env = gym.make("CartPole-v0")

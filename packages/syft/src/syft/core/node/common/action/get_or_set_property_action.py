@@ -46,6 +46,7 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
         args: Union[Tuple[Any, ...], List[Any]],
         kwargs: Dict[Any, Any],
         action: PropertyActions,
+        map_to_dyn: bool,
         set_arg: Optional[Any] = None,
         msg_id: Optional[UID] = None,
     ):
@@ -57,6 +58,7 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
         self.action = action
         self.args = args
         self.kwargs = kwargs
+        self.map_to_dyn = map_to_dyn
 
     def intersect_keys(
         self, left: Dict[VerifyKey, UID], right: Dict[VerifyKey, UID]
@@ -64,7 +66,8 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
         return RunClassMethodAction.intersect_keys(left, right)
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
-        method = node.lib_ast.query(self.path).object_ref
+        ast_node = node.lib_ast.query(self.path)
+        method = ast_node.object_ref
         resolved_self = node.store[self._self.id_at_location]
         result_read_permissions = resolved_self.read_permissions
 
@@ -88,7 +91,7 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
             tag_kwargs[arg_name] = r_arg
             resolved_kwargs[arg_name] = r_arg.data
 
-        if not inspect.isdatadescriptor(method):
+        if not (inspect.isdatadescriptor(method) or self.map_to_dyn):
             raise ValueError(f"{method} not an actual property!")
 
         (
@@ -98,14 +101,23 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
 
         data = resolved_self.data
 
-        if self.action == PropertyActions.SET:
-            result = method.__set__(data, *upcasted_args, **upcasted_kwargs)
-        elif self.action == PropertyActions.GET:
-            result = method.__get__(data, *upcasted_args, **upcasted_kwargs)
-        elif self.action == PropertyActions.DEL:
-            result = method.__del__(data, *upcasted_args, **upcasted_kwargs)
+        if self.map_to_dyn:
+            if self.action == PropertyActions.SET:
+                setattr(data, ast_node.name, *upcasted_args)
+                result = None
+            elif self.action == PropertyActions.GET:
+                result = getattr(data, ast_node.name)
+            elif self.action == PropertyActions.DEL:
+                raise ValueError(f"{self.action} not a valid action!")
         else:
-            raise ValueError(f"{self.action} not a valid action!")
+            if self.action == PropertyActions.SET:
+                result = method.__set__(data, *upcasted_args, **upcasted_kwargs)
+            elif self.action == PropertyActions.GET:
+                result = method.__get__(data, *upcasted_args, **upcasted_kwargs)
+            elif self.action == PropertyActions.DEL:
+                result = method.__del__(data, *upcasted_args, **upcasted_kwargs)
+            else:
+                raise ValueError(f"{self.action} not a valid action!")
 
         if lib.python.primitive_factory.isprimitive(value=result):
             result = lib.python.primitive_factory.PrimitiveFactory.generate_primitive(
@@ -113,6 +125,10 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
             )
         else:
             if hasattr(result, "id"):
+                # just to make mypy to shut up, impossible case
+                if result is None:
+                    raise Exception("Please convert None so _SyNone.")
+
                 try:
                     if hasattr(result, "_id"):
                         # set the underlying id
@@ -177,6 +193,7 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
             _self=serialize(self._self),
             msg_id=serialize(self.id),
             action=self.action.value,
+            map_to_dyn=self.map_to_dyn,
         )
 
     @staticmethod
@@ -202,6 +219,7 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
             args=tuple(_deserialize(blob=x) for x in proto.args),
             kwargs={k: _deserialize(blob=v) for k, v in proto.kwargs.items()},
             action=PropertyActions(proto.action),
+            map_to_dyn=proto.map_to_dyn,
         )
 
     @staticmethod
