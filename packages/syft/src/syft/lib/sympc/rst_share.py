@@ -18,14 +18,8 @@ def object2proto(obj: object) -> ReplicatedSharedTensor_PB:
     session = protobuf_session_serializer(share.session)
     proto = ReplicatedSharedTensor_PB(session=session)
 
-    tensor_proto_list = []
-
     for tensor in share.shares:
-        tensor_proto_list.append(protobuf_tensor_serializer(tensor))
-
-    if len(tensor_proto_list) != 0:
-        for tensor in tensor_proto_list:
-            proto.tensor.extend([tensor])
+        proto.tensor.append(protobuf_tensor_serializer(tensor))
 
     return proto
 
@@ -36,7 +30,6 @@ def proto2object(proto: ReplicatedSharedTensor_PB) -> ReplicatedSharedTensor:
     output_shares = []
 
     for tensor in proto.tensor:
-
         output_shares.append(protobuf_tensor_deserializer(tensor))
 
     share = ReplicatedSharedTensor(shares=None, session=session)
