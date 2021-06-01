@@ -1,4 +1,4 @@
-"""Syft's AST submodule is responsible for remote call executions.
+"""Syft's Abstract Syntax Tree (AST) submodule is responsible for remote call executions.
 
    An AST is a tree that maps function calls to their exact path,
    and knows what to do with that node in tree.

@@ -1,4 +1,4 @@
-"""This module contains `Modlue` attribute representing a module which contains other models or callables."""
+"""This module contains `Module` attribute representing a module which contains other models or callables."""
 
 # stdlib
 import inspect
