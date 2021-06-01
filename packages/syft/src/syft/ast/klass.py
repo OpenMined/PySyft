@@ -1,4 +1,6 @@
 # stdlib
+from enum import Enum
+from enum import EnumMeta
 import inspect
 from types import ModuleType
 from typing import Any
@@ -144,7 +146,7 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
 
 
 def generate_class_property_function(
-    attr_path_and_name: str, action: PropertyActions
+    attr_path_and_name: str, action: PropertyActions, map_to_dyn: bool
 ) -> CallableT:
     def class_property_function(__self: Any, *args: Any, **kwargs: Any) -> CallableT:
         # we want to get the return type which matches the attr_path_and_name
@@ -178,6 +180,7 @@ def generate_class_property_function(
                 args=pointer_args,
                 kwargs=pointer_kwargs,
                 action=action,
+                map_to_dyn=map_to_dyn,
             )
             __self.client.send_immediate_msg_without_reply(msg=cmd)
 
@@ -325,22 +328,39 @@ class Class(Callable):
             elif isinstance(attr, ast.property.Property):
                 prop = property(
                     generate_class_property_function(
-                        attr_path_and_name, PropertyActions.GET
+                        attr_path_and_name, PropertyActions.GET, map_to_dyn=False
                     )
                 )
 
                 prop = prop.setter(
                     generate_class_property_function(
-                        attr_path_and_name, PropertyActions.SET
+                        attr_path_and_name, PropertyActions.SET, map_to_dyn=False
                     )
                 )
                 prop = prop.deleter(
                     generate_class_property_function(
-                        attr_path_and_name, PropertyActions.DEL
+                        attr_path_and_name, PropertyActions.DEL, map_to_dyn=False
                     )
                 )
                 attrs[attr_name] = prop
+            elif isinstance(attr, ast.dynamic_object.DynamicObject):
+                prop = property(
+                    generate_class_property_function(
+                        attr_path_and_name, PropertyActions.GET, map_to_dyn=True
+                    )
+                )
 
+                prop = prop.setter(
+                    generate_class_property_function(
+                        attr_path_and_name, PropertyActions.SET, map_to_dyn=True
+                    )
+                )
+                prop = prop.deleter(
+                    generate_class_property_function(
+                        attr_path_and_name, PropertyActions.DEL, map_to_dyn=True
+                    )
+                )
+                attrs[attr_name] = prop
             if attr_name == "__len__":
                 wrap_len(attrs)
 
@@ -466,11 +486,6 @@ class Class(Callable):
             return
 
         _path: List[str] = path.split(".") if isinstance(path, str) else path
-
-        # stdlib
-        from enum import Enum
-        from enum import EnumMeta
-
         attr_ref = getattr(self.object_ref, _path[index])
 
         class_is_enum = isinstance(self.object_ref, EnumMeta)
@@ -509,6 +524,16 @@ class Class(Callable):
             )
             setattr(self, _path[index], static_attribute)
             self.attrs[_path[index]] = static_attribute
+
+    def add_dynamic_object(self, path_and_name: str, return_type_name: str) -> None:
+        self.attrs[
+            path_and_name.rsplit(".", maxsplit=1)[-1]
+        ] = ast.dynamic_object.DynamicObject(
+            path_and_name=path_and_name,
+            return_type_name=return_type_name,
+            client=self.client,
+            parent=self,
+        )
 
     def __getattribute__(self, item: str) -> Any:
         # self.apply_node_changes()
