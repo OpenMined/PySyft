@@ -48,7 +48,7 @@ $ cd -
 
 ```
 $ cd playground/data-owner
-$ cp data-scientist-example.env .env
+$ cp data-owner-example.env .env
 $ cd -
 ```
 
