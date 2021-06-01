@@ -29,7 +29,7 @@ ds = ExampleDataset(ten)
 
 @pytest.mark.slow
 def test_remote_dataset(client: sy.VirtualMachineClient) -> None:
-    filename = "ds2.pt"
+    filename = "ds1.pt"
     th.save(ds, filename)
 
     rds = RemoteDataset(path=filename, data_type="torch_tensor")
