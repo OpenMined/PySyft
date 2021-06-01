@@ -48,7 +48,7 @@ $ cd -
 
 ```
 $ cd playground/data-owner
-$ cp data-scientist-example.env .env
+$ cp data-owner-example.env .env
 $ cd -
 ```
 
@@ -92,9 +92,19 @@ address of your virtual machine when it comes to accessing the jupyter notebooks
 
 ## Using a deployed Full Stack OM Duet Authority Application
 
-TODO: This still needs to be deployed
+Hosted OM Duet Authority - http://139.162.224.50
 Repo: https://github.com/wip-abramson/fpc-om-authority-aries-application
 
 This example has been designed to work with a full stack application replacing the
 OM Duet Authority notebooks. This application may or may not be running when you come
 to work through this example.
+
+## Designing You Own Credential System
+
+After working through this example you might have ideas for you own credential system for a specific context/domain you are knowledgable about. With a set of actors and roles and a purpose where digital credentials can be justified and bring real value.
+
+If so great!
+
+We have designed a playground that should provide you with the perfect starting place when attempting to design and experiment which what such a system might look like.
+
+https://github.com/wip-abramson/aries-jupyter-playground

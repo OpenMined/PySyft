@@ -77,4 +77,4 @@ jobs:
 
       - name: Run torch tests
         run: |
-          pytest -m torch -n auto -p no:benchmark
+          pytest -m torch -n auto -p no:benchmark --durations=50
