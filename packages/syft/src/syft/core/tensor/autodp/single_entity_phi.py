@@ -31,11 +31,18 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializa
         max_vals,
         scalar_manager=VirtualMachinePrivateScalarManager(),
     ):
+        # child = the actual private data
         super().__init__(child)
 
-        self.entity = entity
+        # identically shaped tensor to "child" but making the LOWEST possible value of this private value
         self._min_vals = min_vals
+
+        # identically shaped tensor to "child" but making the HIGHEST possible value of this private value
         self._max_vals = max_vals
+
+        # the identity of the data subject
+        self.entity = entity
+
         self.scalar_manager = scalar_manager
 
     @property
@@ -73,8 +80,50 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializa
             f"{self.__class__.__name__}(entity={self.entity.name}, child={self.child})"
         )
 
+    def __gt__(self, other):
+
+        # if the tensor being added is also private
+        if isinstance(other, SingleEntityPhiTensor):
+
+            if self.entity != other.entity:
+                # this should return a GammaTensor
+                return NotImplemented
+
+            data = (self.child > other.child) * 1 # the * 1 just makes sure it returns integers instead of True/False
+            min_vals = (self.min_vals*0)
+            max_vals = (self.max_vals*0) + 1
+            entity = self.entity
+
+            return SingleEntityPhiTensor(
+                child=data,
+                entity=entity,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                scalar_manager=self.scalar_manager,
+            )
+
+        # if the tensor being added is a public tensor / int / float / etc.
+        elif is_acceptable_simple_type(other):
+
+            data = (self.child > other)*1
+            min_vals = (self.min_vals * 0)
+            max_vals = (self.max_vals * 0) + 1
+            entity = self.entity
+
+            return SingleEntityPhiTensor(
+                child=data,
+                entity=entity,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                scalar_manager=self.scalar_manager,
+            )
+
+        else:
+            return NotImplemented
+
     def __add__(self, other):
 
+        # if the tensor being added is also private
         if isinstance(other, SingleEntityPhiTensor):
 
             if self.entity != other.entity:
@@ -94,6 +143,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializa
                 scalar_manager=self.scalar_manager,
             )
 
+        # if the tensor being added is a public tensor / int / float / etc.
         elif is_acceptable_simple_type(other):
 
             data = self.child + other
