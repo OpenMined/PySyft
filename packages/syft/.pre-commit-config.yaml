@@ -9,6 +9,7 @@ repos:
       - id: check-added-large-files
       - id: check-yaml
       - id: check-merge-conflict
+        args: ["--assume-in-merge"]
       - id: check-executables-have-shebangs
       - id: debug-statements
       - id: name-tests-test
