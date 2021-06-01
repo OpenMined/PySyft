@@ -5,4 +5,5 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
 # See configuration details in https://github.com/pypa/setuptools_scm
-root = '../..'
+version_scheme = "no-guess-dev"
+root           = '../..'
