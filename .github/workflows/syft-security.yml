@@ -1,41 +1,24 @@
-# Merge Tests
-# Once PR tests have passed and we attempt to merge, we run these tests which are more
-# comprehensive but very slow. The primary difference is the `pytest -m slow` tests.
-# Because the linting and notebook checks have already passed in the PR tests we don't
-# need them here. In addition, we skip MacOS on merge to dev as this happens frequently
-# and the differences between Ubuntu and MacOS are minimal compared with the higher
-# time unit cost of MacOS tests. Finally if we are merging with main we run the MacOS
-# tests as well.
-name: Syft Merge Tests
+name: Security-check
 
 on:
   push:
     branches:
-      - master
-      - main
       - dev
     paths:
       - ".github/workflows/syft-*.yml"
       - "packages/syft/**.py"
-      - "packages/syft/setup.cfg"
-      - "packages/syft/**.txt"
-  workflow_dispatch:
-    inputs:
-      none:
-        description: "Run Merge Tests Manually"
-        required: false
 
 defaults:
   run:
     working-directory: ./packages/syft
 
 jobs:
-  python-tests-latest-versions:
+  package-security:
     strategy:
-      max-parallel: 3
+      max-parallel: 1
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
-        python-version: [3.9]
+        os: [ubuntu-latest]
+        python-version: [3.8]
         torch-version: [1.8.1]
 
     runs-on: ${{ matrix.os }}
@@ -70,12 +53,23 @@ jobs:
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
           pip install -r requirements.unstable.txt
-          pip install -e .[dev] -f https://download.pytorch.org/whl/torch_stable.html
+          pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
+          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
 
-      - name: Check import works without dev packages
+      - name: Scan for security issues
         run: |
-          python -c "import syft"
+          bandit -r src
+          safety check
 
-      - name: Run torch tests
+      - name: Generate requirements.txt for snyk
         run: |
-          pytest -m torch -n auto -p no:benchmark --durations=50
+          pwd
+          sed -n '/syft =/,/^$/p' setup.cfg | tail -n +3 > requirements.txt
+          ls
+          mv requirements.txt ${{ github.workspace }}
+          mv .snyk ${{ github.workspace }}
+
+      - name: Snyk security check
+        uses: snyk/actions/python-3.8@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}

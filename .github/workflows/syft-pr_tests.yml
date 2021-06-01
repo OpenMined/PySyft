@@ -148,6 +148,7 @@ jobs:
           pip install packaging --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
+          pip install -r requirements.unstable.txt
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
 
@@ -158,7 +159,7 @@ jobs:
 
       - name: Run normal tests
         run: |
-          pytest -m 'fast or slow' --cov syft --cov-fail-under 80 -n auto
+          pytest -m 'fast or slow' --cov syft --cov-fail-under 80 -n auto --durations=50
 
       - name: Install libomp for XGBoost
         if: startsWith(runner.os, 'macos')
@@ -167,9 +168,9 @@ jobs:
 
       - name: Run supported library tests
         run: |
-          pytest -m libs --co
-          pytest -m libs -n auto -k "not tenseal" --suppress-no-test-exit-code
-          pytest -m libs -n 1 -k "tenseal" --suppress-no-test-exit-code
+          pytest -m libs --co --durations=50
+          pytest -m libs -n auto -k "not tenseal" --suppress-no-test-exit-code --durations=50
+          pytest -m libs -n 1 -k "tenseal" --suppress-no-test-exit-code --durations=50
 
   python-nb-examples:
     needs: [python-linting]
@@ -210,6 +211,7 @@ jobs:
           pip install packaging --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
+          pip install -r requirements.unstable.txt
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
 
@@ -217,7 +219,7 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
           ./scripts/nb_test.sh
-          pytest examples/api -n auto
+          pytest examples/api -n auto --durations=50
 
       - name: Test syft-network
         run: |
@@ -227,7 +229,7 @@ jobs:
         run: |
           python ./scripts/mnist.py
           python ./scripts/nb_duet_test.py
-          pytest -m duet -n 1 --suppress-no-test-exit-code
+          pytest -m duet -n 1 --suppress-no-test-exit-code --durations=50
 
   pygrid-unit-tests:
     needs: [python-linting]
@@ -274,15 +276,16 @@ jobs:
           pip install packaging --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
+          pip install -r requirements.unstable.txt
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
 
       - name: Test PyGrid
         continue-on-error: true
         run: |
-          pytest ../grid/apps/domain/tests
-          pytest ../grid/apps/network/tests
-          pytest ../grid/apps/worker/tests
+          pytest ../grid/apps/domain/tests --durations=50
+          pytest ../grid/apps/network/tests --durations=50
+          pytest ../grid/apps/worker/tests --durations=50
 
   pygrid-integration-tests:
     needs: [python-linting]
@@ -329,6 +332,7 @@ jobs:
           pip install packaging --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
+          pip install -r requirements.unstable.txt
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
 
@@ -336,4 +340,4 @@ jobs:
         continue-on-error: true
         run: |
           python ./scripts/mnist.py
-          pytest -m grid
+          pytest -m grid --durations=50

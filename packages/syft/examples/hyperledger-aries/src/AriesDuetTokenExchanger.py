@@ -139,8 +139,6 @@ class AriesDuetTokenExchanger(DuetCredentialExchanger):
 
     def _register_agent_listeners(self) -> None:
         print("REGISTER LISTENERS")
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(self.agent_controller.listen_webhooks())
 
         listeners = [
             {"handler": self.messages_handler, "topic": "basicmessages"},
@@ -213,12 +211,23 @@ class AriesDuetTokenExchanger(DuetCredentialExchanger):
         print("----------------------------------------------------------")
 
     def proof_handler(self, payload: TypeDict) -> None:
-        print("Handle present proof")
         role = payload["role"]
+        connection_id = payload["connection_id"]
         pres_ex_id = payload["presentation_exchange_id"]
         state = payload["state"]
-        print(f"Role {role}, Exchange {pres_ex_id} in state {state}")
         loop = asyncio.get_event_loop()
+        print(
+            "\n---------------------------------------------------------------------\n"
+        )
+        print("Handle present-proof")
+        print("Connection ID : ", connection_id)
+        print("Presentation Exchange ID : ", pres_ex_id)
+        print("Protocol State : ", state)
+        print("Agent Role : ", role)
+        print("Initiator : ", payload["initiator"])
+        print(
+            "\n---------------------------------------------------------------------\n"
+        )
 
         if state == "presentation_received":
             verified_response = loop.run_until_complete(

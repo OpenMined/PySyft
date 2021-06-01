@@ -4,6 +4,7 @@ from typing import Optional
 # syft relative
 from . import collections
 from ...ast import add_classes
+from ...ast import add_dynamic_objects
 from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
@@ -563,9 +564,12 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ),
     ]
 
+    dynamic_objects = [("syft.lib.python.Bool.my_field", "syft.lib.python.Int")]
+
     add_modules(ast, modules)
     add_classes(ast, classes)
     add_methods(ast, methods)
+    add_dynamic_objects(ast, dynamic_objects)
 
     for klass in ast.classes:
         klass.create_pointer_class()
