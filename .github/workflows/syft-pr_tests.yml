@@ -158,7 +158,7 @@ jobs:
 
       - name: Run normal tests
         run: |
-          pytest -m 'fast or slow' --cov syft --cov-fail-under 80 -n auto
+          pytest -m 'fast or slow' --cov syft --cov-fail-under 80 -n auto --durations=50
 
       - name: Install libomp for XGBoost
         if: startsWith(runner.os, 'macos')
@@ -167,9 +167,9 @@ jobs:
 
       - name: Run supported library tests
         run: |
-          pytest -m libs --co
-          pytest -m libs -n auto -k "not tenseal" --suppress-no-test-exit-code
-          pytest -m libs -n 1 -k "tenseal" --suppress-no-test-exit-code
+          pytest -m libs --co --durations=50
+          pytest -m libs -n auto -k "not tenseal" --suppress-no-test-exit-code --durations=50
+          pytest -m libs -n 1 -k "tenseal" --suppress-no-test-exit-code --durations=50
 
   python-nb-examples:
     needs: [python-linting]
@@ -217,7 +217,7 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
           ./scripts/nb_test.sh
-          pytest examples/api -n auto
+          pytest examples/api -n auto --durations=50
 
       - name: Test syft-network
         run: |
@@ -227,7 +227,7 @@ jobs:
         run: |
           python ./scripts/mnist.py
           python ./scripts/nb_duet_test.py
-          pytest -m duet -n 1 --suppress-no-test-exit-code
+          pytest -m duet -n 1 --suppress-no-test-exit-code --durations=50
 
   pygrid-unit-tests:
     needs: [python-linting]
@@ -280,9 +280,9 @@ jobs:
       - name: Test PyGrid
         continue-on-error: true
         run: |
-          pytest ../grid/apps/domain/tests
-          pytest ../grid/apps/network/tests
-          pytest ../grid/apps/worker/tests
+          pytest ../grid/apps/domain/tests --durations=50
+          pytest ../grid/apps/network/tests --durations=50
+          pytest ../grid/apps/worker/tests --durations=50
 
   pygrid-integration-tests:
     needs: [python-linting]
@@ -336,4 +336,4 @@ jobs:
         continue-on-error: true
         run: |
           python ./scripts/mnist.py
-          pytest -m grid
+          pytest -m grid --durations=50
