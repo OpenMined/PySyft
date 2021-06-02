@@ -395,7 +395,16 @@ parameters_pointer_objectives = []
 for py_type in test_dict:
     for test_object in test_dict[py_type]["objects"]:
         for func in test_dict[py_type]["inputs"]:
-            if py_type == "list":
+            if py_type == "dict" and func in ["__sizeof__", "clear", "popitem"]:
+                parameters_pointer_objectives.append(
+                    pytest.param(
+                        py_type,
+                        test_object,
+                        func,
+                        marks=pytest.mark.xfail,
+                    )
+                )
+            elif py_type == "list":
                 parameters_pointer_objectives.append([py_type, test_object(), func])
                 # test_object in list are lambda func
             else:
