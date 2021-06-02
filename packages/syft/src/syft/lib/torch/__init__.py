@@ -11,6 +11,7 @@ import torch
 from . import device  # noqa: 401
 from . import parameter  # noqa: 401
 from . import return_types  # noqa: 401
+from . import size  # noqa: 401
 from . import uppercase_tensor  # noqa: 401
 from ...ast.globals import Globals
 from ...logger import info

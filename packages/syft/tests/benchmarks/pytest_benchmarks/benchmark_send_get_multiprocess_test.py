@@ -11,14 +11,12 @@ from syft.lib.python.string import String
 # syft relative
 from ...syft.grid.duet.process_test import SyftTestProcess
 
-PORT = 21211
 
-
-def do_send(data: Any) -> None:
+def do_send(data: Any, port: int) -> None:
     # syft absolute
     import syft as sy
 
-    duet = sy.launch_duet(loopback=True, network_url=f"http://127.0.0.1:{PORT}/")
+    duet = sy.launch_duet(loopback=True, network_url=f"http://127.0.0.1:{port}/")
     duet.requests.add_handler(action="accept")
 
     _ = data.send(duet, pointable=True)
@@ -26,11 +24,11 @@ def do_send(data: Any) -> None:
     sy.core.common.event_loop.loop.run_forever()
 
 
-def ds_get(data: Any) -> None:
+def ds_get(data: Any, port: int) -> None:
     # syft absolute
     import syft as sy
 
-    duet = sy.join_duet(loopback=True, network_url=f"http://127.0.0.1:{PORT}/")
+    duet = sy.join_duet(loopback=True, network_url=f"http://127.0.0.1:{port}/")
 
     for retry in range(10):
         if len(duet.store) != 0:
@@ -44,14 +42,14 @@ def ds_get(data: Any) -> None:
     assert remote == data
 
 
-def run_endpoints(do_runner: Any, ds_runner: Any, data: Any) -> None:
+def run_endpoints(do_runner: Any, ds_runner: Any, data: Any, port: int) -> None:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        assert s.connect_ex(("localhost", PORT)) == 0
+        assert s.connect_ex(("localhost", port)) == 0
 
-    do_proc = SyftTestProcess(target=do_runner, args=(data,))
+    do_proc = SyftTestProcess(target=do_runner, args=(data, port))
     do_proc.start()
 
-    ds_proc = SyftTestProcess(target=ds_runner, args=(data,))
+    ds_proc = SyftTestProcess(target=ds_runner, args=(data, port))
     ds_proc.start()
 
     ds_proc.join(120)
@@ -71,9 +69,9 @@ def run_endpoints(do_runner: Any, ds_runner: Any, data: Any) -> None:
         raise Exception(f"ds_proc is hanged for {len(data)}")
 
 
-def send_get_string_multiprocess(data: String) -> None:
-    run_endpoints(do_send, ds_get, String(data))
+def send_get_string_multiprocess(data: String, port: int) -> None:
+    run_endpoints(do_send, ds_get, String(data), port)
 
 
-def send_get_list_multiprocess(data: List[str]) -> None:
-    run_endpoints(do_send, ds_get, SyList(data))
+def send_get_list_multiprocess(data: List[str], port: int) -> None:
+    run_endpoints(do_send, ds_get, SyList(data), port)
