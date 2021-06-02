@@ -133,7 +133,7 @@ def main():
         "--no-cuda",
         action="store_true",
         default=False,
-        help="disables CUDA training (default: False)"
+        help="disables CUDA training (default: False)",
     )
     parser.add_argument(
         "--dry-run",
@@ -142,11 +142,7 @@ def main():
         help="quickly check a single pass (default: False)",
     )
     parser.add_argument(
-        "--seed",
-        type=int,
-        default=1,
-        metavar="S",
-        help="random seed (default: 1)"
+        "--seed", type=int, default=1, metavar="S", help="random seed (default: 1)"
     )
     parser.add_argument(
         "--log-interval",

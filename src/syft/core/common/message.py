@@ -29,7 +29,7 @@ SignedMessageT = TypeVar("SignedMessageT")
 
 
 class AbstractMessage(ObjectWithID, Generic[SignedMessageT]):
-    """"""
+    """ """
 
     # this should be overloaded by a subclass
     signed_type: Type[SignedMessageT]
@@ -222,33 +222,33 @@ class SignedMessage(SyftMessage):
 
 
 class SignedImmediateSyftMessageWithReply(SignedMessage):
-    """"""
+    """ """
 
 
 class SignedImmediateSyftMessageWithoutReply(SignedMessage):
-    """"""
+    """ """
 
     # do stuff
 
 
 class SignedEventualSyftMessageWithoutReply(SignedMessage):
-    """"""
+    """ """
 
 
 class ImmediateSyftMessage(SyftMessage):
-    ""
+    """ """
 
 
 class EventualSyftMessage(SyftMessage):
-    ""
+    """ """
 
 
 class SyftMessageWithReply(SyftMessage):
-    ""
+    """ """
 
 
 class SyftMessageWithoutReply(SyftMessage):
-    ""
+    """ """
 
 
 class ImmediateSyftMessageWithoutReply(ImmediateSyftMessage, SyftMessageWithoutReply):

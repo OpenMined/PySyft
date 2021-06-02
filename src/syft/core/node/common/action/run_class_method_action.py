@@ -155,14 +155,31 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
             method_name = self.path.split(".")[-1]
 
-            if isinstance(resolved_self.data, Plan) and method_name == "__call__":
+            if (
+                isinstance(resolved_self.data, Plan)
+                and method_name == "__call__"
+                or (
+                    hasattr(resolved_self.data, "forward")
+                    and (
+                        resolved_self.data.forward.__class__.__name__ == "Plan"
+                        or getattr(resolved_self.data.forward, "__name__", None)
+                        == "_compile_and_forward"
+                    )
+                    and method_name in ["__call__", "forward"]
+                )
+            ):
+
                 if len(self.args) > 0:
                     traceback_and_raise(
                         ValueError(
                             "You passed args to Plan.__call__, while it only accepts kwargs"
                         )
                     )
-                result = method(resolved_self.data, node, verify_key, **self.kwargs)
+                if method.__name__ == "_forward_unimplemented":
+                    method = resolved_self.data.forward
+                    result = method(node, verify_key, **self.kwargs)
+                else:
+                    result = method(resolved_self.data, node, verify_key, **self.kwargs)
             else:
                 target_method = getattr(resolved_self.data, method_name, None)
 

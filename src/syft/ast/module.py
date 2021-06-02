@@ -41,7 +41,8 @@ class Module(ast.attribute.Attribute):
         object_ref: Optional[Union[CallableT, ModuleType]] = None,
         return_type_name: Optional[str] = None,
     ):
-        """
+        """Base constructor.
+
         Args:
             client: The client for which all computation is being executed.
             path_and_name: The path for the current node, e.g. `syft.lib.python.List`

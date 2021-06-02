@@ -13,4 +13,5 @@ message Pointer {
   repeated string tags = 5;
   string description = 6;
   string object_type = 7;
+  string attribute_name = 8;
 }

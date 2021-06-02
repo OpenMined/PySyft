@@ -1,6 +1,7 @@
 -r ./requirements.torch.txt
 
 aiortc
+cryptography>=3.4.7
 dataclasses # backport to python 3.6
 dpcontracts
 flask

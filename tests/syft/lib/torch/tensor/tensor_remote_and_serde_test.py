@@ -14,7 +14,7 @@ from syft.core.node.common.service.auth import AuthorizationException
 def test_torch_remote_tensor_register(
     node: sy.VirtualMachine, client: sy.VirtualMachineClient
 ) -> None:
-    """ Test if sending a tensor will be registered on the remote worker. """
+    """Test if sending a tensor will be registered on the remote worker."""
     x = th.tensor([-1, 0, 1, 2, 3, 4])
     ptr = x.send(client, pointable=False)
 

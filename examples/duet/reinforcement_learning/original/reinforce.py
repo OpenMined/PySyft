@@ -20,16 +20,9 @@ parser.add_argument(
     help="discount factor (default: 0.99)",
 )
 parser.add_argument(
-    "--seed",
-    type=int,
-    default=543,
-    metavar="S",
-    help="random seed (default: 543)"
+    "--seed", type=int, default=543, metavar="S", help="random seed (default: 543)"
 )
-parser.add_argument(
-    "--render",
-    action="store_true",
-    help="render the environment")
+parser.add_argument("--render", action="store_true", help="render the environment")
 parser.add_argument(
     "--log-interval",
     type=int,

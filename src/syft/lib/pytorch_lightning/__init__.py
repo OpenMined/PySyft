@@ -25,10 +25,23 @@ PACKAGE_SUPPORT = {
 def create_ast(client: TypeAny) -> Globals:
     ast = Globals(client=client)
 
-    modules: TypeList[TypeTuple[str, TypeAny]] = [("pytorch_lightning", pl)]
+    modules: TypeList[TypeTuple[str, TypeAny]] = [
+        ("pytorch_lightning", pl),
+        ("pytorch_lightning.metrics", pl.metrics),
+        ("pytorch_lightning.metrics.classification", pl.metrics.classification),
+        (
+            "pytorch_lightning.metrics.classification.accuracy",
+            pl.metrics.classification.accuracy,
+        ),
+    ]
 
     classes: TypeList[TypeTuple[str, str, TypeAny]] = [
         ("pytorch_lightning.Trainer", "pytorch_lightning.Trainer", pl.Trainer),
+        (
+            "pytorch_lightning.metrics.classification.accuracy.Accuracy",
+            "pytorch_lightning.metrics.classification.accuracy.Accuracy",
+            pl.metrics.classification.accuracy.Accuracy,
+        ),
     ]
 
     methods: TypeList[TypeTuple[str, str]] = [

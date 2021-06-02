@@ -26,6 +26,7 @@ primitives = [
     tuple,
     set,
     slice,
+    range,
     None,
     NoneType,
     str,
@@ -45,6 +46,7 @@ PrimitiveType = Union[
     list,
     set,
     slice,
+    range,
     None,
     NoneType,
     str,
@@ -94,6 +96,11 @@ class PrimitiveFactory(ABC):
 
         if isinstance(value, slice):
             return python.Slice(
+                start=value.start, stop=value.stop, step=value.step, id=id
+            )
+
+        if isinstance(value, range):
+            return python.Range(
                 start=value.start, stop=value.stop, step=value.step, id=id
             )
 

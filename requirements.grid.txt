@@ -9,10 +9,13 @@ PyInquirer
 PyJWT==1.7.1
 pytest
 pytest-xprocess
+python-dp
 requests_toolbelt
 scipy
 sqlalchemy>=1.4
 sqlalchemy_mixins
 sqlalchemy_utils
+sympc @ git+https://github.com/OpenMined/SyMPC@main
+tenseal
 tenseal
 terrascript

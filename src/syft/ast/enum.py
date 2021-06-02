@@ -12,6 +12,8 @@ from ..logger import traceback_and_raise
 
 
 class EnumAttribute(ast.attribute.Attribute):
+    """An EnumAttribute represents the attributes of a Python Enum which are only gettable, not settable."""
+
     def __init__(
         self,
         parent: ast.attribute.Attribute,
@@ -19,15 +21,12 @@ class EnumAttribute(ast.attribute.Attribute):
         return_type_name: Optional[str] = None,
         client: Optional[AbstractNodeClient] = None,
     ) -> None:
-        """
-        An EnumAttribute represents the attributes of a Python Enum. Due to it's
-        constraints, they are only gettable, not settable.
+        """Base constructor for Enum Attribute.
 
         Args:
-            parent: The parent node is needed when solving `EnumAttributes`, as we have no getter functions on
-                them or a reliable way to get them without traversing the full AST each time.
+            parent: The parent node is needed when solving `EnumAttributes`.
             path_and_name: The path for the current node, e.g. `syft.lib.python.List`.
-            return_type_name: The return type name of the given action as a string with its the full path.
+            return_type_name: The return type name of given action as a string with its full path.
             client: The client for which all computation is being executed.
         """
         super().__init__(
@@ -38,13 +37,11 @@ class EnumAttribute(ast.attribute.Attribute):
         )
 
     def get_remote_enum_attribute(self) -> AbstractPointer:
-        """
-        Remote getter on an `Enum` attribute in the AST.
+        """Remote getter on an `Enum` attribute in the AST.
 
         Returns:
             A pointer to the remote enum attribute.
         """
-
         if self.path_and_name is None:
             traceback_and_raise(
                 ValueError(
@@ -76,8 +73,7 @@ class EnumAttribute(ast.attribute.Attribute):
         return ptr
 
     def solve_get_enum_attribute(self) -> Enum:
-        """
-        Local getter on an `Enum` attribute in the AST.
+        """Local getter on an `Enum` attribute in the AST.
 
         Returns:
             The `Enum` object from the parent object reference.
@@ -93,8 +89,7 @@ class EnumAttribute(ast.attribute.Attribute):
         return getattr(self.parent.object_ref, self.name)
 
     def __call__(self, *args: Any, **kwargs: Any) -> None:
-        """
-        An `Enum` attribute is not callable.
+        """An `Enum` attribute is not callable.
 
         Throws:
             ValueError: If the function is called.
@@ -104,8 +99,7 @@ class EnumAttribute(ast.attribute.Attribute):
         )
 
     def add_path(self, *args: Any, **kwargs: Any) -> None:
-        """
-        An `Enum` can no longer have children nodes.
+        """An `Enum` can no longer have children nodes.
 
         Throws:
             ValueError: If the function is called.

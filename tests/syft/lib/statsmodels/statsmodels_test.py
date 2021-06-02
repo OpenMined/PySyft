@@ -34,7 +34,7 @@ def test_glm(root_client: sy.VirtualMachineClient) -> None:
     url = "https://raw.githubusercontent.com/chemo-wakate/tutorial-6th/master/beginner/data/winequality-red.txt"
     df = pd.read_csv(url, sep="\t")
     df["quality"] = df["quality"].apply(lambda x: 1 if x >= 6 else 0)
-    df = df.sample(100)
+    df = df.sample(100, random_state=42)
     df_ptr = df.send(root_client)
 
     # explanatory variable

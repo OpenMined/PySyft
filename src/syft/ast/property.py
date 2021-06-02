@@ -11,6 +11,10 @@ from ..logger import traceback_and_raise
 
 
 class Property(ast.attribute.Attribute):
+    """Creates property objects which implements getter and setter objects.
+    Each valid action on AST triggers GetSetPropertyAction.
+    """
+
     def __init__(
         self,
         path_and_name: str,

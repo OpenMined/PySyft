@@ -1,3 +1,7 @@
+# stdlib
+from typing import Any
+from typing import Tuple as TypeTuple
+
 # third party
 import pytest
 import torch as th
@@ -5,7 +9,6 @@ import torch as th
 # syft absolute
 import syft as sy
 from syft import Plan
-from syft import PlanBuilder
 from syft import make_plan
 from syft import serialize
 from syft.core.common.uid import UID
@@ -330,17 +333,17 @@ def test_mlp_plan(client: sy.VirtualMachineClient) -> None:
     assert not (old_params[0] == new_params[0]).all()
 
 
-def test_planbuilder() -> None:
-    class TestModel(PlanBuilder):
-        def __init__(self) -> None:
-            self.model_pointer = th.tensor([1, 2, 3])
-            super().__init__()
+def test_check_placeholder() -> None:
+    def test_define_plan() -> None:
+        @make_plan
+        def add_plan(inp: Any) -> Any:
+            return inp + inp
 
-        def forward(self, x: th.Tensor = th.tensor([0, 0, 0])) -> th.Tensor:
-            res = x * self.model_pointer
-            return res
+    def assertRaises(
+        exc: Exception, obj: object, methodname: str, *args: TypeTuple[Any, ...]
+    ) -> None:
+        with pytest.raises(exc) as e_info:
+            getattr(obj, methodname)(*args)
+        assert str(e_info) != ""
 
-    model = TestModel()
-
-    res = model(x=th.tensor([4, 5, 6]))
-    assert th.equal(*res.get(), th.tensor([4, 10, 18]))
+    assertRaises(ValueError, test_define_plan, "__call__")  # type: ignore

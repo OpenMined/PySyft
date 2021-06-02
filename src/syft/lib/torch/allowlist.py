@@ -1156,6 +1156,7 @@ allowlist["torch.bitwise_or"] = {
 }
 allowlist["torch.bitwise_xor"] = "torch.Tensor"
 allowlist["torch.bmm"] = "torch.Tensor"
+allowlist["torch.cat"] = "torch.Tensor"
 allowlist["torch.ceil_"] = "torch.Tensor"
 allowlist["torch.ceil"] = "torch.Tensor"
 allowlist["torch.cholesky_inverse"] = "torch.Tensor"
@@ -1221,6 +1222,7 @@ allowlist["torch.floor"] = "torch.Tensor"
 allowlist["torch.fmod"] = "torch.Tensor"
 allowlist["torch.frac_"] = "torch.Tensor"
 allowlist["torch.frac"] = "torch.Tensor"
+allowlist["torch.from_numpy"] = "torch.Tensor"
 allowlist["torch.gather"] = "torch.Tensor"
 allowlist["torch.ge"] = "torch.Tensor"
 allowlist["torch.geqrf"] = "torch.return_types.geqrf"
@@ -1345,6 +1347,7 @@ allowlist["torch.square"] = {
     "min_version": "1.5.0",
 }
 allowlist["torch.squeeze"] = "torch.Tensor"
+allowlist["torch.stack"] = "torch.Tensor"
 allowlist["torch.std"] = "torch.Tensor"
 allowlist["torch.stft"] = "torch.Tensor"
 allowlist["torch.sub"] = "torch.Tensor"
@@ -1761,6 +1764,7 @@ allowlist["torch.exp"] = "torch.Tensor"
 # Modules
 allowlist["torch.nn.Module"] = "torch.nn.Module"
 allowlist["torch.nn.Module.__call__"] = "torch.Tensor"
+allowlist["torch.nn.Module.forward"] = "torch.Tensor"
 allowlist["torch.nn.Module.parameters"] = "syft.lib.python.List"
 allowlist["torch.nn.Module.register_parameter"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Module.train"] = "torch.nn.Module"
@@ -1927,6 +1931,7 @@ allowlist["torch.nn.functional.multi_margin_loss"] = "torch.Tensor"
 allowlist["torch.nn.functional.multilabel_margin_loss"] = "torch.Tensor"
 allowlist["torch.nn.functional.multilabel_soft_margin_loss"] = "torch.Tensor"
 allowlist["torch.nn.functional.nll_loss"] = "torch.Tensor"
+allowlist["torch.nn.functional.cross_entropy"] = "torch.Tensor"
 allowlist["torch.nn.functional.poisson_nll_loss"] = "torch.Tensor"
 allowlist["torch.nn.functional.smooth_l1_loss"] = "torch.Tensor"
 allowlist["torch.nn.functional.soft_margin_loss"] = "torch.Tensor"
@@ -3329,6 +3334,9 @@ allowlist["torch.nn.ZeroPad2d.state_dict"] = "syft.lib.python.collections.Ordere
 allowlist["torch.nn.ZeroPad2d.load_state_dict"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.ZeroPad2d.extra_repr"] = "syft.lib.python.String"
 
+allowlist["torch.distributions.Categorical"] = "torch.distributions.Categorical"
+allowlist["torch.distributions.Categorical.sample"] = "torch.Tensor"
+allowlist["torch.distributions.Categorical.log_prob"] = "torch.Tensor"
 
 allowlist["torch.Tensor.xpu"] = {
     "return_type": "torch.Tensor",

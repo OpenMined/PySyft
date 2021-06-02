@@ -20,48 +20,37 @@ parser.add_argument(
     "--data",
     type=str,
     default="./data/wikitext-2",
-    help="location of the data corpus; default: \"./data/wikitext-2\""
+    help='location of the data corpus; default: "./data/wikitext-2"',
 )
 parser.add_argument(
     "--checkpoint",
     type=str,
     default="./model.pt",
-    help="model checkpoint to use; default: \"./model.pt\""
+    help='model checkpoint to use; default: "./model.pt"',
 )
 parser.add_argument(
     "--outf",
     type=str,
     default="generated.txt",
-    help="output file for generated text; default: \"generated.txt\""
+    help='output file for generated text; default: "generated.txt"',
 )
 parser.add_argument(
     "--words",
     type=int,
     default="1000",
-    help="number of words to generate; default: 1000"
+    help="number of words to generate; default: 1000",
 )
-parser.add_argument(
-    "--seed",
-    type=int,
-    default=1111,
-    help="random seed; default: 1111"
-)
-parser.add_argument(
-    "--cuda",
-    action="store_true",
-    help="use CUDA"
-)
+parser.add_argument("--seed", type=int, default=1111, help="random seed; default: 1111")
+parser.add_argument("--cuda", action="store_true", help="use CUDA")
 parser.add_argument(
     "--temperature",
     type=float,
     default=1.0,
-    help="temperature - higher will increase diversity; default: 1.0"
+    help="temperature - higher will increase diversity; default: 1.0",
 )
 parser.add_argument(
-    "--log-interval",
-    type=int,
-    default=100,
-    help="reporting interval; default: 100")
+    "--log-interval", type=int, default=100, help="reporting interval; default: 100"
+)
 args = parser.parse_args()
 
 # Set the random seed manually for reproducibility.

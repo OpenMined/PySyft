@@ -153,18 +153,17 @@ def test_tags(root_client: sy.VirtualMachineClient) -> None:
     assert len(f_root) == 3
 
 
-def test_issue_5170(client: sy.VirtualMachineClient) -> None:
-    sy.lib.python.List([1, 2, 3]).send(client, pointable=True, tags=["f"])
+def test_auto_approve_length_request(client: sy.VirtualMachineClient) -> None:
+    remote_list = sy.lib.python.List([1, 2, 3]).send(client)
 
-    f_guest = client.store["f"]
-    result_ptr = f_guest.len()
-    assert result_ptr is not None
-    assert result_ptr.tags == ["f", "__len__"]
+    result_len_ptr = remote_list.len()
+    assert result_len_ptr is not None
+    assert result_len_ptr.get() == 3
 
-    with pytest.raises(ValueError) as e:
-        f_guest.__len__()
-
-    assert str(e.value) == "Request to access data length rejected."
+    remote_list = client.syft.lib.python.List([1, 2, 3])
+    result_len_ptr = remote_list.len()
+    assert result_len_ptr is not None
+    assert result_len_ptr.get() == 3
 
 
 def test_description(root_client: sy.VirtualMachineClient) -> None:
