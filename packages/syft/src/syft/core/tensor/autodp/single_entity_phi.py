@@ -121,6 +121,47 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializa
         else:
             return NotImplemented
     
+    def __ge__(self, other):
+
+        # if the tensor being added is also private
+        if isinstance(other, SingleEntityPhiTensor):
+
+            if self.entity != other.entity:
+                # this should return a GammaTensor
+                return NotImplemented
+
+            data = (self.child >= other.child) * 1 # the * 1 just makes sure it returns integers instead of True/False
+            min_vals = (self.min_vals*0)
+            max_vals = (self.max_vals*0) + 1
+            entity = self.entity
+
+            return SingleEntityPhiTensor(
+                child=data,
+                entity=entity,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                scalar_manager=self.scalar_manager,
+            )
+
+        # if the tensor being added is a public tensor / int / float / etc.
+        elif is_acceptable_simple_type(other):
+
+            data = (self.child >= other)*1
+            min_vals = (self.min_vals * 0)
+            max_vals = (self.max_vals * 0) + 1
+            entity = self.entity
+
+            return SingleEntityPhiTensor(
+                child=data,
+                entity=entity,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                scalar_manager=self.scalar_manager,
+            )
+
+        else:
+            return NotImplemented
+    
     def __lt__(self, other):
 
         # if the tensor being added is also private
@@ -147,6 +188,129 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializa
         elif is_acceptable_simple_type(other):
 
             data = (self.child < other)*1
+            min_vals = (self.min_vals * 0)
+            max_vals = (self.max_vals * 0) + 1
+            entity = self.entity
+
+            return SingleEntityPhiTensor(
+                child=data,
+                entity=entity,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                scalar_manager=self.scalar_manager,
+            )
+
+        else:
+            return NotImplemented
+    
+        def __le__(self, other):
+
+        # if the tensor being added is also private
+        if isinstance(other, SingleEntityPhiTensor):
+
+            if self.entity != other.entity:
+                # this should return a GammaTensor
+                return NotImplemented
+
+            data = (self.child <= other.child) * 1 # the * 1 just makes sure it returns integers instead of True/False
+            min_vals = (self.min_vals*0)
+            max_vals = (self.max_vals*0) + 1
+            entity = self.entity
+
+            return SingleEntityPhiTensor(
+                child=data,
+                entity=entity,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                scalar_manager=self.scalar_manager,
+            )
+
+        # if the tensor being added is a public tensor / int / float / etc.
+        elif is_acceptable_simple_type(other):
+
+            data = (self.child <= other)*1
+            min_vals = (self.min_vals * 0)
+            max_vals = (self.max_vals * 0) + 1
+            entity = self.entity
+
+            return SingleEntityPhiTensor(
+                child=data,
+                entity=entity,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                scalar_manager=self.scalar_manager,
+            )
+
+        else:
+            return NotImplemented
+    
+        def __eq__(self, other):
+
+        # if the tensor being added is also private
+        if isinstance(other, SingleEntityPhiTensor):
+
+            if self.entity != other.entity:
+                # this should return a GammaTensor
+                return NotImplemented
+
+            data = (self.child == other.child) * 1 # the * 1 just makes sure it returns integers instead of True/False
+            min_vals = (self.min_vals*0)
+            max_vals = (self.max_vals*0) + 1
+            entity = self.entity
+
+            return SingleEntityPhiTensor(
+                child=data,
+                entity=entity,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                scalar_manager=self.scalar_manager,
+            )
+
+        # if the tensor being added is a public tensor / int / float / etc.
+        elif is_acceptable_simple_type(other):
+
+            data = (self.child == other)*1
+            min_vals = (self.min_vals * 0)
+            max_vals = (self.max_vals * 0) + 1
+            entity = self.entity
+
+            return SingleEntityPhiTensor(
+                child=data,
+                entity=entity,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                scalar_manager=self.scalar_manager,
+            )
+
+        else:
+            return NotImplemented
+    
+        def __ne__(self, other):
+
+        # if the tensor being added is also private
+        if isinstance(other, SingleEntityPhiTensor):
+
+            if self.entity != other.entity:
+                # this should return a GammaTensor
+                return NotImplemented
+
+            data = (self.child != other.child) * 1 # the * 1 just makes sure it returns integers instead of True/False
+            min_vals = (self.min_vals*0)
+            max_vals = (self.max_vals*0) + 1
+            entity = self.entity
+
+            return SingleEntityPhiTensor(
+                child=data,
+                entity=entity,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                scalar_manager=self.scalar_manager,
+            )
+
+        # if the tensor being added is a public tensor / int / float / etc.
+        elif is_acceptable_simple_type(other):
+
+            data = (self.child != other)*1
             min_vals = (self.min_vals * 0)
             max_vals = (self.max_vals * 0) + 1
             entity = self.entity
@@ -313,6 +477,44 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializa
         else:
             return self * (1 / other)
 
+    def __floordiv__(self, other):
+
+        if isinstance(other, SingleEntityPhiTensor):
+
+            if self.entity != other.entity:
+                # this should return a GammaTensor
+                return NotImplemented
+
+            data = self.child / other.child
+
+            if (other.min_vals == 0).any() or (other.max_vals == 0).any():
+
+                raise Exception(
+                    "Infinite sensitivity - we can support this in the future but not yet"
+                )
+
+            else:
+
+                min_min = self.min_vals // other.min_vals
+                min_max = self.min_vals // other.max_vals
+                max_min = self.max_vals // other.min_vals
+                max_max = self.max_vals // other.max_vals
+
+                min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)
+                max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)
+
+            entity = self.entity
+
+            return SingleEntityPhiTensor(
+                child=data,
+                entity=entity,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                scalar_manager=self.scalar_manager,
+            )
+        else:
+            return self * (1 / other)      
+        
     def repeat(self, repeats, axis=None):
 
         data = self.child.repeat(repeats, axis=axis)
