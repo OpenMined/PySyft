@@ -80,6 +80,7 @@ def test_plan_serialization(client: sy.VirtualMachineClient) -> None:
         args=[],
         kwargs={},
         action=PropertyActions.GET,
+        map_to_dyn=False,
     )
     a7 = GetSetStaticAttributeAction(
         path="",
