@@ -20,8 +20,8 @@ inputs = [
 ]
 
 objects = [
-    # pd.Categorical(["a", "b", "c", "a"], ordered=False), # Results in Error in comparision func
-    pd.Categorical(["a", "b", "c", "a"], ordered=True),
+    pd.Categorical(["a", "b", "c", "a"]),
+    pd.Categorical([1, 2, 3, 1], ordered=True),
 ]
 
 
