@@ -17,6 +17,7 @@ inputs = [
         {"func": "to_numpy", "args": [], "kwargs": {}},
         marks=pytest.mark.xfail(reason="np.ndarray object dtype not Implemented"),
     ),
+    {"func": "sort_values", "args": [], "kwargs": {}},
 ]
 
 objects = [
