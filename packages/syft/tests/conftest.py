@@ -10,8 +10,6 @@ from typing import List as TypeList
 
 # third party
 import _pytest
-from cachetools import cached
-from cachetools.keys import hashkey
 import pytest
 
 # syft absolute
@@ -163,9 +161,8 @@ def pytest_collection_modifyitems(
 
 
 @pytest.fixture(scope="session")
-@cached(cache={}, key=lambda worker_id: hashkey(worker_id))
-def node(worker_id: str) -> sy.VirtualMachine:
-    return sy.VirtualMachine(name="Bob_" + worker_id)
+def node() -> sy.VirtualMachine:
+    return sy.VirtualMachine(name="Bob")
 
 
 @pytest.fixture(autouse=True)

@@ -17,13 +17,12 @@ sy.load("numpy")
 def test_remote_numpy_array(
     root_client: sy.VirtualMachineClient, arrow_backend: str
 ) -> None:
+    flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
     # syft absolute
     from syft.lib.numpy.array import SUPPORTED_BOOL_TYPES
     from syft.lib.numpy.array import SUPPORTED_DTYPES
     from syft.lib.numpy.array import SUPPORTED_FLOAT_TYPES
     from syft.lib.numpy.array import SUPPORTED_INT_TYPES
-
-    flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
 
     test_arrays: List[np.ndarray] = []  # type: ignore
     for dtype in SUPPORTED_DTYPES:

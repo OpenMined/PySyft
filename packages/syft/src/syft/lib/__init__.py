@@ -119,7 +119,7 @@ def _regenerate_unions(*, lib_ast: Globals, client: TypeAny = None) -> None:
         lib_ast.syft.lib.add_attr(attr_name="misc", attr=union_misc_ast.attrs["misc"])
 
 
-@cached(cache={}, key=lambda *, lib, options: hashkey(lib))
+@cached({}, lambda *, lib, options=None: hashkey(lib))
 def _load_lib(*, lib: str, options: Optional[TypeDict[str, TypeAny]] = None) -> None:
     """
     Load and Update Node with given library module
@@ -130,6 +130,7 @@ def _load_lib(*, lib: str, options: Optional[TypeDict[str, TypeAny]] = None) -> 
     """
     global lib_ast
     _options = {} if options is None else options
+
     _ = importlib.import_module(lib)
     vendor_ast = importlib.import_module(f"syft.lib.{lib}")
     PACKAGE_SUPPORT = getattr(vendor_ast, "PACKAGE_SUPPORT", None)
