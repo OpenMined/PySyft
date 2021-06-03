@@ -18,8 +18,6 @@ from typing import Union
 
 # third party
 import torch
-from torch._C import Value
-from torch._C import dtype
 
 # syft absolute
 import syft as sy
@@ -554,12 +552,23 @@ class SyModule(torch.nn.Module, metaclass=ForwardToPlanConverter):
 
     """
 
-    def __init__(self, *args, input_size: Optional[Tuple[int]] = None, inputs: Optional[Dict[str, torch.Tensor]] = None, **kwargs) -> None:  # type: ignore
-        """Initializes an empty SyModule
-
+    def __init__(  # type: ignore
+        self,
+        *args,
+        input_size: Optional[Tuple[int]] = None,
+        inputs: Optional[Dict[str, torch.Tensor]] = None,
+        **kwargs,
+    ):
+        """
         Args:
-            input_size (Tuple[Int], optional): input_size of the Module, needs to be defined or inferrable.
-            Defaults to None.
+            input_size (Optional[Tuple[int]], optional): input_size of the Module,
+                needs to be defined or inferrable. Defaults to None.
+            inputs (Optional[Dict[str, torch.Tensor]], optional): dictionary of dummy input tensors.
+                Use this argument instead of `input_size` if there are multiple forward inputs,
+                or if the forward input is not a FloatTensor. Defaults to None.
+
+        Raises:
+            ValueError: [description]
         """
         super().__init__(*args, **kwargs)
         self.building_forward = False
@@ -684,16 +693,34 @@ class SyModule(torch.nn.Module, metaclass=ForwardToPlanConverter):
 class SySequential(SyModule):
     """The Syft equivalent of torch.nn.Sequential"""
 
-    def __init__(self, *args, input_size: Optional[Tuple[int]] = None, inputs: Optional[Dict[str, torch.Tensor]] = None, **kwargs):  # type: ignore
+    def __init__(self, *args, input_size: Optional[Tuple[int]] = None, **kwargs):  # type: ignore
         """initializes SySequential and stores the submodules
 
         input_size (Tuple[Int], optional): input_size of the Module, needs to be defined or inferrable.
             Defaults to None.
         """
-        super().__init__(input_size=input_size, inputs=inputs, **kwargs)
+        if input_size is None:
+            input_size = self._infer_input_size(*args)
+
+        super().__init__(input_size=input_size, **kwargs)
         for idx, module in enumerate(args):
             setattr(self, str(idx), module)
         self.n_modules = len(args)
+
+    def _infer_input_size(self, *args: Any) -> Tuple[int]:
+        """Infer input size from first child
+
+        Returns:
+            Tuple[int]: input size of first child SyModule.
+        """
+        if hasattr(args[0], "input_size"):
+            return args[0].input_size
+        else:
+            raise ValueError(
+                "Could not infer `input_size` from children modules."
+                "Either 1) define `input_size` as a kwarg of SySequential OR"
+                " 2) define `input_size`: Tuple[int] as kwarg on the first child module."
+            )
 
     def __iter__(self):  # type: ignore
         if self.building_forward:
@@ -725,7 +752,7 @@ class SySequential(SyModule):
             key = self._get_item_by_idx(self._modules.keys(), idx)
             delattr(self, key)
 
-    def forward(self, x: Any = None) -> Any:  # type: ignore
+    def forward(self, x: Any) -> Any:  # type: ignore
         """Sequentially call submodule.forward
 
         Args:
@@ -752,20 +779,3 @@ class SySequential(SyModule):
             str: "x"
         """
         return "x"
-
-    def _get_inp_size(self) -> Tuple[int]:
-        """Get input size for this module
-
-        Returns:
-            Tuple[Int]: input size for `.forward`
-        """
-        if hasattr(getattr(self, "0"), "input_size"):
-            return getattr(self, "0").input_size
-        elif hasattr(self, "input_size"):
-            return self.input_size  # type: ignore
-        else:
-            raise ValueError(
-                "SySequential needs either 1) `input_size`: Tuple(Int) as a kwargs for on of its children \
-                                OR 2) `input_size`: Tuple(Int) as kwarg for itself \
-                                to trace the forward plan"
-            )
