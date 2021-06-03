@@ -585,3 +585,20 @@ class Pointer(AbstractPointer):
 
         if self.gc_enabled:
             self.client.gc.apply(self)
+
+    def set_result_permissions(self, method_name, inputs, verify_key):
+        from syft.core.node.common.service.set_result_permission_service import SetResultPermissionMessage
+        
+        _inputs = {k: v.id_at_location for k, v in inputs.items()}
+
+        obj_msg = SetResultPermissionMessage(
+            id_at_location=self.id_at_location,
+            inputs=_inputs,
+            method_name=method_name,
+            verify_key=verify_key,
+            address=self.client.address,
+            reply_to=self.client.address
+        )
+
+        obj = self.client.send_immediate_msg_with_reply(msg=obj_msg).status_message
+        return obj

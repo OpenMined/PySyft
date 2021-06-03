@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package syft.core.node.common.action;
+
+import "proto/core/common/common_object.proto";
+import "proto/core/io/address.proto";
+
+message SetResultPermissionMessage {
+  syft.core.common.UID id_at_location = 1;
+  syft.core.io.Address address = 2;
+  syft.core.io.Address reply_to = 3;
+  syft.core.common.UID msg_id = 4;
+  map<string, syft.core.common.UID> inputs = 5;
+  string method_name = 6;
+  bytes target_verify_key = 7;
+}
+
+message SetResultPermissionAnswerMessage {
+  syft.core.io.Address address = 1;
+  syft.core.common.UID msg_id = 2;
+  string status_message = 3;
+}

@@ -140,6 +140,12 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             resolved_kwargs[arg_name] = r_arg.data
             tag_kwargs[arg_name] = r_arg
 
+        method_name = self.path.split(".")[-1]
+        
+        if self.has_result_read_permission(resolved_self.result_permissions,method_name, verify_key):
+            if verify_key not in result_read_permissions:
+                result_read_permissions[verify_key] = None
+
         (
             upcasted_args,
             upcasted_kwargs,
@@ -153,7 +159,6 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     ValueError(f"Method {method} called, but self is None.")
                 )
 
-            method_name = self.path.split(".")[-1]
 
             if (
                 isinstance(resolved_self.data, Plan)
@@ -268,6 +273,11 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             address=serialize(self.address),
             msg_id=serialize(self.id),
         )
+
+    def has_result_read_permission(self, permissions, method_name, verify_key):
+        _args = [a.id_at_location for a in self.args]
+        _kwargs = {k: v.id_at_location for k, v in self.kwargs.items()}
+        return any([permission.matches(self._self.id_at_location, verify_key, method_name, _args, _kwargs) for permission in permissions])
 
     @staticmethod
     def _proto2object(proto: RunClassMethodAction_PB) -> "RunClassMethodAction":

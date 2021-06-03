@@ -20,6 +20,8 @@ from ..common.serde.serializable import Serializable
 from ..common.serde.serializable import bind_protobuf
 from ..common.storeable_object import AbstractStorableObject
 from ..common.uid import UID
+from .permission.result_permission import ResultPermission
+from syft.core.store.permission import result_permission
 
 
 @bind_protobuf
@@ -59,6 +61,7 @@ class StorableObject(AbstractStorableObject):
         tags: Optional[List[str]] = None,
         read_permissions: Optional[dict] = None,
         search_permissions: Optional[dict] = None,
+        result_permissions: Optional[List[ResultPermission]]=None
     ):
         self.id = id
         self.data = data
@@ -74,6 +77,8 @@ class StorableObject(AbstractStorableObject):
         # the value is the original request_id to allow lookup later
         # who are allowed to know that the tensor exists (via search or other means)
         self.search_permissions: dict = search_permissions if search_permissions else {}
+
+        self.result_permissions = result_permission if result_permissions else []
 
     @property
     def object_type(self) -> str:
