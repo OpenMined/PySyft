@@ -152,7 +152,6 @@ class FFN(SyModule):
         self.lin2 = nn.Linear(in_features=config.hidden_dim, out_features=config.dim)
 
         if config.activation == "gelu":
-            # TODO numerical check with transformers gelu.
             self.activation = ROOT_CLIENT.torch.nn.functional.gelu
         elif config.activation == "relu":
             self.activation = ROOT_CLIENT.torch.nn.functional.relu
@@ -162,7 +161,6 @@ class FFN(SyModule):
             )
 
     def forward(self, input: torch.Tensor) -> torch.Tensor:
-        # TODO Chunking
         x = self.lin1(input)
         x = self.activation(x)
         x = self.lin2(x)
