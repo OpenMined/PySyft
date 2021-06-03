@@ -4,14 +4,19 @@ import pytest
 # syft absolute
 import syft as sy
 
-np = pytest.importorskip("numpy")
-xgb = pytest.importorskip("xgboost")
+try:
+    np = pytest.importorskip("numpy")
+    xgb = pytest.importorskip("xgboost")
+    _SKIP_XGB = False
+except Exception:
+    _SKIP_XGB = True
+
 sy.load("xgboost")
 sy.load("numpy")
 
 
 # this currently fails: https://github.com/OpenMined/PySyft/issues/5536
-@pytest.mark.skip
+@pytest.mark.skipif(_SKIP_XGB)
 @pytest.mark.vendor(lib="xgboost")
 def test_xgb_base_module(root_client: sy.VirtualMachineClient) -> None:
     xgb_remote = root_client.xgboost
