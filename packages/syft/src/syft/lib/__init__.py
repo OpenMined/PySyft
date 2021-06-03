@@ -125,6 +125,17 @@ def _load_lib(*, lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
         lib: name of library to load and update Node with
         options: external requirements for loading library successfully
     """
+    global lib_ast
+
+    try:
+        _ = lib_ast.query(lib)
+        already_loaded = True
+    except Exception:
+        already_loaded = False
+
+    if already_loaded:
+        return
+
     _ = importlib.import_module(lib)
     vendor_ast = importlib.import_module(f"syft.lib.{lib}")
     PACKAGE_SUPPORT = getattr(vendor_ast, "PACKAGE_SUPPORT", None)
@@ -132,7 +143,6 @@ def _load_lib(*, lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
     if PACKAGE_SUPPORT is not None and vendor_requirements_available(
         vendor_requirements=PACKAGE_SUPPORT
     ):
-        global lib_ast
         _add_lib(vendor_ast=vendor_ast, ast_or_client=lib_ast)
         # cache the constructor for future created clients
         lib_ast.loaded_lib_constructors[lib] = getattr(vendor_ast, "update_ast", None)
