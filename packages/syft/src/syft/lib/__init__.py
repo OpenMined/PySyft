@@ -14,6 +14,8 @@ from typing import Union as TypeUnion
 import warnings
 
 # third party
+from cachetools import cached
+from cachetools.keys import hashkey
 from packaging import version
 
 # syft relative
@@ -117,7 +119,8 @@ def _regenerate_unions(*, lib_ast: Globals, client: TypeAny = None) -> None:
         lib_ast.syft.lib.add_attr(attr_name="misc", attr=union_misc_ast.attrs["misc"])
 
 
-def _load_lib(*, lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
+@cached(cache={}, key=lambda *, lib, options: hashkey(lib))
+def _load_lib(*, lib: str, options: Optional[TypeDict[str, TypeAny]] = None) -> None:
     """
     Load and Update Node with given library module
 
@@ -126,20 +129,11 @@ def _load_lib(*, lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
         options: external requirements for loading library successfully
     """
     global lib_ast
-
-    try:
-        _ = lib_ast.query(lib)
-        already_loaded = True
-    except Exception:
-        already_loaded = False
-
-    if already_loaded:
-        return
-
+    _options = {} if options is None else options
     _ = importlib.import_module(lib)
     vendor_ast = importlib.import_module(f"syft.lib.{lib}")
     PACKAGE_SUPPORT = getattr(vendor_ast, "PACKAGE_SUPPORT", None)
-    PACKAGE_SUPPORT.update(options)
+    PACKAGE_SUPPORT.update(_options)
     if PACKAGE_SUPPORT is not None and vendor_requirements_available(
         vendor_requirements=PACKAGE_SUPPORT
     ):
