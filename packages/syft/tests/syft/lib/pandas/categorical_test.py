@@ -2,6 +2,7 @@
 from typing import Any
 
 # third party
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -38,10 +39,6 @@ def test_categorical_func(
 ) -> None:
     sy.load("pandas")
     sy.load("numpy")
-
-    # third party
-    import numpy as np
-    import pandas as pd
 
     x = test_object
     x_ptr = test_object.send(client)
