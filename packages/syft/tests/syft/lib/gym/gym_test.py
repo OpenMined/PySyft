@@ -9,13 +9,7 @@ from syft.experimental_flags import flags
 @pytest.mark.xfail
 @pytest.mark.vendor(lib="gym")
 @pytest.mark.parametrize("arrow_backend", [False, True])
-def test_remote_gym(arrow_backend: bool) -> None:
-
-    # Don't share with other tests due to the _regenerate_numpy_serde that occurs with
-    # flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
-    vm = sy.VirtualMachine()
-    root_client = vm.get_root_client()
-
+def test_remote_gym(root_client: sy.VirtualMachineClient, arrow_backend: bool) -> None:
     # third party
     import gym
     import numpy as np
