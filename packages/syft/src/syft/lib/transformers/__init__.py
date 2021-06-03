@@ -64,7 +64,8 @@ def create_ast(client: TypeAny = None) -> Globals:
             "transformers.PreTrainedTokenizerFast.__call__",
             "transformers.tokenization_utils_base.BatchEncoding",
         ),
-        ("transformers.activations.gelu", "torch.Tensor"),
+        ("transformers.tokenization_utils_base.BatchEncoding.__getitem__",
+         "torch.Tensor")
     ]
 
     add_modules(ast, modules)
