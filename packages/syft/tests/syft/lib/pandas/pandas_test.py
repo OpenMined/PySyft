@@ -10,13 +10,13 @@ import pytest
 # syft absolute
 import syft as sy
 
+pd = pytest.importorskip("pandas")
+np = pytest.importorskip("numpy")
+sy.load("pandas", "numpy")
+
 
 @pytest.mark.vendor(lib="pandas")
 def test_pandas(root_client: sy.VirtualMachineClient) -> None:
-    sy.load("pandas")
-    # third party
-    import pandas as pd
-
     data = {
         "col_1": {0: 3, 1: 2, 2: 1, 3: 0},
         "col_2": {0: "a", 1: "b", 2: "c", 3: "d"},
@@ -37,10 +37,6 @@ def test_pd_categoriesdtype(
     categories: List[Any],
     ordered: bool,
 ) -> None:
-    sy.load("pandas")
-    # third party
-    import pandas as pd
-
     t = pd.CategoricalDtype(categories=categories, ordered=ordered)
 
     t_ptr = t.send(root_client)
@@ -57,10 +53,6 @@ def test_pd_categoriesdtype(
 def test_pd_categories(
     root_client: sy.VirtualMachineClient, data: List[Any], ordered: bool
 ) -> None:
-    sy.load("pandas")
-    # third party
-    import pandas as pd
-
     t = pd.Categorical(data, ordered=ordered)
 
     t_ptr = t.send(root_client)
@@ -74,10 +66,6 @@ def test_pd_categories(
 
 @pytest.mark.vendor(lib="pandas")
 def test_slice_dataframe(root_client: sy.VirtualMachineClient) -> None:
-    sy.load("pandas")
-    # third party
-    import pandas as pd
-
     data: Dict[str, Dict] = {
         "col_1": {0: 3, 1: 2, 2: 1, 3: 0},
         "col_2": {0: "a", 1: "b", 2: "c", 3: "d"},
@@ -103,10 +91,6 @@ def test_slice_dataframe(root_client: sy.VirtualMachineClient) -> None:
 
 @pytest.mark.vendor(lib="pandas")
 def test_pandas_json_normalize(root_client: sy.VirtualMachineClient) -> None:
-    sy.load("pandas")
-    # third party
-    import pandas as pd
-
     data = {"A": [1, 2]}
     df = pd.json_normalize(data)
 

@@ -2,12 +2,16 @@
 from typing import Any
 
 # third party
-import numpy as np
-import pandas as pd
 import pytest
 
 # syft absolute
 import syft as sy
+
+pd = pytest.importorskip("pandas")
+np = pytest.importorskip("np")
+sy.load("pandas")
+sy.load("numpy")
+
 
 inputs = [
     pytest.param(
@@ -37,9 +41,6 @@ def test_categorical_func(
     node: sy.VirtualMachine,
     client: sy.VirtualMachineClient,
 ) -> None:
-    sy.load("pandas")
-    sy.load("numpy")
-
     x = test_object
     x_ptr = test_object.send(client)
 
