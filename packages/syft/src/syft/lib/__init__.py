@@ -15,6 +15,7 @@ import warnings
 
 # third party
 from packaging import version
+import wrapt
 
 # syft relative
 from ..ast.globals import Globals
@@ -180,6 +181,10 @@ def load(
             "Unable to load package support for any library. Iterable object not found."
         )
 
+    msg = f"load done sucessfully {libs}"
+    warning(msg, print=True)
+    warnings.warn(msg, DeprecationWarning)
+
 
 def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
     """
@@ -231,6 +236,15 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
     lib_ast.syft.lib.add_attr(attr_name="misc", attr=union_misc_ast.attrs["misc"])
 
     return lib_ast
+
+
+@wrapt.when_imported("sklearn")
+@wrapt.when_imported("numpy")
+def post_import_hook_third_party(module: TypeAny) -> None:
+    msg = f"load() is no longer needed {module.__name__}"
+    warning(msg, print=True)
+    warnings.warn(msg, DeprecationWarning)
+    load(module.__name__)
 
 
 lib_ast = create_lib_ast(None)

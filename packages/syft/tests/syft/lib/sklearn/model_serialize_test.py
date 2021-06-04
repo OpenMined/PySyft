@@ -18,8 +18,8 @@ def test_logistic_model_serde(arrow_backend: bool) -> None:
     import numpy as np
     from sklearn.linear_model import LogisticRegression
 
-    sy.load("sklearn")
-    sy.load("numpy")
+    # sy.load("sklearn")
+    # sy.load("numpy")
 
     flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
     X = np.array([[-1, -1], [-2, -1], [1, 1], [2, 1]])
