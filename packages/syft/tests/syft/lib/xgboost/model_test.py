@@ -1,3 +1,6 @@
+# stdlib
+from sys import platform
+
 # third party
 import pytest
 
@@ -10,7 +13,7 @@ try:
     sy.load("xgboost")
     sy.load("numpy")
 
-    _SKIP_XGB = False
+    _SKIP_XGB = platform == "darwin"
 except Exception:
     _SKIP_XGB = True
 
