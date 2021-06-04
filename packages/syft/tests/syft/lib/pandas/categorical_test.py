@@ -35,8 +35,8 @@ def test_categorical_func(
     node: sy.VirtualMachine,
     client: sy.VirtualMachineClient,
 ) -> None:
-    sy.load("pandas")
-    sy.load("numpy")
+    # sy.load("pandas")
+    # sy.load("numpy")
 
     # third party
     import numpy as np

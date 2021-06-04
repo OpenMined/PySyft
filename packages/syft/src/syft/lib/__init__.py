@@ -238,10 +238,11 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
     return lib_ast
 
 
+@wrapt.when_imported("pandas")
 @wrapt.when_imported("sklearn")
 @wrapt.when_imported("numpy")
 def post_import_hook_third_party(module: TypeAny) -> None:
-    msg = f"load() is no longer needed {module.__name__}"
+    msg = f"load() is no longer needed: module_name {module.__name__}"
     warning(msg, print=True)
     warnings.warn(msg, DeprecationWarning)
     load(module.__name__)

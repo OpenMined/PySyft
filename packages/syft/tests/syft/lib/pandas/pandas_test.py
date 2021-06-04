@@ -11,7 +11,7 @@ import syft as sy
 
 @pytest.mark.vendor(lib="pandas")
 def test_pandas(root_client: sy.VirtualMachineClient) -> None:
-    sy.load("pandas")
+    # sy.load("pandas")
     # third party
     import pandas as pd
 
@@ -29,7 +29,7 @@ def test_pandas(root_client: sy.VirtualMachineClient) -> None:
 
 @pytest.mark.vendor(lib="pandas")
 def test_pd_categoriesdtype(root_client: sy.VirtualMachineClient) -> None:
-    sy.load("pandas")
+    # sy.load("pandas")
     # third party
     import pandas as pd
 
@@ -47,7 +47,7 @@ def test_pd_categoriesdtype(root_client: sy.VirtualMachineClient) -> None:
 
 @pytest.mark.vendor(lib="pandas")
 def test_pd_categories(root_client: sy.VirtualMachineClient) -> None:
-    sy.load("pandas")
+    # sy.load("pandas")
     # third party
     import pandas as pd
 
@@ -68,7 +68,7 @@ def test_pd_categories(root_client: sy.VirtualMachineClient) -> None:
 
 @pytest.mark.vendor(lib="pandas")
 def test_slice_dataframe(root_client: sy.VirtualMachineClient) -> None:
-    sy.load("pandas")
+    # sy.load("pandas")
     # third party
     import pandas as pd
 
@@ -97,7 +97,7 @@ def test_slice_dataframe(root_client: sy.VirtualMachineClient) -> None:
 
 @pytest.mark.vendor(lib="pandas")
 def test_pandas_json_normalize(root_client: sy.VirtualMachineClient) -> None:
-    sy.load("pandas")
+    # sy.load("pandas")
     # third party
     import pandas as pd
 
