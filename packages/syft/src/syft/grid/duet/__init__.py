@@ -301,42 +301,41 @@ def join_duet(
     return duet
 
 
-def test_duet_network(loopback: bool = False) -> None:
-    if not loopback:
+def test_duet_network(network_url: str = "", loopback: bool = False) -> None:
+    def check_url(url: str, url_description: str) -> bool:
+        try:
+            r = requests.head(url, timeout=5)
+            if r.status_code == 200:
+                info("Successfully able to reach " + url_description, print=True)
+                return True
+            else:
+                info(
+                    "Unable to reach "
+                    + url_description
+                    + " HTTP status code: "
+                    + str(r.status_code),
+                    print=True,
+                )
+        except requests.exceptions.Timeout:
+            info(
+                "Unable to reach " + url_description + " Connection timed out.",
+                print=True,
+            )
+        except requests.exceptions.ConnectTimeout:
+            info(
+                "Unable to reach " + url_description + " Connection timed out.",
+                print=True,
+            )
+        except requests.exceptions.TooManyRedirects:
+            info(
+                "Unable to reach " + url_description + " Too many redirects.",
+                print=True,
+            )
+        except requests.exceptions.RequestException as e:
+            info("Unable to reach " + url_description + " " + e.strerror, print=True)
+        return False
 
-        def check_url(url: str, url_description: str) -> bool:
-            try:
-                r = requests.head(url, timeout=5)
-                if r.status_code == 200:
-                    info("Successfully able to reach " + url_description, print=True)
-                    return True
-                else:
-                    info(
-                        "Unable to reach "
-                        + url_description
-                        + " HTTP status code: "
-                        + str(r.status_code),
-                        print=True,
-                    )
-            except requests.exceptions.Timeout:
-                info(
-                    "Unable to reach " + url_description + " Connection timed out.",
-                    print=True,
-                )
-            except requests.exceptions.ConnectTimeout:
-                info(
-                    "Unable to reach " + url_description + " Connection timed out.",
-                    print=True,
-                )
-            except requests.exceptions.TooManyRedirects:
-                info(
-                    "Unable to reach " + url_description + " Too many redirects.",
-                    print=True,
-                )
-            except requests.exceptions.RequestException as e:
-                info("Unable to reac " + url_description + " " + e.strerror, print=True)
-            return False
-
+    if not network_url:
         # testing github domain reachability
         if not check_url("https://github.com/", "GitHub domain."):
             return None
@@ -350,15 +349,18 @@ def test_duet_network(loopback: bool = False) -> None:
         network_addr = json.loads(requests.get(ADDR_REPOSITORY).content)
         for num, addr in enumerate(network_addr):
             check_url(addr + "/metadata", "signaling sever #" + str(num) + ".")
-
     else:
-        info("Testing loopback connection process using default filepath.")
+        if not check_url(network_url + "/metadata", "Local signaling server."):
+            return None
+
+    if loopback:
         file_path = get_loopback_path()
         try:
-            with open(file_path):
+            with open(file_path, 'w+'):
                 pass
-        except IOError:
-            if IOError.errno == errno.EACCES:
-                info("File permission error.\n", IOError.strerror, print=True)
+            info("Successfully able to access/create loopback file", print=True)
+        except IOError as e:
+            if e.errno == errno.EACCES:
+                info("Loopback file permission error.\n", str(e), print=True)
             else:
-                info(IOError.strerror, print=True)
+                info("Loopback file error: ", str(e), print=True)
