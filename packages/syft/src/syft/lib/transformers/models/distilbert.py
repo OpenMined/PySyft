@@ -62,11 +62,12 @@ class MultiHeadSelfAttention(SyModule):
     def __init__(self, config: DistilBertConfig, **kwargs) -> None:  # type: ignore
         super().__init__(**kwargs)
 
+        if config.dim % config.n_heads != 0:
+            raise ValueError("`config.dim` should be a multiple of `config.n_heads`")
+
         self.n_heads = config.n_heads
         self.dim = config.dim
         self.dropout = nn.Dropout(p=config.attention_dropout)
-
-        assert self.dim % self.n_heads == 0
 
         self.q_lin = nn.Linear(in_features=config.dim, out_features=config.dim)
         self.k_lin = nn.Linear(in_features=config.dim, out_features=config.dim)
@@ -171,7 +172,8 @@ class FFN(SyModule):
 class TransformerBlock(SyModule):
     def __init__(self, config: DistilBertConfig, **kwargs) -> None:  # type: ignore
         super().__init__(**kwargs)
-        assert config.dim % config.n_heads == 0
+        if config.dim % config.n_heads != 0:
+            raise ValueError("`config.dim` should be a multiple of `config.n_heads`")
 
         attn_dummy_inputs = {
             "query": kwargs["inputs"]["x"],
