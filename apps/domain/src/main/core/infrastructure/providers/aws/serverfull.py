@@ -233,7 +233,7 @@ class AWS_Serverfull(AWS):
         self.tfscript += self.load_balancer
 
     def write_domain_exec_script(self, app, index=0):
-        branch = "dev"
+        branch = "master"
         # exec_script = "#cloud-boothook\n#!/bin/bash\n"
         exec_script = "#!/bin/bash\n"
         exec_script += textwrap.dedent(
@@ -303,7 +303,7 @@ class AWS_Serverfull(AWS):
         return exec_script
 
     def write_worker_exec_script(self, app):
-        branch = "dev"
+        branch = "master"
         exec_script = "#!/bin/bash\n"
         exec_script += textwrap.dedent(
             f"""
