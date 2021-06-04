@@ -1,13 +1,12 @@
 # third party
 import pytest
 import torch
-from transformers import AutoTokenizer
-from transformers import PreTrainedTokenizerFast
 
 # syft absolute
 import syft as sy
 from syft.lib.python import List
 
+transformers = pytest.importorskip("transformers")
 sy.load("transformers")
 
 
@@ -16,8 +15,8 @@ def test_tokenizer_serde() -> None:
     alice = sy.VirtualMachine()
     alice_client = alice.get_root_client()
 
-    tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
-    tokenizer = PreTrainedTokenizerFast(
+    tokenizer = transformers.AutoTokenizer.from_pretrained("bert-base-uncased")
+    tokenizer = transformers.PreTrainedTokenizerFast(
         tokenizer_object=tokenizer._tokenizer,
         name_or_path=tokenizer.name_or_path,
         padding_side=tokenizer.padding_side,
@@ -35,12 +34,13 @@ def test_tokenizer_serde() -> None:
     assert tok_serde.special_tokens_map == tokenizer.special_tokens_map
 
 
+@pytest.mark.slow
 def test_batchencoding_serde() -> None:
     alice = sy.VirtualMachine()
     alice_client = alice.get_root_client()
 
-    tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
-    tokenizer = PreTrainedTokenizerFast(
+    tokenizer = transformers.AutoTokenizer.from_pretrained("bert-base-uncased")
+    tokenizer = transformers.PreTrainedTokenizerFast(
         tokenizer_object=tokenizer._tokenizer,
         name_or_path=tokenizer.name_or_path,
         padding_side=tokenizer.padding_side,

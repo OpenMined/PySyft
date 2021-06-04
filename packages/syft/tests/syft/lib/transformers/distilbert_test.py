@@ -5,40 +5,38 @@ from typing import Any
 import pytest
 import torch
 
-# transformers imports, not needed in AST
-from transformers.models.distilbert.modeling_distilbert import DistilBertConfig
-
 # syft absolute
 import syft as sy
 from syft import SyModule
-from syft import logger
 from syft.core.plan.plan_builder import make_plan
-from syft.lib.transformers.models.distilbert import Embeddings
-from syft.lib.transformers.models.distilbert import FFN
-from syft.lib.transformers.models.distilbert import MultiHeadSelfAttention
-from syft.lib.transformers.models.distilbert import SyDistilBert
 
+transformers = pytest.importorskip("transformers")
+distilbert = pytest.importorskip("syft.lib.transformers.models.distilbert")
 sy.load("transformers")
-logger.remove()
 
-CONFIG = DistilBertConfig(
-    vocab_size=10,
-    dim=16,
-    max_position_embeddings=100,
-    n_heads=2,
-    hidden_dim=10,
-    n_layers=2,
-    dropout=0,
-    attention_dropout=0,
-)
+
+@pytest.fixture(scope="module")
+def config() -> Any:
+    return transformers.DistilBertConfig(
+        vocab_size=10,
+        dim=16,
+        max_position_embeddings=100,
+        n_heads=2,
+        hidden_dim=10,
+        n_layers=2,
+        dropout=0,
+        attention_dropout=0,
+    )
 
 
 @pytest.mark.slow
-def test_embedding() -> None:
+def test_embedding(config: Any) -> None:
     alice = sy.VirtualMachine()
     alice_client = alice.get_root_client()
 
-    model = Embeddings(CONFIG, inputs={"input_ids": torch.ones(3, 4, dtype=torch.long)})
+    model = distilbert.Embeddings(
+        config, inputs={"input_ids": torch.ones(3, 4, dtype=torch.long)}
+    )
     model.eval()
     model_ptr = model.send(alice_client)
 
@@ -52,18 +50,18 @@ def test_embedding() -> None:
 
 
 @pytest.mark.slow
-def test_mhsa() -> None:
+def test_mhsa(config: Any) -> None:
     alice = sy.VirtualMachine()
     alice_client = alice.get_root_client()
 
     inputs = {
-        "query": torch.randn(5, 10, CONFIG.dim),
-        "key": torch.randn(5, 10, CONFIG.dim),
-        "value": torch.randn(5, 10, CONFIG.dim),
+        "query": torch.randn(5, 10, config.dim),
+        "key": torch.randn(5, 10, config.dim),
+        "value": torch.randn(5, 10, config.dim),
         "mask": torch.ones(5, 10),
     }
 
-    model = MultiHeadSelfAttention(CONFIG, inputs=inputs)
+    model = distilbert.MultiHeadSelfAttention(config, inputs=inputs)
 
     @make_plan
     def mhsa_forward(
@@ -77,9 +75,9 @@ def test_mhsa() -> None:
         return [out]
 
     inputs = {
-        "query": torch.randn(8, 16, CONFIG.dim),
-        "key": torch.randn(8, 16, CONFIG.dim),
-        "value": torch.randn(8, 16, CONFIG.dim),
+        "query": torch.randn(8, 16, config.dim),
+        "key": torch.randn(8, 16, config.dim),
+        "value": torch.randn(8, 16, config.dim),
         "mask": torch.ones(8, 16),
     }
     out = model(**inputs)[0]
@@ -91,15 +89,15 @@ def test_mhsa() -> None:
 
 
 @pytest.mark.slow
-def test_ffn() -> None:
+def test_ffn(config: Any) -> None:
     alice = sy.VirtualMachine()
     alice_client = alice.get_root_client()
 
     inputs = {
-        "input": torch.randn(5, 10, CONFIG.dim),
+        "input": torch.randn(5, 10, config.dim),
     }
 
-    model = FFN(CONFIG, inputs=inputs)
+    model = distilbert.FFN(config, inputs=inputs)
 
     @make_plan
     def ffn_forward(
@@ -109,7 +107,7 @@ def test_ffn() -> None:
         return [out]
 
     inputs = {
-        "input": torch.randn(8, 16, CONFIG.dim),
+        "input": torch.randn(8, 16, config.dim),
     }
     out = model(**inputs)[0]
 
@@ -120,16 +118,16 @@ def test_ffn() -> None:
 
 
 @pytest.mark.slow
-def test_distilbert() -> None:
+def test_distilbert(config: Any) -> None:
     alice = sy.VirtualMachine()
     alice_client = alice.get_root_client()
 
     inputs = {
-        "input_ids": torch.LongTensor(5, 10).random_(0, CONFIG.vocab_size),
+        "input_ids": torch.LongTensor(5, 10).random_(0, config.vocab_size),
         "attention_mask": torch.ones(5, 10),
     }
 
-    model = SyDistilBert(CONFIG, inputs=inputs)
+    model = distilbert.SyDistilBert(config, inputs=inputs)
 
     @make_plan
     def db_forward(
@@ -141,7 +139,7 @@ def test_distilbert() -> None:
         return [out]
 
     inputs = {
-        "input_ids": torch.LongTensor(8, 5).random_(0, CONFIG.vocab_size),
+        "input_ids": torch.LongTensor(8, 5).random_(0, config.vocab_size),
         "attention_mask": torch.ones(8, 5),
     }
     out = model(**inputs)[0]
