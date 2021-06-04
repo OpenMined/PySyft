@@ -17,11 +17,12 @@ inputs = [
         {"func": "to_numpy", "args": [], "kwargs": {}},
         marks=pytest.mark.xfail(reason="np.ndarray object dtype not Implemented"),
     ),
+    {"func": "sort_values", "args": [], "kwargs": {}},
 ]
 
 objects = [
-    # pd.Categorical(["a", "b", "c", "a"], ordered=False), # Results in Error in comparision func
-    pd.Categorical(["a", "b", "c", "a"], ordered=True),
+    pd.Categorical(["a", "b", "c", "a"]),
+    pd.Categorical([1, 2, 3, 1], ordered=True),
 ]
 
 
