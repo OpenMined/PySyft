@@ -148,6 +148,7 @@ jobs:
           pip install packaging --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
+          pip install -r requirements.unstable.txt
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
 
@@ -156,14 +157,14 @@ jobs:
           bandit -r src
           safety check
 
-      - name: Run normal tests
-        run: |
-          pytest -m 'fast or slow' --cov syft --cov-fail-under 80 -n auto --durations=50
-
       - name: Install libomp for XGBoost
         if: startsWith(runner.os, 'macos')
         run: |
           brew install libomp
+
+      - name: Run normal tests
+        run: |
+          pytest -m 'fast or slow' --cov syft --cov-fail-under 80 -n auto --durations=50
 
       - name: Run supported library tests
         run: |
@@ -210,6 +211,7 @@ jobs:
           pip install packaging --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
+          pip install -r requirements.unstable.txt
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
 
@@ -274,6 +276,7 @@ jobs:
           pip install packaging --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
+          pip install -r requirements.unstable.txt
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
 
@@ -329,6 +332,7 @@ jobs:
           pip install packaging --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
+          pip install -r requirements.unstable.txt
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
 

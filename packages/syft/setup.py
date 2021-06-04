@@ -20,6 +20,7 @@ class PostDevelopCommand(develop):
     def run(self) -> None:
         develop.run(self)
         try:
+            print("Installing pre-commit and git hooks")
             check_call("pip install pre-commit".split())
             check_call("pre-commit install".split())
         except Exception as e:
