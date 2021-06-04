@@ -14,7 +14,7 @@ _sym_db = _symbol_database.Default()
 
 
 # syft absolute
-from syft.proto.lib.sympc import session_pb2 as proto_dot_lib_dot_sympc_dot_session__pb2
+from syft.proto.lib.python import dict_pb2 as proto_dot_lib_dot_python_dot_dict__pb2
 from syft.proto.lib.torch import tensor_pb2 as proto_dot_lib_dot_torch_dot_tensor__pb2
 
 DESCRIPTOR = _descriptor.FileDescriptor(
@@ -23,10 +23,10 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n"proto/lib/sympc/share_tensor.proto\x12\x0esyft.lib.sympc\x1a\x1cproto/lib/torch/tensor.proto\x1a\x1dproto/lib/sympc/session.proto"g\n\x0bShareTensor\x12+\n\x06tensor\x18\x01 \x01(\x0b\x32\x1b.syft.lib.torch.TensorProto\x12+\n\x07session\x18\x02 \x01(\x0b\x32\x1a.syft.lib.sympc.MPCSessionb\x06proto3',
+    serialized_pb=b'\n"proto/lib/sympc/share_tensor.proto\x12\x0esyft.lib.sympc\x1a\x1cproto/lib/torch/tensor.proto\x1a\x1bproto/lib/python/dict.proto"w\n\x0bShareTensor\x12+\n\x06tensor\x18\x01 \x01(\x0b\x32\x1b.syft.lib.torch.TensorProto\x12%\n\x06\x63onfig\x18\x02 \x01(\x0b\x32\x15.syft.lib.python.Dict\x12\x14\n\x0csession_uuid\x18\x03 \x01(\tb\x06proto3',
     dependencies=[
         proto_dot_lib_dot_torch_dot_tensor__pb2.DESCRIPTOR,
-        proto_dot_lib_dot_sympc_dot_session__pb2.DESCRIPTOR,
+        proto_dot_lib_dot_python_dot_dict__pb2.DESCRIPTOR,
     ],
 )
 
@@ -59,8 +59,8 @@ _SHARETENSOR = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="session",
-            full_name="syft.lib.sympc.ShareTensor.session",
+            name="config",
+            full_name="syft.lib.sympc.ShareTensor.config",
             index=1,
             number=2,
             type=11,
@@ -68,6 +68,25 @@ _SHARETENSOR = _descriptor.Descriptor(
             label=1,
             has_default_value=False,
             default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="session_uuid",
+            full_name="syft.lib.sympc.ShareTensor.session_uuid",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -86,16 +105,16 @@ _SHARETENSOR = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=115,
-    serialized_end=218,
+    serialized_start=113,
+    serialized_end=232,
 )
 
 _SHARETENSOR.fields_by_name[
     "tensor"
 ].message_type = proto_dot_lib_dot_torch_dot_tensor__pb2._TENSORPROTO
 _SHARETENSOR.fields_by_name[
-    "session"
-].message_type = proto_dot_lib_dot_sympc_dot_session__pb2._MPCSESSION
+    "config"
+].message_type = proto_dot_lib_dot_python_dot_dict__pb2._DICT
 DESCRIPTOR.message_types_by_name["ShareTensor"] = _SHARETENSOR
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
