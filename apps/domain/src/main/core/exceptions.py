@@ -135,13 +135,6 @@ class MissingRequestKeyError(PyGridError):
         super().__init__(message)
 
 
-class MissingSetupKeyError(PyGridError):
-    def __init__(self, message=""):
-        if not message:
-            message = "Missing setup request key!"
-        super().__init__(message)
-
-
 class AssociationRequestError(PyGridError):
     def __init__(self):
         message = "Association Request ID not found!"

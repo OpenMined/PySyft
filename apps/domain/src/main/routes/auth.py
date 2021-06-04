@@ -18,7 +18,6 @@ from ..core.exceptions import AuthorizationError
 from ..core.exceptions import GroupNotFoundError
 from ..core.exceptions import InvalidCredentialsError
 from ..core.exceptions import MissingRequestKeyError
-from ..core.exceptions import MissingSetupKeyError
 from ..core.exceptions import OwnerAlreadyExistsError
 from ..core.exceptions import PyGridError
 from ..core.exceptions import RoleNotFoundError
