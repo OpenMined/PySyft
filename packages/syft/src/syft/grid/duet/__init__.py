@@ -356,7 +356,7 @@ def test_duet_network(network_url: str = "", loopback: bool = False) -> None:
     if loopback:
         file_path = get_loopback_path()
         try:
-            with open(file_path, 'w+'):
+            with open(file_path, "w+"):
                 pass
             info("Successfully able to access/create loopback file", print=True)
         except IOError as e:
