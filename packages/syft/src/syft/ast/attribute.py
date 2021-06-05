@@ -1,3 +1,5 @@
+"""This module contains Attribute, an interface of a generic node in the AST."""
+
 # stdlib
 from types import ModuleType
 from typing import Any
@@ -127,6 +129,7 @@ class Attribute:
         self, path: Union[List[str], str], obj_type: Optional[type] = None
     ) -> "Attribute":
         """The query method is a tree traversal function based on the path to retrieve the node.
+
            It has a similar functionality to `__call__`,
            main difference being that `query` retrieves node without performing execution on node.
 
@@ -207,7 +210,14 @@ class Attribute:
 
     @property
     def parent(self) -> "Attribute":
-        """Check if all the nodes have a parent node."""
+        """Check if all the nodes have a parent node.
+
+        Returns:
+            Attribute: parent node
+
+        Raises:
+            AttributeError: If node has no parent attribute.
+        """
         if self._parent:
             return self._parent
 
