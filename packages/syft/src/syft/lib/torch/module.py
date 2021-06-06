@@ -35,6 +35,7 @@ from ...logger import info
 from ...logger import traceback_and_raise
 from ...proto.lib.torch.module_pb2 import Module as Module_PB
 from ..python.collections import OrderedDict as SyOrderedDict
+from ..python.util import downcast
 
 # from ...core.node.common.service.auth import AuthorizationException
 
@@ -581,6 +582,20 @@ class SyModule(torch.nn.Module, metaclass=ForwardToPlanConverter):
         self.__call__ = plan
         self._create_uid2attr()
         self.building_forward = False
+        self._remove_plan_action_data()
+
+    def _remove_plan_action_data(self) -> None:
+        """
+        Sets `action.obj.data` for each symodule action in `self._forward_plan` to `None`.
+
+        This greatly reduces the proto memory footprint;
+        The whole state of `self` is saved in the action, which will be recompiled anyway.
+        """
+
+        # Remove module action data
+        for action in self._forward_plan.actions:
+            if isinstance(action, SaveObjectAction) and action.obj.id in self._uid2attr:
+                action.obj.data = downcast(None)
 
     def _local_forward(self, *args, **kwargs):  # type: ignore
         recompile(self)

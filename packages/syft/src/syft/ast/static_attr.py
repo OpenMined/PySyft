@@ -1,3 +1,6 @@
+"""This module contains `StaticAttribute`, an AST node representing a method,
+ function, or constructor which can be directly executed."""
+
 # stdlib
 from typing import Any
 from typing import Callable as CallableT
@@ -20,7 +23,7 @@ from ..logger import traceback_and_raise
 
 
 class StaticAttribute(ast.attribute.Attribute):
-    """A method, function, or constructor which can be directly executed"""
+    """A method, function, or constructor which can be directly executed."""
 
     def __init__(
         self,
@@ -46,7 +49,11 @@ class StaticAttribute(ast.attribute.Attribute):
 
     def get_remote_value(self) -> AbstractPointer:
         """Remote execution is performed when AST is constructed with a client.
+
         The get_remote_value method triggers GetSetStaticAttributeAction on the AST.
+
+        Returns:
+            AbstractPointer: Pointer to remote value.
         """
         if self.path_and_name is None:
             traceback_and_raise(
@@ -79,18 +86,33 @@ class StaticAttribute(ast.attribute.Attribute):
 
     def solve_get_value(self) -> Any:
         """Local execution of the getter function is performed.
-        The solve_get_value method executes the getter function on the AST.
+
+        The `solve_get_value` method executes the getter function on the AST.
+
+        Raises:
+            ValueError : If `path_and_name` is `None`.
+
+        Returns:
+            Value of the AST node
         """
         self.apply_node_changes()
 
         if self.path_and_name is None:
-            raise ValueError("path_and_none should not be None")
+            raise ValueError("path_and_name should not be None")
 
         return getattr(self.parent.object_ref, self.path_and_name.rsplit(".")[-1])
 
     def solve_set_value(self, set_value: Any) -> None:
         """Local execution of setter function is performed.
-        The solve_set_value method executes the setter function on the AST.
+
+        The `solve_set_value` method executes the setter function on the AST.
+
+        Args:
+            set_value: The value to set to.
+
+        Raises:
+            ValueError : If `path_and_name` is `None`.
+
         """
         self.apply_node_changes()
 
@@ -99,9 +121,19 @@ class StaticAttribute(ast.attribute.Attribute):
 
         setattr(self.parent.object_ref, self.path_and_name.rsplit(".")[-1], set_value)
 
-    def set_remote_value(self, set_arg: Any) -> None:
+    def set_remote_value(self, set_arg: Any) -> Any:
         """Remote execution of setter function is performed when AST is constructed with a client.
+
         The set_remote_value method triggers GetSetStaticAttributeAction on the AST.
+
+        Args:
+            set_arg: The value to set to.
+
+        Raises:
+            ValueError: If `client` is `None` or `path_and_name` is `None`.
+
+        Returns:
+            Pointer to the object
         """
         if self.client is None:
             raise ValueError(
@@ -132,7 +164,25 @@ class StaticAttribute(ast.attribute.Attribute):
     def __call__(  # type: ignore
         self, action: StaticAttributeAction
     ) -> Optional[Union["ast.callable.Callable", CallableT]]:
+        """A `StaticAttribute` attribute is not callable.
+
+        Args:
+            action: `GET` or `SET` action
+
+        Raises:
+            ValueError: If the function is called.
+        """
         raise ValueError("MAKE PROPER SCHEMA, THIS SHOULD NEVER BE CALLED")
 
     def add_path(self, *args: List[Any], **kwargs: Dict[Any, Any]) -> None:  # type: ignore
+        """An `StaticAttribute` can no longer have children nodes.
+
+        Args:
+            *args: List of arguments.
+            **kwargs: Dict of Keyword arguments.
+
+        Raises:
+            ValueError: If the function is called.
+
+        """
         raise ValueError("MAKE PROPER SCHEMA")

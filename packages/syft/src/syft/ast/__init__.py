@@ -1,4 +1,5 @@
-"""Syft's AST submodule is responsible for remote call executions.
+"""Syft's Abstract Syntax Tree (AST) submodule is responsible for remote call executions.
+
    An AST is a tree that maps function calls to their exact path,
    and knows what to do with that node in tree.
 
@@ -87,6 +88,9 @@ def get_parent(
 
     Returns:
         The parent module or class.
+
+    Raises:
+        ValueError: If parent is not a class or module
 
     Examples:
         For instance, given the syft project root directory, the parent to the path `syft.lib.python.Int` is `python`.
