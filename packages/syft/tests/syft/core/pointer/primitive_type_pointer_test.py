@@ -297,7 +297,6 @@ inputs_dict: Dict[str, List] = {
     "__len__": [[]],
     "__ne__": [[{"a": 1, "b": 2, "c": None}], [{1: "a", 2: "b"}]],
     "__str__": [[]],
-    "__sizeof__": [[]],
     "copy": [[]],
     "fromkeys": [[[("a", 1), ("b", 2), ("c", 2)]]],
     "items": [[]],
@@ -395,16 +394,7 @@ parameters_pointer_objectives = []
 for py_type in test_dict:
     for test_object in test_dict[py_type]["objects"]:
         for func in test_dict[py_type]["inputs"]:
-            if py_type == "dict" and func in ["__sizeof__", "clear", "popitem"]:
-                parameters_pointer_objectives.append(
-                    pytest.param(
-                        py_type,
-                        test_object,
-                        func,
-                        marks=pytest.mark.xfail,
-                    )
-                )
-            elif py_type == "list":
+            if py_type == "list":
                 parameters_pointer_objectives.append([py_type, test_object(), func])
                 # test_object in list are lambda func
             else:
