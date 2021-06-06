@@ -5,21 +5,19 @@ import pytest
 import syft as sy
 from syft.experimental_flags import flags
 
+np = pytest.importorskip("numpy")
+# sy.load("numpy")
+sklearn = pytest.importorskip("sklearn")
+# sy.load("sklearn")
+
 
 @pytest.mark.vendor(lib="sklearn")
 @pytest.mark.parametrize("arrow_backend", [True, False])
-def test_logistic_model_serde(arrow_backend: bool) -> None:
-    # Don't share with other tests due to the _regenerate_numpy_serde that occurs with
-    # flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
-    vm = sy.VirtualMachine()
-    root_client = vm.get_root_client()
-
+def test_logistic_model_serde(
+    root_client: sy.VirtualMachineClient, arrow_backend: bool
+) -> None:
     # third party
-    import numpy as np
     from sklearn.linear_model import LogisticRegression
-
-    # sy.load("sklearn")
-    # sy.load("numpy")
 
     flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
     X = np.array([[-1, -1], [-2, -1], [1, 1], [2, 1]])

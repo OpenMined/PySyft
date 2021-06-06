@@ -14,6 +14,8 @@ from typing import Union as TypeUnion
 import warnings
 
 # third party
+from cachetools import cached
+from cachetools.keys import hashkey
 from packaging import version
 import wrapt
 
@@ -118,7 +120,8 @@ def _regenerate_unions(*, lib_ast: Globals, client: TypeAny = None) -> None:
         lib_ast.syft.lib.add_attr(attr_name="misc", attr=union_misc_ast.attrs["misc"])
 
 
-def _load_lib(*, lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
+@cached({}, lambda *, lib, options=None: hashkey(lib))
+def _load_lib(*, lib: str, options: Optional[TypeDict[str, TypeAny]] = None) -> None:
     """
     Load and Update Node with given library module
 
@@ -126,14 +129,16 @@ def _load_lib(*, lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
         lib: name of library to load and update Node with
         options: external requirements for loading library successfully
     """
+    global lib_ast
+    _options = {} if options is None else options
+
     _ = importlib.import_module(lib)
     vendor_ast = importlib.import_module(f"syft.lib.{lib}")
     PACKAGE_SUPPORT = getattr(vendor_ast, "PACKAGE_SUPPORT", None)
-    PACKAGE_SUPPORT.update(options)
+    PACKAGE_SUPPORT.update(_options)
     if PACKAGE_SUPPORT is not None and vendor_requirements_available(
         vendor_requirements=PACKAGE_SUPPORT
     ):
-        global lib_ast
         _add_lib(vendor_ast=vendor_ast, ast_or_client=lib_ast)
         # cache the constructor for future created clients
         lib_ast.loaded_lib_constructors[lib] = getattr(vendor_ast, "update_ast", None)
