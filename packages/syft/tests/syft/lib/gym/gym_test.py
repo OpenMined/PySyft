@@ -7,7 +7,7 @@ from syft.experimental_flags import flags
 
 np = pytest.importorskip("numpy")
 gym = pytest.importorskip("gym")
-sy.load("numpy", "gym")
+# sy.load("numpy", "gym")
 
 
 @pytest.mark.vendor(lib="gym")

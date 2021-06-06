@@ -8,7 +8,7 @@ import pytest
 import syft as sy
 
 ts = pytest.importorskip("tenseal")
-sy.load("tenseal")
+# sy.load("tenseal")
 
 
 @pytest.fixture(scope="function")

@@ -10,7 +10,7 @@ def test_statement_zk_proof() -> None:
     vm = sy.VirtualMachine()
     client = vm.get_root_client()
 
-    sy.load("zksk")
+    # sy.load("zksk")
 
     # third party
     from zksk import DLRep

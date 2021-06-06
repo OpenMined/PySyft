@@ -10,8 +10,8 @@ import syft as sy
 pd = pytest.importorskip("pandas")
 statsmodels = pytest.importorskip("statsmodels")
 
-sy.load("pandas")
-sy.load("sklearn")
+# sy.load("pandas")
+# sy.load("sklearn")
 
 
 @pytest.mark.vendor(lib="statsmodels")
@@ -28,8 +28,8 @@ def test_glm(root_client: sy.VirtualMachineClient) -> None:
 
     UNNECESSARY_STR = r"Time(.*)(?=Pearson)|Date(.*)(?=Deviance)"
 
-    sy.load("pandas")
-    sy.load("statsmodels")
+    # sy.load("pandas")
+    # sy.load("statsmodels")
 
     # load data
     url = "https://raw.githubusercontent.com/chemo-wakate/tutorial-6th/master/beginner/data/winequality-red.txt"

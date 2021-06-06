@@ -6,7 +6,7 @@ from pytest import approx
 import syft as sy
 
 psi = pytest.importorskip("openmined_psi")
-sy.load("openmined_psi")
+# sy.load("openmined_psi")
 
 
 @pytest.mark.parametrize("reveal_intersection", [True, False])

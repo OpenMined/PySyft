@@ -10,7 +10,7 @@ Session = sympc.session.Session
 SessionManager = sympc.session.SessionManager
 MPCTensor = sympc.tensor.MPCTensor
 
-sy.load("sympc")
+# sy.load("sympc")
 
 
 @pytest.mark.asyncio

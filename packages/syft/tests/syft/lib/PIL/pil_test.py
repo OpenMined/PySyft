@@ -9,7 +9,7 @@ from syft.grid.duet.ui import LOGO_URL
 PIL = pytest.importorskip("PIL")
 np = pytest.importorskip("numpy")
 
-sy.load("numpy", "PIL")
+# sy.load("numpy", "PIL")
 
 
 @pytest.mark.vendor(lib="PIL")
