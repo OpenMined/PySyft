@@ -182,10 +182,6 @@ def load(
             "Unable to load package support for any library. Iterable object not found."
         )
 
-    msg = f"load done sucessfully {libs}"
-    warning(msg, print=True)
-    warnings.warn(msg, DeprecationWarning)
-
 
 def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
     """
@@ -249,7 +245,7 @@ def post_import_hook_third_party(module: TypeAny) -> None:
     """
     Note: This needs to be after `lib_ast` because code above uses lib-ast
     """
-    msg = f"inside post_import_hook_third_party module_name {module.__name__}"
-    warning(msg, print=True)
-    warnings.warn(msg, DeprecationWarning)
+    # msg = f"inside post_import_hook_third_party module_name {module.__name__}"
+    # warning(msg, print=True)
+    # warnings.warn(msg, DeprecationWarning)
     load(module.__name__)
