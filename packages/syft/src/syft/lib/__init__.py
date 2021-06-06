@@ -158,6 +158,7 @@ def load(
         **kwargs: for backward compatibility with calls like `syft.load(lib = "opacus")`
     """
     # For backward compatibility with calls like `syft.load(lib = "opacus")`
+    # Note: syft.load(lib = "opacus") doesnot work as it iterates the string, syft.load('opacus') works
     if "lib" in kwargs.keys():
         libs += tuple(kwargs["lib"])
 
@@ -238,14 +239,17 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
     return lib_ast
 
 
-@wrapt.when_imported("pandas")
-@wrapt.when_imported("sklearn")
+lib_ast = create_lib_ast(None)
+
+
 @wrapt.when_imported("numpy")
+@wrapt.when_imported("sklearn")
+@wrapt.when_imported("pandas")
 def post_import_hook_third_party(module: TypeAny) -> None:
-    msg = f"load() is no longer needed: module_name {module.__name__}"
+    """
+    Note: This needs to be after `lib_ast` because code above uses lib-ast
+    """
+    msg = f"inside post_import_hook_third_party module_name {module.__name__}"
     warning(msg, print=True)
     warnings.warn(msg, DeprecationWarning)
     load(module.__name__)
-
-
-lib_ast = create_lib_ast(None)
