@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package syft.lib.sympc;
+
+message protocol{
+	string name=1;
+	string security_type=2;
+}
