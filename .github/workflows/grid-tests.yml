@@ -1,4 +1,4 @@
-name: Run tests
+name: Grid Tests
 
 on:
   push:
