@@ -14,8 +14,6 @@ import syft
 
 # syft relative
 from ...generate_wrapper import GenerateWrapper
-from ...lib.torch.tensor_util import tensor_deserializer
-from ...lib.torch.tensor_util import tensor_serializer
 from ...proto.lib.sympc.share_tensor_pb2 import ShareTensor as ShareTensor_PB
 from ..python.primitive_factory import PrimitiveFactory
 
@@ -38,7 +36,7 @@ def object2proto(obj: object) -> ShareTensor_PB:
 
     tensor_data = getattr(share.tensor, "data", None)
     if tensor_data is not None:
-        proto.tensor.tensor.CopyFrom(tensor_serializer(tensor_data))
+        proto.tensor.CopyFrom(syft.serialize(share.tensor, to_proto=True))
 
     return proto
 
@@ -53,14 +51,14 @@ def proto2object(proto: ShareTensor_PB) -> ShareTensor:
     else:
         config = syft.deserialize(proto.config, from_proto=True)
 
-    data = tensor_deserializer(proto.tensor.tensor)
+    tensor = syft.deserialize(proto.tensor, from_proto=True)
     share = ShareTensor(data=None, config=Config(**config))
 
     if proto.session_uuid:
         share.session_uuid = UUID(proto.session_uuid)
 
     # Manually put the tensor since we do not want to re-encode it
-    share.tensor = data
+    share.tensor = tensor
 
     return share
 
