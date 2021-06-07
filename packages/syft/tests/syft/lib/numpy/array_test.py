@@ -8,11 +8,8 @@ import pytest
 # syft absolute
 import syft as sy
 from syft.experimental_flags import flags
-from syft.lib.numpy.array import SUPPORTED_BOOL_TYPES
-from syft.lib.numpy.array import SUPPORTED_DTYPES
-from syft.lib.numpy.array import SUPPORTED_FLOAT_TYPES
-from syft.lib.numpy.array import SUPPORTED_INT_TYPES
 
+np = pytest.importorskip("numpy")
 sy.load("numpy")
 
 
@@ -22,8 +19,13 @@ def test_remote_numpy_array(
     arrow_backend: str, root_client: sy.VirtualMachineClient
 ) -> None:
     flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
+    # syft absolute
+    from syft.lib.numpy.array import SUPPORTED_BOOL_TYPES
+    from syft.lib.numpy.array import SUPPORTED_DTYPES
+    from syft.lib.numpy.array import SUPPORTED_FLOAT_TYPES
+    from syft.lib.numpy.array import SUPPORTED_INT_TYPES
 
-    test_arrays: List[np.ndarray] = []
+    test_arrays: List[np.ndarray] = []  # type: ignore
     for dtype in SUPPORTED_DTYPES:
 
         # test their bounds

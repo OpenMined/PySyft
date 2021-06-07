@@ -1,0 +1,4 @@
+aries_cloudcontroller==0.2.6
+qrcode
+syft==0.5.0rc1
+termcolor

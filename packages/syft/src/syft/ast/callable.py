@@ -1,3 +1,6 @@
+"""This module contains `Callable`, an AST node representing a method (can be static),
+global function, or constructor which can be directly executed."""
+
 # stdlib
 from types import ModuleType
 from typing import Any
@@ -31,7 +34,7 @@ class Callable(ast.attribute.Attribute):
         client: Optional[AbstractNodeClient] = None,
         is_static: Optional[bool] = False,
     ):
-        """Base constructor.
+        """Base constructor for Callable.
 
         Args:
             path_and_name: The path for the current node, e.g. `syft.lib.python.List`.
@@ -62,6 +65,13 @@ class Callable(ast.attribute.Attribute):
         given the `return_type_name`.
 
         2. If the client is not set, then the `__call__` is used as a query on the ast.
+
+        Args:
+            *args: arguments of `callable`
+            **kwargs: keyword arguments of `callable`
+
+        Returns:
+            If client is not set, returns `callable` node in AST at given path.
         """
         self.apply_node_changes()
 

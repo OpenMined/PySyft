@@ -1,0 +1,10 @@
+# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.
+version: v1.19.0
+# ignores vulnerabilities until expiry date; change duration by modifying expiry date
+ignore:
+  SNYK-PYTHON-CRYPTOGRAPHY-1022152:
+    - '*':
+        reason: CRYPTOGRAPHY - Fix not available currently
+        expires: 2021-06-06T08:03:12.281Z
+        created: 2021-05-07T08:03:12.290Z
+patch: {}
