@@ -8,7 +8,6 @@ from ...proto.lib.petlib.bn_pb2 import Bn as Bn_PB
 
 def object2proto_group(obj: pl.bn.Bn) -> Bn_PB:
     proto = Bn_PB()
-    print("what do we have???", obj, obj.hex(), type(obj.hex()))
     proto.hex = obj.hex()
     return proto
 
