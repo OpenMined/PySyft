@@ -1,13 +1,11 @@
 # stdlib
-
-# stdlib
 import dataclasses
 from uuid import UUID
 
 # third party
 import sympc
 from sympc.config import Config
-from sympc.tensor import ShareTensor
+from sympc.tensor import ReplicatedSharedTensor
 
 # syft absolute
 import syft
@@ -16,12 +14,14 @@ import syft
 from ...generate_wrapper import GenerateWrapper
 from ...lib.torch.tensor_util import protobuf_tensor_deserializer
 from ...lib.torch.tensor_util import protobuf_tensor_serializer
-from ...proto.lib.sympc.share_tensor_pb2 import ShareTensor as ShareTensor_PB
+from ...proto.lib.sympc.replicatedshared_tensor_pb2 import (
+    ReplicatedSharedTensor as ReplicatedSharedTensor_PB,
+)
 from ..python.primitive_factory import PrimitiveFactory
 
 
-def object2proto(obj: object) -> ShareTensor_PB:
-    share: ShareTensor = obj
+def object2proto(obj: object) -> ReplicatedSharedTensor_PB:
+    share: ReplicatedSharedTensor = obj
 
     session_uuid = ""
     config = {}
@@ -34,16 +34,15 @@ def object2proto(obj: object) -> ShareTensor_PB:
     conf_syft = syft.serialize(
         PrimitiveFactory.generate_primitive(value=config), to_proto=True
     )
-    proto = ShareTensor_PB(session_uuid=session_uuid_syft, config=conf_syft)
+    proto = ReplicatedSharedTensor_PB(session_uuid=session_uuid_syft, config=conf_syft)
 
-    tensor_data = getattr(share.tensor, "data", None)
-    if tensor_data is not None:
-        proto.tensor.tensor.CopyFrom(protobuf_tensor_serializer(tensor_data))
+    for tensor in share.shares:
+        proto.tensor.append(protobuf_tensor_serializer(tensor))
 
     return proto
 
 
-def proto2object(proto: ShareTensor_PB) -> ShareTensor:
+def proto2object(proto: ReplicatedSharedTensor_PB) -> ReplicatedSharedTensor:
     if proto.session_uuid:
         session = sympc.session.get_session(proto.session_uuid)
         if session is None:
@@ -53,22 +52,25 @@ def proto2object(proto: ShareTensor_PB) -> ShareTensor:
     else:
         config = syft.deserialize(proto.config, from_proto=True)
 
-    data = protobuf_tensor_deserializer(proto.tensor.tensor)
-    share = ShareTensor(data=None, config=Config(**config))
+    output_shares = []
+
+    for tensor in proto.tensor:
+        output_shares.append(protobuf_tensor_deserializer(tensor))
+
+    share = ReplicatedSharedTensor(shares=None, config=Config(**config))
 
     if proto.session_uuid:
         share.session_uuid = UUID(proto.session_uuid)
 
-    # Manually put the tensor since we do not want to re-encode it
-    share.tensor = data
+    share.shares = output_shares
 
     return share
 
 
 GenerateWrapper(
-    wrapped_type=ShareTensor,
-    import_path="sympc.tensor.ShareTensor",
-    protobuf_scheme=ShareTensor_PB,
+    wrapped_type=ReplicatedSharedTensor,
+    import_path="sympc.tensor.ReplicatedSharedTensor",
+    protobuf_scheme=ReplicatedSharedTensor_PB,
     type_object2proto=object2proto,
     type_proto2object=proto2object,
 )

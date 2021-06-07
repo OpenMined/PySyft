@@ -157,14 +157,14 @@ jobs:
           bandit -r src
           safety check
 
-      - name: Run normal tests
-        run: |
-          pytest -m 'fast or slow' --cov syft --cov-fail-under 80 -n auto --durations=50
-
       - name: Install libomp for XGBoost
         if: startsWith(runner.os, 'macos')
         run: |
           brew install libomp
+
+      - name: Run normal tests
+        run: |
+          pytest -m 'fast or slow' --cov syft --cov-fail-under 80 -n auto --durations=50
 
       - name: Run supported library tests
         run: |

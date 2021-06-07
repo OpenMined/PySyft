@@ -289,6 +289,25 @@ inputs_list: Dict[str, List] = {
     "reverse": [[]],
     "sort": [[]],
 }
+inputs_dict: Dict[str, List] = {
+    "__contains__": [["a"], ["d"]],
+    "__eq__": [[{"a": 1, "b": 2, "c": None}], [{1: "a", 2: "b"}]],
+    "__getitem__": [["a"], [1]],
+    "__hash__": [[]],
+    "__len__": [[]],
+    "__ne__": [[{"a": 1, "b": 2, "c": None}], [{1: "a", 2: "b"}]],
+    "__str__": [[]],
+    "copy": [[]],
+    "fromkeys": [[[("a", 1), ("b", 2), ("c", 2)]]],
+    "items": [[]],
+    "keys": [[]],
+    "values": [[]],
+    "pop": [["a"]],
+    "popitem": [[]],
+    "setdefault": [["start", 101]],
+    "clear": [[]],
+    "get": [["a"]],
+}
 
 test_dict: Dict[str, Dict[str, Any]] = {
     "float": {
@@ -359,22 +378,27 @@ test_dict: Dict[str, Dict[str, Any]] = {
         ),
         "objects": [lambda: ([41, 15, 3, 80],), lambda: (list(range(2 ** 5)),)],
     },
+    "dict": {
+        "inputs": inputs_dict,
+        "construct": (
+            dict,
+            sy.lib.python.Dict,
+            lambda client: client.syft.lib.python.Dict,
+        ),
+        "objects": [[("a", 1), ("b", 2), ("c", None)], {1: "a", 2: "b"}],
+    },
 }
+
+
 parameters_pointer_objectives = []
 for py_type in test_dict:
-    if py_type in ["list"]:
-        parameters_pointer_objectives += [
-            # test_object in list are lambda func
-            [py_type, test_object_fn(), func]
-            for test_object_fn in test_dict[py_type]["objects"]
-            for func in test_dict[py_type]["inputs"]
-        ]
-    else:
-        parameters_pointer_objectives += [
-            [py_type, test_object, func]
-            for test_object in test_dict[py_type]["objects"]
-            for func in test_dict[py_type]["inputs"]
-        ]
+    for test_object in test_dict[py_type]["objects"]:
+        for func in test_dict[py_type]["inputs"]:
+            if py_type == "list":
+                parameters_pointer_objectives.append([py_type, test_object(), func])
+                # test_object in list are lambda func
+            else:
+                parameters_pointer_objectives.append([py_type, test_object, func])
 
 
 @pytest.mark.slow
@@ -435,13 +459,13 @@ def test_pointer_objectives(
             sy_res = int(sy_res * 1000) / 1000
             remote_sy_res = int(remote_sy_res * 1000) / 1000
 
-        if func in ["items", "values", "keys"]:
+        if func in ["items", "values", "keys", "popitem"]:
             py_res = list(py_res)
             sy_res = list(sy_res)
 
         assert py_res == sy_res
         # TODO: support `.get` for IteratorPointer objects
-        if func not in ("items", "keys", "values"):
+        if func not in ("items", "keys", "values", "popitem"):
             assert sy_res == remote_sy_res
 
 
@@ -499,10 +523,34 @@ def test_pointer_properties(
 
 @pytest.mark.slow
 @pytest.mark.parametrize("test_object_fn", test_dict["list"]["objects"])
-def test_iterator(
+# Test iter method on list and dict object.
+def test_list_iterator(
     test_object_fn: Callable[[], List[int]], client: sy.VirtualMachineClient
 ) -> None:
     py_obj = test_object_fn()
+    sy_obj, remote_sy_obj = sy.lib.python.List(py_obj), client.syft.lib.python.List(
+        py_obj
+    )
+
+    py_iter = iter(py_obj)
+    sy_iter = iter(sy_obj)
+
+    remote_sy_obj.set_request_config({})
+    rsy_iter = iter(remote_sy_obj)
+
+    for i in range(len(py_obj)):
+        py_elem = next(py_iter)
+        sy_elem = next(sy_iter)
+        rsy_elem = next(rsy_iter)
+
+        assert py_elem == sy_elem
+        assert sy_elem == rsy_elem.get()
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("test_object", test_dict["dict"]["objects"])
+def test_dict_iterator(test_object: List, client: sy.VirtualMachineClient) -> None:
+    py_obj = test_object
     sy_obj, remote_sy_obj = sy.lib.python.List(py_obj), client.syft.lib.python.List(
         py_obj
     )
