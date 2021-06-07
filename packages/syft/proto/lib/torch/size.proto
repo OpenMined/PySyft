@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package syft.lib.torch;
+import "proto/core/common/common_object.proto";
+
+message Size {
+  repeated uint64 data = 1;
+  syft.core.common.UID id = 2;
+}

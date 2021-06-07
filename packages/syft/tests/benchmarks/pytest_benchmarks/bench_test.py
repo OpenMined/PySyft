@@ -74,14 +74,17 @@ def test_duet_list_local(
 @pytest.mark.benchmark
 @pytest.mark.parametrize("byte_size", [10 * KB, 100 * KB, MB, 10 * MB])
 def test_duet_string_multiprocess(
-    byte_size: int, benchmark: Any, signaling_server: Process
+    byte_size: int, benchmark: Any, signaling_server: int
 ) -> None:
     time.sleep(3)
 
     data = "a" * byte_size
 
     benchmark.pedantic(
-        send_get_string_multiprocess, args=(data,), rounds=3, iterations=3
+        send_get_string_multiprocess,
+        args=(data, signaling_server),
+        rounds=3,
+        iterations=3,
     )
 
 
@@ -94,7 +97,12 @@ def test_duet_list_multiprocess(
 
     data = [LIST_TEMPLATE] * list_size
 
-    benchmark.pedantic(send_get_list_multiprocess, args=(data,), rounds=3, iterations=3)
+    benchmark.pedantic(
+        send_get_list_multiprocess,
+        args=(data, signaling_server),
+        rounds=3,
+        iterations=3,
+    )
 
 
 @pytest.mark.skip
@@ -119,5 +127,8 @@ def test_duet_chunk_size(
     os.environ["DC_MAX_BUFSIZE"] = str(max_buffer)
 
     benchmark.pedantic(
-        send_get_string_multiprocess, args=(data,), rounds=2, iterations=2
+        send_get_string_multiprocess,
+        args=(data, signaling_server),
+        rounds=2,
+        iterations=2,
     )

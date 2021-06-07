@@ -6,26 +6,31 @@ import pytest
 
 # syft absolute
 import syft as sy
+from syft.experimental_flags import flags
+
+np = pytest.importorskip("numpy")
+sy.load("numpy")
 
 
 @pytest.mark.vendor(lib="numpy")
-def test_remote_numpy_array(root_client: sy.VirtualMachineClient) -> None:
-    # third party
-    import numpy as np
-
+@pytest.mark.parametrize("arrow_backend", [False, True])
+def test_remote_numpy_array(
+    root_client: sy.VirtualMachineClient, arrow_backend: str
+) -> None:
+    flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
     # syft absolute
     from syft.lib.numpy.array import SUPPORTED_BOOL_TYPES
     from syft.lib.numpy.array import SUPPORTED_DTYPES
     from syft.lib.numpy.array import SUPPORTED_FLOAT_TYPES
     from syft.lib.numpy.array import SUPPORTED_INT_TYPES
 
-    sy.load("numpy")
-
-    test_arrays: List[np.ndarray] = []
+    test_arrays: List[np.ndarray] = []  # type: ignore
     for dtype in SUPPORTED_DTYPES:
 
         # test their bounds
         if dtype in SUPPORTED_BOOL_TYPES:
+            if arrow_backend:
+                continue
             lower = False
             upper = True
             mid = False
@@ -54,9 +59,9 @@ def test_remote_numpy_array(root_client: sy.VirtualMachineClient) -> None:
 
 # Attributes test
 @pytest.mark.vendor(lib="numpy")
-def test_shape(root_client: sy.VirtualMachineClient) -> None:
-    # third party
-    import numpy as np
+@pytest.mark.parametrize("arrow_backend", [False, True])
+def test_shape(root_client: sy.VirtualMachineClient, arrow_backend: bool) -> None:
+    flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
 
     x = np.array([1, 2, 3, 4])
     x_ptr = x.send(root_client)
@@ -68,9 +73,9 @@ def test_shape(root_client: sy.VirtualMachineClient) -> None:
 
 
 @pytest.mark.vendor(lib="numpy")
-def test_strides(root_client: sy.VirtualMachineClient) -> None:
-    # third party
-    import numpy as np
+@pytest.mark.parametrize("arrow_backend", [False, True])
+def test_strides(root_client: sy.VirtualMachineClient, arrow_backend: bool) -> None:
+    flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
 
     x = np.array([[0, 1, 2, 3, 4], [5, 6, 7, 8, 9]], dtype=np.int32)
     x_ptr = x.send(root_client)
@@ -82,9 +87,9 @@ def test_strides(root_client: sy.VirtualMachineClient) -> None:
 
 
 @pytest.mark.vendor(lib="numpy")
-def test_ndim(root_client: sy.VirtualMachineClient) -> None:
-    # third party
-    import numpy as np
+@pytest.mark.parametrize("arrow_backend", [False, True])
+def test_ndim(root_client: sy.VirtualMachineClient, arrow_backend: bool) -> None:
+    flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
 
     x = np.zeros((2, 3, 4))
     x_ptr = x.send(root_client)
@@ -96,9 +101,9 @@ def test_ndim(root_client: sy.VirtualMachineClient) -> None:
 
 
 @pytest.mark.vendor(lib="numpy")
-def test_size(root_client: sy.VirtualMachineClient) -> None:
-    # third party
-    import numpy as np
+@pytest.mark.parametrize("arrow_backend", [False, True])
+def test_size(root_client: sy.VirtualMachineClient, arrow_backend: bool) -> None:
+    flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
 
     x = np.zeros((3, 5, 2))
     x_ptr = x.send(root_client)
@@ -110,9 +115,9 @@ def test_size(root_client: sy.VirtualMachineClient) -> None:
 
 
 @pytest.mark.vendor(lib="numpy")
-def test_itemsize(root_client: sy.VirtualMachineClient) -> None:
-    # third party
-    import numpy as np
+@pytest.mark.parametrize("arrow_backend", [False, True])
+def test_itemsize(root_client: sy.VirtualMachineClient, arrow_backend: bool) -> None:
+    flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
 
     x = np.array([1, 2, 3], dtype=np.float64)
     x_ptr = x.send(root_client)
@@ -124,9 +129,9 @@ def test_itemsize(root_client: sy.VirtualMachineClient) -> None:
 
 
 @pytest.mark.vendor(lib="numpy")
-def test_nbytes(root_client: sy.VirtualMachineClient) -> None:
-    # third party
-    import numpy as np
+@pytest.mark.parametrize("arrow_backend", [False, True])
+def test_nbytes(root_client: sy.VirtualMachineClient, arrow_backend: bool) -> None:
+    flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
 
     x = np.zeros((3, 5, 2))
     x_ptr = x.send(root_client)
@@ -138,9 +143,9 @@ def test_nbytes(root_client: sy.VirtualMachineClient) -> None:
 
 
 @pytest.mark.vendor(lib="numpy")
-def test_transpose(root_client: sy.VirtualMachineClient) -> None:
-    # third party
-    import numpy as np
+@pytest.mark.parametrize("arrow_backend", [False, True])
+def test_transpose(root_client: sy.VirtualMachineClient, arrow_backend: bool) -> None:
+    flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
 
     x = np.array([1, 2, 3])
     x_ptr = x.send(root_client)
@@ -152,9 +157,9 @@ def test_transpose(root_client: sy.VirtualMachineClient) -> None:
 
 
 @pytest.mark.vendor(lib="numpy")
-def test_item(root_client: sy.VirtualMachineClient) -> None:
-    # third party
-    import numpy as np
+@pytest.mark.parametrize("arrow_backend", [False, True])
+def test_item(root_client: sy.VirtualMachineClient, arrow_backend: bool) -> None:
+    flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
 
     x = np.array([6, 8, 4, 7])
     x_ptr = x.send(root_client)
@@ -166,9 +171,9 @@ def test_item(root_client: sy.VirtualMachineClient) -> None:
 
 
 @pytest.mark.vendor(lib="numpy")
-def test_byteswap(root_client: sy.VirtualMachineClient) -> None:
-    # third party
-    import numpy as np
+@pytest.mark.parametrize("arrow_backend", [False, True])
+def test_byteswap(root_client: sy.VirtualMachineClient, arrow_backend: bool) -> None:
+    flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
 
     x = np.array([1, 256, 8755], dtype=np.int16)
     x_ptr = x.send(root_client)
@@ -181,9 +186,9 @@ def test_byteswap(root_client: sy.VirtualMachineClient) -> None:
 
 
 @pytest.mark.vendor(lib="numpy")
-def test_copy(root_client: sy.VirtualMachineClient) -> None:
-    # third party
-    import numpy as np
+@pytest.mark.parametrize("arrow_backend", [False, True])
+def test_copy(root_client: sy.VirtualMachineClient, arrow_backend: bool) -> None:
+    flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
 
     x = np.array([1, 2, 3])
     x_ptr = x.send(root_client)
@@ -196,9 +201,9 @@ def test_copy(root_client: sy.VirtualMachineClient) -> None:
 
 
 @pytest.mark.vendor(lib="numpy")
-def test_view(root_client: sy.VirtualMachineClient) -> None:
-    # third party
-    import numpy as np
+@pytest.mark.parametrize("arrow_backend", [False, True])
+def test_view(root_client: sy.VirtualMachineClient, arrow_backend: bool) -> None:
+    flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
 
     x = np.array([(1, 2, 3)])
     x_ptr = x.send(root_client)

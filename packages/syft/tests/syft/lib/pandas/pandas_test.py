@@ -1,6 +1,8 @@
 # stdlib
 from collections import OrderedDict
+from typing import Any
 from typing import Dict
+from typing import List
 
 # third party
 import pytest
@@ -8,13 +10,13 @@ import pytest
 # syft absolute
 import syft as sy
 
+pd = pytest.importorskip("pandas")
+np = pytest.importorskip("numpy")
+sy.load("pandas", "numpy")
+
 
 @pytest.mark.vendor(lib="pandas")
 def test_pandas(root_client: sy.VirtualMachineClient) -> None:
-    sy.load("pandas")
-    # third party
-    import pandas as pd
-
     data = {
         "col_1": {0: 3, 1: 2, 2: 1, 3: 0},
         "col_2": {0: "a", 1: "b", 2: "c", 3: "d"},
@@ -27,14 +29,14 @@ def test_pandas(root_client: sy.VirtualMachineClient) -> None:
     assert df2.to_dict() == data
 
 
+@pytest.mark.parametrize("ordered", [True, False])
+@pytest.mark.parametrize("categories", [["b", "a"], [1, 2, 3]])
 @pytest.mark.vendor(lib="pandas")
-def test_pd_categoriesdtype(root_client: sy.VirtualMachineClient) -> None:
-    sy.load("pandas")
-    # third party
-    import pandas as pd
-
-    categories = ["b", "a"]
-    ordered = False
+def test_pd_categoriesdtype(
+    root_client: sy.VirtualMachineClient,
+    categories: List[Any],
+    ordered: bool,
+) -> None:
     t = pd.CategoricalDtype(categories=categories, ordered=ordered)
 
     t_ptr = t.send(root_client)
@@ -45,33 +47,25 @@ def test_pd_categoriesdtype(root_client: sy.VirtualMachineClient) -> None:
     assert t2.ordered == ordered
 
 
+@pytest.mark.parametrize("ordered", [True, False])
+@pytest.mark.parametrize("data", [["a", "a", "b", "f"], [1, 2, 3]])
 @pytest.mark.vendor(lib="pandas")
-def test_pd_categories(root_client: sy.VirtualMachineClient) -> None:
-    sy.load("pandas")
-    # third party
-    import pandas as pd
-
-    categories = ["b", "a"]
-    ordered = False
-    t = pd.Categorical(
-        ["b", "a", "c", "a", "b"], categories=categories, ordered=ordered
-    )
+def test_pd_categories(
+    root_client: sy.VirtualMachineClient, data: List[Any], ordered: bool
+) -> None:
+    t = pd.Categorical(data, ordered=ordered)
 
     t_ptr = t.send(root_client)
 
     t2 = t_ptr.get()
     print(t2)
-    assert t2.categories.to_list() == categories
+    assert (t2.categories.to_list() == t.categories).all()
     assert t2.ordered == ordered
     assert t2.codes.tolist() == t.codes.tolist()
 
 
 @pytest.mark.vendor(lib="pandas")
 def test_slice_dataframe(root_client: sy.VirtualMachineClient) -> None:
-    sy.load("pandas")
-    # third party
-    import pandas as pd
-
     data: Dict[str, Dict] = {
         "col_1": {0: 3, 1: 2, 2: 1, 3: 0},
         "col_2": {0: "a", 1: "b", 2: "c", 3: "d"},
@@ -97,10 +91,6 @@ def test_slice_dataframe(root_client: sy.VirtualMachineClient) -> None:
 
 @pytest.mark.vendor(lib="pandas")
 def test_pandas_json_normalize(root_client: sy.VirtualMachineClient) -> None:
-    sy.load("pandas")
-    # third party
-    import pandas as pd
-
     data = {"A": [1, 2]}
     df = pd.json_normalize(data)
 

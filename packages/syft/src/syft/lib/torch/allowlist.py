@@ -6,7 +6,7 @@ from typing import Union
 from ..misc.union import UnionGenerator
 
 allowlist: Dict[str, Union[str, Dict[str, str]]] = {}  # (path: str, return_type:type)
-
+dynamic_allowlist: Dict[str, str] = {}
 # --------------------------------------------------------------------------------------
 # SECTION - Tensor methods which are intentionally disabled
 # --------------------------------------------------------------------------------------
@@ -1811,6 +1811,7 @@ allowlist["torch.nn.Linear.state_dict"] = "syft.lib.python.collections.OrderedDi
 allowlist["torch.nn.Linear.load_state_dict"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Linear.extra_repr"] = "syft.lib.python.String"
 
+
 # DataLoader
 allowlist["torch.utils.data.DataLoader"] = "torch.utils.data.DataLoader"
 allowlist["torch.utils.data.DataLoader.__iter__"] = "syft.lib.python.Iterator"
@@ -3586,3 +3587,6 @@ allowlist["torch.Tensor.inner"] = {
     "return_type": "torch.Tensor",
     "min_version": "1.8.0",
 }
+
+dynamic_allowlist["torch.nn.Linear.weight"] = "torch.nn.Parameter"
+dynamic_allowlist["torch.nn.Linear.bias"] = "torch.nn.Parameter"
