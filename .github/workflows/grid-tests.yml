@@ -1,0 +1,157 @@
+name: Grid Tests
+
+on:
+  push:
+    branches:
+      - master
+      - dev
+      - pygrid_0.4.0
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  linting:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix:
+        python-version: [3.8]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
+
+      - name: Install Poetry
+        run: |
+          pip install poetry
+
+      - name: Get poetry cache dir
+        id: poetry-cache
+        run: |
+          echo "::set-output name=dir::$(poetry config cache-dir)"
+
+      - name: poetry cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.poetry-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - id: file_changes # get changed files.
+        uses: trilom/file-changes-action@v1.2.3
+        with:
+          output: " "
+
+      - uses: pre-commit/action@v2.0.0
+        continue-on-error: true
+        with:
+          extra_args: --files ${{ steps.file_changes.outputs.files}} # apply only to changed files.
+
+  build:
+    runs-on: ubuntu-latest
+    # needs: [linting]
+    strategy:
+      max-parallel: 4
+      matrix:
+        python-version: [3.8]
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
+
+      - name: Install Poetry
+        run: |
+          pip install poetry
+
+      - name: Get poetry cache dir
+        id: poetry-cache
+        run: |
+          echo "::set-output name=dir::$(poetry config cache-dir)"
+
+      - name: poetry cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.poetry-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      # - id: file_changes  # get changed files.
+      #   uses: trilom/file-changes-action@v1.2.3
+      #   with:
+      #     output: ' '
+
+      # - uses: pre-commit/action@v2.0.0
+      #   with:
+      #     extra_args: --files ${{ steps.file_changes.outputs.files}}  # apply only to changed files.
+
+      - name: Test Grid Domain
+        run: |
+          cd ./apps/domain/
+
+          # Install dependencies
+          poetry install
+
+          # Run black
+          poetry run black --check --verbose .
+
+          # Run docformatter
+          poetry run docformatter --check --recursive .
+
+          # Run unit tests
+          poetry run coverage run -m pytest -v tests
+
+      - name: Test Grid Network
+        run: |
+          cd ./apps/network/
+
+          # Install dependencies
+          poetry install
+
+          # Run black
+          poetry run black --check --verbose --exclude src/syft .
+
+          # Run docformatter
+          poetry run docformatter --check --recursive .
+
+          # Run unit tests
+          poetry run coverage run -m pytest -v tests
+
+      - name: Test Grid Worker
+        run: |
+          cd ./apps/worker/
+
+          # Install dependencies
+          poetry install
+
+          # Run black
+          poetry run black --check --verbose --exclude src/syft .
+
+          # Run docformatter
+          poetry run docformatter --check --recursive .
+
+          # Run unit tests
+          poetry run coverage run -m pytest -v tests
+
+      - name: Run Integration Tests
+        run: |
+          cd ./apps/domain/
+
+          # Run Integration tests
+          # poetry run coverage run -m pytest -v ../../tests
