@@ -125,14 +125,45 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializa
 
         data = self.child.abs()
 
-        # create mask for min_vals > 0 and multiply by min-vals so
-        # that positive min-vals stay the same but all negative min-vals
-        # are converted to zero
-        min_vals = (self.min_vals > 0) * self.min_vals
+        # create true/false gate inputs
+        minvals_is_gt0 = self.min_vals > 0
+        minvals_is_le0 = (-minvals_is_gt0 + 1)
+        maxvals_is_gt0 = self.max_vals >= 0
+        maxvals_is_le0 = (-maxvals_is_gt0 + 1)
 
-        # create mask for min_vals > 0 and multiply by negative min-vals
-        # so that positive max_vals
-        max_vals = (self.min_vals > 0) * -self.min_vals
+        # create true/false gates
+        is_strict_gt0 = minvals_is_gt0
+        is_gtlt0 = minvals_is_le0 * maxvals_is_gt0
+        is_strict_lt0 = minvals_is_le0 * maxvals_is_le0
+
+        # if min_vals > 0, then new min_vals doesn't change
+        min_vals_strict_gt0 = self.min_vals
+
+        # if min_vals < 0 and max_vals > 0, then new min_vals = 0
+        min_vals_gtlt0 = self.min_vals * 0
+
+        # if min_vals < 0 and max_vals < 0, then new min_vals = -max_vals
+        min_vals_strict_lt0 = -self.max_vals
+
+        # sum of masked options
+        min_vals = is_strict_gt0 * min_vals_strict_gt0
+        min_vals = min_vals + (is_gtlt0 * min_vals_gtlt0)
+        min_vals = min_vals + (is_strict_lt0 * min_vals_strict_lt0)
+
+        #  if min_vals > 0, then new min_vals doesn't change
+        max_vals_strict_gt0 = self.max_vals
+
+        # if min_vals < 0 and max_vals > 0, then new min_vals = 0
+        max_vals_gtlt0 = np.max([self.max_vals, -self.min_vals])
+
+        #  if min_vals < 0 and max_vals < 0, then new min_vals = -max_vals
+        max_vals_strict_lt0 = -self.min_vals
+
+        # sum of masked options
+        max_vals = is_strict_gt0 * max_vals_strict_gt0
+        max_vals = max_vals + (is_gtlt0 * max_vals_gtlt0)
+        max_vals = max_vals + (is_strict_lt0 * max_vals_strict_lt0)
+
         entity = self.entity
 
         return SingleEntityPhiTensor(
