@@ -1,0 +1,99 @@
+syntax = "proto3";
+
+package syft.grid.messages;
+
+import "proto/core/common/common_object.proto";
+import "proto/core/io/address.proto";
+
+
+// CREATE WORKER
+message CreateWorkerMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+message CreateWorkerResponse {
+  syft.core.common.UID msg_id = 1;
+  int32 status_code = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}
+
+// CHECK Cloud instance types
+message GetWorkerInstanceTypesMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+message GetWorkerInstanceTypesResponse {
+  syft.core.common.UID msg_id = 1;
+  int32 status_code = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}
+
+
+// GET Worker
+message GetWorkerMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+
+message GetWorkerResponse {
+  syft.core.common.UID msg_id = 1;
+  int32 status_code = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}
+
+// GET ALL Workers
+message GetWorkersMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+message GetWorkersResponse {
+  syft.core.common.UID msg_id = 1;
+  int32 status_code = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}
+
+// Delete Worker
+message DeleteWorkerMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+message DeleteWorkerResponse {
+  syft.core.common.UID msg_id = 1;
+  int32 status_code = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}
+
+// UPDATE Worker
+message UpdateWorkerMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+message UpdateWorkerResponse {
+  syft.core.common.UID msg_id = 1;
+  int32 status_code = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}

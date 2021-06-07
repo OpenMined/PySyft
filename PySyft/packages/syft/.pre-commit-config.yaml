@@ -1,0 +1,79 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.4.0
+    hooks:
+      - id: check-ast
+      - id: trailing-whitespace
+      - id: check-docstring-first
+      - id: check-json
+      - id: check-added-large-files
+      - id: check-yaml
+      - id: check-merge-conflict
+        args: ["--assume-in-merge"]
+      - id: check-executables-have-shebangs
+      - id: debug-statements
+      - id: name-tests-test
+        exclude: ^(packages/syft/tests/syft/lib/allowlist_report.py)
+      - id: requirements-txt-fixer
+  - repo: https://gitlab.com/pycqa/flake8
+    rev: 3.9.1
+    hooks:
+      - id: flake8
+        args: ["--config=packages/syft/setup.cfg"]
+        # additional_dependencies:
+        # - flake8-kwarger
+        # - darglint
+        exclude: ^(packages/syft/src/syft/proto|packages/syft/examples/duet)
+  - repo: https://github.com/psf/black
+    rev: 21.4b0
+    hooks:
+      - id: black
+        exclude: ^(packages/syft/src/syft/proto|examples/duet)
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v0.812
+    hooks:
+      - id: mypy
+        exclude: ^(packages/syft/src/syft/proto|packages/syft/tests/syft/lib/python|packages/syft/examples/duet|packages/syft/pygrid)
+        args: [
+            "--ignore-missing-imports",
+            "--scripts-are-modules",
+            "--disallow-incomplete-defs",
+            "--no-implicit-optional",
+            "--warn-unused-ignores",
+            "--warn-redundant-casts",
+            "--strict-equality",
+            "--warn-unreachable",
+            # "--disallow-untyped-decorators",
+            "--disallow-untyped-defs",
+            "--disallow-untyped-calls",
+          ]
+
+  - repo: local
+    hooks:
+      - id: flynt
+        name: flynt
+        entry: flynt
+        args: [--fail-on-change]
+        types: [python]
+        language: python
+        additional_dependencies:
+          - flynt
+  - repo: https://github.com/pycqa/isort
+    rev: 5.8.0
+    hooks:
+      - id: isort
+        name: isort (python)
+
+  # - repo: https://github.com/pycqa/pydocstyle
+  #   rev: 5.1.1
+  #   hooks:
+  #     - id: pydocstyle
+  #       args:
+  #         - --convention=google
+  #       exclude: tests
+
+  # - repo: https://github.com/terrencepreilly/darglint
+  #   rev: main
+  #   hooks:
+  #     - id: darglint
+  #       exclude: tests

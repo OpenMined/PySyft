@@ -1,0 +1,105 @@
+# stdlib
+import atexit
+from multiprocessing import set_start_method
+import os
+import shutil
+import socket
+import sys
+import time
+import pytest
+
+# syft relative
+from ...syft.grid.duet.process_test import SyftTestProcess
+
+set_start_method("spawn", force=True)
+
+
+def cleanup() -> None:
+    checkpoint_dir = "checkpoints"
+    try:
+        shutil.rmtree(checkpoint_dir)
+    except BaseException:
+        pass
+    try:
+        os.makedirs(checkpoint_dir, exist_ok=True)
+    except BaseException:
+        pass
+
+atexit.register(cleanup)
+
+
+def do(port) -> None:
+    # stdlib
+    import time
+    from . import set_global_var
+    set_global_var(port)
+
+    # syft absolute
+    import syft as sy
+
+    sy.logger.add(sys.stderr, "ERROR")
+
+    start = time.time()
+
+    # syft relative
+    from . import (  # noqa: F401
+        {{DO_SCRIPT}},
+    )
+
+    sys.stderr.write(f"DO sending took {time.time() - start} sec\n")
+
+    sy.core.common.event_loop.loop.run_forever()
+
+
+def ds(port) -> None:
+    # stdlib
+    import time
+    from . import set_global_var
+    set_global_var(port)
+
+    # syft absolute
+    import syft as sy
+
+    sy.logger.add(sys.stderr, "ERROR")
+    start = time.time()
+
+    # syft relative
+    from . import (  # noqa: F401
+        {{DS_SCRIPT}},
+    )
+
+    sys.stderr.write(f"DS get took {time.time() - start} sec\n")
+
+
+{{LIB_DECORATOR}}
+def test_{{TESTCASE}}(signaling_server) -> None:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        assert s.connect_ex(("127.0.0.1", signaling_server)) == 0
+
+    cleanup()
+
+    start = time.time()
+
+    do_proc = SyftTestProcess(target=do, args=(signaling_server,))
+    do_proc.start()
+
+    ds_proc = SyftTestProcess(target=ds, args=(signaling_server,))
+    ds_proc.start()
+
+    ds_proc.join(400)
+
+    do_proc.terminate()
+
+    if do_proc.exception:
+        exception, tb = do_proc.exception
+        raise Exception(tb) from exception
+
+    if ds_proc.exception:
+        exception, tb = ds_proc.exception
+        raise Exception(tb) from exception
+
+    if ds_proc.is_alive():
+        ds_proc.terminate()
+        raise Exception("ds_proc is hanged")
+
+    print(f"test passed in {time.time() - start} seconds")

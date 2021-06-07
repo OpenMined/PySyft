@@ -1,0 +1,81 @@
+# Merge Tests
+# Once PR tests have passed and we attempt to merge, we run these tests which are more
+# comprehensive but very slow. The primary difference is the `pytest -m slow` tests.
+# Because the linting and notebook checks have already passed in the PR tests we don't
+# need them here. In addition, we skip MacOS on merge to dev as this happens frequently
+# and the differences between Ubuntu and MacOS are minimal compared with the higher
+# time unit cost of MacOS tests. Finally if we are merging with main we run the MacOS
+# tests as well.
+name: Syft Merge Tests
+
+on:
+  push:
+    branches:
+      - master
+      - main
+      - dev
+    paths:
+      - ".github/workflows/syft-*.yml"
+      - "packages/syft/**.py"
+      - "packages/syft/setup.cfg"
+      - "packages/syft/**.txt"
+  workflow_dispatch:
+    inputs:
+      none:
+        description: "Run Merge Tests Manually"
+        required: false
+
+defaults:
+  run:
+    working-directory: ./packages/syft
+
+jobs:
+  python-tests-latest-versions:
+    strategy:
+      max-parallel: 3
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        python-version: [3.9]
+        torch-version: [1.8.1]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
+
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - name: Install Dependencies
+        run: |
+          pip install packaging --default-timeout=60
+          python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
+          grep -A 3 "torch_ecosystem" setup.cfg
+          pip install -r requirements.unstable.txt
+          pip install -e .[dev] -f https://download.pytorch.org/whl/torch_stable.html
+
+      - name: Check import works without dev packages
+        run: |
+          python -c "import syft"
+
+      - name: Run torch tests
+        run: |
+          pytest -m torch -n auto -p no:benchmark --durations=50

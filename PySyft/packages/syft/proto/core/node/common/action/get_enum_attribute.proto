@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package syft.core.node.common.action;
+
+import "proto/core/common/common_object.proto";
+import "proto/core/io/address.proto";
+
+message GetEnumAttributeAction {
+  string path = 1;
+  syft.core.common.UID id_at_location = 2;
+  syft.core.io.Address address = 3;
+  syft.core.common.UID msg_id = 4;
+  int32 value_index = 5;
+}

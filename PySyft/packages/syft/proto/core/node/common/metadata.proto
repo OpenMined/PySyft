@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package syft.core.node.common;
+
+import "proto/core/common/common_object.proto";
+import "proto/core/io/location.proto";
+
+message Metadata {
+  syft.core.common.UID id = 1;
+  string name = 2;
+  syft.core.io.SpecificLocation node = 3;
+}

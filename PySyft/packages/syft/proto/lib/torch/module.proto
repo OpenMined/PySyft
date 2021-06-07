@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package syft.lib.torch;
+
+import "proto/lib/python/collections/ordered_dict.proto";
+import "proto/core/plan/plan.proto";
+
+message Module {
+    string module_type = 1;
+    string module_name = 2;
+    string module_repr = 3;
+    repeated Module children = 4;
+    syft.lib.python.collections.OrderedDict state_dict = 5;
+    syft.lib.python.collections.OrderedDict parameters = 6;
+    optional syft.core.plan.Plan forward = 7;
+    optional syft.lib.python.collections.OrderedDict _uid2attr = 8;
+}

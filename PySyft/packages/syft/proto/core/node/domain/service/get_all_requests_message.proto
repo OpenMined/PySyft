@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package syft.core.node.domain.service;
+
+import "proto/core/node/domain/service/request_message.proto";
+import "proto/core/common/common_object.proto";
+import "proto/core/io/address.proto";
+
+message GetAllRequestsMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  syft.core.io.Address reply_to = 3;
+}
+
+message GetAllRequestsResponseMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  repeated syft.core.node.domain.service.RequestMessage requests = 3;
+}

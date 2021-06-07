@@ -1,0 +1,343 @@
+# PR Tests
+# To speed up development we don't run all the tests when opening and updating a PR.
+# Instead we first run the lint check which fails fast and then only run the
+# `pytest -m fast` tests against Ubuntu and Windows and the notebook examples.
+# Once these checks pass and we decide to do a merge, the actions in `merge_tests.yml`
+# get executed.
+name: Syft PR Tests
+
+on:
+  pull_request:
+    branches:
+      - dev
+    paths:
+      - ".github/workflows/syft-*.yml"
+      - "packages/syft/**.py"
+      - "packages/syft/**.txt"
+      - "packages/syft/setup.cfg"
+      - "packages/syft/examples/private-ai-series/**.ipynb"
+
+defaults:
+  run:
+    working-directory: ./packages/syft
+
+jobs:
+  python-linting:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix:
+        python-version: [3.9]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
+
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v1
+        with:
+          version: "3.x"
+
+      - name: Build Protos
+        run: |
+          set -e
+          pip install black isort --default-timeout=60
+          ./scripts/build_proto.sh
+
+      # - id: file_changes # get changed files.
+      #   uses: trilom/file-changes-action@v1.2.3
+      #   with:
+      #     output: " "
+      - name: Hack pre-commit # https://github.com/pre-commit/action/issues/44
+        run: |
+          pwd
+          ls
+          cp .pre-commit-config.yaml ../../
+      - uses: pre-commit/action@v2.0.0
+      # with:
+      #   extra_args: --files ${{ steps.file_changes.outputs.files}} # apply only to changed files.
+
+      # - name: Run darglint via flake8 - Ignore Errors
+      #   continue-on-error: true
+      #   run: |
+      #     pip install darglint flake8
+      #     flake8 src tests
+
+      # check docstring coverage. If head coverage < base, exitcode = 1
+      # - uses: actions/checkout@v2
+      #   with:
+      #     fetch-depth: 0
+
+      # - name: Install docstr-coverage
+      #   run: pip install docstr-coverage --default-timeout=60
+
+      # - name: Get base coverage
+      #   run: |
+      #     git checkout ${{ github.event.pull_request.base.sha }}
+      #     echo "BASE_COV=$(docstr-coverage -p src)" >> $GITHUB_ENV
+
+      # - name: Get head coverage
+      #   continue-on-error: true
+      #   run: |
+      #     git checkout ${{ github.event.pull_request.head.sha }}
+      #     docstr-coverage -p --fail-under=$BASE_COV src
+
+      # - name: Check docstring modified files
+      #   if: ${{ failure() }}
+      #   run: |
+      #     git diff --name-only $(git merge-base ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }}) | xargs docstr-coverage --accept-empty
+
+  python-tests-latest-versions:
+    needs: [python-linting]
+    strategy:
+      max-parallel: 3
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        python-version: [3.8]
+        torch-version: [1.8.1]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
+
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - name: Install Dependencies
+        run: |
+          pip install packaging --default-timeout=60
+          python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
+          grep -A 3 "torch_ecosystem" setup.cfg
+          pip install -r requirements.unstable.txt
+          pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
+          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
+
+      - name: Scan for security issues
+        run: |
+          bandit -r src
+          safety check
+
+      - name: Install libomp for XGBoost
+        if: startsWith(runner.os, 'macos')
+        run: |
+          brew install libomp
+
+      - name: Run normal tests
+        run: |
+          pytest -m 'fast or slow' --cov syft --cov-fail-under 80 -n auto --durations=50
+
+      - name: Run supported library tests
+        run: |
+          pytest -m libs --co --durations=50
+          pytest -m libs -n auto -k "not tenseal" --suppress-no-test-exit-code --durations=50
+          pytest -m libs -n 1 -k "tenseal" --suppress-no-test-exit-code --durations=50
+
+  python-nb-examples:
+    needs: [python-linting]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      max-parallel: 1
+      matrix:
+        python-version: [3.8]
+        torch-version: [1.8.1]
+        os: [ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
+
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('./setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - name: Install Dependencies
+        run: |
+          pip install packaging --default-timeout=60
+          python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
+          grep -A 3 "torch_ecosystem" setup.cfg
+          pip install -r requirements.unstable.txt
+          pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
+          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
+
+      - name: Run notebook API examples
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: |
+          ./scripts/nb_test.sh
+          pytest examples/api -n auto --durations=50
+
+      - name: Test syft-network
+        run: |
+          python ./scripts/start_signaling_server.py --dry_run=True
+
+      - name: Run notebook Duet examples
+        run: |
+          python ./scripts/mnist.py
+          python ./scripts/nb_duet_test.py
+          pytest -m duet -n 1 --suppress-no-test-exit-code --durations=50
+
+  pygrid-unit-tests:
+    needs: [python-linting]
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix:
+        python-version: [3.8]
+        torch-version: [1.8.1]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
+
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('/setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - uses: actions/checkout@v2
+        with:
+          repository: "OpenMined/PyGrid"
+          ref: "dev"
+          path: "packages/grid"
+
+      - name: Install Dependencies
+        run: |
+          pip install packaging --default-timeout=60
+          python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
+          grep -A 3 "torch_ecosystem" setup.cfg
+          pip install -r requirements.unstable.txt
+          pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
+          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
+
+      - name: Test PyGrid
+        continue-on-error: true
+        run: |
+          pytest ../grid/apps/domain/tests --durations=50
+          pytest ../grid/apps/network/tests --durations=50
+          pytest ../grid/apps/worker/tests --durations=50
+
+  pygrid-integration-tests:
+    needs: [python-linting]
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix:
+        python-version: [3.8]
+        torch-version: [1.8.1]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip --default-timeout=60
+
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('./setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - uses: actions/checkout@v2
+        with:
+          repository: "OpenMined/PyGrid"
+          ref: "dev"
+          path: "packages/grid"
+
+      - name: Install Dependencies
+        run: |
+          pip install packaging --default-timeout=60
+          python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
+          grep -A 3 "torch_ecosystem" setup.cfg
+          pip install -r requirements.unstable.txt
+          pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
+          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
+
+      - name: Test PyGrid
+        continue-on-error: true
+        run: |
+          python ./scripts/mnist.py
+          pytest -m grid --durations=50

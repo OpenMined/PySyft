@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package syft.lib.numpy;
+import "proto/lib/torch/tensor.proto";
+
+message NumpyProtoArrow {
+  bytes data = 1;
+}
+
+message NumpyProto {
+  syft.lib.torch.TensorData tensor = 1;
+  string dtype = 2;
+}

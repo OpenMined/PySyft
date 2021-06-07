@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package syft.core.node.common.action;
+
+import "proto/core/common/common_object.proto";
+import "proto/core/io/address.proto";
+import "proto/core/pointer/pointer.proto";
+
+message GetSetStaticAttributeAction {
+  string path = 1;
+  syft.core.pointer.Pointer set_arg = 2;
+  syft.core.common.UID id_at_location = 3;
+  syft.core.io.Address address = 4;
+  syft.core.common.UID msg_id = 5;
+  int32 action = 6;
+}

@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package syft.core.node.domain.service;
+
+import "proto/core/common/common_object.proto";
+import "proto/core/io/address.proto";
+
+message RequestAnswerResponse {
+  int32 status = 1;
+  syft.core.common.UID request_id = 2;
+  syft.core.io.Address address = 3;
+}

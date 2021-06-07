@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package syft.lib.tenseal;
+import "proto/core/common/common_object.proto";
+
+message TenSEALVector {
+  syft.core.common.UID id = 1;
+  string obj_type = 2;
+  bytes vector = 4;
+}
