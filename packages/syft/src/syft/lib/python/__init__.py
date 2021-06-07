@@ -4,6 +4,7 @@ from typing import Optional
 # syft relative
 from . import collections
 from ...ast import add_classes
+from ...ast import add_dynamic_objects
 from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
@@ -333,6 +334,7 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.lib.python.Dict.__sizeof__", "syft.lib.python.Int"),
         ("syft.lib.python.Dict.__str__", "syft.lib.python.String"),
         ("syft.lib.python.Dict.copy", "syft.lib.python.Dict"),
+        ("syft.lib.python.Dict.clear", "syft.lib.python._SyNone"),
         ("syft.lib.python.Dict.fromkeys", "syft.lib.python.Dict"),
         # Rename get to dict_get because of conflict
         ("syft.lib.python.Dict.dict_get", "syft.lib.python.Any"),
@@ -563,9 +565,12 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ),
     ]
 
+    dynamic_objects = [("syft.lib.python.Bool.my_field", "syft.lib.python.Int")]
+
     add_modules(ast, modules)
     add_classes(ast, classes)
     add_methods(ast, methods)
+    add_dynamic_objects(ast, dynamic_objects)
 
     for klass in ast.classes:
         klass.create_pointer_class()

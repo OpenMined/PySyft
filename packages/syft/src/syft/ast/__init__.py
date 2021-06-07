@@ -1,4 +1,5 @@
-"""Syft's AST submodule is responsible for remote call executions.
+"""Syft's Abstract Syntax Tree (AST) submodule is responsible for remote call executions.
+
    An AST is a tree that maps function calls to their exact path,
    and knows what to do with that node in tree.
 
@@ -67,6 +68,7 @@ from typing import Union
 # syft relative
 from . import attribute  # noqa: F401
 from . import callable  # noqa: F401
+from . import dynamic_object  # noqa: F401
 from . import enum  # noqa: F401
 from . import globals  # noqa: F401
 from . import klass  # noqa: F401
@@ -86,6 +88,9 @@ def get_parent(
 
     Returns:
         The parent module or class.
+
+    Raises:
+        ValueError: If parent is not a class or module
 
     Examples:
         For instance, given the syft project root directory, the parent to the path `syft.lib.python.Int` is `python`.
@@ -174,3 +179,11 @@ def add_methods(
             index=len(path_list) - 1,
             return_type_name=return_type,
         )
+
+
+def add_dynamic_objects(
+    ast: globals.Globals, paths: TypeList[TypeTuple[str, str]]
+) -> None:
+    for path, return_type in paths:
+        parent = get_parent(path, ast)
+        parent.add_dynamic_object(path_and_name=path, return_type_name=return_type)
