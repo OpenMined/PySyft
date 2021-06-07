@@ -1,11 +1,12 @@
-# Database object controllers
-# Generic imports
+# stdlib
+from datetime import datetime
 import hashlib
 import logging
 import uuid
-from datetime import datetime
 
-from ...codes import CYCLE, MSG_FIELD
+# grid relative
+from ...codes import CYCLE
+from ...codes import MSG_FIELD
 from ...exceptions import ProtocolNotFoundError
 from ..cycles import cycle_manager
 from ..models import model_manager

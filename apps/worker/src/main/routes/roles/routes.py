@@ -1,17 +1,20 @@
-from .blueprint import roles_blueprint as roles_route
-from flask import request, Response
+# stdlib
 import json
 
-from syft.grid.messages.role_messages import (
-    CreateRoleMessage,
-    DeleteRoleMessage,
-    GetRoleMessage,
-    GetRolesMessage,
-    UpdateRoleMessage,
-)
+# third party
+from flask import Response
+from flask import request
+from syft.grid.messages.role_messages import CreateRoleMessage
+from syft.grid.messages.role_messages import DeleteRoleMessage
+from syft.grid.messages.role_messages import GetRoleMessage
+from syft.grid.messages.role_messages import GetRolesMessage
+from syft.grid.messages.role_messages import UpdateRoleMessage
 
-from ..auth import error_handler, token_required
+# grid relative
 from ...core.task_handler import route_logic
+from ..auth import error_handler
+from ..auth import token_required
+from .blueprint import roles_blueprint as roles_route
 
 
 @roles_route.route("", methods=["POST"])

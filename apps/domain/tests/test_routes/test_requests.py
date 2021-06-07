@@ -1,13 +1,15 @@
-from json import dumps, loads
+# stdlib
+from json import dumps
+from json import loads
+import time
 
+# third party
+from flask import current_app as app
 import jwt
 import pytest
-from flask import current_app as app
-
 from src.main.core.database import *
-from src.main.core.datasets.dataset_ops import create_dataset
 from src.main.core.database.store_disk import DiskObjectStore
-import time
+from src.main.core.datasets.dataset_ops import create_dataset
 
 owner_role = ("Owner", True, True, True, True, True, True, True)
 
@@ -327,6 +329,4 @@ def test_delete_request(client, database, cleanup):
         content_type="application/json",
     )
 
-    response = result.get_json()
-    assert result.status_code == 200
-    assert response["msg"] == "Request deleted!"
+    assert result.status_code == 204

@@ -1,9 +1,11 @@
-from json import dumps, loads
+# stdlib
+from json import dumps
+from json import loads
 
+# third party
+from flask import current_app as app
 import jwt
 import pytest
-from flask import current_app as app
-
 from src.main.core.database import *
 from src.main.core.database.environment.environment import Environment
 from src.main.core.database.environment.user_environment import UserEnvironment

@@ -1,9 +1,9 @@
-# Std python imports
+# stdlib
 import os
 import sys
 from typing import Dict
 
-# Internal imports
+# third party
 import config.settings
 
 # create settings object corresponding to specified env

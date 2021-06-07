@@ -1,38 +1,33 @@
 # stdlib
+from datetime import datetime
+import json
 import secrets
 from typing import List
 from typing import Type
 from typing import Union
-from datetime import datetime
 
 # third party
-from nacl.signing import VerifyKey
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
+from nacl.signing import VerifyKey
+import requests
+from syft.core.common.message import ImmediateSyftMessageWithReply
 
 # syft relative
 from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.service.auth import service_auth
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
-from syft.core.common.message import ImmediateSyftMessageWithReply
-
-from syft.grid.messages.network_search_message import (
-    NetworkSearchMessage,
-    NetworkSearchResponse,
-)
-
-from ..exceptions import (
-    MissingRequestKeyError,
-    InvalidParameterValueError,
-    AuthorizationError,
-)
-
-from ..database.utils import model_to_json
+from syft.core.node.domain.client import DomainClient
 from syft.grid.client.client import connect
 from syft.grid.client.grid_connection import GridHTTPConnection
-from syft.core.node.domain.client import DomainClient
-import requests
-import json
+from syft.grid.messages.network_search_message import NetworkSearchMessage
+from syft.grid.messages.network_search_message import NetworkSearchResponse
+
+# grid relative
+from ..database.utils import model_to_json
+from ..exceptions import AuthorizationError
+from ..exceptions import InvalidParameterValueError
+from ..exceptions import MissingRequestKeyError
 
 
 class BroadcastSearchService(ImmediateNodeServiceWithReply):

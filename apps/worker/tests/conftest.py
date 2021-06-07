@@ -1,12 +1,15 @@
-import pytest
-
-import sys, os
+# stdlib
+import os
+import sys
 
 myPath = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(myPath + "/../src/")
+
+# third party
 from app import create_app
 import main.core.node
 from main.core.node import GridDomain
+import pytest
 
 
 @pytest.fixture(scope="function", autouse=True)

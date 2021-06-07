@@ -1,8 +1,9 @@
+# stdlib
 import json
 import os
+from pathlib import Path
 import platform
 import subprocess
-from pathlib import Path
 
 var = lambda x: "${" + x + "}"
 var_module = lambda x, y: var(f"module.{x._name}.{y}")

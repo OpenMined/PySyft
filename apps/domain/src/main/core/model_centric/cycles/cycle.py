@@ -1,4 +1,6 @@
-from ...database import BaseModel, db
+# grid relative
+from ...database import BaseModel
+from ...database import db
 
 
 class Cycle(BaseModel):

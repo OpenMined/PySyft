@@ -1,7 +1,5 @@
-# Syft assets module imports
+# grid relative
 from ...exceptions import ProtocolNotFoundError
-
-# PyGrid imports
 from ...manager.database_manager import DatabaseManager
 from .protocol import Protocol
 

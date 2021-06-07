@@ -1,8 +1,8 @@
-# Standard python imports
+# stdlib
 import logging
 import traceback
 
-# Threads
+# grid relative
 from ....utils.executor import executor
 
 

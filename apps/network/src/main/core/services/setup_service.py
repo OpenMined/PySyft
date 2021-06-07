@@ -1,39 +1,37 @@
 # stdlib
+from datetime import datetime
 import secrets
 from typing import List
 from typing import Type
 from typing import Union
-from datetime import datetime
 
 # third party
-from nacl.signing import VerifyKey
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
+from nacl.signing import VerifyKey
+from syft.core.common.message import ImmediateSyftMessageWithReply
 
 # syft relative
 from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.service.auth import service_auth
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
-from syft.core.common.message import ImmediateSyftMessageWithReply
+from syft.grid.messages.setup_messages import CreateInitialSetUpMessage
+from syft.grid.messages.setup_messages import CreateInitialSetUpResponse
+from syft.grid.messages.setup_messages import GetSetUpMessage
+from syft.grid.messages.setup_messages import GetSetUpResponse
 
-from syft.grid.messages.setup_messages import (
-    CreateInitialSetUpMessage,
-    CreateInitialSetUpResponse,
-    GetSetUpMessage,
-    GetSetUpResponse,
-)
-
-from ..exceptions import (
-    MissingRequestKeyError,
-    InvalidParameterValueError,
-    AuthorizationError,
-)
+# grid relative
+from ...core.database.environment.environment import states
+from ...core.infrastructure import AWS_Serverfull
+from ...core.infrastructure import AWS_Serverless
+from ...core.infrastructure import Config
+from ...core.infrastructure import Provider
 from ..database.setup.setup import SetupConfig
 from ..database.utils import model_to_json
-
-from ...core.database.environment.environment import states
-from ...core.infrastructure import Config, Provider, AWS_Serverfull, AWS_Serverless
+from ..exceptions import AuthorizationError
+from ..exceptions import InvalidParameterValueError
+from ..exceptions import MissingRequestKeyError
 
 
 def create_initial_setup(

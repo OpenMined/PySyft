@@ -1,7 +1,9 @@
+# stdlib
 import sys
 
 sys.path.append("../")
 
+# third party
 from src import __version__
 
 

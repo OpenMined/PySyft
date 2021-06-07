@@ -1,5 +1,8 @@
-import numpy
+# stdlib
 import math
+
+# third party
+import numpy
 
 
 def mask_payload_fast(self, payload: bytes) -> str:

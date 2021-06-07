@@ -1,13 +1,17 @@
-from typing import Union
-from typing import List
+# stdlib
 from datetime import datetime
+from typing import List
+from typing import Union
 
-from .database_manager import DatabaseManager
-from ..database.requests.request import Request
-from .role_manager import RoleManager
-from ..exceptions import RequestError
-from syft.core.node.domain.service import RequestStatus
+# third party
 from syft.core.common.uid import UID
+from syft.core.node.domain.service import RequestStatus
+
+# grid relative
+from ..database.requests.request import Request
+from ..exceptions import RequestError
+from .database_manager import DatabaseManager
+from .role_manager import RoleManager
 
 
 class RequestManager(DatabaseManager):

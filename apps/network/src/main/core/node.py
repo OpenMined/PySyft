@@ -1,23 +1,21 @@
+# third party
+from nacl.encoding import HexEncoder
+from nacl.signing import SigningKey
+
+# grid relative
+from ..routes import association_requests_blueprint
+from ..routes import dcfl_blueprint
+from ..routes import groups_blueprint
+from ..routes import roles_blueprint
+from ..routes import root_blueprint
+from ..routes import search_blueprint
+from ..routes import setup_blueprint
+from ..routes import users_blueprint
+from ..utils.executor import executor
+from ..utils.monkey_patch import mask_payload_fast
 from .nodes.domain import GridDomain
 from .nodes.network import GridNetwork
 from .nodes.worker import GridWorker
-from ..utils.monkey_patch import mask_payload_fast
-from nacl.signing import SigningKey
-from nacl.encoding import HexEncoder
-
-# Threads
-from ..utils.executor import executor
-
-from ..routes import (
-    roles_blueprint,
-    users_blueprint,
-    setup_blueprint,
-    groups_blueprint,
-    dcfl_blueprint,
-    association_requests_blueprint,
-    root_blueprint,
-    search_blueprint,
-)
 
 node = None
 
@@ -64,7 +62,12 @@ def create_network_app(app, args, testing=False):
     # Here you should add all the blueprints related to WebSocket routes.
     # sockets.register_blueprint()
 
-    from .database import db, set_database_config, seed_network_db, User, Role
+    # grid relative
+    from .database import Role
+    from .database import User
+    from .database import db
+    from .database import seed_network_db
+    from .database import set_database_config
 
     global node
     node = GridNetwork(name=args.name)
@@ -118,7 +121,12 @@ def create_domain_app(app, args, testing=False):
     # Here you should add all the blueprints related to WebSocket routes.
     # sockets.register_blueprint()
 
-    from .database import db, set_database_config, seed_db, User, Role
+    # grid relative
+    from .database import Role
+    from .database import User
+    from .database import db
+    from .database import seed_db
+    from .database import set_database_config
 
     global node
     node = GridDomain(name=args.name)

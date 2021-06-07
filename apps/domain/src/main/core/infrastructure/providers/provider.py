@@ -1,16 +1,19 @@
+# stdlib
 import json
 import os
+from pathlib import Path
 import subprocess
 import time
-from pathlib import Path
 from types import SimpleNamespace
 
+# third party
 import terrascript
+from terrascript import Module
 import terrascript.data as data
 import terrascript.provider as provider
 import terrascript.resource as resource
-from terrascript import Module
 
+# grid relative
 from ..tf import Terraform
 from ..utils import Config
 

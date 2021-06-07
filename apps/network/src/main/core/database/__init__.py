@@ -1,30 +1,34 @@
+# stdlib
 import os
 
+# third party
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy_mixins import AllFeaturesMixin
 
 db = SQLAlchemy()
 
-
+# TODO: Move this out of being defined above imports
 class BaseModel(db.Model, AllFeaturesMixin):
     __abstract__ = True
     pass
 
 
+# grid relative
 from .bin_storage.bin_obj import BinaryObject
 from .bin_storage.json_obj import JsonObject
 from .bin_storage.metadata import StorageMetadata
 from .groups.groups import Group
 from .groups.usergroup import UserGroup
-from .roles.roles import Role, create_role
-from .users.user import User, create_user
 from .requests.request import Request
-from .setup.setup import SetupConfig, create_setup
-from .bin_storage.bin_obj import BinaryObject
-from .bin_storage.json_obj import JsonObject
-from .bin_storage.metadata import StorageMetadata
-from .utils import model_to_json, expand_user_object
+from .roles.roles import Role
+from .roles.roles import create_role
+from .setup.setup import SetupConfig
+from .setup.setup import create_setup
+from .users.user import User
+from .users.user import create_user
+from .utils import expand_user_object
+from .utils import model_to_json
 
 
 def set_database_config(app, test_config=None, verbose=False):

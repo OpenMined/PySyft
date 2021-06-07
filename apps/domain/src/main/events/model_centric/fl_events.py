@@ -1,22 +1,22 @@
-# Standard python imports
+# stdlib
 import base64
+from binascii import unhexlify
 import json
 import traceback
 import uuid
-from binascii import unhexlify
 
-from ...core.codes import CYCLE, MODEL_CENTRIC_FL_EVENTS, MSG_FIELD, RESPONSE_MSG
-from ...core.exceptions import (
-    CycleNotFoundError,
-    MaxCycleLimitExceededError,
-    PyGridError,
-)
+# grid relative
+from ...core.codes import CYCLE
+from ...core.codes import MODEL_CENTRIC_FL_EVENTS
+from ...core.codes import MSG_FIELD
+from ...core.codes import RESPONSE_MSG
+from ...core.exceptions import CycleNotFoundError
+from ...core.exceptions import MaxCycleLimitExceededError
+from ...core.exceptions import PyGridError
 from ...core.model_centric.auth.federated import verify_token
 from ...core.model_centric.controller import processes
 from ...core.model_centric.processes import process_manager
 from ...core.model_centric.workers import worker_manager
-
-# Local imports
 from .socket_handler import SocketHandler
 
 # Singleton socket handler

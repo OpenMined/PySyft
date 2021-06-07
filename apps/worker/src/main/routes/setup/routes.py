@@ -1,14 +1,18 @@
-from .blueprint import setup_blueprint as setup_route
-from flask import request, Response
+# stdlib
 import json
 
-from syft.grid.messages.setup_messages import (
-    CreateInitialSetUpMessage,
-    GetSetUpMessage,
-)
+# third party
+from flask import Response
+from flask import request
+from syft.grid.messages.setup_messages import CreateInitialSetUpMessage
+from syft.grid.messages.setup_messages import GetSetUpMessage
 
-from ..auth import error_handler, token_required, optional_token
+# grid relative
 from ...core.task_handler import route_logic
+from ..auth import error_handler
+from ..auth import optional_token
+from ..auth import token_required
+from .blueprint import setup_blueprint as setup_route
 
 
 @setup_route.route("/", methods=["POST"])

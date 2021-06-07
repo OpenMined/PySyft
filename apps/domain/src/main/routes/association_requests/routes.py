@@ -1,18 +1,21 @@
-from .blueprint import association_requests_blueprint as association_request_route
-from flask import request, Response
+# stdlib
 import json
 
-from syft.grid.messages.association_messages import (
-    SendAssociationRequestMessage,
-    ReceiveAssociationRequestMessage,
-    GetAssociationRequestMessage,
-    DeleteAssociationRequestMessage,
-    GetAssociationRequestsMessage,
-    RespondAssociationRequestMessage,
-)
+# third party
+from flask import Response
+from flask import request
+from syft.grid.messages.association_messages import DeleteAssociationRequestMessage
+from syft.grid.messages.association_messages import GetAssociationRequestMessage
+from syft.grid.messages.association_messages import GetAssociationRequestsMessage
+from syft.grid.messages.association_messages import ReceiveAssociationRequestMessage
+from syft.grid.messages.association_messages import RespondAssociationRequestMessage
+from syft.grid.messages.association_messages import SendAssociationRequestMessage
 
-from ..auth import error_handler, token_required
+# grid relative
 from ...core.task_handler import route_logic
+from ..auth import error_handler
+from ..auth import token_required
+from .blueprint import association_requests_blueprint as association_request_route
 
 
 @association_request_route.route("/request", methods=["POST"])
@@ -32,7 +35,7 @@ def send_association_request(current_user):
     content["sender_address"] = sender_address
 
     status_code, response_msg = error_handler(
-        route_logic, SendAssociationRequestMessage, current_user, content
+        route_logic, 200, SendAssociationRequestMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -52,7 +55,7 @@ def recv_association_request():
         content = {}
 
     status_code, response_msg = error_handler(
-        route_logic, ReceiveAssociationRequestMessage, None, content
+        route_logic, 200, ReceiveAssociationRequestMessage, None, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -81,7 +84,7 @@ def reply_association_request(current_user):
     content["sender_address"] = sender_address
 
     status_code, response_msg = error_handler(
-        route_logic, RespondAssociationRequestMessage, current_user, content
+        route_logic, 200, RespondAssociationRequestMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -102,7 +105,7 @@ def get_all_association_requests(current_user):
         content = {}
 
     status_code, response_msg = error_handler(
-        route_logic, GetAssociationRequestsMessage, current_user, content
+        route_logic, 200, GetAssociationRequestsMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -126,7 +129,7 @@ def get_specific_association_requests(current_user, association_request_id):
     content["association_request_id"] = association_request_id
 
     status_code, response_msg = error_handler(
-        route_logic, GetAssociationRequestMessage, current_user, content
+        route_logic, 200, GetAssociationRequestMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -150,7 +153,7 @@ def delete_association_requests(current_user, association_request_id):
     content["association_request_id"] = association_request_id
 
     status_code, response_msg = error_handler(
-        route_logic, DeleteAssociationRequestMessage, current_user, content
+        route_logic, 204, DeleteAssociationRequestMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content

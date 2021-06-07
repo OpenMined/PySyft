@@ -1,18 +1,20 @@
-from ..blueprint import dcfl_blueprint as dcfl_route
-from flask import request, Response
+# stdlib
 import json
 
-from syft.grid.messages.tensor_messages import (
-    CreateTensorMessage,
-    GetTensorMessage,
-    UpdateTensorMessage,
-    GetTensorMessage,
-    GetTensorsMessage,
-    DeleteTensorMessage,
-)
+# third party
+from flask import Response
+from flask import request
+from syft.grid.messages.tensor_messages import CreateTensorMessage
+from syft.grid.messages.tensor_messages import DeleteTensorMessage
+from syft.grid.messages.tensor_messages import GetTensorMessage
+from syft.grid.messages.tensor_messages import GetTensorsMessage
+from syft.grid.messages.tensor_messages import UpdateTensorMessage
 
-from ...auth import error_handler, token_required
+# grid relative
 from ....core.task_handler import route_logic
+from ...auth import error_handler
+from ...auth import token_required
+from ..blueprint import dcfl_blueprint as dcfl_route
 
 
 @dcfl_route.route("/tensors", methods=["POST"])
@@ -24,7 +26,7 @@ def create_tensor(current_user):
         content = {}
 
     status_code, response_msg = error_handler(
-        route_logic, CreateTensorMessage, current_user, content
+        route_logic, 201, CreateTensorMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -47,7 +49,7 @@ def get_tensor(current_user, tensor_id):
     content["tensor_id"] = tensor_id
 
     status_code, response_msg = error_handler(
-        route_logic, GetTensorMessage, current_user, content
+        route_logic, 200, GetTensorMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -67,7 +69,7 @@ def get_all_tensors():
         content = {}
 
     status_code, response_msg = error_handler(
-        route_logic, GetTensorsMessage, None, content
+        route_logic, 200, GetTensorsMessage, None, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -90,7 +92,7 @@ def update_tensor(current_user, tensor_id):
     content["tensor_id"] = tensor_id
 
     status_code, response_msg = error_handler(
-        route_logic, UpdateTensorMessage, current_user, content
+        route_logic, 204, UpdateTensorMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -113,7 +115,7 @@ def delete_tensor(current_user, tensor_id):
     content["tensor_id"] = tensor_id
 
     status_code, response_msg = error_handler(
-        route_logic, DeleteTensorMessage, current_user, content
+        route_logic, 204, DeleteTensorMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content

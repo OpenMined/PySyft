@@ -8,35 +8,31 @@
 - Import order : python std libraries, extendend libs, internal source code.
 """
 
-# Std Python imports
-from typing import Optional
-from typing import Dict
+# stdlib
 import logging
 import os
+from typing import Dict
+from typing import Optional
 
-# Extended Python imports
+# third party
+import config
 from flask import Flask
 from flask_sockets import Sockets
-
 from geventwebsocket.websocket import Header
-from nacl.signing import SigningKey
-from nacl.encoding import HexEncoder
-from syft.core.node.domain.domain import Domain
-
-
-# Internal imports
-from main.utils.monkey_patch import mask_payload_fast
-from main.routes import (
-    roles_blueprint,
-    users_blueprint,
-    setup_blueprint,
-    groups_blueprint,
-    dcfl_blueprint,
-    association_requests_blueprint,
-    root_blueprint,
-)
-import config
 from main.core.node import create_network_app
+from main.routes import association_requests_blueprint
+from main.routes import dcfl_blueprint
+from main.routes import groups_blueprint
+from main.routes import roles_blueprint
+from main.routes import root_blueprint
+from main.routes import setup_blueprint
+from main.routes import users_blueprint
+from main.utils.monkey_patch import mask_payload_fast
+from nacl.encoding import HexEncoder
+from nacl.signing import SigningKey
+
+# syft absolute
+from syft.core.node.domain.domain import Domain
 
 DEFAULT_SECRET_KEY = "justasecretkeythatishouldputhere"
 

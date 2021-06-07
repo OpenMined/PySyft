@@ -94,13 +94,6 @@ The latest PyGrid Network and Node images are also available on the Docker Hub.
 - [PyGrid Worker - `openmined/grid-worker`](https://hub.docker.com/repository/docker/openmined/grid-worker)
 - [PyGrid Network - `openmined/grid-network`](https://hub.docker.com/repository/docker/openmined/grid-network)
 
-To setup and start the PyGrid platform you just need start the docker-compose process.
-
-```
-$ docker-compose up
-```
-
-This will download the latest Openmined Docker images and start a grid platform with a network and 4 nodes. You can modify this setup by changing the `docker-compose.yml` file.
 
 #### 3. _Optional_ - Build your own images
 

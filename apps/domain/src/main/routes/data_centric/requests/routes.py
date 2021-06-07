@@ -1,20 +1,25 @@
-from json import dumps, loads
+# stdlib
+from json import dumps
+from json import loads
 
-from flask import request, Response
+# third party
+from flask import Response
+from flask import request
+from main.core.task_handler import route_logic
+from main.core.task_handler import task_handler
 from syft.core.node.common.service.repr_service import ReprMessage
 from syft.grid.messages.dataset_messages import CreateDatasetMessage
-from syft.grid.messages.request_messages import (
-    CreateRequestMessage,
-    GetRequestMessage,
-    GetRequestsMessage,
-    UpdateRequestMessage,
-    DeleteRequestMessage,
-)
+from syft.grid.messages.request_messages import CreateRequestMessage
+from syft.grid.messages.request_messages import DeleteRequestMessage
+from syft.grid.messages.request_messages import GetRequestMessage
+from syft.grid.messages.request_messages import GetRequestsMessage
+from syft.grid.messages.request_messages import UpdateRequestMessage
 
-from ...auth import error_handler, token_required, optional_token
-from main.core.task_handler import route_logic, task_handler
+# grid relative
+from ...auth import error_handler
+from ...auth import optional_token
+from ...auth import token_required
 from ..blueprint import dcfl_blueprint as dcfl_route
-from ....core.node import node
 
 
 @dcfl_route.route("/requests", methods=["POST"])
@@ -26,7 +31,7 @@ def create_request(current_user):
         content = {}
 
     status_code, response_msg = error_handler(
-        route_logic, CreateRequestMessage, current_user, content
+        route_logic, 200, CreateRequestMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -45,7 +50,7 @@ def get_specific_request(current_user, request_id):
     content["request_id"] = request_id
 
     status_code, response_msg = error_handler(
-        route_logic, GetRequestMessage, current_user, content
+        route_logic, 200, GetRequestMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -63,7 +68,7 @@ def get_all_requests(current_user):
     content = {}
 
     status_code, response_msg = error_handler(
-        route_logic, GetRequestsMessage, current_user, content
+        route_logic, 200, GetRequestsMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -86,7 +91,7 @@ def update_request(current_user, request_id):
     content["request_id"] = request_id
 
     status_code, response_msg = error_handler(
-        route_logic, UpdateRequestMessage, current_user, content
+        route_logic, 200, UpdateRequestMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -105,7 +110,7 @@ def delete_request(current_user, request_id):
     content["request_id"] = request_id
 
     status_code, response_msg = error_handler(
-        route_logic, DeleteRequestMessage, current_user, content
+        route_logic, 204, DeleteRequestMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content

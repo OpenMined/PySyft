@@ -1,10 +1,11 @@
+# stdlib
 from typing import List
 from typing import Union
-from .database_manager import DatabaseManager
+
+# grid relative
 from ..database.roles.roles import Role
-from ..exceptions import (
-    RoleNotFoundError,
-)
+from ..exceptions import RoleNotFoundError
+from .database_manager import DatabaseManager
 
 
 class RoleManager(DatabaseManager):

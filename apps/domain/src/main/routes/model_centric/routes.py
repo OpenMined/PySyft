@@ -1,37 +1,41 @@
-# Standard Python Imports
+# stdlib
 import io
 import json
 import logging
 from math import floor
 from random import random
 
+# third party
+from flask import Response
+from flask import current_app
+from flask import render_template
+from flask import request
+from flask import send_file
 import numpy as np
-from flask import Response, current_app, render_template, request, send_file
-
-# External modules imports
 from requests_toolbelt import MultipartEncoder
 
-# Dependencies used by req_join endpoint
-# It's a mockup endpoint and should be removed soon.
+# TODO: Dependency used by req_join mockup endpoint and should be removed soon
 from scipy.stats import poisson
 
-from ...core.codes import CYCLE, MSG_FIELD, RESPONSE_MSG
-from ...core.exceptions import InvalidRequestKeyError, ModelNotFoundError, PyGridError
+# grid relative
+from ...core.codes import CYCLE
+from ...core.codes import MSG_FIELD
+from ...core.codes import RESPONSE_MSG
+from ...core.exceptions import InvalidRequestKeyError
+from ...core.exceptions import ModelNotFoundError
+from ...core.exceptions import PyGridError
 from ...core.model_centric.auth.federated import verify_token
 from ...core.model_centric.controller import processes
 from ...core.model_centric.cycles import cycle_manager
 from ...core.model_centric.models import model_manager
 from ...core.model_centric.processes import process_manager
-from ...core.model_centric.syft_assets import plans, protocols
+from ...core.model_centric.syft_assets import plans
+from ...core.model_centric.syft_assets import protocols
 from ...core.model_centric.workers import worker_manager
-from ...events.model_centric.fl_events import (
-    assign_worker_id,
-    cycle_request,
-    report,
-    requires_speed_test,
-)
-
-# Local imports
+from ...events.model_centric.fl_events import assign_worker_id
+from ...events.model_centric.fl_events import cycle_request
+from ...events.model_centric.fl_events import report
+from ...events.model_centric.fl_events import requires_speed_test
 from .blueprint import mcfl_blueprint
 
 

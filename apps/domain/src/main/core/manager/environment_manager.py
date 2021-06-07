@@ -1,7 +1,11 @@
+# stdlib
 from datetime import datetime
-from typing import List, Union
+from typing import List
+from typing import Union
 
-from ..database.environment.environment import Environment, states
+# grid relative
+from ..database.environment.environment import Environment
+from ..database.environment.environment import states
 from ..database.environment.user_environment import UserEnvironment
 from ..exceptions import EnvironmentNotFoundError
 from .database_manager import DatabaseManager

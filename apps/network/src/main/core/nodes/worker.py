@@ -1,53 +1,49 @@
-from typing import Optional
+# stdlib
+from threading import Thread
+from time import sleep
 from typing import Dict
+from typing import Optional
 
+# third party
+from flask import current_app as app
+import jwt
+from nacl.signing import SigningKey
+from nacl.signing import VerifyKey
+import syft as sy
+from syft import serialize
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
-
+from syft.core.io.location import Location
+from syft.core.io.location import SpecificLocation
 from syft.core.node.common.action.exception_action import ExceptionMessage
 from syft.core.node.common.action.exception_action import UnknownPrivateException
 from syft.core.node.common.service.auth import AuthorizationException
-from syft.core.node.domain.domain import Domain
 from syft.core.node.device.client import DeviceClient
-from syft.grid.connections.http_connection import HTTPConnection
-from syft.core.io.location import SpecificLocation
-from syft.core.io.location import Location
-from syft import serialize
+from syft.core.node.domain.client import DomainClient
+from syft.core.node.domain.domain import Domain
 from syft.grid.client.client import connect
 from syft.grid.client.grid_connection import GridHTTPConnection
-from syft.core.node.domain.client import DomainClient
+from syft.grid.connections.http_connection import HTTPConnection
 
-# Services
-from ..services.association_request import AssociationRequestService
-from ..services.infra_service import DomainInfrastructureService
-from ..services.setup_service import SetUpService
-from ..services.tensor_service import RegisterTensorService
-from ..services.role_service import RoleManagerService
-from ..services.user_service import UserManagerService
-from ..services.dataset_service import DatasetManagerService
-from ..services.group_service import GroupManagerService
-from ..services.transfer_service import TransferObjectService
-from ..services.transfer_service import SaveObjectService
-
-# Database Management
+# grid relative
 from ..database import db
 from ..database.store_disk import DiskObjectStore
-from ..manager.user_manager import UserManager
-from ..manager.role_manager import RoleManager
-from ..manager.group_manager import GroupManager
-from ..manager.environment_manager import EnvironmentManager
-from ..manager.setup_manager import SetupManager
 from ..manager.association_request_manager import AssociationRequestManager
-
-from nacl.signing import SigningKey
-from nacl.signing import VerifyKey
-from time import sleep
-
-import jwt
-from flask import current_app as app
-from threading import Thread
-
-import syft as sy
+from ..manager.environment_manager import EnvironmentManager
+from ..manager.group_manager import GroupManager
+from ..manager.role_manager import RoleManager
+from ..manager.setup_manager import SetupManager
+from ..manager.user_manager import UserManager
+from ..services.association_request import AssociationRequestService
+from ..services.dataset_service import DatasetManagerService
+from ..services.group_service import GroupManagerService
+from ..services.infra_service import DomainInfrastructureService
+from ..services.role_service import RoleManagerService
+from ..services.setup_service import SetUpService
+from ..services.tensor_service import RegisterTensorService
+from ..services.transfer_service import SaveObjectService
+from ..services.transfer_service import TransferObjectService
+from ..services.user_service import UserManagerService
 
 
 class GridWorker(Domain):

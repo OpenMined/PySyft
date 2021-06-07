@@ -1,12 +1,20 @@
+# stdlib
 from typing import Dict
-from typing import Union
 from typing import List
-from bcrypt import checkpw, gensalt, hashpw
+from typing import Union
 
+# third party
+from bcrypt import checkpw
+from bcrypt import gensalt
+from bcrypt import hashpw
+
+# grid relative
+from ..database.users.user import User
+from ..exceptions import AuthorizationError
+from ..exceptions import InvalidCredentialsError
+from ..exceptions import UserNotFoundError
 from .database_manager import DatabaseManager
 from .role_manager import RoleManager
-from ..database.users.user import User
-from ..exceptions import UserNotFoundError, AuthorizationError, InvalidCredentialsError
 
 
 class UserManager(DatabaseManager):

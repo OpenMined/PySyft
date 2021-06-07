@@ -1,27 +1,23 @@
-from src import main
-from src.main.core.database import *
-from src.main.core.manager import UserManager
-from src.main.core.manager import GroupManager
-from src.main.core.exceptions import (
-    InvalidCredentialsError,
-    UserNotFoundError,
-    MissingRequestKeyError,
-)
-from src.main.core.nodes.domain import GridDomain
-from src.main.core.database import expand_user_object
+# third party
+from bcrypt import checkpw
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import pytest
-from bcrypt import checkpw
-
-from syft.grid.messages.user_messages import (
-    CreateUserMessage,
-    GetUserMessage,
-    GetUsersMessage,
-    DeleteUserMessage,
-    SearchUsersMessage,
-    UpdateUserMessage,
-)
+from src import main
+from src.main.core.database import *
+from src.main.core.database import expand_user_object
+from src.main.core.exceptions import InvalidCredentialsError
+from src.main.core.exceptions import MissingRequestKeyError
+from src.main.core.exceptions import UserNotFoundError
+from src.main.core.manager import GroupManager
+from src.main.core.manager import UserManager
+from src.main.core.nodes.domain import GridDomain
+from syft.grid.messages.user_messages import CreateUserMessage
+from syft.grid.messages.user_messages import DeleteUserMessage
+from syft.grid.messages.user_messages import GetUserMessage
+from syft.grid.messages.user_messages import GetUsersMessage
+from syft.grid.messages.user_messages import SearchUsersMessage
+from syft.grid.messages.user_messages import UpdateUserMessage
 
 owner = ("Owner", True, True, True, True)
 user = ("User", False, False, False, False)

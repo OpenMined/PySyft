@@ -1,20 +1,25 @@
-from json import dumps, loads
+# stdlib
+from json import dumps
+from json import loads
 
-from flask import request, Response
+# third party
+from flask import Response
+from flask import request
+from main.core.task_handler import route_logic
+from main.core.task_handler import task_handler
 from syft.core.node.common.service.repr_service import ReprMessage
 from syft.grid.messages.dataset_messages import CreateDatasetMessage
-from syft.grid.messages.request_messages import (
-    CreateRequestMessage,
-    GetRequestMessage,
-    GetRequestsMessage,
-    UpdateRequestMessage,
-    DeleteRequestMessage,
-)
+from syft.grid.messages.request_messages import CreateRequestMessage
+from syft.grid.messages.request_messages import DeleteRequestMessage
+from syft.grid.messages.request_messages import GetRequestMessage
+from syft.grid.messages.request_messages import GetRequestsMessage
+from syft.grid.messages.request_messages import UpdateRequestMessage
 
-from ...auth import error_handler, token_required, optional_token
-from main.core.task_handler import route_logic, task_handler
+# grid relative
+from ...auth import error_handler
+from ...auth import optional_token
+from ...auth import token_required
 from ..blueprint import dcfl_blueprint as dcfl_route
-from ....core.node import node
 
 
 @dcfl_route.route("/requests", methods=["POST"])

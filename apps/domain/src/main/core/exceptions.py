@@ -152,8 +152,23 @@ class RequestError(PyGridError):
         super().__init__(message)
 
 
+class DatasetNotFoundError(PyGridError):
+    def __init__(self):
+        message = "Dataset ID not found!"
+        super().__init__(message)
+
+
 class InvalidParameterValueError(PyGridError):
     def __init__(self, message=""):
         if not message:
             message = "Passed paramater value not valid!"
+        super().__init__(message)
+
+
+class AppInSleepyMode(PyGridError):
+    def __init__(self, message=""):
+        if not message:
+            message = (
+                "This app is in sleep mode. Please undergo the initial setup first"
+            )
         super().__init__(message)

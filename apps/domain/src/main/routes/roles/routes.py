@@ -1,17 +1,20 @@
-from .blueprint import roles_blueprint as roles_route
-from flask import request, Response
+# stdlib
 import json
 
-from syft.grid.messages.role_messages import (
-    CreateRoleMessage,
-    DeleteRoleMessage,
-    GetRoleMessage,
-    GetRolesMessage,
-    UpdateRoleMessage,
-)
+# third party
+from flask import Response
+from flask import request
+from syft.grid.messages.role_messages import CreateRoleMessage
+from syft.grid.messages.role_messages import DeleteRoleMessage
+from syft.grid.messages.role_messages import GetRoleMessage
+from syft.grid.messages.role_messages import GetRolesMessage
+from syft.grid.messages.role_messages import UpdateRoleMessage
 
-from ..auth import error_handler, token_required
+# grid relative
 from ...core.task_handler import route_logic
+from ..auth import error_handler
+from ..auth import token_required
+from .blueprint import roles_blueprint as roles_route
 
 
 @roles_route.route("", methods=["POST"])
@@ -23,7 +26,7 @@ def create_role_route(current_user):
         content = {}
 
     status_code, response_msg = error_handler(
-        route_logic, CreateRoleMessage, current_user, content
+        route_logic, 204, CreateRoleMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -45,7 +48,7 @@ def get_role_route(current_user, role_id):
     content["role_id"] = role_id
 
     status_code, response_msg = error_handler(
-        route_logic, GetRoleMessage, current_user, content
+        route_logic, 200, GetRoleMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -66,7 +69,7 @@ def get_all_roles_route(current_user):
         content = {}
 
     status_code, response_msg = error_handler(
-        route_logic, GetRolesMessage, current_user, content
+        route_logic, 200, GetRolesMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -88,7 +91,7 @@ def put_role_route(current_user, role_id):
     content["role_id"] = role_id
 
     status_code, response_msg = error_handler(
-        route_logic, UpdateRoleMessage, current_user, content
+        route_logic, 204, UpdateRoleMessage, current_user, content
     )
 
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
@@ -110,7 +113,7 @@ def delete_role_route(current_user, role_id):
     content["role_id"] = role_id
 
     status_code, response_msg = error_handler(
-        route_logic, DeleteRoleMessage, current_user, content
+        route_logic, 204, DeleteRoleMessage, current_user, content
     )
     response = response_msg if isinstance(response_msg, dict) else response_msg.content
 

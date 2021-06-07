@@ -1,13 +1,15 @@
-from typing import Union
-from typing import List
-from hashlib import sha256
+# stdlib
 from datetime import datetime
+from hashlib import sha256
+from typing import List
+from typing import Union
 
-from .database_manager import DatabaseManager
-from ..database.association.request import AssociationRequest
+# grid relative
 from ..database.association.association import Association
-from .role_manager import RoleManager
+from ..database.association.request import AssociationRequest
 from ..exceptions import AssociationRequestError
+from .database_manager import DatabaseManager
+from .role_manager import RoleManager
 
 
 class AssociationRequestManager(DatabaseManager):

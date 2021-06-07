@@ -1,18 +1,20 @@
-from ..blueprint import dcfl_blueprint as dcfl_route
-from flask import request, Response
+# stdlib
 import json
 
-from syft.grid.messages.tensor_messages import (
-    CreateTensorMessage,
-    GetTensorMessage,
-    UpdateTensorMessage,
-    GetTensorMessage,
-    GetTensorsMessage,
-    DeleteTensorMessage,
-)
+# third party
+from flask import Response
+from flask import request
+from syft.grid.messages.tensor_messages import CreateTensorMessage
+from syft.grid.messages.tensor_messages import DeleteTensorMessage
+from syft.grid.messages.tensor_messages import GetTensorMessage
+from syft.grid.messages.tensor_messages import GetTensorsMessage
+from syft.grid.messages.tensor_messages import UpdateTensorMessage
 
-from ...auth import error_handler, token_required
+# grid relative
 from ....core.task_handler import route_logic
+from ...auth import error_handler
+from ...auth import token_required
+from ..blueprint import dcfl_blueprint as dcfl_route
 
 
 @dcfl_route.route("/tensors", methods=["POST"])

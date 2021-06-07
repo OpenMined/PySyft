@@ -1,9 +1,11 @@
-from json import dumps, loads
+# stdlib
+from json import dumps
+from json import loads
 
+# third party
+from flask import current_app as app
 import jwt
 import pytest
-from flask import current_app as app
-
 from src.main.core.database import *
 
 JSON_DECODE_ERR_MSG = (
@@ -63,15 +65,16 @@ def test_initial_setup(client, database, cleanup):
     database.session.commit()
 
     result = client.post(
-        "/setup/",
+        "/setup",
         json={
-            "email": "owner@email.com",
-            "password": "testing",
-            "node_name": "OpenMined Node",
+            "email": "owner@openmined.org",
+            "password": "12345",
+            "domain_name": "OpenMined Domain",
         },
     )
+
     assert result.status_code == 200
-    assert result.get_json() == {"msg": "Running initial setup!"}
+    assert result.get_json() == {"message": "Running initial setup!"}
 
 
 def test_get_setup(client, database, cleanup):
@@ -81,15 +84,15 @@ def test_get_setup(client, database, cleanup):
     database.session.commit()
 
     result = client.post(
-        "/setup/",
+        "/setup",
         json={
-            "email": "owner@email.com",
-            "password": "testing",
-            "node_name": "OpenMined Node",
+            "email": "owner@openmined.org",
+            "password": "12345",
+            "domain_name": "OpenMined Domain",
         },
     )
     # assert result.status_code == 200
-    assert result.get_json() == {"msg": "Running initial setup!"}
+    assert result.get_json() == {"message": "Running initial setup!"}
 
     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
     headers = {
@@ -97,21 +100,21 @@ def test_get_setup(client, database, cleanup):
     }
 
     result = client.get(
-        "/setup/",
+        "/setup",
         headers=headers,
     )
 
     assert result.status_code == 200
     assert result.get_json() == {
         "id": 1,
-        "node_name": "OpenMined Node",
+        "domain_name": "OpenMined Domain",
         "private_key": "",
         "aws_credentials": "",
         "gcp_credentials": "",
         "azure_credentials": "",
         "cache_strategy": "",
         "replicate_db": False,
-        "auto_scale": "",
+        "auto_scale": False,
         "tensor_expiration_policy": 0,
         "allow_user_signup": False,
     }

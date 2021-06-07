@@ -1,21 +1,20 @@
-from .roles.blueprint import roles_blueprint
-from .users.blueprint import users_blueprint
-from .setup.blueprint import setup_blueprint
-from .groups.blueprint import groups_blueprint
-from .data_centric.blueprint import dcfl_blueprint
+# grid relative
 from .association_requests.blueprint import association_requests_blueprint
-from .search.blueprint import search_blueprint
-from .general.blueprint import root_blueprint
-
-
-from .users.routes import *
-from .general.routes import *
-from .groups.routes import *
-from .roles.routes import *
 from .association_requests.routes import *
-from .setup.routes import *
+from .data_centric.blueprint import dcfl_blueprint
 from .data_centric.datasets.routes import *
 from .data_centric.requests.routes import *
-from .data_centric.workers.routes import *
 from .data_centric.tensors.routes import *
+from .data_centric.workers.routes import *
+from .general.blueprint import root_blueprint
+from .general.routes import *
+from .groups.blueprint import groups_blueprint
+from .groups.routes import *
+from .roles.blueprint import roles_blueprint
+from .roles.routes import *
+from .search.blueprint import search_blueprint
 from .search.routes import *
+from .setup.blueprint import setup_blueprint
+from .setup.routes import *
+from .users.blueprint import users_blueprint
+from .users.routes import *

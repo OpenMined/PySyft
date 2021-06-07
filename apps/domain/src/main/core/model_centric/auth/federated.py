@@ -1,14 +1,18 @@
-# PyGrid imports
+# stdlib
 import base64
 import json
 import logging
 import uuid
 
-# Generic imports
+# third party
 import jwt
 import requests
 
-from ...codes import CYCLE, MODEL_CENTRIC_FL_EVENTS, MSG_FIELD, RESPONSE_MSG
+# grid relative
+from ...codes import CYCLE
+from ...codes import MODEL_CENTRIC_FL_EVENTS
+from ...codes import MSG_FIELD
+from ...codes import RESPONSE_MSG
 from ..processes import process_manager
 
 

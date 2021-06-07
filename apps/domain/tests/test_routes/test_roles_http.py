@@ -1,10 +1,16 @@
-from json import dumps, loads
+# stdlib
+from json import dumps
+from json import loads
 
+# third party
+from flask import current_app as app
 import jwt
 import pytest
-from flask import current_app as app
-
-from src.main.core.database import Role, User, create_role, create_user, model_to_json
+from src.main.core.database import Role
+from src.main.core.database import User
+from src.main.core.database import create_role
+from src.main.core.database import create_user
+from src.main.core.database import model_to_json
 
 payload = {
     "name": "mario mario",
@@ -169,8 +175,7 @@ def test_post_role_success(client, database, cleanup):
     expected_role = payload.copy()
     expected_role["id"] = 3  # Two roles already inserted
 
-    assert result.status_code == 200
-    assert result.get_json() == {"msg": "Role created successfully!"}
+    assert result.status_code == 204
 
 
 # GET ALL ROLES
@@ -588,8 +593,7 @@ def test_put_role_success(client, database, cleanup):
         headers=headers,
     )
 
-    assert result.status_code == 200
-    assert result.get_json() == {"msg": "Role updated successfully!"}
+    assert result.status_code == 204
 
 
 # DELETE ROLE
@@ -708,5 +712,4 @@ def test_delete_role_success(client, database, cleanup):
     }
     result = client.delete("/roles/2", headers=headers)
 
-    assert result.status_code == 200
-    assert result.get_json() == {"msg": "Role has been deleted!"}
+    assert result.status_code == 204

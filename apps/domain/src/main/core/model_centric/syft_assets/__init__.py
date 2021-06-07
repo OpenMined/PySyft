@@ -1,7 +1,7 @@
+# grid relative
+from ...database import db
 from .plan_manager import PlanManager
 from .protocol_manager import ProtocolManager
-
-from ...database import db
 
 plans = PlanManager(db)
 protocols = ProtocolManager(db)

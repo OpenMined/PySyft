@@ -1,20 +1,25 @@
-from json import dumps, loads
+# stdlib
+from json import dumps
+from json import loads
 from json.decoder import JSONDecodeError
 import logging
 
-from flask import Response, request
+# third party
+from flask import Response
+from flask import request
 from nacl.signing import SigningKey
 
+# grid relative
 from ..codes import RESPONSE_MSG
-from ..exceptions import (
-    UserNotFoundError,
-    RoleNotFoundError,
-    AuthorizationError,
-    PyGridError,
-    MissingRequestKeyError,
-)
-from ..database import Role, User, db
+from ..database import Role
+from ..database import User
+from ..database import db
 from ..database.utils import model_to_json
+from ..exceptions import AuthorizationError
+from ..exceptions import MissingRequestKeyError
+from ..exceptions import PyGridError
+from ..exceptions import RoleNotFoundError
+from ..exceptions import UserNotFoundError
 
 expected_fields = (
     "name",

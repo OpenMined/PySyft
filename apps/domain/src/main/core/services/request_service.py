@@ -1,70 +1,61 @@
 # stdlib
+import time
 from typing import List
+from typing import Optional
 from typing import Type
 from typing import Union
-from typing import Optional
-import time
 
 # third party
-from nacl.signing import VerifyKey
 from nacl.encoding import HexEncoder
-
-# syft relative
-from syft.core.node.abstract.node import AbstractNode
-from syft.core.node.common.service.auth import service_auth
-from syft.core.node.common.node import DuplicateRequestException
-from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
-from syft.core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
+from nacl.signing import VerifyKey
 from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.uid import UID
-from syft.util import validate_type
 
-# Syft Request services with reply
-from syft.core.node.domain.service.request_answer_message import (
-    RequestAnswerMessage,
-    RequestAnswerResponse,
-)
-from syft.core.node.domain.service.get_all_requests_service import (
-    GetAllRequestsMessage,
-    GetAllRequestsResponseMessage,
-)
-from syft.core.node.domain.service.request_handler_service import (
-    GetAllRequestHandlersMessage,
-    GetAllRequestHandlersResponseMessage,
-)
-
-# Syft Request services without reply
-from syft.core.node.domain.service.request_message import RequestMessage
+# syft relative
+from syft.core.node.abstract.node import AbstractNode
+from syft.core.node.common.node import DuplicateRequestException
+from syft.core.node.common.service.auth import service_auth
+from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
+from syft.core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
 from syft.core.node.domain.service.accept_or_deny_request_service import (
     AcceptOrDenyRequestMessage,
+)
+from syft.core.node.domain.service.get_all_requests_service import (
+    GetAllRequestsResponseMessage,
+)
+from syft.core.node.domain.service.get_all_requests_service import GetAllRequestsMessage
+from syft.core.node.domain.service.request_answer_message import RequestAnswerMessage
+from syft.core.node.domain.service.request_answer_message import RequestAnswerResponse
+from syft.core.node.domain.service.request_handler_service import (
+    GetAllRequestHandlersMessage,
+)
+from syft.core.node.domain.service.request_handler_service import (
+    GetAllRequestHandlersResponseMessage,
 )
 from syft.core.node.domain.service.request_handler_service import (
     UpdateRequestHandlerMessage,
 )
+from syft.core.node.domain.service.request_message import RequestMessage
+from syft.grid.messages.request_messages import CreateRequestMessage
+from syft.grid.messages.request_messages import CreateRequestResponse
+from syft.grid.messages.request_messages import DeleteRequestMessage
+from syft.grid.messages.request_messages import DeleteRequestResponse
+from syft.grid.messages.request_messages import GetRequestMessage
+from syft.grid.messages.request_messages import GetRequestResponse
+from syft.grid.messages.request_messages import GetRequestsMessage
+from syft.grid.messages.request_messages import GetRequestsResponse
+from syft.grid.messages.request_messages import UpdateRequestMessage
+from syft.grid.messages.request_messages import UpdateRequestResponse
+from syft.util import validate_type
 
-
-from syft.grid.messages.request_messages import (
-    CreateRequestMessage,
-    CreateRequestResponse,
-    GetRequestMessage,
-    GetRequestResponse,
-    GetRequestsMessage,
-    GetRequestsResponse,
-    UpdateRequestMessage,
-    UpdateRequestResponse,
-    DeleteRequestMessage,
-    DeleteRequestResponse,
-)
-
-from ..exceptions import (
-    MissingRequestKeyError,
-    AuthorizationError,
-    InvalidParameterValueError,
-    RequestError,
-)
+# grid relative
 from ..database.utils import model_to_json
 from ..datasets.dataset_ops import update_dataset_metadata
+from ..exceptions import AuthorizationError
+from ..exceptions import InvalidParameterValueError
+from ..exceptions import MissingRequestKeyError
+from ..exceptions import RequestError
 
 
 def create_request_msg(

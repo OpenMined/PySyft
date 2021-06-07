@@ -1,28 +1,24 @@
+# third party
+from flask_sockets import Sockets
+from main import ws
+from nacl.encoding import HexEncoder
+from nacl.signing import SigningKey
+
+# grid relative
+from ..routes import association_requests_blueprint
+from ..routes import dcfl_blueprint
+from ..routes import groups_blueprint
+from ..routes import mcfl_blueprint
+from ..routes import roles_blueprint
+from ..routes import root_blueprint
+from ..routes import search_blueprint
+from ..routes import setup_blueprint
+from ..routes import users_blueprint
+from ..utils.executor import executor
 from .nodes.domain import GridDomain
 from .nodes.network import GridNetwork
 from .nodes.worker import GridWorker
-from ..utils.monkey_patch import mask_payload_fast
-from nacl.signing import SigningKey
-from nacl.encoding import HexEncoder
-from flask_sockets import Sockets
-
-from main import ws
-
-
-# Threads
-from ..utils.executor import executor
-
-from ..routes import (
-    roles_blueprint,
-    users_blueprint,
-    setup_blueprint,
-    groups_blueprint,
-    dcfl_blueprint,
-    mcfl_blueprint,
-    association_requests_blueprint,
-    root_blueprint,
-    search_blueprint,
-)
+from .sleepy_until_configured import SleepyUntilConfigured
 
 node = None
 
@@ -67,7 +63,12 @@ def create_network_app(app, args, testing=False):
     # Register WebSocket blueprints
     # Here you should add all the blueprints related to WebSocket routes.
 
-    from .database import db, set_database_config, seed_db, User, Role
+    # grid relative
+    from .database import Role
+    from .database import User
+    from .database import db
+    from .database import seed_db
+    from .database import set_database_config
 
     global node
     node = GridNetwork(name=args.name)
@@ -113,7 +114,7 @@ def create_domain_app(app, args, testing=False):
     # Here you should add all the blueprints related to HTTP routes.
     app.register_blueprint(roles_blueprint, url_prefix=r"/roles")
     app.register_blueprint(users_blueprint, url_prefix=r"/users")
-    app.register_blueprint(setup_blueprint, url_prefix=r"/setup/")
+    app.register_blueprint(setup_blueprint, url_prefix=r"/setup")
     app.register_blueprint(groups_blueprint, url_prefix=r"/groups")
     app.register_blueprint(dcfl_blueprint, url_prefix=r"/data-centric/")
     app.register_blueprint(mcfl_blueprint, url_prefix=r"/model-centric/")
@@ -126,20 +127,28 @@ def create_domain_app(app, args, testing=False):
     # Here you should add all the blueprints related to WebSocket routes.
     sockets.register_blueprint(ws, url_prefix=r"/")
 
-    from .database import db, set_database_config, seed_db, User, Role
+    # grid relative
+    from .database import Role
+    from .database import SetupConfig
+    from .database import User
+    from .database import db
+    from .database import seed_db
+    from .database import set_database_config
 
     global node
     node = GridDomain(name=args.name)
 
     # Set SQLAlchemy configs
     set_database_config(app, test_config=test_config)
-    s = app.app_context().push()
-
+    app.app_context().push()
     db.create_all()
 
     if not testing:
         if len(db.session.query(Role).all()) == 0:
             seed_db()
+
+        if len(db.session.query(SetupConfig).all()) != 0:
+            node.name = db.session.query(SetupConfig).first().domain_name
 
         role = db.session.query(Role.id).filter_by(name="Owner").first()
         user = User.query.filter_by(role=role.id).first()
@@ -150,9 +159,14 @@ def create_domain_app(app, args, testing=False):
             node.signing_key = signing_key
             node.verify_key = node.signing_key.verify_key
             node.root_verify_key = node.verify_key
+
+        # Register global middlewares
+        # Always after context is pushed
+        app.wsgi_app = SleepyUntilConfigured(app, app.wsgi_app)
     db.session.commit()
 
     app.config["EXECUTOR_PROPAGATE_EXCEPTIONS"] = True
     app.config["EXECUTOR_TYPE"] = "thread"
     executor.init_app(app)
+
     return app

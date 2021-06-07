@@ -1,29 +1,17 @@
-from .codes import RESPONSE_MSG
-from json.decoder import JSONDecodeError
-
-from flask import request
-
-from syft.core.common.message import SignedImmediateSyftMessageWithReply
-from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
-
 # third party
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
+from syft.core.common.message import SignedImmediateSyftMessageWithReply
+from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 
-
-from .node import get_node
-from .exceptions import (
-    PyGridError,
-    UserNotFoundError,
-    RoleNotFoundError,
-    GroupNotFoundError,
-    AuthorizationError,
-    MissingRequestKeyError,
-    InvalidCredentialsError,
-)
+# grid relative
+from .exceptions import MissingRequestKeyError
 
 
 def process_as_syft_message(message_class, message_content, sign_key):
+    # grid relative
+    from .node import get_node  # TODO: fix circular import
+
     message = message_class(**message_content)
     signed_message = message.sign(signing_key=sign_key)
 
@@ -72,6 +60,9 @@ def task_handler(route_function, data, mandatory, optional=[]):
 
 
 def route_logic(message_class, current_user, msg_content):
+    # grid relative
+    from .node import get_node  # TODO: fix circular import
+
     if current_user:
         user_key = SigningKey(
             current_user.private_key.encode("utf-8"), encoder=HexEncoder

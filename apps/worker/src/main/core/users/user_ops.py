@@ -1,31 +1,40 @@
-import logging
-from datetime import datetime, timedelta
-from json import dumps, loads
+# stdlib
+from datetime import datetime
+from datetime import timedelta
+from json import dumps
+from json import loads
 from json.decoder import JSONDecodeError
+import logging
 from secrets import token_hex
 
-import jwt
-from bcrypt import checkpw, gensalt, hashpw
+# third party
+from bcrypt import checkpw
+from bcrypt import gensalt
+from bcrypt import hashpw
 from flask import Response
 from flask import current_app as app
 from flask import request
-
+import jwt
+from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
-from nacl.encoding import HexEncoder
 
+# grid relative
 from ..codes import RESPONSE_MSG
+from ..database import Group
+from ..database import Role
+from ..database import User
+from ..database import UserGroup
+from ..database import db
+from ..database import expand_user_object
+from ..exceptions import AuthorizationError
+from ..exceptions import GroupNotFoundError
+from ..exceptions import InvalidCredentialsError
+from ..exceptions import MissingRequestKeyError
+from ..exceptions import PyGridError
+from ..exceptions import RoleNotFoundError
+from ..exceptions import UserNotFoundError
 from ..node import node
-from ..database import db, Group, Role, User, UserGroup, expand_user_object
-from ..exceptions import (
-    AuthorizationError,
-    GroupNotFoundError,
-    InvalidCredentialsError,
-    MissingRequestKeyError,
-    PyGridError,
-    RoleNotFoundError,
-    UserNotFoundError,
-)
 
 
 def salt_and_hash_password(password, rounds):

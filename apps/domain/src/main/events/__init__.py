@@ -1,6 +1,15 @@
 """This file exists to provide a route to websocket events."""
-# Standard Python imports
+# stdlib
 import json
+
+# grid relative
+from .. import ws
+from ..core.codes import *
+from ..core.codes import GROUP_EVENTS
+from ..core.codes import ROLE_EVENTS
+from ..core.codes import USER_EVENTS
+from .model_centric.fl_events import *
+from .model_centric.socket_handler import SocketHandler
 
 
 class REQUEST_MSG(object):  # noqa: N801
@@ -14,12 +23,6 @@ class REQUEST_MSG(object):  # noqa: N801
     RUN_INFERENCE = "run-inference"
     AUTHENTICATE = "authentication"
 
-
-from .. import ws
-from ..core.codes import *
-from ..core.codes import GROUP_EVENTS, ROLE_EVENTS, USER_EVENTS
-from .model_centric.fl_events import *
-from .model_centric.socket_handler import SocketHandler
 
 # Websocket events routes
 # This structure allows compatibility between javascript applications (syft.js/grid.js) and PyGrid.

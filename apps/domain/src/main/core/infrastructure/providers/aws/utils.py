@@ -1,8 +1,11 @@
+# third party
+from PyInquirer import prompt
 import boto3
 import click
-from PyInquirer import prompt
 
-from ...utils import Config, styles
+# grid relative
+from ...utils import Config
+from ...utils import styles
 
 
 def get_vpc_config() -> Config:

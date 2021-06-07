@@ -30,7 +30,7 @@ You can install it via `pip install pre-commit`
 
 Then you just need to call `pre-commit install`
 
-This can all also be done by running `make install_hooks`
+You can manually run these checks at any time with: `pre-commit run --all-files`
 
 ### Syncing with the latest changes
 

@@ -1,9 +1,8 @@
-# workers module imports
+# stdlib
 import logging
 
+# grid relative
 from ...exceptions import WorkerNotFoundError
-
-# PyGrid imports
 from ...manager.database_manager import DatabaseManager
 from .worker import Worker
 

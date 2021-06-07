@@ -1,35 +1,34 @@
 # stdlib
 import secrets
+from threading import Thread
+import traceback
 from typing import List
 from typing import Type
 from typing import Union
-import torch as th
 
 # third party
-from nacl.signing import VerifyKey
 from nacl.encoding import HexEncoder
-from syft.grid.client.client import connect
-from syft.grid.client.grid_connection import GridHTTPConnection
-from syft.core.node.domain.client import DomainClient
+from nacl.signing import VerifyKey
+from syft.core.common.message import ImmediateSyftMessageWithReply
+from syft.core.common.serde.deserialize import _deserialize
+from syft.core.common.uid import UID
 
 # syft relative
 from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.service.auth import service_auth
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.common.serde.deserialize import _deserialize
+from syft.core.node.domain.client import DomainClient
+from syft.grid.client.client import connect
+from syft.grid.client.grid_connection import GridHTTPConnection
+from syft.grid.messages.transfer_messages import LoadObjectMessage
+from syft.grid.messages.transfer_messages import LoadObjectResponse
+from syft.grid.messages.transfer_messages import SaveObjectMessage
+from syft.grid.messages.transfer_messages import SaveObjectResponse
 from syft.proto.core.io.address_pb2 import Address as Address_PB
-from syft.core.common.uid import UID
-from threading import Thread
+import torch as th
 
-from syft.grid.messages.transfer_messages import (
-    LoadObjectMessage,
-    LoadObjectResponse,
-    SaveObjectMessage,
-    SaveObjectResponse,
-)
-import traceback
+# grid relative
 from ...utils.executor import executor
 
 

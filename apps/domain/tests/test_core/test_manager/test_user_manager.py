@@ -1,8 +1,9 @@
-from src.main.core.database import *
-from src.main.core.manager import UserManager
-from src.main.core.exceptions import InvalidCredentialsError
-import pytest
+# third party
 from bcrypt import checkpw
+import pytest
+from src.main.core.database import *
+from src.main.core.exceptions import InvalidCredentialsError
+from src.main.core.manager import UserManager
 
 user_role = ("User", False, False, False, False, False, False, False)
 admin_role = ("Administrator", True, True, True, True, False, False, True)

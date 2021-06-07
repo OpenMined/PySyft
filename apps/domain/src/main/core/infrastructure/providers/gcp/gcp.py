@@ -1,10 +1,15 @@
+# stdlib
 import subprocess
 import textwrap
 
-import click
+# third party
 from PyInquirer import prompt
+import click
 
-from ...tf import generate_cidr_block, var, var_module
+# grid relative
+from ...tf import generate_cidr_block
+from ...tf import var
+from ...tf import var_module
 from ..provider import *
 
 
@@ -128,7 +133,6 @@ class GCP(Provider):
             self.instances.append(instance)
 
     def write_domain_exec_script(self, app, index=0):
-        ##TODO(amr): remove `git checkout pygrid_0.3.0` after merge
         branch = "master"
 
         # exec_script = "#cloud-boothook\n#!/bin/bash\n"
@@ -169,7 +173,7 @@ class GCP(Provider):
 
             echo "Setting environment variables"
             export CLOUD_PROVIDER={self.config.provider}
-
+            export MEMORY_STORE=True
             echo "Exporting GCP Configs"
             export project_id={self.config.gcp.project_id},
             export REGION={self.config.gcp.region},

@@ -1,5 +1,7 @@
+# stdlib
 import textwrap
 
+# grid relative
 from .aws import *
 
 
@@ -58,7 +60,7 @@ class AWS_Serverfull(AWS):
         if hasattr(self, "load_balancer"):
             self.tfscript += terrascript.Output(
                 "load_balancer_dns",
-                value=var_module(self.load_balancer, "this_elb_dns_name"),
+                value=var_module(self.load_balancer, "elb_dns_name"),
                 description="The DNS name of the ELB.",
             )
 
@@ -270,6 +272,8 @@ class AWS_Serverfull(AWS):
 
             echo "Setting environment variables"
             export DATABASE_URL={self.database.engine}+pymysql://{self.database.username}:{self.database.password}@{var(self.database.endpoint)}/{self.database.name}
+
+            export MEMORY_STORE=True
             # export DATABASE_URL="sqlite:///pygrid.db"
             export CLOUD_PROVIDER={self.config.provider}
             export REGION={self.config.vpc.region}
@@ -305,7 +309,7 @@ class AWS_Serverfull(AWS):
             f"""
             exec &> logs.out
             sudo apt update -y
-            
+
             echo 'Setup Miniconda environment'
             sudo wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
             sudo bash miniconda.sh -b -p miniconda
@@ -315,20 +319,20 @@ class AWS_Serverfull(AWS):
             source ~/.bashrc
             conda create -y -n pygrid python=3.7
             conda activate pygrid
-            
+
             echo 'Install poetry...'
             pip install poetry
-            
+
             echo 'Install GCC'
             sudo apt-get install zip unzip -y
             sudo apt-get install python3-dev -y
             sudo apt-get install libevent-dev -y
             sudo apt-get install gcc -y
-            
+
             echo 'Cloning PyGrid'
             git clone https://github.com/OpenMined/PyGrid && cd /PyGrid/
             git checkout {branch}
-            
+
             cd /PyGrid/apps/worker
             echo 'Installing worker Dependencies'
             poetry install

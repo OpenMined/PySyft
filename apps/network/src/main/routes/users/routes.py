@@ -1,21 +1,25 @@
-from .blueprint import users_blueprint as user_route
-from flask import request, Response
+# stdlib
 import json
 
-from syft.grid.messages.user_messages import (
-    CreateUserMessage,
-    DeleteUserMessage,
-    GetUserMessage,
-    GetUsersMessage,
-    UpdateUserMessage,
-    SearchUsersMessage,
-)
+# third party
+from flask import Response
+from flask import request
+from syft.grid.messages.user_messages import CreateUserMessage
+from syft.grid.messages.user_messages import DeleteUserMessage
+from syft.grid.messages.user_messages import GetUserMessage
+from syft.grid.messages.user_messages import GetUsersMessage
+from syft.grid.messages.user_messages import SearchUsersMessage
+from syft.grid.messages.user_messages import UpdateUserMessage
 
-from ..auth import error_handler, token_required, optional_token
-from ...core.task_handler import route_logic, task_handler
-from ...core.node import get_node
-from ...core.exceptions import MissingRequestKeyError
+# grid relative
 from ...core.database.utils import model_to_json
+from ...core.exceptions import MissingRequestKeyError
+from ...core.task_handler import route_logic
+from ...core.task_handler import task_handler
+from ..auth import error_handler
+from ..auth import optional_token
+from ..auth import token_required
+from .blueprint import users_blueprint as user_route
 
 
 @user_route.route("me", methods=["GET"])
@@ -53,6 +57,9 @@ def create_user(current_user):
 @user_route.route("/login", methods=["POST"])
 def login_route():
     def route_logic():
+        # grid relative
+        from ...core.node import get_node  # TODO: fix circular import
+
         # Get request body
         content = json.loads(request.data)
 
