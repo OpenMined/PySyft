@@ -1,3 +1,5 @@
+"""This module contains `Class` attribute,an AST node representing a class."""
+
 # stdlib
 from enum import Enum
 from enum import EnumMeta
@@ -36,7 +38,8 @@ from ..util import inherit_tags
 
 
 def _resolve_pointer_type(self: Pointer) -> Pointer:
-    """
+    """Resolve pointer of the object.
+
     Creates a request on a pointer to validate and regenerate the current pointer type. This method
     is useful when deadling with AnyPointer or Union<types>Pointers, to retrieve the real pointer.
 
@@ -49,7 +52,6 @@ def _resolve_pointer_type(self: Pointer) -> Pointer:
     Returns:
         The new pointer, validated from the remote object.
     """
-
     # id_at_location has to be preserved
     id_at_location = getattr(self, "id_at_location", None)
 
@@ -78,19 +80,27 @@ def _resolve_pointer_type(self: Pointer) -> Pointer:
 
 
 def get_run_class_method(attr_path_and_name: str) -> CallableT:
-    """
-    It might seem hugely un-necessary to have these methods nested in this way.
-    However, it has to do with ensuring that the scope of `attr_path_and_name` is local
-    and not global.
+    """Create a function for class method in `attr_path_and_name` for remote execution.
 
-    If we do not put a `get_run_class_method` around `run_class_method` then
-    each `run_class_method` will end up referencing the same `attr_path_and_name` variable
-    and all methods will actually end up calling the same method.
+    Args:
+        attr_path_and_name: The path of the class method.
 
-    If, instead, we return the function object itself then it includes
-    the current `attr_path_and_name` as an internal variable and when we call `get_run_class_method`
-    multiple times it returns genuinely different methods each time with a different
-    internal `attr_path_and_name` variable.
+    Returns:
+        Function for the class method.
+
+    Note:
+        It might seem hugely un-necessary to have these methods nested in this way.
+        However, it has to do with ensuring that the scope of `attr_path_and_name` is local
+        and not global.
+
+        If we do not put a `get_run_class_method` around `run_class_method` then
+        each `run_class_method` will end up referencing the same `attr_path_and_name` variable
+        and all methods will actually end up calling the same method.
+
+        If, instead, we return the function object itself then it includes
+        the current `attr_path_and_name` as an internal variable and when we call `get_run_class_method`
+        multiple times it returns genuinely different methods each time with a different
+        internal `attr_path_and_name` variable.
     """
 
     def run_class_method(
@@ -98,6 +108,15 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
         *args: Tuple[Any, ...],
         **kwargs: Any,
     ) -> object:
+        """Run remote class method and get pointer to returned object.
+
+        Args:
+            *args: Args list of class method.
+            **kwargs: Keyword args of class method.
+
+        Returns:
+            Pointer to object returned by class method.
+        """
         # we want to get the return type which matches the attr_path_and_name
         # so we ask lib_ast for the return type name that matches out
         # attr_path_and_name and then use that to get the actual pointer klass
@@ -148,7 +167,26 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
 def generate_class_property_function(
     attr_path_and_name: str, action: PropertyActions, map_to_dyn: bool
 ) -> CallableT:
-    def class_property_function(__self: Any, *args: Any, **kwargs: Any) -> CallableT:
+    """Returns a function that handles action on property.
+
+    Args:
+        attr_path_and_name: The path of the property in AST.
+        action: action to perform on property (GET | SET | DEL).
+
+    Returns:
+        Function to handle action on property.
+    """
+
+    def class_property_function(__self: Any, *args: Any, **kwargs: Any) -> object:
+        """Handles remote action on property and returns pointer.
+
+        Args:
+            *args: Argument list.
+            **kwargs: Keyword arguments.
+
+        Returns:
+            Pointer to the object returned.
+        """
         # we want to get the return type which matches the attr_path_and_name
         # so we ask lib_ast for the return type name that matches out
         # attr_path_and_name and then use that to get the actual pointer klass
@@ -198,6 +236,14 @@ def generate_class_property_function(
 
 
 def _get_request_config(self: Any) -> Dict[str, Any]:
+    """Get config for request.
+
+    Args:
+        self: object.
+
+    Returns:
+        Config for request.
+    """
     return {
         "request_block": True,
         "timeout_secs": 25,
@@ -206,12 +252,47 @@ def _get_request_config(self: Any) -> Dict[str, Any]:
 
 
 def _set_request_config(self: Any, request_config: Dict[str, Any]) -> None:
+    """Set config for request.
+
+    Args:
+        self: object.
+        request_config: new config.
+    """
     setattr(self, "get_request_config", lambda: request_config)
 
 
 def wrap_iterator(attrs: Dict[str, Union[str, CallableT, property]]) -> None:
+    """Add syft Iterator to `attrs['__iter__']`.
+
+    Args:
+        attrs: Dict of `Attribute`s of node.
+
+    Raises:
+        AttributeError: Base `__iter__` is not callable.
+    """
+
     def wrap_iter(iter_func: CallableT) -> CallableT:
+        """Create syft iterator for `iter_func`.
+
+        Args:
+            iter_func: Base Iterator.
+
+        Returns:
+            Wrapped Iterator.
+        """
+
         def __iter__(self: Any) -> Iterable:
+            """Create Syft Iterator for `iter_func`.
+
+            Args:
+                self: object to add iterator to.
+
+            Raises:
+                ValueError: Falied ot access __len__.
+
+            Returns:
+                Iterable: syft Iterator.
+            """
             # syft absolute
             from syft.lib.python.iterator import Iterator
 
@@ -249,8 +330,37 @@ def wrap_iterator(attrs: Dict[str, Union[str, CallableT, property]]) -> None:
 
 
 def wrap_len(attrs: Dict[str, Union[str, CallableT, property]]) -> None:
+    """Add method to access pointer len to `attr[__len__]`.
+
+    Args:
+        attrs: Dict of `Attribute`s of node.
+
+    Raises:
+        AttributeError: Base `__len__` is not callable.
+    """
+
     def wrap_len(len_func: CallableT) -> CallableT:
+        """Add wrapper function for `len_func`.
+
+        Args:
+            len_func: Base len function.
+
+        Returns:
+            Wrapped len function.
+        """
+
         def __len__(self: Any) -> int:
+            """Access len of pointer obj.
+
+            Args:
+                self: object to add iterator to.
+
+            Returns:
+                int: length of object.
+
+            Raises:
+                ValueError: Request to access data length rejected.
+            """
             data_len_ptr = len_func(self)
             try:
                 data_len = data_len_ptr.get(**self.get_request_config())
@@ -281,6 +391,15 @@ def wrap_len(attrs: Dict[str, Union[str, CallableT, property]]) -> None:
 
 
 def attach_tags(obj: object, tags: List[str]) -> None:
+    """Add tags to the object.
+
+    Args:
+        obj: Object to add tags to.
+        tags: List of tags.
+
+    Raises:
+        AttributeError: Cannot add tags to object.
+    """
     try:
         obj.tags = sorted(set(tags), key=tags.index)  # type: ignore
     except AttributeError:
@@ -288,6 +407,15 @@ def attach_tags(obj: object, tags: List[str]) -> None:
 
 
 def attach_description(obj: object, description: str) -> None:
+    """Add description to the object.
+
+    Args:
+        obj: Object to add description to.
+        description: Description.
+
+    Raises:
+        AttributeError: Cannot add description to object.
+    """
     try:
         obj.description = description  # type: ignore
     except AttributeError:
@@ -295,6 +423,8 @@ def attach_description(obj: object, description: str) -> None:
 
 
 class Class(Callable):
+    """A Class attribute represents a class."""
+
     def __init__(
         self,
         path_and_name: str,
@@ -302,7 +432,16 @@ class Class(Callable):
         object_ref: Union[Callable, CallableT],
         return_type_name: Optional[str],
         client: Optional[Any],
-    ):
+    ) -> None:
+        """Base constructor for Class Attribute.
+
+        Args:
+            path_and_name: The path for the current node, e.g. `syft.lib.python.List`.
+            parent: The parent node is needed when solving `EnumAttributes`.
+            object_ref: The actual python object for which the computation is being made.
+            return_type_name: The return type name of given action as a string with its full path.
+            client: The client for which all computation is being executed.
+        """
         super().__init__(
             path_and_name=path_and_name,
             object_ref=object_ref,
@@ -315,9 +454,15 @@ class Class(Callable):
 
     @property
     def pointer_type(self) -> Union[Callable, CallableT]:
+        """Get pointer type of Class Attribute.
+
+        Returns:
+            `pointer_type` of the object.
+        """
         return getattr(self, self.pointer_name)
 
     def create_pointer_class(self) -> None:
+        """Create pointer type for object."""
         attrs: Dict[str, Union[str, CallableT, property]] = {}
         for attr_name, attr in self.attrs.items():
             attr_path_and_name = getattr(attr, "path_and_name", None)
@@ -387,6 +532,8 @@ class Class(Callable):
         setattr(self, self.pointer_name, klass_pointer)
 
     def create_send_method(outer_self: Any) -> None:
+        """Add `send` method to `outer_self.object_ref`."""
+
         def send(
             self: Any,
             client: Any,
@@ -395,6 +542,21 @@ class Class(Callable):
             tags: Optional[List[str]] = None,
             searchable: Optional[bool] = None,
         ) -> Pointer:
+            """Send obj to client and return pointer to the object.
+
+            Args:
+                self: Object to be sent.
+                client: Client to send object to.
+                pointable:
+                description: Description for the object to send.
+                tags: Tags for the object to send.
+
+            Returns:
+                Pointer to sent object.
+
+            Note:
+                `searchable` is deprecated please use `pointable` in the future.
+            """
             if searchable is not None:
                 msg = "`searchable` is deprecated please use `pointable` in future"
                 warning(msg, print=True)
@@ -462,11 +624,31 @@ class Class(Callable):
         aggressive_set_attr(obj=outer_self.object_ref, name="send", attr=send)
 
     def create_storable_object_attr_convenience_methods(outer_self: Any) -> None:
+        """Add methods to set tag and description to `outer_self.object_ref`."""
+
         def tag(self: Any, *tags: Tuple[Any, ...]) -> object:
+            """Add tags to object.
+
+            Args:
+                self: object to add tags to.
+                *tags: List of tags to add.
+
+            Returns:
+                object.
+            """
             attach_tags(self, tags)  # type: ignore
             return self
 
         def describe(self: Any, description: str) -> object:
+            """Add description to object.
+
+            Args:
+                self: object to add description to.
+                description: Description to add.
+
+            Returns:
+                object.
+            """
             attach_description(self, description)
             return self
 
@@ -481,7 +663,15 @@ class Class(Callable):
         framework_reference: Optional[ModuleType] = None,
         is_static: bool = False,
     ) -> None:
+        """The add_path method adds new nodes in AST based on type of current node and type of object to be added.
 
+        Args:
+            path: The node path added in AST, e.g. `syft.lib.python.List` or ["syft", "lib", "python", "List].
+            index: The associated position in the path for the current node.
+            framework_reference: The Python framework in which we can resolve same path to obtain Python object.
+            return_type_name: The return type name of the given action as a string with its full path.
+            is_static: If the queried object is static, it has to be found on AST itself, not on an existing pointer.
+        """
         if index >= len(path) or path[index] in self.attrs:
             return
 
@@ -536,6 +726,14 @@ class Class(Callable):
         )
 
     def __getattribute__(self, item: str) -> Any:
+        """Get pointer to attribute.
+
+        Args:
+            item: Attribute.
+
+        Returns:
+            Pointer to the attribute.
+        """
         # self.apply_node_changes()
         try:
             target_object = super().__getattribute__(item)
@@ -558,6 +756,17 @@ class Class(Callable):
             traceback_and_raise(e)
 
     def __getattr__(self, item: str) -> Any:
+        """Get value of attribute `item` of the object.
+
+        Args:
+            item: Attribute.
+
+        Raises:
+            KeyError: If attribute `item` is not present.
+
+        Returns:
+            Value of the attribute.
+        """
         attrs = super().__getattribute__("attrs")
         if item not in attrs:
             if item == "__name__":
@@ -572,6 +781,12 @@ class Class(Callable):
         return attrs[item]
 
     def __setattr__(self, key: str, value: Any) -> None:
+        """Change value of attribute `key` to `value`.
+
+        Args:
+            key: name of attribute to change.
+            value: value to change attribute `key` to.
+        """
         # self.apply_node_changes()
 
         if hasattr(super(), "attrs"):
@@ -587,6 +802,16 @@ class Class(Callable):
 def pointerize_args_and_kwargs(
     args: Union[List[Any], Tuple[Any, ...]], kwargs: Dict[Any, Any], client: Any
 ) -> Tuple[List[Any], Dict[Any, Any]]:
+    """Get pointers to args and kwargs.
+
+    Args:
+        args: List of arguments.
+        kwargs: Dict of Keyword arguments.
+        client: Client node.
+
+    Returns:
+        Tuple of args and kwargs with pointer to values.
+    """
     # When we try to send params to a remote function they need to be pointers so
     # that they can be serialized and fetched from the remote store on arrival
     # this ensures that any args which are passed in from the user side are first

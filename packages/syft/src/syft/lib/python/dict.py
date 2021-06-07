@@ -182,7 +182,7 @@ class Dict(UserDict, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     def popitem(self) -> SyPrimitiveRet:
-        res = super().popitem()
+        res = self.data.popitem()
         return PrimitiveFactory.generate_primitive(value=res)
 
     def setdefault(self, key: Any, default: Any = None) -> SyPrimitiveRet:
