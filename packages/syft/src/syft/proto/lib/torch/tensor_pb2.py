@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x1cproto/lib/torch/tensor.proto\x12\x0esyft.lib.torch\x1a\x1cproto/lib/torch/device.proto"\xf0\x02\n\x0fProtobufContent\x12\r\n\x05shape\x18\x01 \x03(\x03\x12\r\n\x05\x64type\x18\x02 \x01(\t\x12\x16\n\x0e\x63ontents_uint8\x18\x10 \x03(\r\x12\x15\n\rcontents_int8\x18\x11 \x03(\x05\x12\x16\n\x0e\x63ontents_int16\x18\x12 \x03(\x05\x12\x16\n\x0e\x63ontents_int32\x18\x13 \x03(\x05\x12\x16\n\x0e\x63ontents_int64\x18\x14 \x03(\x03\x12\x18\n\x10\x63ontents_float16\x18\x15 \x03(\x02\x12\x18\n\x10\x63ontents_float32\x18\x16 \x03(\x02\x12\x18\n\x10\x63ontents_float64\x18\x17 \x03(\x01\x12\x15\n\rcontents_bool\x18\x18 \x03(\x08\x12\x16\n\x0e\x63ontents_qint8\x18\x19 \x03(\x11\x12\x17\n\x0f\x63ontents_quint8\x18\x1a \x03(\r\x12\x17\n\x0f\x63ontents_qint32\x18\x1b \x03(\x11\x12\x19\n\x11\x63ontents_bfloat16\x18\x1c \x03(\x02"y\n\nTensorData\x12\x14\n\x0cis_quantized\x18\x01 \x01(\x08\x12\r\n\x05scale\x18\x02 \x01(\x02\x12\x12\n\nzero_point\x18\x03 \x01(\x05\x12\x14\n\nproto_data\x18\x04 \x01(\x0cH\x00\x12\x14\n\narrow_data\x18\x05 \x01(\x0cH\x00\x42\x06\n\x04\x64\x61ta"j\n\x0bTensorProto\x12\x0e\n\x06tensor\x18\x01 \x01(\x0c\x12\x15\n\rrequires_grad\x18\x02 \x01(\x08\x12\x0c\n\x04grad\x18\x03 \x01(\x0c\x12&\n\x06\x64\x65vice\x18\x04 \x01(\x0b\x32\x16.syft.lib.torch.Deviceb\x06proto3',
+    serialized_pb=b'\n\x1cproto/lib/torch/tensor.proto\x12\x0esyft.lib.torch\x1a\x1cproto/lib/torch/device.proto"\xe1\x02\n\x0fProtobufContent\x12\r\n\x05shape\x18\x01 \x03(\x03\x12\x16\n\x0e\x63ontents_uint8\x18\x10 \x03(\r\x12\x15\n\rcontents_int8\x18\x11 \x03(\x05\x12\x16\n\x0e\x63ontents_int16\x18\x12 \x03(\x05\x12\x16\n\x0e\x63ontents_int32\x18\x13 \x03(\x05\x12\x16\n\x0e\x63ontents_int64\x18\x14 \x03(\x03\x12\x18\n\x10\x63ontents_float16\x18\x15 \x03(\x02\x12\x18\n\x10\x63ontents_float32\x18\x16 \x03(\x02\x12\x18\n\x10\x63ontents_float64\x18\x17 \x03(\x01\x12\x15\n\rcontents_bool\x18\x18 \x03(\x08\x12\x16\n\x0e\x63ontents_qint8\x18\x19 \x03(\x11\x12\x17\n\x0f\x63ontents_quint8\x18\x1a \x03(\r\x12\x17\n\x0f\x63ontents_qint32\x18\x1b \x03(\x11\x12\x19\n\x11\x63ontents_bfloat16\x18\x1c \x03(\x02"\x88\x01\n\nTensorData\x12\x14\n\x0cis_quantized\x18\x01 \x01(\x08\x12\r\n\x05scale\x18\x02 \x01(\x02\x12\x12\n\nzero_point\x18\x03 \x01(\x05\x12\x14\n\nproto_data\x18\x04 \x01(\x0cH\x00\x12\x14\n\narrow_data\x18\x05 \x01(\x0cH\x00\x12\r\n\x05\x64type\x18\x06 \x01(\tB\x06\n\x04\x64\x61ta"j\n\x0bTensorProto\x12\x0e\n\x06tensor\x18\x01 \x01(\x0c\x12\x15\n\rrequires_grad\x18\x02 \x01(\x08\x12\x0c\n\x04grad\x18\x03 \x01(\x0c\x12&\n\x06\x64\x65vice\x18\x04 \x01(\x0b\x32\x16.syft.lib.torch.Deviceb\x06proto3',
     dependencies=[
         proto_dot_lib_dot_torch_dot_device__pb2.DESCRIPTOR,
     ],
@@ -57,28 +57,9 @@ _PROTOBUFCONTENT = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="dtype",
-            full_name="syft.lib.torch.ProtobufContent.dtype",
-            index=1,
-            number=2,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=b"".decode("utf-8"),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
             name="contents_uint8",
             full_name="syft.lib.torch.ProtobufContent.contents_uint8",
-            index=2,
+            index=1,
             number=16,
             type=13,
             cpp_type=3,
@@ -97,7 +78,7 @@ _PROTOBUFCONTENT = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name="contents_int8",
             full_name="syft.lib.torch.ProtobufContent.contents_int8",
-            index=3,
+            index=2,
             number=17,
             type=5,
             cpp_type=1,
@@ -116,7 +97,7 @@ _PROTOBUFCONTENT = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name="contents_int16",
             full_name="syft.lib.torch.ProtobufContent.contents_int16",
-            index=4,
+            index=3,
             number=18,
             type=5,
             cpp_type=1,
@@ -135,7 +116,7 @@ _PROTOBUFCONTENT = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name="contents_int32",
             full_name="syft.lib.torch.ProtobufContent.contents_int32",
-            index=5,
+            index=4,
             number=19,
             type=5,
             cpp_type=1,
@@ -154,7 +135,7 @@ _PROTOBUFCONTENT = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name="contents_int64",
             full_name="syft.lib.torch.ProtobufContent.contents_int64",
-            index=6,
+            index=5,
             number=20,
             type=3,
             cpp_type=2,
@@ -173,7 +154,7 @@ _PROTOBUFCONTENT = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name="contents_float16",
             full_name="syft.lib.torch.ProtobufContent.contents_float16",
-            index=7,
+            index=6,
             number=21,
             type=2,
             cpp_type=6,
@@ -192,7 +173,7 @@ _PROTOBUFCONTENT = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name="contents_float32",
             full_name="syft.lib.torch.ProtobufContent.contents_float32",
-            index=8,
+            index=7,
             number=22,
             type=2,
             cpp_type=6,
@@ -211,7 +192,7 @@ _PROTOBUFCONTENT = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name="contents_float64",
             full_name="syft.lib.torch.ProtobufContent.contents_float64",
-            index=9,
+            index=8,
             number=23,
             type=1,
             cpp_type=5,
@@ -230,7 +211,7 @@ _PROTOBUFCONTENT = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name="contents_bool",
             full_name="syft.lib.torch.ProtobufContent.contents_bool",
-            index=10,
+            index=9,
             number=24,
             type=8,
             cpp_type=7,
@@ -249,7 +230,7 @@ _PROTOBUFCONTENT = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name="contents_qint8",
             full_name="syft.lib.torch.ProtobufContent.contents_qint8",
-            index=11,
+            index=10,
             number=25,
             type=17,
             cpp_type=1,
@@ -268,7 +249,7 @@ _PROTOBUFCONTENT = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name="contents_quint8",
             full_name="syft.lib.torch.ProtobufContent.contents_quint8",
-            index=12,
+            index=11,
             number=26,
             type=13,
             cpp_type=3,
@@ -287,7 +268,7 @@ _PROTOBUFCONTENT = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name="contents_qint32",
             full_name="syft.lib.torch.ProtobufContent.contents_qint32",
-            index=13,
+            index=12,
             number=27,
             type=17,
             cpp_type=1,
@@ -306,7 +287,7 @@ _PROTOBUFCONTENT = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name="contents_bfloat16",
             full_name="syft.lib.torch.ProtobufContent.contents_bfloat16",
-            index=14,
+            index=13,
             number=28,
             type=2,
             cpp_type=6,
@@ -332,7 +313,7 @@ _PROTOBUFCONTENT = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=79,
-    serialized_end=447,
+    serialized_end=432,
 )
 
 
@@ -439,6 +420,25 @@ _TENSORDATA = _descriptor.Descriptor(
             file=DESCRIPTOR,
             create_key=_descriptor._internal_create_key,
         ),
+        _descriptor.FieldDescriptor(
+            name="dtype",
+            full_name="syft.lib.torch.TensorData.dtype",
+            index=5,
+            number=6,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -457,8 +457,8 @@ _TENSORDATA = _descriptor.Descriptor(
             fields=[],
         ),
     ],
-    serialized_start=449,
-    serialized_end=570,
+    serialized_start=435,
+    serialized_end=571,
 )
 
 
@@ -555,8 +555,8 @@ _TENSORPROTO = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=572,
-    serialized_end=678,
+    serialized_start=573,
+    serialized_end=679,
 )
 
 _TENSORDATA.oneofs_by_name["data"].fields.append(

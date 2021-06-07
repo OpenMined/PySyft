@@ -18,8 +18,11 @@ from syft.lib.torchvision.allowlist import allowlist
 
 TORCHVISION_VERSION = version.parse(tv.__version__)
 PIL = pytest.importorskip("PIL")
+np = pytest.importorskip("numpy")
+
 Image = PIL.Image.Image
 sy.load("PIL")
+sy.load("numpy")
 
 
 @pytest.fixture(scope="function")
@@ -79,6 +82,7 @@ def test_allowlist(
             and version_supported(support_dict=allowlist[item])
         ):
             try:
+                print(item + TEST_PARAMS[item])
                 exec(item + TEST_PARAMS[item])
             except RuntimeError as e:
                 assert (

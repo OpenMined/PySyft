@@ -7,7 +7,6 @@ import "proto/lib/torch/device.proto";
 
 message ProtobufContent {
   repeated int64 shape = 1;
-  string dtype = 2;
 
     // Field numbers starting at 16 take two bytes to encode,
   // so starting the tensor data at 16 leaves room for more
@@ -56,6 +55,8 @@ message TensorData {
     bytes proto_data = 4;
     bytes arrow_data = 5;
   }
+
+  string dtype = 6;
 }
 
 
