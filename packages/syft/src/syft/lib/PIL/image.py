@@ -6,20 +6,20 @@ import torchvision
 
 # syft relative
 from ...generate_wrapper import GenerateWrapper
-from ...lib.torch.tensor_util import protobuf_tensor_deserializer
-from ...lib.torch.tensor_util import protobuf_tensor_serializer
+from ...lib.torch.tensor_util import tensor_deserializer
+from ...lib.torch.tensor_util import tensor_serializer
 from ...proto.lib.torch.tensor_pb2 import TensorData
 
 
 def object2proto(obj: PIL.Image.Image) -> TensorData:
     image_tensor = torch.Tensor(np.array(obj))
-    tensor_proto = protobuf_tensor_serializer(image_tensor)
+    tensor_proto = tensor_serializer(image_tensor)
 
     return tensor_proto
 
 
 def proto2object(proto: TensorData) -> PIL.Image.Image:
-    image_tensor = protobuf_tensor_deserializer(proto)
+    image_tensor = tensor_deserializer(proto)
     if image_tensor.dim() == 3:
         image_tensor = image_tensor.permute(2, 0, 1)
     image_obj = torchvision.transforms.functional.to_pil_image(image_tensor)

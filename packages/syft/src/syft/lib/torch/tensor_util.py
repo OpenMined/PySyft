@@ -1,3 +1,6 @@
+# stdlib
+from typing import Optional
+
 # third party
 import pyarrow as pa
 import torch as th
@@ -35,7 +38,7 @@ def protobuf_data_encoding(tensor: th.Tensor) -> bytes:
     if tensor.is_quantized:
         data = th.flatten(tensor).int_repr().tolist()
     else:
-        data = th.flatten(tensor).int_repr().tolist()
+        data = th.flatten(tensor).tolist()
     dtype = TORCH_DTYPE_STR[tensor.dtype]
 
     protobuf_tensor_data.dtype = dtype
@@ -56,7 +59,9 @@ def arrow_data_encoding(tensor: th.Tensor) -> bytes:
     return sink.getvalue().to_pybytes()
 
 
-def tensor_serializer(tensor: th.Tensor) -> TensorData:
+def tensor_serializer(
+    tensor: th.Tensor, override_flag: Optional[bool] = None
+) -> TensorData:
     """Strategy to serialize a tensor using Protobuf"""
 
     protobuf_tensor = TensorData()
@@ -75,19 +80,21 @@ def tensor_serializer(tensor: th.Tensor) -> TensorData:
 
 
 def protobuf_data_decoding(protobuf_tensor: TensorData) -> th.Tensor:
-    size = tuple(protobuf_tensor.proto_data.shape)
-    data = getattr(protobuf_tensor.proto_data, "contents_" + protobuf_tensor.dtype)
+    proto_data = ProtobufContent()
+    proto_data.ParseFromString(protobuf_tensor.proto_data)
+    size = tuple(proto_data.shape)
+    data = getattr(proto_data, "contents_" + proto_data.dtype)
 
     if protobuf_tensor.is_quantized:
         # Drop the 'q' from the beginning of the quantized dtype to get the int type
-        dtype = TORCH_STR_DTYPE[protobuf_tensor.proto_data.dtype[1:]]
+        dtype = TORCH_STR_DTYPE[proto_data.dtype[1:]]
         int_tensor = th.tensor(data, dtype=dtype).reshape(size)
         # Automatically converts int types to quantized types
         return th._make_per_tensor_quantized_tensor(
             int_tensor, protobuf_tensor.scale, protobuf_tensor.zero_point
         )
     else:
-        dtype = TORCH_STR_DTYPE[protobuf_tensor.proto_data.dtype]
+        dtype = TORCH_STR_DTYPE[proto_data.dtype]
         return th.tensor(data, dtype=dtype).reshape(size)
 
 

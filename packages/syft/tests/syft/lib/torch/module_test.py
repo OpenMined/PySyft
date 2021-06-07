@@ -183,7 +183,12 @@ def test_module_modules_empty(modelEmpty: SyNetEmpty) -> None:
 
 
 @pytest.mark.slow
-def test_module_parameteres(root_client: sy.VirtualMachineClient, model: SyNet) -> None:
+@pytest.mark.parametrize("apache_arrow_backend", [True, False])
+def test_module_parameteres(
+    apache_arrow_backend: bool, root_client: sy.VirtualMachineClient, model: SyNet
+) -> None:
+    sy.flags.APACHE_ARROW_SERDE = apache_arrow_backend
+
     model_ptr = model.send(root_client)
 
     assert len(model_ptr.parameters().get()) == 2
@@ -267,11 +272,14 @@ def test_module_gradient_sanity(
 
 
 @pytest.mark.slow
+@pytest.mark.parametrize("apache_arrow_backend", [True, False])
 def test_module_send_get(
+    apache_arrow_backend: bool,
     root_client: sy.VirtualMachineClient,
     model: SyNet,
     dataloader: Tuple[torch.Tensor, torch.Tensor],
 ) -> None:
+    sy.flags.APACHE_ARROW_SERDE = apache_arrow_backend
     data, labels = dataloader
 
     model_ptr = model.send(root_client)
@@ -304,18 +312,26 @@ def test_module_send_get(
 
 
 @pytest.mark.slow
-def test_debug_sum_layers(root_client: sy.VirtualMachineClient, model: SyNet) -> None:
+@pytest.mark.parametrize("apache_arrow_backend", [True, False])
+def test_debug_sum_layers(
+    apache_arrow_backend: bool, root_client: sy.VirtualMachineClient, model: SyNet
+) -> None:
+    sy.flags.APACHE_ARROW_SERDE = apache_arrow_backend
     assert model.debug_sum_layers() is None
     model_ptr = model.send(root_client)
 
     assert model_ptr.debug_sum_layers() is None
 
 
+@pytest.mark.parametrize("apache_arrow_backend", [True, False])
 def test_sy_module(
+    apache_arrow_backend: bool,
     root_client: sy.VirtualMachineClient,
     sy_model: SyModule,
     torch_model: torch.nn.Module,
 ) -> None:
+    sy.flags.APACHE_ARROW_SERDE = apache_arrow_backend
+
     assert isinstance(sy_model._forward_plan, Plan)
     assert len(sy_model._forward_plan.actions) > 0
     assert sy_model.state_dict().keys() == torch_model.state_dict().keys()
@@ -333,10 +349,14 @@ def test_sy_module(
 
 
 @pytest.mark.slow
+@pytest.mark.parametrize("apache_arrow_backend", [True, False])
 def test_recompile_downloaded_sy_module(
+    apache_arrow_backend: bool,
     sy_model: SyModule,
     torch_model: torch.nn.Module,
 ) -> None:
+    sy.flags.APACHE_ARROW_SERDE = apache_arrow_backend
+
     # first download
     downloaded_sy_model = sy_model.send(ROOT_CLIENT).get()
     # then load new weights
@@ -349,9 +369,11 @@ def test_recompile_downloaded_sy_module(
 
 
 @pytest.mark.slow
+@pytest.mark.parametrize("apache_arrow_backend", [True, False])
 def test_nest_sy_module(
-    root_client: sy.VirtualMachineClient, sy_model: SyModule
+    apache_arrow_backend: bool, root_client: sy.VirtualMachineClient, sy_model: SyModule
 ) -> None:
+    sy.flags.APACHE_ARROW_SERDE = apache_arrow_backend
     remote_torch = ROOT_CLIENT.torch
 
     @make_plan

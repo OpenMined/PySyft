@@ -6,8 +6,8 @@ import torch
 # syft relative
 from ...experimental_flags import flags
 from ...generate_wrapper import GenerateWrapper
-from ...lib.torch.tensor_util import protobuf_tensor_deserializer
-from ...lib.torch.tensor_util import protobuf_tensor_serializer
+from ...lib.torch.tensor_util import tensor_deserializer
+from ...lib.torch.tensor_util import tensor_serializer
 from ...proto.lib.numpy.array_pb2 import NumpyProto
 from ...proto.lib.numpy.array_pb2 import NumpyProtoArrow
 
@@ -67,13 +67,13 @@ def protobuf_object2proto(obj: np.ndarray) -> NumpyProto:
         obj = obj.astype(DTYPE_REFACTOR[original_dtype])
 
     tensor = torch.from_numpy(obj).clone()
-    tensor_proto = protobuf_tensor_serializer(tensor)
+    tensor_bytes = tensor_serializer(tensor)
     dtype = original_dtype.name
-    return NumpyProto(tensor=tensor_proto, dtype=dtype)
+    return NumpyProto(tensor=tensor_bytes, dtype=dtype)
 
 
 def protobuf_proto2object(proto: NumpyProto) -> np.ndarray:
-    tensor = protobuf_tensor_deserializer(proto.tensor)
+    tensor = tensor_deserializer(proto.tensor)
     array = tensor.to("cpu").detach().numpy().copy()
     str_dtype = proto.dtype
     original_dtype = np.dtype(str_dtype)

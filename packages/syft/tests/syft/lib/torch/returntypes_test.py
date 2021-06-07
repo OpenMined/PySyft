@@ -57,14 +57,17 @@ def assert_serde(y):  # type: ignore
     assert_eq(y, de)
 
 
+@pytest.mark.parametrize("apache_arrow_backend", [True, False])
 @pytest.mark.parametrize("op_name, ten, _arg", parameters)
 def test_returntypes(
+    apache_arrow_backend: bool,
     op_name: str,
     ten: torch.Tensor,
     _arg: Any,
     node: sy.VirtualMachine,
     client: sy.VirtualMachineClient,
 ) -> None:
+    sy.flags.APACHE_ARROW_SERDE = apache_arrow_backend
     # serde y=ten.op(_arg)
     op = getattr(ten, op_name)
     if _arg is not None:

@@ -2,7 +2,6 @@
 from typing import List
 
 # third party
-import numpy as np
 import pytest
 
 # syft absolute
