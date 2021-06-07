@@ -121,6 +121,29 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializa
         else:
             return NotImplemented
 
+    def __abs__(self):
+
+        data = self.child.abs()
+
+        # create mask for min_vals > 0 and multiply by min-vals so
+        # that positive min-vals stay the same but all negative min-vals
+        # are converted to zero
+        min_vals = (self.min_vals > 0) * self.min_vals
+
+        # create mask for min_vals > 0 and multiply by negative min-vals
+        # so that positive max_vals
+        max_vals = (self.min_vals > 0) * -self.min_vals
+        entity = self.entity
+
+        return SingleEntityPhiTensor(
+            child=data,
+            entity=entity,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            scalar_manager=self.scalar_manager,
+            )
+
+
     def __add__(self, other):
 
         # if the tensor being added is also private
