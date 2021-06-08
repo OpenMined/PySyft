@@ -6,10 +6,9 @@ import torch
 # syft relative
 from ...experimental_flags import flags
 from ...generate_wrapper import GenerateWrapper
-from ...lib.torch.tensor_util import protobuf_tensor_deserializer
-from ...lib.torch.tensor_util import protobuf_tensor_serializer
+from ...lib.torch.tensor_util import tensor_deserializer
+from ...lib.torch.tensor_util import tensor_serializer
 from ...proto.lib.numpy.array_pb2 import NumpyProto
-from ...proto.lib.numpy.array_pb2 import NumpyProtoArrow
 
 SUPPORTED_BOOL_TYPES = [np.bool_]
 SUPPORTED_INT_TYPES = [
@@ -38,17 +37,15 @@ DTYPE_REFACTOR = {
 }
 
 
-def arrow_object2proto(obj: np.ndarray) -> NumpyProtoArrow:
+def arrow_serialize(obj: np.ndarray) -> bytes:
     apache_arrow = pa.Tensor.from_numpy(obj=obj)
     sink = pa.BufferOutputStream()
     pa.ipc.write_tensor(apache_arrow, sink)
-    buf = sink.getvalue().to_pybytes()
-    proto = NumpyProtoArrow(data=buf)
-    return proto
+    return sink.getvalue().to_pybytes()
 
 
-def arrow_proto2object(proto: NumpyProtoArrow) -> np.ndarray:
-    reader = pa.BufferReader(proto.data)
+def arrow_deserialize(buf: bytes) -> np.ndarray:
+    reader = pa.BufferReader(buf)
     buf = reader.read_buffer()
     result = pa.ipc.read_tensor(buf)
     np_array = result.to_numpy()
@@ -56,7 +53,7 @@ def arrow_proto2object(proto: NumpyProtoArrow) -> np.ndarray:
     return np_array
 
 
-def protobuf_object2proto(obj: np.ndarray) -> NumpyProto:
+def protobuf_serialize(obj: np.ndarray) -> NumpyProto:
     original_dtype = obj.dtype
     if original_dtype not in SUPPORTED_DTYPES:
         raise NotImplementedError(f"{original_dtype} is not supported")
@@ -67,13 +64,13 @@ def protobuf_object2proto(obj: np.ndarray) -> NumpyProto:
         obj = obj.astype(DTYPE_REFACTOR[original_dtype])
 
     tensor = torch.from_numpy(obj).clone()
-    tensor_proto = protobuf_tensor_serializer(tensor)
+    tensor_bytes = tensor_serializer(tensor)
     dtype = original_dtype.name
-    return NumpyProto(tensor=tensor_proto, dtype=dtype)
+    return NumpyProto(proto_data=tensor_bytes, dtype=dtype)
 
 
-def protobuf_proto2object(proto: NumpyProto) -> np.ndarray:
-    tensor = protobuf_tensor_deserializer(proto.tensor)
+def protobuf_deserialize(proto: NumpyProto) -> np.ndarray:
+    tensor = tensor_deserializer(proto.proto_data)
     array = tensor.to("cpu").detach().numpy().copy()
     str_dtype = proto.dtype
     original_dtype = np.dtype(str_dtype)
@@ -81,26 +78,24 @@ def protobuf_proto2object(proto: NumpyProto) -> np.ndarray:
     return obj
 
 
-def _generate_serde() -> None:
+def serialize_numpy_array(obj: np.ndarray) -> NumpyProto:
     if flags.APACHE_ARROW_TENSOR_SERDE:
-        NumpyProtoArrow.schema2type = None
-        GenerateWrapper(
-            wrapped_type=np.ndarray,
-            import_path="numpy.ndarray",
-            protobuf_scheme=NumpyProtoArrow,
-            type_object2proto=arrow_object2proto,
-            type_proto2object=arrow_proto2object,
-        )
+        return NumpyProto(arrow_data=arrow_serialize(obj))
     else:
-        NumpyProto.schema2type = None
-        GenerateWrapper(
-            wrapped_type=np.ndarray,
-            import_path="numpy.ndarray",
-            protobuf_scheme=NumpyProto,
-            type_object2proto=protobuf_object2proto,
-            type_proto2object=protobuf_proto2object,
-        )
+        return protobuf_serialize(obj)
 
 
-_generate_serde()
-flags._regenerate_numpy_serde = _generate_serde
+def deserialize_numpy_array(proto: NumpyProto) -> np.ndarray:
+    if proto.HasField("arrow_data"):
+        return arrow_deserialize(proto.arrow_data)
+    else:
+        return protobuf_deserialize(proto)
+
+
+GenerateWrapper(
+    wrapped_type=np.ndarray,
+    import_path="numpy.ndarray",
+    protobuf_scheme=NumpyProto,
+    type_object2proto=serialize_numpy_array,
+    type_proto2object=deserialize_numpy_array,
+)

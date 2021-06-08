@@ -7,6 +7,7 @@ from typing import List as TypeList
 from typing import Tuple as TypeTuple
 
 # syft relative
+from . import rst_share  # noqa: 401
 from . import session  # noqa: 401
 from . import share  # noqa: 401
 from ...ast import add_classes
@@ -37,6 +38,7 @@ def create_ast(client: TypeAny = None) -> Globals:
     import sympc
 
     # syft relative
+    from . import rst_share  # noqa: 401
     from . import session  # noqa: 401
     from . import share  # noqa: 401
 

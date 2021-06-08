@@ -8,29 +8,23 @@ import pytest
 import syft as sy
 from syft.experimental_flags import flags
 
+np = pytest.importorskip("numpy")
+sy.load("numpy")
+
 
 @pytest.mark.vendor(lib="numpy")
 @pytest.mark.parametrize("arrow_backend", [False, True])
-def test_remote_numpy_array(arrow_backend: str) -> None:
-
-    # Don't share with other tests due to the _regenerate_numpy_serde that occurs with
-    # flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
-    vm = sy.VirtualMachine()
-    root_client = vm.get_root_client()
-
-    # third party
-    import numpy as np
-
+def test_remote_numpy_array(
+    arrow_backend: str, root_client: sy.VirtualMachineClient
+) -> None:
+    flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
     # syft absolute
     from syft.lib.numpy.array import SUPPORTED_BOOL_TYPES
     from syft.lib.numpy.array import SUPPORTED_DTYPES
     from syft.lib.numpy.array import SUPPORTED_FLOAT_TYPES
     from syft.lib.numpy.array import SUPPORTED_INT_TYPES
 
-    sy.load("numpy")
-    flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
-
-    test_arrays: List[np.ndarray] = []
+    test_arrays: List[np.ndarray] = []  # type: ignore
     for dtype in SUPPORTED_DTYPES:
 
         # test their bounds
@@ -66,17 +60,7 @@ def test_remote_numpy_array(arrow_backend: str) -> None:
 # Attributes test
 @pytest.mark.vendor(lib="numpy")
 @pytest.mark.parametrize("arrow_backend", [False, True])
-def test_shape(arrow_backend: bool) -> None:
-
-    # Don't share with other tests due to the _regenerate_numpy_serde that occurs with
-    # flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
-    vm = sy.VirtualMachine()
-    root_client = vm.get_root_client()
-
-    # third party
-    import numpy as np
-
-    sy.load("numpy")
+def test_shape(arrow_backend: bool, root_client: sy.VirtualMachineClient) -> None:
     flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
 
     x = np.array([1, 2, 3, 4])
@@ -90,17 +74,7 @@ def test_shape(arrow_backend: bool) -> None:
 
 @pytest.mark.vendor(lib="numpy")
 @pytest.mark.parametrize("arrow_backend", [False, True])
-def test_strides(arrow_backend: bool) -> None:
-
-    # Don't share with other tests due to the _regenerate_numpy_serde that occurs with
-    # flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
-    vm = sy.VirtualMachine()
-    root_client = vm.get_root_client()
-
-    # third party
-    import numpy as np
-
-    sy.load("numpy")
+def test_strides(arrow_backend: bool, root_client: sy.VirtualMachineClient) -> None:
     flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
 
     x = np.array([[0, 1, 2, 3, 4], [5, 6, 7, 8, 9]], dtype=np.int32)
@@ -114,17 +88,7 @@ def test_strides(arrow_backend: bool) -> None:
 
 @pytest.mark.vendor(lib="numpy")
 @pytest.mark.parametrize("arrow_backend", [False, True])
-def test_ndim(arrow_backend: bool) -> None:
-
-    # Don't share with other tests due to the _regenerate_numpy_serde that occurs with
-    # flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
-    vm = sy.VirtualMachine()
-    root_client = vm.get_root_client()
-
-    # third party
-    import numpy as np
-
-    sy.load("numpy")
+def test_ndim(arrow_backend: bool, root_client: sy.VirtualMachineClient) -> None:
     flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
 
     x = np.zeros((2, 3, 4))
@@ -138,17 +102,7 @@ def test_ndim(arrow_backend: bool) -> None:
 
 @pytest.mark.vendor(lib="numpy")
 @pytest.mark.parametrize("arrow_backend", [False, True])
-def test_size(arrow_backend: bool) -> None:
-
-    # Don't share with other tests due to the _regenerate_numpy_serde that occurs with
-    # flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
-    vm = sy.VirtualMachine()
-    root_client = vm.get_root_client()
-
-    # third party
-    import numpy as np
-
-    sy.load("numpy")
+def test_size(arrow_backend: bool, root_client: sy.VirtualMachineClient) -> None:
     flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
 
     x = np.zeros((3, 5, 2))
@@ -162,17 +116,7 @@ def test_size(arrow_backend: bool) -> None:
 
 @pytest.mark.vendor(lib="numpy")
 @pytest.mark.parametrize("arrow_backend", [False, True])
-def test_itemsize(arrow_backend: bool) -> None:
-
-    # Don't share with other tests due to the _regenerate_numpy_serde that occurs with
-    # flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
-    vm = sy.VirtualMachine()
-    root_client = vm.get_root_client()
-
-    # third party
-    import numpy as np
-
-    sy.load("numpy")
+def test_itemsize(arrow_backend: bool, root_client: sy.VirtualMachineClient) -> None:
     flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
 
     x = np.array([1, 2, 3], dtype=np.float64)
@@ -186,17 +130,7 @@ def test_itemsize(arrow_backend: bool) -> None:
 
 @pytest.mark.vendor(lib="numpy")
 @pytest.mark.parametrize("arrow_backend", [False, True])
-def test_nbytes(arrow_backend: bool) -> None:
-
-    # Don't share with other tests due to the _regenerate_numpy_serde that occurs with
-    # flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
-    vm = sy.VirtualMachine()
-    root_client = vm.get_root_client()
-
-    # third party
-    import numpy as np
-
-    sy.load("numpy")
+def test_nbytes(arrow_backend: bool, root_client: sy.VirtualMachineClient) -> None:
     flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
 
     x = np.zeros((3, 5, 2))
@@ -210,17 +144,7 @@ def test_nbytes(arrow_backend: bool) -> None:
 
 @pytest.mark.vendor(lib="numpy")
 @pytest.mark.parametrize("arrow_backend", [False, True])
-def test_transpose(arrow_backend: bool) -> None:
-
-    # Don't share with other tests due to the _regenerate_numpy_serde that occurs with
-    # flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
-    vm = sy.VirtualMachine()
-    root_client = vm.get_root_client()
-
-    # third party
-    import numpy as np
-
-    sy.load("numpy")
+def test_transpose(arrow_backend: bool, root_client: sy.VirtualMachineClient) -> None:
     flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
 
     x = np.array([1, 2, 3])
@@ -234,17 +158,7 @@ def test_transpose(arrow_backend: bool) -> None:
 
 @pytest.mark.vendor(lib="numpy")
 @pytest.mark.parametrize("arrow_backend", [False, True])
-def test_item(arrow_backend: bool) -> None:
-
-    # Don't share with other tests due to the _regenerate_numpy_serde that occurs with
-    # flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
-    vm = sy.VirtualMachine()
-    root_client = vm.get_root_client()
-
-    # third party
-    import numpy as np
-
-    sy.load("numpy")
+def test_item(arrow_backend: bool, root_client: sy.VirtualMachineClient) -> None:
     flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
 
     x = np.array([6, 8, 4, 7])
@@ -258,17 +172,7 @@ def test_item(arrow_backend: bool) -> None:
 
 @pytest.mark.vendor(lib="numpy")
 @pytest.mark.parametrize("arrow_backend", [False, True])
-def test_byteswap(arrow_backend: bool) -> None:
-
-    # Don't share with other tests due to the _regenerate_numpy_serde that occurs with
-    # flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
-    vm = sy.VirtualMachine()
-    root_client = vm.get_root_client()
-
-    # third party
-    import numpy as np
-
-    sy.load("numpy")
+def test_byteswap(arrow_backend: bool, root_client: sy.VirtualMachineClient) -> None:
     flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
 
     x = np.array([1, 256, 8755], dtype=np.int16)
@@ -283,17 +187,7 @@ def test_byteswap(arrow_backend: bool) -> None:
 
 @pytest.mark.vendor(lib="numpy")
 @pytest.mark.parametrize("arrow_backend", [False, True])
-def test_copy(arrow_backend: bool) -> None:
-
-    # Don't share with other tests due to the _regenerate_numpy_serde that occurs with
-    # flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
-    vm = sy.VirtualMachine()
-    root_client = vm.get_root_client()
-
-    # third party
-    import numpy as np
-
-    sy.load("numpy")
+def test_copy(arrow_backend: bool, root_client: sy.VirtualMachineClient) -> None:
     flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
 
     x = np.array([1, 2, 3])
@@ -308,17 +202,7 @@ def test_copy(arrow_backend: bool) -> None:
 
 @pytest.mark.vendor(lib="numpy")
 @pytest.mark.parametrize("arrow_backend", [False, True])
-def test_view(arrow_backend: bool) -> None:
-
-    # Don't share with other tests due to the _regenerate_numpy_serde that occurs with
-    # flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
-    vm = sy.VirtualMachine()
-    root_client = vm.get_root_client()
-
-    # third party
-    import numpy as np
-
-    sy.load("numpy")
+def test_view(arrow_backend: bool, root_client: sy.VirtualMachineClient) -> None:
     flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
 
     x = np.array([(1, 2, 3)])

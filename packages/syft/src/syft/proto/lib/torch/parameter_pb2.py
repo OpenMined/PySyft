@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x1fproto/lib/torch/parameter.proto\x12\x0esyft.lib.torch\x1a\x1cproto/lib/torch/tensor.proto"\xae\x01\n\x0eParameterProto\x12*\n\x06tensor\x18\x01 \x01(\x0b\x32\x1a.syft.lib.torch.TensorData\x12\x15\n\rrequires_grad\x18\x02 \x01(\x08\x12(\n\x04grad\x18\x03 \x01(\x0b\x32\x1a.syft.lib.torch.TensorData\x12/\n\x0bgrad_sample\x18\x04 \x01(\x0b\x32\x1a.syft.lib.torch.TensorDatab\x06proto3',
+    serialized_pb=b'\n\x1fproto/lib/torch/parameter.proto\x12\x0esyft.lib.torch\x1a\x1cproto/lib/torch/tensor.proto"}\n\x0eParameterProto\x12\x0e\n\x06tensor\x18\x01 \x01(\x0c\x12\x15\n\rrequires_grad\x18\x02 \x01(\x08\x12\x11\n\x04grad\x18\x03 \x01(\x0cH\x00\x88\x01\x01\x12\x18\n\x0bgrad_sample\x18\x04 \x01(\x0cH\x01\x88\x01\x01\x42\x07\n\x05_gradB\x0e\n\x0c_grad_sampleb\x06proto3',
     dependencies=[
         proto_dot_lib_dot_torch_dot_tensor__pb2.DESCRIPTOR,
     ],
@@ -42,11 +42,11 @@ _PARAMETERPROTO = _descriptor.Descriptor(
             full_name="syft.lib.torch.ParameterProto.tensor",
             index=0,
             number=1,
-            type=11,
-            cpp_type=10,
+            type=12,
+            cpp_type=9,
             label=1,
             has_default_value=False,
-            default_value=None,
+            default_value=b"",
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -80,11 +80,11 @@ _PARAMETERPROTO = _descriptor.Descriptor(
             full_name="syft.lib.torch.ParameterProto.grad",
             index=2,
             number=3,
-            type=11,
-            cpp_type=10,
+            type=12,
+            cpp_type=9,
             label=1,
             has_default_value=False,
-            default_value=None,
+            default_value=b"",
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -99,11 +99,11 @@ _PARAMETERPROTO = _descriptor.Descriptor(
             full_name="syft.lib.torch.ParameterProto.grad_sample",
             index=3,
             number=4,
-            type=11,
-            cpp_type=10,
+            type=12,
+            cpp_type=9,
             label=1,
             has_default_value=False,
-            default_value=None,
+            default_value=b"",
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -121,20 +121,40 @@ _PARAMETERPROTO = _descriptor.Descriptor(
     is_extendable=False,
     syntax="proto3",
     extension_ranges=[],
-    oneofs=[],
-    serialized_start=82,
-    serialized_end=256,
+    oneofs=[
+        _descriptor.OneofDescriptor(
+            name="_grad",
+            full_name="syft.lib.torch.ParameterProto._grad",
+            index=0,
+            containing_type=None,
+            create_key=_descriptor._internal_create_key,
+            fields=[],
+        ),
+        _descriptor.OneofDescriptor(
+            name="_grad_sample",
+            full_name="syft.lib.torch.ParameterProto._grad_sample",
+            index=1,
+            containing_type=None,
+            create_key=_descriptor._internal_create_key,
+            fields=[],
+        ),
+    ],
+    serialized_start=81,
+    serialized_end=206,
 )
 
-_PARAMETERPROTO.fields_by_name[
-    "tensor"
-].message_type = proto_dot_lib_dot_torch_dot_tensor__pb2._TENSORDATA
+_PARAMETERPROTO.oneofs_by_name["_grad"].fields.append(
+    _PARAMETERPROTO.fields_by_name["grad"]
+)
 _PARAMETERPROTO.fields_by_name[
     "grad"
-].message_type = proto_dot_lib_dot_torch_dot_tensor__pb2._TENSORDATA
+].containing_oneof = _PARAMETERPROTO.oneofs_by_name["_grad"]
+_PARAMETERPROTO.oneofs_by_name["_grad_sample"].fields.append(
+    _PARAMETERPROTO.fields_by_name["grad_sample"]
+)
 _PARAMETERPROTO.fields_by_name[
     "grad_sample"
-].message_type = proto_dot_lib_dot_torch_dot_tensor__pb2._TENSORDATA
+].containing_oneof = _PARAMETERPROTO.oneofs_by_name["_grad_sample"]
 DESCRIPTOR.message_types_by_name["ParameterProto"] = _PARAMETERPROTO
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 

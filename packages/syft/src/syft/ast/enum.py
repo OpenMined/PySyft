@@ -1,3 +1,6 @@
+"""This module contains `EnumAttribute`, an AST node representing the
+ attributes of a Python Enum which are only gettable, not settable."""
+
 # stdlib
 from enum import Enum
 from typing import Any
@@ -39,6 +42,9 @@ class EnumAttribute(ast.attribute.Attribute):
     def get_remote_enum_attribute(self) -> AbstractPointer:
         """Remote getter on an `Enum` attribute in the AST.
 
+        Raises:
+            ValueError: Cannot get Enum attribute.
+
         Returns:
             A pointer to the remote enum attribute.
         """
@@ -75,6 +81,9 @@ class EnumAttribute(ast.attribute.Attribute):
     def solve_get_enum_attribute(self) -> Enum:
         """Local getter on an `Enum` attribute in the AST.
 
+        Raises:
+            ValueError: Cannot get Enum attribute.
+
         Returns:
             The `Enum` object from the parent object reference.
         """
@@ -91,7 +100,11 @@ class EnumAttribute(ast.attribute.Attribute):
     def __call__(self, *args: Any, **kwargs: Any) -> None:
         """An `Enum` attribute is not callable.
 
-        Throws:
+        Args:
+            *args: Variable length argument list.
+            *kwargs: keyword arguments.
+
+        Raises:
             ValueError: If the function is called.
         """
         traceback_and_raise(
@@ -101,7 +114,11 @@ class EnumAttribute(ast.attribute.Attribute):
     def add_path(self, *args: Any, **kwargs: Any) -> None:
         """An `Enum` can no longer have children nodes.
 
-        Throws:
+        Args:
+            *args: Variable length argument list.
+            *kwargs: keyword arguments..
+
+        Raises:
             ValueError: If the function is called.
         """
         traceback_and_raise(

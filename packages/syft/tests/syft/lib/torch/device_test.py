@@ -32,9 +32,14 @@ def test_device_init(node: sy.VirtualMachine, client: sy.VirtualMachineClient) -
 @pytest.mark.slow
 @pytest.mark.parametrize("type_str", ["cpu", "cuda"])
 @pytest.mark.parametrize("index", [None, 0])
+@pytest.mark.parametrize("apache_arrow_backend", [True, False])
 def test_device_serde(
-    type_str: str, index: Any, root_client: sy.VirtualMachineClient
+    apache_arrow_backend: bool,
+    type_str: str,
+    index: Any,
+    root_client: sy.VirtualMachineClient,
 ) -> None:
+    sy.flags.APACHE_ARROW_SERDE = apache_arrow_backend
     device = th.device(type_str, index)
     device_ptr = device.send(root_client)
     assert device_ptr.get() == device

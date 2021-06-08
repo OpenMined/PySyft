@@ -157,14 +157,14 @@ jobs:
           bandit -r src
           safety check
 
-      - name: Run normal tests
-        run: |
-          pytest -m 'fast or slow' --cov syft --cov-fail-under 80 -n auto --durations=50
-
       - name: Install libomp for XGBoost
         if: startsWith(runner.os, 'macos')
         run: |
           brew install libomp
+
+      - name: Run normal tests
+        run: |
+          pytest -m 'fast or slow' --cov syft --cov-fail-under 80 -n auto --durations=50
 
       - name: Run supported library tests
         run: |
@@ -265,12 +265,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
-      - uses: actions/checkout@v2
-        with:
-          repository: "OpenMined/PyGrid"
-          ref: "dev"
-          path: "packages/grid"
-
       - name: Install Dependencies
         run: |
           pip install packaging --default-timeout=60
@@ -281,7 +275,6 @@ jobs:
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
 
       - name: Test PyGrid
-        continue-on-error: true
         run: |
           pytest ../grid/apps/domain/tests --durations=50
           pytest ../grid/apps/network/tests --durations=50
@@ -321,12 +314,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
-      - uses: actions/checkout@v2
-        with:
-          repository: "OpenMined/PyGrid"
-          ref: "dev"
-          path: "packages/grid"
-
       - name: Install Dependencies
         run: |
           pip install packaging --default-timeout=60
@@ -337,7 +324,6 @@ jobs:
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
 
       - name: Test PyGrid
-        continue-on-error: true
         run: |
           python ./scripts/mnist.py
-          pytest -m grid --durations=50
+          pytest -m grid -p no:randomly -p no:xdist

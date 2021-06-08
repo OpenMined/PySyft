@@ -1,20 +1,21 @@
+# stdlib
+import re
+
 # third party
 import pytest
 
 # syft absolute
 import syft as sy
 
+pd = pytest.importorskip("pandas")
+statsmodels = pytest.importorskip("statsmodels")
+
+sy.load("pandas")
+sy.load("sklearn")
+
 
 @pytest.mark.vendor(lib="statsmodels")
 def test_glm(root_client: sy.VirtualMachineClient) -> None:
-
-    # stdlib
-    import re
-
-    # third party
-    import pandas as pd
-    import statsmodels
-
     FAMILY = [
         statsmodels.genmod.families.Binomial,
         statsmodels.genmod.families.Gamma,
