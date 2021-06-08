@@ -1,3 +1,4 @@
+files: ^packages/syft
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v3.4.0
@@ -33,7 +34,7 @@ repos:
     rev: v0.812
     hooks:
       - id: mypy
-        exclude: ^(packages/syft/src/syft/proto|packages/syft/tests/syft/lib/python|packages/syft/examples/duet|packages/syft/pygrid)
+        exclude: ^(packages/syft/src/syft/proto|packages/syft/tests/syft/lib/python|packages/syft/examples/duet)
         args: [
             "--ignore-missing-imports",
             "--scripts-are-modules",
