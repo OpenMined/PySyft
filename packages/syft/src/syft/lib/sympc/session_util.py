@@ -6,6 +6,7 @@ from uuid import UUID
 # third party
 import sympc
 from sympc.config import Config
+from sympc.protocol.protocol import Protocol
 from sympc.session import Session
 from sympc.store import CryptoStore
 
@@ -28,19 +29,20 @@ def protobuf_session_serializer(session: Session) -> MPCSession_PB:
         (length_nr_parties + 7) // 8, byteorder="big"
     )
 
-    protocol = session.protocol.__name__
-    protocol_serialized = str.encode(protocol)
-
     uuid = str(session.uuid)
 
-    return MPCSession_PB(
+    session_pb = MPCSession_PB(
         uuid=uuid,
         config=conf_proto,
         ring_size=rs_bytes,
         nr_parties=nr_parties_bytes,
         rank=session.rank,
-        protocol=protocol_serialized,
     )
+
+    session_pb.protocol.name = type(session.protocol).__name__
+    session_pb.protocol.security_type = session.protocol.security_type
+
+    return session_pb
 
 
 def protobuf_session_deserializer(proto: MPCSession_PB) -> Session:
@@ -59,7 +61,8 @@ def protobuf_session_deserializer(proto: MPCSession_PB) -> Session:
     conf = Config(**_conf_dict)
     ring_size = int.from_bytes(proto.ring_size, "big")
     nr_parties = int.from_bytes(proto.nr_parties, "big")
-    protocol_deserialized = proto.protocol.decode()
+    protocol_deserialized = Protocol.registered_protocols[proto.protocol.name]()
+    protocol_deserialized.security_type = proto.protocol.security_type
 
     session = Session(
         config=conf,
