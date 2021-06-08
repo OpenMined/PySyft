@@ -9,6 +9,7 @@ np = pytest.importorskip("numpy")
 linear_model = pytest.importorskip("sklearn.linear_model")
 LogisticRegression = linear_model.LogisticRegression
 
+
 @pytest.mark.vendor(lib="sklearn")
 @pytest.mark.parametrize("arrow_backend", [True, False])
 def test_logistic_model_serde(
