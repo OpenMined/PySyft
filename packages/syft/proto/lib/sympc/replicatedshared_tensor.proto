@@ -6,7 +6,7 @@ import "proto/lib/torch/tensor.proto";
 import "proto/lib/python/dict.proto";
 
 message ReplicatedSharedTensor {
-  repeated syft.lib.torch.TensorData tensor = 1;
+  repeated syft.lib.torch.TensorProto tensor = 1;
   syft.lib.python.Dict config = 2;
   string session_uuid = 3;
 }
