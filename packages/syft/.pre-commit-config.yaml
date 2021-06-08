@@ -4,7 +4,9 @@ repos:
     hooks:
       - id: check-ast
       - id: trailing-whitespace
+        exclude: ^(packages/grid)
       - id: check-docstring-first
+        exclude: ^(packages/grid)
       - id: check-json
       - id: check-added-large-files
       - id: check-yaml
@@ -13,7 +15,7 @@ repos:
       - id: check-executables-have-shebangs
       - id: debug-statements
       - id: name-tests-test
-        exclude: ^(packages/syft/tests/syft/lib/allowlist_report.py)
+        exclude: ^(packages/syft/tests/syft/lib/allowlist_report.py|packages/grid)
       - id: requirements-txt-fixer
   - repo: https://gitlab.com/pycqa/flake8
     rev: 3.9.1
@@ -23,7 +25,7 @@ repos:
         # additional_dependencies:
         # - flake8-kwarger
         # - darglint
-        exclude: ^(packages/syft/src/syft/proto|packages/syft/examples/duet)
+        exclude: ^(packages/syft/src/syft/proto|packages/syft/examples/duet|packages/grid)
   - repo: https://github.com/psf/black
     rev: 21.4b0
     hooks:
@@ -33,7 +35,7 @@ repos:
     rev: v0.812
     hooks:
       - id: mypy
-        exclude: ^(packages/syft/src/syft/proto|packages/syft/tests/syft/lib/python|packages/syft/examples/duet|packages/syft/pygrid)
+        exclude: ^(packages/grid|packages/syft/src/syft/proto|packages/syft/tests/syft/lib/python|packages/syft/examples/duet|packages/syft/pygrid)
         args: [
             "--ignore-missing-imports",
             "--scripts-are-modules",
@@ -51,6 +53,7 @@ repos:
   - repo: local
     hooks:
       - id: flynt
+        exclude: ^(packages/grid)
         name: flynt
         entry: flynt
         args: [--fail-on-change]
@@ -63,6 +66,7 @@ repos:
     hooks:
       - id: isort
         name: isort (python)
+        exclude: ^(packages/grid)
 
   # - repo: https://github.com/pycqa/pydocstyle
   #   rev: 5.1.1

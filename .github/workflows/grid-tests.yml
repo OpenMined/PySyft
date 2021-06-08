@@ -1,13 +1,19 @@
 name: Grid Tests
 
 on:
-  push:
-    branches:
-      - master
-      - dev
-      - pygrid_0.4.0
   pull_request:
-    types: [opened, synchronize, reopened]
+    branches:
+      - dev
+    paths:
+      - ".github/workflows/grid-*.yml"
+      - "packages/grid/**.py"
+      - "packages/grid/**.txt"
+      - "packages/grid/**.toml"
+      - "packages/grid/setup.cfg"
+
+defaults:
+  run:
+    working-directory: ./packages/grid
 
 jobs:
   linting:
