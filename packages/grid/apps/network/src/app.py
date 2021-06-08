@@ -83,4 +83,5 @@ def create_app(
     app.config["SECRET_KEY"] = secret_key
 
     # Send app instance
+    logger.info(f"App started in {config.APP_ENV} environment")
     return app
