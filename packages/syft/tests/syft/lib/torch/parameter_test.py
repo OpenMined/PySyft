@@ -9,10 +9,11 @@ import torch as th
 import syft as sy
 
 
-@pytest.mark.slow
+@pytest.mark.parametrize("apache_arrow_backend", [True, False])
 def test_parameter_vm_remote_operation(
-    node: sy.VirtualMachine, client: sy.VirtualMachineClient
+    apache_arrow_backend: bool, node: sy.VirtualMachine, client: sy.VirtualMachineClient
 ) -> None:
+    sy.flags.APACHE_ARROW_SERDE = apache_arrow_backend
     x = th.nn.Parameter(th.randn(3, 3))
 
     xp = x.send(client, pointable=False)
@@ -32,7 +33,11 @@ def test_parameter_vm_remote_operation(
     assert len(node.store._objects) == 0
 
 
-def test_get_copy(node: sy.VirtualMachine, client: sy.VirtualMachineClient) -> None:
+@pytest.mark.parametrize("apache_arrow_backend", [True, False])
+def test_get_copy(
+    apache_arrow_backend: bool, node: sy.VirtualMachine, client: sy.VirtualMachineClient
+) -> None:
+    sy.flags.APACHE_ARROW_SERDE = apache_arrow_backend
     x = th.nn.Parameter(th.randn(3, 3))
 
     xp = x.send(client, pointable=False)
@@ -52,7 +57,9 @@ def test_get_copy(node: sy.VirtualMachine, client: sy.VirtualMachineClient) -> N
     assert len(node.store._objects) == 1
 
 
-def test_parameter_serde() -> None:
+@pytest.mark.parametrize("apache_arrow_backend", [True, False])
+def test_parameter_serde(apache_arrow_backend: bool) -> None:
+    sy.flags.APACHE_ARROW_SERDE = apache_arrow_backend
     param = th.nn.parameter.Parameter(th.tensor([1.0, 2, 3]), requires_grad=True)
     # Setting grad manually to check it is passed through serialization
     param.grad = th.randn_like(param)
@@ -66,7 +73,10 @@ def test_parameter_serde() -> None:
     assert param2.requires_grad == param2.requires_grad
 
 
-def test_linear_grad_serde() -> None:
+@pytest.mark.parametrize("apache_arrow_backend", [True, False])
+def test_linear_grad_serde(apache_arrow_backend: bool) -> None:
+    sy.flags.APACHE_ARROW_SERDE = apache_arrow_backend
+
     # Parameter is created inside Linear module
     linear = th.nn.Linear(5, 1)
     param = linear.weight
