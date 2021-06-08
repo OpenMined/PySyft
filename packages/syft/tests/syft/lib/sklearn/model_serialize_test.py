@@ -6,9 +6,7 @@ import syft as sy
 from syft.experimental_flags import flags
 
 np = pytest.importorskip("numpy")
-# sy.load("numpy")
 sklearn = pytest.importorskip("sklearn")
-# sy.load("sklearn")
 
 
 @pytest.mark.vendor(lib="sklearn")

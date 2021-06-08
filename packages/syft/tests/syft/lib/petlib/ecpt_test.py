@@ -5,7 +5,6 @@ import pytest
 import syft as sy
 
 petlib = pytest.importorskip("petlib")
-# sy.load("petlib")
 
 
 @pytest.mark.vendor(lib="petlib")

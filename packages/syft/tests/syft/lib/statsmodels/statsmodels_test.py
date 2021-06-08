@@ -10,9 +10,6 @@ import syft as sy
 pd = pytest.importorskip("pandas")
 statsmodels = pytest.importorskip("statsmodels")
 
-# sy.load("pandas")
-# sy.load("sklearn")
-
 
 @pytest.mark.vendor(lib="statsmodels")
 def test_glm(root_client: sy.VirtualMachineClient) -> None:

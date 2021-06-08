@@ -5,7 +5,6 @@ import pytest
 import syft as sy
 
 opacus = pytest.importorskip("opacus")
-# sy.load("opacus")
 
 
 @pytest.mark.vendor(lib="opacus")

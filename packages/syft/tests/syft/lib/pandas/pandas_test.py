@@ -12,7 +12,6 @@ import syft as sy
 
 pd = pytest.importorskip("pandas")
 np = pytest.importorskip("numpy")
-# sy.load("pandas", "numpy")
 
 
 @pytest.mark.vendor(lib="pandas")

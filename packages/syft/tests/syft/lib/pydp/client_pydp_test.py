@@ -5,7 +5,6 @@ import pytest
 import syft as sy
 
 pytest.importorskip("pydp")
-# sy.load("pydp")
 
 
 @pytest.mark.vendor(lib="pydp")
