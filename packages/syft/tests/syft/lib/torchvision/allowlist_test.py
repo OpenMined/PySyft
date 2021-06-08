@@ -82,7 +82,6 @@ def test_allowlist(
             and version_supported(support_dict=allowlist[item])
         ):
             try:
-                print(item + TEST_PARAMS[item])
                 exec(item + TEST_PARAMS[item])
             except RuntimeError as e:
                 assert (
