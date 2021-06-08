@@ -1,7 +1,5 @@
 # third party
 from tokenizers import Tokenizer
-
-# Third party
 from transformers import PreTrainedTokenizerFast
 
 # syft relative

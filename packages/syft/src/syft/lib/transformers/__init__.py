@@ -6,6 +6,9 @@ from typing import List as TypeList
 from typing import Tuple as TypeTuple
 from typing import Union
 
+# third party
+import transformers
+
 # syft relative
 from . import batchencoding  # noqa: 401
 from . import tokenizer  # noqa: 401
@@ -34,9 +37,6 @@ def get_return_type(support_dict: Union[str, Dict[str, str]]) -> str:
 def create_ast(client: TypeAny = None) -> Globals:
 
     ast = Globals(client=client)
-
-    # third party
-    import transformers
 
     # Define which transformer modules to add to the AST
     modules: TypeList[TypeTuple[str, TypeAny]] = [

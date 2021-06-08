@@ -1,6 +1,4 @@
 # third party
-# Third party
-# third party
 from transformers.tokenization_utils_base import BatchEncoding
 
 # syft relative
