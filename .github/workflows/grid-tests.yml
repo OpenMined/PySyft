@@ -57,6 +57,11 @@ jobs:
         with:
           output: " "
 
+      - name: Hack pre-commit # https://github.com/pre-commit/action/issues/44
+        run: |
+          pwd
+          ls
+          cp .pre-commit-config.yaml ../../
       - uses: pre-commit/action@v2.0.0
         continue-on-error: true
         with:
