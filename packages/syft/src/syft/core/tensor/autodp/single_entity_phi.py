@@ -55,6 +55,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializa
 
     @property
     def gamma(self):
+        """Property to cast this tensor into a GammaTensor"""
         return self.create_gamma()
 
     def create_gamma(self, scalar_manager=None):
