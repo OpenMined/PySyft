@@ -64,10 +64,10 @@ class RowEntityPhiTensor(PassthroughTensor, Serializable):
             scalar_manager = self.scalar_manager
 
         return InitialGammaTensor(
-            values=self.value,      # 5 x 10 data
-            min_vals=self.min_vals,     # 5 x 10 minimum values
-            max_vals=self.max_vals,     # 5 x 10 maximum values
-            entities=self.entities,     # list of 5 entities
+            values=self.value,  # 5 x 10 data
+            min_vals=self.min_vals,  # 5 x 10 minimum values
+            max_vals=self.max_vals,  # 5 x 10 maximum values
+            entities=self.entities,  # list of 5 entities
             scalar_manager=scalar_manager,
         )
 
