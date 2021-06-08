@@ -30,6 +30,7 @@ source code.
 # stdlib
 import asyncio
 from typing import Optional
+from enum import Enum
 
 # third party
 from nacl.signing import SigningKey
@@ -327,3 +328,11 @@ class Duet(DomainClient):
             )
         except Exception as e:
             traceback_and_raise(e)
+
+
+    def set_flags(self, flags: Enum) -> bool:
+        msg = SetFlagsProtocolMessage(flags=flags)
+
+        reply = self.send_immediate_msg_with_reply()
+
+        return reply

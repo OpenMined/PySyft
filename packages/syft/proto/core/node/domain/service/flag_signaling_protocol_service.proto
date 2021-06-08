@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package syft.core.node.domain.service;
+
+import "proto/core/common/common_object.proto";
+import "proto/core/io/address.proto";
+
+message SetProtocolMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  syft.core.io.Address reply_to = 3;
+  string name = 4;
+  repeated string enum_keys = 5;
+  repeated int32 enum_values = 6;
+
+}
+
+message SetProtocolMessageReply {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  bool response = 3;
+}

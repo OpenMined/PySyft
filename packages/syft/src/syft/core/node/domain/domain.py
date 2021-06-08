@@ -80,6 +80,7 @@ class Domain(Node):
         self.immediate_services_with_reply.append(RequestAnswerMessageService)
         self.immediate_services_with_reply.append(GetAllRequestsService)
         self.immediate_services_with_reply.append(GetAllRequestHandlersService)
+        self.immediate_services_with_reply.append(FlagSignalingProtocolService)
 
         self.requests: List[RequestMessage] = list()
         # available_device_types = set()
