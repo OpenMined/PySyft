@@ -149,7 +149,7 @@ def _load_lib(*, lib: str, options: Optional[TypeDict[str, TypeAny]] = None) -> 
             _regenerate_unions(lib_ast=lib_ast, client=client)
 
 
-def _load(
+def load(
     *libs: TypeUnion[TypeList[str], TypeTuple[str], TypeSet[str], str],
     options: TypeDict[str, TypeAny] = {},
     **kwargs: str,
@@ -160,10 +160,15 @@ def _load(
     Args:
         *libs: names of libraries to load and update Node with (can be variadic, tuple, list, set)
         options: external requirements for loading library successfully
-        **kwargs: for backward compatibility with calls like `syft._load(lib = "opacus")`
+        **kwargs: for backward compatibility with calls like `syft.load(lib = "opacus")`
     """
-    # For backward compatibility with calls like `syft._load(lib = "opacus")`
-    # Note: syft._load(lib = "opacus") doesnot work as it iterates the string, syft._load('opacus') works
+    # For backward compatibility with calls like `syft.load(lib = "opacus")`
+    # Note: syft.load(lib = "opacus") doesnot work as it iterates the string, syft.load('opacus') works
+
+    msg = "sy.load() is deprecated and not needed anymore"
+    warning(msg, print=True)
+    warnings.warn(msg, DeprecationWarning)
+
     if "lib" in kwargs.keys():
         libs += tuple(kwargs["lib"])
 
@@ -191,33 +196,17 @@ def _load(
 def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
     """
     Load and Update Node with given library module
-    load_lib() is deprecated please use load() in the future
+    _load_lib() is deprecated please use load() in the future
 
     Args:
         lib: name of library to load and update Node with
         options: external requirements for loading library successfully
 
     """
-    msg = "sy.load_lib() is deprecated and not needed anymore"
+    msg = "sy._load_lib() is deprecated and not needed anymore"
     warning(msg, print=True)
     warnings.warn(msg, DeprecationWarning)
-    _load(lib=lib, options=options)
-
-
-def load(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
-    """
-    Load and Update Node with given library module
-    load_lib() is deprecated please use load() in the future
-
-    Args:
-        lib: name of library to load and update Node with
-        options: external requirements for loading library successfully
-
-    """
-    msg = "sy.load() is deprecated and not needed anymore"
-    warning(msg, print=True)
-    warnings.warn(msg, DeprecationWarning)
-    _load(lib=lib, options=options)
+    load(lib=lib, options=options)
 
 
 # now we need to load the relevant frameworks onto the node
@@ -281,4 +270,4 @@ def post_import_hook_third_party(module: TypeAny) -> None:
     # msg = f"inside post_import_hook_third_party module_name {module.__name__}"
     # warning(msg, print=True)
     # warnings.warn(msg, DeprecationWarning)
-    _load(module.__name__)
+    load(module.__name__)
