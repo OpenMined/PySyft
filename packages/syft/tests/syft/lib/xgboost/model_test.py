@@ -10,8 +10,6 @@ import syft as sy
 try:
     np = pytest.importorskip("numpy")
     xgb = pytest.importorskip("xgboost")
-    sy.load("xgboost")
-    sy.load("numpy")
 
     _SKIP_XGB = platform == "darwin"
 except Exception:
