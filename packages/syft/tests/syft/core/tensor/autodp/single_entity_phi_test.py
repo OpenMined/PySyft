@@ -60,4 +60,3 @@ def test_mul(x):
 #     assert isinstance(z, Tensor), "Mul: Result is not a Tensor"
 #     assert z.child.min_vals == x.child.min_vals ** 2, "(Mul, Minval) Result is not correct"
 #     assert z.child.max_vals == x.child.max_vals ** 2, "(Mul, Maxval) Result is not correct"
-
