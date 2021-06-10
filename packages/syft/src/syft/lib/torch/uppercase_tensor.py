@@ -35,7 +35,9 @@ def object2proto(obj: object) -> Tensor_PB:
 
 
 def proto2object(proto: Tensor_PB) -> th.Tensor:
+    # print(proto)
     tensor = tensor_deserializer(proto.tensor)
+    # print(tensor)
     if proto.requires_grad:
         tensor.grad = tensor_deserializer(proto.grad)
 

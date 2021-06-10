@@ -128,3 +128,6 @@ def tensor_deserializer(buf: bytes) -> th.Tensor:
         return arrow_data_decoding(protobuf_tensor)
     elif protobuf_tensor.HasField("proto_data"):
         return protobuf_data_decoding(protobuf_tensor)
+    else:
+
+        return arrow_data_decoding(protobuf_tensor)

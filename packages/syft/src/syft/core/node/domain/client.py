@@ -158,6 +158,10 @@ class RequestQueueClient:
         )
         self.client.send_immediate_msg_without_reply(msg=msg)
 
+    def _repr_html_(self) -> str:
+        """Displays a nice table when the object is returned in Jupyter Notebook"""
+        return self.pandas._repr_html_()
+
 
 class RequestHandlerQueueClient:
     def __init__(self, client: Client) -> None:
