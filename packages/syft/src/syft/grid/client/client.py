@@ -251,6 +251,7 @@ def connect(
         user_key=user_key,
     )
 
+
 def login(
     email: Optional[str] = None,
     password: Optional[str] = None,
@@ -267,6 +268,7 @@ def login(
         credentials = {"email": email, "password": password}
 
     return connect(url=url, credentials=credentials, conn_type=conn_type)
+
 
 def register(email: str, password: str, url: Optional[str] = DEFAULT_PYGRID_ADDRESS):
     login(url=url).register(email=email, password=password)
