@@ -65,14 +65,10 @@ class DatasetRequestAPI(GridRequestAPI):
         dataset_obj.files = datasets
         type(dataset_obj).__getitem__ = lambda x, i: x.data[i]
         dataset_obj.client = self.client
-        return Dataset(dataset_obj)
-
-    def _repr_html_(self) -> str:
-        """Displays a nice table when the object is returned in Jupyter Notebook"""
-        return self.all(pandas=True)._repr_html_()  # type: ignore
+        return DatasetPointer(dataset_obj)
 
 
-class Dataset:
+class DatasetPointer:
     def __init__(self, dataset_metadata: Any) -> None:
         self.dataset_metadata = dataset_metadata
         self.id = self.dataset_metadata.id

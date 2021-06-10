@@ -44,6 +44,7 @@ from .request_api.group_api import GroupRequestAPI
 from .request_api.role_api import RoleRequestAPI
 from .request_api.user_api import UserRequestAPI
 from .request_api.worker_api import WorkerRequestAPI
+from .dataset import Dataset
 
 DEFAULT_PYGRID_PORT = 5000
 DEFAULT_PYGRID_ADDRESS = f"http://127.0.0.1:{DEFAULT_PYGRID_PORT}"
@@ -146,6 +147,9 @@ class GridClient(DomainClient):
         response = self.conn.setup(**kwargs)  # type: ignore
         logging.info(response[RequestAPIFields.MESSAGE])
 
+    def register(self, email, password):
+        return self.users.create(email=email, password=password)
+
     def get_setup(self, **kwargs: Any) -> Any:
         return self.__perform_grid_request(grid_msg=GetSetUpMessage, content=kwargs)
 
@@ -157,6 +161,12 @@ class GridClient(DomainClient):
             response = DataFrame(response)
 
         return response
+
+    def upload_dataset(self, data, description, tags=list()):
+        d = Dataset(data=data, description=description, tags=tags)
+        path = d.tozip()
+        self.datasets.create(path)
+        return self.datasets[-1]
 
     def send_immediate_msg_with_reply(
         self,
@@ -208,7 +218,7 @@ class GridClient(DomainClient):
             content = {}
         signed_msg = self.__build_msg(grid_msg=grid_msg, content=content)
         response = self.send_immediate_msg_with_reply(msg=signed_msg)
-        print("got this intermediary", response, type(response))
+        # print("got this intermediary", response, type(response))
         return self.__process_response(response=response)
 
     def __build_msg(self, grid_msg: Any, content: Dict[Any, Any]) -> Any:
@@ -220,7 +230,7 @@ class GridClient(DomainClient):
         return grid_msg(**args).sign(signing_key=self.signing_key)
 
     def __process_response(self, response: SyftMessage) -> Dict[Any, Any]:
-        print("calling __process_response", response, type(response))
+        # print("calling __process_response", response, type(response))
         if response.status_code == 200:  # type: ignore
             return response.content  # type: ignore
         else:
@@ -241,7 +251,6 @@ def connect(
         user_key=user_key,
     )
 
-
 def login(
     email: Optional[str] = None,
     password: Optional[str] = None,
@@ -258,3 +267,7 @@ def login(
         credentials = {"email": email, "password": password}
 
     return connect(url=url, credentials=credentials, conn_type=conn_type)
+
+def register(email: str, password: str, url: Optional[str] = DEFAULT_PYGRID_ADDRESS):
+    login(url=url).register(email=email, password=password)
+    return login(url=url, email=email, password=password)
