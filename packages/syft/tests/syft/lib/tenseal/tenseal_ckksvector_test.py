@@ -12,7 +12,6 @@ import syft as sy
 from .utils_test import decrypt
 
 ts = pytest.importorskip("tenseal")
-sy.load("tenseal")
 
 
 def _almost_equal(vec1: Sequence, vec2: Sequence, precision_pow_ten: int = 1) -> None:

@@ -17,6 +17,7 @@ import warnings
 from cachetools import cached
 from cachetools.keys import hashkey
 from packaging import version
+import wrapt
 
 # syft relative
 from ..ast.globals import Globals
@@ -162,6 +163,12 @@ def load(
         **kwargs: for backward compatibility with calls like `syft.load(lib = "opacus")`
     """
     # For backward compatibility with calls like `syft.load(lib = "opacus")`
+    # Note: syft.load(lib = "opacus") doesnot work as it iterates the string, syft.load('opacus') works
+
+    msg = "sy.load() is deprecated and not needed anymore"
+    warning(msg, print=True)
+    warnings.warn(msg, DeprecationWarning)
+
     if "lib" in kwargs.keys():
         libs += tuple(kwargs["lib"])
 
@@ -189,14 +196,14 @@ def load(
 def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
     """
     Load and Update Node with given library module
-    load_lib() is deprecated please use load() in the future
+    _load_lib() is deprecated please use load() in the future
 
     Args:
         lib: name of library to load and update Node with
         options: external requirements for loading library successfully
 
     """
-    msg = "load_lib() is deprecated please use load() in the future"
+    msg = "sy._load_lib() is deprecated and not needed anymore"
     warning(msg, print=True)
     warnings.warn(msg, DeprecationWarning)
     load(lib=lib, options=options)
@@ -239,3 +246,28 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
 
 
 lib_ast = create_lib_ast(None)
+
+
+@wrapt.when_imported("gym")
+@wrapt.when_imported("opacus")
+@wrapt.when_imported("numpy")
+@wrapt.when_imported("sklearn")
+@wrapt.when_imported("pandas")
+@wrapt.when_imported("PIL")
+@wrapt.when_imported("petlib")
+@wrapt.when_imported("openmined_psi")
+@wrapt.when_imported("pydp")
+@wrapt.when_imported("statsmodels")
+@wrapt.when_imported("sympc")
+@wrapt.when_imported("tenseal")
+@wrapt.when_imported("xgboost")
+@wrapt.when_imported("zksk")
+@wrapt.when_imported("pytorch_lightning")
+def post_import_hook_third_party(module: TypeAny) -> None:
+    """
+    Note: This needs to be after `lib_ast` because code above uses lib-ast
+    """
+    # msg = f"inside post_import_hook_third_party module_name {module.__name__}"
+    # warning(msg, print=True)
+    # warnings.warn(msg, DeprecationWarning)
+    load(module.__name__)
