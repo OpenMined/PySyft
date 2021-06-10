@@ -12,8 +12,7 @@ from flask import current_app as app
 import jwt
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
-import pydp
-import syft as sy
+
 from syft import serialize
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
@@ -43,11 +42,8 @@ from syft.core.node.common.service.repr_service import ReprService
 from syft.core.node.common.service.resolve_pointer_type_service import (
     ResolvePointerTypeService,
 )
-from syft.core.node.device.client import DeviceClient
+
 from syft.core.node.domain.domain import Domain
-from syft.grid.connections.http_connection import HTTPConnection
-import sympc
-import tenseal as ts
 
 # grid relative
 from ..database import db
@@ -70,10 +66,6 @@ from ..services.setup_service import SetUpService
 from ..services.tensor_service import RegisterTensorService
 from ..services.transfer_service import TransferObjectService
 from ..services.user_service import UserManagerService
-
-sy.load("tenseal")
-sy.load("sympc")
-sy.load("pydp")
 
 
 class GridDomain(Domain):
