@@ -9,7 +9,9 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# check protoc version >= 3.15.0
 VERSION=$(protoc --version | grep -op '[0-9].*')
+# no easy way to do as bash does not support float comparisions.
 function version_lt() { test "$(echo "$@" | tr " " "\n" | sort -rV | head -n 1)" != "$1"; }
 if version_lt $VERSION 3.15.0; then
 	echo "you have Protobuf $VERSION, Please upgrade to Protobuf >= 3.15.0"
