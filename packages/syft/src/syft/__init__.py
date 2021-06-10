@@ -59,6 +59,7 @@ from syft.core.plan.plan import Plan  # noqa: F401
 from syft.core.plan.plan_builder import make_plan  # noqa: F401
 from syft.experimental_flags import flags  # noqa: F401
 from syft.grid.client.client import login  # noqa: F401
+from syft.grid.client.client import register  # noqa: F401
 
 # Convenience Functions
 from syft.grid.duet import bcolors  # noqa: F401
