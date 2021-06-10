@@ -5,6 +5,8 @@ import pytest
 import syft as sy
 from syft.experimental_flags import flags
 
+np = pytest.importorskip("numpy")
+gym = pytest.importorskip("gym")
 
 @pytest.mark.xfail
 @pytest.mark.vendor(lib="gym")

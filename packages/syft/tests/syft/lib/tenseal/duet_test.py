@@ -11,13 +11,12 @@ from typing import List
 import pytest
 
 # syft absolute
-import syft as sy
+import syft as sy  # noqa F401
 
 # syft relative
 from ...grid.duet.process_test import SyftTestProcess
 
 ts = pytest.importorskip("tenseal")
-sy.load("tenseal")
 
 set_start_method("spawn", force=True)
 
@@ -42,9 +41,8 @@ def do(ct_size: int, batch_size: int, signaling_server: int) -> None:
     import tenseal as ts
 
     # syft absolute
-    import syft as sy
+    import syft as sy  # noqa F401
 
-    sy.load("tenseal")
     sy.logger.add(sys.stderr, "ERROR")
 
     duet = sy.launch_duet(
@@ -75,9 +73,8 @@ def do(ct_size: int, batch_size: int, signaling_server: int) -> None:
 
 def ds(ct_size: int, batch_size: int, signaling_server: int) -> None:
     # syft absolute
-    import syft as sy
+    import syft as sy  # noqa F401
 
-    sy.load("tenseal")
     sy.logger.add(sys.stderr, "ERROR")
 
     duet = sy.join_duet(

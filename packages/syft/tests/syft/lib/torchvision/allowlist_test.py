@@ -2,11 +2,11 @@
 import json
 import os
 from os import path
+from typing import Any
 from typing import Dict
 from typing import Union
 
 # third party
-import PIL
 from packaging import version
 import pytest
 import torch
@@ -17,10 +17,16 @@ import syft as sy
 from syft.lib.torchvision.allowlist import allowlist
 
 TORCHVISION_VERSION = version.parse(tv.__version__)
+PIL = pytest.importorskip("PIL")
+np = pytest.importorskip("numpy")
+
+Image = PIL.Image.Image
+sy.load("PIL")
+sy.load("numpy")
 
 
 @pytest.fixture(scope="function")
-def pil_img() -> PIL.Image.Image:
+def pil_img() -> Any:
     img_file = "../../../../docs/img/logo.png"
     if path.isfile(img_file):
         return PIL.Image.open(img_file).convert("RGB")
@@ -31,7 +37,7 @@ def pil_img() -> PIL.Image.Image:
 
 
 @pytest.fixture(scope="function")
-def tens(pil_img: PIL.Image.Image) -> torch.Tensor:
+def tens(pil_img: Any) -> torch.Tensor:
     return tv.transforms.functional.to_tensor(pil_img).type(torch.uint8)
 
 
@@ -46,10 +52,9 @@ def version_supported(support_dict: Union[str, Dict[str, str]]) -> bool:
 
 @pytest.mark.slow
 def test_allowlist(
-    root_client: sy.VirtualMachineClient, tens: torch.Tensor, pil_img: PIL.Image.Image
+    root_client: sy.VirtualMachineClient, tens: torch.Tensor, pil_img: Any
 ) -> None:
     # Required for testing on torchvision==1.6.0
-    sy.load("PIL")
     torchvision = root_client.torchvision
     torch = root_client.torch
     try:

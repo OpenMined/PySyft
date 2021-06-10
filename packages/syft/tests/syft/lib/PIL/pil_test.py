@@ -1,18 +1,17 @@
 # third party
 import pytest
+import torch
 
 # syft absolute
 import syft as sy
 from syft.grid.duet.ui import LOGO_URL
 
+PIL = pytest.importorskip("PIL")
+np = pytest.importorskip("numpy")
+
 
 @pytest.mark.vendor(lib="PIL")
 def test_send_and_get(root_client: sy.VirtualMachineClient) -> None:
-    # third party
-    import PIL
-
-    sy.load("PIL")
-
     im = PIL.Image.open(LOGO_URL)
     remote_im = im.send(root_client)
     received_im = remote_im.get()
@@ -22,13 +21,6 @@ def test_send_and_get(root_client: sy.VirtualMachineClient) -> None:
 
 @pytest.mark.vendor(lib="PIL")
 def test_remote_create(root_client: sy.VirtualMachineClient) -> None:
-    # third party
-    import PIL
-    import numpy as np
-    import torch
-
-    sy.load("PIL")
-
     remote_torchvision = root_client.torchvision
 
     im = PIL.Image.open(LOGO_URL)

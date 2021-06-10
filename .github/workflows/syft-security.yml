@@ -1,0 +1,75 @@
+name: Security-check
+
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - ".github/workflows/syft-*.yml"
+      - "packages/syft/**.py"
+
+defaults:
+  run:
+    working-directory: ./packages/syft
+
+jobs:
+  package-security:
+    strategy:
+      max-parallel: 1
+      matrix:
+        os: [ubuntu-latest]
+        python-version: [3.8]
+        torch-version: [1.8.1]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
+
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - name: Install Dependencies
+        run: |
+          pip install packaging --default-timeout=60
+          python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
+          grep -A 3 "torch_ecosystem" setup.cfg
+          pip install -r requirements.unstable.txt
+          pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
+          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
+
+      - name: Scan for security issues
+        run: |
+          bandit -r src
+          safety check
+
+      - name: Generate requirements.txt for snyk
+        run: |
+          pwd
+          sed -n '/syft =/,/^$/p' setup.cfg | tail -n +3 > requirements.txt
+          ls
+          mv requirements.txt ${{ github.workspace }}
+          mv .snyk ${{ github.workspace }}
+
+      - name: Snyk security check
+        uses: snyk/actions/python-3.8@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}

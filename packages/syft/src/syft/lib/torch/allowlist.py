@@ -6,7 +6,7 @@ from typing import Union
 from ..misc.union import UnionGenerator
 
 allowlist: Dict[str, Union[str, Dict[str, str]]] = {}  # (path: str, return_type:type)
-
+dynamic_allowlist: Dict[str, str] = {}
 # --------------------------------------------------------------------------------------
 # SECTION - Tensor methods which are intentionally disabled
 # --------------------------------------------------------------------------------------
@@ -1065,7 +1065,8 @@ allowlist["torch.Tensor.grad"] = "torch.Tensor"  # need an example with grad
 allowlist["torch.Size"] = "torch.Size"  # requires protobuf serialization
 allowlist["torch.Size.__len__"] = "syft.lib.python.Int"
 allowlist["torch.Size.__iter__"] = "syft.lib.python.Iterator"
-allowlist["torch.Tensor.size"] = "torch.Size"  # requires torch.Size
+allowlist["torch.Size.__getitem__"] = "syft.lib.python.Int"
+allowlist["torch.Tensor.size"] = UnionGenerator["torch.Size", "syft.lib.python.Int"]
 allowlist["torch.Tensor.shape"] = "torch.Size"  # requires torch.Size
 # allowlist["torch.Tensor.__iter__"] = "unknown"  # How to handle return iterator?
 # allowlist["torch.Tensor.imag"] = "torch.Tensor"  # requires dtype complex
@@ -1112,6 +1113,7 @@ allowlist["torch.zeros"] = "torch.Tensor"
 allowlist["torch.randn"] = "torch.Tensor"
 allowlist["torch.ones_like"] = "torch.Tensor"
 allowlist["torch.Tensor.__len__"] = "syft.lib.python.Int"
+allowlist["torch.arange"] = "torch.Tensor"
 
 # --------------------------------------------------------------------------------------
 # SECTION - Torch functions enabled as torch.Tensor methods above
@@ -1811,6 +1813,7 @@ allowlist["torch.nn.Linear.state_dict"] = "syft.lib.python.collections.OrderedDi
 allowlist["torch.nn.Linear.load_state_dict"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.Linear.extra_repr"] = "syft.lib.python.String"
 
+
 # DataLoader
 allowlist["torch.utils.data.DataLoader"] = "torch.utils.data.DataLoader"
 allowlist["torch.utils.data.DataLoader.__iter__"] = "syft.lib.python.Iterator"
@@ -1829,6 +1832,7 @@ allowlist[
 
 # Functional
 allowlist["torch.nn.functional.relu"] = "torch.Tensor"
+allowlist["torch.nn.functional.gelu"] = "torch.Tensor"
 allowlist["torch.nn.functional.max_pool2d"] = "torch.Tensor"
 allowlist["torch.nn.functional.log_softmax"] = "torch.Tensor"
 allowlist["torch.flatten"] = "torch.Tensor"
@@ -2864,6 +2868,8 @@ allowlist["torch.nn.ModuleList.cpu"] = "torch.nn.ModuleList"
 allowlist["torch.nn.ModuleList.state_dict"] = "syft.lib.python.collections.OrderedDict"
 allowlist["torch.nn.ModuleList.load_state_dict"] = "syft.lib.python._SyNone"
 allowlist["torch.nn.ModuleList.extra_repr"] = "syft.lib.python.String"
+allowlist["torch.nn.ModuleList.__len__"] = "syft.lib.python.Int"
+allowlist["torch.nn.ModuleList.__getitem__"] = "torch.nn.Module"
 
 allowlist["torch.nn.MultiheadAttention"] = "torch.nn.MultiheadAttention"
 allowlist["torch.nn.MultiheadAttention.__call__"] = "torch.Tensor"
@@ -3586,3 +3592,6 @@ allowlist["torch.Tensor.inner"] = {
     "return_type": "torch.Tensor",
     "min_version": "1.8.0",
 }
+
+dynamic_allowlist["torch.nn.Linear.weight"] = "torch.nn.Parameter"
+dynamic_allowlist["torch.nn.Linear.bias"] = "torch.nn.Parameter"

@@ -5,6 +5,10 @@ import pytest
 import syft as sy
 from syft.experimental_flags import flags
 
+np = pytest.importorskip("numpy")
+linear_model = pytest.importorskip("sklearn.linear_model")
+LogisticRegression = linear_model.LogisticRegression
+
 
 @pytest.mark.vendor(lib="sklearn")
 @pytest.mark.parametrize("arrow_backend", [True, False])

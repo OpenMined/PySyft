@@ -4,17 +4,13 @@ import pytest
 # syft absolute
 import syft as sy
 
+petlib = pytest.importorskip("petlib")
+
 
 @pytest.mark.vendor(lib="petlib")
 def test_ecpt_serde() -> None:
     vm = sy.VirtualMachine()
     client = vm.get_root_client()
-
-    # third party
-    import petlib
-
-    sy.load("petlib")
-
     ec_group = petlib.ec.EcGroup()
 
     remote_ec_group = ec_group.send(client)

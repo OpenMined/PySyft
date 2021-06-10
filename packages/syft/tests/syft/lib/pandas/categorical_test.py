@@ -2,11 +2,14 @@
 from typing import Any
 
 # third party
-import pandas as pd
 import pytest
 
 # syft absolute
 import syft as sy
+
+pd = pytest.importorskip("pandas")
+np = pytest.importorskip("np")
+
 
 inputs = [
     pytest.param(
@@ -17,11 +20,12 @@ inputs = [
         {"func": "to_numpy", "args": [], "kwargs": {}},
         marks=pytest.mark.xfail(reason="np.ndarray object dtype not Implemented"),
     ),
+    {"func": "sort_values", "args": [], "kwargs": {}},
 ]
 
 objects = [
-    # pd.Categorical(["a", "b", "c", "a"], ordered=False), # Results in Error in comparision func
-    pd.Categorical(["a", "b", "c", "a"], ordered=True),
+    pd.Categorical(["a", "b", "c", "a"]),
+    pd.Categorical([1, 2, 3, 1], ordered=True),
 ]
 
 
@@ -35,13 +39,6 @@ def test_categorical_func(
     node: sy.VirtualMachine,
     client: sy.VirtualMachineClient,
 ) -> None:
-    sy.load("pandas")
-    sy.load("numpy")
-
-    # third party
-    import numpy as np
-    import pandas as pd
-
     x = test_object
     x_ptr = test_object.send(client)
 

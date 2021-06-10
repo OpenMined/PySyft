@@ -4,11 +4,11 @@ import pytest
 # syft absolute
 import syft as sy
 
+opacus = pytest.importorskip("opacus")
+
 
 @pytest.mark.vendor(lib="opacus")
 def test_remote_engine_simple(root_client: sy.VirtualMachineClient) -> None:
-    sy.load("opacus")
-
     remote_opacus = root_client.opacus
     remote_torch = root_client.torch
 

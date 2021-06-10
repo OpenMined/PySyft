@@ -55,6 +55,7 @@ from syft.core.plan.plan_builder import make_plan  # noqa: F401
 from syft.core.tensor import functions as tensor_functions  # noqa: F401
 from syft.core.tensor.autograd import functions as autograd_functions  # noqa: F401
 from syft.core.tensor.tensor import Tensor  # noqa: F401
+from syft.experimental_flags import flags  # noqa: F401
 from syft.grid.client.client import login  # noqa: F401
 from syft.grid.duet import bcolors  # noqa: F401
 from syft.grid.duet import duet  # noqa: F401

@@ -1,22 +1,25 @@
+# stdlib
+from sys import platform
+
 # third party
 import pytest
 
 # syft absolute
 import syft as sy
 
+try:
+    np = pytest.importorskip("numpy")
+    xgb = pytest.importorskip("xgboost")
+
+    _SKIP_XGB = platform == "darwin"
+except Exception:
+    _SKIP_XGB = True
+
 
 # this currently fails: https://github.com/OpenMined/PySyft/issues/5536
-@pytest.mark.skip
+@pytest.mark.skipif(_SKIP_XGB, reason="xgboost couldn't properly load")
 @pytest.mark.vendor(lib="xgboost")
 def test_xgb_base_module(root_client: sy.VirtualMachineClient) -> None:
-
-    sy.load("xgboost")
-    sy.load("numpy")
-
-    # third party
-    import numpy as np
-    import xgboost as xgb
-
     xgb_remote = root_client.xgboost
 
     # import xgboost as xgb

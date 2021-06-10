@@ -11,10 +11,13 @@ import torch
 from . import device  # noqa: 401
 from . import parameter  # noqa: 401
 from . import return_types  # noqa: 401
+from . import size  # noqa: 401
 from . import uppercase_tensor  # noqa: 401
+from ...ast import add_dynamic_objects
 from ...ast.globals import Globals
 from ...logger import info
 from .allowlist import allowlist
+from .allowlist import dynamic_allowlist
 
 TORCH_VERSION = version.parse(torch.__version__.split("+")[0])
 
@@ -67,8 +70,11 @@ def create_torch_ast(client: Any = None) -> Globals:
         else:
             info(f"Skipping {method} not supported in {TORCH_VERSION}")
 
+    add_dynamic_objects(ast, list(dynamic_allowlist.items()))
+
     for klass in ast.classes:
         klass.create_pointer_class()
         klass.create_send_method()
         klass.create_storable_object_attr_convenience_methods()
+
     return ast
