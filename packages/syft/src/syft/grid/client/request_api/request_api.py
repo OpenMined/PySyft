@@ -72,3 +72,7 @@ class GridRequestAPI:
             result = type(_class_name, (object,), result)()
 
         return result
+
+    def _repr_html_(self) -> str:
+        """Displays a nice table when the object is returned in Jupyter Notebook"""
+        return self.all(pandas=True)._repr_html_()  # type: ignore

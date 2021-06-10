@@ -46,18 +46,12 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializa
         self.scalar_manager = scalar_manager
 
     @property
-    def min_vals(self):
-        return self._min_vals
-
-    @property
-    def max_vals(self):
-        return self._max_vals
-
-    @property
     def gamma(self):
+        """Property to cast this tensor into a GammaTensor"""
         return self.create_gamma()
 
     def create_gamma(self, scalar_manager=None):
+        """Return a new Gamma tensor based on this phi tensor"""
 
         if scalar_manager is None:
             scalar_manager = self.scalar_manager
@@ -75,51 +69,19 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializa
             scalar_manager=scalar_manager,
         )
 
+    @property
+    def min_vals(self):
+        return self._min_vals
+
+    @property
+    def max_vals(self):
+        return self._max_vals
+
     def __repr__(self):
+        """Pretty print some information, optimized for Jupyter notebook viewing."""
         return (
             f"{self.__class__.__name__}(entity={self.entity.name}, child={self.child})"
         )
-
-    def __gt__(self, other):
-
-        # if the tensor being added is also private
-        if isinstance(other, SingleEntityPhiTensor):
-
-            if self.entity != other.entity:
-                # this should return a GammaTensor
-                return NotImplemented
-
-            data = (self.child > other.child) * 1 # the * 1 just makes sure it returns integers instead of True/False
-            min_vals = (self.min_vals*0)
-            max_vals = (self.max_vals*0) + 1
-            entity = self.entity
-
-            return SingleEntityPhiTensor(
-                child=data,
-                entity=entity,
-                min_vals=min_vals,
-                max_vals=max_vals,
-                scalar_manager=self.scalar_manager,
-            )
-
-        # if the tensor being added is a public tensor / int / float / etc.
-        elif is_acceptable_simple_type(other):
-
-            data = (self.child > other)*1
-            min_vals = (self.min_vals * 0)
-            max_vals = (self.max_vals * 0) + 1
-            entity = self.entity
-
-            return SingleEntityPhiTensor(
-                child=data,
-                entity=entity,
-                min_vals=min_vals,
-                max_vals=max_vals,
-                scalar_manager=self.scalar_manager,
-            )
-
-        else:
-            return NotImplemented
 
     def __abs__(self):
 
@@ -127,22 +89,22 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializa
 
         # create true/false gate inputs
         minvals_is_gt0 = self.min_vals > 0
-        minvals_is_le0 = (-minvals_is_gt0 + 1)
+        minvals_is_le0 = -minvals_is_gt0 + 1
         maxvals_is_gt0 = self.max_vals >= 0
-        maxvals_is_le0 = (-maxvals_is_gt0 + 1)
+        maxvals_is_le0 = -maxvals_is_gt0 + 1
 
         # create true/false gates
         is_strict_gt0 = minvals_is_gt0
         is_gtlt0 = minvals_is_le0 * maxvals_is_gt0
         is_strict_lt0 = minvals_is_le0 * maxvals_is_le0
 
-        # if min_vals > 0, then new min_vals doesn't change
+        # if min_vals > 0, then new min_vals doesn't change
         min_vals_strict_gt0 = self.min_vals
 
         # if min_vals < 0 and max_vals > 0, then new min_vals = 0
         min_vals_gtlt0 = self.min_vals * 0
 
-        # if min_vals < 0 and max_vals < 0, then new min_vals = -max_vals
+        # if min_vals < 0 and max_vals < 0, then new min_vals = -max_vals
         min_vals_strict_lt0 = -self.max_vals
 
         # sum of masked options
@@ -172,7 +134,9 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializa
             min_vals=min_vals,
             max_vals=max_vals,
             scalar_manager=self.scalar_manager,
+
             )
+
 
     def __add__(self, other):
 
@@ -220,6 +184,19 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializa
         data = -self.child
         min_vals = -self.max_vals
         max_vals = -self.min_vals
+
+    def __getitem__(self, key) -> SingleEntityPhiTensor:
+        data = self.child.__getitem__(key)
+        min_vals = self.min_vals.__getitem__(key)
+        max_vals = self.max_vals.__getitem__(key)
+
+        if isinstance(data, (np.number, bool, int, float)):
+            data = np.array([data])  # 1 dimensional np.array
+        if isinstance(min_vals, (np.number, bool, int, float)):
+            min_vals = np.array(min_vals)  # 1 dimensional np.array
+        if isinstance(max_vals, (np.number, bool, int, float)):
+            max_vals = np.array(max_vals)  # 1 dimensional np.array
+
         entity = self.entity
 
         return SingleEntityPhiTensor(
@@ -230,16 +207,21 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializa
             scalar_manager=self.scalar_manager,
         )
 
-    def __sub__(self, other):
 
+    def __gt__(self, other):
+
+        # if the tensor being added is also private
         if isinstance(other, SingleEntityPhiTensor):
+
             if self.entity != other.entity:
                 # this should return a GammaTensor
                 return NotImplemented
 
-            data = self.child - other.child
-            min_vals = self.min_vals - other.min_vals
-            max_vals = self.max_vals - other.max_vals
+            data = (
+                self.child > other.child
+            ) * 1  # the * 1 just makes sure it returns integers instead of True/False
+            min_vals = self.min_vals * 0
+            max_vals = (self.max_vals * 0) + 1
             entity = self.entity
 
             return SingleEntityPhiTensor(
@@ -249,6 +231,23 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializa
                 max_vals=max_vals,
                 scalar_manager=self.scalar_manager,
             )
+
+        # if the tensor being added is a public tensor / int / float / etc.
+        elif is_acceptable_simple_type(other):
+
+            data = (self.child > other) * 1
+            min_vals = self.min_vals * 0
+            max_vals = (self.max_vals * 0) + 1
+            entity = self.entity
+
+            return SingleEntityPhiTensor(
+                child=data,
+                entity=entity,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                scalar_manager=self.scalar_manager,
+            )
+
         else:
             return NotImplemented
 
@@ -302,6 +301,28 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializa
         else:
             return NotImplemented
 
+    def __sub__(self, other):
+
+        if isinstance(other, SingleEntityPhiTensor):
+            if self.entity != other.entity:
+                # this should return a GammaTensor
+                return NotImplemented
+
+            data = self.child - other.child
+            min_vals = self.min_vals - other.min_vals
+            max_vals = self.max_vals - other.max_vals
+            entity = self.entity
+
+            return SingleEntityPhiTensor(
+                child=data,
+                entity=entity,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                scalar_manager=self.scalar_manager,
+            )
+        else:
+            return NotImplemented
+
     def __truediv__(self, other):
 
         if isinstance(other, SingleEntityPhiTensor):
@@ -340,6 +361,24 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializa
         else:
             return self * (1 / other)
 
+    def dot(self, other):
+        return self.manual_dot(other)
+
+    # ndarray.flatten(order='C')
+    def flatten(self, order: str = "C") -> SingleEntityPhiTensor:
+        data = self.child.flatten(order=order)
+        min_vals = self.min_vals.flatten(order=order)
+        max_vals = self.max_vals.flatten(order=order)
+        entity = self.entity
+
+        return SingleEntityPhiTensor(
+            child=data,
+            entity=entity,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            scalar_manager=self.scalar_manager,
+        )
+
     def repeat(self, repeats, axis=None):
 
         data = self.child.repeat(repeats, axis=axis)
@@ -370,43 +409,6 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializa
             scalar_manager=self.scalar_manager,
         )
 
-    # ndarray.flatten(order='C')
-    def flatten(self, order: str = "C") -> SingleEntityPhiTensor:
-        data = self.child.flatten(order=order)
-        min_vals = self.min_vals.flatten(order=order)
-        max_vals = self.max_vals.flatten(order=order)
-        entity = self.entity
-
-        return SingleEntityPhiTensor(
-            child=data,
-            entity=entity,
-            min_vals=min_vals,
-            max_vals=max_vals,
-            scalar_manager=self.scalar_manager,
-        )
-
-    def __getitem__(self, key) -> SingleEntityPhiTensor:
-        data = self.child.__getitem__(key)
-        min_vals = self.min_vals.__getitem__(key)
-        max_vals = self.max_vals.__getitem__(key)
-
-        if isinstance(data, (np.number, bool, int, float)):
-            data = np.array([data])  # 1 dimensional np.array
-        if isinstance(min_vals, (np.number, bool, int, float)):
-            min_vals = np.array(min_vals)  # 1 dimensional np.array
-        if isinstance(max_vals, (np.number, bool, int, float)):
-            max_vals = np.array(max_vals)  # 1 dimensional np.array
-
-        entity = self.entity
-
-        return SingleEntityPhiTensor(
-            child=data,
-            entity=entity,
-            min_vals=min_vals,
-            max_vals=max_vals,
-            scalar_manager=self.scalar_manager,
-        )
-
     def sum(self, *args, **kwargs):
 
         data = self.child.sum(*args, **kwargs)
@@ -421,9 +423,6 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializa
             max_vals=max_vals,
             scalar_manager=self.scalar_manager,
         )
-
-    def dot(self, other):
-        return self.manual_dot(other)
 
     def transpose(self, *args, **kwargs):
 
@@ -490,11 +489,23 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializa
         return Tensor_PB
 
 
-# @implements(SingleEntityPhiTensor, np.min)
-# def npmax(*args, **kwargs):
-#     print("mining1")
-#     args, kwargs = inputs2child(*args, **kwargs)
-#     return np.min(*args, **kwargs)
+@implements(SingleEntityPhiTensor, np.expand_dims)
+def expand_dims(a, axis):
+
+    entity = a.entity
+
+    min_vals = np.expand_dims(a=a.min_vals, axis=axis)
+    max_vals = np.expand_dims(a=a.max_vals, axis=axis)
+
+    data = np.expand_dims(a.child, axis=axis)
+
+    return SingleEntityPhiTensor(
+        child=data,
+        entity=entity,
+        min_vals=min_vals,
+        max_vals=max_vals,
+        scalar_manager=a.scalar_manager,
+    )
 
 
 @implements(SingleEntityPhiTensor, np.mean)
@@ -522,23 +533,4 @@ def mean(*args, **kwargs):
         min_vals=min_vals,
         max_vals=max_vals,
         scalar_manager=scalar_manager,
-    )
-
-
-@implements(SingleEntityPhiTensor, np.expand_dims)
-def expand_dims(a, axis):
-
-    entity = a.entity
-
-    min_vals = np.expand_dims(a=a.min_vals, axis=axis)
-    max_vals = np.expand_dims(a=a.max_vals, axis=axis)
-
-    data = np.expand_dims(a.child, axis=axis)
-
-    return SingleEntityPhiTensor(
-        child=data,
-        entity=entity,
-        min_vals=min_vals,
-        max_vals=max_vals,
-        scalar_manager=a.scalar_manager,
     )
