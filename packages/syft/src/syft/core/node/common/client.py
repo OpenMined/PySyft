@@ -452,3 +452,7 @@ class StoreClient:
                 }
             )
         return pd.DataFrame(obj_lines)
+
+    def _repr_html_(self) -> str:
+        """Displays a nice table when the object is returned in Jupyter Notebook"""
+        return self.pandas._repr_html_()
