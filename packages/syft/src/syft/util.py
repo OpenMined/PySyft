@@ -14,6 +14,7 @@ from nacl.signing import VerifyKey
 
 # syft absolute
 import syft
+import syft as sy
 
 # syft relative
 from .logger import critical
