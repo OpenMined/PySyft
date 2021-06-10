@@ -152,6 +152,7 @@ def _load_lib(*, lib: str, options: Optional[TypeDict[str, TypeAny]] = None) -> 
 def load(
     *libs: TypeUnion[TypeList[str], TypeTuple[str], TypeSet[str], str],
     options: TypeDict[str, TypeAny] = {},
+    ignore_warning: bool = False,
     **kwargs: str,
 ) -> None:
     """
@@ -165,9 +166,10 @@ def load(
     # For backward compatibility with calls like `syft.load(lib = "opacus")`
     # Note: syft.load(lib = "opacus") doesnot work as it iterates the string, syft.load('opacus') works
 
-    msg = "sy.load() is deprecated and not needed anymore"
-    warning(msg, print=True)
-    warnings.warn(msg, DeprecationWarning)
+    if not ignore_warning:
+        msg = "sy.load() is deprecated and not needed anymore"
+        warning(msg, print=True)
+        warnings.warn(msg, DeprecationWarning)
 
     if "lib" in kwargs.keys():
         libs += tuple(kwargs["lib"])
@@ -270,4 +272,4 @@ def post_import_hook_third_party(module: TypeAny) -> None:
     # msg = f"inside post_import_hook_third_party module_name {module.__name__}"
     # warning(msg, print=True)
     # warnings.warn(msg, DeprecationWarning)
-    load(module.__name__)
+    load(module.__name__, ignore_warning=True)
