@@ -9,8 +9,15 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+VERSION=$(protoc --version | grep -op '[0-9].*')
+function version_lt() { test "$(echo "$@" | tr " " "\n" | sort -rV | head -n 1)" != "$1"; }
+if version_lt $VERSION 3.15.0; then
+	echo "you have Protobuf $VERSION, Please upgrade to Protobuf >= 3.15.0"
+	exit 1
+fi
+
 rm -rf "${CLEAN}"
-find ${PROTO_IN} -name "*.proto" -print0 | xargs -0 protoc --python_out=${PYTHON_OUT} --experimental_allow_proto3_optional
+find ${PROTO_IN} -name "*.proto" -print0 | xargs -0 protoc --python_out=${PYTHON_OUT}
 
 # no easy way to do -i replace on both MacOS and Linux
 # https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
