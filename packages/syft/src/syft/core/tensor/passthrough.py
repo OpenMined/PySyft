@@ -13,9 +13,9 @@ import numpy as np
 # syft relative
 from .util import implements
 from .util import query_implementation
+from ..common.uid import UID
 
 AcceptableSimpleType = Union[int, bool, float, np.ndarray]
-
 
 def inputs2child(*args, **kwargs):
     args = [x.child if isinstance(x, PassthroughTensor) else x for x in args]
@@ -33,8 +33,12 @@ def is_acceptable_simple_type(obj):
 class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     """A simple tensor class which passes method/function calls to self.child"""
 
-    def __init__(self, child) -> None:
+    def __init__(self, child, id=None) -> None:
         self.child = child
+        if id is None:
+            self.id = UID() 
+        else:
+            self.id = id
 
     # TODO: Remove
     @property
