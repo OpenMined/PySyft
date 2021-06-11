@@ -31,6 +31,12 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializa
         max_vals,
         scalar_manager=VirtualMachinePrivateScalarManager(),
     ):
+        # assert that all min_vals are smaller than their respective max_vals
+        assert np.less_equal(min_vals, max_vals).all(), "Impossible range: min_val > max_val for some element in Tensor"
+
+        # clip child to the range [min_val, max_val]
+        child = np.clip(child, min_vals, max_vals)
+
         # child = the actual private data
         super().__init__(child)
 
@@ -244,6 +250,8 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializa
 
     def __mul__(self, other):
 
+        # function is symmetric in selft, other
+
         if other.__class__ == SingleEntityPhiTensor:
 
             if self.entity != other.entity:
@@ -252,13 +260,13 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializa
 
             data = self.child * other.child
 
-            
             min_min = self.min_vals * other.min_vals
             max_max = self.max_vals * other.max_vals
 
             if self.id != other.id:
                 min_max = self.min_vals * other.max_vals
                 max_min = self.max_vals * other.min_vals
+                # Kritika: verify if there is any case that can be omitted for min_vals (from the paper)
                 min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)
                 max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)
             else:
