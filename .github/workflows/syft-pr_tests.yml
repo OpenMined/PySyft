@@ -75,7 +75,7 @@ jobs:
           pwd
           ls
           cp .pre-commit-config.yaml ../../
-      - uses: pre-commit/action@v2
+      - uses: pre-commit/action@v2.0.3
       # with:
       #   extra_args: --files ${{ steps.file_changes.outputs.files}} # apply only to changed files.
 
