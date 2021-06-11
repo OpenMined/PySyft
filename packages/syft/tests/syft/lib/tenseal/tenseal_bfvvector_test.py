@@ -11,7 +11,6 @@ import syft as sy
 from .utils_test import decrypt
 
 ts = pytest.importorskip("tenseal")
-sy.load("tenseal")
 
 
 @pytest.fixture(scope="function")
