@@ -137,7 +137,6 @@ class GridDomain(Domain):
 
         # Grid Domain Services
         self.immediate_services_with_reply.append(AssociationRequestService)
-        # self.immediate_services_with_reply.append(DomainInfrastructureService)
         self.immediate_services_with_reply.append(SetUpService)
         self.immediate_services_with_reply.append(RegisterTensorService)
         self.immediate_services_with_reply.append(RoleManagerService)
