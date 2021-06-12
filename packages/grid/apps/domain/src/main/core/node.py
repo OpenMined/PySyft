@@ -16,7 +16,6 @@ from ..routes import setup_blueprint
 from ..routes import users_blueprint
 from ..utils.executor import executor
 from .nodes.domain import GridDomain
-from .nodes.worker import GridWorker
 from .sleepy_until_configured import SleepyUntilConfigured
 
 node = None
@@ -25,24 +24,6 @@ node = None
 def get_node():
     global node
     return node
-
-
-def create_worker_app(app, args):
-    # Register HTTP blueprints
-    # Here you should add all the blueprints related to HTTP routes.
-    app.register_blueprint(root_blueprint, url_prefix=r"/")
-
-    # Register WebSocket blueprints
-    # Here you should add all the blueprints related to WebSocket routes.
-
-    global node
-    node = GridWorker(name=args.name, domain_url=args.domain_address)
-
-    app.config["EXECUTOR_PROPAGATE_EXCEPTIONS"] = True
-    app.config["EXECUTOR_TYPE"] = "thread"
-    executor.init_app(app)
-
-    return app
 
 def create_domain_app(app, args, testing=False):
     test_config = None
