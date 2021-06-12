@@ -12,8 +12,6 @@ import syft
 
 # syft relative
 from ...generate_wrapper import GenerateWrapper
-from ...lib.torch.tensor_util import tensor_deserializer
-from ...lib.torch.tensor_util import tensor_serializer
 from ...proto.lib.sympc.replicatedshared_tensor_pb2 import (
     ReplicatedSharedTensor as ReplicatedSharedTensor_PB,
 )
@@ -37,7 +35,7 @@ def object2proto(obj: object) -> ReplicatedSharedTensor_PB:
     proto = ReplicatedSharedTensor_PB(session_uuid=session_uuid_syft, config=conf_syft)
 
     for tensor in share.shares:
-        proto.tensor.append(tensor_serializer(tensor))
+        proto.tensor.append(syft.serialize(tensor, to_proto=True))
 
     return proto
 
@@ -55,7 +53,7 @@ def proto2object(proto: ReplicatedSharedTensor_PB) -> ReplicatedSharedTensor:
     output_shares = []
 
     for tensor in proto.tensor:
-        output_shares.append(tensor_deserializer(tensor))
+        output_shares.append(syft.deserialize(tensor, from_proto=True))
 
     share = ReplicatedSharedTensor(shares=None, config=Config(**config))
 

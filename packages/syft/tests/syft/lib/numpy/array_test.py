@@ -9,7 +9,6 @@ import syft as sy
 from syft.experimental_flags import flags
 
 np = pytest.importorskip("numpy")
-sy.load("numpy")
 
 
 @pytest.mark.vendor(lib="numpy")
