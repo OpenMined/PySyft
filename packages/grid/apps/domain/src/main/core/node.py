@@ -25,6 +25,7 @@ def get_node():
     global node
     return node
 
+
 def create_domain_app(app, args, testing=False):
     test_config = None
 
