@@ -328,11 +328,11 @@ class AZURE(Provider):
             echo "client_secret={self.config.azure.client_secret}"  | sudo tee -a /etc/environment >/dev/null
             echo "tenant_id={self.config.azure.tenant_id}"  | sudo tee -a /etc/environment >/dev/null
 
-            echo 'Cloning PyGrid'
-            git clone https://github.com/OpenMined/PyGrid && cd /PyGrid/
+            echo 'Cloning PySyft'
+            git clone https://github.com/OpenMined/PySyft && cd /PySyft/
             git checkout {branch}
 
-            cd /PyGrid/apps/{self.config.app.name}
+            cd /PySyft/packages/grid/apps/{self.config.app.name}
 
             echo 'Installing {self.config.app.name} Dependencies'
             poetry install
@@ -380,11 +380,11 @@ class AZURE(Provider):
             sudo apt-get install libevent-dev -y
             sudo apt-get install gcc -y
 
-            echo 'Cloning PyGrid'
-            git clone https://github.com/OpenMined/PyGrid && cd /PyGrid/
+            echo 'Cloning PySyft'
+            git clone https://github.com/OpenMined/PySyft && cd /PySyft/
             git checkout {branch}
 
-            cd /PyGrid/apps/worker
+            cd /PySyft/packages/grid/apps/worker
             echo 'Installing worker Dependencies'
             poetry install
             nohup ./run.sh --port {app.port}  --host 0.0.0.0

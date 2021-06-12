@@ -326,7 +326,7 @@ class AWS_Serverfull(AWS):
             sudo apt-get install libevent-dev -y
             sudo apt-get install gcc -y
 
-            echo 'Cloning PyGrid'
+            echo 'Cloning PySyft'
             git clone https://github.com/OpenMined/PySyft && cd /PySyft/
             git checkout {branch}
 
