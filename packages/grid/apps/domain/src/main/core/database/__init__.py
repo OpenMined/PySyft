@@ -13,7 +13,6 @@ class BaseModel(db.Model, AllFeaturesMixin):
     __abstract__ = True
     pass
 
-
 # grid relative
 from .bin_storage.bin_obj import BinObject
 from .bin_storage.bin_obj import ObjectMetadata

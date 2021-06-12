@@ -42,11 +42,8 @@ from syft.core.node.common.service.repr_service import ReprService
 from syft.core.node.common.service.resolve_pointer_type_service import (
     ResolvePointerTypeService,
 )
-from syft.core.node.device.client import DeviceClient
+
 from syft.core.node.domain.domain import Domain
-from syft.grid.connections.http_connection import HTTPConnection
-import sympc
-import tenseal as ts
 
 # grid relative
 from ..database import db
@@ -62,7 +59,8 @@ from ..services.association_request import AssociationRequestService
 from ..services.dataset_service import DatasetManagerService
 from ..services.group_service import GroupManagerService
 
-# from ..services.infra_service import DomainInfrastructureService # commenting because these services require Jupyter conflict deps
+# commenting because these services require Jupyter conflict deps
+# from ..services.infra_service import DomainInfrastructureService
 from ..services.request_service import RequestService
 from ..services.request_service import RequestServiceWithoutReply
 from ..services.role_service import RoleManagerService
@@ -70,9 +68,6 @@ from ..services.setup_service import SetUpService
 from ..services.tensor_service import RegisterTensorService
 from ..services.transfer_service import TransferObjectService
 from ..services.user_service import UserManagerService
-
-sy.load("tenseal")
-sy.load("sympc")
 
 
 class GridDomain(Domain):
