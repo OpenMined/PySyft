@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "PyGrid Domain"
+name = "domain"
 version = "0.3.0"
 description = ""
 authors = ["Ionesio Junior <ionesiojr@gmail.com>"]
@@ -22,9 +22,7 @@ bcrypt = "^3.2.0"
 loguru = "^0.5.3"
 Flask-Executor = "^0.9.4"
 Flask-Cors = "^3.0.10"
-syft = { git = "https://github.com/OpenMined/PySyft", rev = "pygrid_demo" }
 sympc = { git = "https://github.com/OpenMined/SyMPC", rev = "main" }
-python-dp = "^1.0.2"
 terrascript = "^0.9.0"
 PyInquirer = "^1.0.3"
 boto3 = "^1.14.51"
@@ -43,5 +41,5 @@ flake8 = "^3.8.3"
 flake8-comprehensions = "^3.2.3"
 
 [build-system]
-requires = ["poetry>=0.12"]
+requires = ["setuptools", "poetry>=0.12"]
 build-backend = "poetry.masonry.api"
