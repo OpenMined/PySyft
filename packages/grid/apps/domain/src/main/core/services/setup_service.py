@@ -23,11 +23,11 @@ from syft.grid.messages.setup_messages import GetSetUpMessage
 from syft.grid.messages.setup_messages import GetSetUpResponse
 
 # grid relative
-from ...core.database.environment.environment import states
-from ...core.infrastructure import AWS_Serverfull
-from ...core.infrastructure import AWS_Serverless
-from ...core.infrastructure import Config
-from ...core.infrastructure import Provider
+# from ...core.database.environment.environment import states
+# from ...core.infrastructure import AWS_Serverfull
+# from ...core.infrastructure import AWS_Serverless
+# from ...core.infrastructure import Config
+# from ...core.infrastructure import Provider
 from ..database.setup.setup import SetupConfig
 from ..database.utils import model_to_json
 from ..exceptions import AuthorizationError

@@ -38,9 +38,7 @@ from ..manager.user_manager import UserManager
 from ..services.association_request import AssociationRequestService
 from ..services.dataset_service import DatasetManagerService
 from ..services.group_service import GroupManagerService
-from ..services.infra_service import DomainInfrastructureService
 from ..services.role_service import RoleManagerService
-from ..services.setup_service import SetUpService
 from ..services.tensor_service import RegisterTensorService
 from ..services.transfer_service import SaveObjectService
 from ..services.transfer_service import TransferObjectService

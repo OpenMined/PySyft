@@ -2,7 +2,6 @@
 from types import SimpleNamespace
 
 # third party
-from PyInquirer import Separator
 from PyInquirer import Token
 from PyInquirer import prompt
 from PyInquirer import style_from_dict

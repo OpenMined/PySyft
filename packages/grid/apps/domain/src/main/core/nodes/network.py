@@ -35,9 +35,9 @@ from ..services.association_request import AssociationRequestService
 from ..services.broadcast_search import BroadcastSearchService
 from ..services.dataset_service import DatasetManagerService
 from ..services.group_service import GroupManagerService
-from ..services.infra_service import DomainInfrastructureService
+# from ..services.infra_service import DomainInfrastructureService
 from ..services.role_service import RoleManagerService
-from ..services.setup_service import SetUpService
+# from ..services.setup_service import SetUpService
 from ..services.tensor_service import RegisterTensorService
 from ..services.transfer_service import TransferObjectService
 from ..services.user_service import UserManagerService
@@ -78,7 +78,7 @@ class GridNetwork(Domain):
 
         # Grid Domain Services
         self.immediate_services_with_reply.append(AssociationRequestService)
-        self.immediate_services_with_reply.append(SetUpService)
+        # self.immediate_services_with_reply.append(SetUpService)
         self.immediate_services_with_reply.append(RoleManagerService)
         self.immediate_services_with_reply.append(UserManagerService)
         self.immediate_services_with_reply.append(BroadcastSearchService)
