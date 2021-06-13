@@ -9,8 +9,6 @@ from syft.grid.duet.ui import LOGO_URL
 PIL = pytest.importorskip("PIL")
 np = pytest.importorskip("numpy")
 
-sy.load("numpy", "PIL")
-
 
 @pytest.mark.vendor(lib="PIL")
 def test_send_and_get(root_client: sy.VirtualMachineClient) -> None:

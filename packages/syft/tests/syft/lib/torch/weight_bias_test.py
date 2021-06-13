@@ -9,9 +9,13 @@ input_list = [torch.nn.Linear(100, 10)]
 
 
 @pytest.mark.parametrize("target_layer", input_list)
+@pytest.mark.parametrize("apache_arrow_backend", [True, False])
 def test_weights_and_bias(
-    root_client: sy.VirtualMachineClient, target_layer: torch.nn.Module
+    apache_arrow_backend: bool,
+    root_client: sy.VirtualMachineClient,
+    target_layer: torch.nn.Module,
 ) -> None:
+    sy.flags.APACHE_ARROW_SERDE = apache_arrow_backend
     original_bias = target_layer.bias
     original_weight = target_layer.weight
 

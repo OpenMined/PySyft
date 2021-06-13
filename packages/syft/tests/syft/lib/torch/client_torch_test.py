@@ -11,7 +11,11 @@ import syft as sy
 
 
 @pytest.mark.slow
-def test_torch_function(client: sy.VirtualMachineClient) -> None:
+@pytest.mark.parametrize("apache_arrow_backend", [True, False])
+def test_torch_function(
+    apache_arrow_backend: bool, client: sy.VirtualMachineClient
+) -> None:
+    sy.flags.APACHE_ARROW_SERDE = apache_arrow_backend
     x = th.tensor([[-0.1, 0.1], [0.2, 0.3]])
     ptr_x = x.send(client)
     ptr_res = client.torch.zeros_like(ptr_x)

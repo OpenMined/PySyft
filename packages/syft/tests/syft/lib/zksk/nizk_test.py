@@ -15,8 +15,6 @@ def test_nizk_serde() -> None:
     from zksk import Secret
     from zksk import utils
 
-    sy.load("zksk")
-
     num = 2
     seed = 42
     G, H = utils.make_generators(num=num, seed=seed)

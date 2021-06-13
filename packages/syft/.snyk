@@ -5,6 +5,6 @@ ignore:
   SNYK-PYTHON-CRYPTOGRAPHY-1022152:
     - '*':
         reason: CRYPTOGRAPHY - Fix not available currently
-        expires: 2021-06-06T08:03:12.281Z
+        expires: 2022-06-06T08:03:12.281Z
         created: 2021-05-07T08:03:12.290Z
 patch: {}
