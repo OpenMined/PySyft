@@ -9,13 +9,17 @@ import statsmodels
 import statsmodels.api as sm
 
 # syft relative
-from . import family  # noqa: 401
-from . import results  # noqa: 401
-from ...ast import add_classes
-from ...ast import add_methods
-from ...ast import add_modules
-from ...ast.globals import Globals
-from ..util import generic_update_ast
+from .serde import family  # noqa: 401
+from .serde import results  # noqa: 401
+from syft.ast import add_classes
+from syft.ast import add_methods
+from syft.ast import add_modules
+from syft.ast.globals import Globals
+from syft.lib.util import generic_update_ast
+
+# import wrappers
+from .serde.results import wrap_me as wrap_results_kwargs
+from .serde.family import wrap_me_list as wrap_family_list_kwargs
 
 LIB_NAME = "statsmodels"
 PACKAGE_SUPPORT = {"lib": LIB_NAME}
@@ -133,3 +137,6 @@ def create_ast(client: TypeAny = None) -> Globals:
 
 
 update_ast = functools.partial(generic_update_ast, LIB_NAME, create_ast)
+
+objects = family.wrap_me_list
+objects.append(results.wrap_me)

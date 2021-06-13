@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+import "proto/string.proto";
+
+message FamilyProto {
+  String family = 1;
+  String link = 2;
+}

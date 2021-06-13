@@ -6,10 +6,11 @@ from typing import Type
 import statsmodels
 
 # syft relative
-from ...generate_wrapper import GenerateWrapper
-from ...lib.python.primitive_factory import PrimitiveFactory
-from ...lib.python.string import String
-from ...proto.lib.statsmodels.family_pb2 import FamilyProto
+# from ...generate_wrapper import GenerateWrapper
+
+from syft.lib.python.primitive_factory import PrimitiveFactory
+from syft.lib.python.string import String
+from ..proto.family_pb2 import FamilyProto
 
 FAMILY_2_STR: Dict[Type[statsmodels.genmod.families.family.Family], str] = {
     statsmodels.genmod.families.family.Binomial: "Binomial",
@@ -62,11 +63,13 @@ def proto2object(proto: FamilyProto) -> Type[statsmodels.genmod.families.family.
     return obj
 
 
-for fam in FAMILY_2_STR.keys():
-    GenerateWrapper(
-        wrapped_type=fam,
-        import_path="statsmodels.genmod.families.family" + fam.__class__.__name__,
-        protobuf_scheme=FamilyProto,
-        type_object2proto=object2proto,
-        type_proto2object=proto2object,
-    )
+wrap_me_list = [
+    {
+        "wrapped_type": fam,
+        "import_path": "statsmodels.genmod.families.family" + fam.__class__.__name__,
+        "protobuf_scheme": FamilyProto,
+        "type_object2proto": object2proto,
+        "type_proto2object": proto2object,
+    }
+    for fam in FAMILY_2_STR.keys()
+]

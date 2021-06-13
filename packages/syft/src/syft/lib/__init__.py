@@ -6,6 +6,7 @@ from typing import Any
 from typing import Any as TypeAny
 from typing import Dict as TypeDict
 from typing import Iterable
+from typing import Callable
 from typing import List as TypeList
 from typing import Optional
 from typing import Set as TypeSet
@@ -31,6 +32,7 @@ from ..logger import critical
 from ..logger import traceback_and_raise
 from ..logger import warning
 from .misc import create_union_ast
+from ..generate_wrapper import GenerateWrapper
 
 
 class VendorLibraryImportException(Exception):
@@ -273,3 +275,31 @@ def post_import_hook_third_party(module: TypeAny) -> None:
     # warning(msg, print=True)
     # warnings.warn(msg, DeprecationWarning)
     load(module.__name__, ignore_warning=True)
+
+
+def add_lib_external(
+    lib: str, update_ast: Callable, objects: Iterable[TypeDict[str, TypeAny]]
+) -> None:
+    global lib_ast
+
+    update_ast(ast_or_client=lib_ast)
+    # cache the constructor for future created clients
+    lib_ast.loaded_lib_constructors[lib] = update_ast
+    _regenerate_unions(lib_ast=lib_ast)
+
+    for _, client in lib_ast.registered_clients.items():
+        update_ast(ast_or_client=client)
+        _regenerate_unions(lib_ast=lib_ast, client=client)
+
+    if isinstance(objects, Iterable):
+        for objects_kwargs in objects:
+            GenerateWrapper(**objects_kwargs)
+    else:
+        GenerateWrapper(**objects)
+
+
+@wrapt.when_imported("syft_statsmodels")
+def add_ext_lib_hook(module: TypeAny) -> None:
+    name = module.__name__[5:]
+    print("Adding support for " + name)
+    add_lib_external(name, module.update_ast, module.objects)

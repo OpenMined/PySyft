@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+message CommonObject {
+  UID uid_object = 1;
+  ObjectWithID object_with_id_object = 2;
+}
+
+message ObjectWithID { UID id = 1; }
+
+message UID { bytes value = 1; }
+

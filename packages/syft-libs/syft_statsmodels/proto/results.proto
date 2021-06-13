@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+import "proto/string.proto";
+
+message ResultsProto {
+  String summary = 1;
+}
