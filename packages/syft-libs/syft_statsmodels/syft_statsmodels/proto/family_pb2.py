@@ -12,24 +12,25 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-from . import string_pb2 as proto_dot_string__pb2
+from syft.proto.lib.python import \
+    string_pb2 as proto_dot_lib_dot_python_dot_string__pb2
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/family.proto",
-    package="",
+    package="statsmodels",
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x12proto/family.proto\x1a\x12proto/string.proto"=\n\x0b\x46\x61milyProto\x12\x17\n\x06\x66\x61mily\x18\x01 \x01(\x0b\x32\x07.String\x12\x15\n\x04link\x18\x02 \x01(\x0b\x32\x07.Stringb\x06proto3',
+    serialized_pb=b"\n\x12proto/family.proto\x12\x0bstatsmodels\x1a\x1dproto/lib/python/string.proto\"]\n\x0b\x46\x61milyProto\x12'\n\x06\x66\x61mily\x18\x01 \x01(\x0b\x32\x17.syft.lib.python.String\x12%\n\x04link\x18\x02 \x01(\x0b\x32\x17.syft.lib.python.Stringb\x06proto3",
     dependencies=[
-        proto_dot_string__pb2.DESCRIPTOR,
+        proto_dot_lib_dot_python_dot_string__pb2.DESCRIPTOR,
     ],
 )
 
 
 _FAMILYPROTO = _descriptor.Descriptor(
     name="FamilyProto",
-    full_name="FamilyProto",
+    full_name="statsmodels.FamilyProto",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -37,7 +38,7 @@ _FAMILYPROTO = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="family",
-            full_name="FamilyProto.family",
+            full_name="statsmodels.FamilyProto.family",
             index=0,
             number=1,
             type=11,
@@ -56,7 +57,7 @@ _FAMILYPROTO = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="link",
-            full_name="FamilyProto.link",
+            full_name="statsmodels.FamilyProto.link",
             index=1,
             number=2,
             type=11,
@@ -82,12 +83,16 @@ _FAMILYPROTO = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=42,
-    serialized_end=103,
+    serialized_start=66,
+    serialized_end=159,
 )
 
-_FAMILYPROTO.fields_by_name["family"].message_type = proto_dot_string__pb2._STRING
-_FAMILYPROTO.fields_by_name["link"].message_type = proto_dot_string__pb2._STRING
+_FAMILYPROTO.fields_by_name[
+    "family"
+].message_type = proto_dot_lib_dot_python_dot_string__pb2._STRING
+_FAMILYPROTO.fields_by_name[
+    "link"
+].message_type = proto_dot_lib_dot_python_dot_string__pb2._STRING
 DESCRIPTOR.message_types_by_name["FamilyProto"] = _FAMILYPROTO
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -97,7 +102,7 @@ FamilyProto = _reflection.GeneratedProtocolMessageType(
     {
         "DESCRIPTOR": _FAMILYPROTO,
         "__module__": "proto.family_pb2"
-        # @@protoc_insertion_point(class_scope:FamilyProto)
+        # @@protoc_insertion_point(class_scope:statsmodels.FamilyProto)
     },
 )
 _sym_db.RegisterMessage(FamilyProto)

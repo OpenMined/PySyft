@@ -12,24 +12,25 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-from . import string_pb2 as proto_dot_string__pb2
+from syft.proto.lib.python import \
+    string_pb2 as proto_dot_lib_dot_python_dot_string__pb2
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/results.proto",
-    package="",
+    package="statsmodel",
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x13proto/results.proto\x1a\x12proto/string.proto"(\n\x0cResultsProto\x12\x18\n\x07summary\x18\x01 \x01(\x0b\x32\x07.Stringb\x06proto3',
+    serialized_pb=b'\n\x13proto/results.proto\x12\nstatsmodel\x1a\x1dproto/lib/python/string.proto"8\n\x0cResultsProto\x12(\n\x07summary\x18\x01 \x01(\x0b\x32\x17.syft.lib.python.Stringb\x06proto3',
     dependencies=[
-        proto_dot_string__pb2.DESCRIPTOR,
+        proto_dot_lib_dot_python_dot_string__pb2.DESCRIPTOR,
     ],
 )
 
 
 _RESULTSPROTO = _descriptor.Descriptor(
     name="ResultsProto",
-    full_name="ResultsProto",
+    full_name="statsmodel.ResultsProto",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -37,7 +38,7 @@ _RESULTSPROTO = _descriptor.Descriptor(
     fields=[
         _descriptor.FieldDescriptor(
             name="summary",
-            full_name="ResultsProto.summary",
+            full_name="statsmodel.ResultsProto.summary",
             index=0,
             number=1,
             type=11,
@@ -63,11 +64,13 @@ _RESULTSPROTO = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=43,
-    serialized_end=83,
+    serialized_start=66,
+    serialized_end=122,
 )
 
-_RESULTSPROTO.fields_by_name["summary"].message_type = proto_dot_string__pb2._STRING
+_RESULTSPROTO.fields_by_name[
+    "summary"
+].message_type = proto_dot_lib_dot_python_dot_string__pb2._STRING
 DESCRIPTOR.message_types_by_name["ResultsProto"] = _RESULTSPROTO
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -77,7 +80,7 @@ ResultsProto = _reflection.GeneratedProtocolMessageType(
     {
         "DESCRIPTOR": _RESULTSPROTO,
         "__module__": "proto.results_pb2"
-        # @@protoc_insertion_point(class_scope:ResultsProto)
+        # @@protoc_insertion_point(class_scope:statsmodel.ResultsProto)
     },
 )
 _sym_db.RegisterMessage(ResultsProto)

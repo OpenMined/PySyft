@@ -1,8 +1,10 @@
 syntax = "proto3";
 
-import "proto/string.proto";
+import "proto/lib/python/string.proto";
+
+package statsmodels;
 
 message FamilyProto {
-  String family = 1;
-  String link = 2;
+  syft.lib.python.String family = 1;
+  syft.lib.python.String link = 2;
 }

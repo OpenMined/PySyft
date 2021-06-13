@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-import "proto/common_object.proto";
-
-message String {
-  string data = 1;
-  UID id = 2;
-}

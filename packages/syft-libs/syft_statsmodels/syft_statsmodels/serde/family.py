@@ -52,7 +52,6 @@ def object2proto(obj: Type[statsmodels.genmod.families.family.Family]) -> Family
     link_name_prim = PrimitiveFactory.generate_primitive(value=link_name)
     family_name_proto = family_name_prim._object2proto()
     link_name_proto = link_name_prim._object2proto()
-
     return FamilyProto(family=family_name_proto, link=link_name_proto)
 
 
