@@ -5,6 +5,8 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Union
+from enum import Enum
+from asyncio import Queue
 
 # third party
 from nacl.signing import SigningKey
@@ -20,7 +22,8 @@ from ...io.location import SpecificLocation
 from ...io.route import Route
 from ..common.client import Client
 from .service import RequestMessage
-
+from .service.flag_signaling_protocol_service import SetProtocolMessage
+from .service.flag_signaling_protocol_service import SignalFlagMessage
 
 class RequestQueueClient:
     def __init__(self, client: Client) -> None:
@@ -256,7 +259,7 @@ class DomainClient(Client):
             signing_key=signing_key,
             verify_key=verify_key,
         )
-
+        self.flags_queue = Queue()
         self.requests = RequestQueueClient(client=self)
         self.post_init()
 
@@ -317,3 +320,16 @@ class DomainClient(Client):
                 for tag in tags:
                     state[tag] = ptr
         return self.store.pandas
+
+
+    def set_protocol(self, flags: Enum) -> bool:
+        msg = SetProtocolMessage(flags=flags, address=self.address, reply_to=self.address)
+        reply = self.send_immediate_msg_with_reply(msg)
+        return reply.response
+
+    def signal_flag(self, flag: int):
+        msg = SignalFlagMessage(flag=flag, address=self.node.address)
+        return self.send_immediate_msg_without_reply(msg)
+
+    def wait_for_signal(self):
+        return self.signal_queue.get()

@@ -20,3 +20,15 @@ message SetProtocolMessageReply {
   syft.core.io.Address address = 2;
   bool response = 3;
 }
+
+message SignalFlagMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  int32 flag = 3;
+}
+
+message SignalFlagMessageReply {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  int32 flag = 3;
+}

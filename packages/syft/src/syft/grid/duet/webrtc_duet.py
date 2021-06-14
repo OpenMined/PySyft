@@ -30,12 +30,12 @@ source code.
 # stdlib
 import asyncio
 from typing import Optional
-from enum import Enum
+from asyncio import Queue
 
 # third party
 from nacl.signing import SigningKey
 
-# syft relative
+
 from ... import serialize
 from ...core.io.route import SoloRoute
 from ...core.node.common.metadata import Metadata
@@ -108,6 +108,9 @@ class Duet(DomainClient):
         else:
             # Push a WebRTC offer request to the address.
             self.send_offer(target_id=target_id)
+
+        self.flags = None
+        self.flags_queue = Queue()
 
         # This flag is used in order to finish the signaling process gracefully
         # While self._available is True, the pull/push tasks will be running
@@ -328,11 +331,3 @@ class Duet(DomainClient):
             )
         except Exception as e:
             traceback_and_raise(e)
-
-
-    def set_flags(self, flags: Enum) -> bool:
-        msg = SetFlagsProtocolMessage(flags=flags)
-
-        reply = self.send_immediate_msg_with_reply()
-
-        return reply

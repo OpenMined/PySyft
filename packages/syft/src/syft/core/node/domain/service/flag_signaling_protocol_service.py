@@ -6,7 +6,6 @@ from enum import Enum
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
-from syft import Domain
 from typing_extensions import final
 
 # syft relative
@@ -20,6 +19,8 @@ from ...common.service.node_service import ImmediateNodeServiceWithReply
 from ....common.message import ImmediateSyftMessageWithReply
 from .....proto.core.node.domain.service.flag_signaling_protocol_service_pb2 import SetProtocolMessage as SetProtocolMessage_PB
 from .....proto.core.node.domain.service.flag_signaling_protocol_service_pb2 import SetProtocolMessageReply as SetProtocolMessageReply_PB
+from .....proto.core.node.domain.service.flag_signaling_protocol_service_pb2 import SignalFlagMessage as SignalFlagMessage_PB
+from .....proto.core.node.domain.service.flag_signaling_protocol_service_pb2 import SignalFlagMessageReply as SignalFlagMessageReply_PB
 
 
 @bind_protobuf
@@ -102,10 +103,70 @@ class SetProtocolMessageReply(ImmediateSyftMessageWithoutReply):
         return SetProtocolMessageReply_PB
 
 
+class SignalFlagMessage(ImmediateSyftMessageWithoutReply):
+    def __init__(
+            self,
+            flag: int,
+            address: Address,
+            msg_id: Optional[UID] = None
+    ):
+        super().__init__(address=address, msg_id=msg_id)
+        self.flag = flag
+
+    def _object2proto(self) -> SignalFlagMessage_PB:
+        return SignalFlagMessage_PB(
+            flag=self.flag,
+            msg_id=serialize(self.msg_id),
+            address=serialize(self.address)
+        )
+
+    @staticmethod
+    def _proto2object(proto: SignalFlagMessage_PB) -> "SignalFlagMessage":
+        return SignalFlagMessage(
+            flag=proto.flag,
+            msg_id=deserialize(proto.msg_id),
+            address=deserialize(proto.address)
+        )
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return SignalFlagMessage_PB
+
+class SignalFlagMessageReply(ImmediateSyftMessageWithoutReply):
+    def __init__(
+            self,
+            response: bool,
+            address: Address,
+            msg_id: Optional[UID] = None
+    ):
+        super().__init__(address=address, msg_id=msg_id)
+        self.response = response
+
+    def _object2proto(self) -> SignalFlagMessageReply_PB:
+        return SignalFlagMessageReply_PB(
+            response=self.response,
+            msg_id=serialize(self.msg_id),
+            address=serialize(self.address)
+        )
+
+    @staticmethod
+    def _proto2object(proto: SignalFlagMessageReply_PB) -> "SignalFlagMessageReply":
+        return SignalFlagMessageReply(
+            response=proto.response,
+            msg_id=deserialize(proto.msg_id),
+            address=deserialize(proto.address)
+        )
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return SignalFlagMessageReply_PB
+
+
+
 class FlagSignalingProtocolService(ImmediateNodeServiceWithReply):
     @staticmethod
     def process(
-        node: Domain,
+        node,
         msg: ImmediateSyftMessageWithReply,
         verify_key: Optional[VerifyKey] = None,
     ) -> SyftMessage:
@@ -121,6 +182,44 @@ class FlagSignalingProtocolService(ImmediateNodeServiceWithReply):
                 return answer
             return answer
 
+        if isinstance(msg, SignalFlagMessage):
+            answer = SignalFlagMessageReply(
+                response=False,
+                address=msg.reply_to,
+            )
+
+            if node.flags is not None:
+                node.flags_queue.push(msg.flag)
+                answer.response = True
+
+            return answer
+
+    @staticmethod
+    def message_handler_types() -> List[SyftMessage]:
+        return [SetProtocolMessage, SignalFlagMessage]
+
+
+class SignalFlagService(ImmediateNodeServiceWithReply):
+    @staticmethod
+    def process(
+        node,
+        msg: ImmediateSyftMessageWithReply,
+        verify_key: Optional[VerifyKey] = None,
+    ) -> SyftMessage:
+        if isinstance(msg, SetProtocolMessage):
+            answer = SetProtocolMessageReply(
+                response=False,
+                address=msg.reply_to
+            )
+
+            if node.flags is None:
+                node.flags = msg.flags
+                answer.response = True
+                return answer
+            return answer
+
+
     @staticmethod
     def message_handler_types() -> List[SyftMessage]:
         return [SetProtocolMessage_PB]
+

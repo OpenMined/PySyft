@@ -25,7 +25,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\nDproto/core/node/domain/service/flag_signaling_protocol_service.proto\x12\x1dsyft.core.node.domain.service\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\xc2\x01\n\x12SetProtocolMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0c\n\x04name\x18\x04 \x01(\t\x12\x11\n\tenum_keys\x18\x05 \x03(\t\x12\x13\n\x0b\x65num_values\x18\x06 \x03(\x05"z\n\x17SetProtocolMessageReply\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x10\n\x08response\x18\x03 \x01(\x08\x62\x06proto3',
+    serialized_pb=b'\nDproto/core/node/domain/service/flag_signaling_protocol_service.proto\x12\x1dsyft.core.node.domain.service\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\xc2\x01\n\x12SetProtocolMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0c\n\x04name\x18\x04 \x01(\t\x12\x11\n\tenum_keys\x18\x05 \x03(\t\x12\x13\n\x0b\x65num_values\x18\x06 \x03(\x05"z\n\x17SetProtocolMessageReply\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x10\n\x08response\x18\x03 \x01(\x08"p\n\x11SignalFlagMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0c\n\x04\x66lag\x18\x03 \x01(\x05"u\n\x16SignalFlagMessageReply\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0c\n\x04\x66lag\x18\x03 \x01(\x05\x62\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
@@ -247,6 +247,164 @@ _SETPROTOCOLMESSAGEREPLY = _descriptor.Descriptor(
     serialized_end=490,
 )
 
+
+_SIGNALFLAGMESSAGE = _descriptor.Descriptor(
+    name="SignalFlagMessage",
+    full_name="syft.core.node.domain.service.SignalFlagMessage",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.core.node.domain.service.SignalFlagMessage.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.core.node.domain.service.SignalFlagMessage.address",
+            index=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="flag",
+            full_name="syft.core.node.domain.service.SignalFlagMessage.flag",
+            index=2,
+            number=3,
+            type=5,
+            cpp_type=1,
+            label=1,
+            has_default_value=False,
+            default_value=0,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=492,
+    serialized_end=604,
+)
+
+
+_SIGNALFLAGMESSAGEREPLY = _descriptor.Descriptor(
+    name="SignalFlagMessageReply",
+    full_name="syft.core.node.domain.service.SignalFlagMessageReply",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.core.node.domain.service.SignalFlagMessageReply.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.core.node.domain.service.SignalFlagMessageReply.address",
+            index=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="flag",
+            full_name="syft.core.node.domain.service.SignalFlagMessageReply.flag",
+            index=2,
+            number=3,
+            type=5,
+            cpp_type=1,
+            label=1,
+            has_default_value=False,
+            default_value=0,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=606,
+    serialized_end=723,
+)
+
 _SETPROTOCOLMESSAGE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
@@ -262,8 +420,22 @@ _SETPROTOCOLMESSAGEREPLY.fields_by_name[
 _SETPROTOCOLMESSAGEREPLY.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
+_SIGNALFLAGMESSAGE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_SIGNALFLAGMESSAGE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
+_SIGNALFLAGMESSAGEREPLY.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_SIGNALFLAGMESSAGEREPLY.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 DESCRIPTOR.message_types_by_name["SetProtocolMessage"] = _SETPROTOCOLMESSAGE
 DESCRIPTOR.message_types_by_name["SetProtocolMessageReply"] = _SETPROTOCOLMESSAGEREPLY
+DESCRIPTOR.message_types_by_name["SignalFlagMessage"] = _SIGNALFLAGMESSAGE
+DESCRIPTOR.message_types_by_name["SignalFlagMessageReply"] = _SIGNALFLAGMESSAGEREPLY
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 SetProtocolMessage = _reflection.GeneratedProtocolMessageType(
@@ -287,6 +459,28 @@ SetProtocolMessageReply = _reflection.GeneratedProtocolMessageType(
     },
 )
 _sym_db.RegisterMessage(SetProtocolMessageReply)
+
+SignalFlagMessage = _reflection.GeneratedProtocolMessageType(
+    "SignalFlagMessage",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _SIGNALFLAGMESSAGE,
+        "__module__": "proto.core.node.domain.service.flag_signaling_protocol_service_pb2"
+        # @@protoc_insertion_point(class_scope:syft.core.node.domain.service.SignalFlagMessage)
+    },
+)
+_sym_db.RegisterMessage(SignalFlagMessage)
+
+SignalFlagMessageReply = _reflection.GeneratedProtocolMessageType(
+    "SignalFlagMessageReply",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _SIGNALFLAGMESSAGEREPLY,
+        "__module__": "proto.core.node.domain.service.flag_signaling_protocol_service_pb2"
+        # @@protoc_insertion_point(class_scope:syft.core.node.domain.service.SignalFlagMessageReply)
+    },
+)
+_sym_db.RegisterMessage(SignalFlagMessageReply)
 
 
 # @@protoc_insertion_point(module_scope)

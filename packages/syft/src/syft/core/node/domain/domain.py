@@ -1,6 +1,7 @@
 # stdlib
 import asyncio
 import time
+from enum import Enum
 from typing import Any
 from typing import Dict
 from typing import List
@@ -13,6 +14,9 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
 # syft relative
+from syft.core.node.domain.service.flag_signaling_protocol_service import \
+    FlagSignalingProtocolService
+
 from ....lib.python import String
 from ....logger import critical
 from ....logger import debug
@@ -92,11 +96,12 @@ class Domain(Node):
         self._register_services()
         self.request_handlers: List[Dict[Union[str, String], Any]] = []
         self.handled_requests: Dict[Any, float] = {}
-
         self.post_init()
 
         # run the handlers in an asyncio future
         asyncio.ensure_future(self.run_handlers())
+
+        self.flags = None
 
     @property
     def icon(self) -> str:
