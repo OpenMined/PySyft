@@ -25,7 +25,6 @@ install_requires = [
     "sqlalchemy_mixins>=1.2.1,<2.0.0",
     "sqlalchemy_utils>=0.36.8,<0.37.0",
     "sqlitedict>=1.6.0,<2.0.0",
-    "sympc @ git+https://github.com/OpenMined/SyMPC@main",
     "tenseal>=0.3.2,<0.4.0",
     "terrascript>=0.9.0,<0.10.0",
     "textwrap3>=0.9.2,<0.10.0",
