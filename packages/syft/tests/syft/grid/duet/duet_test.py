@@ -22,9 +22,10 @@ set_start_method("spawn", force=True)
 registered_tests: List[Tuple[str, Callable, Callable]] = []
 register_duet_scenarios(registered_tests)
 
+
 @pytest.mark.fast
-def test_duet_network_availabiliity() -> None:
-    assert duet_network_test() == True
+def test_duet_network_availability() -> None:
+    assert duet_network_test() is True
 
 
 @pytest.mark.slow
