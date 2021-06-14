@@ -55,7 +55,7 @@ class EnvironmentManager(DatabaseManager):
 
     def query(self, **kwargs) -> Union[None, List]:
         results = super().query(**kwargs)
-        if len(results) == 0:
+        if results is not None and len(results) == 0:
             raise EnvironmentNotFoundError
         return results
 

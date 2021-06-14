@@ -1,8 +1,9 @@
 # stdlib
-import base64
+from typing import Dict, Any
 from binascii import unhexlify
-import json
 import traceback
+import base64
+import json
 import uuid
 
 # grid relative
@@ -33,7 +34,7 @@ def host_federated_training(message: dict, socket=None) -> dict:
         response : String response to the client
     """
     data = message[MSG_FIELD.DATA]
-    response = {}
+    response: Any = {}
 
     try:
         # Retrieve JSON values
@@ -124,7 +125,7 @@ def requires_speed_test(model_name, model_version):
     )
 
 
-def authenticate(message: dict, socket=None) -> dict:
+def authenticate(message: Dict, socket=None) -> dict:
     """Check the submitted token and assign the worker a new id.
 
     Args:
@@ -137,9 +138,10 @@ def authenticate(message: dict, socket=None) -> dict:
     response = {}
 
     try:
-        _auth_token = data.get("auth_token")
-        model_name = data.get("model_name", None)
-        model_version = data.get("model_version", None)
+        if data is not None:
+            _auth_token = data.get("auth_token")
+            model_name = data.get("model_name", None)
+            model_version = data.get("model_version", None)
 
         verification_result = verify_token(_auth_token, model_name, model_version)
 
@@ -230,7 +232,7 @@ def cycle_request(message: dict, socket=None) -> dict:
     return response
 
 
-def report(message: dict, socket=None) -> dict:
+def report(message: Dict, socket=None) -> dict:
     """This method will allow a worker that has been accepted into a cycle and
     finished training a model on their device to upload the resulting model
     diff.
@@ -242,7 +244,7 @@ def report(message: dict, socket=None) -> dict:
         response : String response to the client
     """
     data = message[MSG_FIELD.DATA]
-    response = {}
+    response: Any = {}
 
     try:
         worker_id = data.get(MSG_FIELD.WORKER_ID, None)

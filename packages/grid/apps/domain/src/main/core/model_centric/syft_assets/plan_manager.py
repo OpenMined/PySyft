@@ -1,3 +1,5 @@
+from typing import Dict
+
 # third party
 import syft as sy
 from syft import deserialize
@@ -19,10 +21,10 @@ class PlanManager(DatabaseManager):
         self._schema = PlanManager.schema
         self.db = database
 
-    def register(self, process, plans: dict, avg_plan: bool):
+    def register(self, **kwargs):
         if not avg_plan:
             # Store specific plan types in proper fields in DB
-            plans_types = {}
+            plans_types: Dict[str, Dict] = {}
             for idx_type, plan in plans.items():
                 type = "syft"
                 idx = idx_type
@@ -96,7 +98,7 @@ class PlanManager(DatabaseManager):
         return plan
 
     @staticmethod
-    def serialize_plan(plan: "sy.Plan") -> bin:
+    def serialize_plan(plan: "sy.Plan") -> bytes:
         """Serialize a Plan."""
         pb = serialize(plan)
         serialized_plan = pb.SerializeToString()

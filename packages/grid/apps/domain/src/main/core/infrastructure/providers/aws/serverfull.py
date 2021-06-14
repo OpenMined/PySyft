@@ -1,4 +1,5 @@
 # stdlib
+from typing import List, Dict
 import textwrap
 
 # grid relative
@@ -19,7 +20,7 @@ class AWS_Serverfull(AWS):
             )
             super().__init__(config)
 
-            self.vpc = Config(id=os.environ["VPC_ID"])
+            self.vpc: Config = Config(id=os.environ["VPC_ID"])
             public_subnet_ids = str(os.environ["PUBLIC_SUBNET_ID"]).split(",")
             private_subnet_ids = str(os.environ["PRIVATE_SUBNET_ID"]).split(",")
             self.subnets = [

@@ -1,8 +1,5 @@
 # stdlib
-from typing import Iterable
-from typing import KeysView
-from typing import Optional
-from typing import ValuesView
+from typing import Iterable, KeysView, Optional, List, ValuesView
 
 # third party
 from flask import current_app as app
@@ -69,7 +66,7 @@ class DiskObjectStore(ObjectStore):
         keys = [UID.from_string(k[0]) for k in keys]
         return keys
 
-    def values(self) -> ValuesView[StorableObject]:
+    def values(self) -> List[StorableObject]:
         obj_keys = self.keys()
         values = []
         for key in obj_keys:

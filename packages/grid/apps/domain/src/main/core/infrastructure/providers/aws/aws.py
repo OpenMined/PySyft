@@ -1,3 +1,5 @@
+from typing import List, Tuple, Dict, Optional
+
 # grid relative
 from ...tf import generate_cidr_block
 from ...tf import var
@@ -18,8 +20,8 @@ class AWS(Provider):
         # Credentials read from env variables
         self.tfscript += terrascript.provider.aws(region=self.config.vpc.region)
 
-        self.vpc = None
-        self.subnets = []
+        self.vpc: Optional[Config] = None
+        self.subnets: List[Tuple[Config, Config]] = []
 
     def build_vpc(self):
         """Adds a VPC."""

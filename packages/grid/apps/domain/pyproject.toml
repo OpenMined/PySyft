@@ -41,6 +41,10 @@ pytest = "^5.4.3"
 docformatter = "^1.3.1"
 flake8 = "^3.8.3"
 flake8-comprehensions = "^3.2.3"
+mypy = "^0.902"
+types-Flask = "^1.1.0"
+types-requests = "^0.1.11"
+types-jwt = "^0.1.3"
 
 [build-system]
 requires = ["poetry>=0.12"]

@@ -1,10 +1,9 @@
 # stdlib
+from typing import Iterable, Optional, List
 from copy import deepcopy
-import csv
 from io import StringIO
 import tarfile
-from typing import Iterable
-from typing import Optional
+import csv
 
 # third party
 from nacl.encoding import HexEncoder
@@ -20,16 +19,16 @@ from syft.core.store.storeable_object import StorableObject
 import torch as th
 
 # grid relative
-from ..database import db
-from ..database.bin_storage.bin_obj import BinObject
-from ..database.bin_storage.bin_obj import ObjectMetadata
-from ..database.bin_storage.json_obj import JsonObject
-from ..database.bin_storage.metadata import get_metadata
-from ..database.dataset.datasetgroup import BinObjDataset
-from ..database.dataset.datasetgroup import Dataset
-from ..database.dataset.datasetgroup import DatasetGroup
-from ..database.store_disk import DiskObjectStore
-from ..database.utils import model_to_json
+from main.core.database import db
+from main.core.database.bin_storage.bin_obj import BinObject
+from main.core.database.bin_storage.bin_obj import ObjectMetadata
+from main.core.database.bin_storage.json_obj import JsonObject
+from main.core.database.bin_storage.metadata import get_metadata
+from main.core.database.dataset.datasetgroup import BinObjDataset
+from main.core.database.dataset.datasetgroup import Dataset
+from main.core.database.dataset.datasetgroup import DatasetGroup
+from main.core.database.store_disk import DiskObjectStore
+from main.core.database.utils import model_to_json
 
 
 def decompress(file_obj):
@@ -147,7 +146,7 @@ def create_dataset(df_json: dict) -> dict:
     _json["id"] = str(df_id.value)
 
     # Create storables from UID/CSV. Update metadata
-    storables = []
+    storables: List[StorableObject] = []
     for idx, (name, _id, raw_file) in enumerate(mapping):
         _tensor = pd.read_csv(StringIO(raw_file))
         _tensor = th.tensor(_tensor.values.astype(np.float32))

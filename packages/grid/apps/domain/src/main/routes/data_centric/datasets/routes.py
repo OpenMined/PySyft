@@ -20,10 +20,8 @@ from syft.grid.messages.dataset_messages import UpdateDatasetMessage
 from werkzeug.utils import secure_filename
 
 # grid relative
-from ...auth import error_handler
-from ...auth import optional_token
-from ...auth import token_required
-from ..blueprint import dcfl_blueprint as dcfl_route
+from main.routes.auth import error_handler, optional_token, token_required
+from main.routes.data_centric.blueprint import dcfl_blueprint as dcfl_route
 
 ALLOWED_EXTENSIONS = {"tar.gz"}
 

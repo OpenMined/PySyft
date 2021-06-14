@@ -3,9 +3,7 @@ from base64 import b64decode
 from base64 import b64encode
 from json import dumps
 import secrets
-from typing import List
-from typing import Type
-from typing import Union
+from typing import List, Type, Union, Any
 
 # third party
 from nacl.encoding import HexEncoder
@@ -33,21 +31,21 @@ from syft.grid.messages.dataset_messages import UpdateDatasetMessage
 from syft.grid.messages.dataset_messages import UpdateDatasetResponse
 
 # grid relative
-from ..database import expand_user_object
-from ..database.utils import model_to_json
-from ..datasets.dataset_ops import create_dataset
-from ..datasets.dataset_ops import delete_dataset
-from ..datasets.dataset_ops import get_all_datasets
-from ..datasets.dataset_ops import get_all_datasets_metadata
-from ..datasets.dataset_ops import get_all_relations
-from ..datasets.dataset_ops import get_dataset_metadata
-from ..datasets.dataset_ops import get_specific_dataset_and_relations
-from ..datasets.dataset_ops import update_dataset
-from ..exceptions import AuthorizationError
-from ..exceptions import DatasetNotFoundError
-from ..exceptions import MissingRequestKeyError
-from ..exceptions import RoleNotFoundError
-from ..exceptions import UserNotFoundError
+from main.core.database import expand_user_object
+from main.core.database.utils import model_to_json
+from main.core.datasets.dataset_ops import create_dataset
+from main.core.datasets.dataset_ops import delete_dataset
+from main.core.datasets.dataset_ops import get_all_datasets
+from main.core.datasets.dataset_ops import get_all_datasets_metadata
+from main.core.datasets.dataset_ops import get_all_relations
+from main.core.datasets.dataset_ops import get_dataset_metadata
+from main.core.datasets.dataset_ops import get_specific_dataset_and_relations
+from main.core.datasets.dataset_ops import update_dataset
+from main.core.exceptions import AuthorizationError
+from main.core.exceptions import DatasetNotFoundError
+from main.core.exceptions import MissingRequestKeyError
+from main.core.exceptions import RoleNotFoundError
+from main.core.exceptions import UserNotFoundError
 
 ENCODING = "UTF-8"
 
@@ -91,7 +89,7 @@ def get_dataset_metadata_msg(
             verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
         ).id
 
-    _msg = {}
+        _msg: Any = {}  # TODO Replace with more accurate type hint
 
     storage = node.disk_store
     ds, objs = get_specific_dataset_and_relations(_dataset_id)
@@ -124,7 +122,7 @@ def get_all_datasets_metadata_msg(
             verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
         ).id
 
-    _msg = {}
+        _msg: Any = {}  # TODO Replace with more accurate type hint
 
     storage = node.disk_store
     datasets = []
@@ -169,7 +167,7 @@ def update_dataset_msg(
 
     _allowed = users.can_upload_data(user_id=_current_user_id)
 
-    _msg = {}
+    _msg: Any = {}  # TODO replace with more accurate type
     if _allowed:
         storage = node.disk_store
         _msg = update_dataset(_dataset_id, _tags, _manifest, _description)

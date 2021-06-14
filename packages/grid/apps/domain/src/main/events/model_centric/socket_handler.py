@@ -1,9 +1,10 @@
 # stdlib
 import queue
+from typing import Optional, Dict, Any
 
 
 class Singleton(type):
-    _instances = {}
+    _instances: Dict[Any, Any] = {}
 
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:
@@ -41,7 +42,7 @@ class SocketHandler(metaclass=Singleton):
         if socket:
             socket.send(message)
 
-    def remove(self, socket) -> str:
+    def remove(self, socket) -> Optional[str]:
         """Remove a socket descriptor from mapping structure. It will be used
         when the socket connection is closed.
 
@@ -54,6 +55,7 @@ class SocketHandler(metaclass=Singleton):
             if skt == socket:
                 del self.connections[worker_id]
             return worker_id
+        return None
 
     def __len__(self) -> int:
         """Number of connections handled by this server.

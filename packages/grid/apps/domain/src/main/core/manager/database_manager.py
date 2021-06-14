@@ -1,15 +1,17 @@
 # stdlib
-from typing import Dict
-from typing import List
-from typing import Type
-from typing import Union
+from typing import Dict, List, Type, Union
 
 # grid relative
-from ..database import BaseModel
-from ..database import db
+from main.core.database import BaseModel
+from main.core.database import db
+from flask_sqlalchemy import SQLAlchemy
 
 
 class DatabaseManager:
+
+    _schema: BaseModel
+    db: SQLAlchemy
+
     def register(self, **kwargs) -> BaseModel:
         """Register e  new object into the database.
 
@@ -23,7 +25,7 @@ class DatabaseManager:
         self.db.session.commit()
         return _obj
 
-    def query(self, **kwargs) -> Union[None, BaseModel]:
+    def query(self, **kwargs) -> Union[BaseModel, List[BaseModel]]:
         """Query db objects filtering by parameters
         Args:
             parameters : List of parameters used to filter.

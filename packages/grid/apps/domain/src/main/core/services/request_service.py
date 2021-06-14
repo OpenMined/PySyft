@@ -50,12 +50,12 @@ from syft.grid.messages.request_messages import UpdateRequestResponse
 from syft.util import validate_type
 
 # grid relative
-from ..database.utils import model_to_json
-from ..datasets.dataset_ops import update_dataset_metadata
-from ..exceptions import AuthorizationError
-from ..exceptions import InvalidParameterValueError
-from ..exceptions import MissingRequestKeyError
-from ..exceptions import RequestError
+from main.core.database.utils import model_to_json
+from main.core.datasets.dataset_ops import update_dataset_metadata
+from main.core.exceptions import AuthorizationError
+from main.core.exceptions import InvalidParameterValueError
+from main.core.exceptions import MissingRequestKeyError
+from main.core.exceptions import RequestError
 
 
 def create_request_msg(
@@ -576,7 +576,7 @@ class RequestServiceWithoutReply(ImmediateNodeServiceWithoutReply):
         ],
         verify_key: VerifyKey,
     ) -> None:
-        RequestServiceWithoutReply.msg_handler_map[type(msg)](
+        RequestServiceWithoutReply.msg_handler_map[type(msg)](  # type: ignore
             msg=msg, node=node, verify_key=verify_key
         )
 

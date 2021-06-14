@@ -1,7 +1,5 @@
 # stdlib
-from typing import Dict
-from typing import List
-from typing import Union
+from typing import Dict, List, Any, Union
 
 # third party
 from bcrypt import checkpw
@@ -20,6 +18,8 @@ from .role_manager import RoleManager
 class UserManager(DatabaseManager):
 
     schema = User
+    roles: RoleManager
+    _schema: User
 
     def __init__(self, database):
         self._schema = UserManager.schema
@@ -27,16 +27,16 @@ class UserManager(DatabaseManager):
         self.db = database
 
     @property
-    def common_users(self) -> list:
-        common_users = []
+    def common_users(self) -> List[User]:
+        common_users: List[User] = []
         for role in self.roles.common_roles:
             common_users = common_users + list(super().query(role=role.id))
 
         return common_users
 
     @property
-    def org_users(self) -> list:
-        org_users = []
+    def org_users(self) -> List[User]:
+        org_users: List[User] = []
         for role in self.roles.org_roles:
             org_users = org_users + list(super().query(role=role.id))
         return org_users
@@ -54,30 +54,32 @@ class UserManager(DatabaseManager):
             salt=salt,
         )
 
-    def query(self, **kwargs) -> Union[None, List]:
+    def query(self, **kwargs) -> List:
         results = super().query(**kwargs)
         if len(results) == 0:
             raise UserNotFoundError
         return results
 
-    def first(self, **kwargs) -> Union[None, User]:
+    def first(self, **kwargs) -> User:
         result = super().first(**kwargs)
         if not result:
             raise UserNotFoundError
         return result
 
-    def login(self, email: str, password: str) -> User:
+    def login(self, email: str, password: str) -> bool:
         return self.__login_validation(email, password)
 
     def set(
         self,
-        user_id: str,
+        user_id: int,
         email: str = None,
         password: str = None,
         role: int = 0,
     ) -> None:
         if not self.contain(id=user_id):
             raise UserNotFoundError
+
+        value: Any
 
         if email:
             key = "email"
@@ -94,30 +96,30 @@ class UserManager(DatabaseManager):
 
         self.modify({"id": user_id}, {key: value})
 
-    def can_create_users(self, user_id: str) -> bool:
+    def can_create_users(self, user_id: int) -> bool:
         role = self.role(user_id=user_id)
         if role:
             return role.can_create_users
         else:
             return False
 
-    def can_upload_data(self, user_id: str) -> bool:
+    def can_upload_data(self, user_id: int) -> bool:
         role = self.role(user_id=user_id)
         if role:
             return role.can_upload_data
         else:
             return False
 
-    def can_triage_requests(self, user_id: str) -> bool:
+    def can_triage_requests(self, user_id: int) -> bool:
         return self.role(user_id=user_id).can_triage_requests
 
-    def can_manage_infrastructure(self, user_id: str) -> bool:
+    def can_manage_infrastructure(self, user_id: int) -> bool:
         return self.role(user_id=user_id).can_manage_infrastructure
 
-    def can_edit_roles(self, user_id: str) -> bool:
+    def can_edit_roles(self, user_id: int) -> bool:
         return self.role(user_id=user_id).can_edit_roles
 
-    def can_create_groups(self, user_id: str) -> bool:
+    def can_create_groups(self, user_id: int) -> bool:
         return self.role(user_id=user_id).can_create_groups
 
     def role(self, user_id: int):
@@ -131,11 +133,11 @@ class UserManager(DatabaseManager):
         try:
             user = self.first(email=email)
 
-            hashed = user.hashed_password.encode("UTF-8")
-            salt = user.salt.encode("UTF-8")
-            password = password.encode("UTF-8")
+            hashed: bytes = user.hashed_password.encode("UTF-8")
+            salt: bytes = user.salt.encode("UTF-8")
+            password_bytes: bytes = password.encode("UTF-8")
 
-            if checkpw(password, salt + hashed):
+            if checkpw(password_bytes, salt + hashed):
                 return user
             else:
                 raise InvalidCredentialsError

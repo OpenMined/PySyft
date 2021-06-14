@@ -102,7 +102,7 @@ class FLController:
         )
 
         # Retrieve the last cycle used by this fl process/ version
-        _cycle = cycle_manager.last(_fl_process.id, None)
+        _cycle = cycle_manager.last(fl_process_id=_fl_process.id, version=None)
 
         # Check if already exists a relation between the worker and the cycle.
         _assigned = cycle_manager.is_assigned(worker.id, _cycle.id)

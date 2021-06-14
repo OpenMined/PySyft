@@ -48,7 +48,7 @@ class GCP(Provider):
             self.build_ip_address()
             self.build_instances()
 
-    def build(self) -> bool:
+    def build(self) -> None:  # TODO Used to have return hint bool?
         app = self.name
         self.vpc = Module(
             "pygrid-vpc",
@@ -93,6 +93,7 @@ class GCP(Provider):
             },
         )
         self.tfscript += self.firewall
+        return None
 
     def build_ip_address(self):
         app = self.name

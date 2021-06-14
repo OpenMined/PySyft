@@ -12,7 +12,7 @@ class ProtocolManager(DatabaseManager):
         self._schema = ProtocolManager.schema
         # self._protocols = DatabaseManager(Protocol)
 
-    def register(self, process, protocols: dict):
+    def register(self, **kwargs):
         # Register new Protocols into the database
         for key, value in protocols.items():
             super().register(name=key, value=value, protocol_flprocess=process)

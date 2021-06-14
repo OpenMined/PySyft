@@ -1,4 +1,5 @@
 # stdlib
+from typing import Any
 from datetime import datetime
 from datetime import timedelta
 from functools import reduce
@@ -71,7 +72,9 @@ class CycleManager(DatabaseManager):
 
         return _new_cycle
 
-    def last_participation(self, process: int, worker_id: str):
+    def last_participation(
+        self, process: Any, worker_id: str
+    ):  # TODO Get more accurate type for process
         """Retrieve the last time the worker participated from this cycle.
 
         Args:
@@ -95,7 +98,7 @@ class CycleManager(DatabaseManager):
 
         return last
 
-    def last(self, fl_process_id: int, version: str = None):
+    def last(self, **kwargs):
         """Retrieve the last not completed registered cycle.
 
         Args:
@@ -338,9 +341,11 @@ class CycleManager(DatabaseManager):
         max_cycles = server_config.get("num_cycles", 0)
         if completed_cycles_num < max_cycles or max_cycles == 0:
             # make new cycle
-            _new_cycle = self.create(
-                cycle.fl_process_id, cycle.version, server_config.get("cycle_length")
-            )
+            cycle_length = server_config.get("cycle_length")
+            if cycle_length is not None:
+                _new_cycle = self.create(
+                    cycle.fl_process_id, cycle.version, cycle_length
+                )
             logging.info("Creating new cycle: %s" % str(_new_cycle))
         else:
             logging.info("FL is done!")

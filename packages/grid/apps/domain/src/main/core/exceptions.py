@@ -74,12 +74,6 @@ class WorkerNotFoundError(PyGridError):
         super().__init__(message)
 
 
-class ProtocolNotFoundError(PyGridError):
-    def __init__(self):
-        message = "Protocol ID not found!"
-        super().__init__(message)
-
-
 class FLProcessConflict(PyGridError):
     def __init__(self):
         message = "FL Process already exists."
@@ -87,6 +81,8 @@ class FLProcessConflict(PyGridError):
 
 
 class MaxCycleLimitExceededError(PyGridError):
+    name: str
+
     def __init__(self):
         message = "There are no cycles remaining"
         super().__init__(message)

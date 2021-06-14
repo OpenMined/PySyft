@@ -63,13 +63,14 @@ class WorkerManager(DatabaseManager):
         )
 
         # Check bandwidth
-        _comp_bandwidth = (
-            "minimum_upload_speed" not in server_config
-            or _worker.avg_upload >= server_config["minimum_upload_speed"]
-        ) and (
-            "minimum_download_speed" not in server_config
-            or _worker.avg_download >= server_config["minimum_download_speed"]
-        )
+        if _worker is not None:
+            _comp_bandwidth = (
+                "minimum_upload_speed" not in server_config
+                or _worker.avg_upload >= server_config["minimum_upload_speed"]
+            ) and (
+                "minimum_download_speed" not in server_config
+                or _worker.avg_download >= server_config["minimum_download_speed"]
+            )
 
         logging.info(f"Result of bandwidth check: {_comp_bandwidth}")
         return _comp_bandwidth
