@@ -99,10 +99,7 @@ class GridDomain(Domain):
         self.roles = RoleManager(db)
         self.groups = GroupManager(db)
         self.disk_store = DiskObjectStore(db)
-# <<<<<<< HEAD
-#         self.store = DiskObjectStore(db)
-# =======
-# >>>>>>> f248433fef4718c08bc96c24a637d42ed8202ae1
+        self.store = DiskObjectStore(db)
         self.environments = EnvironmentManager(db)
         self.setup = SetupManager(db)
         self.association_requests = AssociationRequestManager(db)

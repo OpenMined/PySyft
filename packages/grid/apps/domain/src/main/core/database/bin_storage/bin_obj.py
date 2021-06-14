@@ -3,6 +3,7 @@ from syft import deserialize
 from syft import serialize
 from syft.proto.lib.pandas.frame_pb2 import PandasDataFrame as PandasDataFrame_PB
 from syft.proto.lib.torch.tensor_pb2 import TensorProto as TensorProto_PB
+from syft.proto.lib.torch.module_pb2 import Module as Module_PB
 
 # grid relative
 from .. import BaseModel
@@ -11,6 +12,7 @@ from .. import db
 bin_to_proto = {
     TensorProto_PB.__name__: TensorProto_PB,
     PandasDataFrame_PB.__name__: PandasDataFrame_PB,
+    Module_PB.__name__: Module_PB,
 }
 
 
