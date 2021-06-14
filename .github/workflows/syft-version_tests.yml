@@ -77,6 +77,17 @@ jobs:
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
 
+      - name: Get datasets cache dir
+        id: datasets-cache
+        run: |
+          python -c "from pathlib import Path; print('::set-output name=dir::' + str(Path.home()) + '/.syft/data')"
+
+      - name: Cache datasets
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.datasets-cache.outputs.dir }}
+          key: pl-datasets-version-tests-${{ hashFiles('tests/conftest.py') }}
+
       - name: Scan for security issues
         run: |
           bandit -r src
@@ -149,6 +160,17 @@ jobs:
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
 
+      - name: Get datasets cache dir
+        id: datasets-cache
+        run: |
+          python -c "from pathlib import Path; print('::set-output name=dir::' + str(Path.home()) + '/.syft/data')"
+
+      - name: Cache datasets
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.datasets-cache.outputs.dir }}
+          key: pl-datasets-version-tests-${{ hashFiles('tests/conftest.py') }}
+
       - name: Test PyGrid
         continue-on-error: true
         run: |
@@ -208,6 +230,17 @@ jobs:
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
           pip install -e .[dev] -f https://download.pytorch.org/whl/torch_stable.html
+
+      - name: Get datasets cache dir
+        id: datasets-cache
+        run: |
+          python -c "from pathlib import Path; print('::set-output name=dir::' + str(Path.home()) + '/.syft/data')"
+
+      - name: Cache datasets
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.datasets-cache.outputs.dir }}
+          key: pl-datasets-version-tests-${{ hashFiles('tests/conftest.py') }}
 
       - name: Check import works without dev packages
         run: |

@@ -41,19 +41,6 @@ jobs:
         run: |
           pip install --upgrade --user pip
 
-      - name: Get pip cache dir
-        id: pip-cache
-        run: |
-          echo "::set-output name=dir::$(pip cache dir)"
-
-      - name: pip cache
-        uses: actions/cache@v2
-        with:
-          path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
-
       - name: Install Protoc
         uses: arduino/setup-protoc@v1
         with:
@@ -151,6 +138,17 @@ jobs:
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
 
+      - name: Get datasets cache dir
+        id: datasets-cache
+        run: |
+          python -c "from pathlib import Path; print('::set-output name=dir::' + str(Path.home()) + '/.syft/data')"
+
+      - name: Cache datasets
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.datasets-cache.outputs.dir }}
+          key: pl-datasets-pr-${{ hashFiles('tests/conftest.py') }}
+
       - name: Scan for security issues
         run: |
           bandit -r src
@@ -212,6 +210,17 @@ jobs:
           grep -A 3 "torch_ecosystem" setup.cfg
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
+
+      - name: Get datasets cache dir
+        id: datasets-cache
+        run: |
+          python -c "from pathlib import Path; print('::set-output name=dir::' + str(Path.home()) + '/.syft/data')"
+
+      - name: Cache datasets
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.datasets-cache.outputs.dir }}
+          key: pl-datasets-pr-${{ hashFiles('tests/conftest.py') }}
 
       - name: Run notebook API examples
         if: ${{ matrix.os == 'ubuntu-latest' }}
@@ -277,6 +286,17 @@ jobs:
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
 
+      - name: Get datasets cache dir
+        id: datasets-cache
+        run: |
+          python -c "from pathlib import Path; print('::set-output name=dir::' + str(Path.home()) + '/.syft/data')"
+
+      - name: Cache datasets
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.datasets-cache.outputs.dir }}
+          key: pl-datasets-pr-${{ hashFiles('tests/conftest.py') }}
+
       - name: Test PyGrid
         continue-on-error: true
         run: |
@@ -331,6 +351,17 @@ jobs:
           grep -A 3 "torch_ecosystem" setup.cfg
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
+
+      - name: Get datasets cache dir
+        id: datasets-cache
+        run: |
+          python -c "from pathlib import Path; print('::set-output name=dir::' + str(Path.home()) + '/.syft/data')"
+
+      - name: Cache datasets
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.datasets-cache.outputs.dir }}
+          key: pl-datasets-pr-${{ hashFiles('tests/conftest.py') }}
 
       - name: Test PyGrid
         continue-on-error: true

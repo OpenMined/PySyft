@@ -52,6 +52,17 @@ jobs:
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
 
+      - name: Get datasets cache dir
+        id: datasets-cache
+        run: |
+          python -c "from pathlib import Path; print('::set-output name=dir::' + str(Path.home()) + '/.syft/data')"
+
+      - name: Cache datasets
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.datasets-cache.outputs.dir }}
+          key: pl-datasets-bench-${{ hashFiles('tests/conftest.py') }}
+
       - name: Reset git
         run: |
           git reset --hard
