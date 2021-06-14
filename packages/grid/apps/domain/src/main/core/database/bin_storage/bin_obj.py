@@ -2,18 +2,12 @@
 from syft import deserialize
 from syft import serialize
 from syft.proto.lib.pandas.frame_pb2 import PandasDataFrame as PandasDataFrame_PB
-from syft.proto.lib.torch.tensor_pb2 import TensorProto as TensorProto_PB
 from syft.proto.lib.torch.module_pb2 import Module as Module_PB
+from syft.proto.lib.torch.tensor_pb2 import TensorProto as TensorProto_PB
 
 # grid relative
 from .. import BaseModel
 from .. import db
-
-bin_to_proto = {
-    TensorProto_PB.__name__: TensorProto_PB,
-    PandasDataFrame_PB.__name__: PandasDataFrame_PB,
-    Module_PB.__name__: Module_PB,
-}
 
 
 class BinObject(BaseModel):
@@ -21,20 +15,18 @@ class BinObject(BaseModel):
 
     id = db.Column(db.String(3072), primary_key=True)
     binary = db.Column(db.LargeBinary(3072))
-    protobuf_name = db.Column(db.String(3072))
+    obj_name = db.Column(db.String(3072))
 
     @property
     def object(self):
-        _proto_struct = bin_to_proto[self.protobuf_name]()
-        _proto_struct.ParseFromString(self.binary)
-        _obj = deserialize(blob=_proto_struct)
-        return _obj
+        # storing DataMessage, we should unwrap
+        return deserialize(self.binary, from_bytes=True)  # TODO: techdebt fix
 
     @object.setter
     def object(self, value):
-        serialized_value = serialize(value)
-        self.binary = serialized_value.SerializeToString()
-        self.protobuf_name = serialized_value.__class__.__name__
+        # storing DataMessage, we should unwrap
+        self.binary = serialize(value, to_bytes=True)  # TODO: techdebt fix
+        self.obj_name = type(value).__name__
 
 
 class ObjectMetadata(BaseModel):
