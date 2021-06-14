@@ -25,10 +25,7 @@ class BinObject(BaseModel):
 
     @property
     def object(self):
-        try:
-            _proto_struct = bin_to_proto[self.protobuf_name]()
-        except Exception:
-            print(str(e))
+        _proto_struct = bin_to_proto[self.protobuf_name]()
         _proto_struct.ParseFromString(self.binary)
         _obj = deserialize(blob=_proto_struct)
         return _obj
