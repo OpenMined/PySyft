@@ -14,6 +14,7 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 import warnings
+import copy
 
 # syft relative
 from .. import ast
@@ -530,6 +531,23 @@ class Class(Callable):
         klass_pointer = type(self.pointer_name, (Pointer,), attrs)
         setattr(klass_pointer, "path_and_name", self.path_and_name)
         setattr(self, self.pointer_name, klass_pointer)
+
+    def store_init_args(outer_self: Any) -> None:
+        """
+        Stores args and kwargs of outer_self init by wrapping the init method.
+        """
+
+        def init_wrapper(self, *args, **kwargs):
+            obj = outer_self.object_ref._wrapped_init(self, *args, **kwargs)
+
+            self._args = args
+            self._kwargs = kwargs
+
+        # If _wrapped_init exists, create_init_method is already called once.
+        if not hasattr(outer_self.object_ref, "_wrapped_init"):
+            outer_self.object_ref._wrapped_init = outer_self.object_ref.__init__
+            outer_self.object_ref.__init__ = init_wrapper
+
 
     def create_send_method(outer_self: Any) -> None:
         """Add `send` method to `outer_self.object_ref`."""

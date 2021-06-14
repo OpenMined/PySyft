@@ -15,6 +15,7 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
+import importlib
 
 # third party
 import torch
@@ -35,7 +36,9 @@ from ...logger import info
 from ...logger import traceback_and_raise
 from ...proto.lib.torch.module_pb2 import Module as Module_PB
 from ..python.collections import OrderedDict as SyOrderedDict
-from ..python.util import downcast
+from ..python.list import List
+from ..python.util import downcast, upcast
+from .. import lib_ast
 
 # from ...core.node.common.service.auth import AuthorizationException
 
@@ -419,16 +422,31 @@ class Module:
                         s = v.sum().item()
                         info(f"  Layer {n} sum({k}): {s}")
 
+def module_in_ast(module_type: type) -> bool:
+    fqn = full_name_with_qualname(klass=module_type)
+    try:
+        return bool(lib_ast.query(fqn, obj_type=module_type))
+    except ValueError:
+        return False
 
 def object2proto(obj: torch.nn.Module, is_child: bool = False) -> Module_PB:
+
     proto = Module_PB()
-    if "torch.nn." in type(obj).__module__:
-        proto.module_type = type(obj).__name__
+    if module_in_ast(type(obj)):
+        proto.python_module = type(obj).__module__
     else:
-        proto.module_type = f"_USER_DEFINED_MODULE_{type(obj).__name__}"
+        proto.python_module = "_USER_DEFINED"
         proto.forward.CopyFrom(sy.serialize(obj._forward_plan))
 
+    proto.module_type = type(obj).__name__
     proto.module_repr = obj.extra_repr()
+
+    # Requires klass.store_init_args() when building AST.
+    if hasattr(obj, "_args") and hasattr(obj, "_kwargs"):
+        module_args = sy.serialize(sy.lib.python.List(obj._args))
+        proto.module_args.CopyFrom(module_args)
+        module_kwargs = sy.serialize(sy.lib.python.Dict(obj._kwargs))
+        proto.module_kwargs.CopyFrom(module_kwargs)
 
     if hasattr(obj, "_uid2attr"):
         proto._uid2attr.CopyFrom(sy.serialize(SyOrderedDict(obj._uid2attr)))
@@ -444,18 +462,30 @@ def object2proto(obj: torch.nn.Module, is_child: bool = False) -> Module_PB:
 
 
 def proto2object(proto: Module_PB) -> torch.nn.Module:
-    is_userdefined = proto.module_type.startswith("_USER_DEFINED_MODULE_")
+    is_userdefined = proto.python_module == "_USER_DEFINED"
 
     if is_userdefined:
         obj_type = type(
-            proto.module_type.replace("_USER_DEFINED_MODULE_", ""),
+            proto.module_type,
             (torch.nn.Module,),
             {},
         )
     else:
-        obj_type = getattr(torch.nn, proto.module_type)
+        obj_type = getattr(
+            importlib.import_module(proto.python_module),
+            proto.module_type
+        )
 
-    args, kwargs = repr_to_kwargs(repr_str=proto.module_repr)
+    if proto.HasField("module_args") and proto.HasField("module_kwargs"):
+        args = upcast(sy.deserialize(proto.module_args))
+        kwargs = upcast(sy.deserialize(proto.module_kwargs))
+    elif proto.HasField("module_repr"):
+        # TODO make Modules defined by torch use module_args and module_kwargs,
+        # and remove module_repr from proto
+        args, kwargs = repr_to_kwargs(repr_str=proto.module_repr)
+    else:
+        raise ValueError("Could not infer args and kwargs from Module proto.")
+
     obj = obj_type(*args, **kwargs)
 
     for name, param in sy.deserialize(proto.parameters).items():
