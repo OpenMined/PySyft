@@ -444,10 +444,10 @@ def object2proto(obj: torch.nn.Module, is_child: bool = False) -> Module_PB:
     proto.module_repr = obj.extra_repr()
 
     # Requires klass.store_init_args() when building AST.
-    if hasattr(obj, "_args") and hasattr(obj, "_kwargs"):
-        module_args = sy.serialize(sy.lib.python.List(obj._args))
+    if hasattr(obj, "_init_args") and hasattr(obj, "_init_kwargs"):
+        module_args = sy.serialize(sy.lib.python.List(obj._init_args))
         proto.module_args.CopyFrom(module_args)
-        module_kwargs = sy.serialize(sy.lib.python.Dict(obj._kwargs))
+        module_kwargs = sy.serialize(sy.lib.python.Dict(obj._init_kwargs))
         proto.module_kwargs.CopyFrom(module_kwargs)
 
     if hasattr(obj, "_uid2attr"):

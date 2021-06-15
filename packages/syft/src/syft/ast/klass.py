@@ -538,8 +538,8 @@ class Class(Callable):
 
         def init_wrapper(self: Any, *args: List[Any], **kwargs: Dict[Any, Any]) -> None:
             outer_self.object_ref._wrapped_init(self, *args, **kwargs)
-            self._args = args
-            self._kwargs = kwargs
+            self._init_args = args
+            self._init_kwargs = kwargs
 
         # If _wrapped_init already exists, create_init_method is already called once
         # and does not need to wrap __init__ again.

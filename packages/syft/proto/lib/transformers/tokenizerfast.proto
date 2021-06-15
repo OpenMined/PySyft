@@ -8,6 +8,7 @@ import "proto/lib/python/dict.proto";
 
 message TokenizerFast {
   syft.core.common.UID id = 1;
-  syft.lib.python.String tokenizer = 2;
-  syft.lib.python.Dict kwargs = 3;
+  string tokenizer_type = 2;
+  string tokenizer = 3;
+  syft.lib.python.Dict kwargs = 4;
 }
