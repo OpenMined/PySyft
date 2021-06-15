@@ -63,6 +63,6 @@ message TensorData {
 message TensorProto {
   bytes tensor = 1;
   bool requires_grad = 2;
-  bytes grad = 3;
+  optional bytes grad = 3;
   syft.lib.torch.Device device = 4;
 }

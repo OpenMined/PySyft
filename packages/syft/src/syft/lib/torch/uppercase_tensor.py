@@ -36,11 +36,10 @@ def object2proto(obj: object) -> Tensor_PB:
 
 def proto2object(proto: Tensor_PB) -> th.Tensor:
     tensor = tensor_deserializer(proto.tensor)
-    if proto.requires_grad:
-        try:
-            tensor.grad = tensor_deserializer(proto.grad)
-        except Exception as e:
-            print("Can't deserialize grad with", proto.grad)
+    tensor.requires_grad = proto.requires_grad
+
+    if proto.HasField("grad"):
+        tensor.grad = tensor_deserializer(proto.grad)
 
     tensor.requires_grad_(proto.requires_grad)
 
