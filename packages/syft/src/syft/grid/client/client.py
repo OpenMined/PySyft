@@ -152,8 +152,24 @@ class GridClient(DomainClient):
             )
             return login(email=kwargs["email"], password=kwargs["password"])
 
-    def register(self, email, password) -> Any:
-        return self.users.create(email=email, password=password)
+    def register(self, email:str, password:str, role=None) -> Any:
+
+        try:
+
+            if role is None:
+                return self.users.create(email=email, password=password)
+
+            return self.users.create(
+                email=email, password=password, role=role
+            )
+
+        except Exception as e:
+            logging.warn("This user probably already exists. Trying to log in instead.")
+
+            return login(email=email, password=password)
+
+    def register_compliance_officer(self, email:str, password:str) -> Any:
+        return self.register(email=email, password=password, role="Compliance Officer")
 
     def get_setup(self, **kwargs: Any) -> Any:
         return self.__perform_grid_request(grid_msg=GetSetUpMessage, content=kwargs)
@@ -276,3 +292,7 @@ def login(
 def register(email: str, password: str, url: Optional[str] = DEFAULT_PYGRID_ADDRESS):
     login(url=url).register(email=email, password=password)
     return login(url=url, email=email, password=password)
+
+
+def register_root(email: str, password: str, domain_name:str, url: Optional[str]=DEFAULT_PYGRID_ADDRESS) -> GridClient:
+    return login().setup(email=email, password=password, domain_name=domain_name, url=url)
