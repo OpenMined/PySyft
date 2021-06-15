@@ -81,3 +81,6 @@ allowlist[
 allowlist[
     "transformers.tokenization_utils_fast.PreTrainedTokenizerFast"
 ] = "transformers.tokenization_utils_fast.PreTrainedTokenizerFast"
+allowlist[
+    "transformers.tokenization_utils_fast.PreTrainedTokenizerFast.__call__"
+] = "transformers.tokenization_utils_base.BatchEncoding"
