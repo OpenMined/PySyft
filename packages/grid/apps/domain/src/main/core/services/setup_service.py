@@ -21,8 +21,11 @@ from syft.grid.messages.setup_messages import CreateInitialSetUpMessage
 from syft.grid.messages.setup_messages import CreateInitialSetUpResponse
 from syft.grid.messages.setup_messages import GetSetUpMessage
 from syft.grid.messages.setup_messages import GetSetUpResponse
+from syft.grid.messages.setup_messages import UpdateSetupMessage
+from syft.grid.messages.setup_messages import UpdateSetupResponse
 
 # grid relative
+from ..database import db
 from ...core.database.environment.environment import states
 from ...core.infrastructure import AWS_Serverfull
 from ...core.infrastructure import AWS_Serverless
@@ -118,6 +121,47 @@ def create_initial_setup(
     )
 
 
+
+def update_setup(
+    msg: UpdateSetupMessage, node: AbstractNode, verify_key: VerifyKey
+) -> UpdateSetupResponse:
+
+    # Get Payload Content
+    configs = {
+        "domain_name": msg.content.get("domain_name", None),
+    }
+
+    settings = db.session.query(SetupConfig).first()
+
+    for attr, val in configs.items():
+        if not attr == None:
+            setattr(settings, attr, val)
+
+    db.session.commit()
+
+    _current_user_id = msg.content.get("current_user", None)
+
+    users = node.users
+
+    if not _current_user_id:
+        try:
+            _current_user_id = users.first(
+                verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+            ).id
+        except Exception:
+            pass
+
+    # Change Node Name
+    node.name = settings.domain_name
+    
+    # Final status / message
+    final_msg = "Settings Updated!"
+    return UpdateSetupResponse(
+        address=msg.reply_to,
+        status_code=200,
+        content={"message": final_msg},
+    )
+
 def get_setup(
     msg: GetSetUpMessage, node: AbstractNode, verify_key: VerifyKey
 ) -> GetSetUpResponse:
@@ -151,6 +195,7 @@ class SetUpService(ImmediateNodeServiceWithReply):
     msg_handler_map = {
         CreateInitialSetUpMessage: create_initial_setup,
         GetSetUpMessage: get_setup,
+        UpdateSetupMessage: update_setup,
     }
 
     @staticmethod
@@ -160,9 +205,10 @@ class SetUpService(ImmediateNodeServiceWithReply):
         msg: Union[
             CreateInitialSetUpMessage,
             GetSetUpMessage,
+            UpdateSetupMessage,
         ],
         verify_key: VerifyKey,
-    ) -> Union[CreateInitialSetUpResponse, GetSetUpResponse,]:
+    ) -> Union[CreateInitialSetUpResponse, GetSetUpResponse, UpdateSetupResponse]:
         return SetUpService.msg_handler_map[type(msg)](
             msg=msg, node=node, verify_key=verify_key
         )
@@ -172,4 +218,5 @@ class SetUpService(ImmediateNodeServiceWithReply):
         return [
             CreateInitialSetUpMessage,
             GetSetUpMessage,
+            UpdateSetupMessage,
         ]
