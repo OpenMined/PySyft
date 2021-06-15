@@ -295,4 +295,5 @@ def register(email: str, password: str, url: Optional[str] = DEFAULT_PYGRID_ADDR
 
 
 def register_root(email: str, password: str, domain_name:str, url: Optional[str]=DEFAULT_PYGRID_ADDRESS) -> GridClient:
-    return login().setup(email=email, password=password, domain_name=domain_name, url=url)
+    login().setup(email=email, password=password, domain_name=domain_name, url=url)
+    return login(email=email, password=password, url=url)
