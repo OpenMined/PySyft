@@ -25,12 +25,12 @@ from syft.grid.messages.setup_messages import UpdateSetupMessage
 from syft.grid.messages.setup_messages import UpdateSetupResponse
 
 # grid relative
-from ..database import db
 from ...core.database.environment.environment import states
 from ...core.infrastructure import AWS_Serverfull
 from ...core.infrastructure import AWS_Serverless
 from ...core.infrastructure import Config
 from ...core.infrastructure import Provider
+from ..database import db
 from ..database.setup.setup import SetupConfig
 from ..database.utils import model_to_json
 from ..exceptions import AuthorizationError
@@ -121,7 +121,6 @@ def create_initial_setup(
     )
 
 
-
 def update_setup(
     msg: UpdateSetupMessage, node: AbstractNode, verify_key: VerifyKey
 ) -> UpdateSetupResponse:
@@ -153,7 +152,7 @@ def update_setup(
 
     # Change Node Name
     node.name = settings.domain_name
-    
+
     # Final status / message
     final_msg = "Settings Updated!"
     return UpdateSetupResponse(
@@ -161,6 +160,7 @@ def update_setup(
         status_code=200,
         content={"message": final_msg},
     )
+
 
 def get_setup(
     msg: GetSetUpMessage, node: AbstractNode, verify_key: VerifyKey

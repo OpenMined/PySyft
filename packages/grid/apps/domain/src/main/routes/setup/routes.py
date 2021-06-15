@@ -57,6 +57,7 @@ def get_setup(current_user):
         mimetype="application/json",
     )
 
+
 @setup_route.route("", methods=["PUT"])
 @optional_token
 def update_setup(current_user):
@@ -76,6 +77,7 @@ def update_setup(current_user):
         status=status_code,
         mimetype="application/json",
     )
+
 
 @setup_route.route("/status", methods=["GET"])
 def get_status():
