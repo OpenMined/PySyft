@@ -6,9 +6,8 @@ import "proto/core/common/common_object.proto";
 import "proto/lib/python/string.proto";
 import "proto/lib/python/dict.proto";
 
-message TokenizerFast {
+message HFConfig {
   syft.core.common.UID id = 1;
-  string tokenizer_type = 2;
-  string tokenizer = 3;
-  syft.lib.python.Dict kwargs = 4;
+  syft.lib.python.String config_class = 2;
+  syft.lib.python.Dict config_attrs = 3;
 }

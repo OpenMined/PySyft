@@ -60,7 +60,7 @@ Technically speaking, it isn't required to run a Network when performing data-ce
 
 **Network-based data-centric FL**
 
-Many times you will wat to use a Network to allow multiple Domains to be connected together. As a data owner, it's not strictly necessary to own and operate mulitple Domains. PyGrid doesn't prescribe one way to organize Domains and Networks, but we expose these applications to allow you and various related stakeholders to make the correct decision about your infrastructure needs.
+Many times you will want to use a Network to allow multiple Domains to be connected together. As a data owner, it's not strictly necessary to own and operate mulitple Domains. PyGrid doesn't prescribe one way to organize Domains and Networks, but we expose these applications to allow you and various related stakeholders to make the correct decision about your infrastructure needs.
 
 ![Network-based DCFL](assets/DCFL-network.png)
 
@@ -93,7 +93,6 @@ The latest PyGrid Network and Node images are also available on the Docker Hub.
 - [PyGrid Domain - `openmined/grid-domain`](https://hub.docker.com/repository/docker/openmined/grid-domain)
 - [PyGrid Worker - `openmined/grid-worker`](https://hub.docker.com/repository/docker/openmined/grid-worker)
 - [PyGrid Network - `openmined/grid-network`](https://hub.docker.com/repository/docker/openmined/grid-network)
-
 
 #### 3. _Optional_ - Build your own images
 
@@ -176,8 +175,7 @@ You can pass the arguments or use environment variables to set the network confi
 
 ## Deployment & CLI
 
-[Please check the instruction for deployment and CLI here.](deployment.md)
-
+[Please check the instruction for deployment and CLI here.](DEPLOYMENT.md)
 
 ## Contributing
 
