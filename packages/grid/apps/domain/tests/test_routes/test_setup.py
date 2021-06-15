@@ -119,6 +119,7 @@ def test_get_setup(client, database, cleanup):
         "allow_user_signup": False,
     }
 
+
 def test_update_setup(client, database, cleanup):
     new_role = create_role(*owner_role)
     database.session.add(new_role)
@@ -139,7 +140,7 @@ def test_update_setup(client, database, cleanup):
     result = client.put(
         "/setup",
         json={
-            "domain_name":"OpenMined Updated",
+            "domain_name": "OpenMined Updated",
         },
     )
     assert result.status_code == 200
