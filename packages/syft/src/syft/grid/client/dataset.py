@@ -1,13 +1,23 @@
-import numpy as np
-import torch as th
+# stdlib
 from pathlib import Path
 import platform
-import tempfile
 import tarfile
+import tempfile
+from typing import Optional
+from typing import Union
+
+# third party
+import numpy as np
+import torch as th
 
 
 class Dataset:
-    def __init__(self, data, description=None, tags=None):
+    def __init__(
+        self,
+        data: Union[th.Tensor, list, np.ndarray],
+        description: Optional[str] = None,
+        tags: Optional[list] = None,
+    ) -> None:
         """WARNING: this should only ever be callable on a CLIENT
         by a DATA OWNER. This class should NEVER BE DESERIALIZED ONTO A WORKER.
         It INTERACTS WITH THE FILE SYSTEM!
@@ -22,7 +32,7 @@ class Dataset:
         self.desc = description
         self.tags = tags
 
-    def tozip(self):
+    def tozip(self) -> Path:
         tempdir = Path(
             "/tmp" if platform.system() == "Darwin" else tempfile.gettempdir()
         )
