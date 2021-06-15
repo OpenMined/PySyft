@@ -118,3 +118,53 @@ def test_get_setup(client, database, cleanup):
         "tensor_expiration_policy": 0,
         "allow_user_signup": False,
     }
+
+def test_update_setup(client, database, cleanup):
+    new_role = create_role(*owner_role)
+    database.session.add(new_role)
+
+    database.session.commit()
+
+    result = client.post(
+        "/setup",
+        json={
+            "email": "owner@openmined.org",
+            "password": "12345",
+            "domain_name": "OpenMined Domain",
+        },
+    )
+
+    assert result.status_code == 200
+
+    result = client.put(
+        "/setup",
+        json={
+            "domain_name":"OpenMined Updated",
+        },
+    )
+    assert result.status_code == 200
+
+    token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
+    headers = {
+        "token": token.decode("UTF-8"),
+    }
+
+    result = client.get(
+        "/setup",
+        headers=headers,
+    )
+
+    assert result.status_code == 200
+    assert result.get_json() == {
+        "id": 1,
+        "domain_name": "OpenMined Updated",
+        "private_key": "",
+        "aws_credentials": "",
+        "gcp_credentials": "",
+        "azure_credentials": "",
+        "cache_strategy": "",
+        "replicate_db": False,
+        "auto_scale": False,
+        "tensor_expiration_policy": 0,
+        "allow_user_signup": False,
+    }

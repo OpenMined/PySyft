@@ -125,6 +125,11 @@ def update_setup(
     msg: UpdateSetupMessage, node: AbstractNode, verify_key: VerifyKey
 ) -> UpdateSetupResponse:
 
+    _current_user_id = msg.content.get("current_user", None)
+
+    if node.users.role(user_id=_current_user_id).name != "Owner":
+        raise AuthorizationError("You're not allowed to get setup configs!")
+
     # Get Payload Content
     configs = {
         "domain_name": msg.content.get("domain_name", None),
@@ -138,17 +143,7 @@ def update_setup(
 
     db.session.commit()
 
-    _current_user_id = msg.content.get("current_user", None)
-
     users = node.users
-
-    if not _current_user_id:
-        try:
-            _current_user_id = users.first(
-                verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
-            ).id
-        except Exception:
-            pass
 
     # Change Node Name
     node.name = settings.domain_name

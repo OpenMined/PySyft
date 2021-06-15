@@ -59,7 +59,7 @@ def get_setup(current_user):
 
 
 @setup_route.route("", methods=["PUT"])
-@optional_token
+@token_required
 def update_setup(current_user):
     # Get request body
     content = request.get_json()
