@@ -73,7 +73,10 @@ class DiskObjectStore(ObjectStore):
         obj_keys = self.keys()
         values = []
         for key in obj_keys:
-            values.append(self.__getitem__(key))
+            try:
+                values.append(self.__getitem__(key))
+            except Exception as e:
+                print("Unable to get item for key", key)  # TODO: TechDebt add logging
         return values
 
     def __contains__(self, key: UID) -> bool:
@@ -107,7 +110,6 @@ class DiskObjectStore(ObjectStore):
         return obj
 
     def __setitem__(self, key: UID, value: StorableObject) -> None:
-        obj = value
         bin_obj = BinObject(id=str(key.value), object=value.data)
         metadata_dict = storable_to_dict(value)
         metadata_obj = ObjectMetadata(
