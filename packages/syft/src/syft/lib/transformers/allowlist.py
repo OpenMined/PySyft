@@ -78,3 +78,6 @@ allowlist[
 allowlist[
     "transformers.models.distilbert.tokenization_distilbert_fast.DistilBertTokenizerFast.__call__"
 ] = "transformers.tokenization_utils_base.BatchEncoding"
+allowlist[
+    "transformers.tokenization_utils_fast.PreTrainedTokenizerFast"
+] = "transformers.tokenization_utils_fast.PreTrainedTokenizerFast"
