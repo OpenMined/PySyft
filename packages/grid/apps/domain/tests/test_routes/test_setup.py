@@ -137,14 +137,6 @@ def test_update_setup(client, database, cleanup):
 
     assert result.status_code == 200
 
-    result = client.put(
-        "/setup",
-        json={
-            "domain_name": "OpenMined Updated",
-        },
-    )
-    assert result.status_code == 200
-
     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
     headers = {
         "token": token.decode("UTF-8"),
@@ -152,6 +144,15 @@ def test_update_setup(client, database, cleanup):
 
     result = client.get(
         "/setup",
+        headers=headers,
+    )
+    assert result.status_code == 200
+
+    result = client.put(
+        "/setup",
+        json={
+            "domain_name": "OpenMined Updated",
+        },
         headers=headers,
     )
 
