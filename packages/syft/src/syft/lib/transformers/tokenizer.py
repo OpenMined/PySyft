@@ -10,11 +10,12 @@ from ...lib.python.util import upcast
 from ...proto.lib.transformers.tokenizerfast_pb2 import (
     TokenizerFast as TokenizerFast_PB,
 )
+from ..util import full_name_with_qualname
 
 
 def object2proto(obj: PreTrainedTokenizerFast) -> TokenizerFast_PB:
+    tokenizer_type = full_name_with_qualname(klass=type(obj))
     tokenizer_str = obj._tokenizer.to_str()
-    tokenizer_str = PrimitiveFactory.generate_primitive(value=tokenizer_str)
 
     kwargs = obj.special_tokens_map
     kwargs["name_or_path"] = obj.name_or_path
@@ -23,19 +24,26 @@ def object2proto(obj: PreTrainedTokenizerFast) -> TokenizerFast_PB:
     kwargs = PrimitiveFactory.generate_primitive(value=kwargs)
 
     protobuf_tokenizer = TokenizerFast_PB(
-        id=tokenizer_str.id._object2proto(),
-        tokenizer=tokenizer_str._object2proto(),
+        id=kwargs.id._object2proto(),
+        tokenizer_type=tokenizer_type,
+        tokenizer=tokenizer_str,
         kwargs=kwargs._object2proto(),
     )
     return protobuf_tokenizer
 
 
 def proto2object(proto: TokenizerFast_PB) -> PreTrainedTokenizerFast:
-    _tokenizer = Tokenizer.from_str(proto.tokenizer.data)
+    # TODO some subclasses of pretrainedtokenizerfast have required args,
+    # cast every tokenizer as baseclass pretrainedtokenizerfast for now.
+    # See  BertTokenizerFast.
+
+    tokenizer_type = PreTrainedTokenizerFast
+
+    _tokenizer = Tokenizer.from_str(proto.tokenizer)
     kwargs = deserialize(proto.kwargs)
     kwargs = upcast(kwargs)
 
-    tokenizer = PreTrainedTokenizerFast(tokenizer_object=_tokenizer, **kwargs)
+    tokenizer = tokenizer_type(tokenizer_object=_tokenizer, **kwargs)
     return tokenizer
 
 
