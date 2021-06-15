@@ -34,6 +34,7 @@ from ...core.pointer.pointer import Pointer
 from ..messages.network_search_message import NetworkSearchMessage
 from ..messages.setup_messages import GetSetUpMessage
 from ..messages.transfer_messages import LoadObjectMessage
+from .dataset import Dataset
 from .enums import PyGridClientEnums
 from .enums import RequestAPIFields
 from .exceptions import RequestAPIException
@@ -44,7 +45,6 @@ from .request_api.group_api import GroupRequestAPI
 from .request_api.role_api import RoleRequestAPI
 from .request_api.user_api import UserRequestAPI
 from .request_api.worker_api import WorkerRequestAPI
-from .dataset import Dataset
 
 DEFAULT_PYGRID_PORT = 5000
 DEFAULT_PYGRID_ADDRESS = f"http://127.0.0.1:{DEFAULT_PYGRID_PORT}"
@@ -143,11 +143,16 @@ class GridClient(DomainClient):
             )
 
         kwargs["domain_name"] = domain_name
+        try:
+            response = self.conn.setup(**kwargs)  # type: ignore
+            logging.info(response[RequestAPIFields.MESSAGE])
+        except Exception as e:
+            logging.warn(
+                "This node probably already has an owner. Trying to log in instead."
+            )
+            return login(email=kwargs["email"], password=kwargs["password"])
 
-        response = self.conn.setup(**kwargs)  # type: ignore
-        logging.info(response[RequestAPIFields.MESSAGE])
-
-    def register(self, email, password):
+    def register(self, email, password) -> Any:
         return self.users.create(email=email, password=password)
 
     def get_setup(self, **kwargs: Any) -> Any:
