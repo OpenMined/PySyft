@@ -62,7 +62,7 @@ def proto2object(proto: FamilyProto) -> Type[statsmodels.genmod.families.family.
     return obj
 
 
-wrap_me_list = [
+serde = [
     {
         "wrapped_type": fam,
         "import_path": "statsmodels.genmod.families.family" + fam.__class__.__name__,

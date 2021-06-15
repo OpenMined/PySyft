@@ -1,8 +1,12 @@
 # stdlib
 import functools
-from typing import Any as TypeAny
+from posixpath import basename, dirname
+from typing import Any as TypeAny, Dict, Iterable,Tuple as TypeTuple
 from typing import List as TypeList
-from typing import Tuple as TypeTuple
+import json
+import glob
+import os
+from importlib import import_module
 
 # third party
 import statsmodels
@@ -17,126 +21,40 @@ from syft.ast import add_modules
 from syft.ast.globals import Globals
 from syft.lib.util import generic_update_ast
 
-# import wrappers
-from .serde.results import wrap_me as wrap_results_kwargs
-from .serde.family import wrap_me_list as wrap_family_list_kwargs
+def read_package_support() -> TypeList[TypeTuple[str, TypeAny]]:
+    with open(
+        os.path.join(os.path.dirname(__file__), "package-support.json"), "r"
+    ) as f:
+        data = json.load(f)
 
-LIB_NAME = "statsmodels"
-PACKAGE_SUPPORT = {"lib": LIB_NAME}
+    # TODO: check type to prevent errors and raise necessary errors
+    modules = [(t[0], import_module(t[1])) for t in data["modules"] if len(t) == 2]
+    classes = []
+    for t in data["classes"]:
+        module, classname = t[2].rsplit(".", 1)
+        klass = getattr(import_module(module), classname)
+        classes.append((t[0], t[1], klass))
 
+    return {
+        "lib": data["lib"],
+        "modules": modules,
+        "classes": classes,
+        "methods": data["methods"],
+    }
 
-def create_ast(client: TypeAny = None) -> Globals:
-    ast = Globals(client=client)
+def get_serde()->TypeList[Dict[str,TypeAny]]: 
+    serde_objs = []
+    all_serde_modules = glob.glob(os.path.join(os.path.dirname(__file__),"serde/*.py"))     
+    for f in all_serde_modules:
+        serde_module = import_module("syft_statsmodels.serde."+basename(f)[:-3])
+        serde = getattr(serde_module,"serde")
+        
+        if isinstance(serde,Iterable) and not isinstance(serde,Dict):
+            serde_objs.extend(serde)
+        else:
+            serde_objs.append(serde)
 
-    modules: TypeList[TypeTuple[str, TypeAny]] = [
-        ("statsmodels", statsmodels),
-        ("statsmodels.api", sm),
-        ("statsmodels.genmod", statsmodels.genmod),
-        (
-            "statsmodels.genmod.generalized_linear_model",
-            statsmodels.genmod.generalized_linear_model,
-        ),
-        ("statsmodels.genmod.families", statsmodels.genmod.families),
-        ("statsmodels.iolib", statsmodels.iolib),
-        ("statsmodels.iolib.summary", statsmodels.iolib.summary),
-    ]
+    return serde_objs
 
-    classes: TypeList[TypeTuple[str, str, TypeAny]] = [
-        (
-            "statsmodels.genmod.generalized_linear_model.GLM",
-            "statsmodels.genmod.generalized_linear_model.GLM",
-            statsmodels.genmod.generalized_linear_model.GLM,
-        ),
-        (
-            "statsmodels.genmod.generalized_linear_model.GLMResults",
-            "statsmodels.genmod.generalized_linear_model.GLMResults",
-            statsmodels.genmod.generalized_linear_model.GLMResults,
-        ),
-        (
-            "statsmodels.genmod.generalized_linear_model.GLMResultsWrapper",
-            "statsmodels.genmod.generalized_linear_model.GLMResultsWrapper",
-            statsmodels.genmod.generalized_linear_model.GLMResultsWrapper,
-        ),
-        (
-            "statsmodels.iolib.summary.Summary",
-            "statsmodels.iolib.summary.Summary",
-            statsmodels.iolib.summary.Summary,
-        ),
-        (
-            "statsmodels.genmod.families.Binomial",
-            "statsmodels.genmod.families.Binomial",
-            statsmodels.genmod.families.Binomial,
-        ),
-        (
-            "statsmodels.genmod.families.Gamma",
-            "statsmodels.genmod.families.Gamma",
-            statsmodels.genmod.families.Gamma,
-        ),
-        (
-            "statsmodels.genmod.families.Gaussian",
-            "statsmodels.genmod.families.Gaussian",
-            statsmodels.genmod.families.Gaussian,
-        ),
-        (
-            "statsmodels.genmod.families.InverseGaussian",
-            "statsmodels.genmod.families.InverseGaussian",
-            statsmodels.genmod.families.InverseGaussian,
-        ),
-        (
-            "statsmodels.genmod.families.NegativeBinomial",
-            "statsmodels.genmod.families.NegativeBinomial",
-            statsmodels.genmod.families.NegativeBinomial,
-        ),
-        (
-            "statsmodels.genmod.families.Poisson",
-            "statsmodels.genmod.families.Poisson",
-            statsmodels.genmod.families.Poisson,
-        ),
-        (
-            "statsmodels.genmod.families.Tweedie",
-            "statsmodels.genmod.families.Tweedie",
-            statsmodels.genmod.families.Tweedie,
-        ),
-    ]
-
-    # TODO: finish all these methods, summary is an object attribute for example
-    methods = [
-        ("statsmodels.api.add_constant", "pandas.DataFrame"),
-        (
-            "statsmodels.genmod.generalized_linear_model.GLM.fit",
-            "statsmodels.genmod.generalized_linear_model.GLMResultsWrapper",
-        ),
-        (
-            "statsmodels.genmod.generalized_linear_model.GLMResults.summary",
-            "statsmodels.iolib.summary.Summary",
-        ),
-        (
-            "statsmodels.genmod.generalized_linear_model.GLMResultsWrapper.cov_params",
-            "pandas.DataFrame",
-        ),
-        (
-            "statsmodels.genmod.generalized_linear_model.GLMResultsWrapper.conf_int",
-            "pandas.DataFrame",
-        ),
-        ("statsmodels.iolib.summary.Summary.as_csv", "syft.lib.python.String"),
-        ("statsmodels.iolib.summary.Summary.as_html", "syft.lib.python.String"),
-        ("statsmodels.iolib.summary.Summary.as_latex", "syft.lib.python.String"),
-        ("statsmodels.iolib.summary.Summary.as_text", "syft.lib.python.String"),
-    ]
-
-    add_modules(ast, modules)
-    add_classes(ast, classes)
-    add_methods(ast, methods)
-
-    for klass in ast.classes:
-        klass.create_pointer_class()
-        klass.create_send_method()
-        klass.create_storable_object_attr_convenience_methods()
-
-    return ast
-
-
-update_ast = functools.partial(generic_update_ast, LIB_NAME, create_ast)
-
-objects = family.wrap_me_list
-objects.append(results.wrap_me)
+config = read_package_support()
+objects = get_serde()

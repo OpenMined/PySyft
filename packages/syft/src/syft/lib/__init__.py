@@ -1,4 +1,5 @@
 # stdlib
+import functools
 import importlib
 import sys
 from types import ModuleType
@@ -18,6 +19,9 @@ import warnings
 from cachetools import cached
 from cachetools.keys import hashkey
 from packaging import version
+from torch._C import AnyType
+from ..ast import add_classes, add_methods, add_modules
+from .util import generic_update_ast
 import wrapt
 
 # syft relative
@@ -276,12 +280,26 @@ def post_import_hook_third_party(module: TypeAny) -> None:
     # warnings.warn(msg, DeprecationWarning)
     load(module.__name__, ignore_warning=True)
 
+def create_support_ast(modules,classes,methods,client:TypeAny = None)->Globals:
+    ast = Globals(client=client)
+    add_modules(ast,modules)
+    add_classes(ast,classes)
+    add_methods(ast,methods)
+
+    for klass in ast.classes:
+        klass.create_pointer_class()
+        klass.create_send_method()
+        klass.create_storable_object_attr_convenience_methods()
+    return ast
 
 def add_lib_external(
-    lib: str, update_ast: Callable, objects: Iterable[TypeDict[str, TypeAny]]
+    lib: str,config: TypeDict[str, AnyType], objects: Iterable[TypeDict[str, TypeAny]]
 ) -> None:
+    lib = config["lib"]
+    create_ast = functools.partial(create_support_ast,config["modules"],config["classes"],config["methods"])
+    update_ast = functools.partial(generic_update_ast,lib,create_ast)
+    
     global lib_ast
-
     update_ast(ast_or_client=lib_ast)
     # cache the constructor for future created clients
     lib_ast.loaded_lib_constructors[lib] = update_ast
@@ -302,4 +320,4 @@ def add_lib_external(
 def add_ext_lib_hook(module: TypeAny) -> None:
     name = module.__name__[5:]
     print("Adding support for " + name)
-    add_lib_external(name, module.update_ast, module.objects)
+    add_lib_external(name, module.config, module.objects)

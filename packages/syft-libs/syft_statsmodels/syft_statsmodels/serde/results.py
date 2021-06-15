@@ -18,7 +18,7 @@ def proto2object(proto: ResultsProto) -> str:
     return str(String._proto2object(proto.summary))
 
 
-wrap_me = {
+serde = {
     "wrapped_type": GLMResultsWrapper,
     "import_path": "statsmodels.genmod.generalized_linear_model.GLMResultsWrapper",
     "protobuf_scheme": ResultsProto,
