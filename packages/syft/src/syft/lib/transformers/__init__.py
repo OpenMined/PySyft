@@ -2,26 +2,22 @@
 import functools
 from typing import Any
 from typing import Dict
-from typing import List as TypeList
-from typing import Tuple as TypeTuple
 from typing import Union
-from packaging import version
 
 # third party
+from packaging import version
 import transformers
 
 # syft relative
-from .allowlist import allowlist
 from . import batchencoding  # noqa: 401
+from . import model_config  # noqa: 401
 from . import tokenizer  # noqa: 401
-from . import model_config # noqa: 401
-from ...ast import add_classes
-from ...ast import add_methods
-from ...ast import add_modules
 from ...ast.globals import Globals
+from ...logger import info
 
 # from .allowlist import allowlist
 from ..util import generic_update_ast
+from .allowlist import allowlist
 
 # The library name
 LIB_NAME = "transformers"
@@ -30,12 +26,6 @@ PACKAGE_SUPPORT = {
 }
 
 TRANSFORMERS_VERSION = version.parse(transformers.__version__.split("+")[0])
-
-def get_return_type(support_dict: Union[str, Dict[str, str]]) -> str:
-    if isinstance(support_dict, str):
-        return support_dict
-    else:
-        return support_dict["return_type"]
 
 
 def get_return_type(support_dict: Union[str, Dict[str, str]]) -> str:
@@ -74,7 +64,9 @@ def create_ast(client: Any = None) -> Globals:
                 # this allows us to import them for testing
                 continue
             ast.add_path(
-                path=method, framework_reference=transformers, return_type_name=return_type
+                path=method,
+                framework_reference=transformers,
+                return_type_name=return_type,
             )
 
         else:

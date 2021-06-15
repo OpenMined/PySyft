@@ -1,17 +1,14 @@
 # third party
-from tokenizers import Tokenizer
 import transformers
 from transformers import PretrainedConfig
-import importlib
 
 # syft relative
 from ... import deserialize
 from ...generate_wrapper import GenerateWrapper
 from ...lib.python.primitive_factory import PrimitiveFactory
 from ...lib.python.util import upcast
-from ...proto.lib.transformers.hf_config_pb2 import (
-    HFConfig as HFConfig_PB
-)
+from ...proto.lib.transformers.hf_config_pb2 import HFConfig as HFConfig_PB
+
 
 def object2proto(obj: PretrainedConfig) -> HFConfig_PB:
     config_class = PrimitiveFactory.generate_primitive(value=type(obj).__name__)
@@ -20,7 +17,7 @@ def object2proto(obj: PretrainedConfig) -> HFConfig_PB:
     config_proto = HFConfig_PB(
         id=config_class.id._object2proto(),
         config_class=config_class._object2proto(),
-        config_attrs=config_attrs._object2proto()
+        config_attrs=config_attrs._object2proto(),
     )
     return config_proto
 

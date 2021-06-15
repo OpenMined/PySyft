@@ -14,7 +14,6 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 import warnings
-import copy
 
 # syft relative
 from .. import ast
@@ -537,17 +536,16 @@ class Class(Callable):
         Stores args and kwargs of outer_self init by wrapping the init method.
         """
 
-        def init_wrapper(self, *args, **kwargs):
-            obj = outer_self.object_ref._wrapped_init(self, *args, **kwargs)
-
+        def init_wrapper(self: Any, *args: List[Any], **kwargs: Dict[Any, Any]) -> None:
+            outer_self.object_ref._wrapped_init(self, *args, **kwargs)
             self._args = args
             self._kwargs = kwargs
 
-        # If _wrapped_init exists, create_init_method is already called once.
+        # If _wrapped_init already exists, create_init_method is already called once
+        # and does not need to wrap __init__ again.
         if not hasattr(outer_self.object_ref, "_wrapped_init"):
             outer_self.object_ref._wrapped_init = outer_self.object_ref.__init__
             outer_self.object_ref.__init__ = init_wrapper
-
 
     def create_send_method(outer_self: Any) -> None:
         """Add `send` method to `outer_self.object_ref`."""

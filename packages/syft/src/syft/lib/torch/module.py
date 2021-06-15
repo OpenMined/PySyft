@@ -2,6 +2,7 @@
 import ast
 from collections import OrderedDict
 import copy
+import importlib
 import inspect
 from itertools import islice
 import os
@@ -15,7 +16,6 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
-import importlib
 
 # third party
 import torch
@@ -28,6 +28,7 @@ from syft.core.plan.plan_builder import make_plan
 from syft.lib.python import _SyNone
 
 # syft relative
+from .. import lib_ast
 from ...core.pointer.pointer import Pointer
 from ...generate_wrapper import GenerateWrapper
 from ...lib.util import full_name_with_qualname
@@ -36,9 +37,8 @@ from ...logger import info
 from ...logger import traceback_and_raise
 from ...proto.lib.torch.module_pb2 import Module as Module_PB
 from ..python.collections import OrderedDict as SyOrderedDict
-from ..python.list import List
-from ..python.util import downcast, upcast
-from .. import lib_ast
+from ..python.util import downcast
+from ..python.util import upcast
 
 # from ...core.node.common.service.auth import AuthorizationException
 
@@ -422,12 +422,14 @@ class Module:
                         s = v.sum().item()
                         info(f"  Layer {n} sum({k}): {s}")
 
+
 def module_in_ast(module_type: type) -> bool:
     fqn = full_name_with_qualname(klass=module_type)
     try:
         return bool(lib_ast.query(fqn, obj_type=module_type))
     except ValueError:
         return False
+
 
 def object2proto(obj: torch.nn.Module, is_child: bool = False) -> Module_PB:
 
@@ -472,8 +474,7 @@ def proto2object(proto: Module_PB) -> torch.nn.Module:
         )
     else:
         obj_type = getattr(
-            importlib.import_module(proto.python_module),
-            proto.module_type
+            importlib.import_module(proto.python_module), proto.module_type
         )
 
     if proto.HasField("module_args") and proto.HasField("module_kwargs"):
