@@ -38,22 +38,23 @@ class BroadcastSearchService(ImmediateNodeServiceWithReply):
         msg: NetworkSearchMessage,
         verify_key: VerifyKey,
     ) -> NetworkSearchResponse:
-        queries = set(msg.content.get("query", []))
+        queries = msg.content.get("query", [])
         associations = node.association_requests.associations()
 
-        def filter_domains(url):
-            datasets = json.loads(requests.get(url + "/data-centric/tensors").text)
-            for dataset in datasets["tensors"]:
-                if queries.issubset(set(dataset["tags"])):
-                    return True
-            return False
-
-        filtered_nodes = list(filter(lambda x: filter_domains(x.address), associations))
-
-        match_nodes = [node.address for node in filtered_nodes]
+        match_nodes = []
+        for node_association in associations:
+            result = json.loads(
+                requests.post(
+                    node_association.address + "/search/domain-search",
+                    json={"query": queries},
+                ).text
+            )
+            if result["items"] > 0:
+                result["address"] = node_association.address
+                match_nodes.append(result)
 
         return NetworkSearchResponse(
-            address=msg.reply_to, status_code=200, content={"match-nodes": match_nodes}
+            address=msg.reply_to, status_code=200, content=match_nodes
         )
 
     @staticmethod

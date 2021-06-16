@@ -33,3 +33,39 @@ def broadcast_search(current_user):
         status=status_code,
         mimetype="application/json",
     )
+
+
+@search_route.route("/domain-search", methods=["POST"])
+@optional_token
+def domain_search(current_user):
+    # TODO: This route must be refactored in the future to follow the same
+    # pattern adopted by PyGrid services.
+
+    from ...core.node import get_node  # TODO: fix circular import
+
+    associations = get_node().association_requests.associations()
+
+    # Get request body
+    content = request.get_json()
+    if not content:
+        return Response(
+            json.dumps({"error": "Invalid message body!"}),
+            status=400,
+            mimetype="application/json",
+        )
+
+    queries = set(content.get("query", []))
+
+    _count = 0
+    # AND search
+    for dataset in get_node().store.values():
+        if queries.issubset(set(dataset.tags)):
+            _count += 1
+
+    result = {"node": get_node().name, "items": _count}
+
+    return Response(
+        json.dumps(result),
+        status=200,
+        mimetype="application/json",
+    )
