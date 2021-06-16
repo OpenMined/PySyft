@@ -142,12 +142,6 @@ def test_update_setup(client, database, cleanup):
         "token": token.decode("UTF-8"),
     }
 
-    result = client.get(
-        "/setup",
-        headers=headers,
-    )
-    assert result.status_code == 200
-
     result = client.put(
         "/setup",
         json={
@@ -155,7 +149,12 @@ def test_update_setup(client, database, cleanup):
         },
         headers=headers,
     )
+    assert result.status_code == 200
 
+    result = client.get(
+        "/setup",
+        headers=headers,
+    )
     assert result.status_code == 200
     assert result.get_json() == {
         "id": 1,
