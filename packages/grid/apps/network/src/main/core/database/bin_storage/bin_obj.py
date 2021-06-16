@@ -1,6 +1,5 @@
 # grid relative
-from .. import BaseModel
-from .. import db
+from .. import BaseModel, db
 
 
 class BinaryObject(BaseModel):

@@ -3,6 +3,7 @@ from typing import List
 from typing import Union
 
 # grid relative
+from main.core.database import BaseModel
 from ..database.roles.roles import Role
 from ..exceptions import RoleNotFoundError
 from .database_manager import DatabaseManager
@@ -48,13 +49,13 @@ class RoleManager(DatabaseManager):
     def org_roles(self):
         return self.db.session.query(self._schema).except_(self.common_roles)
 
-    def first(self, **kwargs) -> Union[None, List]:
+    def first(self, **kwargs) -> Union[None, BaseModel]:
         result = super().first(**kwargs)
         if not result:
             raise RoleNotFoundError
         return result
 
-    def query(self, **kwargs) -> Union[None, List]:
+    def query(self, **kwargs) -> List[BaseModel]:
         results = super().query(**kwargs)
         if len(results) == 0:
             raise RoleNotFoundError

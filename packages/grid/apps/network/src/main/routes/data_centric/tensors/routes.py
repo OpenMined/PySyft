@@ -11,10 +11,10 @@ from syft.grid.messages.tensor_messages import GetTensorsMessage
 from syft.grid.messages.tensor_messages import UpdateTensorMessage
 
 # grid relative
-from ....core.task_handler import route_logic
-from ...auth import error_handler
-from ...auth import token_required
-from ..blueprint import dcfl_blueprint as dcfl_route
+from main.core.task_handler import route_logic
+from main.routes.auth import error_handler
+from main.routes.auth import token_required
+from main.routes.data_centric.blueprint import dcfl_blueprint as dcfl_route
 
 
 @dcfl_route.route("/tensors", methods=["POST"])

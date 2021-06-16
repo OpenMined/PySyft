@@ -36,13 +36,13 @@ from syft.grid.messages.infra_messages import GetWorkersResponse
 from syft.proto.core.io.address_pb2 import Address as Address_PB
 
 # grid relative
-from ...core.database.environment.environment import states
-from ...core.infrastructure import AWS_Serverfull
-from ...core.infrastructure import Config
-from ...core.infrastructure import Provider
-from ..database.utils import model_to_json
-from ..exceptions import AuthorizationError
-from ..exceptions import MissingRequestKeyError
+from main.core.database.environment.environment import states
+from main.core.infrastructure import AWS_Serverfull
+from main.core.infrastructure import Config
+from main.core.infrastructure import Provider
+from main.core.database.utils import model_to_json
+from main.core.exceptions import AuthorizationError
+from main.core.exceptions import MissingRequestKeyError
 
 # TODO: Modify existing routes or add new ones, to
 # 1. allow admin to get all workers deployed by a specific user
@@ -81,7 +81,7 @@ def create_worker_msg(
         elif config.provider == "gcp":
             pass
 
-        if deployment.validate():
+        if deployment is not None and deployment.validate():
             env_parameters = {
                 "id": config.app.id,
                 "state": states["creating"],
@@ -92,7 +92,8 @@ def create_worker_msg(
             new_env = node.environments.register(**env_parameters)
             node.environments.association(user_id=_current_user_id, env_id=new_env.id)
 
-            deployed, output = deployment.deploy()  # Deploy
+            if deployment is not None:
+                deployed, output = deployment.deploy()  # Deploy
 
             if deployed:
                 node.environments.set(

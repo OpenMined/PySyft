@@ -25,10 +25,10 @@ from syft.grid.messages.request_messages import UpdateRequestMessage
 from syft.grid.messages.request_messages import UpdateRequestResponse
 
 # grid relative
-from ..database.utils import model_to_json
-from ..exceptions import AuthorizationError
-from ..exceptions import InvalidParameterValueError
-from ..exceptions import MissingRequestKeyError
+from main.core.database.utils import model_to_json
+from main.core.exceptions import AuthorizationError
+from main.core.exceptions import InvalidParameterValueError
+from main.core.exceptions import MissingRequestKeyError
 
 
 def create_request_msg(

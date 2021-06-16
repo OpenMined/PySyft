@@ -1186,6 +1186,101 @@ doc = ["sphinx-rtd-theme", "sphinx-autodoc-typehints (>=1.2.0)"]
 test = ["pytest", "typing-extensions", "mypy"]
 
 [[package]]
+name = "types-click"
+version = "7.1.1"
+description = "Typing stubs for click"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
+name = "types-cryptography"
+version = "3.3.2"
+description = "Typing stubs for cryptography"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+types-enum34 = "*"
+types-ipaddress = "*"
+
+[[package]]
+name = "types-enum34"
+version = "0.1.5"
+description = "Typing stubs for enum34"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
+name = "types-flask"
+version = "1.1.0"
+description = "Typing stubs for Flask"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+types-click = "*"
+types-Jinja2 = "*"
+types-Werkzeug = "*"
+
+[[package]]
+name = "types-ipaddress"
+version = "0.1.2"
+description = "Typing stubs for ipaddress"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
+name = "types-jinja2"
+version = "2.11.1"
+description = "Typing stubs for Jinja2"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+types-MarkupSafe = "*"
+
+[[package]]
+name = "types-jwt"
+version = "0.1.3"
+description = "Typing stubs for jwt"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+types-cryptography = "*"
+
+[[package]]
+name = "types-markupsafe"
+version = "1.1.2"
+description = "Typing stubs for MarkupSafe"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
+name = "types-requests"
+version = "0.1.11"
+description = "Typing stubs for requests"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
+name = "types-werkzeug"
+version = "1.0.1"
+description = "Typing stubs for Werkzeug"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "typing-extensions"
 version = "3.10.0.0"
 description = "Backported and Experimental Type Hints for Python 3.5+"
@@ -1312,7 +1407,7 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "e688ffcf408fc1424571a1d3c75e29ce516e2bf20ec09f4e9ae4674dd7f96340"
+content-hash = "b3607dbaafa9d96356df8af83bebf8f587ce35fc2c54d63857dc2380a0674bd3"
 
 [metadata.files]
 aioice = [
@@ -2382,6 +2477,36 @@ typed-ast = [
 typeguard = [
     {file = "typeguard-2.12.1-py3-none-any.whl", hash = "sha256:cc15ef2704c9909ef9c80e19c62fb8468c01f75aad12f651922acf4dbe822e02"},
     {file = "typeguard-2.12.1.tar.gz", hash = "sha256:c2af8b9bdd7657f4bd27b45336e7930171aead796711bc4cfc99b4731bb9d051"},
+]
+types-click = [
+    {file = "types_click-7.1.1-py2.py3-none-any.whl", hash = "sha256:b1db0fb31a6d4a31c4282c231827cbdab628b0d504b016937822d943cd5e40a5"},
+]
+types-cryptography = [
+    {file = "types_cryptography-3.3.2-py2.py3-none-any.whl", hash = "sha256:9c0e7018ba376c5161b0f5c4757718045fe536d1f33aed801890613620d03b39"},
+]
+types-enum34 = [
+    {file = "types_enum34-0.1.5-py2.py3-none-any.whl", hash = "sha256:8ea6c9ba83103abd8802f2d459f5b08e59cfcff38ef530c007735296a06a35e3"},
+]
+types-flask = [
+    {file = "types_Flask-1.1.0-py2.py3-none-any.whl", hash = "sha256:0d16fbd554b274d003761b10bb06e86aa535b122cd98b0a8e45082750c54e35b"},
+]
+types-ipaddress = [
+    {file = "types_ipaddress-0.1.2-py2.py3-none-any.whl", hash = "sha256:1074af46f90b81ec2102999d49c557b63fe648df2baba407949f87e7140c7758"},
+]
+types-jinja2 = [
+    {file = "types_Jinja2-2.11.1-py2.py3-none-any.whl", hash = "sha256:84f66a2612376ff3c1656198b10a04c7711b6d917d4f5f7f2c2f7ecec0afa040"},
+]
+types-jwt = [
+    {file = "types_jwt-0.1.3-py2.py3-none-any.whl", hash = "sha256:36a1d5f99b349428f9ca5695e5caf3378398ae31d7aaed1c668c81451ba79b08"},
+]
+types-markupsafe = [
+    {file = "types_MarkupSafe-1.1.2-py2.py3-none-any.whl", hash = "sha256:b5e311cb6aad7f6da0bb1455494305e2bb7941b04c3c8cf9ed7bbd33cf8ba374"},
+]
+types-requests = [
+    {file = "types_requests-0.1.11-py2.py3-none-any.whl", hash = "sha256:e79c09e5866c6520cdf23dc260573a0a190444f36b112116fadc5542656c8309"},
+]
+types-werkzeug = [
+    {file = "types_Werkzeug-1.0.1-py2.py3-none-any.whl", hash = "sha256:51dca6aa5be250e5b2e3150c8ab40e531408e4684db7054d02b5b8dcd2a193cd"},
 ]
 typing-extensions = [
     {file = "typing_extensions-3.10.0.0-py2-none-any.whl", hash = "sha256:0ac0f89795dd19de6b97debb0c6af1c70987fd80a2d62d1958f7e56fcc31b497"},

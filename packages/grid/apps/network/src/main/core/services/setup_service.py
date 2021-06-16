@@ -22,16 +22,16 @@ from syft.grid.messages.setup_messages import GetSetUpMessage
 from syft.grid.messages.setup_messages import GetSetUpResponse
 
 # grid relative
-from ...core.database.environment.environment import states
-from ...core.infrastructure import AWS_Serverfull
-from ...core.infrastructure import AWS_Serverless
-from ...core.infrastructure import Config
-from ...core.infrastructure import Provider
-from ..database.setup.setup import SetupConfig
-from ..database.utils import model_to_json
-from ..exceptions import AuthorizationError
-from ..exceptions import InvalidParameterValueError
-from ..exceptions import MissingRequestKeyError
+from main.core.database.environment.environment import states
+from main.core.infrastructure import AWS_Serverfull
+from main.core.infrastructure import AWS_Serverless
+from main.core.infrastructure import Config
+from main.core.infrastructure import Provider
+from main.core.database.setup.setup import SetupConfig
+from main.core.database.utils import model_to_json
+from main.core.exceptions import AuthorizationError
+from main.core.exceptions import InvalidParameterValueError
+from main.core.exceptions import MissingRequestKeyError
 
 
 def create_initial_setup(

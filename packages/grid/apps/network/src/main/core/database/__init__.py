@@ -9,7 +9,7 @@ from sqlalchemy_mixins import AllFeaturesMixin
 db = SQLAlchemy()
 
 # TODO: Move this out of being defined above imports
-class BaseModel(db.Model, AllFeaturesMixin):
+class BaseModel(db.Model, AllFeaturesMixin):  # type: ignore
     __abstract__ = True
     pass
 

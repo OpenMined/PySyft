@@ -26,10 +26,10 @@ from syft.grid.messages.group_messages import UpdateGroupMessage
 from syft.grid.messages.group_messages import UpdateGroupResponse
 
 # grid relative
-from ..database.utils import model_to_json
-from ..exceptions import AuthorizationError
-from ..exceptions import GroupNotFoundError
-from ..exceptions import MissingRequestKeyError
+from main.core.database.utils import model_to_json
+from main.core.exceptions import AuthorizationError
+from main.core.exceptions import GroupNotFoundError
+from main.core.exceptions import MissingRequestKeyError
 
 
 def create_group_msg(

@@ -4,6 +4,7 @@ from typing import List
 from typing import Union
 
 # grid relative
+from main.core.database import BaseModel
 from ..database.environment.environment import Environment
 from ..database.environment.environment import states
 from ..database.environment.user_environment import UserEnvironment
@@ -44,13 +45,13 @@ class EnvironmentManager(DatabaseManager):
 
         self.db.session.commit()
 
-    def first(self, **kwargs) -> Union[None, List]:
+    def first(self, **kwargs) -> Union[None, BaseModel]:
         result = super().first(**kwargs)
         if not result:
             raise EnvironmentNotFoundError
         return result
 
-    def query(self, **kwargs) -> Union[None, List]:
+    def query(self, **kwargs) -> List[BaseModel]:
         results = super().query(**kwargs)
         if len(results) == 0:
             raise EnvironmentNotFoundError

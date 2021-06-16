@@ -4,6 +4,7 @@ from typing import List
 from typing import Union
 
 # grid relative
+from main.core.database import BaseModel
 from ..database.requests.request import Request
 from ..exceptions import RequestError
 from .database_manager import DatabaseManager
@@ -18,7 +19,7 @@ class RequestManager(DatabaseManager):
         self._schema = RequestManager.schema
         self.db = database
 
-    def first(self, **kwargs) -> Union[None, List]:
+    def first(self, **kwargs) -> Union[None, BaseModel]:
         result = super().first(**kwargs)
         if not result:
             raise RequestError

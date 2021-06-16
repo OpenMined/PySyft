@@ -1113,34 +1113,6 @@ def test_put_own_user_password_success(client, database, cleanup):
     )
 
 
-def test_put_other_user_email_missing_user(client, database, cleanup):
-    new_role = create_role(*admin_role)
-    database.session.add(new_role)
-    new_role = create_role(*user_role)
-    database.session.add(new_role)
-    new_user = create_user(*user1)
-    database.session.add(new_user)
-
-    database.session.commit()
-
-    token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
-    headers = {
-        "token": token.decode("UTF-8"),
-    }
-
-    new_password = "BrandNewPassword123"
-    payload = {"password": new_password}
-    result = client.put(
-        "/users/2/password",
-        headers=headers,
-        data=dumps(payload),
-        content_type="application/json",
-    )
-
-    assert result.status_code == 404
-    assert result.get_json()["error"] == "User not found!"
-
-
 # DELETE USER
 
 

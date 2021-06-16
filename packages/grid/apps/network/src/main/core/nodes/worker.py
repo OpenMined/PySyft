@@ -26,24 +26,24 @@ from syft.grid.client.grid_connection import GridHTTPConnection
 from syft.grid.connections.http_connection import HTTPConnection
 
 # grid relative
-from ..database import db
-from ..database.store_disk import DiskObjectStore
-from ..manager.association_request_manager import AssociationRequestManager
-from ..manager.environment_manager import EnvironmentManager
-from ..manager.group_manager import GroupManager
-from ..manager.role_manager import RoleManager
-from ..manager.setup_manager import SetupManager
-from ..manager.user_manager import UserManager
-from ..services.association_request import AssociationRequestService
-from ..services.dataset_service import DatasetManagerService
-from ..services.group_service import GroupManagerService
-from ..services.infra_service import DomainInfrastructureService
-from ..services.role_service import RoleManagerService
-from ..services.setup_service import SetUpService
-from ..services.tensor_service import RegisterTensorService
-from ..services.transfer_service import SaveObjectService
-from ..services.transfer_service import TransferObjectService
-from ..services.user_service import UserManagerService
+from main.core.database import db
+from main.core.database.store_disk import DiskObjectStore
+from main.core.manager.association_request_manager import AssociationRequestManager
+from main.core.manager.environment_manager import EnvironmentManager
+from main.core.manager.group_manager import GroupManager
+from main.core.manager.role_manager import RoleManager
+from main.core.manager.setup_manager import SetupManager
+from main.core.manager.user_manager import UserManager
+from main.core.services.association_request import AssociationRequestService
+from main.core.services.dataset_service import DatasetManagerService
+from main.core.services.group_service import GroupManagerService
+from main.core.services.infra_service import DomainInfrastructureService
+from main.core.services.role_service import RoleManagerService
+from main.core.services.setup_service import SetUpService
+from main.core.services.tensor_service import RegisterTensorService
+from main.core.services.transfer_service import SaveObjectService
+from main.core.services.transfer_service import TransferObjectService
+from main.core.services.user_service import UserManagerService
 
 
 class GridWorker(Domain):

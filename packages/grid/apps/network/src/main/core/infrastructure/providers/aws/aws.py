@@ -1,3 +1,5 @@
+from typing import List, Optional, Any
+
 # grid relative
 from ...tf import generate_cidr_block
 from ...tf import var
@@ -7,6 +9,8 @@ from ..provider import *
 
 class AWS(Provider):
     """Amazon Web Services (AWS) Cloud Provider."""
+
+    vpc: Optional[Config]
 
     def __init__(self, config: SimpleNamespace) -> None:
         """
@@ -19,7 +23,7 @@ class AWS(Provider):
         self.tfscript += terrascript.provider.aws(region=self.config.vpc.region)
 
         self.vpc = None
-        self.subnets = []
+        self.subnets: List[Any] = []
 
     def build_vpc(self):
         """Adds a VPC."""

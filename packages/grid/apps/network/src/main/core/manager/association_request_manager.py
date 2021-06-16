@@ -5,6 +5,7 @@ from typing import List
 from typing import Union
 
 # grid relative
+from main.core.database import BaseModel
 from ..database.association.association import Association
 from ..database.association.request import AssociationRequest
 from ..exceptions import AssociationRequestError
@@ -20,7 +21,7 @@ class AssociationRequestManager(DatabaseManager):
         self._schema = AssociationRequestManager.schema
         self.db = database
 
-    def first(self, **kwargs) -> Union[None, List]:
+    def first(self, **kwargs) -> Union[None, BaseModel]:
         result = super().first(**kwargs)
         if not result:
             raise AssociationRequestError
