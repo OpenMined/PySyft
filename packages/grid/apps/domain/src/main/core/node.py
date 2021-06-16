@@ -44,7 +44,7 @@ def create_domain_app(app, args, testing=False):
     app.register_blueprint(dcfl_blueprint, url_prefix=r"/data-centric/")
     app.register_blueprint(mcfl_blueprint, url_prefix=r"/model-centric/")
     app.register_blueprint(root_blueprint, url_prefix=r"/")
-    app.register_blueprint(search_blueprint, url_prefix=r'/search')
+    app.register_blueprint(search_blueprint, url_prefix=r"/search")
     app.register_blueprint(
         association_requests_blueprint, url_prefix=r"/association-requests/"
     )
