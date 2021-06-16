@@ -7,7 +7,6 @@ from typing import Any
 from typing import Any as TypeAny
 from typing import Dict as TypeDict
 from typing import Iterable
-from typing import Callable
 from typing import List as TypeList
 from typing import Optional
 from typing import Set as TypeSet
@@ -19,14 +18,15 @@ import warnings
 from cachetools import cached
 from cachetools.keys import hashkey
 from packaging import version
-from torch._C import AnyType
-from ..ast import add_classes, add_methods, add_modules
-from .util import generic_update_ast
 import wrapt
 
 # syft relative
+from ..ast import add_classes
+from ..ast import add_methods
+from ..ast import add_modules
 from ..ast.globals import Globals
 from ..core.node.abstract.node import AbstractNodeClient
+from ..generate_wrapper import GenerateWrapper
 from ..lib.plan import create_plan_ast
 from ..lib.python import create_python_ast
 from ..lib.remote_dataloader import create_remote_dataloader_ast
@@ -36,7 +36,7 @@ from ..logger import critical
 from ..logger import traceback_and_raise
 from ..logger import warning
 from .misc import create_union_ast
-from ..generate_wrapper import GenerateWrapper
+from .util import generic_update_ast
 
 
 class VendorLibraryImportException(Exception):
@@ -280,11 +280,17 @@ def post_import_hook_third_party(module: TypeAny) -> None:
     # warnings.warn(msg, DeprecationWarning)
     load(module.__name__, ignore_warning=True)
 
-def create_support_ast(modules,classes,methods,client:TypeAny = None)->Globals:
+
+def create_support_ast(
+    modules: TypeList[TypeTuple[str, TypeAny]],
+    classes: TypeList[TypeTuple[str, str, TypeAny]],
+    methods: TypeList[TypeTuple[str, str]],
+    client: TypeAny = None,
+) -> Globals:
     ast = Globals(client=client)
-    add_modules(ast,modules)
-    add_classes(ast,classes)
-    add_methods(ast,methods)
+    add_modules(ast, modules)
+    add_classes(ast, classes)
+    add_methods(ast, methods)
 
     for klass in ast.classes:
         klass.create_pointer_class()
@@ -292,13 +298,16 @@ def create_support_ast(modules,classes,methods,client:TypeAny = None)->Globals:
         klass.create_storable_object_attr_convenience_methods()
     return ast
 
+
 def add_lib_external(
-    lib: str,config: TypeDict[str, AnyType], objects: Iterable[TypeDict[str, TypeAny]]
+    lib: str, config: TypeDict[str, TypeAny], objects: Iterable[TypeDict[str, TypeAny]]
 ) -> None:
     lib = config["lib"]
-    create_ast = functools.partial(create_support_ast,config["modules"],config["classes"],config["methods"])
-    update_ast = functools.partial(generic_update_ast,lib,create_ast)
-    
+    create_ast = functools.partial(
+        create_support_ast, config["modules"], config["classes"], config["methods"]
+    )
+    update_ast = functools.partial(generic_update_ast, lib, create_ast)
+
     global lib_ast
     update_ast(ast_or_client=lib_ast)
     # cache the constructor for future created clients
@@ -310,10 +319,8 @@ def add_lib_external(
         _regenerate_unions(lib_ast=lib_ast, client=client)
 
     if isinstance(objects, Iterable):
-        for objects_kwargs in objects:
-            GenerateWrapper(**objects_kwargs)
-    else:
-        GenerateWrapper(**objects)
+        for serde_object in objects:
+            GenerateWrapper(**serde_object)
 
 
 @wrapt.when_imported("syft_statsmodels")

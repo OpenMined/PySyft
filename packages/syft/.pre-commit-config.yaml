@@ -34,7 +34,7 @@ repos:
     rev: v0.812
     hooks:
       - id: mypy
-        exclude: ^(packages/syft/src/syft/proto|packages/syft/tests/syft/lib/python|packages/syft/examples/duet)
+        exclude: ^(packages/syft/src/syft/proto|packages/syft/tests/syft/lib/python|packages/syft/examples/duet|packages/syft-libs)
         args: [
             "--ignore-missing-imports",
             "--scripts-are-modules",
