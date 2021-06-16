@@ -50,6 +50,7 @@ def scraping_lib(root_module: TypeAny) -> TypeAny:
         for ax in dir(module):
             # print(ax)
             t = getattr(module, ax)
+            key_name: str = module.__name__ + "." + t.__name__
             if inspect.ismodule(t):
                 if module.__name__ in t.__name__:
                     q.put(t)
@@ -58,27 +59,23 @@ def scraping_lib(root_module: TypeAny) -> TypeAny:
             if inspect.isclass(t):
                 # Commenting because allowlist should only contain methods
                 # allowlist[module.__name__ + '.' + t.__name__] = module.__name__ + '.' + t.__name__
-                classes_list.append(module.__name__ + "." + t.__name__)
+                classes_list.append(key_name)
             if inspect.ismethod(t) or inspect.isfunction(t):
                 # print(f't for debug: {t} {module}')
                 try:
                     # try block
                     d = typing.get_type_hints(t)
                     if not d:
-                        empty_typing_hints.append(module.__name__ + "." + t.__name__)
+                        empty_typing_hints.append(key_name)
                     else:
                         if "return" in d.keys():
                             if isinstance(d["return"], typing._GenericAlias):  # type: ignore
                                 # print(type(d['return']))
                                 # print(get_origin(d['return']))
-                                allowlist[
-                                    module.__name__ + "." + t.__name__
-                                ] = get_origin(d["return"]).__name__
+                                allowlist[key_name] = get_origin(d["return"]).__name__
                             else:
                                 # print(d['return'])
-                                allowlist[module.__name__ + "." + t.__name__] = d[
-                                    "return"
-                                ].__name__
+                                allowlist[key_name] = d["return"].__name__
                         else:
                             print(f"No return in keys {t}")
 
