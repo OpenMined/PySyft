@@ -10,6 +10,7 @@ install_requires = [
     "Flask-Sockets>=0.2.1,<0.3.0",
     "Flask>=1.1.1,<2.0.0",
     # "PyInquirer>=1.0.3,<2.0.0",
+    "pynacl",
     "PyJWT>=1.7.1,<2.0.0",
     "bcrypt>=3.2.0,<4.0.0",
     "boto3>=1.14.51,<2.0.0",
