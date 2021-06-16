@@ -265,6 +265,7 @@ lib_ast = create_lib_ast(None)
 @wrapt.when_imported("xgboost")
 @wrapt.when_imported("zksk")
 @wrapt.when_imported("pytorch_lightning")
+@wrapt.when_imported("transformers")
 def post_import_hook_third_party(module: TypeAny) -> None:
     """
     Note: This needs to be after `lib_ast` because code above uses lib-ast
