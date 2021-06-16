@@ -15,10 +15,10 @@ from syft.grid.messages.dataset_messages import GetDatasetsMessage
 from syft.grid.messages.dataset_messages import UpdateDatasetMessage
 
 # grid relative
-from ...auth import error_handler
-from ...auth import optional_token
-from ...auth import token_required
-from ..blueprint import dcfl_blueprint as dcfl_route
+from main.routes.auth import error_handler
+from main.routes.auth import optional_token
+from main.routes.auth import token_required
+from main.routes.data_centric.blueprint import dcfl_blueprint as dcfl_route
 
 
 @dcfl_route.route("/datasets", methods=["POST"])

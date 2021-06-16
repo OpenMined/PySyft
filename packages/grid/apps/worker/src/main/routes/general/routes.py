@@ -63,7 +63,7 @@ def metadata_route():
 
 
 @root_route.route("/pysyft", methods=["POST"])
-def root_route():
+def base_route():
     # grid relative
     from ...core.node import get_node  # TODO: fix circular import
 

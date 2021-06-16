@@ -1,7 +1,5 @@
 # stdlib
-from typing import Dict
-from typing import List
-from typing import Union
+from typing import Dict, List, Union, Optional, Any
 
 # third party
 from bcrypt import checkpw
@@ -28,17 +26,23 @@ class UserManager(DatabaseManager):
 
     @property
     def common_users(self) -> list:
-        common_users = []
+        common_users: List[User] = []
         for role in self.roles.common_roles:
-            common_users = common_users + list(super().query(role=role.id))
+            if role is not None:
+                query_result = list(super().query(role=role.id))
+            if query_result is not None:
+                common_users = common_users + query_result
 
         return common_users
 
     @property
     def org_users(self) -> list:
-        org_users = []
+        org_users: List[User] = []
         for role in self.roles.org_roles:
-            org_users = org_users + list(super().query(role=role.id))
+            if role is not None:
+                query_result = list(super().query(role=role.id))
+            if query_result is not None:
+                org_users = org_users + query_result
         return org_users
 
     def signup(
@@ -56,7 +60,7 @@ class UserManager(DatabaseManager):
 
     def query(self, **kwargs) -> Union[None, List]:
         results = super().query(**kwargs)
-        if len(results) == 0:
+        if results is not None and len(results) == 0:
             raise UserNotFoundError
         return results
 
@@ -66,7 +70,7 @@ class UserManager(DatabaseManager):
             raise UserNotFoundError
         return result
 
-    def login(self, email: str, password: str) -> User:
+    def login(self, email: str, password: str) -> Optional[User]:
         return self.__login_validation(email, password)
 
     def set(
@@ -76,6 +80,8 @@ class UserManager(DatabaseManager):
         password: str = None,
         role: int = 0,
     ) -> None:
+        value: Any
+
         if not self.contain(id=user_id):
             raise UserNotFoundError
 
@@ -94,48 +100,50 @@ class UserManager(DatabaseManager):
 
         self.modify({"id": user_id}, {key: value})
 
-    def can_create_users(self, user_id: str) -> bool:
+    def can_create_users(self, user_id: int) -> bool:
         role = self.role(user_id=user_id)
         if role:
             return role.can_create_users
         else:
             return False
 
-    def can_upload_data(self, user_id: str) -> bool:
+    def can_upload_data(self, user_id: int) -> bool:
         role = self.role(user_id=user_id)
         if role:
             return role.can_upload_data
         else:
             return False
 
-    def can_triage_requests(self, user_id: str) -> bool:
+    def can_triage_requests(self, user_id: int) -> bool:
         return self.role(user_id=user_id).can_triage_requests
 
-    def can_manage_infrastructure(self, user_id: str) -> bool:
+    def can_manage_infrastructure(self, user_id: int) -> bool:
         return self.role(user_id=user_id).can_manage_infrastructure
 
-    def can_edit_roles(self, user_id: str) -> bool:
+    def can_edit_roles(self, user_id: int) -> bool:
         return self.role(user_id=user_id).can_edit_roles
 
-    def can_create_groups(self, user_id: str) -> bool:
+    def can_create_groups(self, user_id: int) -> bool:
         return self.role(user_id=user_id).can_create_groups
 
     def role(self, user_id: int):
         try:
             user = self.first(id=user_id)
-            return self.roles.first(id=user.role)
+            if user is not None:
+                return self.roles.first(id=user.role)
         except UserNotFoundError:
             return False
 
-    def __login_validation(self, email: str, password: str) -> bool:
+    def __login_validation(self, email: str, password: str) -> Optional[User]:
         try:
             user = self.first(email=email)
 
-            hashed = user.hashed_password.encode("UTF-8")
-            salt = user.salt.encode("UTF-8")
-            password = password.encode("UTF-8")
+            if user is not None:
+                hashed: bytes = user.hashed_password.encode("UTF-8")
+                salt: bytes = user.salt.encode("UTF-8")
+                password_bytes: bytes = password.encode("UTF-8")
 
-            if checkpw(password, salt + hashed):
+            if checkpw(password_bytes, salt + hashed):
                 return user
             else:
                 raise InvalidCredentialsError

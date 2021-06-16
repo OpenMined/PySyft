@@ -1,8 +1,7 @@
 # stdlib
 from threading import Thread
 from time import sleep
-from typing import Dict
-from typing import Optional
+from typing import Dict, Optional, Any
 
 # third party
 from flask import current_app as app
@@ -23,26 +22,25 @@ from syft.core.node.domain.domain import Domain
 from syft.grid.connections.http_connection import HTTPConnection
 import tenseal as ts
 
-# grid relative
-from ..database import db
-from ..database.store_disk import DiskObjectStore
-from ..manager.association_request_manager import AssociationRequestManager
-from ..manager.environment_manager import EnvironmentManager
-from ..manager.group_manager import GroupManager
-from ..manager.request_manager import RequestManager
-from ..manager.role_manager import RoleManager
-from ..manager.setup_manager import SetupManager
-from ..manager.user_manager import UserManager
-from ..services.association_request import AssociationRequestService
-from ..services.dataset_service import DatasetManagerService
-from ..services.group_service import GroupManagerService
-from ..services.infra_service import DomainInfrastructureService
-from ..services.request_service import RequestService
-from ..services.role_service import RoleManagerService
-from ..services.setup_service import SetUpService
-from ..services.tensor_service import RegisterTensorService
-from ..services.transfer_service import TransferObjectService
-from ..services.user_service import UserManagerService
+from main.core.database import db
+from main.core.database.store_disk import DiskObjectStore
+from main.core.manager.association_request_manager import AssociationRequestManager
+from main.core.manager.environment_manager import EnvironmentManager
+from main.core.manager.group_manager import GroupManager
+from main.core.manager.request_manager import RequestManager
+from main.core.manager.role_manager import RoleManager
+from main.core.manager.setup_manager import SetupManager
+from main.core.manager.user_manager import UserManager
+from main.core.services.association_request import AssociationRequestService
+from main.core.services.dataset_service import DatasetManagerService
+from main.core.services.group_service import GroupManagerService
+from main.core.services.infra_service import DomainInfrastructureService
+from main.core.services.request_service import RequestService
+from main.core.services.role_service import RoleManagerService
+from main.core.services.setup_service import SetUpService
+from main.core.services.tensor_service import RegisterTensorService
+from main.core.services.transfer_service import TransferObjectService
+from main.core.services.user_service import UserManagerService
 
 sy.load("tenseal")
 
@@ -81,8 +79,8 @@ class GridDomain(Domain):
         self.association_requests = AssociationRequestManager(db)
         self.data_requests = RequestManager(db)
 
-        self.env_clients = {}
-        self.setup_configs = {}
+        self.env_clients: Dict[Any, Any] = {}
+        self.setup_configs: Dict[Any, Any] = {}
 
         # Grid Domain Services
         self.immediate_services_with_reply.append(AssociationRequestService)
@@ -103,8 +101,9 @@ class GridDomain(Domain):
 
     def login(self, email: str, password: str) -> Dict:
         user = self.users.login(email=email, password=password)
-        token = jwt.encode({"id": user.id}, app.config["SECRET_KEY"])
-        token = token.decode("UTF-8")
+        token: str = jwt.encode({"id": user.id}, app.config["SECRET_KEY"]).decode(
+            "UTF-8"
+        )
         return {
             "token": token,
             "key": user.private_key,

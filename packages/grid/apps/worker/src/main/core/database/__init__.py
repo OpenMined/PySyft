@@ -6,7 +6,7 @@ from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy_mixins import AllFeaturesMixin
 
-db = SQLAlchemy()
+db: SQLAlchemy = SQLAlchemy()
 
 # TODO: Move this out of being defined above imports
 class BaseModel(db.Model, AllFeaturesMixin):

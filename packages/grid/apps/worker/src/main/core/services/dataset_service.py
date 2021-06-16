@@ -18,7 +18,6 @@ from syft.core.node.common.service.auth import service_auth
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
 
-# syft relative
 from syft.core.store import Dataset
 from syft.core.store.storeable_object import StorableObject
 from syft.grid.messages.dataset_messages import CreateDatasetMessage
@@ -32,13 +31,12 @@ from syft.grid.messages.dataset_messages import GetDatasetsResponse
 from syft.grid.messages.dataset_messages import UpdateDatasetMessage
 from syft.grid.messages.dataset_messages import UpdateDatasetResponse
 
-# grid relative
-from ..database import expand_user_object
-from ..database.utils import model_to_json
-from ..exceptions import AuthorizationError
-from ..exceptions import MissingRequestKeyError
-from ..exceptions import RoleNotFoundError
-from ..exceptions import UserNotFoundError
+from main.core.database import expand_user_object
+from main.core.database.utils import model_to_json
+from main.core.exceptions import AuthorizationError
+from main.core.exceptions import MissingRequestKeyError
+from main.core.exceptions import RoleNotFoundError
+from main.core.exceptions import UserNotFoundError
 
 ENCODING = "UTF-8"
 

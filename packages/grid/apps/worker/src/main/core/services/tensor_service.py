@@ -40,8 +40,8 @@ def create_tensor_msg(
         payload = msg.content
 
         new_tensor = th.tensor(payload["tensor"])
-        new_tensor.tag(*payload.get("tags", []))
-        new_tensor.describe(payload.get("description", ""))
+        new_tensor.tag(*payload.get("tags", []))  # type: ignore
+        new_tensor.describe(payload.get("description", ""))  # type: ignore
 
         id_at_location = UID()
 
@@ -49,8 +49,8 @@ def create_tensor_msg(
         storable = StorableObject(
             id=id_at_location,
             data=new_tensor,
-            tags=new_tensor.tags,
-            description=new_tensor.description,
+            tags=new_tensor.tags,  # type: ignore
+            description=new_tensor.description,  # type: ignore
             search_permissions={VerifyAll(): None}
             if payload.get("searchable", False)
             else {},
@@ -90,8 +90,8 @@ def update_tensor_msg(
         payload = msg.content
 
         new_tensor = th.tensor(payload["tensor"])
-        new_tensor.tag(*payload.get("tags", []))
-        new_tensor.describe(payload.get("description", ""))
+        new_tensor.tag(*payload.get("tags", []))  # type: ignore
+        new_tensor.describe(payload.get("description", ""))  # type: ignore
 
         key = UID.from_string(value=payload["tensor_id"])
 
@@ -99,8 +99,8 @@ def update_tensor_msg(
         storable = StorableObject(
             id=key,
             data=new_tensor,
-            tags=new_tensor.tags,
-            description=new_tensor.description,
+            tags=new_tensor.tags,  # type: ignore
+            description=new_tensor.description,  # type: ignore
             search_permissions={VerifyAll(): None}
             if payload.get("searchable", False)
             else {},

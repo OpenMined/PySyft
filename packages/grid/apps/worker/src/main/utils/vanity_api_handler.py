@@ -8,8 +8,7 @@ from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.message import SyftMessage
 
-# grid relative
-from ..core.node import node
+from main.core.node import node
 
 
 def handle_vanity_api(msg_type: SyftMessage, args: Dict) -> Optional[Dict]:
@@ -23,3 +22,5 @@ def handle_vanity_api(msg_type: SyftMessage, args: Dict) -> Optional[Dict]:
         node.recv_eventual_msg_without_reply(msg=msg)
     if response:
         return response
+
+    return None

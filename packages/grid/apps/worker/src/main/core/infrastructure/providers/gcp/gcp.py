@@ -1,4 +1,5 @@
 # stdlib
+from typing import Any
 import subprocess
 
 # third party
@@ -10,7 +11,7 @@ from ..deploy import base_setup
 from ..tf import *
 from ..utils import Config
 from ..utils import styles
-from .provider import *
+from ..provider import *
 
 
 class GCloud:
@@ -71,6 +72,10 @@ class GCloud:
 class GCP(Provider):
     """Google Cloud Provider."""
 
+    config: Any  # TODO Replace with more accurate type
+    azure: Any  # TODO Replace with more accurate type
+    update_script: Any  # TODO Replace with more accurate type
+
     def __init__(self, config):
         super().__init__(config)
 
@@ -85,7 +90,7 @@ class GCP(Provider):
         self.update_script()
 
         click.echo("Initializing GCP Provider")
-        TF.init()
+        self.TF.init()
 
         build = self.build()
 
@@ -115,7 +120,7 @@ class GCP(Provider):
         )
 
         self.update_script()
-        return TF.validate()
+        return self.TF.validate()
 
     def deploy_network(self, name: str = "pygridnetwork", apply: bool = True):
         images = self.config.gcp.images
@@ -148,7 +153,7 @@ class GCP(Provider):
 
         self.update_script()
 
-        return TF.apply()
+        return self.TF.apply()
 
     def deploy_domain(self, name: str = "pygriddomain", apply: bool = True):
         images = self.config.gcp.images
@@ -178,7 +183,7 @@ class GCP(Provider):
 
         self.update_script()
 
-        return TF.apply()
+        return self.TF.apply()
 
     def get_gcp_config(self) -> Config:
         """Getting the configration required for deployment on GCP.

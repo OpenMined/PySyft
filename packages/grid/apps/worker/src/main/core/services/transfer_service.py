@@ -29,7 +29,7 @@ from syft.proto.core.io.address_pb2 import Address as Address_PB
 import torch as th
 
 # grid relative
-from ...utils.executor import executor
+from main.utils.executor import executor
 
 
 def send_obj(address, obj, node):

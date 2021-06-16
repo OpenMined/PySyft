@@ -1,4 +1,5 @@
 # stdlib
+from typing import Any
 import subprocess
 
 # third party
@@ -6,11 +7,11 @@ from PyInquirer import prompt
 import click
 
 # grid relative
+from main.core.infrastructure.tf import *
 from ..deploy import base_setup
-from ..tf import *
 from ..utils import Config
 from ..utils import styles
-from .provider import *
+from ..provider import *
 
 
 class AZ:
@@ -28,6 +29,10 @@ class AZ:
 class AZURE(Provider):
     """Azure Cloud Provider."""
 
+    config: Any  # TODO Replace with more accurate type
+    azure: Any  # TODO Replace with more accurate type
+    update_script: Any  # TODO Replace with more accurate type
+
     def __init__(self, config):
         super().__init__(config)
 
@@ -38,7 +43,7 @@ class AZURE(Provider):
         self.update_script()
 
         click.echo("Initializing Azure Provider")
-        TF.init()
+        self.TF.init()
 
         build = self.build()
 
@@ -83,9 +88,11 @@ class AZURE(Provider):
         self.tfscript += self.network_interface
 
         self.update_script()
-        return TF.validate()
+        return self.TF.validate()
 
-    def deploy_network(self, name: str = "pygridmetwork", apply: bool = True):
+    def deploy_network(
+        self, network: Any, name: str = "pygridmetwork", apply: bool = True
+    ):
         virtual_machine = terrascript.resource.azurerm_virtual_machine(
             name,
             name=name,
@@ -124,7 +131,7 @@ class AZURE(Provider):
 
         self.update_script()
 
-    def deploy_domain(self, apply: bool = True):
+    def deploy_domain(self, name: str, network: Any, apply: bool = True):
         virtual_machine = terrascript.resource.azurerm_virtual_machine(
             name,
             name=name,

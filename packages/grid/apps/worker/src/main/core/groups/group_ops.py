@@ -7,21 +7,20 @@ from json.decoder import JSONDecodeError
 import logging
 from secrets import token_hex
 
-# grid relative
-from ..codes import RESPONSE_MSG
-from ..database import Group
-from ..database import Role
-from ..database import User
-from ..database import UserGroup
-from ..database import db
-from ..database.utils import model_to_json
-from ..exceptions import AuthorizationError
-from ..exceptions import GroupNotFoundError
-from ..exceptions import InvalidCredentialsError
-from ..exceptions import MissingRequestKeyError
-from ..exceptions import PyGridError
-from ..exceptions import RoleNotFoundError
-from ..exceptions import UserNotFoundError
+from main.core.codes import RESPONSE_MSG
+from main.core.database import Group
+from main.core.database import Role
+from main.core.database import User
+from main.core.database import UserGroup
+from main.core.database import db
+from main.core.database.utils import model_to_json
+from main.core.exceptions import AuthorizationError
+from main.core.exceptions import GroupNotFoundError
+from main.core.exceptions import InvalidCredentialsError
+from main.core.exceptions import MissingRequestKeyError
+from main.core.exceptions import PyGridError
+from main.core.exceptions import RoleNotFoundError
+from main.core.exceptions import UserNotFoundError
 
 
 def create_group(current_user, name):

@@ -1,8 +1,6 @@
 # stdlib
 import secrets
-from typing import List
-from typing import Type
-from typing import Union
+from typing import List, Type, Union, Any
 
 # third party
 from nacl.encoding import HexEncoder
@@ -10,7 +8,6 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 from syft.core.common.message import ImmediateSyftMessageWithReply
 
-# syft relative
 from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.service.auth import service_auth
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
@@ -28,13 +25,12 @@ from syft.grid.messages.user_messages import SearchUsersResponse
 from syft.grid.messages.user_messages import UpdateUserMessage
 from syft.grid.messages.user_messages import UpdateUserResponse
 
-# grid relative
-from ..database import expand_user_object
-from ..database.utils import model_to_json
-from ..exceptions import AuthorizationError
-from ..exceptions import MissingRequestKeyError
-from ..exceptions import RoleNotFoundError
-from ..exceptions import UserNotFoundError
+from main.core.database import expand_user_object
+from main.core.database.utils import model_to_json
+from main.core.exceptions import AuthorizationError
+from main.core.exceptions import MissingRequestKeyError
+from main.core.exceptions import RoleNotFoundError
+from main.core.exceptions import UserNotFoundError
 
 
 def create_user_msg(
@@ -342,6 +338,7 @@ def search_users_msg(
     node: AbstractNode,
     verify_key: VerifyKey,
 ) -> SearchUsersResponse:
+    _msg: Any
     # Get Payload Content
     _current_user_id = msg.content.get("current_user", None)
     users = node.users

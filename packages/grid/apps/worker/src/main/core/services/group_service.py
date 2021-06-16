@@ -9,7 +9,6 @@ from nacl.encoding import HexEncoder
 from nacl.signing import VerifyKey
 from syft.core.common.message import ImmediateSyftMessageWithReply
 
-# syft relative
 from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.service.auth import service_auth
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
@@ -25,11 +24,10 @@ from syft.grid.messages.group_messages import GetGroupsResponse
 from syft.grid.messages.group_messages import UpdateGroupMessage
 from syft.grid.messages.group_messages import UpdateGroupResponse
 
-# grid relative
-from ..database.utils import model_to_json
-from ..exceptions import AuthorizationError
-from ..exceptions import GroupNotFoundError
-from ..exceptions import MissingRequestKeyError
+from main.core.database.utils import model_to_json
+from main.core.exceptions import AuthorizationError
+from main.core.exceptions import GroupNotFoundError
+from main.core.exceptions import MissingRequestKeyError
 
 
 def create_group_msg(

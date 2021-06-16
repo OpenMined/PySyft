@@ -20,21 +20,21 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
 # grid relative
-from ..codes import RESPONSE_MSG
-from ..database import Group
-from ..database import Role
-from ..database import User
-from ..database import UserGroup
-from ..database import db
-from ..database import expand_user_object
-from ..exceptions import AuthorizationError
-from ..exceptions import GroupNotFoundError
-from ..exceptions import InvalidCredentialsError
-from ..exceptions import MissingRequestKeyError
-from ..exceptions import PyGridError
-from ..exceptions import RoleNotFoundError
-from ..exceptions import UserNotFoundError
-from ..node import node
+from main.core.codes import RESPONSE_MSG
+from main.core.database import Group
+from main.core.database import Role
+from main.core.database import User
+from main.core.database import UserGroup
+from main.core.database import db
+from main.core.database import expand_user_object
+from main.core.exceptions import AuthorizationError
+from main.core.exceptions import GroupNotFoundError
+from main.core.exceptions import InvalidCredentialsError
+from main.core.exceptions import MissingRequestKeyError
+from main.core.exceptions import PyGridError
+from main.core.exceptions import RoleNotFoundError
+from main.core.exceptions import UserNotFoundError
+from main.core.node import node
 
 
 def salt_and_hash_password(password, rounds):

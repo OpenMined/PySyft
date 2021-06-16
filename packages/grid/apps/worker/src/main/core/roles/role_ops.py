@@ -10,16 +10,16 @@ from flask import request
 from nacl.signing import SigningKey
 
 # grid relative
-from ..codes import RESPONSE_MSG
-from ..database import Role
-from ..database import User
-from ..database import db
-from ..database.utils import model_to_json
-from ..exceptions import AuthorizationError
-from ..exceptions import MissingRequestKeyError
-from ..exceptions import PyGridError
-from ..exceptions import RoleNotFoundError
-from ..exceptions import UserNotFoundError
+from main.core.codes import RESPONSE_MSG
+from main.core.database import Role
+from main.core.database import User
+from main.core.database import db
+from main.core.database.utils import model_to_json
+from main.core.exceptions import AuthorizationError
+from main.core.exceptions import MissingRequestKeyError
+from main.core.exceptions import PyGridError
+from main.core.exceptions import RoleNotFoundError
+from main.core.exceptions import UserNotFoundError
 
 expected_fields = (
     "name",
