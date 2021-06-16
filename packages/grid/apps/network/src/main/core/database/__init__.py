@@ -14,23 +14,6 @@ class BaseModel(db.Model, AllFeaturesMixin):
     pass
 
 
-# grid relative
-from .bin_storage.bin_obj import BinaryObject
-from .bin_storage.json_obj import JsonObject
-from .bin_storage.metadata import StorageMetadata
-from .groups.groups import Group
-from .groups.usergroup import UserGroup
-from .requests.request import Request
-from .roles.roles import Role
-from .roles.roles import create_role
-from .setup.setup import SetupConfig
-from .setup.setup import create_setup
-from .users.user import User
-from .users.user import create_user
-from .utils import expand_user_object
-from .utils import model_to_json
-
-
 def set_database_config(app, test_config=None, verbose=False):
     """Set configs to use SQL Alchemy library.
 

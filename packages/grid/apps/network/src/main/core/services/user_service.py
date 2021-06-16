@@ -29,7 +29,7 @@ from syft.grid.messages.user_messages import UpdateUserMessage
 from syft.grid.messages.user_messages import UpdateUserResponse
 
 # grid relative
-from ..database import expand_user_object
+from ..database.utils import expand_user_object
 from ..database.utils import model_to_json
 from ..exceptions import AuthorizationError
 from ..exceptions import MissingRequestKeyError

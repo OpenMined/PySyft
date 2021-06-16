@@ -63,8 +63,8 @@ def create_network_app(app, args, testing=False):
     # sockets.register_blueprint()
 
     # grid relative
-    from .database import Role
-    from .database import User
+    from .database.roles.roles import Role
+    from .database.users.user import User
     from .database import db
     from .database import seed_network_db
     from .database import set_database_config
@@ -122,8 +122,8 @@ def create_domain_app(app, args, testing=False):
     # sockets.register_blueprint()
 
     # grid relative
-    from .database import Role
-    from .database import User
+    from .database.roles.roles import Role
+    from .database.users.user import User
     from .database import db
     from .database import seed_db
     from .database import set_database_config

@@ -33,7 +33,7 @@ from syft.grid.messages.dataset_messages import UpdateDatasetMessage
 from syft.grid.messages.dataset_messages import UpdateDatasetResponse
 
 # grid relative
-from ..database import expand_user_object
+from ..database.utils import expand_user_object
 from ..database.utils import model_to_json
 from ..exceptions import AuthorizationError
 from ..exceptions import MissingRequestKeyError

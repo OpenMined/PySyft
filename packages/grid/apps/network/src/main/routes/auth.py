@@ -11,7 +11,7 @@ import jwt
 
 # grid relative
 from ..core.codes import RESPONSE_MSG
-from ..core.database import User
+from ..core.database.users.user import User
 from ..core.database import db
 from ..core.exceptions import AuthorizationError
 from ..core.exceptions import GroupNotFoundError

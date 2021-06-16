@@ -3,9 +3,13 @@ from bcrypt import checkpw
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import pytest
+
 from src import main
-from src.main.core.database import *
-from src.main.core.database import expand_user_object
+from src.main.core.database.roles.roles import Role, create_role
+from src.main.core.database.users.user import User, create_user
+from src.main.core.database.groups.groups import Group
+from src.main.core.database.groups.usergroup import UserGroup
+from src.main.core.database.utils import expand_user_object
 from src.main.core.exceptions import InvalidCredentialsError
 from src.main.core.exceptions import MissingRequestKeyError
 from src.main.core.exceptions import UserNotFoundError
