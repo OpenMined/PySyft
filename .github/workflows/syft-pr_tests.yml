@@ -65,6 +65,7 @@ jobs:
           pip install black isort --default-timeout=60
           ./scripts/build_proto.sh
 
+      # fails for no reason and breaks CI
       # - id: file_changes # get changed files.
       #   uses: trilom/file-changes-action@v1.2.3
       #   with:
@@ -74,7 +75,7 @@ jobs:
           pwd
           ls
           cp .pre-commit-config.yaml ../../
-      - uses: pre-commit/action@v2.0.0
+      - uses: pre-commit/action@v2.0.3
       # with:
       #   extra_args: --files ${{ steps.file_changes.outputs.files}} # apply only to changed files.
 
