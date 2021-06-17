@@ -25,8 +25,8 @@ from .groups.usergroup import UserGroup
 from .requests.request import Request
 from .roles.roles import Role
 from .roles.roles import create_role
-from .setup.setup import SetupConfig
-from .setup.setup import create_setup
+from .setup import SetupConfig
+from .setup import create_setup
 from .user import User
 from .user import create_user
 from .utils import expand_user_object

@@ -3,7 +3,7 @@ from typing import List
 from typing import Union
 
 # grid relative
-from ..database.setup.setup import SetupConfig
+from ..database.setup import SetupConfig
 from ..exceptions import SetupNotFoundError
 from .database_manager import DatabaseManager
 

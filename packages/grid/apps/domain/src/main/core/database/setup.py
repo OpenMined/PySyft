@@ -1,6 +1,6 @@
 # grid relative
-from .. import BaseModel
-from .. import db
+from . import BaseModel
+from . import db
 
 
 class SetupConfig(BaseModel):
