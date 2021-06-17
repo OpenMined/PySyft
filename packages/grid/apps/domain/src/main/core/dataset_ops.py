@@ -20,16 +20,16 @@ from syft.core.store.storeable_object import StorableObject
 import torch as th
 
 # grid relative
-from ..database import db
-from ..database.bin_storage.bin_obj import BinObject
-from ..database.bin_storage.bin_obj import ObjectMetadata
-from ..database.bin_storage.json_obj import JsonObject
-from ..database.bin_storage.metadata import get_metadata
-from ..database.dataset.datasetgroup import BinObjDataset
-from ..database.dataset.datasetgroup import Dataset
-from ..database.dataset.datasetgroup import DatasetGroup
-from ..database.store_disk import DiskObjectStore
-from ..database.utils import model_to_json
+from .database import db
+from .database.bin_storage.bin_obj import BinObject
+from .database.bin_storage.bin_obj import ObjectMetadata
+from .database.bin_storage.json_obj import JsonObject
+from .database.bin_storage.metadata import get_metadata
+from .database.dataset.datasetgroup import BinObjDataset
+from .database.dataset.datasetgroup import Dataset
+from .database.dataset.datasetgroup import DatasetGroup
+from .database.store_disk import DiskObjectStore
+from .database.utils import model_to_json
 
 
 def decompress(file_obj):

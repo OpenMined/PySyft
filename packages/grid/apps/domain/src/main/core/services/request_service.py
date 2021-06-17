@@ -51,7 +51,6 @@ from syft.util import validate_type
 
 # grid relative
 from ..database.utils import model_to_json
-from ..datasets.dataset_ops import update_dataset_metadata
 from ..exceptions import AuthorizationError
 from ..exceptions import InvalidParameterValueError
 from ..exceptions import MissingRequestKeyError

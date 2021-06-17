@@ -1,26 +1,17 @@
 # stdlib
-from base64 import b64decode
-from base64 import b64encode
-from json import dumps
-import secrets
 from typing import List
 from typing import Type
 from typing import Union
 
 # third party
 from nacl.encoding import HexEncoder
-from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.common.uid import UID
 from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.service.auth import service_auth
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
-from syft.core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
 
 # syft relative
-from syft.core.store import Dataset
-from syft.core.store.storeable_object import StorableObject
 from syft.grid.messages.dataset_messages import CreateDatasetMessage
 from syft.grid.messages.dataset_messages import CreateDatasetResponse
 from syft.grid.messages.dataset_messages import DeleteDatasetMessage
@@ -33,21 +24,15 @@ from syft.grid.messages.dataset_messages import UpdateDatasetMessage
 from syft.grid.messages.dataset_messages import UpdateDatasetResponse
 
 # grid relative
-from ..database import expand_user_object
 from ..database.utils import model_to_json
-from ..datasets.dataset_ops import create_dataset
-from ..datasets.dataset_ops import delete_dataset
-from ..datasets.dataset_ops import get_all_datasets
-from ..datasets.dataset_ops import get_all_datasets_metadata
-from ..datasets.dataset_ops import get_all_relations
-from ..datasets.dataset_ops import get_dataset_metadata
-from ..datasets.dataset_ops import get_specific_dataset_and_relations
-from ..datasets.dataset_ops import update_dataset
+from ..dataset_ops import create_dataset
+from ..dataset_ops import delete_dataset
+from ..dataset_ops import get_all_datasets
+from ..dataset_ops import get_all_relations
+from ..dataset_ops import get_specific_dataset_and_relations
+from ..dataset_ops import update_dataset
 from ..exceptions import AuthorizationError
 from ..exceptions import DatasetNotFoundError
-from ..exceptions import MissingRequestKeyError
-from ..exceptions import RoleNotFoundError
-from ..exceptions import UserNotFoundError
 
 ENCODING = "UTF-8"
 
