@@ -1,11 +1,11 @@
 [tool.poetry]
-name = "PyGrid Domain"
+name = "PyGrid Network"
 version = "0.3.0"
 description = ""
 authors = ["Ionesio Junior <ionesiojr@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.7"
 gevent = "^20.6.2"
 gevent-websocket = "^0.10.1"
 gunicorn = "^20.0.4"
@@ -22,7 +22,7 @@ bcrypt = "^3.2.0"
 loguru = "^0.5.3"
 Flask-Executor = "^0.9.4"
 Flask-Cors = "^3.0.10"
-syft = { git = "https://github.com/OpenMined/PySyft", rev = "0.5.0rc1" }
+syft = { git = "https://github.com/OpenMined/PySyft", rev = "pygrid_demo" }
 terrascript = "^0.9.0"
 PyInquirer = "^1.0.3"
 boto3 = "^1.14.51"
