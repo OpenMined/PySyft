@@ -3,7 +3,6 @@ from . import BaseModel
 from . import db
 
 
-
 class Dataset(BaseModel):
     __tablename__ = "dataset"
 
@@ -11,5 +10,3 @@ class Dataset(BaseModel):
     manifest = db.Column(db.String(2048))
     description = db.Column(db.String(2048))
     tags = db.Column(db.JSON())
-
-

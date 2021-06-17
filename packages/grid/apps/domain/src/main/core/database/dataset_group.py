@@ -15,5 +15,3 @@ class DatasetGroup(BaseModel):
             f"<DatasetGroup id: {self.id}, bin_object: {self.bin_object}, "
             f"dataset: {self.dataset}>"
         )
-
-

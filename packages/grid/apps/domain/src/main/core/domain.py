@@ -102,9 +102,9 @@ class GridDomain(Domain):
         # commented out temporarily because every object in the store is brought into memory
         # just to build the table for domain_client.store. When we have lots of big objects
         # this makes things very slow. Commenting this out forces the store to be entirely
-        # in memory which is very fast until we can work out this issue.
+        # in memory which is very fast until we can work out this issue.
         # self.store = DiskObjectStore(db)
-        
+
         self.environments = EnvironmentManager(db)
         self.setup = SetupManager(db)
         self.association_requests = AssociationRequestManager(db)
