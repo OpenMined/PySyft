@@ -3,7 +3,7 @@ from typing import List
 from typing import Union
 
 # grid relative
-from ..database.roles.roles import Role
+from ..database.tables.role import Role
 from ..exceptions import RoleNotFoundError
 from .database_manager import DatabaseManager
 

@@ -4,9 +4,9 @@ from typing import List
 from typing import Union
 
 # grid relative
-from ..database.environment.environment import Environment
-from ..database.environment.environment import states
-from ..database.environment.user_environment import UserEnvironment
+from ..database.tables.environment import Environment
+from ..database.tables.environment import states
+from ..database.tables.user_environment import UserEnvironment
 from ..exceptions import EnvironmentNotFoundError
 from .database_manager import DatabaseManager
 

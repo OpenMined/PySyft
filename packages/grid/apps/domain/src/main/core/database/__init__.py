@@ -15,20 +15,20 @@ class BaseModel(db.Model, AllFeaturesMixin):
 
 
 # grid relative
-from .bin_obj import BinObject
-from .bin_obj import ObjectMetadata
-from .json_obj import JsonObject
-from .metadata import StorageMetadata
-from .dataset_group import DatasetGroup
-from .groups.groups import Group
-from .groups.usergroup import UserGroup
-from .requests.request import Request
-from .roles.roles import Role
-from .roles.roles import create_role
-from .setup import SetupConfig
-from .setup import create_setup
-from .user import User
-from .user import create_user
+from .tables.bin_obj import BinObject
+from .tables.bin_obj import ObjectMetadata
+from .tables.json_obj import JsonObject
+from .tables.metadata import StorageMetadata
+from .tables.dataset_group import DatasetGroup
+from .tables.group import Group
+from .tables.user_group import UserGroup
+from .tables.request import Request
+from .tables.role import Role
+from .tables.role import create_role
+from .tables.setup import SetupConfig
+from .tables.setup import create_setup
+from .tables.user import User
+from .tables.user import create_user
 from .utils import expand_user_object
 from .utils import model_to_json
 

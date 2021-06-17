@@ -9,8 +9,7 @@ from bcrypt import gensalt
 from bcrypt import hashpw
 
 # grid relative
-from ..database.user import User
-from ..exceptions import AuthorizationError
+from ..database.tables.user import User
 from ..exceptions import InvalidCredentialsError
 from ..exceptions import UserNotFoundError
 from .database_manager import DatabaseManager

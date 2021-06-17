@@ -27,7 +27,7 @@ from syft.grid.messages.setup_messages import GetSetUpResponse
 # from ...core.infrastructure import AWS_Serverless
 # from ...core.infrastructure import Config
 # from ...core.infrastructure import Provider
-from ..database.setup import SetupConfig
+from ..database.tables.setup import SetupConfig
 from ..database.utils import model_to_json
 from ..exceptions import AuthorizationError
 from ..exceptions import InvalidParameterValueError

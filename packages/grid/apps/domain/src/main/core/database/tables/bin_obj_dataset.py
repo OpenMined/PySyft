@@ -1,5 +1,5 @@
-from . import BaseModel
-from . import db
+from .. import BaseModel
+from .. import db
 
 
 class BinObjDataset(BaseModel):
