@@ -17,7 +17,6 @@ from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.action.save_object_action import SaveObjectAction
 from syft.core.node.common.service.auth import service_auth
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
-from syft.core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
 from syft.core.store.storeable_object import StorableObject
 from syft.grid.messages.tensor_messages import CreateTensorMessage
 from syft.grid.messages.tensor_messages import CreateTensorResponse
