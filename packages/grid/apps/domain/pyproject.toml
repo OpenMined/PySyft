@@ -5,7 +5,7 @@ description = ""
 authors = ["Ionesio Junior <ionesiojr@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.7"
 gevent = "^20.6.2"
 gevent-websocket = "^0.10.1"
 gunicorn = "^20.0.4"
