@@ -16,7 +16,6 @@ from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.service.auth import service_auth
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
-from syft.core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
 from syft.grid.messages.setup_messages import CreateInitialSetUpMessage
 from syft.grid.messages.setup_messages import CreateInitialSetUpResponse
 from syft.grid.messages.setup_messages import GetSetUpMessage
