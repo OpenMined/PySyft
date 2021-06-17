@@ -9,7 +9,7 @@ install_requires = [
     "Flask-Executor>=0.9.4,<0.10.0",
     "Flask-Sockets>=0.2.1,<0.3.0",
     "Flask>=1.1.1,<2.0.0",
-    # "PyInquirer>=1.0.3,<2.0.0",
+    # "PyInquirer>=1.0.3,<2.0.0", # TODO: fix dependency issue with jupyter
     "pynacl",
     "PyJWT>=1.7.1,<2.0.0",
     "bcrypt>=3.2.0,<4.0.0",
