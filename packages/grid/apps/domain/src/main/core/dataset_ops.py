@@ -13,7 +13,6 @@ import numpy as np
 import pandas as pd
 from pandas import DataFrame
 from syft.core.common.group import VERIFYALL
-from syft.core.common.group import VerifyAll
 from syft.core.common.uid import UID
 from syft.core.node.common.action.save_object_action import SaveObjectAction
 from syft.core.store.storeable_object import StorableObject
@@ -21,13 +20,13 @@ import torch as th
 
 # grid relative
 from .database import db
-from .database.bin_storage.bin_obj import BinObject
-from .database.bin_storage.bin_obj import ObjectMetadata
-from .database.bin_storage.json_obj import JsonObject
-from .database.bin_storage.metadata import get_metadata
-from .database.dataset.datasetgroup import BinObjDataset
-from .database.dataset.datasetgroup import Dataset
-from .database.dataset.datasetgroup import DatasetGroup
+from .database.bin_obj import BinObject
+from .database.bin_obj import ObjectMetadata
+from .database.json_obj import JsonObject
+from .database.metadata import get_metadata
+from .database.bin_obj_dataset import BinObjDataset
+from .database.dataset import Dataset
+from .database.dataset_group import DatasetGroup
 from .database.store_disk import DiskObjectStore
 from .database.utils import model_to_json
 

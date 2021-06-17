@@ -5,11 +5,10 @@ from typing import List
 from typing import Union
 
 # grid relative
-from ..database.association.association import Association
-from ..database.association.request import AssociationRequest
+from ..database.association import Association
+from ..database.association_request import AssociationRequest
 from ..exceptions import AssociationRequestError
 from .database_manager import DatabaseManager
-from .role_manager import RoleManager
 
 
 class AssociationRequestManager(DatabaseManager):

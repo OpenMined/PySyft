@@ -16,8 +16,8 @@ from syft.core.store.storeable_object import StorableObject
 from torch import Tensor
 
 # grid relative
-from .bin_storage.bin_obj import BinObject
-from .bin_storage.bin_obj import ObjectMetadata
+from .bin_obj import BinObject
+from .bin_obj import ObjectMetadata
 
 ENCODING = "UTF-8"
 

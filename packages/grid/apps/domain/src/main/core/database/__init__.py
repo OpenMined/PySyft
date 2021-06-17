@@ -15,11 +15,11 @@ class BaseModel(db.Model, AllFeaturesMixin):
 
 
 # grid relative
-from .bin_storage.bin_obj import BinObject
-from .bin_storage.bin_obj import ObjectMetadata
-from .bin_storage.json_obj import JsonObject
-from .bin_storage.metadata import StorageMetadata
-from .dataset.datasetgroup import DatasetGroup
+from .bin_obj import BinObject
+from .bin_obj import ObjectMetadata
+from .json_obj import JsonObject
+from .metadata import StorageMetadata
+from .dataset_group import DatasetGroup
 from .groups.groups import Group
 from .groups.usergroup import UserGroup
 from .requests.request import Request
