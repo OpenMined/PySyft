@@ -1,6 +1,6 @@
 #!/bin/bash
-CLEAN="syft_statsmodels/proto"
-PYTHON_OUT="syft_statsmodels"
+CLEAN="src/syft_statsmodels/proto"
+PYTHON_OUT="src/syft_statsmodels"
 PROTO_IN="proto"
 
 command -v protoc &> /dev/null
@@ -17,10 +17,10 @@ find ${PROTO_IN} -name "*.proto" -print0 | xargs -0 protoc --proto_path="../../s
 if [ "$(uname)" == "Darwin" ]; then
     echo "Darwin"
     # note the '' for empty file on MacOS
-    find syft_statsmodels/proto -name "*_pb2.py" -print0 | xargs -0 sed -i '' 's/from \(proto.*\) import /from syft.\1 import /g'
+    find src/syft_statsmodels/proto -name "*_pb2.py" -print0 | xargs -0 sed -i '' 's/from \(proto.*\) import /from syft.\1 import /g'
 else
     echo "Linux"
-    find syft_statsmodels/proto -name "*_pb2.py" -print0 | xargs -0 sed -i 's/from \(proto.*\) import /from syft.\1 import /g'
+    find src/syft_statsmodels/proto -name "*_pb2.py" -print0 | xargs -0 sed -i 's/from \(proto.*\) import /from syft.\1 import /g'
 fi
-black syft_statsmodels/proto
-isort syft_statsmodels/proto
+black src/syft_statsmodels/proto
+isort src/syft_statsmodels/proto
