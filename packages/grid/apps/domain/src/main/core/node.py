@@ -15,7 +15,7 @@ from ..routes import search_blueprint
 from ..routes import setup_blueprint
 from ..routes import users_blueprint
 from ..utils.executor import executor
-from .nodes.domain import GridDomain
+from .domain import GridDomain
 from .sleepy_until_configured import SleepyUntilConfigured
 
 node = None

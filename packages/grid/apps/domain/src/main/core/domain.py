@@ -46,28 +46,28 @@ from syft.core.node.common.service.resolve_pointer_type_service import (
 from syft.core.node.domain.domain import Domain
 
 # grid relative
-from ..database import db
-from ..database.store_disk import DiskObjectStore
-from ..manager.association_request_manager import AssociationRequestManager
-from ..manager.environment_manager import EnvironmentManager
-from ..manager.group_manager import GroupManager
-from ..manager.request_manager import RequestManager
-from ..manager.role_manager import RoleManager
-from ..manager.setup_manager import SetupManager
-from ..manager.user_manager import UserManager
-from ..services.association_request import AssociationRequestService
-from ..services.dataset_service import DatasetManagerService
-from ..services.group_service import GroupManagerService
+from .database import db
+from .database.store_disk import DiskObjectStore
+from .manager.association_request_manager import AssociationRequestManager
+from .manager.environment_manager import EnvironmentManager
+from .manager.group_manager import GroupManager
+from .manager.request_manager import RequestManager
+from .manager.role_manager import RoleManager
+from .manager.setup_manager import SetupManager
+from .manager.user_manager import UserManager
+from .services.association_request import AssociationRequestService
+from .services.dataset_service import DatasetManagerService
+from .services.group_service import GroupManagerService
 
 # commenting because these services require Jupyter conflict deps
 # from ..services.infra_service import DomainInfrastructureService
-from ..services.request_service import RequestService
-from ..services.request_service import RequestServiceWithoutReply
-from ..services.role_service import RoleManagerService
-from ..services.setup_service import SetUpService
-from ..services.tensor_service import RegisterTensorService
-from ..services.transfer_service import TransferObjectService
-from ..services.user_service import UserManagerService
+from .services.request_service import RequestService
+from .services.request_service import RequestServiceWithoutReply
+from .services.role_service import RoleManagerService
+from .services.setup_service import SetUpService
+from .services.tensor_service import RegisterTensorService
+from .services.transfer_service import TransferObjectService
+from .services.user_service import UserManagerService
 
 
 class GridDomain(Domain):
