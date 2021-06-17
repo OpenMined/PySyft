@@ -27,7 +27,7 @@ from ..util import generic_update_ast
 LIB_NAME = "pydp"
 PACKAGE_SUPPORT = {
     "lib": LIB_NAME,
-    "python": {"max_version": (3, 8, 99)},
+    "python": {"max_version": (3, 9, 99)},
 }
 
 
