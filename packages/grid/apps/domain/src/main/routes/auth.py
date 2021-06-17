@@ -13,7 +13,6 @@ from syft.core.node.common.node import DuplicateRequestException
 # grid relative
 from ..core.codes import RESPONSE_MSG
 from ..core.database import User
-from ..core.database import db
 from ..core.exceptions import AuthorizationError
 from ..core.exceptions import GroupNotFoundError
 from ..core.exceptions import InvalidCredentialsError
