@@ -120,24 +120,31 @@ class Node(AbstractNode):
             name=name, network=network, domain=domain, device=device, vm=vm
         )
 
+        # TableBase is the base class from which all ORM classes must inherit
+        # If one isn't provided then we can simply make one.
         if TableBase is None:
             TableBase = declarative_base()
 
-        if engine is None:
-            engine = create_engine("sqlite:///:memory:", echo=False)
-
+        # If not provided a session connecting us to the database, let's just
+        # initialize a database in memory
         if db_session is None:
+
+            # If a DB engine isn't provided then
+            if engine is None:
+                engine = create_engine("sqlite:///:memory:", echo=False)
 
             db_session = sessionmaker(bind=engine)()
 
+        # cache these variables on self
         self.TableBase = TableBase
         self.engine = engine
         self.db_session = db_session
 
+        # select which database tables we want to create
         self.bin_obj_table = BinObject(self.TableBase)
         self.bin_obj_metadata_table = BinObjectMetadata(self.TableBase)
 
-        # create tables in the database
+        # launch the tables in the database
         self.TableBase.metadata.create_all(engine)
 
         self.store = BinObjectManager(
