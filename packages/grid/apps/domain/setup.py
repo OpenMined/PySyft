@@ -3,7 +3,7 @@ from setuptools import setup
 
 package_dir = {"": "src"}
 
-modules = ["domain"]
+modules = ["pygrid-domain"]
 install_requires = [
     "Flask-Cors>=3.0.10,<4.0.0",
     "Flask-Executor>=0.9.4,<0.10.0",
