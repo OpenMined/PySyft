@@ -27,8 +27,8 @@ from .roles.roles import Role
 from .roles.roles import create_role
 from .setup.setup import SetupConfig
 from .setup.setup import create_setup
-from .users.user import User
-from .users.user import create_user
+from .user import User
+from .user import create_user
 from .utils import expand_user_object
 from .utils import model_to_json
 
