@@ -1,5 +1,6 @@
 # stdlib
-from typing import Dict, Type
+from typing import Dict
+from typing import Type
 
 # third party
 import statsmodels

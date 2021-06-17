@@ -1,13 +1,18 @@
 # stdlib
 import glob
+from importlib import import_module
+import inspect
 import json
 import os
-from importlib import import_module
 from os.path import basename
 from typing import Any as TypeAny
-from typing import Dict, Iterable
+from typing import Dict
+from typing import Iterable
 from typing import List as TypeList
 from typing import Tuple as TypeTuple
+
+# syft absolute
+import syft as sy
 
 
 def read_package_support() -> TypeList[TypeTuple[str, TypeAny]]:
@@ -16,14 +21,19 @@ def read_package_support() -> TypeList[TypeTuple[str, TypeAny]]:
     ) as f:
         data = json.load(f)
 
-    # TODO: check type to prevent errors and raise necessary errors
-    modules = [(t[0], import_module(t[1])) for t in data["modules"] if len(t) == 2]
+    modules = [
+        (module_name, import_module(module_name)) for module_name in data["modules"]
+    ]
     classes = []
-    for t in data["classes"]:
-        module, classname = t[2].rsplit(".", 1)
+    for path in data["classes"]:
+        module, classname = path.rsplit(".", 1)
         klass = getattr(import_module(module), classname)
-        classes.append((t[0], t[1], klass))
 
+        if not inspect.isclass(klass):
+            raise TypeError(f"{path} is not a class.")
+        classes.append((path, path, klass))
+
+    # TODO: can we test if methods are correct?
     return {
         "lib": data["lib"],
         "modules": modules,
@@ -42,7 +52,7 @@ def get_serde() -> TypeList[Dict[str, TypeAny]]:
         module_path = "{}.serde.{}".format(dir_name, basename(f)[:-3])
         serde_module = import_module(module_path)
         serde = getattr(serde_module, "serde")
-
+        # TODO: check serde
         if isinstance(serde, Iterable) and not isinstance(serde, Dict):
             serde_objs.extend(serde)
         else:
@@ -51,5 +61,4 @@ def get_serde() -> TypeList[Dict[str, TypeAny]]:
     return serde_objs
 
 
-config = read_package_support()
-objects = get_serde()
+sy.lib.add_lib_external(read_package_support(), get_serde())

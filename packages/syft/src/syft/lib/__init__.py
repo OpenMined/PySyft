@@ -301,7 +301,7 @@ def create_support_ast(
 
 
 def add_lib_external(
-    lib: str, config: TypeDict[str, TypeAny], objects: Iterable[TypeDict[str, TypeAny]]
+    config: TypeDict[str, TypeAny], objects: Iterable[TypeDict[str, TypeAny]]
 ) -> None:
     lib = config["lib"]
     create_ast = functools.partial(
@@ -322,10 +322,5 @@ def add_lib_external(
     if isinstance(objects, Iterable):
         for serde_object in objects:
             GenerateWrapper(**serde_object)
-
-
-@wrapt.when_imported("syft_statsmodels")
-def add_ext_lib_hook(module: TypeAny) -> None:
-    name = module.__name__[5:]
-    print("Adding support for " + name)
-    add_lib_external(name, module.config, module.objects)
+    else:
+        critical("Serde objects is expected to be an Iterable.")
