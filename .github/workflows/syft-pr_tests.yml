@@ -70,8 +70,8 @@ jobs:
       - name: Run flake8 # applied only to diff
         run: |
           pip install pydocstyle==6.1.1 flake8==3.9.2
-          echo "git diff ${{ github.event.pull_request.base.sha  }} ${{ github.event.pull_request.head.sha}} -U0 --relative"
-          git diff ${{ github.event.pull_request.base.sha  }} ${{ github.event.pull_request.head.sha}} -U0 --relative | flake8 --diff
+          echo "git diff origin/dev HEAD -U0 --relative"
+          git diff origin/dev HEAD -U0 --relative | flake8 --diff
 
       # fails for no reason and breaks CI
       # - id: file_changes # get changed files.
