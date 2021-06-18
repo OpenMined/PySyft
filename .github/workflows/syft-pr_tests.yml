@@ -115,7 +115,7 @@ jobs:
       max-parallel: 3
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        python-version: [3.8]
+        python-version: [3.9]
         torch-version: [1.8.1]
 
     runs-on: ${{ matrix.os }}
@@ -179,7 +179,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        python-version: [3.8]
+        python-version: [3.9]
         torch-version: [1.8.1]
         os: [ubuntu-latest]
     steps:
@@ -238,7 +238,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        python-version: [3.8]
+        python-version: [3.9]
         torch-version: [1.8.1]
 
     steps:
@@ -287,7 +287,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        python-version: [3.8]
+        python-version: [3.9]
         torch-version: [1.8.1]
 
     steps:

@@ -18,7 +18,7 @@ jobs:
       max-parallel: 1
       matrix:
         os: [ubuntu-latest]
-        python-version: [3.8]
+        python-version: [3.9]
         torch-version: [1.8.1]
 
     runs-on: ${{ matrix.os }}
@@ -70,6 +70,6 @@ jobs:
           mv .snyk ${{ github.workspace }}
 
       - name: Snyk security check
-        uses: snyk/actions/python-3.8@master
+        uses: snyk/actions/python-3.9@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
