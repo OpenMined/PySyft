@@ -70,7 +70,7 @@ jobs:
       - name: Run flake8 # applied only to diff
         run: |
           pip install pydocstyle==6.1.1 flake8==3.9.2
-          git diff origin/dev HEAD -U0 --relative | cat
+          git diff ${{ github.base_ref }} ${{ github.head_ref }} -U0 --relative | cat
           git diff origin/dev HEAD -U0 --relative | flake8 --diff | cat
 
       # fails for no reason and breaks CI
