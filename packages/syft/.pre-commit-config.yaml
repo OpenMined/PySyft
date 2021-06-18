@@ -69,7 +69,7 @@ repos:
     rev: 3.7.9
     hooks:
       -  id: flake8
-         entry: bash -c 'git diff --staged -- "$@" | flake8 --diff' --
+         entry: bash -c 'git diff origin/dev HEAD -U0 --relative -- "$@" | flake8 --diff' --
 
   # - repo: https://github.com/pycqa/pydocstyle
   #   rev: 5.1.1
