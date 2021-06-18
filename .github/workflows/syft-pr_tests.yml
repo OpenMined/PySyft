@@ -66,7 +66,6 @@ jobs:
           ./scripts/build_proto.sh
 
       - name: Run flake8 # applied only to diff
-        uses: actions/checkout@v2
         run: |
           pip install pydocstyle==6.1.1 flake8==3.9.2
           git diff ${{ github.base_ref}} ${{ github.head_ref}} -U0 --relative | flake8 --diff
