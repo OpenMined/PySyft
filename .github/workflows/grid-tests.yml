@@ -123,6 +123,9 @@ jobs:
 
           # Run docformatter
           poetry run docformatter --check --recursive .
+          
+          # Run mypy
+          poetry run mypy --ignore-missing-imports --python-version ${{ matrix.python-version }} src/ tests/
 
           # Run unit tests
           poetry run coverage run -m pytest -v tests
@@ -139,6 +142,9 @@ jobs:
 
           # Run docformatter
           poetry run docformatter --check --recursive .
+          
+          # Run mypy
+          poetry run mypy --ignore-missing-imports --python-version ${{ matrix.python-version }} src/ tests/
 
           # Run unit tests
           poetry run coverage run -m pytest -v tests
@@ -155,6 +161,9 @@ jobs:
 
           # Run docformatter
           poetry run docformatter --check --recursive .
+          
+          # Run mypy
+          poetry run mypy --ignore-missing-imports --python-version ${{ matrix.python-version }} src/ tests/
 
           # Run unit tests
           poetry run coverage run -m pytest -v tests
