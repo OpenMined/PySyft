@@ -31,6 +31,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+        with:
+          - fetch-depth: 100
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
@@ -68,7 +70,7 @@ jobs:
       - name: Run flake8 # applied only to diff
         run: |
           pip install pydocstyle==6.1.1 flake8==3.9.2
-          git diff -U0 --relative | flake8 --diff  # -UO -> 0 lines of context
+          git diff -U0 --relative | flake8 --diff
 
       # fails for no reason and breaks CI
       # - id: file_changes # get changed files.
