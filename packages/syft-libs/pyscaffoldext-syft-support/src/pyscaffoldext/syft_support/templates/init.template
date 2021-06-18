@@ -1,12 +1,13 @@
 # stdlib
 import glob
+from importlib import import_module
 import inspect
 import json
 import os
-from importlib import import_module
 from os.path import basename
 from typing import Any as TypeAny
-from typing import Dict, Iterable
+from typing import Dict
+from typing import Iterable
 from typing import List as TypeList
 from typing import Tuple as TypeTuple
 
