@@ -55,8 +55,8 @@ jobs:
 
       - name: Run benchmarks
         run: |
-          pytest tests/benchmarks/pytest_benchmarks/bench_test.py --benchmark-storage=elasticsearch+http://localhost:9200/benchmarking/_doc
-          curl -X POST "localhost:9200/benchmarking/_doc?refresh=true&pretty" -H 'Content-Type: application/json' -d'{}'
+          pytest tests/benchmarks/pytest_benchmarks/bench_test.py --benchmark-autosave --benchmark-storage=elasticsearch+http://localhost:9200/benchmarking
+          curl -X POST "localhost:9200/_refresh?pretty"
 
   cleanup:
     needs: [benchmark]
