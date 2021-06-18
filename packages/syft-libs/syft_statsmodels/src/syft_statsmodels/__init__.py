@@ -20,9 +20,10 @@ def read_package_support() -> TypeList[TypeTuple[str, TypeAny]]:
     ) as f:
         data = json.load(f)
 
-    modules = [
-        (module_name, import_module(module_name)) for module_name in data["modules"]
-    ]
+    modules = []
+    for module_name in data["modules"]:
+        modules.append((module_name, import_module(module_name)))
+
     classes = []
     for path in data["classes"]:
         module, classname = path.rsplit(".", 1)
