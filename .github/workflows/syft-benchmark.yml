@@ -57,8 +57,10 @@ jobs:
           pytest tests/benchmarks/pytest_benchmarks/bench_test.py --cov-fail-under 0 --benchmark-json tests/benchmarks/pytest_benchmarks/pytest_benchmarks_output.json
           cat tests/benchmarks/pytest_benchmarks/pytest_benchmarks_output.json
 
-    cleanup:
-      - needs: [benchmark]
-      - name: Cleanup
-        run: |
-          rm -rf ../../../*
+  cleanup:
+    needs: [benchmark]
+    runs-on: [self-hosted, benchmarking-runner]
+    steps:
+    - name: Cleanup
+      run: |
+        rm -rf ../../../*
