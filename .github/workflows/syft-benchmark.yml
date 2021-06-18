@@ -56,6 +56,9 @@ jobs:
         run: |
           pytest tests/benchmarks/pytest_benchmarks/bench_test.py --cov-fail-under 0 --benchmark-json tests/benchmarks/pytest_benchmarks/pytest_benchmarks_output.json
           cat tests/benchmarks/pytest_benchmarks/pytest_benchmarks_output.json
+
+    cleanup:
+      - needs: [benchmark]
       - name: Cleanup
         run: |
-          rm -rf "${{ github.workspace }}"
+          rm -rf ../../../*
