@@ -38,13 +38,6 @@ jobs:
         run: |
           echo "::set-output name=dir::$(pip cache dir)"
 
-      - name: pip cache
-        uses: actions/cache@v2
-        with:
-          path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('./setup.cfg') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
       - name: Install Dependencies
         run: |
