@@ -54,8 +54,7 @@ jobs:
 
       - name: Run benchmarks
         run: |
-          pytest tests/benchmarks/pytest_benchmarks/bench_test.py --cov-fail-under 0 --benchmark-json tests/benchmarks/pytest_benchmarks/pytest_benchmarks_output.json
-          cat tests/benchmarks/pytest_benchmarks/pytest_benchmarks_output.json
+          pytest tests/benchmarks/pytest_benchmarks/bench_test.py --benchmark-storage=elasticsearch+http://localhost:9200/benchmarking
 
   cleanup:
     needs: [benchmark]
@@ -63,4 +62,4 @@ jobs:
     steps:
     - name: Cleanup
       run: |
-        rm -rf ~/actions-runner/_work
+        rm -rf ~/actions-runner/_work/*
