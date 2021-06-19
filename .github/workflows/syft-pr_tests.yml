@@ -69,7 +69,9 @@ jobs:
 
       - name: Run flake8 # applied only to diff
         run: |
+          echo "Installing flake8:\n"
           pip install flake8==3.9.2 flake8-docstrings==1.6.0
+          echo "Running flake8:\n"
           git diff origin/${{ github.base_ref }} HEAD -U0 --relative | flake8 --diff
 
       # fails for no reason and breaks CI
