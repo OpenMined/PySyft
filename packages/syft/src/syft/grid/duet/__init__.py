@@ -233,9 +233,11 @@ def launch_duet(
         begin_duet_logger(my_domain=my_domain)
     info(print=True)
 
+    #TODO (flight): handle outside localhost (hard)
+    #TODO (flight): get available ports
     scheme = "grpc+tcp"
     host = "localhost"
-    port = 5001
+    port = 8999
     my_domain.flight_client = FlightClientDuet(f"{scheme}://{host}:{port}")
 
     return out_duet
@@ -303,11 +305,14 @@ def join_duet(
     info("♫♫♫ > " + bcolors.OKGREEN + "CONNECTED!" + bcolors.ENDC, print=True)
     # begin_duet_client_logger(duet.node)
 
+    #TODO (flight): handle outside localhost (hard)
+    #TODO (flight): get available ports
+
     flight_args = {
         'scheme': 'grpc+tcp',
         'tls': False,
         'host': 'localhost',
-        'port': 5001,
+        'port': 8999,
         'verify_client': False,
         'root_certificates': None,
         'auth_handler': None,
