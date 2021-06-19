@@ -16,6 +16,7 @@ message GetObjectAction {
 
 message GetObjectResponseMessage {
   syft.core.common.UID msg_id = 1;
-  syft.core.store.StorableObject obj = 2;
+  optional syft.core.store.StorableObject obj = 2;
   syft.core.io.Address address = 3;
+  bool flight_transfer = 4;
 }

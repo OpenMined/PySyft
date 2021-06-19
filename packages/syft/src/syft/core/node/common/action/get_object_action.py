@@ -41,10 +41,11 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
     """
 
     def __init__(
-        self, obj: StorableObject, address: Address, msg_id: Optional[UID] = None
+        self, obj: StorableObject = None, address: Address = None, msg_id: Optional[UID] = None, flight_transfer = False,
     ) -> None:
         super().__init__(address=address, msg_id=msg_id)
         self.obj = obj
+        self.flight_transfer = flight_transfer
 
     def _object2proto(self) -> GetObjectResponseMessage_PB:
         """Returns a protobuf serialization of self.
@@ -61,13 +62,20 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
             the other public serialization methods if you wish to serialize an
             object.
         """
-        ser = serialize(self.obj)
-
-        return GetObjectResponseMessage_PB(
-            msg_id=serialize(self.id),
-            address=serialize(self.address),
-            obj=ser,
-        )
+        if self.obj:
+            ser = serialize(self.obj)
+            return GetObjectResponseMessage_PB(
+                msg_id=serialize(self.id),
+                address=serialize(self.address),
+                obj=ser,
+                flight_transfer=self.flight_transfer,
+            )
+        else:
+            return GetObjectResponseMessage_PB(
+                msg_id=serialize(self.id),
+                address=serialize(self.address),
+                flight_transfer=self.flight_transfer,
+            )
 
     @staticmethod
     def _proto2object(proto: GetObjectResponseMessage_PB) -> "GetObjectResponseMessage":
@@ -83,11 +91,19 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
-        return GetObjectResponseMessage(
-            obj=_deserialize(blob=proto.obj),
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
-        )
+        if proto.HasField('obj'):
+            return GetObjectResponseMessage(
+                obj=_deserialize(blob=proto.obj),
+                msg_id=_deserialize(blob=proto.msg_id),
+                address=_deserialize(blob=proto.address),
+                flight_transfer=proto.flight_transfer,
+            )
+        else:
+            return GetObjectResponseMessage(
+                msg_id=_deserialize(blob=proto.msg_id),
+                address=_deserialize(blob=proto.address),
+                flight_transfer=proto.flight_transfer,
+            )
 
     @property
     def data(self) -> object:
@@ -181,9 +197,23 @@ class GetObjectAction(ImmediateActionWithReply):
                 )
                 traceback_and_raise(AuthorizationException(log))
 
-            obj = validate_type(storable_object.clean_copy(), StorableObject)
-
-            msg = GetObjectResponseMessage(obj=obj, address=self.reply_to, msg_id=None)
+            flight_transfer = False
+            try:
+                #TODO (flight): add flight/WebRTC choice param
+                if 'numpy.ndarray' in str(type(storable_object.data)):
+                    flight_transfer = True
+                    #TODO: send flight data in background
+                    node.flight_client.put_object(self.id_at_location, storable_object.data)
+            except:
+                print("numpy.ndarray flight transfer failed. Using WebRTC instead.")
+                flight_transfer = False
+                
+            msg = []
+            if flight_transfer:
+                msg = GetObjectResponseMessage(address=self.reply_to, msg_id=None, flight_transfer=flight_transfer)
+            else:
+                obj = validate_type(storable_object.clean_copy(), StorableObject)
+                msg = GetObjectResponseMessage(obj=obj, address=self.reply_to, msg_id=None, flight_transfer=flight_transfer)
 
             if self.delete_obj:
                 try:

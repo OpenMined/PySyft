@@ -21,6 +21,7 @@ from ..core.node.common.action.get_or_set_property_action import GetOrSetPropert
 from ..core.node.common.action.get_or_set_property_action import PropertyActions
 from ..core.node.common.action.run_class_method_action import RunClassMethodAction
 from ..core.node.common.action.save_object_action import SaveObjectAction
+from ..core.node.common.action.call_do_exchange_action import CallDoExchangeAction
 from ..core.node.common.service.resolve_pointer_type_service import (
     ResolvePointerTypeMessage,
 )
@@ -402,6 +403,20 @@ class Class(Callable):
             # TODO: Allow Classes to opt out in the AST like Pandas where the properties
             # would break their dict attr usage
             # Issue: https://github.com/OpenMined/PySyft/issues/5322
+
+            #TODO (flight): currently only for duet client with WebRTCConnection, make it work for other clients
+            #TODO (flight): add flight/WebRTC choice param
+            try:
+                if outer_self.pointer_name == "ndarrayPointer":
+                    id_at_location = UID()
+                    #TODO (flight): fix permissions
+                    client.flight_server.add_accessible(self, id_at_location)
+                    obj_msg = CallDoExchangeAction(id_at_location, address=client.address)
+                    client.send_immediate_msg_without_reply(msg=obj_msg)
+                    return
+            except:
+                pass
+
             if outer_self.pointer_name not in {"DataFramePointer", "SeriesPointer"}:
                 attach_tags(self, tags)
                 attach_description(self, description)

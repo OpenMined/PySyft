@@ -7,9 +7,12 @@ from typing import Generator
 from typing import Optional
 
 # third party
+import threading
 import requests
 
 # syft relative
+from ..flight.flight_client import FlightClientDuet
+from ..flight.flight_server import FlightServerDuet
 from ...core.common.environment import is_jupyter
 from ...core.node.common.client import Client
 from ...core.node.domain.domain import Domain
@@ -230,6 +233,11 @@ def launch_duet(
         begin_duet_logger(my_domain=my_domain)
     info(print=True)
 
+    scheme = "grpc+tcp"
+    host = "localhost"
+    port = 5001
+    my_domain.flight_client = FlightClientDuet(f"{scheme}://{host}:{port}")
+
     return out_duet
 
 
@@ -294,5 +302,19 @@ def join_duet(
     info(print=True)
     info("♫♫♫ > " + bcolors.OKGREEN + "CONNECTED!" + bcolors.ENDC, print=True)
     # begin_duet_client_logger(duet.node)
+
+    flight_args = {
+        'scheme': 'grpc+tcp',
+        'tls': False,
+        'host': 'localhost',
+        'port': 5001,
+        'verify_client': False,
+        'root_certificates': None,
+        'auth_handler': None,
+    }
+
+    flight_server = FlightServerDuet(flight_args)
+    threading.Thread(target=flight_server.serve).start()
+    duet.flight_server = flight_server
 
     return duet

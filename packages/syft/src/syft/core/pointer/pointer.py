@@ -176,7 +176,15 @@ class Pointer(AbstractPointer):
             delete_obj=delete_obj,
         )
 
-        obj = self.client.send_immediate_msg_with_reply(msg=obj_msg).data
+        response = self.client.send_immediate_msg_with_reply(msg=obj_msg)
+
+        if response.flight_transfer:
+            #TODO (flight): add wait till object received via flight (+ implementing background send)
+            #TODO (flight): potentially add non-blocking get
+            return self.client.flight_server.retrieve_accessible(self.id_at_location) 
+        else:
+            obj = response.data
+
         if self.is_enum:
             enum_class = self.client.lib_ast.query(self.path_and_name).object_ref
             return enum_class(obj)
