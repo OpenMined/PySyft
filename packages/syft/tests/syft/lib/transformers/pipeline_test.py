@@ -1,8 +1,8 @@
 # third party
-import pytest
+# import pytest
 
 # syft absolute
-import syft as sy
+# import syft as sy
 
 # @pytest.mark.vendor(lib="transformers")
 # def test_pipeline(
