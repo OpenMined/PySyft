@@ -128,7 +128,7 @@ class Node(AbstractNode):
         # If not provided a session connecting us to the database, let's just
         # initialize a database in memory
         if db_session is None:
-
+            print("INITIALIZING IN MEMORY STORE!!!")
             # If a DB engine isn't provided then
             if engine is None:
                 engine = create_engine("sqlite:///:memory:", echo=False)
