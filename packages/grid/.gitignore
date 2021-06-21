@@ -24,6 +24,7 @@ notebooks/ipfs.log
 .idea/*
 venv/
 test_flask_grid_server.db
+**tmp**
 
 # Sphinx documentation
 docs/_build/
