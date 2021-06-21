@@ -12,6 +12,11 @@ from flask import current_app as app
 import jwt
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+<<<<<<< HEAD:packages/grid/apps/domain/src/main/core/domain.py
+=======
+
+import syft as sy
+>>>>>>> dev:packages/grid/apps/domain/src/main/core/nodes/domain.py
 from syft import serialize
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
@@ -67,7 +72,6 @@ from .services.setup_service import SetUpService
 from .services.tensor_service import RegisterTensorService
 from .services.transfer_service import TransferObjectService
 from .services.user_service import UserManagerService
-
 
 class GridDomain(Domain):
     def __init__(
