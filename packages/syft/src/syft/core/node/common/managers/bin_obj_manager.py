@@ -83,6 +83,7 @@ class BinObjectManager(ObjectStore):
                 values.append(self.__getitem__(key))
             except Exception as e:  # noqa: F841
                 print("Unable to get item for key", key)  # TODO: TechDebt add logging
+                print(e)
         return values
 
     def __contains__(self, key: UID) -> bool:

@@ -147,12 +147,6 @@ class Node(AbstractNode):
         # launch the tables in the database
         self.TableBase.metadata.create_all(engine)
 
-        self.store = BinObjectManager(
-            db_session=self.db_session,
-            bin_obj_table=self.bin_obj_table,
-            bin_obj_metadata_table=self.bin_obj_metadata_table,
-        )
-
         # Any object that needs to be stored on a node is stored here
         # More specifically, all collections of objects are found here
         # There should be NO COLLECTIONS stored as attributes directly
@@ -160,18 +154,11 @@ class Node(AbstractNode):
         # become quite numerous (or otherwise fill up RAM).
         # self.store is the elastic memory.
 
-        # if db_path is not None:
-        #     try:
-        #         self.store = DiskObjectStore(db_path=db_path)
-        #         log = f"Opened DiskObjectStore at {db_path}."
-        #         debug(log)
-        #     except Exception as e:
-        #         log = f"Failed to open DiskObjectStore at {db_path}. {e}"
-        #         critical(log)
-        # else:
-        #     self.store = MemoryStore()
-        #     log = "Created MemoryStore."
-        #     debug(log)
+        self.store = BinObjectManager(
+            db_session=self.db_session,
+            bin_obj_table=self.bin_obj_table,
+            bin_obj_metadata_table=self.bin_obj_metadata_table,
+        )
 
         # We need to register all the services once a node is created
         # On the off chance someone forgot to do this (super unlikely)
