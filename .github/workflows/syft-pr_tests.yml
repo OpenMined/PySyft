@@ -65,6 +65,7 @@ jobs:
           pip install black isort --default-timeout=60
           ./scripts/build_proto.sh
 
+      # fails for no reason and breaks CI
       # - id: file_changes # get changed files.
       #   uses: trilom/file-changes-action@v1.2.3
       #   with:
@@ -74,7 +75,7 @@ jobs:
           pwd
           ls
           cp .pre-commit-config.yaml ../../
-      - uses: pre-commit/action@v2.0.0
+      - uses: pre-commit/action@v2.0.3
       # with:
       #   extra_args: --files ${{ steps.file_changes.outputs.files}} # apply only to changed files.
 
@@ -114,7 +115,7 @@ jobs:
       max-parallel: 3
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        python-version: [3.8]
+        python-version: [3.9]
         torch-version: [1.8.1]
 
     runs-on: ${{ matrix.os }}
@@ -178,7 +179,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        python-version: [3.8]
+        python-version: [3.9]
         torch-version: [1.8.1]
         os: [ubuntu-latest]
     steps:
@@ -237,7 +238,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        python-version: [3.8]
+        python-version: [3.9]
         torch-version: [1.8.1]
 
     steps:
@@ -286,7 +287,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        python-version: [3.8]
+        python-version: [3.9]
         torch-version: [1.8.1]
 
     steps:

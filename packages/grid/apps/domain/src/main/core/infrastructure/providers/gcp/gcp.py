@@ -180,17 +180,14 @@ class GCP(Provider):
             export zone={self.config.gcp.zone},
             export machine_type={self.config.gcp.machine_type},
 
-            echo 'Cloning PyGrid'
-            git clone https://github.com/OpenMined/PyGrid && cd /PyGrid/
+            echo 'Cloning PySyft'
+            git clone https://github.com/OpenMined/PySyft && cd /PySyft/
             git checkout {branch}
 
-            cd /PyGrid/apps/{self.config.app.name}
+            cd /PySyft/packages/grid/apps/{self.config.app.name}
 
             echo 'Installing {self.config.app.name} Dependencies'
             poetry install
-
-            ## TODO(amr): remove this after poetry updates
-            pip install pymysql
 
             nohup ./run.sh --port {app.port}  --host 0.0.0.0 --start_local_db
             """
@@ -224,11 +221,11 @@ class GCP(Provider):
             sudo apt-get install libevent-dev -y
             sudo apt-get install gcc -y
 
-            echo 'Cloning PyGrid'
-            git clone https://github.com/OpenMined/PyGrid && cd /PyGrid/
+            echo 'Cloning PySyft'
+            git clone https://github.com/OpenMined/PySyft && cd /PySyft/
             git checkout {branch}
 
-            cd /PyGrid/apps/worker
+            cd /PySyft/packages/grid/apps/worker
             echo 'Installing worker Dependencies'
             poetry install
             nohup ./run.sh --port {app.port}  --host 0.0.0.0

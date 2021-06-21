@@ -47,7 +47,7 @@ You will need to use a [GCP service account](https://cloud.google.com/docs/authe
 
 [Instructions for adding credentials](https://registry.terraform.io/providers/hashicorp/google/latest/docs/guides/getting_started#adding-credentials)
 
-Or through using [GCloud CLI](https://cloud.google.com/sdk/docs/install) and loggining to your GCP provider through this command:
+Or through using [GCloud CLI](https://cloud.google.com/sdk/docs/install) and logging to your GCP provider through this command:
 
 ```shell
 gcloud auth application-default login
@@ -81,7 +81,7 @@ pip install pygrid-cli
 
 ### Manual install
 
-To get started, install the CLI first through thess commands:
+To get started, install the CLI first through these commands:
 
 Clone PyGrid Repo:
 

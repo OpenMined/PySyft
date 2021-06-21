@@ -15,14 +15,7 @@ def test_tokenizer_serde() -> None:
     alice = sy.VirtualMachine()
     alice_client = alice.get_root_client()
 
-    tokenizer = transformers.AutoTokenizer.from_pretrained("bert-base-uncased")
-    tokenizer = transformers.PreTrainedTokenizerFast(
-        tokenizer_object=tokenizer._tokenizer,
-        name_or_path=tokenizer.name_or_path,
-        padding_side=tokenizer.padding_side,
-        model_max_length=tokenizer.model_max_length,
-        **tokenizer.special_tokens_map
-    )
+    tokenizer = transformers.AutoTokenizer.from_pretrained("distilbert-base-uncased")
 
     tok_ptr = tokenizer.send(alice_client)
     tok_serde = tok_ptr.get()
@@ -39,14 +32,8 @@ def test_batchencoding_serde() -> None:
     alice = sy.VirtualMachine()
     alice_client = alice.get_root_client()
 
-    tokenizer = transformers.AutoTokenizer.from_pretrained("bert-base-uncased")
-    tokenizer = transformers.PreTrainedTokenizerFast(
-        tokenizer_object=tokenizer._tokenizer,
-        name_or_path=tokenizer.name_or_path,
-        padding_side=tokenizer.padding_side,
-        model_max_length=tokenizer.model_max_length,
-        **tokenizer.special_tokens_map
-    )
+    tokenizer = transformers.AutoTokenizer.from_pretrained("distilbert-base-uncased")
+
     tok_ptr = tokenizer.send(alice_client)
 
     batch = ["This is a test", "Another test!"]

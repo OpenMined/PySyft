@@ -21,7 +21,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        python-version: [3.8]
+        python-version: [3.9]
 
     steps:
       - uses: actions/checkout@v2
@@ -52,20 +52,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
-      - id: file_changes # get changed files.
-        uses: trilom/file-changes-action@v1.2.3
-        with:
-          output: " "
+      # fails for no reason and breaks CI
+      # - id: file_changes # get changed files.
+      #   uses: trilom/file-changes-action@v1.2.3
+      #   with:
+      #     output: " "
 
       - name: Hack pre-commit # https://github.com/pre-commit/action/issues/44
         run: |
           pwd
           ls
           cp .pre-commit-config.yaml ../../
-      - uses: pre-commit/action@v2.0.0
+      - uses: pre-commit/action@v2.0.3
         continue-on-error: true
-        with:
-          extra_args: --files ${{ steps.file_changes.outputs.files}} # apply only to changed files.
 
   build:
     runs-on: ubuntu-latest
@@ -73,7 +72,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: [3.8]
+        python-version: [3.9]
 
     steps:
       - uses: actions/checkout@v1
@@ -108,7 +107,7 @@ jobs:
       #   with:
       #     output: ' '
 
-      # - uses: pre-commit/action@v2.0.0
+      # - uses: pre-commit/action@v2.0.3
       #   with:
       #     extra_args: --files ${{ steps.file_changes.outputs.files}}  # apply only to changed files.
 
