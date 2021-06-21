@@ -150,26 +150,29 @@ class GridClient(DomainClient):
             logging.warn(
                 "This node probably already has an owner. Trying to log in instead."
             )
+            logging.warning(e)
             return login(email=kwargs["email"], password=kwargs["password"])
 
-    def register(self, email:str, password:str, role=None) -> Any:
+    def register_user(
+        self, email: str, password: str, role: Optional[str] = None
+    ) -> Any:
 
         try:
 
             if role is None:
                 return self.users.create(email=email, password=password)
 
-            return self.users.create(
-                email=email, password=password, role=role
-            )
+            return self.users.create(email=email, password=password, role=role)
 
         except Exception as e:
             logging.warn("This user probably already exists. Trying to log in instead.")
-
+            logging.warn(e)
             return login(email=email, password=password)
 
-    def register_compliance_officer(self, email:str, password:str) -> Any:
-        return self.register(email=email, password=password, role="Compliance Officer")
+    def register_compliance_officer(self, email: str, password: str) -> Any:
+        return self.register_user(
+            email=email, password=password, role="Compliance Officer"
+        )
 
     def get_setup(self, **kwargs: Any) -> Any:
         return self.__perform_grid_request(grid_msg=GetSetUpMessage, content=kwargs)
@@ -183,7 +186,9 @@ class GridClient(DomainClient):
 
         return response
 
-    def upload_dataset(self, data, description, tags=list()):
+    def upload_dataset(
+        self, data: Any, description: str, tags: List[str] = list()
+    ) -> Dataset:
         d = Dataset(data=data, description=description, tags=tags)
         path = d.tozip()
         self.datasets.create(path)
@@ -289,11 +294,18 @@ def login(
     return connect(url=url, credentials=credentials, conn_type=conn_type)
 
 
-def register(email: str, password: str, url: Optional[str] = DEFAULT_PYGRID_ADDRESS):
-    login(url=url).register(email=email, password=password)
+def register(
+    email: str, password: str, url: str = DEFAULT_PYGRID_ADDRESS
+) -> GridClient:
+    login(url=url).register_user(email=email, password=password)
     return login(url=url, email=email, password=password)
 
 
-def register_root(email: str, password: str, domain_name:str, url: Optional[str]=DEFAULT_PYGRID_ADDRESS) -> GridClient:
+def register_root(
+    email: str,
+    password: str,
+    domain_name: str,
+    url: str = DEFAULT_PYGRID_ADDRESS,
+) -> GridClient:
     login().setup(email=email, password=password, domain_name=domain_name, url=url)
     return login(email=email, password=password, url=url)

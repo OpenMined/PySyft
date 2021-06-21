@@ -29,32 +29,32 @@ class Dataset:
         elif isinstance(data, list):
             data = np.array(data)
         self.data = data
-        self.desc = description
-        self.tags = tags
+        self.desc = description if description is not None else ""
+        self.tags = tags if tags is not None else []
 
-    def tozip(self) -> Path:
+    def tozip(self) -> str:
         tempdir = Path(
             "/tmp" if platform.system() == "Darwin" else tempfile.gettempdir()
         )
-        tempdir = str(tempdir.absolute())
-        np.savetxt(tempdir + "/data_01.csv", self.data, delimiter=",")
-        f = open(tempdir + "/manifest", "w")
+        tempdir_str = str(tempdir.absolute())
+        np.savetxt(tempdir_str + "/data_01.csv", self.data, delimiter=",")
+        f = open(tempdir_str + "/manifest", "w")
         f.write(self.desc)
         f.close()
-        f = open(tempdir + "/description", "w")
+        f = open(tempdir_str + "/description", "w")
         f.write(self.desc)
         f.close()
-        f = open(tempdir + "/tags", "w")
+        f = open(tempdir_str + "/tags", "w")
         for tag in self.tags:
             f.write(tag + "\n")
         f.close()
-        tar = tarfile.open(tempdir + "/sample.tar.gz", "w:gz")
+        tar = tarfile.open(tempdir_str + "/sample.tar.gz", "w:gz")
         for name in [
-            tempdir + "/data_01.csv",
-            tempdir + "/manifest",
-            tempdir + "/description",
-            tempdir + "/tags",
+            tempdir_str + "/data_01.csv",
+            tempdir_str + "/manifest",
+            tempdir_str + "/description",
+            tempdir_str + "/tags",
         ]:
             tar.add(name)
         tar.close()
-        return tempdir + "/sample.tar.gz"
+        return tempdir_str + "/sample.tar.gz"
