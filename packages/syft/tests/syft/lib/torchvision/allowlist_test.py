@@ -18,8 +18,11 @@ from syft.lib.torchvision.allowlist import allowlist
 
 TORCHVISION_VERSION = version.parse(tv.__version__)
 PIL = pytest.importorskip("PIL")
+np = pytest.importorskip("numpy")
+
 Image = PIL.Image.Image
 sy.load("PIL")
+sy.load("numpy")
 
 
 @pytest.fixture(scope="function")

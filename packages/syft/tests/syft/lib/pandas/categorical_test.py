@@ -9,8 +9,6 @@ import syft as sy
 
 pd = pytest.importorskip("pandas")
 np = pytest.importorskip("np")
-sy.load("pandas")
-sy.load("numpy")
 
 
 inputs = [
