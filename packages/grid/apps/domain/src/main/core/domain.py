@@ -12,11 +12,7 @@ from flask import current_app as app
 import jwt
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
-<<<<<<< HEAD:packages/grid/apps/domain/src/main/core/domain.py
-=======
 
-import syft as sy
->>>>>>> dev:packages/grid/apps/domain/src/main/core/nodes/domain.py
 from syft import serialize
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
