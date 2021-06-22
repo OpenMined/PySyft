@@ -29,11 +29,10 @@ jobs:
         uses: gabrielfalcao/pyenv-action@v7
         with:
           default: 3.8.6
-          command: pip install -U pip  # upgrade pip after installing python
+          command: |
+            sudo apt-get install tox
+            tox -e grid.precommit
 
-      - name: Run precommit check
-        run: |
-          tox -e grid.precommit
 
   build:
     runs-on: ubuntu-latest
