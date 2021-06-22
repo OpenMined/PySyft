@@ -35,7 +35,8 @@ jobs:
 
       - name: Install Dependencies
           if: steps.cache.outputs.cache-hit != 'true'
-          run: /install.sh
+          run:
+            echo "HI"
 
       - name: Install and run tox
         run: |
