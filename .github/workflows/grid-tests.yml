@@ -30,17 +30,13 @@ jobs:
         run: |
           sudo apt-get install -y tox
           curl https://pyenv.run | bash
-          export PYENV_ROOT="$HOME/.pyenv"
-          export PATH="$PYENV_ROOT/bin:$PATH"
-          eval "$(pyenv init --path)"
-          eval "$(pyenv init -)"
-          eval "$(pyenv virtualenv-init -)"
+          echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
+          echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
+          echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n eval "$(pyenv init -)"\nfi' >> ~/.bashrc
+          exec "$SHELL"
 
       - name: Run precommit check
         run: |
-          eval "$(pyenv init --path)"
-          eval "$(pyenv init -)"
-          eval "$(pyenv virtualenv-init -)"
           tox -e grid.precommit
 
   build:
