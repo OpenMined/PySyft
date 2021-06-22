@@ -35,6 +35,9 @@ jobs:
           echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n eval "$(pyenv init -)"\nfi' >> ~/.bashrc
           exec "$SHELL"
 
+      - name: Check pyenv
+        run: |
+          pyenv install --list
       - name: Run precommit check
         run: |
           tox -e grid.precommit
