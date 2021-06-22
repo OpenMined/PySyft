@@ -27,12 +27,6 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install python ${{ matrix.python-version }}
         uses: gabrielfalcao/pyenv-action@v7
-        with:
-          default: 3.9
-          command: |
-              pyenv install -l
-              sudo apt-get install tox
-              tox -e grid.precommit
 
       - name: Check pyenv
         run: |
