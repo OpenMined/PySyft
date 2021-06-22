@@ -48,11 +48,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
-      - name: Scan for security issues
-        run: |
-          bandit -r src
-          safety check
-
       - name: Install and run tox
         run: |
           pip install tox
