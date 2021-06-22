@@ -25,6 +25,7 @@ jobs:
       - name: Install and run tox
         run: |
           pip install tox
+          pyenv install 3.9.5
           tox -e grid.precommit
 
   build:
