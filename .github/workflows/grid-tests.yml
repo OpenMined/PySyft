@@ -24,13 +24,10 @@ jobs:
         python-version: [3.9]
 
     steps:
-      - uses: actions/checkout@v2
-
-        runs-on: ubuntu-latest
-        name: install pyenv
-        steps:
-        - name: setup pyenv
-          uses: "gabrielfalcao/pyenv-action@v5"
+      - name: setup pyenv
+        uses: "gabrielfalcao/pyenv-action@v5"
+        with:
+            default: 3.9
 
       - name: Check pyenv
         run: |
