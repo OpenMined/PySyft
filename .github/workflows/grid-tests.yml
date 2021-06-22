@@ -24,19 +24,12 @@ jobs:
         python-version: [3.9]
 
     steps:
-      - name: setup pyenv
-        uses: "gabrielfalcao/pyenv-action@v7"
-        with:
-            default: 3.9
-
-      - name: Create virtualenv for python 3.8.6
-        run: pyenv local 3.8.6
-
-      - name: Install BlockDiag
-        run: make installBlockDiag
-
-      - name: Test BlockDiag
-        run: make testBlockDiag
+    - uses: actions/checkout@v2
+    - name: Install python 3.8.6
+      uses: gabrielfalcao/pyenv-action@v7
+      with:
+        default: 3.8.6
+        command: pip install -U pip  # upgrade pip after installing python
 
       - name: Run precommit check
         run: |
