@@ -30,6 +30,7 @@ jobs:
 
       - name: Update pyenv
         run: |
+          pyenv --version
           git clone https://github.com/pyenv/pyenv-update.git $(pyenv root)/plugins/pyenv-update
           pyenv update
       - name: Check pyenv
