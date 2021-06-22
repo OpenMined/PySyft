@@ -25,91 +25,97 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Install pyenv
-        uses: gabrielfalcao/pyenv-action@v8
 
-      - name: Install Tox
-        id: install
+      - name: Set up Python 3.9.5
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9.5
+
+      - name: Upgrade pip
         run: |
-          pip install tox
-          echo "::set-output name=pyenv_version::$PYENV_ROOT"
+          pip install --upgrade --user pip
+
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
-        id: cache
         uses: actions/cache@v2
         with:
-          path: ${{ steps.install.outputs.pyenv_version }}/versions/
-          key: ${{ runner.os }}-${{ hashFiles('.python-version') }}
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - name: Scan for security issues
+        run: |
+          bandit -r src
+          safety check
 
       - name: Install and run tox
         run: |
-          tox -l
+          pip install tox
           tox -e syft.precommit
 
-#  python-tests-latest-versions:
-#    needs: [python-linting]
-#    strategy:
-#      max-parallel: 3
-#      matrix:
-#        os: [windows-latest, ubuntu-latest, macos-latest]
-#        python-version: [3.9]
-#        torch-version: [1.8.1]
-#
-#    runs-on: ${{ matrix.os }}
-#    steps:
-#      - uses: actions/checkout@v2
-#
-#      - name: Set up Python ${{ matrix.python-version }}
-#        uses: actions/setup-python@v2
-#        with:
-#          python-version: ${{ matrix.python-version }}
-#
-#      - name: Upgrade pip
-#        run: |
-#          pip install --upgrade --user pip
-#
-#      - name: Get pip cache dir
-#        id: pip-cache
-#        run: |
-#          echo "::set-output name=dir::$(pip cache dir)"
-#
-#      - name: pip cache
-#        uses: actions/cache@v2
-#        with:
-#          path: ${{ steps.pip-cache.outputs.dir }}
-#          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
-#          restore-keys: |
-#            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
-#
-#      - name: Install Dependencies
-#        run: |
-#          pip install packaging --default-timeout=60
-#          python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
-#          grep -A 3 "torch_ecosystem" setup.cfg
-#          pip install -r requirements.unstable.txt
-#          pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
-#          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
-#
-#      - name: Scan for security issues
-#        run: |
-#          bandit -r src
-#          safety check
-#
-#      - name: Install libomp for XGBoost
-#        if: startsWith(runner.os, 'macos')
-#        run: |
-#          brew install libomp
-#
-#      - name: Run normal tests
-#        run: |
-#          pytest -m 'fast or slow' --cov syft --cov-fail-under 80 -n auto --durations=50
-#
-#      - name: Run supported library tests
-#        run: |
-#          pytest -m libs --co --durations=50
-#          pytest -m libs -n auto -k "not tenseal" --suppress-no-test-exit-code --durations=50
-#          pytest -m libs -n 1 -k "tenseal" --suppress-no-test-exit-code --durations=50
-#
+  python-tests-latest-versions:
+    needs: [python-linting]
+    strategy:
+      max-parallel: 3
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        python-version: [3.9]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
+
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - name: Install Dependencies
+        run: |
+          pip install packaging --default-timeout=60
+          python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
+          grep -A 3 "torch_ecosystem" setup.cfg
+          pip install -r requirements.unstable.txt
+          pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
+          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
+
+      - name: Install libomp for XGBoost
+        if: startsWith(runner.os, 'macos')
+        run: |
+          brew install libomp
+
+      - name: Run normal tests
+        run: |
+          pytest -m 'fast or slow' --cov syft --cov-fail-under 80 -n auto --durations=50
+
+      - name: Run supported library tests
+        run: |
+          pytest -m libs --co --durations=50
+          pytest -m libs -n auto -k "not tenseal" --suppress-no-test-exit-code --durations=50
+          pytest -m libs -n 1 -k "tenseal" --suppress-no-test-exit-code --durations=50
+
 #  python-nb-examples:
 #    needs: [python-linting]
 #    runs-on: ${{ matrix.os }}
