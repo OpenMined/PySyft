@@ -34,9 +34,8 @@ jobs:
           pip install tox
 
       - name: Install Dependencies
-          if: steps.cache.outputs.cache-hit != 'true'
-          run: |
-            echo "HI2"
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: echo "HI2"
 
 
       - name: Install and run tox
