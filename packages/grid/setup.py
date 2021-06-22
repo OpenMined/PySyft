@@ -6,8 +6,8 @@ from setuptools import setup
 
 here = os.path.abspath(os.path.dirname(__file__))
 
-# Get the long description from the README.mf file
-with open(os.path.join(here, "deployment.md"), encoding="utf-8") as f:
+# Get the long description from the README.md file
+with open(os.path.join(here, "DEPLOYMENT.md"), encoding="utf-8") as f:
     long_description = f.read()
 
 setup(
@@ -24,7 +24,7 @@ setup(
         "apps.domain.src.main.core.infrastructure.providers.azure",
         "apps.domain.src.main.core.infrastructure.providers.gcp",
     ],
-    install_requires=["click", "PyInquirer", "terrascript", "boto3"],
+    install_requires=["click", "PyInquirer", "terrascript", "boto3", "flask"],
     entry_points="""
         [console_scripts]
         pygrid=apps.domain.src.main.core.infrastructure.cli:cli
