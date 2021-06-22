@@ -65,3 +65,6 @@ override.tf.json
 .terraformrc
 terraform.rc
 .vscode/
+
+# data
+apps/domain/diabetes-data/*
