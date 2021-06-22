@@ -26,45 +26,14 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Upgrade pip
+      - name: Install Tox and pyenv
         run: |
-          pip install --upgrade --user pip
+          curl https://pyenv.run | bash
+          sudo apt-get install -y python-tox
 
-      - name: Install Poetry
-        run: |
-          pip install poetry
-
-      - name: Get poetry cache dir
-        id: poetry-cache
-        run: |
-          echo "::set-output name=dir::$(poetry config cache-dir)"
-
-      - name: poetry cache
-        uses: actions/cache@v2
-        with:
-          path: ${{ steps.poetry-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('**/pyproject.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
-
-      # fails for no reason and breaks CI
-      # - id: file_changes # get changed files.
-      #   uses: trilom/file-changes-action@v1.2.3
-      #   with:
-      #     output: " "
-
-      - name: Hack pre-commit # https://github.com/pre-commit/action/issues/44
-        run: |
-          pwd
-          ls
-          cp .pre-commit-config.yaml ../../
-      - uses: pre-commit/action@v2.0.3
-        continue-on-error: true
+      -name: Run precommit check
+      - run: |
+          tox -e grid.precommit
 
   build:
     runs-on: ubuntu-latest
