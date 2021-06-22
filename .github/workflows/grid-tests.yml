@@ -38,6 +38,9 @@ jobs:
 
       - name: Run precommit check
         run: |
+          eval "$(pyenv init --path)"
+          eval "$(pyenv init -)"
+          eval "$(pyenv virtualenv-init -)"
           tox -e grid.precommit
 
   build:
