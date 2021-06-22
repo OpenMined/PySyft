@@ -1,0 +1,7 @@
+[flake8]
+max-line-length = 100
+exclude = .git,.eggs,__pycache__,build,dist,venv,syft
+max-complexity = 11
+show-source = true
+statistics = true
+count = true

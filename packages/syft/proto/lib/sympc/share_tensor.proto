@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package syft.lib.sympc;
+
+import "proto/lib/torch/tensor.proto";
+import "proto/lib/python/dict.proto";
+
+message ShareTensor {
+  syft.lib.torch.TensorProto tensor = 1;
+  syft.lib.python.Dict config = 2;
+  string session_uuid = 3;
+}
