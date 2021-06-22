@@ -31,7 +31,7 @@ jobs:
         id: cache
         uses: actions/cache@v2
         with:
-          path: $PYENV_ROOT/versions/
+          path: $(PYENV_ROOT)/versions/
           key: ${{ runner.os }}-${{ hashFiles('.python-version') }}
 
       - name: Install and run tox
