@@ -31,7 +31,7 @@ jobs:
           curl https://pyenv.run | bash
           sudo apt-get install -y python-tox
 
-      -name: Run precommit check
+      - name: Run precommit check
       - run: |
           tox -e grid.precommit
 
