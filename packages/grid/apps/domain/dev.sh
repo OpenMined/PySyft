@@ -14,4 +14,4 @@ export LOCAL_DATABASE=True
 export PYTHONPATH="${PYTHONPATH}:${APP_SRC}"
 
 # run
-flask run
+poetry run flask run

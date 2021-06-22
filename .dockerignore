@@ -1,0 +1,6 @@
+.tox
+.vscode
+scripts
+.mypy_cache
+.benchmarks
+docker
