@@ -32,7 +32,7 @@ jobs:
           sudo apt-get install -y python-tox
 
       - name: Run precommit check
-      - run: |
+        run: |
           tox -e grid.precommit
 
   build:
