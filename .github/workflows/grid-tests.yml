@@ -34,6 +34,9 @@ jobs:
               sudo apt-get install tox
               tox -e grid.precommit
 
+      - name: Check pyenv
+        run: |
+          pyenv install -l
 
   build:
     runs-on: ubuntu-latest
