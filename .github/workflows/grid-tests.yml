@@ -29,10 +29,10 @@ jobs:
         uses: gabrielfalcao/pyenv-action@v7
         with:
           default: 3.9
-        run: |
-            pyenv install -l
-            sudo apt-get install tox
-            tox -e grid.precommit
+          command: |
+              pyenv install -l
+              sudo apt-get install tox
+              tox -e grid.precommit
 
 
   build:
