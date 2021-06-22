@@ -28,7 +28,7 @@ jobs:
 
       - name: Install Tox and pyenv
         run: |
-          sudo apt-get install -y python-tox
+          sudo apt-get install -y tox
           curl https://pyenv.run | bash
 
       - name: Run precommit check
