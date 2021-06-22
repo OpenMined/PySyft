@@ -26,7 +26,7 @@ jobs:
         id: install
         run: |
           pip install tox
-          echo "::set-output name=pyenv_version::$PYENV_ROOT)"
+          echo "::set-output name=pyenv_version::$PYENV_ROOT"
 
       - name: pip cache
         id: cache
