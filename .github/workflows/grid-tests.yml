@@ -25,7 +25,7 @@ jobs:
 
     steps:
       - name: setup pyenv
-        uses: "gabrielfalcao/pyenv-action@v5"
+        uses: "gabrielfalcao/pyenv-action@v7"
         with:
             default: 3.9
 
