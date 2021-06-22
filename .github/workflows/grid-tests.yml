@@ -27,6 +27,8 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install python ${{ matrix.python-version }}
         uses: gabrielfalcao/pyenv-action@v8
+        with:
+          default: ${{ matrix.python-version }}
 
       - name: Check pyenv
         run: |
@@ -35,6 +37,7 @@ jobs:
       - name: Install and run tox
         run: |
           pip install tox
+          pyenv install
           tox -e grid.precommit
 
   build:
