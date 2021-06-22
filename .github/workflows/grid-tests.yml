@@ -27,6 +27,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install python ${{ matrix.python-version }}
         uses: gabrielfalcao/pyenv-action@v7
+        command: pip install -U pip
 
       - name: Update pyenv
         run: |
