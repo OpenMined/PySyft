@@ -29,7 +29,7 @@ jobs:
       - name: Install Tox and pyenv
         run: |
           sudo apt-get install -y tox
-          sudo apt-get install git python-pip make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev curl
+          sudo apt-get install git python3-pip make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev curl
           sudo pip install virtualenvwrapper
           sudo apt-get install python-is-python3
 
