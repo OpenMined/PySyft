@@ -26,12 +26,13 @@ jobs:
         id: install
         run: |
           pip install tox
+          echo "::set-output name=pyenv_version::$PYENV_ROOT)"
 
       - name: pip cache
         id: cache
         uses: actions/cache@v2
         with:
-          path: $(PYENV_ROOT)/versions/
+          path: ${{ steps.install.outputs.pyenv_version }}/versions/
           key: ${{ runner.os }}-${{ hashFiles('.python-version') }}
 
       - name: Install and run tox
