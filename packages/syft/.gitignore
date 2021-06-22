@@ -1,0 +1,19 @@
+# packages/syft
+allowlist_test_errors_*.jsonl
+allowlist_report_*.html
+allowlist_test_support*.jsonl
+examples/**/data/*
+examples/**/dcgan/result/*
+tests/syft/notebooks/*.py
+tests/syft/notebooks/checkpoints
+tests/syft/notebooks/data
+tests/syft/notebooks/dataset
+data
+**/lightning_logs
+src/target/**
+src/syft/*.so
+docs/_modules
+build
+src/syft.egg-info/
+Pipfile
+.coverage*

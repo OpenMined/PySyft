@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package syft.lib.sympc;
+
+import "proto/core/node/common/client.proto";
+import "proto/lib/python/dict.proto";
+import "proto/lib/sympc/protocol.proto";
+
+
+message MPCSession {
+  string uuid = 1;
+  int32 rank = 2;
+  bytes ring_size = 3; /* 2 ** 64 cannot be handled */
+  bytes nr_parties = 4;
+  syft.lib.python.Dict config = 5;
+  repeated syft.core.node.common.Client parties = 6;
+  syft.core.node.common.Client ttp = 7;
+  syft.lib.sympc.protocol protocol = 8;
+}
