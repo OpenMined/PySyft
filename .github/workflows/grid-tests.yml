@@ -30,6 +30,11 @@ jobs:
         run: |
           sudo apt-get install -y tox
           curl https://pyenv.run | bash
+          export PYENV_ROOT="$HOME/.pyenv"
+          export PATH="$PYENV_ROOT/bin:$PATH"
+          eval "$(pyenv init --path)"
+          eval "$(pyenv init -)"
+          eval "$(pyenv virtualenv-init -)"
 
       - name: Run precommit check
         run: |
