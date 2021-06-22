@@ -22,16 +22,20 @@ jobs:
       - name: Install pyenv
         uses: gabrielfalcao/pyenv-action@v8
 
+      - name: Install Tox
+        id: install
+        run: |
+          pip install tox
+          echo "::set-output name=pyenv_version::$(pyenv --version | cut -f2 -d" ")"
+
       - name: pip cache
         id: cache
         uses: actions/cache@v2
         with:
-          path: /opt/hostedtoolcache/pyenv_root/$(cut -f2 -d" ")/x64/versions/
-          key: ${{ runner.os }}-pyenv${{ hashFiles('tox.ini') }}-${{ hashFiles('.python-version') }}
+          path: /opt/hostedtoolcache/pyenv_root/${{ steps.install.outputs.pyenv_version }}/x64/versions/
+          key: ${{ runner.os }}-${{ hashFiles('.python-version') }}
 
-      - name: Install Tox
-        run: |
-          pip install tox
+
 
       - name: Install Dependencies
         if: steps.cache.outputs.cache-hit != 'true'
