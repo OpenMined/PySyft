@@ -17,10 +17,6 @@ on:
       - "packages/syft/setup.cfg"
       - "packages/syft/examples/private-ai-series/**.ipynb"
 
-defaults:
-  run:
-    working-directory: ./packages/syft
-
 jobs:
   python-linting:
     runs-on: ubuntu-latest
@@ -48,7 +44,7 @@ jobs:
       - name: Install and run tox
         run: |
           tox -l
-          tox -e syft.precommit || true
+          tox -e syft.precommit
 
 #  python-tests-latest-versions:
 #    needs: [python-linting]
