@@ -29,9 +29,14 @@ jobs:
         with:
             default: 3.9
 
-      - name: Check pyenv
-        run: |
-          pyenv install --list
+      - name: Create virtualenv for python 3.8.6
+        run: pyenv local 3.8.6
+
+      - name: Install BlockDiag
+        run: make installBlockDiag
+
+      - name: Test BlockDiag
+        run: make testBlockDiag
 
       - name: Run precommit check
         run: |
