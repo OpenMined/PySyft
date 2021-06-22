@@ -28,14 +28,6 @@ jobs:
       - name: Install python ${{ matrix.python-version }}
         uses: gabrielfalcao/pyenv-action@v8
 
-      - name: Update pyenv
-        run: |
-          cd $(pyenv root)
-          ls -lha
-          git pull
-          pyenv --version
-
-
       - name: Check pyenv
         run: |
           pyenv install -l
