@@ -11,10 +11,6 @@ on:
       - "packages/grid/**.toml"
       - "packages/grid/setup.cfg"
 
-defaults:
-  run:
-    working-directory: ./packages/grid
-
 jobs:
   linting:
     runs-on: ubuntu-latest
