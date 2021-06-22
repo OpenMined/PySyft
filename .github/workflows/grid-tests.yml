@@ -16,22 +16,15 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 1
-      matrix:
-        python-version: [3.9.5]
 
     steps:
       - uses: actions/checkout@v2
-      - name: Install python ${{ matrix.python-version }}
+      - name: Install pyenv
         uses: gabrielfalcao/pyenv-action@v8
-
-      - name: Check pyenv
-        run: |
-          pyenv install -l
 
       - name: Install and run tox
         run: |
           pip install tox
-          tox -l
           tox -e grid.precommit
 
   build:
