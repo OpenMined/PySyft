@@ -26,7 +26,7 @@ jobs:
         id: cache
         uses: actions/cache@v2
         with:
-          path: /opt/hostedtoolcache/pyenv_root/2.0.0/x64/versions/
+          path: /opt/hostedtoolcache/pyenv_root/$(cut -f2 -d" ")/x64/versions/
           key: ${{ runner.os }}-pyenv${{ hashFiles('tox.ini') }}-${{ hashFiles('.python-version') }}
 
       - name: Install Tox
