@@ -22,9 +22,23 @@ jobs:
       - name: Install pyenv
         uses: gabrielfalcao/pyenv-action@v8
 
-      - name: Install and run tox
+      - name: pip cache
+        id: cache
+        uses: actions/cache@v2
+        with:
+          path: /opt/hostedtoolcache/pyenv_root/2.0.0/x64/versions/
+          key: ${{ runner.os }}-pyenv${{ hashFiles('tox.ini') }}-${{ hashFiles('.python-version') }}
+
+      - name: Install Tox
         run: |
           pip install tox
+
+      - name: Install Dependencies
+          if: steps.cache.outputs.cache-hit != 'true'
+          run: /install.sh
+
+      - name: Install and run tox
+        run: |
           tox -l
           tox -e grid.precommit
 
