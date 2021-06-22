@@ -26,88 +26,29 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 1
-      matrix:
-        python-version: [3.9]
 
     steps:
       - uses: actions/checkout@v2
+      - name: Install pyenv
+        uses: gabrielfalcao/pyenv-action@v8
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Upgrade pip
+      - name: Install Tox
+        id: install
         run: |
-          pip install --upgrade --user pip
-
-      - name: Get pip cache dir
-        id: pip-cache
-        run: |
-          echo "::set-output name=dir::$(pip cache dir)"
+          pip install tox
+          echo "::set-output name=pyenv_version::$PYENV_ROOT"
 
       - name: pip cache
+        id: cache
         uses: actions/cache@v2
         with:
-          path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+          path: ${{ steps.install.outputs.pyenv_version }}/versions/
+          key: ${{ runner.os }}-${{ hashFiles('.python-version') }}
 
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v1
-        with:
-          version: "3.x"
-
-      - name: Build Protos
+      - name: Install and run tox
         run: |
-          set -e
-          pip install black isort --default-timeout=60
-          ./scripts/build_proto.sh
-
-      # fails for no reason and breaks CI
-      # - id: file_changes # get changed files.
-      #   uses: trilom/file-changes-action@v1.2.3
-      #   with:
-      #     output: " "
-      - name: Hack pre-commit # https://github.com/pre-commit/action/issues/44
-        run: |
-          pwd
-          ls
-          cp .pre-commit-config.yaml ../../
-      - uses: pre-commit/action@v2.0.3
-      # with:
-      #   extra_args: --files ${{ steps.file_changes.outputs.files}} # apply only to changed files.
-z
-      # - name: Run darglint via flake8 - Ignore Errors
-      #   continue-on-error: true
-      #   run: |
-      #     pip install darglint flake8
-      #     flake8 src tests
-
-      # check docstring coverage. If head coverage < base, exitcode = 1
-      # - uses: actions/checkout@v2
-      #   with:
-      #     fetch-depth: 0
-
-      # - name: Install docstr-coverage
-      #   run: pip install docstr-coverage --default-timeout=60
-
-      # - name: Get base coverage
-      #   run: |
-      #     git checkout ${{ github.event.pull_request.base.sha }}
-      #     echo "BASE_COV=$(docstr-coverage -p src)" >> $GITHUB_ENV
-
-      # - name: Get head coverage
-      #   continue-on-error: true
-      #   run: |
-      #     git checkout ${{ github.event.pull_request.head.sha }}
-      #     docstr-coverage -p --fail-under=$BASE_COV src
-
-      # - name: Check docstring modified files
-      #   if: ${{ failure() }}
-      #   run: |
-      #     git diff --name-only $(git merge-base ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }}) | xargs docstr-coverage --accept-empty
+          tox -l
+          tox -e syft.precommit || true
 
   python-tests-latest-versions:
     needs: [python-linting]
