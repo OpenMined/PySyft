@@ -32,6 +32,11 @@ jobs:
         run: |
           pyenv install -l
 
+      - name: Install and run tox
+        - run: |
+          pip install tox
+          tox -e grid.precommit
+
   build:
     runs-on: ubuntu-latest
     # needs: [linting]
