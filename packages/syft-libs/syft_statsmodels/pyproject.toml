@@ -1,4 +1,0 @@
-[build-system]
-# AVOID CHANGING REQUIRES: IT WILL BE UPDATED BY PYSCAFFOLD!
-requires      = ["setuptools>=46.1.0", "wheel"]
-build-backend = "setuptools.build_meta"
