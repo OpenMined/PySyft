@@ -5,6 +5,7 @@ Functions that can be imported and re-used are more suitable for the ``helpers``
 import os
 from pathlib import Path
 from tempfile import mkdtemp
+from typing import Generator
 
 import pytest
 
@@ -12,7 +13,7 @@ from .helpers import rmpath
 
 
 @pytest.fixture
-def tmpfolder(tmp_path):
+def tmpfolder(tmp_path: Path) -> Generator:
     old_path = os.getcwd()
     new_path = mkdtemp(dir=str(tmp_path))
     os.chdir(new_path)

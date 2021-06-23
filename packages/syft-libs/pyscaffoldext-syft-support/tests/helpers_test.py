@@ -7,6 +7,7 @@ from pathlib import Path
 from shutil import rmtree
 from subprocess import STDOUT, CalledProcessError, check_output
 from time import sleep
+from typing import Any
 from uuid import uuid4
 from warnings import warn
 
@@ -15,17 +16,14 @@ from pyscaffold.shell import get_executable
 IS_POSIX = os.name == "posix"
 
 PYTHON = sys.executable
-"""Same python executable executing the tests... Hopefully the one inside the virtualenv
-inside tox folder. If we install packages by mistake is not a huge problem.
-"""
 
 
-def uniqstr():
+def uniqstr() -> str:
     """Generates a unique random long string every time it is called"""
     return str(uuid4())
 
 
-def rmpath(path):
+def rmpath(path: Path) -> None:
     """Carelessly/recursively remove path.
     If an error occurs it will just be ignored, so not suitable for every usage.
     The best is to use this function for paths inside pytest tmp directories, and with
@@ -40,7 +38,7 @@ def rmpath(path):
         warn(msg + traceback.format_exc())
 
 
-def set_writable(func, path, _exc_info):
+def set_writable(func: Any, path: Path, _exc_info: Any) -> None:
     sleep(1)  # Sometimes just giving time to the SO, works
 
     if not Path(path).exists():
@@ -53,7 +51,7 @@ def set_writable(func, path, _exc_info):
     func(path)
 
 
-def run(*args, **kwargs):
+def run(*args, **kwargs):  # type: ignore
     """Run the external command. See ``subprocess.check_output``."""
     # normalize args
     if len(args) == 1:
@@ -80,30 +78,32 @@ def run(*args, **kwargs):
         raise
 
 
-def run_common_tasks(tests=True, docs=True, pre_commit=True, install=True):
+def run_common_tasks(
+    tests: bool = True, docs: bool = True, pre_commit: bool = True, install: bool = True
+) -> None:
     # Requires tox, setuptools_scm and pre-commit in setup.cfg ::
     # opts.extras_require.testing
     if tests:
-        run(f"{PYTHON} -m tox")
+        run(f"{PYTHON} -m tox")  # type: ignore
 
-    run(f"{PYTHON} -m tox -e build")
+    run(f"{PYTHON} -m tox -e build")  # type: ignore
     wheels = list(Path("dist").glob("*.whl"))
     assert wheels
 
-    run(f"{PYTHON} setup.py --version")
+    run(f"{PYTHON} setup.py --version")  # type: ignore
 
     if docs:
-        run(f"{PYTHON} -m tox -e docs,doctests")
+        run(f"{PYTHON} -m tox -e docs,doctests")  # type: ignore
 
     if pre_commit:
         try:
-            run(f"{PYTHON} -m pre_commit run --all-files")
+            run(f"{PYTHON} -m pre_commit run --all-files")  # type: ignore
         except CalledProcessError:
-            print(run(get_executable("git"), "diff"))
+            print(run(get_executable("git"), "diff"))  # type: ignore
             raise
 
     if install:
         assert Path(".venv").exists(), "Please use --venv when generating the project"
         venv_pip = get_executable("pip", prefix=".venv", include_path=False)
         assert venv_pip, "Pip not found, make sure you have used the --venv option"
-        run(venv_pip, "install", wheels[0])
+        run(venv_pip, "install", wheels[0])  # type: ignore
