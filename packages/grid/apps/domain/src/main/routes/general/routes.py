@@ -13,12 +13,81 @@ from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft.core.common.serde.deserialize import _deserialize
 from syft.core.common.serde.serialize import _serialize
+from syft import SyModule
 
 # grid relative
 from ...core.exceptions import AuthorizationError
 from ...core.exceptions import UserNotFoundError
+from ...core.database.utils import model_to_json
+from ...core.dataset_ops import get_all_datasets
+from ...core.dataset_ops import get_all_relations
+
 from ..auth import token_required
 from .blueprint import root_blueprint as root_route
+
+
+@root_route.route("/object-types", methods=["GET"])
+def obj_types_route():
+    # grid relative
+    from ...core.node import get_node  # Tech debt: fix circular import
+
+    # Tech debt : Dummy Approach for PoC/tests purposes
+    # TODO: Replace const string values by python structures / abstractions
+    return Response(
+        json.dumps(["tensor", "dataset", "model"]),
+        status=200,
+        mimetype="application/json",
+    )
+
+
+@root_route.route("/find", methods=["GET"])
+def find_obj_types():
+    from ...core.node import get_node  # Tech debt: fix circular import
+    import torch as th
+
+    obj_type = request.args.get("obj")
+
+    # Tech debt : Dummy Approach for PoC/tests purposes
+    # TODO: Replace const string fields by python structures / abstractions
+
+    result = []
+    if obj_type == "tensor":
+        tensors = get_node().store.get_objects_of_type(obj_type=th.Tensor)
+
+        for tensor in tensors:
+            result.append(
+                {
+                    "id": str(tensor.id.value),
+                    "tags": tensor.tags,
+                    "description": tensor.description,
+                }
+            )
+    elif obj_type == "dataset":
+        for dataset in get_all_datasets():
+            ds = model_to_json(dataset)
+            objs = get_all_relations(dataset.id)
+            ds["data"] = [
+                {
+                    "name": obj.name,
+                    "id": obj.obj,
+                    "dtype": obj.dtype,
+                    "shape": obj.shape,
+                }
+                for obj in objs
+            ]
+            result.append(ds)
+    elif obj_type == "model":
+        models = get_node().store.get_objects_of_type(obj_type=th.nn.Module)
+
+        for model in models:
+            result.append(
+                {
+                    "id": str(model.id.value),
+                    "tags": model.tags,
+                    "description": model.description,
+                }
+            )
+    return Response(json.dumps(result), status=200, mimetype="application/json")
 
 
 @root_route.route("/dashboard", methods=["GET"])
