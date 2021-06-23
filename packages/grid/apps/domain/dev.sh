@@ -14,4 +14,4 @@ export LOCAL_DATABASE=True
 export PYTHONPATH="${PYTHONPATH}:${APP_SRC}"
 
 # run
-poetry run flask run
+flask run --host=0.0.0.0

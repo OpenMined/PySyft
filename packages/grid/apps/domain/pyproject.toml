@@ -1,8 +1,14 @@
 [tool.poetry]
-name = "PyGrid Domain"
-version = "0.3.0"
+name = "grid.domain"
 description = ""
+version = "0"  # using poetry-version-plugin
 authors = ["Ionesio Junior <ionesiojr@gmail.com>"]
+packages = [
+    { include="src", from="." },
+]
+
+[tool.poetry-version-plugin]
+source = "init"
 
 [tool.poetry.dependencies]
 python = "^3.7"
@@ -31,6 +37,7 @@ textwrap3 = "^0.9.2"
 requests-toolbelt = "0.9.1"
 scipy = "^1.6.1"
 tenseal = "^0.3.2"
+untokenize = "^0.1.1"
 
 [tool.poetry.dev-dependencies]
 black = "^20.8b1"

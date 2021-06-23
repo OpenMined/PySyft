@@ -68,3 +68,6 @@ terraform.rc
 
 # data
 apps/domain/diabetes-data/*
+apps/domain/requirements.txt
+apps/network/requirements.txt
+apps/worker/requirements.txt
