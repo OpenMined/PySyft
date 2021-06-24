@@ -9,7 +9,7 @@ import config.settings
 # create settings object corresponding to specified env
 # Search by preset Op. System environment $APP_ENV, if it's not defined
 # return Dev as a default value (It'll make the app run in Development mode).
-APP_ENV = os.environ.get("APP_ENV", "Dev")
+APP_ENV = str(os.environ.get("APP_ENV", "Dev")).lower().capitalize()
 
 # Search by the constant settings class that represents the current environment.
 # Examples:

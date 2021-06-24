@@ -44,8 +44,6 @@ from ..services.tensor_service import RegisterTensorService
 from ..services.transfer_service import TransferObjectService
 from ..services.user_service import UserManagerService
 
-sy.load("tenseal")
-
 
 class GridDomain(Domain):
     def __init__(
