@@ -2,6 +2,8 @@
 from typing import List
 from typing import Union
 
+from flask_sqlalchemy import BaseQuery
+
 # grid relative
 from ..database.roles.roles import Role
 from ..exceptions import RoleNotFoundError
@@ -32,8 +34,7 @@ class RoleManager(DatabaseManager):
     def admin_role(self):
         return self.first(name="Administrator")
 
-    @property
-    def common_roles(self):
+    def _common_roles(self) -> BaseQuery:
         return self.db.session.query(self._schema).filter_by(
             can_triage_requests=False,
             can_edit_settings=False,
@@ -45,8 +46,12 @@ class RoleManager(DatabaseManager):
         )
 
     @property
+    def common_roles(self):
+        return self._common_roles().all()
+
+    @property
     def org_roles(self):
-        return self.db.session.query(self._schema).except_(self.common_roles)
+        return self.db.session.query(self._schema).except_(self._common_roles).all()
 
     def first(self, **kwargs) -> Union[None, List]:
         result = super().first(**kwargs)
