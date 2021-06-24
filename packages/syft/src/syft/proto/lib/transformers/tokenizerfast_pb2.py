@@ -18,7 +18,6 @@ from syft.proto.core.common import (
     common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
 )
 from syft.proto.lib.python import dict_pb2 as proto_dot_lib_dot_python_dot_dict__pb2
-from syft.proto.lib.python import string_pb2 as proto_dot_lib_dot_python_dot_string__pb2
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/lib/transformers/tokenizerfast.proto",
@@ -26,10 +25,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n*proto/lib/transformers/tokenizerfast.proto\x12\x15syft.lib.transformers\x1a%proto/core/common/common_object.proto\x1a\x1dproto/lib/python/string.proto\x1a\x1bproto/lib/python/dict.proto"\x84\x01\n\rTokenizerFast\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x16\n\x0etokenizer_type\x18\x02 \x01(\t\x12\x11\n\ttokenizer\x18\x03 \x01(\t\x12%\n\x06kwargs\x18\x04 \x01(\x0b\x32\x15.syft.lib.python.Dictb\x06proto3',
+    serialized_pb=b'\n*proto/lib/transformers/tokenizerfast.proto\x12\x15syft.lib.transformers\x1a%proto/core/common/common_object.proto\x1a\x1bproto/lib/python/dict.proto"\x84\x01\n\rTokenizerFast\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x16\n\x0etokenizer_type\x18\x02 \x01(\t\x12\x11\n\ttokenizer\x18\x03 \x01(\t\x12%\n\x06kwargs\x18\x04 \x01(\x0b\x32\x15.syft.lib.python.Dictb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
-        proto_dot_lib_dot_python_dot_string__pb2.DESCRIPTOR,
         proto_dot_lib_dot_python_dot_dict__pb2.DESCRIPTOR,
     ],
 )
@@ -128,8 +126,8 @@ _TOKENIZERFAST = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=169,
-    serialized_end=301,
+    serialized_start=138,
+    serialized_end=270,
 )
 
 _TOKENIZERFAST.fields_by_name[
