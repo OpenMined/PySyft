@@ -24,6 +24,7 @@ from ...core.dataset_ops import get_all_relations
 
 from ..auth import token_required
 from .blueprint import root_blueprint as root_route
+import torch as th
 
 
 @root_route.route("/object-types", methods=["GET"])
@@ -43,7 +44,6 @@ def obj_types_route():
 @root_route.route("/find", methods=["GET"])
 def find_obj_types():
     from ...core.node import get_node  # Tech debt: fix circular import
-    import torch as th
 
     obj_type = request.args.get("obj")
 
@@ -111,6 +111,7 @@ def dashboard_route(current_user):
             "org_users": len(get_node().users.org_users),
             "groups": len(get_node().groups),
             "roles": len(get_node().roles),
+            "models": len(get_node().store.get_objects_of_type(obj_type=th.nn.Module)),
         }
         return Response(
             json.dumps(response_body), status=200, mimetype="application/json"
