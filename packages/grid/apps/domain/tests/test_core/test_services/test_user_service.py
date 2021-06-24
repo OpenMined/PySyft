@@ -3,15 +3,17 @@ from bcrypt import checkpw
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import pytest
-from src import main
-from src.main.core.database import *
-from src.main.core.database import expand_user_object
-from src.main.core.exceptions import InvalidCredentialsError
-from src.main.core.exceptions import MissingRequestKeyError
+
 from src.main.core.exceptions import UserNotFoundError
-from src.main.core.manager import GroupManager
-from src.main.core.manager import UserManager
-from src.main.core.nodes.domain import GridDomain
+from src.main.core.manager.group_manager import GroupManager
+
+from src.main.core.database.tables.role import create_role
+from src.main.core.database.tables.role import Role
+from src.main.core.database.tables.user import User
+from src.main.core.database.tables.group import Group
+from src.main.core.database.tables.user_group import UserGroup
+from src.main.core.manager.user_manager import UserManager
+
 from syft.grid.messages.user_messages import CreateUserMessage
 from syft.grid.messages.user_messages import DeleteUserMessage
 from syft.grid.messages.user_messages import GetUserMessage

@@ -7,8 +7,8 @@ from flask import current_app as app
 import jwt
 import pytest
 from src.main.core.database import *
-from src.main.core.database.environment.environment import Environment
-from src.main.core.database.environment.user_environment import UserEnvironment
+from src.main.core.database.tables.environment import Environment
+from src.main.core.database.tables.user_environment import UserEnvironment
 
 JSON_DECODE_ERR_MSG = (
     "Expecting property name enclosed in " "double quotes: line 1 column 2 (char 1)"

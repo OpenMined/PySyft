@@ -131,7 +131,7 @@ class Node(AbstractNode):
             print("INITIALIZING IN MEMORY STORE!!!")
             # If a DB engine isn't provided then
             if engine is None:
-                engine = create_engine("sqlite:///:memory:", echo=False)
+                engine = create_engine("sqlite://", echo=False)
 
             db_session = sessionmaker(bind=engine)()
 
