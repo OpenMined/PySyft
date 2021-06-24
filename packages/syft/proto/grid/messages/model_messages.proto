@@ -1,0 +1,115 @@
+syntax = "proto3";
+
+package syft.grid.messages;
+
+import "proto/core/common/common_object.proto";
+import "proto/core/io/address.proto";
+
+
+// GET Model
+message GetModelMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+
+message GetModelResponse {
+  syft.core.common.UID msg_id = 1;
+  int32 status_code = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}
+
+// GET Model Info
+message GetModelInfoMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+
+message GetModelInfoResponse {
+  syft.core.common.UID msg_id = 1;
+  int32 status_code = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}
+
+// GET ALL Models
+message GetModelsMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+message GetModelsResponse {
+  syft.core.common.UID msg_id = 1;
+  int32 status_code = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}
+
+// GET ALL Models
+message GetModelsInfoMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+message GetModelsInfoResponse {
+  syft.core.common.UID msg_id = 1;
+  int32 status_code = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}
+
+
+// SEARCH Model
+message SearchModelMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+message SearchModelResponse {
+  syft.core.common.UID msg_id = 1;
+  int32 status_code = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}
+
+// UPDATE Model
+message UpdateModelMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+message UpdateModelResponse {
+  syft.core.common.UID msg_id = 1;
+  int32 status_code = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}
+
+// UPDATE Model
+message DeleteModelMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+message DeleteModelResponse {
+  syft.core.common.UID msg_id = 1;
+  int32 status_code = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}
