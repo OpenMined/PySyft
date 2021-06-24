@@ -15,6 +15,7 @@ def BinObjectMetadata(TableBase: DeclarativeMeta) -> DeclarativeMeta:
         obj = Column(Integer, ForeignKey("bin_object.id"))
         tags = Column(JSON())
         description = Column(String())
+        name = Column(String())
         read_permissions = Column(JSON())
         search_permissions = Column(JSON())
 
