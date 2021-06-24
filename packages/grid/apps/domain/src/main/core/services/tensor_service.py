@@ -177,7 +177,7 @@ def get_tensors_msg(
         return GetTensorsResponse(
             address=msg.reply_to,
             status_code=200,
-            content={"tensors": result},
+            content=result,
         )
     except Exception as e:
         return GetTensorsResponse(
