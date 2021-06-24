@@ -59,13 +59,13 @@ class StorableObject(AbstractStorableObject):
         tags: Optional[List[str]] = None,
         read_permissions: Optional[dict] = None,
         search_permissions: Optional[dict] = None,
-        name: Optional[str] = "",
+        name: Optional[str] = None,
     ):
         self.id = id
         self.data = data
         self._description: str = description if description else ""
         self._tags: List[str] = tags if tags else []
-        self._name: str = name
+        self._name: str = name if name else ""
 
         # the dict key of "verify key" objects corresponding to people
         # the value is the original request_id to allow lookup later
