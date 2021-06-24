@@ -21,6 +21,7 @@ message StorableObject {
   bytes read_permissions = 7;
   // fix by making Dict not StorableObject
   bytes search_permissions = 8;
+  string name = 9;
 }
 
 message StoreObject {
