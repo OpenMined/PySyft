@@ -1,0 +1,9 @@
+.tox
+.git
+.vscode
+scripts
+.mypy_cache
+.benchmarks
+docker
+packages/syft/src/target
+packages/grid/apps/domain/src/nodedatabase.db
