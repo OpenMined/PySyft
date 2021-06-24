@@ -29,6 +29,7 @@ from .database.tables.dataset import Dataset
 from .database.tables.dataset_group import DatasetGroup
 from .database.store_disk import DiskObjectStore
 from .database.utils import model_to_json
+from datetime import datetime
 
 
 def decompress(file_obj):
@@ -59,9 +60,13 @@ def extract_metadata_info(tar_obj):
 def process_items(node, tar_obj, user_key):
     # Optional fields
     tags, manifest, description, skip_files = extract_metadata_info(tar_obj)
-
     dataset_db = Dataset(
-        id=str(UID().value), manifest=manifest, description=description, tags=tags
+        id=str(UID().value),
+        manifest=manifest,
+        description=description,
+        tags=tags,
+        name="",
+        created_at=datetime.now(),
     )
     db.session.add(dataset_db)
     data = list()
@@ -114,7 +119,6 @@ def process_items(node, tar_obj, user_key):
                     "shape": obj_dataset_relation.shape,
                 }
             )
-
     db.session.commit()
     ds = model_to_json(dataset_db)
     ds["data"] = data
@@ -212,13 +216,18 @@ def update_dataset_metadata(key: str, **kwargs) -> None:
     db.session.commit()
 
 
-def update_dataset(key: str, tags: list, manifest: str, description: str):
+def update_dataset(key: str, tags: list, manifest: str, description: str, name: str):
     if tags:
         db.session.query(Dataset).filter_by(id=key).update({"tags": tags})
-    elif manifest:
+
+    if manifest:
         db.session.query(Dataset).filter_by(id=key).update({"manifest": manifest})
-    elif description:
+
+    if description:
         db.session.query(Dataset).filter_by(id=key).update({"description": description})
+
+    if name:
+        db.session.query(Dataset).filter_by(id=key).update({"name": name})
 
     db.session.commit()
 
