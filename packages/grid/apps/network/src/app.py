@@ -11,6 +11,7 @@
 # stdlib
 import logging
 import os
+import sys
 from typing import Dict
 from typing import Optional
 
@@ -34,6 +35,15 @@ from nacl.signing import SigningKey
 # syft absolute
 from syft.core.node.domain.domain import Domain
 
+# work around to fix the relative path to src/__init__.py __version__
+# TODO: change this so its less hacky
+path = os.path.dirname(sys.modules[__name__].__file__)
+path = os.path.join(path, "..")
+sys.path.insert(0, path)
+
+# third party
+from src import __version__
+
 DEFAULT_SECRET_KEY = "justasecretkeythatishouldputhere"
 
 # Masking/Unmasking is a process used to guarantee some level of security
@@ -56,8 +66,17 @@ logging.basicConfig(
 logger = logging.getLogger()
 
 
+args = {
+    "port": os.environ.get("GRID_NODE_PORT", 5000),
+    "host": os.environ.get("GRID_NODE_HOST", "0.0.0.0"),
+    "name": os.environ.get("GRID_NODE_NAME", "OpenMined"),
+    "start_local_db": os.environ.get("LOCAL_DATABASE", False),
+}
+args_obj = type("args", (object,), args)()
+
+
 def create_app(
-    args, secret_key=DEFAULT_SECRET_KEY, debug=False, testing=False
+    args=args_obj, secret_key=DEFAULT_SECRET_KEY, debug=False, testing=False
 ) -> Flask:
     """This method creates a new Flask App instance and attach it with some
     HTTP/Websocket bluetprints.
@@ -66,7 +85,8 @@ def create_app(
     :return: returns a Flask app instance.
     :rtype: Flask
     """
-    logger.info(f"Starting app in {config.APP_ENV} environment")
+    app_info = f"network version: {__version__} in {config.APP_ENV}"
+    logger.info(f"{app_info} is Starting")
 
     # Create Flask app instance
     app = Flask(__name__)
@@ -83,5 +103,5 @@ def create_app(
     app.config["SECRET_KEY"] = secret_key
 
     # Send app instance
-    logger.info(f"App started in {config.APP_ENV} environment")
+    logger.info(f"{app_info} is Ready")
     return app
