@@ -4,7 +4,8 @@ from .. import db
 
 
 class JsonObject(BaseModel):
-    __bind_key__ = "bin_store"
+    # @Ionesio: with this uncommented postgresql cant start
+    # __bind_key__ = "bin_store"  # circular reference in datasetgroup?
     __tablename__ = "json_object"
 
     id = db.Column(db.String(), primary_key=True)

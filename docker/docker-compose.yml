@@ -1,7 +1,8 @@
 version: "3.9"
 services:
   network:
-    container_name: grid.network
+    domainname: grid
+    container_name: network
     image: openmined/grid-network:latest
     build:
       context: ../
@@ -12,14 +13,15 @@ services:
         - APP_ENV=production
     environment:
       - DATABASE_URL=postgresql://postgres:dbpass@network-db:5432/network
-      - APP_ENV=production
+      - APP_ENV=dev
     ports:
       - "5001:5000"
     depends_on:
       - "network-db"
     networks: ["net"]
   network-db:
-    container_name: grid.network.db
+    domainname: grid
+    container_name: db.network
     image: postgres:12
     restart: always
     environment:
@@ -31,10 +33,8 @@ services:
       - "5433:5432"
     networks: ["net"]
   domain:
-    container_name: grid.domain
-    # stdin_open: true # docker run -i
-    # tty: true # docker run -t
-    # entrypoint: /bin/bash
+    domainname: grid
+    container_name: domain
     image: openmined/grid-domain:latest
     build:
       context: ../
@@ -45,14 +45,16 @@ services:
         - APP_ENV=production
     environment:
       - DATABASE_URL=postgresql://postgres:dbpass@domain-db:5432/domain
-      - APP_ENV=production
+      # - MEMORY_STORE=True
+      - APP_ENV=dev
     ports:
       - "5002:5000"
     depends_on:
       - "domain-db"
     networks: ["net"]
   domain-db:
-    container_name: grid.domain.db
+    domainname: grid
+    container_name: db.domain
     image: postgres:12
     restart: always
     environment:
