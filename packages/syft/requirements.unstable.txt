@@ -1,3 +1,2 @@
-flake8-kwarger @ git+https://github.com/madhavajay/flake8-kwarger
 pytorch-lightning @ git+https://github.com/tudorcebere/pytorch-lightning@tudor-om-v0
 sympc @ git+https://github.com/OpenMined/SyMPC@16fa17ab61fc37f0aba2f565bda812ae55eb1cdc
