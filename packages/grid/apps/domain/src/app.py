@@ -30,9 +30,7 @@ from main.routes import users_blueprint  # noqa: 401
 
 # Internal imports
 from main.utils.monkey_patch import mask_payload_fast
-
-# grid relative
-from . import __version__
+from src import __version__
 
 DEFAULT_SECRET_KEY = "justasecretkeythatishouldputhere"
 # Masking/Unmasking is a process used to guarantee some level of security

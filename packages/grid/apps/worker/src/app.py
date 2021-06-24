@@ -30,10 +30,8 @@ from main.routes import users_blueprint
 from main.utils.monkey_patch import mask_payload_fast
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
+from src import __version__
 from syft.core.node.domain.domain import Domain
-
-# grid relative
-from . import __version__
 
 DEFAULT_SECRET_KEY = "justasecretkeythatishouldputhere"
 

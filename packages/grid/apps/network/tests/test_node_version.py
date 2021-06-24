@@ -1,4 +1,5 @@
 # stdlib
+import imp
 import sys
 
 sys.path.append("../")
@@ -6,6 +7,8 @@ sys.path.append("../")
 # third party
 from src import __version__
 
+VERSION = imp.load_source("VERSION", "../../VERSION")
+
 
 def test_version():
-    assert __version__ == "0.5.0"
+    assert __version__ == VERSION.__version__

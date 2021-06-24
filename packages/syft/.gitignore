@@ -17,3 +17,13 @@ build
 src/syft.egg-info/
 Pipfile
 .coverage*
+result/final_netD_mnist.pt
+result/final_netG_mnist.pt
+result/fake_samples_0_0.png
+weights.pt
+super_resolve.pt
+predict0.pdf
+output.jpg
+fake_samples_local.png
+duet_mnist.pt
+12084.jpg
