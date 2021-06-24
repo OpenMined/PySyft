@@ -58,6 +58,7 @@ from .manager.user_manager import UserManager
 from .services.association_request import AssociationRequestService
 from .services.dataset_service import DatasetManagerService
 from .services.group_service import GroupManagerService
+from .services.model_service import ModelManagerService
 
 # commenting because these services require Jupyter conflict deps
 # from ..services.infra_service import DomainInfrastructureService
@@ -139,6 +140,7 @@ class GridDomain(Domain):
         self.immediate_services_with_reply.append(GroupManagerService)
         self.immediate_services_with_reply.append(TransferObjectService)
         self.immediate_services_with_reply.append(RequestService)
+        self.immediate_services_with_reply.append(ModelManagerService)
 
         self.immediate_services_without_reply.append(RequestServiceWithoutReply)
         self._register_services()
