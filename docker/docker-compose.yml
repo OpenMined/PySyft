@@ -22,7 +22,7 @@ services:
   network-db:
     domainname: grid
     container_name: db.network
-    image: postgres:12
+    image: postgres
     restart: always
     environment:
       POSTGRES_PASSWORD: dbpass
@@ -55,7 +55,7 @@ services:
   domain-db:
     domainname: grid
     container_name: db.domain
-    image: postgres:12
+    image: postgres
     restart: always
     environment:
       POSTGRES_PASSWORD: dbpass

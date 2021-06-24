@@ -4,7 +4,6 @@ from .. import db
 
 
 class StorageMetadata(BaseModel):
-    __bind_key__ = "bin_store"
     __tablename__ = "storage_metadata"
 
     id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
