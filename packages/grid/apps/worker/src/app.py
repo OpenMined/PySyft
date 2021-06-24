@@ -63,8 +63,15 @@ logging.basicConfig(
 
 logger = logging.getLogger()
 
+args = {
+    "port": os.environ.get("GRID_NODE_PORT", 5000),
+    "host": os.environ.get("GRID_NODE_HOST", "0.0.0.0"),
+    "name": os.environ.get("GRID_NODE_NAME", "OpenMined"),
+}
+args_obj = type("args", (object,), args)()
 
-def create_app(args, secret_key=DEFAULT_SECRET_KEY, debug=False) -> Flask:
+
+def create_app(args=args_obj, secret_key=DEFAULT_SECRET_KEY, debug=False) -> Flask:
     """This method creates a new Flask App instance and attach it with some
     HTTP/Websocket bluetprints.
 
