@@ -59,11 +59,13 @@ class StorableObject(AbstractStorableObject):
         tags: Optional[List[str]] = None,
         read_permissions: Optional[dict] = None,
         search_permissions: Optional[dict] = None,
+        name: Optional[str] = "",
     ):
         self.id = id
         self.data = data
         self._description: str = description if description else ""
         self._tags: List[str] = tags if tags else []
+        self._name: str = name
 
         # the dict key of "verify key" objects corresponding to people
         # the value is the original request_id to allow lookup later
@@ -119,6 +121,14 @@ class StorableObject(AbstractStorableObject):
     def description(self, description: Optional[str]) -> None:
         self._description = description if description else ""
 
+    @property
+    def name(self) -> Optional[str]:
+        return self._name
+
+    @name.setter
+    def name(self, name: Optional[str]) -> None:
+        self._name = name if name else ""
+
     def _object2proto(self) -> StorableObject_PB:
         proto = StorableObject_PB()
 
@@ -158,6 +168,10 @@ class StorableObject(AbstractStorableObject):
             for k, v in self.search_permissions.items():
                 permission_data[k] = v
             proto.search_permissions = sy.serialize(permission_data, to_bytes=True)
+
+        if hasattr(self, "name"):
+            # Step 8: save the name into proto
+            proto.name = self.name
 
         return proto
 
@@ -204,6 +218,9 @@ class StorableObject(AbstractStorableObject):
                 blob=proto.search_permissions, from_bytes=True
             )
 
+        # Step 9: get the name from proto
+        name = proto.name if proto.name else ""
+
         result = StorableObject(
             id=id,
             data=data,
@@ -211,6 +228,7 @@ class StorableObject(AbstractStorableObject):
             tags=tags,
             read_permissions=read_permissions,
             search_permissions=search_permissions,
+            name=name,
         )
 
         return result
