@@ -48,10 +48,6 @@ from ..services.transfer_service import SaveObjectService
 from ..services.transfer_service import TransferObjectService
 from ..services.user_service import UserManagerService
 
-sy.load("sympc")
-sy.load("tenseal")
-sy.load("pydp")
-
 
 class GridWorker(Domain):
     def __init__(

@@ -3,7 +3,6 @@ syntax = "proto3";
 package syft.lib.transformers;
 
 import "proto/core/common/common_object.proto";
-import "proto/lib/python/string.proto";
 import "proto/lib/python/dict.proto";
 
 message TokenizerFast {

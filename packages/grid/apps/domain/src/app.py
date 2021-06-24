@@ -31,6 +31,9 @@ from main.routes import users_blueprint  # noqa: 401
 # Internal imports
 from main.utils.monkey_patch import mask_payload_fast
 
+# grid relative
+from . import __version__
+
 DEFAULT_SECRET_KEY = "justasecretkeythatishouldputhere"
 # Masking/Unmasking is a process used to guarantee some level of security
 # during the transportation of the messages across proxies (as described in WebSocket RFC).
@@ -74,7 +77,8 @@ def create_app(
     :return: returns a Flask app instance.
     :rtype: Flask
     """
-    logger.info(f"Starting app in {config.APP_ENV} environment")
+    app_info = f"domain version: {__version__} in {config.APP_ENV}"
+    logger.info(f"{app_info} is Starting")
 
     # Create Flask app instance
     app = Flask(__name__)
@@ -89,5 +93,5 @@ def create_app(
     app.config["SECRET_KEY"] = secret_key
 
     # Send app instance
-    logger.info(f"App started in {config.APP_ENV} environment")
+    logger.info(f"{app_info} is Ready")
     return app

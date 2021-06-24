@@ -1,7 +1,6 @@
 syntax = "proto3";
 
 package syft.lib.torch;
-import "proto/lib/torch/tensor.proto";
 
 message ReturnTypes {
   string obj_type = 1;

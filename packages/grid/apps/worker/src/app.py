@@ -32,6 +32,9 @@ from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 from syft.core.node.domain.domain import Domain
 
+# grid relative
+from . import __version__
+
 DEFAULT_SECRET_KEY = "justasecretkeythatishouldputhere"
 
 # Masking/Unmasking is a process used to guarantee some level of security
@@ -62,7 +65,8 @@ def create_app(args, secret_key=DEFAULT_SECRET_KEY, debug=False) -> Flask:
     :return: returns a Flask app instance.
     :rtype: Flask
     """
-    logger.info(f"Starting app in {config.APP_ENV} environment")
+    app_info = f"worker version: {__version__} in {config.APP_ENV}"
+    logger.info(f"{app_info} is Starting")
 
     # Create Flask app instance
     app = Flask(__name__)
@@ -79,5 +83,5 @@ def create_app(args, secret_key=DEFAULT_SECRET_KEY, debug=False) -> Flask:
     app.config["SECRET_KEY"] = secret_key
 
     # Send app instance
-    logger.info(f"App started in {config.APP_ENV} environment")
+    logger.info(f"{app_info} is Ready")
     return app

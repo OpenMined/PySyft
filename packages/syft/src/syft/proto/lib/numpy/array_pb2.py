@@ -13,19 +13,13 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-# syft absolute
-from syft.proto.lib.torch import tensor_pb2 as proto_dot_lib_dot_torch_dot_tensor__pb2
-
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/lib/numpy/array.proto",
     package="syft.lib.numpy",
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x1bproto/lib/numpy/array.proto\x12\x0esyft.lib.numpy\x1a\x1cproto/lib/torch/tensor.proto"O\n\nNumpyProto\x12\x14\n\narrow_data\x18\x01 \x01(\x0cH\x00\x12\x14\n\nproto_data\x18\x02 \x01(\x0cH\x00\x12\r\n\x05\x64type\x18\x03 \x01(\tB\x06\n\x04\x64\x61tab\x06proto3',
-    dependencies=[
-        proto_dot_lib_dot_torch_dot_tensor__pb2.DESCRIPTOR,
-    ],
+    serialized_pb=b'\n\x1bproto/lib/numpy/array.proto\x12\x0esyft.lib.numpy"O\n\nNumpyProto\x12\x14\n\narrow_data\x18\x01 \x01(\x0cH\x00\x12\x14\n\nproto_data\x18\x02 \x01(\x0cH\x00\x12\r\n\x05\x64type\x18\x03 \x01(\tB\x06\n\x04\x64\x61tab\x06proto3',
 )
 
 
@@ -112,8 +106,8 @@ _NUMPYPROTO = _descriptor.Descriptor(
             fields=[],
         ),
     ],
-    serialized_start=77,
-    serialized_end=156,
+    serialized_start=47,
+    serialized_end=126,
 )
 
 _NUMPYPROTO.oneofs_by_name["data"].fields.append(

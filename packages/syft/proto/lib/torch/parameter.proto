@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package syft.lib.torch;
 
-import "proto/lib/torch/tensor.proto";
-
 message ParameterProto {
   bytes tensor = 1;
   bool requires_grad = 2;

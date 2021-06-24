@@ -10,9 +10,6 @@
 # $ docker build -f docker/Dockerfile --build-arg BUILD_ENV=prod -t openmined/grid-domain:latest -t openmined/grid-domain:`python VERSION` .
 # $ docker run -it -p 5000:5000 openmined/grid-domain
 
-
-#### INSTRUCTIONS
-
 # FROM nvidia/cuda:11.3.1-cudnn8-runtime-ubuntu20.04
 FROM python:3.9
 
