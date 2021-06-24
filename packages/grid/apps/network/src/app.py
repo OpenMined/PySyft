@@ -11,6 +11,7 @@
 # stdlib
 import logging
 import os
+import sys
 from typing import Dict
 from typing import Optional
 
@@ -30,10 +31,18 @@ from main.routes import users_blueprint
 from main.utils.monkey_patch import mask_payload_fast
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
-from src import __version__
 
 # syft absolute
 from syft.core.node.domain.domain import Domain
+
+# work around to fix the relative path to src/__init__.py __version__
+# TODO: change this so its less hacky
+path = os.path.dirname(sys.modules[__name__].__file__)
+path = os.path.join(path, "..")
+sys.path.insert(0, path)
+
+# third party
+from src import __version__
 
 DEFAULT_SECRET_KEY = "justasecretkeythatishouldputhere"
 

@@ -11,6 +11,7 @@
 # stdlib
 import logging
 import os
+import sys
 
 # third party
 import config
@@ -30,6 +31,14 @@ from main.routes import users_blueprint  # noqa: 401
 
 # Internal imports
 from main.utils.monkey_patch import mask_payload_fast
+
+# work around to fix the relative path to src/__init__.py __version__
+# TODO: change this so its less hacky
+path = os.path.dirname(sys.modules[__name__].__file__)
+path = os.path.join(path, "..")
+sys.path.insert(0, path)
+
+# third party
 from src import __version__
 
 DEFAULT_SECRET_KEY = "justasecretkeythatishouldputhere"
