@@ -33,6 +33,8 @@ def storable_to_dict(storable_obj: StorableObject) -> dict:
     _dict = {}
     _dict["tags"] = storable_obj.tags
     _dict["description"] = storable_obj.description
+    _dict["name"] = storable_obj.name
+
     # Serialize nacl Verify Keys Structure
     _dict["read_permissions"] = {
         key.encode(encoder=HexEncoder).decode("utf-8"): None
@@ -123,6 +125,7 @@ class BinObjectManager(ObjectStore):
             tags=obj_metadata.tags,
             read_permissions=read_permissions,
             search_permissions=syft.lib.python.Dict({VERIFYALL: None}),
+            name=obj_metadata.name,
         )
         return obj
 
@@ -135,6 +138,7 @@ class BinObjectManager(ObjectStore):
             description=metadata_dict["description"],
             read_permissions=metadata_dict["read_permissions"],
             search_permissions={},
+            name=metadata_dict["name"],
         )
 
         if self.__contains__(key):
