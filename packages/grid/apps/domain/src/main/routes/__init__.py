@@ -6,6 +6,7 @@ from .data_centric.datasets.routes import *
 from .data_centric.requests.routes import *
 from .data_centric.tensors.routes import *
 from .data_centric.workers.routes import *
+from .data_centric.models.routes import *
 from .general.blueprint import root_blueprint
 from .general.routes import *
 from .groups.blueprint import groups_blueprint
