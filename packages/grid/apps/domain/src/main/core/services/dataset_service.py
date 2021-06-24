@@ -82,6 +82,7 @@ def get_dataset_metadata_msg(
     ds, objs = get_specific_dataset_and_relations(_dataset_id)
     if not ds:
         raise DatasetNotFoundError
+
     dataset_json = model_to_json(ds)
     dataset_json["data"] = [
         {"name": obj.name, "id": obj.obj, "dtype": obj.dtype, "shape": obj.shape}
@@ -103,7 +104,7 @@ def get_all_datasets_metadata_msg(
     # Get Payload Content
     _current_user_id = msg.content.get("current_user", None)
     users = node.users
-    users = node.users
+
     if not _current_user_id:
         _current_user_id = users.first(
             verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
@@ -113,6 +114,7 @@ def get_all_datasets_metadata_msg(
 
     storage = node.disk_store
     datasets = []
+
     for dataset in get_all_datasets():
         ds = model_to_json(dataset)
         objs = get_all_relations(dataset.id)
@@ -145,6 +147,7 @@ def update_dataset_msg(
     _tags = msg.content.get("tags", [])
     _description = msg.content.get("description", "")
     _manifest = msg.content.get("manifest", "")
+    _name = msg.content.get("name", "")
 
     users = node.users
     if not _current_user_id:
@@ -157,7 +160,7 @@ def update_dataset_msg(
     _msg = {}
     if _allowed:
         storage = node.disk_store
-        _msg = update_dataset(_dataset_id, _tags, _manifest, _description)
+        _msg = update_dataset(_dataset_id, _tags, _manifest, _description, _name)
     else:
         raise AuthorizationError("You're not allowed to upload data!")
 
