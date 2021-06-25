@@ -71,10 +71,6 @@ from ..services.tensor_service import RegisterTensorService
 from ..services.transfer_service import TransferObjectService
 from ..services.user_service import UserManagerService
 
-sy.load("tenseal")
-sy.load("sympc")
-sy.load("pydp")
-
 
 class GridDomain(Domain):
     def __init__(
@@ -200,6 +196,10 @@ class GridDomain(Domain):
                     private_log_msg += f"from {msg.message.reply_to}"  # type: ignore
                 except Exception:
                     pass
+
+                if app.debug:
+                    print(private_log_msg)
+                    print(e)
 
                 # send the public exception back
                 response = ExceptionMessage(
