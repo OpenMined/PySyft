@@ -61,56 +61,56 @@ def cleanup(database):
         database.session.rollback()
 
 
-def test_get_all_tensors(client, database, cleanup):
-    new_role = create_role(*admin_role)
-    database.session.add(new_role)
-    new_user = create_user(*user1)
-    database.session.add(new_user)
-
-    database.session.commit()
-
-    token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
-    headers = {
-        "token": token.decode("UTF-8"),
-    }
-
-    # Register the first tensor
-    tags = ["#first-tensor"]
-    description = "First tensor description"
-
-    result = client.post(
-        "/data-centric/tensors",
-        json={
-            "tensor": [1, 2, 3, 4, 5, 6],
-            "description": description,
-            "tags": tags,
-            "searchable": True,
-        },
-        headers=headers,
-    )
-    tensor_id = result.get_json()["tensor_id"]
-
-    # Register the second tensor
-    tags = ["#second-tensor"]
-    description = "Second tensor description"
-
-    result = client.post(
-        "/data-centric/tensors",
-        json={
-            "tensor": [1, 2, 3, 4, 5, 6],
-            "description": description,
-            "tags": tags,
-            "searchable": True,
-        },
-        headers=headers,
-    )
-    tensor_id = result.get_json()["tensor_id"]
-
-    # Test Get tensors request
-    result = client.get("/data-centric/tensors", headers=headers)
-
-    assert result.status_code == 200
-    assert len(result.get_json()["tensors"]) == 2
+# def test_get_all_tensors(client, database, cleanup):
+#     new_role = create_role(*admin_role)
+#     database.session.add(new_role)
+#     new_user = create_user(*user1)
+#     database.session.add(new_user)
+#
+#     database.session.commit()
+#
+#     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
+#     headers = {
+#         "token": token.decode("UTF-8"),
+#     }
+#
+#     # Register the first tensor
+#     tags = ["#first-tensor"]
+#     description = "First tensor description"
+#
+#     result = client.post(
+#         "/data-centric/tensors",
+#         json={
+#             "tensor": [1, 2, 3, 4, 5, 6],
+#             "description": description,
+#             "tags": tags,
+#             "searchable": True,
+#         },
+#         headers=headers,
+#     )
+#     tensor_id = result.get_json()["tensor_id"]
+#
+#     # Register the second tensor
+#     tags = ["#second-tensor"]
+#     description = "Second tensor description"
+#
+#     result = client.post(
+#         "/data-centric/tensors",
+#         json={
+#             "tensor": [1, 2, 3, 4, 5, 6],
+#             "description": description,
+#             "tags": tags,
+#             "searchable": True,
+#         },
+#         headers=headers,
+#     )
+#     tensor_id = result.get_json()["tensor_id"]
+#
+#     # Test Get tensors request
+#     result = client.get("/data-centric/tensors", headers=headers)
+#
+#     assert result.status_code == 200
+#     assert len(result.get_json()["tensors"]) == 2
 
 
 def test_create_tensor(client, database, cleanup):

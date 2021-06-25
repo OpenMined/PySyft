@@ -7,8 +7,14 @@ from flask import current_app as app
 import jwt
 import pytest
 from src.main.core.database import *
-from src.main.core.database.tables.environment import Environment
-from src.main.core.database.tables.user_environment import UserEnvironment
+
+if __name__ == '__main__':
+    from src.main.core.database.tables.user import User
+    from src.main.core.database.tables.role import Role
+    from src.main.core.database.tables.group import Group
+    from src.main.core.database.tables.user_group import UserGroup
+    from src.main.core.database.tables.environment import Environment
+    from src.main.core.database.tables.user_environment import UserEnvironment
 
 JSON_DECODE_ERR_MSG = (
     "Expecting property name enclosed in " "double quotes: line 1 column 2 (char 1)"
@@ -28,7 +34,6 @@ user2 = (
     "anemail@anemail.com",
     "2amt5MXKdLhEEL8FiQLcl8Mp0FNhZI6",
     "$2b$12$rj8MnLcKBxAgL7GUHrYn6O",
-    "acfc10d15d7ec9f7cd05a312489af2794619c6f11e9af34671a5f33da48c1de2",
     2,
 )
 user3 = (
