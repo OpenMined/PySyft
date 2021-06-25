@@ -7,6 +7,6 @@ do
         tox -e grid.test.unit
         chsum1=$chsum2
     fi
-    sleep 60
+    sleep 120
 done
 

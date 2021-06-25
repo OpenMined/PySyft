@@ -7,6 +7,6 @@ do
         tox -e syft.test.security
         chsum1=$chsum2
     fi
-    sleep 60
+    sleep 120
 done
 
