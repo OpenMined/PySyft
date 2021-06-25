@@ -13,19 +13,13 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-# syft absolute
-from syft.proto.lib.torch import tensor_pb2 as proto_dot_lib_dot_torch_dot_tensor__pb2
-
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/lib/torch/returntypes.proto",
     package="syft.lib.torch",
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n!proto/lib/torch/returntypes.proto\x12\x0esyft.lib.torch\x1a\x1cproto/lib/torch/tensor.proto"K\n\x0bReturnTypes\x12\x10\n\x08obj_type\x18\x01 \x01(\t\x12*\n\x06values\x18\x02 \x03(\x0b\x32\x1a.syft.lib.torch.TensorDatab\x06proto3',
-    dependencies=[
-        proto_dot_lib_dot_torch_dot_tensor__pb2.DESCRIPTOR,
-    ],
+    serialized_pb=b'\n!proto/lib/torch/returntypes.proto\x12\x0esyft.lib.torch"/\n\x0bReturnTypes\x12\x10\n\x08obj_type\x18\x01 \x01(\t\x12\x0e\n\x06values\x18\x02 \x03(\x0c\x62\x06proto3',
 )
 
 
@@ -61,8 +55,8 @@ _RETURNTYPES = _descriptor.Descriptor(
             full_name="syft.lib.torch.ReturnTypes.values",
             index=1,
             number=2,
-            type=11,
-            cpp_type=10,
+            type=12,
+            cpp_type=9,
             label=3,
             has_default_value=False,
             default_value=[],
@@ -84,13 +78,10 @@ _RETURNTYPES = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=83,
-    serialized_end=158,
+    serialized_start=53,
+    serialized_end=100,
 )
 
-_RETURNTYPES.fields_by_name[
-    "values"
-].message_type = proto_dot_lib_dot_torch_dot_tensor__pb2._TENSORDATA
 DESCRIPTOR.message_types_by_name["ReturnTypes"] = _RETURNTYPES
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 

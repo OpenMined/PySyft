@@ -5,8 +5,8 @@ import torch as th
 
 # syft relative
 from ...generate_wrapper import GenerateWrapper
-from ...lib.torch.tensor_util import protobuf_tensor_deserializer
-from ...lib.torch.tensor_util import protobuf_tensor_serializer
+from ...lib.torch.tensor_util import tensor_deserializer
+from ...lib.torch.tensor_util import tensor_serializer
 from ...logger import warning
 from ...proto.lib.torch.device_pb2 import Device as Device_PB
 from ...proto.lib.torch.tensor_pb2 import TensorProto as Tensor_PB
@@ -16,7 +16,7 @@ torch_tensor_type = type(th.tensor([1, 2, 3]))
 
 def object2proto(obj: object) -> Tensor_PB:
     proto = Tensor_PB()
-    proto.tensor.CopyFrom(protobuf_tensor_serializer(obj))
+    proto.tensor = tensor_serializer(obj)
 
     proto.requires_grad = getattr(obj, "requires_grad", False)
     proto.device.CopyFrom(
@@ -29,15 +29,15 @@ def object2proto(obj: object) -> Tensor_PB:
     if proto.requires_grad:
         grad = getattr(obj, "grad", None)
         if grad is not None:
-            proto.grad.CopyFrom(protobuf_tensor_serializer(grad))
+            proto.grad = tensor_serializer(grad)
 
     return proto
 
 
 def proto2object(proto: Tensor_PB) -> th.Tensor:
-    tensor = protobuf_tensor_deserializer(proto.tensor)
-    if proto.HasField("grad"):
-        tensor.grad = protobuf_tensor_deserializer(proto.grad)
+    tensor = tensor_deserializer(proto.tensor)
+    if proto.requires_grad:
+        tensor.grad = tensor_deserializer(proto.grad)
 
     tensor.requires_grad_(proto.requires_grad)
 
