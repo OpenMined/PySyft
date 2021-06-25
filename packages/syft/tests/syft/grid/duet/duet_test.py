@@ -10,7 +10,7 @@ from typing import Tuple
 import pytest
 
 # syft absolute
-from syft.grid.duet import duet_network_test
+from syft.grid.duet import test_duet_network
 
 # syft relative
 from .duet_scenarios_tests import register_duet_scenarios
@@ -25,7 +25,7 @@ register_duet_scenarios(registered_tests)
 
 @pytest.mark.fast
 def test_duet_network_availability() -> None:
-    assert duet_network_test() is True
+    assert test_duet_network() is True
 
 
 @pytest.mark.slow
