@@ -29,6 +29,7 @@ from .tables.setup import SetupConfig
 from .tables.setup import create_setup
 from .tables.user import User
 from .tables.user import create_user
+
 from .utils import expand_user_object
 from .utils import model_to_json
 

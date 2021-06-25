@@ -11,6 +11,7 @@
 # stdlib
 import logging
 import os
+import sys
 
 # third party
 import config
@@ -30,6 +31,15 @@ from main.routes import users_blueprint  # noqa: 401
 
 # Internal imports
 from main.utils.monkey_patch import mask_payload_fast
+
+# work around to fix the relative path to src/__init__.py __version__
+# TODO: change this so its less hacky
+path = os.path.dirname(sys.modules[__name__].__file__)
+path = os.path.join(path, "..")
+sys.path.insert(0, path)
+
+# third party
+from src import __version__
 
 DEFAULT_SECRET_KEY = "justasecretkeythatishouldputhere"
 # Masking/Unmasking is a process used to guarantee some level of security
@@ -74,10 +84,12 @@ def create_app(
     :return: returns a Flask app instance.
     :rtype: Flask
     """
-    logger.info(f"Starting app in {config.APP_ENV} environment")
+    app_info = f"domain version: {__version__} in {config.APP_ENV}"
+    logger.info(f"{app_info} is Starting")
 
     # Create Flask app instance
     app = Flask(__name__)
+    app.url_map.strict_slashes = False
 
     app.config.from_object("config")
 
@@ -89,5 +101,5 @@ def create_app(
     app.config["SECRET_KEY"] = secret_key
 
     # Send app instance
-    logger.info(f"App started in {config.APP_ENV} environment")
+    logger.info(f"{app_info} is Ready")
     return app

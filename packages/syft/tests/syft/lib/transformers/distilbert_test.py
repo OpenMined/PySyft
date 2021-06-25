@@ -11,7 +11,6 @@ from syft.core.plan.plan_builder import make_plan
 
 transformers = pytest.importorskip("transformers")
 distilbert = pytest.importorskip("syft.lib.transformers.models.distilbert")
-sy.load("transformers")
 
 
 @pytest.fixture(scope="module")

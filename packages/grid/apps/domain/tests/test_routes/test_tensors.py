@@ -62,6 +62,10 @@ def cleanup(database):
 
 
 # def test_get_all_tensors(client, database, cleanup):
+#     # Deleting previous objects
+#     database.session.query(BinObject).delete()
+#     database.session.query(ObjectMetadata).delete()
+#
 #     new_role = create_role(*admin_role)
 #     database.session.add(new_role)
 #     new_user = create_user(*user1)

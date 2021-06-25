@@ -12,7 +12,6 @@ class BinObject(BaseModel):
 
     id = db.Column(db.String(3072), primary_key=True)
     binary = db.Column(db.LargeBinary(3072))
-    obj_name = db.Column(db.String(3072))
 
     @property
     def object(self):
@@ -23,14 +22,17 @@ class BinObject(BaseModel):
     def object(self, value):
         # storing DataMessage, we should unwrap
         self.binary = serialize(value, to_bytes=True)  # TODO: techdebt fix
-        self.obj_name = type(value).__name__
 
 
 class ObjectMetadata(BaseModel):
     __tablename__ = "obj_metadata"
 
-    id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
-    obj = db.Column(db.Integer, db.ForeignKey("bin_object.id"))
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+
+    # TODO: @Ionesio investigate the difference
+    obj = db.Column(db.String(3072), db.ForeignKey("bin_object.id", ondelete="CASCADE"))
+    # obj = db.Column(db.String(3072), db.ForeignKey("bin_object.id", ondelete='SET NULL'), nullable=True)
+
     tags = db.Column(db.JSON())
     description = db.Column(db.String())
     read_permissions = db.Column(db.JSON())
