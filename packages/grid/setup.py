@@ -1,4 +1,5 @@
 # stdlib
+import imp
 import os
 
 # third party
@@ -10,9 +11,11 @@ here = os.path.abspath(os.path.dirname(__file__))
 with open(os.path.join(here, "DEPLOYMENT.md"), encoding="utf-8") as f:
     long_description = f.read()
 
+VERSION = imp.load_source("VERSION", "../../VERSION")
+
 setup(
     name="pygrid-cli",
-    version="0.5.0",
+    version=VERSION.__version__,
     description="OpenMined PyGrid CLI for Infrastructure and cloud deployment",
     long_description=long_description,
     long_description_content_type="text/markdown",
