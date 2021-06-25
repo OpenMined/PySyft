@@ -1,10 +1,4 @@
-# stdlib
-from json import dumps
-from json import loads
-
 # third party
-from flask import current_app as app
-import jwt
 import pytest
 from src.main.core.database import *
 
