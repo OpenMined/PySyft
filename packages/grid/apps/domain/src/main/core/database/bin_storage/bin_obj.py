@@ -12,7 +12,6 @@ class BinObject(BaseModel):
 
     id = db.Column(db.String(3072), primary_key=True)
     binary = db.Column(db.LargeBinary(3072))
-    obj_name = db.Column(db.String(3072))
 
     @property
     def object(self):
@@ -23,7 +22,6 @@ class BinObject(BaseModel):
     def object(self, value):
         # storing DataMessage, we should unwrap
         self.binary = serialize(value, to_bytes=True)  # TODO: techdebt fix
-        self.obj_name = type(value).__name__
 
 
 class ObjectMetadata(BaseModel):
