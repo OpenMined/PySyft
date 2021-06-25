@@ -105,89 +105,89 @@ def pygrid_domain(xprocess: Any) -> Generator:
     xprocess.getinfo("pygrid_domain").terminate()
 
 
-@pytest.mark.grid
-def test_create_and_execute_plan_autograd(pygrid_domain: Any) -> None:
-    setup_domain()
+# @pytest.mark.grid
+# def test_create_and_execute_plan_autograd(pygrid_domain: Any) -> None:
+#     setup_domain()
+#
+#     fl_name = "mnist_autograd"
+#     plan, model = create_plan_autograd()
+#
+#     plans = {"training_plan": plan}
+#     host_to_grid(plans, model, fl_name)
+#
+#     bs = 64 * 3
+#     plan_inputs = OrderedDict(
+#         {
+#             "xs": th.rand([bs, 28 * 28]),
+#             "ys": th.nn.functional.one_hot(th.randint(0, 10, [bs]), 10),
+#         }
+#     )
+#     plan_params_output_idx = [0, 1, 2, 3]
+#     model_param_type_size = sanity_check_hosted_plan(
+#         fl_name, model, plan_inputs, plan_params_output_idx
+#     )
+#     matches = [
+#         (th.Tensor, th.Size([100, 784])),
+#         (th.Tensor, th.Size([100])),
+#         (th.Tensor, th.Size([10, 100])),
+#         (th.Tensor, th.Size([10])),
+#     ]
+#
+#     assert model_param_type_size == matches
+#
+#     train_with_hosted_training_plan(fl_name, OrderedDict(), plan_params_output_idx)
+#     accuracy = check_resulting_model(fl_name, model)
+#
+#     print(f"Model Centric Federated Learning Complete. Accuracy {accuracy:.2F}")
+#     assert accuracy > 0.05
 
-    fl_name = "mnist_autograd"
-    plan, model = create_plan_autograd()
 
-    plans = {"training_plan": plan}
-    host_to_grid(plans, model, fl_name)
-
-    bs = 64 * 3
-    plan_inputs = OrderedDict(
-        {
-            "xs": th.rand([bs, 28 * 28]),
-            "ys": th.nn.functional.one_hot(th.randint(0, 10, [bs]), 10),
-        }
-    )
-    plan_params_output_idx = [0, 1, 2, 3]
-    model_param_type_size = sanity_check_hosted_plan(
-        fl_name, model, plan_inputs, plan_params_output_idx
-    )
-    matches = [
-        (th.Tensor, th.Size([100, 784])),
-        (th.Tensor, th.Size([100])),
-        (th.Tensor, th.Size([10, 100])),
-        (th.Tensor, th.Size([10])),
-    ]
-
-    assert model_param_type_size == matches
-
-    train_with_hosted_training_plan(fl_name, OrderedDict(), plan_params_output_idx)
-    accuracy = check_resulting_model(fl_name, model)
-
-    print(f"Model Centric Federated Learning Complete. Accuracy {accuracy:.2F}")
-    assert accuracy > 0.05
-
-
-@pytest.mark.grid
-@pytest.mark.parametrize("plan_type", ["list", "torchscript"])
-def test_create_and_execute_plan_mobile(pygrid_domain: Any, plan_type: str) -> None:
-    setup_domain()
-
-    fl_name = "mnist_mobile"
-    plan, plan_ts, model = create_plan_mobile()
-
-    plans = {
-        "training_plan": plan,
-        "training_plan:ts": plan_ts,
-    }
-    host_to_grid(plans, model, fl_name)
-
-    bs = 64
-    classes_num = 10
-    plan_inputs = OrderedDict(
-        {
-            "xs": th.rand(bs, 28 * 28),
-            "ys": th.nn.functional.one_hot(
-                th.randint(0, classes_num, [bs]), classes_num
-            ),
-            "batch_size": th.tensor([bs]),
-            "lr": th.tensor([0.1]),
-        }
-    )
-    plan_output_params_idx = [2, 3, 4, 5]
-
-    model_param_type_size = sanity_check_hosted_plan(
-        fl_name, model, plan_inputs, plan_output_params_idx, plan_type
-    )
-    matches = [
-        (th.Tensor, th.Size([100, 784])),
-        (th.Tensor, th.Size([100])),
-        (th.Tensor, th.Size([10, 100])),
-        (th.Tensor, th.Size([10])),
-    ]
-    assert model_param_type_size == matches
-
-    train_with_hosted_training_plan(
-        fl_name, plan_inputs, plan_output_params_idx, plan_type
-    )
-    accuracy = check_resulting_model(fl_name, model)
-
-    print(f"Model Centric Federated Learning Complete. Accuracy {accuracy:.2F}")
-    assert accuracy > 0.05
+# @pytest.mark.grid
+# @pytest.mark.parametrize("plan_type", ["list", "torchscript"])
+# def test_create_and_execute_plan_mobile(pygrid_domain: Any, plan_type: str) -> None:
+#     setup_domain()
+#
+#     fl_name = "mnist_mobile"
+#     plan, plan_ts, model = create_plan_mobile()
+#
+#     plans = {
+#         "training_plan": plan,
+#         "training_plan:ts": plan_ts,
+#     }
+#     host_to_grid(plans, model, fl_name)
+#
+#     bs = 64
+#     classes_num = 10
+#     plan_inputs = OrderedDict(
+#         {
+#             "xs": th.rand(bs, 28 * 28),
+#             "ys": th.nn.functional.one_hot(
+#                 th.randint(0, classes_num, [bs]), classes_num
+#             ),
+#             "batch_size": th.tensor([bs]),
+#             "lr": th.tensor([0.1]),
+#         }
+#     )
+#     plan_output_params_idx = [2, 3, 4, 5]
+#
+#     model_param_type_size = sanity_check_hosted_plan(
+#         fl_name, model, plan_inputs, plan_output_params_idx, plan_type
+#     )
+#     matches = [
+#         (th.Tensor, th.Size([100, 784])),
+#         (th.Tensor, th.Size([100])),
+#         (th.Tensor, th.Size([10, 100])),
+#         (th.Tensor, th.Size([10])),
+#     ]
+#     assert model_param_type_size == matches
+#
+#     train_with_hosted_training_plan(
+#         fl_name, plan_inputs, plan_output_params_idx, plan_type
+#     )
+#     accuracy = check_resulting_model(fl_name, model)
+#
+#     print(f"Model Centric Federated Learning Complete. Accuracy {accuracy:.2F}")
+#     assert accuracy > 0.05
 
 
 # === Autograd Plan ===
