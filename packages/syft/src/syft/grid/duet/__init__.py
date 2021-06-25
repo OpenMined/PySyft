@@ -338,11 +338,11 @@ def test_duet_network(network_url: str = "", loopback: bool = False) -> None:
     if not network_url:
         # testing github domain reachability
         if not check_url("https://github.com/", "GitHub domain."):
-            return None
+            return False
 
         # testing Github network_address
         if not check_url(ADDR_REPOSITORY, "GitHub signaling servers list."):
-            return None
+            return False
 
         # testing signaling (STUN) servers
         check_url(WebRTC_HOST + "/metadata", "default signaling server.")
@@ -351,7 +351,7 @@ def test_duet_network(network_url: str = "", loopback: bool = False) -> None:
             check_url(addr + "/metadata", "signaling sever #" + str(num) + ".")
     else:
         if not check_url(network_url + "/metadata", "Local signaling server."):
-            return None
+            return False
 
     if loopback:
         file_path = get_loopback_path()
@@ -364,3 +364,4 @@ def test_duet_network(network_url: str = "", loopback: bool = False) -> None:
                 info("Loopback file permission error.\n", str(e), print=True)
             else:
                 info("Loopback file error: ", str(e), print=True)
+    return True
