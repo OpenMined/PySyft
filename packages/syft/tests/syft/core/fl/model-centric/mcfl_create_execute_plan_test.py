@@ -105,7 +105,6 @@ def pygrid_domain(xprocess: Any) -> Generator:
     xprocess.getinfo("pygrid_domain").terminate()
 
 
-@pytest.mark.grid
 def test_fix_error_code_5_because_all_other_tests_commented_out(
     pygrid_domain: Any,
 ) -> None:
