@@ -396,11 +396,13 @@ for op in BASIC_OPS:
 
 
 @pytest.mark.torch
+@pytest.mark.parametrize("arrow_backend", [False, True])
 @pytest.mark.parametrize(
     "tensor_type, op_name, self_tensor, _args, is_property, return_type, deterministic",
     TEST_DATA,
 )
 def test_all_allowlisted_tensor_methods(
+    arrow_backend: bool,
     tensor_type: str,
     op_name: str,
     self_tensor: ListType,
@@ -410,7 +412,7 @@ def test_all_allowlisted_tensor_methods(
     deterministic: bool,
     client: sy.VirtualMachineClient,
 ) -> None:
-
+    sy.flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
     support_data = {}
     support_data["tensor_type"] = tensor_type
     support_data["op_name"] = op_name

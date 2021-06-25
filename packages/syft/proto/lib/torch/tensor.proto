@@ -4,13 +4,9 @@ package syft.lib.torch;
 
 import "proto/lib/torch/device.proto";
 
-message TensorData {
-  repeated int64 shape = 1;
-  string dtype = 2;
 
-  bool is_quantized = 3;
-  float scale = 4;
-  int32 zero_point = 5;
+message ProtobufContent {
+  repeated int64 shape = 1;
 
   // Field numbers starting at 16 take two bytes to encode,
   // so starting the tensor data at 16 leaves room for more
@@ -49,9 +45,24 @@ message TensorData {
   // repeated double contents_complex128 = 31;
 }
 
+
+message TensorData {
+  bool is_quantized = 1;
+  float scale = 2;
+  int32 zero_point = 3;
+
+  oneof data {
+    bytes proto_data = 4;
+    bytes arrow_data = 5;
+  }
+
+  string dtype = 6;
+}
+
+
 message TensorProto {
-  TensorData tensor = 1;
+  bytes tensor = 1;
   bool requires_grad = 2;
-  TensorData grad = 3;
+  bytes grad = 3;
   syft.lib.torch.Device device = 4;
 }

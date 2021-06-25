@@ -2,6 +2,7 @@
 import ast
 from collections import OrderedDict
 import copy
+import importlib
 import inspect
 from itertools import islice
 import os
@@ -27,6 +28,7 @@ from syft.core.plan.plan_builder import make_plan
 from syft.lib.python import _SyNone
 
 # syft relative
+from .. import lib_ast
 from ...core.pointer.pointer import Pointer
 from ...generate_wrapper import GenerateWrapper
 from ...lib.util import full_name_with_qualname
@@ -36,6 +38,7 @@ from ...logger import traceback_and_raise
 from ...proto.lib.torch.module_pb2 import Module as Module_PB
 from ..python.collections import OrderedDict as SyOrderedDict
 from ..python.util import downcast
+from ..python.util import upcast
 
 # from ...core.node.common.service.auth import AuthorizationException
 
@@ -420,15 +423,32 @@ class Module:
                         info(f"  Layer {n} sum({k}): {s}")
 
 
+def module_in_ast(module_type: type) -> bool:
+    fqn = full_name_with_qualname(klass=module_type)
+    try:
+        return bool(lib_ast.query(fqn, obj_type=module_type))
+    except ValueError:
+        return False
+
+
 def object2proto(obj: torch.nn.Module, is_child: bool = False) -> Module_PB:
+
     proto = Module_PB()
-    if "torch.nn." in type(obj).__module__:
-        proto.module_type = type(obj).__name__
+    if module_in_ast(type(obj)):
+        proto.python_module = type(obj).__module__
     else:
-        proto.module_type = f"_USER_DEFINED_MODULE_{type(obj).__name__}"
+        proto.python_module = "_USER_DEFINED"
         proto.forward.CopyFrom(sy.serialize(obj._forward_plan))
 
+    proto.module_type = type(obj).__name__
     proto.module_repr = obj.extra_repr()
+
+    # Requires klass.store_init_args() when building AST.
+    if hasattr(obj, "_init_args") and hasattr(obj, "_init_kwargs"):
+        module_args = sy.serialize(sy.lib.python.List(obj._init_args))
+        proto.module_args.CopyFrom(module_args)
+        module_kwargs = sy.serialize(sy.lib.python.Dict(obj._init_kwargs))
+        proto.module_kwargs.CopyFrom(module_kwargs)
 
     if hasattr(obj, "_uid2attr"):
         proto._uid2attr.CopyFrom(sy.serialize(SyOrderedDict(obj._uid2attr)))
@@ -444,18 +464,29 @@ def object2proto(obj: torch.nn.Module, is_child: bool = False) -> Module_PB:
 
 
 def proto2object(proto: Module_PB) -> torch.nn.Module:
-    is_userdefined = proto.module_type.startswith("_USER_DEFINED_MODULE_")
+    is_userdefined = proto.python_module == "_USER_DEFINED"
 
     if is_userdefined:
         obj_type = type(
-            proto.module_type.replace("_USER_DEFINED_MODULE_", ""),
+            proto.module_type,
             (torch.nn.Module,),
             {},
         )
     else:
-        obj_type = getattr(torch.nn, proto.module_type)
+        obj_type = getattr(
+            importlib.import_module(proto.python_module), proto.module_type
+        )
 
-    args, kwargs = repr_to_kwargs(repr_str=proto.module_repr)
+    if proto.HasField("module_args") and proto.HasField("module_kwargs"):
+        args = upcast(sy.deserialize(proto.module_args))
+        kwargs = upcast(sy.deserialize(proto.module_kwargs))
+    elif proto.HasField("module_repr"):
+        # TODO make Modules defined by torch use module_args and module_kwargs,
+        # and remove module_repr from proto
+        args, kwargs = repr_to_kwargs(repr_str=proto.module_repr)
+    else:
+        raise ValueError("Could not infer args and kwargs from Module proto.")
+
     obj = obj_type(*args, **kwargs)
 
     for name, param in sy.deserialize(proto.parameters).items():
@@ -552,17 +583,35 @@ class SyModule(torch.nn.Module, metaclass=ForwardToPlanConverter):
 
     """
 
-    def __init__(self, *args, input_size: Optional[Tuple[int]] = None, **kwargs) -> None:  # type: ignore
-        """Initializes an empty SyModule
-
+    def __init__(  # type: ignore
+        self,
+        *args,
+        input_size: Optional[Tuple[int]] = None,
+        inputs: Optional[Dict[str, torch.Tensor]] = None,
+        **kwargs,
+    ):
+        """
         Args:
-            input_size (Tuple[Int], optional): input_size of the Module, needs to be defined or inferrable.
-            Defaults to None.
+            input_size (Optional[Tuple[int]], optional): input_size of the Module,
+                needs to be defined or inferrable. Defaults to None.
+            inputs (Optional[Dict[str, torch.Tensor]], optional): dictionary of dummy input tensors.
+                Use this argument instead of `input_size` if there are multiple forward inputs,
+                or if the forward input is not a FloatTensor. Defaults to None.
+
+        Raises:
+            ValueError: [description]
         """
         super().__init__(*args, **kwargs)
         self.building_forward = False
         self._parameter_pointers: Dict[str, Pointer] = dict()
+
+        if (input_size is None) == (inputs is None):
+            raise ValueError(
+                "Either `input_size` or `inputs` should be specified, but not both."
+            )
+
         self.input_size = input_size
+        self.inputs = inputs
 
     def _make_forward_plan(self) -> None:
         """Convert forward function into a `Plan` object
@@ -636,40 +685,22 @@ class SyModule(torch.nn.Module, metaclass=ForwardToPlanConverter):
         else:
             return res
 
-    def _get_inp_key(self) -> str:
+    def _get_inp_keys(self) -> List[str]:
         """Get key for the `.forward` argument
-
         Returns:
             str: input key
         """
 
         forward_signature = inspect.signature(self.forward)
         args = list(forward_signature.parameters.items())
-        if len(args) == 0 or len(args) > 1:
-            raise ValueError(
-                "SyModules accept only *precisely 1* argument and no kwargs"
-            )
-        k, v = args[0]
-        if v.default is not inspect.Parameter.empty:
-            raise ValueError("SyModules accept only args, not kwargs")
-        inp_key = k
-        return inp_key
-
-    def _get_inp_size(self) -> Tuple[int]:
-        """Get input size for this module
-
-        Returns:
-            Tuple[Int]: input size for `.forward`
-        """
-        if not hasattr(self, "input_size") or not isinstance(
-            self.input_size, (tuple, list)
-        ):
-            raise ValueError(
-                "SyModule needs `input_size`: Tuple(Int) as kwarg to trace the forward plan."
-                "Also, make sure to call **super().__init__(**kwargs)** in ALL your SyModules"
-                ""
-            )
-        return self.input_size
+        if len(args) == 0:
+            raise ValueError("SyModules requires more than one argument, and no kwargs")
+        inp_keys = []
+        for k, v in args:
+            if v.default is not inspect.Parameter.empty:
+                raise ValueError("SyModules accept only args, not kwargs")
+            inp_keys.append(k)
+        return inp_keys
 
     def _get_forward_inputs(self) -> Dict[str, Pointer]:
         """Get the dummy inputs for generating the .forward `Plan`
@@ -677,28 +708,64 @@ class SyModule(torch.nn.Module, metaclass=ForwardToPlanConverter):
         Returns:
             Dict[str: Any]: inputs for .forward
         """
-        input_size = self._get_inp_size()
-        inp_key = self._get_inp_key()
-        if isinstance(self, SySequential):
-            inp_key = "x"
+        inp_keys = self._get_inp_keys()
 
-        inputs = {inp_key: torch.randn(input_size).send(ROOT_CLIENT)}
+        if hasattr(self, "inputs") and isinstance(self.inputs, dict):
+            if set(inp_keys) != set(self.inputs.keys()):
+                raise ValueError(
+                    "Given `inputs` dict and expected `forward` inputs do not match."
+                )
+            inputs = {k: v.send(ROOT_CLIENT) for k, v in self.inputs.items()}
+
+        elif hasattr(self, "input_size") and isinstance(self.input_size, tuple):
+            if len(inp_keys) != 1:
+                raise ValueError(
+                    "`.forward` method has more than one input, define dummy inputs with `inputs` kwarg."
+                )
+            inputs = {inp_keys[0]: torch.rand(self.input_size).send(ROOT_CLIENT)}
+
+        else:
+            raise ValueError(
+                "SyModule needs either `input_size`: Tuple(Int) or `inputs`: Dict[str, Tensor] as kwarg"
+                "to trace the forward plan."
+                "Also, make sure to call **super().__init__(**kwargs)** in ALL your SyModules"
+                ""
+            )
+
         return inputs
 
 
 class SySequential(SyModule):
     """The Syft equivalent of torch.nn.Sequential"""
 
-    def __init__(self, *args, input_size: Optional[Tuple[int]] = None):  # type: ignore
+    def __init__(self, *args, input_size: Optional[Tuple[int]] = None, **kwargs):  # type: ignore
         """initializes SySequential and stores the submodules
 
         input_size (Tuple[Int], optional): input_size of the Module, needs to be defined or inferrable.
             Defaults to None.
         """
-        super().__init__(input_size=input_size)
+        if input_size is None:
+            input_size = self._infer_input_size(*args)
+
+        super().__init__(input_size=input_size, **kwargs)
         for idx, module in enumerate(args):
             setattr(self, str(idx), module)
         self.n_modules = len(args)
+
+    def _infer_input_size(self, *args: Any) -> Tuple[int]:
+        """Infer input size from first child
+
+        Returns:
+            Tuple[int]: input size of first child SyModule.
+        """
+        if hasattr(args[0], "input_size"):
+            return args[0].input_size
+        else:
+            raise ValueError(
+                "Could not infer `input_size` from children modules."
+                "Either 1) define `input_size` as a kwarg of SySequential OR"
+                " 2) define `input_size`: Tuple[int] as kwarg on the first child module."
+            )
 
     def __iter__(self):  # type: ignore
         if self.building_forward:
@@ -730,7 +797,7 @@ class SySequential(SyModule):
             key = self._get_item_by_idx(self._modules.keys(), idx)
             delattr(self, key)
 
-    def forward(self, x: Any = None) -> Any:  # type: ignore
+    def forward(self, x: Any) -> Any:  # type: ignore
         """Sequentially call submodule.forward
 
         Args:
@@ -757,20 +824,3 @@ class SySequential(SyModule):
             str: "x"
         """
         return "x"
-
-    def _get_inp_size(self) -> Tuple[int]:
-        """Get input size for this module
-
-        Returns:
-            Tuple[Int]: input size for `.forward`
-        """
-        if hasattr(getattr(self, "0"), "input_size"):
-            return getattr(self, "0").input_size
-        elif hasattr(self, "input_size"):
-            return self.input_size  # type: ignore
-        else:
-            raise ValueError(
-                "SySequential needs either 1) `input_size`: Tuple(Int) as a kwargs for on of its children \
-                                OR 2) `input_size`: Tuple(Int) as kwarg for itself \
-                                to trace the forward plan"
-            )

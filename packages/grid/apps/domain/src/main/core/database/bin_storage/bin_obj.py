@@ -1,17 +1,10 @@
 # third party
 from syft import deserialize
 from syft import serialize
-from syft.proto.lib.pandas.frame_pb2 import PandasDataFrame as PandasDataFrame_PB
-from syft.proto.lib.torch.tensor_pb2 import TensorProto as TensorProto_PB
 
 # grid relative
 from .. import BaseModel
 from .. import db
-
-bin_to_proto = {
-    TensorProto_PB.__name__: TensorProto_PB,
-    PandasDataFrame_PB.__name__: PandasDataFrame_PB,
-}
 
 
 class BinObject(BaseModel):
@@ -19,27 +12,27 @@ class BinObject(BaseModel):
 
     id = db.Column(db.String(3072), primary_key=True)
     binary = db.Column(db.LargeBinary(3072))
-    protobuf_name = db.Column(db.String(3072))
 
     @property
     def object(self):
-        _proto_struct = bin_to_proto[self.protobuf_name]()
-        _proto_struct.ParseFromString(self.binary)
-        _obj = deserialize(blob=_proto_struct)
-        return _obj
+        # storing DataMessage, we should unwrap
+        return deserialize(self.binary, from_bytes=True)  # TODO: techdebt fix
 
     @object.setter
     def object(self, value):
-        serialized_value = serialize(value)
-        self.binary = serialized_value.SerializeToString()
-        self.protobuf_name = serialized_value.__class__.__name__
+        # storing DataMessage, we should unwrap
+        self.binary = serialize(value, to_bytes=True)  # TODO: techdebt fix
 
 
 class ObjectMetadata(BaseModel):
     __tablename__ = "obj_metadata"
 
-    id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
-    obj = db.Column(db.Integer, db.ForeignKey("bin_object.id"))
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+
+    # TODO: @Ionesio investigate the difference
+    obj = db.Column(db.String(3072), db.ForeignKey("bin_object.id", ondelete="CASCADE"))
+    # obj = db.Column(db.String(3072), db.ForeignKey("bin_object.id", ondelete='SET NULL'), nullable=True)
+
     tags = db.Column(db.JSON())
     description = db.Column(db.String())
     read_permissions = db.Column(db.JSON())

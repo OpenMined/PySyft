@@ -48,10 +48,6 @@ from ..services.transfer_service import SaveObjectService
 from ..services.transfer_service import TransferObjectService
 from ..services.user_service import UserManagerService
 
-sy.load("sympc")
-sy.load("tenseal")
-sy.load("pydp")
-
 
 class GridWorker(Domain):
     def __init__(
@@ -119,6 +115,10 @@ class GridWorker(Domain):
                     private_log_msg += f"from {msg.message.reply_to}"  # type: ignore
                 except Exception:
                     pass
+
+                if app.debug:
+                    print(private_log_msg)
+                    print(e)
 
                 # send the public exception back
                 response = ExceptionMessage(
