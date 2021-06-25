@@ -8,7 +8,7 @@ import jwt
 import pytest
 from src.main.core.database import *
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     from src.main.core.database.tables.user import User
     from src.main.core.database.tables.role import Role
     from src.main.core.database.tables.group import Group

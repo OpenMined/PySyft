@@ -25,6 +25,7 @@ def get_node():
     global node
     return node
 
+
 #
 # def create_worker_app(app, args):
 #     # Register HTTP blueprints
@@ -97,6 +98,7 @@ def get_node():
 #     executor.init_app(app)
 #
 #     return app
+
 
 def create_domain_app(app, args, testing=False):
     test_config = None
