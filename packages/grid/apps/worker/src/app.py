@@ -84,6 +84,7 @@ def create_app(args=args_obj, secret_key=DEFAULT_SECRET_KEY, debug=False) -> Fla
 
     # Create Flask app instance
     app = Flask(__name__)
+    app.url_map.strict_slashes = False
 
     app.config.from_object("config")
 

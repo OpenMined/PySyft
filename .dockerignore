@@ -7,3 +7,5 @@ scripts
 docker
 packages/syft/src/target
 packages/grid/apps/domain/src/nodedatabase.db
+packages/grid/apps/network/src/nodedatabase.db
+packages/grid/apps/worker/src/nodedatabase.db

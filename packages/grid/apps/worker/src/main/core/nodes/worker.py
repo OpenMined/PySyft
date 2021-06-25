@@ -116,6 +116,10 @@ class GridWorker(Domain):
                 except Exception:
                     pass
 
+                if app.debug:
+                    print(private_log_msg)
+                    print(e)
+
                 # send the public exception back
                 response = ExceptionMessage(
                     address=msg.message.reply_to,  # type: ignore
