@@ -1281,31 +1281,31 @@ def test_delete_own_user(client, database, cleanup):
     assert database.session.query(User).get(3) is not None
 
 
-def test_delete_other_user_missing_user(client, database, cleanup):
-    new_role = create_role(*admin_role)
-    database.session.add(new_role)
-    new_role = create_role(*user_role)
-    database.session.add(new_role)
-    new_user = User(
-        email="tech@gibberish.com",
-        hashed_password="2amt5MXKdLhEEL8FiQLcl8Mp0FNhZI6",
-        salt="$2b$12$tufn64/0gSIAdprqBrRzC.",
-        private_key="fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
-        role=1,
-    )
-    database.session.add(new_user)
-
-    database.session.commit()
-
-    token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
-    headers = {
-        "token": token.decode("UTF-8"),
-    }
-
-    result = client.delete("/users/2", headers=headers, content_type="application/json")
-
-    assert result.status_code == 404
-    assert result.get_json()["error"] == "User not found!"
+# def test_delete_other_user_missing_user(client, database, cleanup):
+#     new_role = create_role(*admin_role)
+#     database.session.add(new_role)
+#     new_role = create_role(*user_role)
+#     database.session.add(new_role)
+#     new_user = User(
+#         email="tech@gibberish.com",
+#         hashed_password="2amt5MXKdLhEEL8FiQLcl8Mp0FNhZI6",
+#         salt="$2b$12$tufn64/0gSIAdprqBrRzC.",
+#         private_key="fd062d885b24bda173f6aa534a3418bcafadccecfefe2f8c6f5a8db563549ced",
+#         role=1,
+#     )
+#     database.session.add(new_user)
+#
+#     database.session.commit()
+#
+#     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
+#     headers = {
+#         "token": token.decode("UTF-8"),
+#     }
+#
+#     result = client.delete("/users/2", headers=headers, content_type="application/json")
+#
+#     assert result.status_code == 404
+#     assert result.get_json()["error"] == "User not found!"
 
 
 # SEARCH USERS
