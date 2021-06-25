@@ -1,5 +1,17 @@
 #!/bin/bash
 
+if [ -z "$APP_ENV" ]; then
+    export APP_ENV="dev"
+fi
+
+if [ -z "$PORT" ]; then
+    export PORT=5000
+fi
+
+if [ -z "$LOCAL_DATABASE" ]; then
+    export LOCAL_DATABASE="sqlite:///:memory:"
+fi
+
 if [ "$APP_ENV" = "dev" ]; then
     # enable hot reloading
     export FLASK_ENV=development
