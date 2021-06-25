@@ -10,7 +10,6 @@ db = SQLAlchemy()
 
 
 class BaseModel(db.Model, AllFeaturesMixin):
-    __bind_key__ = "bin_store"
     __abstract__ = True
     pass
 
