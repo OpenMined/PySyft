@@ -1,6 +1,5 @@
 # stdlib
 from pathlib import Path
-import platform
 import tarfile
 import tempfile
 from typing import Optional
@@ -33,9 +32,7 @@ class Dataset:
         self.tags = tags if tags is not None else []
 
     def tozip(self) -> str:
-        tempdir = Path(
-            "/tmp" if platform.system() == "Darwin" else tempfile.gettempdir()
-        )
+        tempdir = Path(tempfile.gettempdir())
         tempdir_str = str(tempdir.absolute())
         np.savetxt(tempdir_str + "/data_01.csv", self.data, delimiter=",")
         f = open(tempdir_str + "/manifest", "w")
