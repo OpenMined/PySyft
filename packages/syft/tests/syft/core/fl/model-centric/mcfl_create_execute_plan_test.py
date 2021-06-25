@@ -105,6 +105,10 @@ def pygrid_domain(xprocess: Any) -> Generator:
     xprocess.getinfo("pygrid_domain").terminate()
 
 
+def test_so_that_we_dont_get_code_5_error() -> None:
+    """ """
+
+
 # @pytest.mark.grid
 # def test_create_and_execute_plan_autograd(pygrid_domain: Any) -> None:
 #     setup_domain()
