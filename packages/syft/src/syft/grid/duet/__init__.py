@@ -301,7 +301,7 @@ def join_duet(
     return duet
 
 
-def test_duet_network(network_url: str = "", loopback: bool = False) -> None:
+def test_duet_network(network_url: str = "", loopback: bool = False) -> bool:
     def check_url(url: str, url_description: str) -> bool:
         try:
             r = requests.head(url, timeout=5)
