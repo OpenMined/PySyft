@@ -21,3 +21,6 @@
 **/*.log
 **/*.sqlite
 **/*.sqlite-journal
+
+# docker compose volumes
+docker/data/*

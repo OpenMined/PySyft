@@ -25,9 +25,6 @@ def test_glm(root_client: sy.VirtualMachineClient) -> None:
 
     UNNECESSARY_STR = r"Time(.*)(?=Pearson)|Date(.*)(?=Deviance)"
 
-    # sy.load("pandas")
-    # sy.load("statsmodels")
-
     # load data
     url = "https://raw.githubusercontent.com/chemo-wakate/tutorial-6th/master/beginner/data/winequality-red.txt"
     df = pd.read_csv(url, sep="\t")

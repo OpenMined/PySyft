@@ -7,7 +7,6 @@ import syft as sy
 from syft.lib.python import List
 
 transformers = pytest.importorskip("transformers")
-sy.load("transformers")
 
 
 @pytest.mark.slow
