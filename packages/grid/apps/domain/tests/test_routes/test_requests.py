@@ -12,7 +12,7 @@ from src.main.core.database import Role
 from src.main.core.database import Group
 from src.main.core.database import UserGroup
 from src.main.core.database import Request
-from src.main.core.database.bin_storage.json_obj import DatasetGroup
+from src.main.core.database import DatasetGroup
 from src.main.core.database import BinObject
 from src.main.core.database import JsonObject
 from src.main.core.database import StorageMetadata

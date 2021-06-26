@@ -5,8 +5,8 @@ from src.main.core.database import User
 from src.main.core.database import Role
 from src.main.core.database import Group
 from src.main.core.database import UserGroup
-from src.main.core.database.environment.environment import Environment
-from src.main.core.database.environment.user_environment import UserEnvironment
+from src.main.core.database.tables.environment import Environment
+from src.main.core.database.tables.user_environment import UserEnvironment
 from src.main.core.manager import EnvironmentManager
 from src.main.core.manager import UserManager
 

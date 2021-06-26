@@ -1,8 +1,4 @@
 # third party
-from syft import deserialize
-from syft import serialize
-
-# grid relative
 from .. import BaseModel
 from .. import db
 

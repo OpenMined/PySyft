@@ -2,15 +2,9 @@
 from typing import List
 
 # grid relative
-from ..database.groups.groups import Group
-from ..database.groups.usergroup import UserGroup
-from ..exceptions import AuthorizationError
+from ..database.tables.groups import Group
+from ..database.tables.usergroup import UserGroup
 from ..exceptions import GroupNotFoundError
-from ..exceptions import InvalidCredentialsError
-from ..exceptions import MissingRequestKeyError
-from ..exceptions import PyGridError
-from ..exceptions import RoleNotFoundError
-from ..exceptions import UserNotFoundError
 from .database_manager import DatabaseManager
 
 
