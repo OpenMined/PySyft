@@ -7,7 +7,18 @@ import time
 from flask import current_app as app
 import jwt
 import pytest
-from src.main.core.database import *
+from src.main.core.database import User
+from src.main.core.database import Role
+from src.main.core.database import Group
+from src.main.core.database import UserGroup
+from src.main.core.database import Request
+from src.main.core.database.bin_storage.json_obj import DatasetGroup
+from src.main.core.database import BinObject
+from src.main.core.database import JsonObject
+from src.main.core.database import StorageMetadata
+from src.main.core.database import create_role
+from src.main.core.database import create_user
+
 from src.main.core.database.store_disk import DiskObjectStore
 from src.main.core.datasets.dataset_ops import create_dataset
 

@@ -6,7 +6,11 @@ from json import loads
 from flask import current_app as app
 import jwt
 import pytest
-from src.main.core.database import *
+from src.main.core.database import User
+from src.main.core.database import Role
+from src.main.core.database import Group
+from src.main.core.database import UserGroup
+
 from src.main.core.database.environment.environment import Environment
 from src.main.core.database.environment.user_environment import UserEnvironment
 

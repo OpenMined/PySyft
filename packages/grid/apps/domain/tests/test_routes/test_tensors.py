@@ -7,7 +7,13 @@ import time
 from flask import current_app as app
 import jwt
 import pytest
-from src.main.core.database import *
+from src.main.core.database import User
+from src.main.core.database import Role
+from src.main.core.database import Group
+from src.main.core.database import UserGroup
+from src.main.core.database import BinObject
+from src.main.core.database import create_role
+from src.main.core.database import create_user
 
 JSON_DECODE_ERR_MSG = (
     "Expecting property name enclosed in " "double quotes: line 1 column 2 (char 1)"
