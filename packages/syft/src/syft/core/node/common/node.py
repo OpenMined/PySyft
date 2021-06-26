@@ -155,7 +155,7 @@ class Node(AbstractNode):
         # become quite numerous (or otherwise fill up RAM).
         # self.store is the elastic memory.
 
-        self.store2 = BinObjectManager(
+        self.store = BinObjectManager(
             db_session=self.db_session,
             bin_obj_table=self.bin_obj_table,
             bin_obj_metadata_table=self.bin_obj_metadata_table,
@@ -170,9 +170,9 @@ class Node(AbstractNode):
         #         log = f"Failed to open DiskObjectStore at {db_path}. {e}"
         #         critical(log)
         # else:
-        self.store = MemoryStore()
-        log = "Created MemoryStore."
-        debug(log)
+        self.store2 = MemoryStore()
+        # log = "Created MemoryStore."
+        # debug(log)
 
         # We need to register all the services once a node is created
         # On the off chance someone forgot to do this (super unlikely)
