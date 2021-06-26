@@ -12,7 +12,7 @@ from flask import current_app as app
 import jwt
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
-import pydp
+
 import syft as sy
 from syft import serialize
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
@@ -70,10 +70,6 @@ from ..services.setup_service import SetUpService
 from ..services.tensor_service import RegisterTensorService
 from ..services.transfer_service import TransferObjectService
 from ..services.user_service import UserManagerService
-
-sy.load("tenseal")
-sy.load("sympc")
-sy.load("pydp")
 
 
 class GridDomain(Domain):
@@ -200,6 +196,10 @@ class GridDomain(Domain):
                     private_log_msg += f"from {msg.message.reply_to}"  # type: ignore
                 except Exception:
                     pass
+
+                if app.debug:
+                    print(private_log_msg)
+                    print(e)
 
                 # send the public exception back
                 response = ExceptionMessage(

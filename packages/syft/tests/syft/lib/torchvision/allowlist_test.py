@@ -21,8 +21,6 @@ PIL = pytest.importorskip("PIL")
 np = pytest.importorskip("numpy")
 
 Image = PIL.Image.Image
-sy.load("PIL")
-sy.load("numpy")
 
 
 @pytest.fixture(scope="function")

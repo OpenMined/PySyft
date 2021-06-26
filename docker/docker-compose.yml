@@ -1,0 +1,71 @@
+version: "3.9"
+services:
+  network:
+    domainname: grid
+    container_name: network
+    image: openmined/grid-network:latest
+    build:
+      context: ../
+      dockerfile: docker/grid.Dockerfile
+      args:
+        - VERSION=latest
+        - APP=network
+        - APP_ENV=production
+    environment:
+      - DATABASE_URL=postgresql://postgres:dbpass@network-db:5432/network
+      - APP_ENV=dev
+    ports:
+      - "5001:5000"
+    depends_on:
+      - "network-db"
+    networks: ["net"]
+  network-db:
+    domainname: grid
+    container_name: db.network
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: dbpass
+      POSTGRES_DB: network
+    # volumes:
+    #   - ./data/network/db/postgres:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    networks: ["net"]
+  domain:
+    domainname: grid
+    container_name: domain
+    image: openmined/grid-domain:latest
+    build:
+      context: ../
+      dockerfile: docker/grid.Dockerfile
+      args:
+        - VERSION=latest
+        - APP=domain
+        - APP_ENV=production
+    environment:
+      - DATABASE_URL=postgresql://postgres:dbpass@domain-db:5432/domain
+      # - MEMORY_STORE=True
+      - APP_ENV=dev
+    ports:
+      - "5002:5000"
+    depends_on:
+      - "domain-db"
+    networks: ["net"]
+  domain-db:
+    domainname: grid
+    container_name: db.domain
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: dbpass
+      POSTGRES_DB: domain
+    # volumes:
+    #   #   - ./data/domain/db/postgres:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    networks: ["net"]
+
+networks:
+  net:
+    name: local-grid
