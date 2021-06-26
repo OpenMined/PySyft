@@ -17,10 +17,18 @@ from .ancestors import AutogradTensorAncestor
 from .ancestors import PhiTensorAncestor
 from .passthrough import PassthroughTensor
 
+from smpc.tensor import FixedPrecisionTensorAncestor
+from smpc.tensor import ShareTensorAncestor
+
 
 @bind_protobuf
 class Tensor(
-    PassthroughTensor, AutogradTensorAncestor, PhiTensorAncestor, Serializable
+    PassthroughTensor,
+    AutogradTensorAncestor,
+    PhiTensorAncestor,
+    FixedPrecisionTensorAncestor,
+    ShareTensorAncestor,
+    Serializable,
 ):
     def __init__(self, child):
         """data must be a list of numpy array"""

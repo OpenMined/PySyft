@@ -1,9 +1,8 @@
 import numpy as np
 
 from syft.core.tensor.passthrough import PassthroughTensor
-from .fixed_precision_tensor_ancestor import FixedPrecisionTensorAncestor
 
-class FixedPrecisionTensor(PassthroughTensor, FixedPrecisionTensorAncestor):
+class FixedPrecisionTensor(PassthroughTensor):
     def __init__(self, base, precision, value):
         self._base = base
         self._precision = precision

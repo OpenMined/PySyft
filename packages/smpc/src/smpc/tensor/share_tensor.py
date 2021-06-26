@@ -1,9 +1,8 @@
 from syft.core.tensor.passthrough import PassthroughTensor
-from .share_tensor_ancestor import ShareTensorAncestor
 
 import numpy as np
 
-class ShareTensor(PassthroughTensor, ShareTensorAncestor):
+class ShareTensor(PassthroughTensor):
     def __init__(self, rank, ring_size = 2**64, value = None, seed = None, seed_generators = None):
         if seed_generators is None:
             self.seed_generators = [0, 1]

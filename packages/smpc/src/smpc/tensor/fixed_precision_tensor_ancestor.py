@@ -1,4 +1,3 @@
-
 from syft.core.tensor.manager import TensorChainManager
 
 
