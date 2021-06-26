@@ -3,10 +3,9 @@ import numpy as np
 
 # syft absolute
 from syft.core.tensor.passthrough import PassthroughTensor
-from syft.core.tensor.share_tensor_ancestor import ShareTensorAncestor
 
 
-class FixedPrecisionTensor(PassthroughTensor, ShareTensorAncestor):
+class FixedPrecisionTensor(PassthroughTensor):
     def __init__(self, value, base=10, precision=3):
         self._base = base
         self._precision = precision

@@ -49,6 +49,9 @@ class ShareTensor(PassthroughTensor):
         if not isinstance(secret, np.ndarray):
             secret = np.array([secret])
 
+        if not isinstance(secret, FixedPrecisionTensor):
+            secret = FixedPrecisionTensor(value=secret)
+
         shape = secret.shape
         min_value, max_value = ShareTensor.compute_min_max_from_ring(ring_size)
 
@@ -60,18 +63,18 @@ class ShareTensor(PassthroughTensor):
                 low=min_value, high=max_value, size=shape
             )
             fpt_value = FixedPrecisionTensor(value=random_value)
-            random_shares.append(ShareTensor(value=fpt_value, rank=i))
+            random_shares.append(fpt_value)
 
         shares = []
         for i in range(nr_shares):
             if i == 0:
-                share = random_shares[i]
+                share = value = random_shares[i]
             elif i < nr_shares - 1:
                 share = random_shares[i] - random_shares[i - 1]
             else:
-                share = secret, random_shares[i - 1]
+                share = secret - random_shares[i - 1]
 
-            shares.append(share)
+            shares.append(ShareTensor(value=share, rank=i))
         return shares
 
     def generate_przs(self, shape):

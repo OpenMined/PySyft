@@ -123,10 +123,6 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.core.tensor.tensor.Tensor.transpose", "syft.core.tensor.tensor.Tensor"),
         # SMPC
         ("syft.core.tensor.tensor.Tensor.share", "syft.core.tensor.tensor.Tensor"),
-        (
-            "syft.core.tensor.tensor.Tensor.reconstruct",
-            "syft.core.tensor.tensor.Tensor",
-        ),
     ]
 
     add_modules(ast, modules)
