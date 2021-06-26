@@ -1,10 +1,12 @@
 # third party
 import numpy as np
+
+# syft absolute
 from syft.core.tensor.passthrough import PassthroughTensor
 
 
 class FixedPrecisionTensor(PassthroughTensor):
-    def __init__(self, base, precision, value):
+    def __init__(self, value, base=10, precision=3):
         self._base = base
         self._precision = precision
         self._scale = base ** precision

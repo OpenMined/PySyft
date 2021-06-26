@@ -1,6 +1,14 @@
+# stdlib
+from functools import lru_cache
+
 # third party
 import numpy as np
+
+# syft absolute
 from syft.core.tensor.passthrough import PassthroughTensor
+
+# syft relative
+from .fixed_precision_tensor import FixedPrecisionTensor
 
 
 class ShareTensor(PassthroughTensor):
@@ -22,12 +30,49 @@ class ShareTensor(PassthroughTensor):
             np.random.default_rng(seed) for seed in self.seed_generators
         ]
         self.generator_ids = np.random.default_rng(self.seed)
-
+        self.rank = rank
         self.ring_size = ring_size
-        self.min_value = (-ring_size) // 2
-        self.max_value = (ring_size - 1) // 2
-
+        self.min_value, self.max_value = ShareTensor.compute_min_max_from_ring(
+            self.ring_size
+        )
         super().__init__(value)
+
+    @staticmethod
+    @lru_cache(32)
+    def compute_min_max_from_ring(ring_size=2 ** 64):
+        min_value = (-ring_size) // 2
+        max_value = (ring_size - 1) // 2
+        return min_value, max_value
+
+    @staticmethod
+    def generate_shares(secret, nr_shares, ring_size=2 ** 64):
+        if not isinstance(secret, np.ndarray):
+            secret = np.array([secret])
+
+        shape = secret.shape
+        min_value, max_value = ShareTensor.compute_min_max_from_ring(ring_size)
+
+        generator_shares = np.random.default_rng()
+
+        random_shares = []
+        for i in range(nr_shares):
+            random_value = generator_shares.integers(
+                low=min_value, high=max_value, size=shape
+            )
+            fpt_value = FixedPrecisionTensor(value=random_value)
+            random_shares.append(ShareTensor(value=fpt_value, rank=i))
+
+        shares = []
+        for i in range(nr_shares):
+            if i == 0:
+                share = random_shares[i]
+            elif i < nr_shares - 1:
+                share = random_shares[i] - random_shares[i - 1]
+            else:
+                share = secret, random_shares[i - 1]
+
+            shares.append(share)
+        return shares
 
     def generate_przs(self, shape):
         if self.child is None:

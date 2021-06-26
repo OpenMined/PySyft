@@ -1,5 +1,7 @@
-# third party
+# syft absolute
 from syft.core.tensor.manager import TensorChainManager
+
+# syft relative
 from .fixed_precision_tensor import FixedPrecisionTensor
 
 

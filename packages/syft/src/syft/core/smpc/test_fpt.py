@@ -1,7 +1,8 @@
 # third party
 import numpy as np
-from syft import Tensor
 
+# syft absolute
+from syft import Tensor
 from syft.core.tensor.fixed_precision_tensor import FixedPrecisionTensor
 
 orig_value = np.array([[1, 2, 3.23], [32, 10.232, 42.42]])

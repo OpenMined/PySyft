@@ -1,6 +1,8 @@
-from syft.core.tensor.share_tensor import ShareTensor
-
+# third party
 import numpy as np
+
+# syft absolute
+from syft.core.tensor.share_tensor import ShareTensor
 
 value = np.array([1, 2, 3, 4, -5])
 

@@ -15,9 +15,8 @@ from ..common.serde.serializable import bind_protobuf
 from ..common.serde.serialize import _serialize as serialize
 from .ancestors import AutogradTensorAncestor
 from .ancestors import PhiTensorAncestor
-from .passthrough import PassthroughTensor
-
 from .fixed_precision_tensor_ancestor import FixedPrecisionTensorAncestor
+from .passthrough import PassthroughTensor
 from .share_tensor_ancestor import ShareTensorAncestor
 
 
