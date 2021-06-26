@@ -23,12 +23,16 @@ from .tables.roles import Role
 from .tables.roles import create_role
 from .tables.setup import SetupConfig
 from .tables.object_metadata import ObjectMetadata
-from .tables.json_obj import DatasetGroup
+from .tables.dataset_group import DatasetGroup
 from .tables.setup import create_setup
 from .tables.user import User
 from .tables.user import create_user
 from .tables.bin_obj import BinObject
 from .tables.json_obj import JsonObject
+from .tables.json_obj import BinObjDataset
+from .tables.json_obj import Dataset
+from .tables.metadata import get_metadata
+from .store_disk import DiskObjectStore
 from .utils import expand_user_object
 from .utils import model_to_json
 

@@ -18,14 +18,14 @@ import torch as th
 
 # grid relative
 from ..database import db
-from ..database.tables.bin_obj import BinObject
+from ..database import BinObject
 from ..database import ObjectMetadata
-from ..database.tables.json_obj import BinObjDataset
-from ..database.tables.json_obj import Dataset
-from ..database.tables.json_obj import DatasetGroup
-from ..database.tables.json_obj import JsonObject
-from ..database.tables.metadata import get_metadata
-from ..database.store_disk import DiskObjectStore
+from ..database import BinObjDataset
+from ..database import Dataset
+from ..database import DatasetGroup
+from ..database import JsonObject
+from ..database import get_metadata
+from ..database import DiskObjectStore
 from ..database.utils import model_to_json
 
 
