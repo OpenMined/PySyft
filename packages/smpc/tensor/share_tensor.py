@@ -1,9 +1,10 @@
 from syft.core.tensor.passthrough import PassthroughTensor
+from .share_tensor_ancestor import ShareTensorAncestor
 
 # TODO: This is not secure
 import random
 
-class ShareTensor(PassthroughTensor):
+class ShareTensor(PassthroughTensor, ShareTensorAncestor):
     def __init__(self, rank: int, value = None, seed = None, seed_generators = None):
         if seed_generators is None:
             self.seed_generators = [0, 1]
