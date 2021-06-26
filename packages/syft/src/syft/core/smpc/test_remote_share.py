@@ -4,6 +4,8 @@ import numpy as np
 # syft absolute
 import syft as sy
 from syft.core.tensor.share_tensor import ShareTensor
+from syft.core.tensor.passthrough import PassthroughTensor
+from syft.core.tensor.tensor import Tensor
 
 alice = sy.VirtualMachine(name="alice")
 bob = sy.VirtualMachine(name="bob")
@@ -12,10 +14,12 @@ bob = sy.VirtualMachine(name="bob")
 alice_client = alice.get_client()
 bob_client = bob.get_client()
 
-orig_value = np.array([[1, 2, 3], [4, 5, 6]])
+orig_tensor = Tensor(np.array([[1, 2, 3], [4, 5, 6]]))
+shape = orig_tensor.shape
 
-# stdlib
+remote_tensor = orig_tensor.send(alice_client)
+
 import pdb
 
 pdb.set_trace()
-shares = ShareTensor.generate_shares(secret=orig_value, nr_shares=2)
+remote_tensor.share(alice, bob)

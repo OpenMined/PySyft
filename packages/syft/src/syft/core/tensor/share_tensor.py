@@ -7,9 +7,6 @@ import numpy as np
 # syft absolute
 from syft.core.tensor.passthrough import PassthroughTensor
 
-# syft relative
-from .fixed_precision_tensor import FixedPrecisionTensor
-
 
 class ShareTensor(PassthroughTensor):
     def __init__(
@@ -46,6 +43,9 @@ class ShareTensor(PassthroughTensor):
 
     @staticmethod
     def generate_shares(secret, nr_shares, ring_size=2 ** 64):
+        # syft relative
+        from .fixed_precision_tensor import FixedPrecisionTensor
+
         if not isinstance(secret, np.ndarray):
             secret = np.array([secret])
 

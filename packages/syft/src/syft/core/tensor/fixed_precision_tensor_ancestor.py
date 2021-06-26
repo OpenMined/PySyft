@@ -7,7 +7,6 @@ from .fixed_precision_tensor import FixedPrecisionTensor
 
 class FixedPrecisionTensorAncestor(TensorChainManager):
     def fix_precision(self, base=10, precision=3):
-
         self.child = FixedPrecisionTensor(
             base=base, precision=precision, value=self.child
         )
