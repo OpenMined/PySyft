@@ -13,15 +13,6 @@ class JsonObject(BaseModel):
         return f"<JsonObject id: {self.id}>"
 
 
-class Dataset(BaseModel):
-    __tablename__ = "dataset"
-
-    id = db.Column(db.String(256), primary_key=True)
-    manifest = db.Column(db.String(2048))
-    description = db.Column(db.String(2048))
-    tags = db.Column(db.JSON())
-
-
 class BinObjDataset(BaseModel):
     __tablename__ = "bin_obj_dataset"
 
