@@ -16,7 +16,7 @@ from torch import Tensor
 
 # grid relative
 from .tables.bin_obj import BinObject
-from .tables.bin_obj import ObjectMetadata
+from . import ObjectMetadata
 
 ENCODING = "UTF-8"
 
