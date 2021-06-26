@@ -12,7 +12,7 @@ from flask import current_app as app
 import jwt
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
-import pydp
+
 import syft as sy
 from syft import serialize
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
