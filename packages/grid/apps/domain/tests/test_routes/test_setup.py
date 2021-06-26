@@ -1,12 +1,13 @@
 # third party
+from flask import current_app as app
+import jwt
 import pytest
-
-from src.main.core.database import User
-from src.main.core.database import Role
 from src.main.core.database import Group
+from src.main.core.database import Role
+from src.main.core.database import SetupConfig
+from src.main.core.database import User
 from src.main.core.database import UserGroup
 from src.main.core.database import create_role
-from src.main.core.database import SetupConfig
 
 JSON_DECODE_ERR_MSG = (
     "Expecting property name enclosed in " "double quotes: line 1 column 2 (char 1)"
@@ -77,44 +78,44 @@ def test_initial_setup(client, database, cleanup):
     assert result.get_json() == {"message": "Running initial setup!"}
 
 
-# def test_get_setup(client, database, cleanup):
-#     new_role = create_role(*owner_role)
-#     database.session.add(new_role)
-#
-#     database.session.commit()
-#
-#     result = client.post(
-#         "/setup",
-#         json={
-#             "email": "owner@openmined.org",
-#             "password": "12345",
-#             "domain_name": "OpenMined Domain",
-#         },
-#     )
-#     # assert result.status_code == 200
-#     assert result.get_json() == {"message": "Running initial setup!"}
-#
-#     token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
-#     headers = {
-#         "token": token.decode("UTF-8"),
-#     }
-#
-#     result = client.get(
-#         "/setup",
-#         headers=headers,
-#     )
-#
-#     assert result.status_code == 200
-#     assert result.get_json() == {
-#         "id": 1,
-#         "domain_name": "OpenMined Domain",
-#         "private_key": "",
-#         "aws_credentials": "",
-#         "gcp_credentials": "",
-#         "azure_credentials": "",
-#         "cache_strategy": "",
-#         "replicate_db": False,
-#         "auto_scale": False,
-#         "tensor_expiration_policy": 0,
-#         "allow_user_signup": False,
-#     }
+def test_get_setup(client, database, cleanup):
+    new_role = create_role(*owner_role)
+    database.session.add(new_role)
+
+    database.session.commit()
+
+    result = client.post(
+        "/setup",
+        json={
+            "email": "owner@openmined.org",
+            "password": "12345",
+            "domain_name": "OpenMined Domain",
+        },
+    )
+    # assert result.status_code == 200
+    assert result.get_json() == {"message": "Running initial setup!"}
+
+    token = jwt.encode({"id": 1}, app.config["SECRET_KEY"])
+    headers = {
+        "token": token.decode("UTF-8"),
+    }
+
+    result = client.get(
+        "/setup",
+        headers=headers,
+    )
+
+    assert result.status_code == 200
+    assert result.get_json() == {
+        "id": 1,
+        "domain_name": "OpenMined Domain",
+        "private_key": "",
+        "aws_credentials": "",
+        "gcp_credentials": "",
+        "azure_credentials": "",
+        "cache_strategy": "",
+        "replicate_db": False,
+        "auto_scale": False,
+        "tensor_expiration_policy": 0,
+        "allow_user_signup": False,
+    }
