@@ -22,7 +22,7 @@ from .tables.request import Request
 from .tables.roles import Role
 from .tables.roles import create_role
 from .tables.setup import SetupConfig
-from .tables.bin_obj import ObjectMetadata
+from .tables.object_metadata import ObjectMetadata
 from .tables.json_obj import DatasetGroup
 from .tables.setup import create_setup
 from .tables.user import User
