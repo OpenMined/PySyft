@@ -17,8 +17,8 @@ from .ancestors import AutogradTensorAncestor
 from .ancestors import PhiTensorAncestor
 from .passthrough import PassthroughTensor
 
-from smpc.tensor import FixedPrecisionTensorAncestor
-from smpc.tensor import ShareTensorAncestor
+from .fixed_precision_tensor_ancestor import FixedPrecisionTensorAncestor
+from .share_tensor_ancestor import ShareTensorAncestor
 
 
 @bind_protobuf
@@ -26,8 +26,8 @@ class Tensor(
     PassthroughTensor,
     AutogradTensorAncestor,
     PhiTensorAncestor,
-    FixedPrecisionTensorAncestor,
     ShareTensorAncestor,
+    FixedPrecisionTensorAncestor,
     Serializable,
 ):
     def __init__(self, child):

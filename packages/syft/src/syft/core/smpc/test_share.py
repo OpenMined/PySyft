@@ -1,5 +1,4 @@
-# third party
-from smpc.tensor import ShareTensor
+from syft.core.tensor.share_tensor import ShareTensor
 
 import numpy as np
 

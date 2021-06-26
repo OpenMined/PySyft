@@ -134,9 +134,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializa
             min_vals=min_vals,
             max_vals=max_vals,
             scalar_manager=self.scalar_manager,
-
-            )
-
+        )
 
     def __add__(self, other):
 
@@ -206,7 +204,6 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializa
             max_vals=max_vals,
             scalar_manager=self.scalar_manager,
         )
-
 
     def __gt__(self, other):
 

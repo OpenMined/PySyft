@@ -1,6 +1,5 @@
 # third party
 from syft.core.tensor.manager import TensorChainManager
-
 from .fixed_precision_tensor import FixedPrecisionTensor
 
 

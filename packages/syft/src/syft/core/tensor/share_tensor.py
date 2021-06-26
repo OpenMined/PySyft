@@ -32,6 +32,7 @@ class ShareTensor(PassthroughTensor):
     def generate_przs(self, shape):
         if self.child is None:
             self.child = np.zeros(shape)
+
         share_1 = self.generators_przs[0].integers(
             low=self.min_value, high=self.max_value
         )
