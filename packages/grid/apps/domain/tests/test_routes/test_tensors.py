@@ -11,6 +11,7 @@ from src.main.core.database import User
 from src.main.core.database import Role
 from src.main.core.database import Group
 from src.main.core.database import UserGroup
+from src.main.core.database import ObjectMetadata
 from src.main.core.database import BinObject
 from src.main.core.database import create_role
 from src.main.core.database import create_user
