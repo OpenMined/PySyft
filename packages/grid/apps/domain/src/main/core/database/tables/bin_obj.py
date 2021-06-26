@@ -1,6 +1,8 @@
 # third party
 from .. import BaseModel
 from .. import db
+from syft import serialize
+from syft import deserialize
 
 
 class BinObject(BaseModel):
