@@ -19,7 +19,7 @@ import torch as th
 # grid relative
 from ..database import db
 from ..database.tables.bin_obj import BinObject
-from ..database.tables.bin_obj import ObjectMetadata
+from ..database import ObjectMetadata
 from ..database.tables.json_obj import BinObjDataset
 from ..database.tables.json_obj import Dataset
 from ..database.tables.json_obj import DatasetGroup
