@@ -104,7 +104,8 @@ class AbstractTensor(AbstractSendable):
             self.child = self.child.refresh()
             return self
         else:
-            raise AttributeError("Refresh should only be called on AdditiveSharedTensors")
+            return self
+            # raise AttributeError("Refresh should only be called on AdditiveSharedTensors")
 
     @property
     def shape(self):

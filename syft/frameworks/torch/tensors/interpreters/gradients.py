@@ -339,9 +339,11 @@ class Cross_entropyBackward(GradFunc):
             ast_mode = isinstance(input.child, sy.AdditiveSharingTensor)
             fp_mode = not ast_mode and isinstance(input, sy.FixedPrecisionTensor)
 
-            fp_kwargs = input.get_class_attributes()
-            ast_kwargs = input.child.get_class_attributes()
-            ast_locations = input.child.locations
+            if fp_mode or ast_mode:
+                fp_kwargs = input.get_class_attributes()
+                if ast_mode:
+                    ast_kwargs = input.child.get_class_attributes()
+                    ast_locations = input.child.locations
 
             def decode(x):
                 if ast_mode:
@@ -373,7 +375,10 @@ class Cross_entropyBackward(GradFunc):
                 # l = decode(logits)
                 # print("#1 logits", l.shape, l.mean(), l.min(), l.max())
 
-                zeros[0] = decode(logits.max(dim, keepdim=True))
+                if ast_mode:
+                    zeros[0] = decode(logits.max(dim, keepdim=True))
+                else:
+                    zeros[0] = decode(logits.max(dim, keepdim=True)[0])
 
                 if (zeros[0] != 0).any():
                     # print(
