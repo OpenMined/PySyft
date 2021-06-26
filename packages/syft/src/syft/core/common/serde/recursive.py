@@ -49,12 +49,16 @@ class RecursiveSerde(Serializable):
 
     @staticmethod
     def _proto2object(proto: RecursiveSerde_PB) -> "RecursiveSerde":
+
         attrs = dict(deserialize(proto.data, from_bytes=True))
 
         class_type = index_syft_by_module_name(proto.fully_qualified_name)
 
         obj = object.__new__(class_type)  # type: ignore
-        obj.__dict__ = attrs
+
+        for attr_name, attr_value in attrs.items():
+            setattr(obj, attr_name, attr_value)
+
         return obj
 
     @staticmethod

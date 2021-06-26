@@ -20,10 +20,8 @@ from syft.ast import add_dynamic_objects
 from syft.ast.globals import Globals
 from syft.core.node.abstract.node import AbstractNodeClient
 from syft.core.node.common.client import Client
+from syft.core.test import module_test
 from syft.lib import lib_ast
-
-# syft relative
-from . import module_test
 
 sys.modules["module_test"] = module_test
 
