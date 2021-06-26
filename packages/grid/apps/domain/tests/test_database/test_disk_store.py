@@ -11,7 +11,8 @@ from syft.core.common.uid import UID
 from sqlalchemy.exc import NoResultFound
 from syft.core.store.storeable_object import StorableObject
 
-from src.main.core.database import *
+from src.main.core.database import ObjectMetadata
+from src.main.core.database import BinObject
 from src.main.core.database.store_disk import DiskObjectStore
 
 tensor1 = th.tensor([[1, 2, 3, 4], [10, 20, 30, 40]])

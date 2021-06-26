@@ -1,7 +1,11 @@
 # third party
 from bcrypt import checkpw
 import pytest
-from src.main.core.database import *
+from src.main.core.database import User
+from src.main.core.database import Role
+from src.main.core.database import Group
+from src.main.core.database import UserGroup
+from src.main.core.database import create_role
 from src.main.core.exceptions import InvalidCredentialsError
 from src.main.core.manager import UserManager
 

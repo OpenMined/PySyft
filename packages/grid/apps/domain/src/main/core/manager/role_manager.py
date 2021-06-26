@@ -5,7 +5,7 @@ from typing import Union
 from flask_sqlalchemy import BaseQuery
 
 # grid relative
-from ..database.roles.roles import Role
+from ..database.tables.roles import Role
 from ..exceptions import RoleNotFoundError
 from .database_manager import DatabaseManager
 
