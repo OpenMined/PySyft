@@ -130,6 +130,15 @@ class Iterator(PyPrimitive):
     def upcast(self) -> Any:
         return iter(self._obj_ref)
 
+    # TODO: Fix based on message from Tudor Cebere
+    # So, when we add a new builtin type we want to have feature parity with cython ones.
+    # When we tried to do this for iterators in the early days we had some problems when the iterators are infinite
+    # (most likely an iterator from a generator). This pattern is common in functional programming, when you use
+    # infinite iterators for different purposes. I then said that it makes sense to force the user to exhaust the
+    # iterator himself and then to serde the type. Here, it might be a bit problematic because somebody might slip
+    # in this kind of iterator and when we exhaust it (through list conversion), we go into infinite computation.
+    # And there are similar edge cases to this.
+
     def _object2proto(self) -> Iterator_PB:
         id_ = serialize(obj=self._id)
         obj_ref_ = serialize(py.list.List(list(self._obj_ref)), to_bytes=True)
