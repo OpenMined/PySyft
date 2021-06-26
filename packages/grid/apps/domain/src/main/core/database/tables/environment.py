@@ -1,9 +1,8 @@
 # stdlib
-from datetime import datetime
-
-# grid relative
 from .. import BaseModel
 from .. import db
+
+from datetime import datetime
 
 states = {"creating": 0, "failed": 1, "success": 2, "destroyed": 3}
 

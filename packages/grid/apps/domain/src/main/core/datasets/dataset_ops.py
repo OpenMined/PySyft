@@ -3,7 +3,6 @@ from copy import deepcopy
 import csv
 from io import StringIO
 import tarfile
-from typing import Iterable
 from typing import Optional
 
 # third party
@@ -11,9 +10,7 @@ from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 import numpy as np
 import pandas as pd
-from pandas import DataFrame
 from syft.core.common.group import VERIFYALL
-from syft.core.common.group import VerifyAll
 from syft.core.common.uid import UID
 from syft.core.node.common.action.save_object_action import SaveObjectAction
 from syft.core.store.storeable_object import StorableObject
@@ -21,13 +18,13 @@ import torch as th
 
 # grid relative
 from ..database import db
-from ..database.bin_storage.bin_obj import BinObject
-from ..database.bin_storage.bin_obj import ObjectMetadata
-from ..database.bin_storage.json_obj import BinObjDataset
-from ..database.bin_storage.json_obj import Dataset
-from ..database.bin_storage.json_obj import DatasetGroup
-from ..database.bin_storage.json_obj import JsonObject
-from ..database.bin_storage.metadata import get_metadata
+from ..database.tables.bin_obj import BinObject
+from ..database.tables.bin_obj import ObjectMetadata
+from ..database.tables.json_obj import BinObjDataset
+from ..database.tables.json_obj import Dataset
+from ..database.tables.json_obj import DatasetGroup
+from ..database.tables.json_obj import JsonObject
+from ..database.tables.metadata import get_metadata
 from ..database.store_disk import DiskObjectStore
 from ..database.utils import model_to_json
 
