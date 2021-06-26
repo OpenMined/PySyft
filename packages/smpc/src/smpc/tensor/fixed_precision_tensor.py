@@ -1,6 +1,7 @@
+# third party
 import numpy as np
-
 from syft.core.tensor.passthrough import PassthroughTensor
+
 
 class FixedPrecisionTensor(PassthroughTensor):
     def __init__(self, base, precision, value):
@@ -9,7 +10,6 @@ class FixedPrecisionTensor(PassthroughTensor):
         self._scale = base ** precision
         encoded_value = (self._scale * value).astype(np.int64)
         super().__init__(encoded_value)
-
 
     def decode(self):
         correction = (self.child < 0).astype(np.int64)

@@ -1,8 +1,9 @@
+# third party
+from smpc.tensor import ShareTensor
 
-from tensor import ShareTensor
 import numpy as np
 
-value = np.array([1,2,3,4, -5])
+value = np.array([1, 2, 3, 4, -5])
 
 
 share = ShareTensor(rank=0, value=value)
@@ -21,4 +22,3 @@ share_2.generate_przs(shape=value.shape)
 
 print(share_1)
 print(share_2)
-
