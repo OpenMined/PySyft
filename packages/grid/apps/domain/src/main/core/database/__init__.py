@@ -29,8 +29,8 @@ from .tables.user import User
 from .tables.user import create_user
 from .tables.bin_obj import BinObject
 from .tables.json_obj import JsonObject
-from .tables.json_obj import BinObjDataset
-from .tables.json_obj import Dataset
+from .tables.bin_obj_dataset import BinObjDataset
+from .tables.dataset import Dataset
 from .tables.metadata import get_metadata
 from .store_disk import DiskObjectStore
 from .utils import expand_user_object
