@@ -130,6 +130,7 @@ class BinObjectManager(ObjectStore):
         return obj
 
     def __setitem__(self, key: UID, value: StorableObject) -> None:
+        print("Storing object:" + str(value))
         bin_obj = self.bin_obj_table(id=str(key.value), object=value.data)
         metadata_dict = storable_to_dict(value)
         metadata_obj = self.bin_obj_metadata_table(
