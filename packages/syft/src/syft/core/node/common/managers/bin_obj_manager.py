@@ -5,15 +5,12 @@ from typing import List
 from typing import Optional
 
 # third party
-from nacl.encoding import HexEncoder
-from nacl.signing import VerifyKey
 from sqlalchemy.orm.decl_api import DeclarativeMeta
 from sqlalchemy.orm.session import Session
 from torch import Tensor
 
 # syft absolute
 import syft
-from syft.core.common.group import VERIFYALL
 from syft.core.common.uid import UID
 from syft.core.store import ObjectStore
 from syft.core.store.storeable_object import StorableObject
@@ -29,21 +26,31 @@ def create_storable(
     return obj
 
 
-def storable_to_dict(storable_obj: StorableObject) -> dict:
-    _dict = {}
-    _dict["tags"] = storable_obj.tags
-    _dict["description"] = storable_obj.description
-
-    # Serialize nacl Verify Keys Structure
-    _dict["read_permissions"] = {
-        key.encode(encoder=HexEncoder)
-        .decode("utf-8"): syft.serialize(value, to_bytes=True)
-        .hex()
-        if value is not None
-        else None
-        for key, value in storable_obj.read_permissions.items()
-    }
-    return _dict
+# def storable_to_dict(storable_obj: StorableObject) -> dict:
+#     _dict = {}
+#     _dict["tags"] = storable_obj.tags
+#     _dict["description"] = storable_obj.description
+#
+#     # Serialize nacl Verify Keys Structure
+#     _dict["read_permissions"] = {
+#         key.encode(encoder=HexEncoder)
+#         .decode("utf-8"): syft.serialize(value, to_bytes=True)
+#         .hex()
+#         if value is not None
+#         else None
+#         for key, value in storable_obj.read_permissions.items()
+#     }
+#
+#     _dict["search_permissions"] = {
+#         key.encode(encoder=HexEncoder) if not isinstance(key, VERIFYALL) else key
+#         .decode("utf-8"): syft.serialize(value, to_bytes=True)
+#         .hex()
+#         if value is not None
+#         else None
+#         for key, value in storable_obj.search_permissions.items()
+#     }
+#
+#     return _dict
 
 
 class BinObjectManager(ObjectStore):
@@ -116,22 +123,21 @@ class BinObjectManager(ObjectStore):
         if not bin_obj or not obj_metadata:
             raise Exception("Object not found!")
 
-        read_permissions = {
-            VerifyKey(key.encode("utf-8"), encoder=HexEncoder): syft.deserialize(
-                bytes.fromhex(value), from_bytes=True
-            )
-            if value is not None
-            else None
-            for key, value in obj_metadata.read_permissions.items()
-        }
-
         obj = StorableObject(
             id=UID.from_string(bin_obj.id),
             data=bin_obj.object,
             description=obj_metadata.description,
             tags=obj_metadata.tags,
-            read_permissions=read_permissions,
-            search_permissions=syft.lib.python.Dict({VERIFYALL: None}),
+            read_permissions=dict(
+                syft.deserialize(
+                    bytes.fromhex(obj_metadata.read_permissions), from_bytes=True
+                )
+            ),
+            search_permissions=dict(
+                syft.deserialize(
+                    bytes.fromhex(obj_metadata.search_permissions), from_bytes=True
+                )
+            ),
             # name=obj_metadata.name,
         )
         return obj
@@ -139,13 +145,17 @@ class BinObjectManager(ObjectStore):
     def __setitem__(self, key: UID, value: StorableObject) -> None:
         print("Storing object:" + str(key) + " -> " + str(value))
         bin_obj = self.bin_obj_table(id=str(key.value), object=value.data)
-        metadata_dict = storable_to_dict(value)
+        # metadata_dict = storable_to_dict(value)
         metadata_obj = self.bin_obj_metadata_table(
             obj=bin_obj.id,
-            tags=metadata_dict["tags"],
-            description=metadata_dict["description"],
-            read_permissions=metadata_dict["read_permissions"],
-            search_permissions={},
+            tags=value.tags,
+            description=value.description,
+            read_permissions=syft.serialize(
+                syft.lib.python.Dict(value.read_permissions), to_bytes=True
+            ).hex(),
+            search_permissions=syft.serialize(
+                syft.lib.python.Dict(value.search_permissions), to_bytes=True
+            ).hex(),
             # name=metadata_dict["name"],
         )
 
