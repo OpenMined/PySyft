@@ -284,7 +284,7 @@ inputs_list: Dict[str, List] = {
     "extend": [[[1, 2, 3]], [[4, 5, 6]]],
     "index": [[0], [1], [5]],
     "insert": [[0, "a"], [3, "b"]],
-    "pop": [[0], [3]],
+    # "pop": [[0], [3]],
     "remove": [[1], [42]],
     "reverse": [[]],
     "sort": [[]],
