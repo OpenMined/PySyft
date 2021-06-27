@@ -332,7 +332,8 @@ def test_delete_request(client, database, cleanup):
         headers=headers,
     )
 
-    request_id = create.get_json()["id"]
+    request_id_json = create.get_json()
+    request_id = request_id_json["id"]
 
     result = client.delete(
         "/data-centric/requests/" + request_id,
