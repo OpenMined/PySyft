@@ -62,7 +62,7 @@ class BinObjectManager(ObjectStore):
         return keys
 
     def values(self) -> List[StorableObject]:
-        print("Getting all of those values")
+
         obj_keys = self.keys()
         values = []
         for key in obj_keys:
