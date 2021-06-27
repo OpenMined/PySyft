@@ -41,14 +41,14 @@ deploy-stag:
   stage: deploy
   script: 
     - >
-      DOMAIN=stag.pygrid-domain.com
-      TRAEFIK_TAG=stag.pygrid-domain.com
-      STACK_NAME=stag-pygrid-domain-com
+      DOMAIN=stag.grid.openmined.org
+      TRAEFIK_TAG=stag.grid.openmined.org
+      STACK_NAME=stag-grid-openmined-org
       TAG=stag
       sh ./scripts/deploy.sh
   environment:
     name: staging
-    url: https://stag.pygrid-domain.com
+    url: https://stag.grid.openmined.org
   only:
     - master
   tags:
@@ -59,14 +59,14 @@ deploy-prod:
   stage: deploy
   script:
     - >
-      DOMAIN=pygrid-domain.com
-      TRAEFIK_TAG=pygrid-domain.com
-      STACK_NAME=pygrid-domain-com
+      DOMAIN=grid.openmined.org
+      TRAEFIK_TAG=grid.openmined.org
+      STACK_NAME=grid-openmined-org
       TAG=prod
       sh ./scripts/deploy.sh
   environment:
     name: production
-    url: https://pygrid-domain.com
+    url: https://grid.openmined.org
   only:
     - production
   tags:

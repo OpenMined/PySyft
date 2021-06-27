@@ -8,6 +8,7 @@ from app.api import deps
 
 router = APIRouter()
 
+
 @router.get("/", response_model=List[schemas.Item])
 def read_items(
     db: Session = Depends(deps.get_db),
