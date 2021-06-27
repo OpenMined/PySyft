@@ -287,7 +287,9 @@ def test_dynamic_ast_type(custom_client: Client) -> None:
 # into an object store, when it gets deserialized later any function
 # changes won't be saved. If you want to change functions, gotta change
 # them on the class
-@pytest.skip
+@pytest.mark.skip(
+    reason="Skipping because now that we save all objects using a serializer"
+)
 def test_dynamic_ast_obj(custom_client: Client) -> None:
     """Unit test for dynamic ast(object) for remote class"""
     obj_ptr = custom_client.module_test.C()
