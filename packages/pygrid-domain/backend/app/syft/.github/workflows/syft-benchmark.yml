@@ -1,0 +1,75 @@
+name: Syft Benchmark
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - ".github/workflows/syft-*.yml"
+      - "packages/syft/**.py"
+
+defaults:
+  run:
+    working-directory: ./packages/syft
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix:
+        python-version: [3.9]
+        torch-version: [1.8.1]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
+
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('./setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - name: Install Dependencies
+        run: |
+          pip install packaging --default-timeout=60
+          python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
+          grep -A 3 "torch_ecosystem" setup.cfg
+          pip install -r requirements.unstable.txt
+          pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
+          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
+
+      - name: Reset git
+        run: |
+          git reset --hard
+
+      - name: Run benchmarks
+        run: |
+          pytest tests/benchmarks/pytest_benchmarks/bench_test.py --cov-fail-under 0 --benchmark-json tests/benchmarks/pytest_benchmarks/pytest_benchmarks_output.json
+
+      - name: Store benchmark result
+        uses: rhysd/github-action-benchmark@v1
+        with:
+          name: Pytest-benchmarks
+          tool: "pytest"
+          output-file-path: packages/syft/tests/benchmarks/pytest_benchmarks/pytest_benchmarks_output.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          # Show alert with commit comment on detecting possible performance regression
+          alert-threshold: "200%"
+          comment-on-alert: true
+          fail-on-alert: true
