@@ -25,6 +25,7 @@ class MPCTensor(PassthroughTensor):
                 secret=secret, parties=parties, shape=shape
             )
 
+        print("Shares tensor", shares)
         res = MPCTensor._mpc_from_shares(shares, parties)
 
         super().__init__(res)

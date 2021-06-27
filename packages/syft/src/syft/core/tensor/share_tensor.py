@@ -65,7 +65,7 @@ class ShareTensor(PassthroughTensor):
             fpt_value = FixedPrecisionTensor(value=random_value)
             random_shares.append(fpt_value)
 
-        shares = []
+        shares_fpt = []
         for i in range(nr_shares):
             if i == 0:
                 share = value = random_shares[i]
@@ -74,5 +74,12 @@ class ShareTensor(PassthroughTensor):
             else:
                 share = secret - random_shares[i - 1]
 
-            shares.append(ShareTensor(value=share, rank=i))
+            shares_fpt.append(share)
+
+        # Add the ShareTensor class between them
+        shares = []
+        for rank, share_fpt in enumerate(shares_fpt):
+            share_fpt.child = ShareTensor(rank=rank, value=share_fpt.child)
+            shares.append(share_fpt)
+
         return shares
