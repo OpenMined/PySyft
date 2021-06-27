@@ -9,10 +9,10 @@ from pytest import CaptureFixture
 import syft
 from syft.ast.globals import Globals
 from syft.core.node.common.client import Client
+from syft.core.test import module_test
 from syft.lib import lib_ast
 
 # syft relative
-from . import module_test
 from .functionality_test import module_test_methods
 from .functionality_test import update_ast_test
 
