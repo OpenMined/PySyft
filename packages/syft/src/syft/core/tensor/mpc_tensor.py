@@ -80,17 +80,19 @@ class MPCTensor(PassthroughTensor):
                 seeds_przs_generators[next_party_idx],
             ]
             if party == secret.client:
-                remote_share = (
-                    party.syft.core.tensor.share_tensor.ShareTensor.generate_przs(
-                        secret, shape, party_seeds_przs_generators
-                    )
-                )
+                value = secret
             else:
-                remote_share = (
-                    party.syft.core.tensor.share_tensor.ShareTensor.generate_przs(
-                        None, shape, i, party_seeds_przs_generators
-                    )
+                value = None
+
+            remote_share = (
+                party.syft.core.tensor.share_tensor.ShareTensor.generate_przs(
+                    rank=i,
+                    value=value,
+                    shape=shape,
+                    seeds_przs_generators=party_seeds_przs_generators,
                 )
+            )
+
             shares.append(remote_share)
 
         return shares
@@ -102,11 +104,6 @@ class MPCTensor(PassthroughTensor):
         return shares
 
     def reconstruct(self):
-        # stdlib
-        import pdb
-
-        pdb.set_trace()
-
         # share should be: FPT > ShareTensor
         local_shares = [share.get() for share in self.child]
         for local_share in local_shares:

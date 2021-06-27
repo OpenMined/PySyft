@@ -22,10 +22,10 @@ class ShareTensor(PassthroughTensor, Serializable):
     def __init__(
         self, rank, ring_size=2 ** 64, value=None, seed=None, seeds_przs_generators=None
     ):
-        if seed_generators is None:
+        if seeds_przs_generators is None:
             self.seeds_przs_generators = [0, 1]
         else:
-            self.seeds_przs_generators = seed_generators
+            self.seeds_przs_generators = seeds_przs_generators
 
         if seed is None:
             self.seed = 42
@@ -34,7 +34,7 @@ class ShareTensor(PassthroughTensor, Serializable):
 
         # TODO: This is not secure
         self.generators_przs = [
-            np.random.default_rng(seed) for seed in self.seed_generators
+            np.random.default_rng(seed) for seed in self.seeds_przs_generators
         ]
         self.generator_ids = np.random.default_rng(self.seed)
         self.rank = rank
@@ -92,15 +92,15 @@ class ShareTensor(PassthroughTensor, Serializable):
         return shares
 
     @staticmethod
-    def generate_przs(tensor, shape, rank, seeds_przs_generator):
+    def generate_przs(value, shape, rank, seeds_przs_generators):
         # syft absolute
         from syft.core.tensor.tensor import Tensor
 
-        if tensor is None:
-            tensor = Tensor(np.zeros(shape))
+        if value is None:
+            value = Tensor(np.zeros(shape))
 
-        fpt = tensor
-        share = tensor.child
+        fpt = value
+        share = value.child
         if not isinstance(share, ShareTensor):
             fpt = FixedPrecisionTensor(value=share)
             fpt.child = ShareTensor(
