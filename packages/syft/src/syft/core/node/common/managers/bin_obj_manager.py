@@ -26,33 +26,6 @@ def create_storable(
     return obj
 
 
-# def storable_to_dict(storable_obj: StorableObject) -> dict:
-#     _dict = {}
-#     _dict["tags"] = storable_obj.tags
-#     _dict["description"] = storable_obj.description
-#
-#     # Serialize nacl Verify Keys Structure
-#     _dict["read_permissions"] = {
-#         key.encode(encoder=HexEncoder)
-#         .decode("utf-8"): syft.serialize(value, to_bytes=True)
-#         .hex()
-#         if value is not None
-#         else None
-#         for key, value in storable_obj.read_permissions.items()
-#     }
-#
-#     _dict["search_permissions"] = {
-#         key.encode(encoder=HexEncoder) if not isinstance(key, VERIFYALL) else key
-#         .decode("utf-8"): syft.serialize(value, to_bytes=True)
-#         .hex()
-#         if value is not None
-#         else None
-#         for key, value in storable_obj.search_permissions.items()
-#     }
-#
-#     return _dict
-
-
 class BinObjectManager(ObjectStore):
     def __init__(
         self,
