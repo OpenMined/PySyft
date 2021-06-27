@@ -14,4 +14,7 @@ bob = sy.VirtualMachine(name="bob")
 alice_client = alice.get_client()
 bob_client = bob.get_client()
 
-value = Tensor(torch.Tensor([[1, 2, 3], [4, 5, 6]])).share(alice_client, bob_client)
+import pdb
+
+pdb.set_trace()
+# value = Tensor(torch.Tensor([[1, 2, 3], [4, 5, 6]])).share(alice_client, bob_client)

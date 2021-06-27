@@ -16,5 +16,5 @@ class FixedPrecisionTensorAncestor(TensorChainManager):
         if not isinstance(self.child, FixedPrecisionTensor):
             raise ValueError(f"self.child should be FPT but is {type(self.child)}")
 
-        self.child = self.child.decode()
-        return self
+        res = self.child.decode()
+        return res
