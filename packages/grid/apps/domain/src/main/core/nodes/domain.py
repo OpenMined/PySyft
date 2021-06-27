@@ -43,11 +43,8 @@ from syft.core.node.common.service.repr_service import ReprService
 from syft.core.node.common.service.resolve_pointer_type_service import (
     ResolvePointerTypeService,
 )
-from syft.core.node.device.client import DeviceClient
+
 from syft.core.node.domain.domain import Domain
-from syft.grid.connections.http_connection import HTTPConnection
-import sympc
-import tenseal as ts
 
 # grid relative
 from ..database import db
