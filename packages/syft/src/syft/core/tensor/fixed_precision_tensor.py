@@ -1,11 +1,22 @@
 # third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 
 # syft absolute
 from syft.core.tensor.passthrough import PassthroughTensor
 
+# syft relative
+from ...proto.core.tensor.fixed_precision_tensor_pb2 import (
+    FixedPrecisionTensor as FixedPrecisionTensor_PB,
+)
+from ...core.common.serde.serializable import Serializable
+from ..common.serde.deserialize import _deserialize as deserialize
+from ..common.serde.serializable import bind_protobuf
+from ..common.serde.serialize import _serialize as serialize
 
-class FixedPrecisionTensor(PassthroughTensor):
+
+@bind_protobuf
+class FixedPrecisionTensor(PassthroughTensor, Serializable):
     def __init__(self, value=None, base=10, precision=3):
         self._base = base
         self._precision = precision
@@ -32,3 +43,30 @@ class FixedPrecisionTensor(PassthroughTensor):
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)
         res.child = self.child - other.child
         return res
+
+    def _object2proto(self) -> FixedPrecisionTensor_PB:
+        from syft.core.tensor.tensor import Tensor
+
+        if isinstance(self.child, Tensor):
+            return FixedPrecisionTensor_PB(
+                tensor=serialize(self.child), base=self._base, precision=self._precision
+            )
+
+        return FixedPrecisionTensor_PB(
+            array=serialize(self.child), base=self._base, precision=self._precision
+        )
+
+    @staticmethod
+    def _proto2object(proto: FixedPrecisionTensor_PB) -> "FixedPrecisionTensor":
+        res = FixedPrecisionTensor(base=proto.base, precision=proto.precision)
+
+        # Put it manually since we send it already encoded
+        if proto.HasField("tensor"):
+            res.child = deserialize(proto.tensor)
+        else:
+            res.child = deserialize(proto.array)
+        return res
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return FixedPrecisionTensor_PB

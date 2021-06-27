@@ -3,6 +3,7 @@ import numpy as np
 
 # syft absolute
 from syft import Tensor
+import syft as sy
 from syft.core.tensor.fixed_precision_tensor import FixedPrecisionTensor
 
 orig_value = np.array([[1, 2, 3.23], [32, 10.232, 42.42]])
@@ -16,15 +17,7 @@ value = fpt_tensor.decode()
 print(value)
 
 
-val = Tensor(orig_value)
-fpt_val = val.fix_precision()
-print(fpt_val)
-
-float_val = fpt_val.decode()
-print(float_val)
-# stdlib
-import pdb
-
-pdb.set_trace()
-
-print(fpt_val + fpt_val)
+# Test send
+alice = sy.VirtualMachine(name="alice")
+alice_client = alice.get_client()
+print(fpt_tensor.send(alice_client))

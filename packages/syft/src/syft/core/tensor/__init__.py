@@ -32,7 +32,7 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             ShareTensor,
         ),
         (
-            "syft.core.tensor.fixed_precision_tensor.ShareTensor",
+            "syft.core.tensor.fixed_precision_tensor.FixedPrecisionTensor",
             "syft.core.tensor.fixed_precision_tensor.FixedPrecisionTensor",
             FixedPrecisionTensor,
         ),
@@ -141,7 +141,7 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.core.tensor.tensor.Tensor",
         ),
         (
-            "syft.core.tensor.tensor.Tensor.generate_przs",
+            "syft.core.tensor.share_tensor.ShareTensor.generate_przs",
             "syft.core.tensor.tensor.Tensor",
         ),
         ("syft.core.tensor.tensor.Tensor.share", "syft.core.tensor.tensor.Tensor"),

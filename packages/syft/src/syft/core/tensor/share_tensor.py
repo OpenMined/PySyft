@@ -2,13 +2,23 @@
 from functools import lru_cache
 
 # third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 
 # syft absolute
+from syft.core.tensor.fixed_precision_tensor import FixedPrecisionTensor
 from syft.core.tensor.passthrough import PassthroughTensor
 
+# syft relative
+from ...proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB
+from ..common.serde.deserialize import _deserialize as deserialize
+from ..common.serde.serializable import bind_protobuf
+from ..common.serde.serialize import _serialize as serialize
+from ...core.common.serde.serializable import Serializable
 
-class ShareTensor(PassthroughTensor):
+
+@bind_protobuf
+class ShareTensor(PassthroughTensor, Serializable):
     def __init__(
         self, rank, ring_size=2 ** 64, value=None, seed=None, seed_generators=None
     ):
@@ -80,3 +90,47 @@ class ShareTensor(PassthroughTensor):
             shares.append(share_fpt)
 
         return shares
+
+    @staticmethod
+    def generate_przs(tensor, shape, rank):
+        # syft absolute
+        from syft.core.tensor.tensor import Tensor
+
+        if tensor is None:
+            tensor = Tensor(np.zeros(shape))
+
+        fpt = tensor
+        share = tensor.child
+        if not isinstance(share, ShareTensor):
+            fpt = FixedPrecisionTensor(value=share)
+            fpt.child = ShareTensor(value=fpt.child, rank=rank)
+            share = fpt.child
+
+        share_1 = share.generators_przs[0].integers(
+            low=share.min_value, high=share.max_value
+        )
+        share_2 = share.generators_przs[1].integers(
+            low=share.min_value, high=share.max_value
+        )
+        share.child += share_1 - share_2
+
+        return fpt
+
+    def _object2proto(self) -> ShareTensor_PB:
+        if isinstance(self.child, np.ndarray):
+            return ShareTensor_PB(array=serialize(self.child), rank=self.rank)
+        else:
+            return ShareTensor_PB(tensor=serialize(self.child), rank=self.rank)
+
+    @staticmethod
+    def _proto2object(proto: ShareTensor_PB) -> "ShareTensor":
+        if proto.HasField("tensor"):
+            res = ShareTensor(rank=proto.rank, value=deserialize(proto.tensor))
+        else:
+            res = ShareTensor(rank=proto.rank, value=deserialize(proto.array))
+
+        return res
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return ShareTensor_PB

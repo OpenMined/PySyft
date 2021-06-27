@@ -18,7 +18,6 @@ from .ancestors import PhiTensorAncestor
 from .fixed_precision_tensor_ancestor import FixedPrecisionTensorAncestor
 from .mpc_tensor_ancestor import MPCTensorAncestor
 from .passthrough import PassthroughTensor
-from .share_tensor_ancestor import ShareTensorAncestor
 
 
 @bind_protobuf
@@ -27,7 +26,6 @@ class Tensor(
     AutogradTensorAncestor,
     PhiTensorAncestor,
     MPCTensorAncestor,
-    ShareTensorAncestor,
     FixedPrecisionTensorAncestor,
     Serializable,
 ):

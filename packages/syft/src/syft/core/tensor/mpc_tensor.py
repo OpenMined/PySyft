@@ -58,21 +58,23 @@ class MPCTensor(PassthroughTensor):
 
     @staticmethod
     def _get_shares_from_remote_secret(secret, shape, parties):
-        # stdlib
-        import pdb; pdb.set_trace()
-
         shares = []
-        dummy_val = 0
         for i, party in enumerate(parties):
             if party == secret.client:
-                remote_share = secret.generate_przs(shape, i)
-            else:
-                remote_share_method = reduce(
-                    getattr, [party, "syft", "core", "tensor", "tensor", "Tensor"]
+                remote_share = (
+                    party.syft.core.tensor.share_tensor.ShareTensor.generate_przs(
+                        secret, shape, i
+                    )
                 )
-                remote_share = remote_share_method(dummy_val)
-                remote_share = remote_share.generate_przs(shape, i)
+            else:
+                remote_share = (
+                    party.syft.core.tensor.share_tensor.ShareTensor.generate_przs(
+                        None, shape, i
+                    )
+                )
             shares.append(remote_share)
+
+        return shares
 
     @staticmethod
     def _get_shares_from_local_secret(secret, nr_parties):
