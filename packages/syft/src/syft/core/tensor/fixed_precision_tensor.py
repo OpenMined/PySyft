@@ -6,10 +6,10 @@ import numpy as np
 from syft.core.tensor.passthrough import PassthroughTensor
 
 # syft relative
+from ...core.common.serde.serializable import Serializable
 from ...proto.core.tensor.fixed_precision_tensor_pb2 import (
     FixedPrecisionTensor as FixedPrecisionTensor_PB,
 )
-from ...core.common.serde.serializable import Serializable
 from ..common.serde.deserialize import _deserialize as deserialize
 from ..common.serde.serializable import bind_protobuf
 from ..common.serde.serialize import _serialize as serialize
@@ -45,11 +45,17 @@ class FixedPrecisionTensor(PassthroughTensor, Serializable):
         return res
 
     def _object2proto(self) -> FixedPrecisionTensor_PB:
+        # syft absolute
+        from syft.core.tensor.share_tensor import ShareTensor
         from syft.core.tensor.tensor import Tensor
 
         if isinstance(self.child, Tensor):
             return FixedPrecisionTensor_PB(
                 tensor=serialize(self.child), base=self._base, precision=self._precision
+            )
+        elif isinstance(self.child, ShareTensor):
+            return FixedPrecisionTensor_PB(
+                share=serialize(self.child), base=self._base, precision=self._precision
             )
 
         return FixedPrecisionTensor_PB(
@@ -63,6 +69,8 @@ class FixedPrecisionTensor(PassthroughTensor, Serializable):
         # Put it manually since we send it already encoded
         if proto.HasField("tensor"):
             res.child = deserialize(proto.tensor)
+        elif proto.HasField("share"):
+            res.child = deserialize(proto.share)
         else:
             res.child = deserialize(proto.array)
         return res

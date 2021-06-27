@@ -10,22 +10,22 @@ from syft.core.tensor.fixed_precision_tensor import FixedPrecisionTensor
 from syft.core.tensor.passthrough import PassthroughTensor
 
 # syft relative
+from ...core.common.serde.serializable import Serializable
 from ...proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB
 from ..common.serde.deserialize import _deserialize as deserialize
 from ..common.serde.serializable import bind_protobuf
 from ..common.serde.serialize import _serialize as serialize
-from ...core.common.serde.serializable import Serializable
 
 
 @bind_protobuf
 class ShareTensor(PassthroughTensor, Serializable):
     def __init__(
-        self, rank, ring_size=2 ** 64, value=None, seed=None, seed_generators=None
+        self, rank, ring_size=2 ** 64, value=None, seed=None, seeds_przs_generators=None
     ):
         if seed_generators is None:
-            self.seed_generators = [0, 1]
+            self.seeds_przs_generators = [0, 1]
         else:
-            self.seed_generators = seed_generators
+            self.seeds_przs_generators = seed_generators
 
         if seed is None:
             self.seed = 42
@@ -92,7 +92,7 @@ class ShareTensor(PassthroughTensor, Serializable):
         return shares
 
     @staticmethod
-    def generate_przs(tensor, shape, rank):
+    def generate_przs(tensor, shape, rank, seeds_przs_generator):
         # syft absolute
         from syft.core.tensor.tensor import Tensor
 
@@ -103,7 +103,9 @@ class ShareTensor(PassthroughTensor, Serializable):
         share = tensor.child
         if not isinstance(share, ShareTensor):
             fpt = FixedPrecisionTensor(value=share)
-            fpt.child = ShareTensor(value=fpt.child, rank=rank)
+            fpt.child = ShareTensor(
+                value=fpt.child, rank=rank, seeds_przs_generators=seeds_przs_generators
+            )
             share = fpt.child
 
         share_1 = share.generators_przs[0].integers(

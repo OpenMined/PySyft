@@ -142,7 +142,7 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ),
         (
             "syft.core.tensor.share_tensor.ShareTensor.generate_przs",
-            "syft.core.tensor.tensor.Tensor",
+            "syft.core.tensor.share_tensor.ShareTensor",
         ),
         ("syft.core.tensor.tensor.Tensor.share", "syft.core.tensor.tensor.Tensor"),
     ]

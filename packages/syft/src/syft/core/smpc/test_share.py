@@ -1,15 +1,20 @@
 # third party
 import numpy as np
 
-import syft as sy
-
 # syft absolute
+import syft as sy
+from syft.core.tensor.fixed_precision_tensor import FixedPrecisionTensor
 from syft.core.tensor.share_tensor import ShareTensor
 
 value = np.array([1, 2, 3, 4, -5])
 
 
-share = ShareTensor(rank=0, value=value)
+share = FixedPrecisionTensor()
+share.child = ShareTensor(rank=0, value=value)
+# stdlib
+import pdb
+
+pdb.set_trace()
 
 # Test send
 alice = sy.VirtualMachine(name="alice")
