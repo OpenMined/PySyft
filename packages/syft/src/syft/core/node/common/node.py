@@ -44,7 +44,6 @@ from ...io.location import Location
 from ...io.route import Route
 from ...io.route import SoloRoute
 from ...io.virtual import create_virtual_connection
-from ...store.store_memory import MemoryStore
 from ..abstract.node import AbstractNode
 from .action.exception_action import ExceptionMessage
 from .action.exception_action import UnknownPrivateException
@@ -160,19 +159,6 @@ class Node(AbstractNode):
             bin_obj_table=self.bin_obj_table,
             bin_obj_metadata_table=self.bin_obj_metadata_table,
         )
-
-        # if db_path is not None:
-        #     try:
-        #         self.store = DiskObjectStore(db_path=db_path)
-        #         log = f"Opened DiskObjectStore at {db_path}."
-        #         debug(log)
-        #     except Exception as e:
-        #         log = f"Failed to open DiskObjectStore at {db_path}. {e}"
-        #         critical(log)
-        # else:
-        self.store2 = MemoryStore()
-        # log = "Created MemoryStore."
-        # debug(log)
 
         # We need to register all the services once a node is created
         # On the off chance someone forgot to do this (super unlikely)
