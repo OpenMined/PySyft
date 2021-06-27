@@ -116,7 +116,7 @@ class BinObjectManager(ObjectStore):
         return obj
 
     def __setitem__(self, key: UID, value: StorableObject) -> None:
-        print("Storing object:" + str(key) + " -> " + str(value))
+
         bin_obj = self.bin_obj_table(id=str(key.value), object=value.data)
         # metadata_dict = storable_to_dict(value)
         metadata_obj = self.bin_obj_metadata_table(
@@ -140,7 +140,7 @@ class BinObjectManager(ObjectStore):
         self.db_session.commit()
 
     def delete(self, key: UID) -> None:
-        print("Deleting object:" + str(key))
+
         try:
             object_to_delete = (
                 self.db_session.query(self.bin_obj_table)
