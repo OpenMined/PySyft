@@ -1,5 +1,6 @@
 # stdlib
 from functools import lru_cache
+from functools import reduce
 
 # third party
 import numpy as np
@@ -21,7 +22,7 @@ class MPCTensor(PassthroughTensor):
 
         if secret is not None:
             shares = MPCTensor._get_shares_from_secret(
-                secret=secret, nr_parties=len(parties), shape=shape
+                secret=secret, parties=parties, shape=shape
             )
 
         res = MPCTensor._mpc_from_shares(shares, parties)
@@ -46,13 +47,33 @@ class MPCTensor(PassthroughTensor):
         return shares_ptr
 
     @staticmethod
-    def _get_shares_from_secret(secret, nr_parties, shape=None):
+    def _get_shares_from_secret(secret, parties, shape=None):
         if is_pointer(secret):
             if shape is None:
                 raise ValueError("Shape must be specified when the secret is remote")
-            return self._from_remote_secret(secret, shape)
+            return MPCTensor._get_shares_from_remote_secret(secret, shape, parties)
 
-        return MPCTensor._get_shares_from_local_secret(secret, nr_parties)
+        return MPCTensor._get_shares_from_local_secret(secret, nr_parties=len(parties))
+
+    @staticmethod
+    def _get_shares_from_remote_secret(secret, shape, parties):
+        # stdlib
+        import pdb
+
+        pdb.set_trace()
+        shares = []
+        dummy_val = 0
+
+        for i, party in enumerate(parties):
+            if party == secret.client:
+                remote_share = secret.generate_przs(shape, i)
+            else:
+                remote_share_method = reduce(
+                    getattr, [party, "syft", "core", "tensor", "tensor", "Tensor"]
+                )
+                remote_share = remote_share_method(dummy_val)
+                remote_share = remote_share.generate_przs(shape, i)
+            shares.append(remote_share)
 
     @staticmethod
     def _get_shares_from_local_secret(secret, nr_parties):

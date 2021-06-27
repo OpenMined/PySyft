@@ -76,16 +76,3 @@ class ShareTensor(PassthroughTensor):
 
             shares.append(ShareTensor(value=share, rank=i))
         return shares
-
-    def generate_przs(self, shape, rank):
-        share_1 = self.generators_przs[0].integers(
-            low=self.min_value, high=self.max_value
-        )
-        share_2 = self.generators_przs[1].integers(
-            low=self.min_value, high=self.max_value
-        )
-
-        if share.child is None:
-            share.child = share_1 - share_2
-        else:
-            share.child += share_1 - share_2
