@@ -106,6 +106,7 @@ class DiskObjectStore(ObjectStore):
         return obj
 
     def __setitem__(self, key: UID, value: StorableObject) -> None:
+
         bin_obj = BinObject(id=str(key.value), object=value.data)
         metadata_dict = storable_to_dict(value)
         metadata_obj = ObjectMetadata(

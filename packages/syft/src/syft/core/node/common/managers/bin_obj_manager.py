@@ -33,12 +33,15 @@ def storable_to_dict(storable_obj: StorableObject) -> dict:
     _dict = {}
     _dict["tags"] = storable_obj.tags
     _dict["description"] = storable_obj.description
-    # _dict["name"] = storable_obj.name
 
     # Serialize nacl Verify Keys Structure
     _dict["read_permissions"] = {
-        key.encode(encoder=HexEncoder).decode("utf-8"): None
-        for key in storable_obj.read_permissions.keys()
+        key.encode(encoder=HexEncoder)
+        .decode("utf-8"): syft.serialize(value, to_bytes=True)
+        .hex()
+        if value is not None
+        else None
+        for key, value in storable_obj.read_permissions.items()
     }
     return _dict
 
@@ -114,7 +117,11 @@ class BinObjectManager(ObjectStore):
             raise Exception("Object not found!")
 
         read_permissions = {
-            VerifyKey(key.encode("utf-8"), encoder=HexEncoder): value
+            VerifyKey(key.encode("utf-8"), encoder=HexEncoder): syft.deserialize(
+                bytes.fromhex(value), from_bytes=True
+            )
+            if value is not None
+            else None
             for key, value in obj_metadata.read_permissions.items()
         }
 
@@ -130,7 +137,7 @@ class BinObjectManager(ObjectStore):
         return obj
 
     def __setitem__(self, key: UID, value: StorableObject) -> None:
-        # print("Storing object:" + str(key) + " -> " + str(value))
+        print("Storing object:" + str(key) + " -> " + str(value))
         bin_obj = self.bin_obj_table(id=str(key.value), object=value.data)
         metadata_dict = storable_to_dict(value)
         metadata_obj = self.bin_obj_metadata_table(
@@ -150,7 +157,7 @@ class BinObjectManager(ObjectStore):
         self.db_session.commit()
 
     def delete(self, key: UID) -> None:
-        # print("Deleting object:" + str(key))
+        print("Deleting object:" + str(key))
         try:
             object_to_delete = (
                 self.db_session.query(self.bin_obj_table)

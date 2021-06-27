@@ -98,6 +98,7 @@ class C(RecursiveSerde):
         C.dummy_reloadable_func = C.func_1  # type: ignore
 
     def obj_reload_func(self) -> None:
+        print("RELOADING OBJ FUNCTION")
         self.dummy_reloadable_func = self.func_2  # type: ignore
 
     def func_1(self) -> int:
