@@ -202,6 +202,7 @@ def test_printing(
         validate_permission_error(data.send(client))
 
 
+@pytest.mark.skip(reason="Hypothesis: serde never truly worked")
 @pytest.mark.slow
 def test_printing_remote_creation(
     client: sy.VirtualMachineClient, root_client: sy.VirtualMachineClient
