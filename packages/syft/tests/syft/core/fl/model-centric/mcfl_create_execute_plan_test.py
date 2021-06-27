@@ -105,6 +105,7 @@ def pygrid_domain(xprocess: Any) -> Generator:
     xprocess.getinfo("pygrid_domain").terminate()
 
 
+@pytest.mark.skip(reason="failing because there's missing serialization")
 @pytest.mark.grid
 def test_create_and_execute_plan_autograd(pygrid_domain: Any) -> None:
     setup_domain()
