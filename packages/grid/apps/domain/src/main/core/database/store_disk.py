@@ -16,7 +16,7 @@ from torch import Tensor
 
 # grid relative
 from .tables.bin_obj import BinObject
-from .tables.bin_obj import ObjectMetadata
+from . import ObjectMetadata
 
 ENCODING = "UTF-8"
 
@@ -106,7 +106,7 @@ class DiskObjectStore(ObjectStore):
         return obj
 
     def __setitem__(self, key: UID, value: StorableObject) -> None:
-        obj = value
+
         bin_obj = BinObject(id=str(key.value), object=value.data)
         metadata_dict = storable_to_dict(value)
         metadata_obj = ObjectMetadata(

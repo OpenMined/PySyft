@@ -20,10 +20,12 @@ from typing import Union
 # third party
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+from sqlalchemy import create_engine
+from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import sessionmaker
 
 # syft relative
 from ....lib import lib_ast
-from ....logger import critical
 from ....logger import debug
 from ....logger import error
 from ....logger import traceback_and_raise
@@ -42,12 +44,11 @@ from ...io.location import Location
 from ...io.route import Route
 from ...io.route import SoloRoute
 from ...io.virtual import create_virtual_connection
-from ...store import DiskObjectStore
-from ...store import MemoryStore
 from ..abstract.node import AbstractNode
 from .action.exception_action import ExceptionMessage
 from .action.exception_action import UnknownPrivateException
 from .client import Client
+from .managers.bin_obj_manager import BinObjectManager
 from .metadata import Metadata
 from .service.auth import AuthorizationException
 from .service.child_node_lifecycle_service import ChildNodeLifecycleService
@@ -66,6 +67,8 @@ from .service.obj_search_permission_service import (
 from .service.obj_search_service import ImmediateObjectSearchService
 from .service.repr_service import ReprService
 from .service.resolve_pointer_type_service import ResolvePointerTypeService
+from .tables.bin_obj import BinObject
+from .tables.bin_obj_metadata import BinObjectMetadata
 
 # this generic type for Client bound by Client
 ClientT = TypeVar("ClientT", bound=Client)
@@ -104,6 +107,9 @@ class Node(AbstractNode):
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
         db_path: Optional[str] = None,
+        TableBase: Any = None,
+        engine: Any = None,
+        db_session: Any = None,
     ):
 
         # The node has a name - it exists purely to help the
@@ -114,6 +120,33 @@ class Node(AbstractNode):
             name=name, network=network, domain=domain, device=device, vm=vm
         )
 
+        # TableBase is the base class from which all ORM classes must inherit
+        # If one isn't provided then we can simply make one.
+        if TableBase is None:
+            TableBase = declarative_base()
+
+        # If not provided a session connecting us to the database, let's just
+        # initialize a database in memory
+        if db_session is None:
+
+            # If a DB engine isn't provided then
+            if engine is None:
+                engine = create_engine("sqlite://", echo=False)
+
+            db_session = sessionmaker(bind=engine)()
+
+        # cache these variables on self
+        self.TableBase = TableBase
+        self.engine = engine
+        self.db_session = db_session
+
+        # select which database tables we want to create
+        self.bin_obj_table = BinObject(self.TableBase)
+        self.bin_obj_metadata_table = BinObjectMetadata(self.TableBase)
+
+        # launch the tables in the database
+        self.TableBase.metadata.create_all(engine)
+
         # Any object that needs to be stored on a node is stored here
         # More specifically, all collections of objects are found here
         # There should be NO COLLECTIONS stored as attributes directly
@@ -121,18 +154,11 @@ class Node(AbstractNode):
         # become quite numerous (or otherwise fill up RAM).
         # self.store is the elastic memory.
 
-        if db_path is not None:
-            try:
-                self.store = DiskObjectStore(db_path=db_path)
-                log = f"Opened DiskObjectStore at {db_path}."
-                debug(log)
-            except Exception as e:
-                log = f"Failed to open DiskObjectStore at {db_path}. {e}"
-                critical(log)
-        else:
-            self.store = MemoryStore()
-            log = "Created MemoryStore."
-            debug(log)
+        self.store = BinObjectManager(
+            db_session=self.db_session,
+            bin_obj_table=self.bin_obj_table,
+            bin_obj_metadata_table=self.bin_obj_metadata_table,
+        )
 
         # We need to register all the services once a node is created
         # On the off chance someone forgot to do this (super unlikely)
@@ -453,7 +479,7 @@ class Node(AbstractNode):
     def process_message(
         self, msg: SignedMessage, router: dict
     ) -> Union[SyftMessage, None]:
-
+        print(msg.message)
         self.message_counter += 1
 
         debug(f"> Processing 📨 {msg.pprint} @ {self.pprint} {msg.message}")

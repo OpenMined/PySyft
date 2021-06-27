@@ -52,6 +52,7 @@ class GetSetStaticAttributeAction(ImmediateActionWithoutReply):
         return RunClassMethodAction.intersect_keys(left, right)
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
+
         static_attribute_solver = node.lib_ast.query(self.path)
 
         if self.action == StaticAttributeAction.SET:
