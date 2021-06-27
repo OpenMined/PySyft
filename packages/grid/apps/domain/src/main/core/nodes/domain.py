@@ -98,8 +98,10 @@ class GridDomain(Domain):
         self.roles = RoleManager(db)
         self.groups = GroupManager(db)
         self.disk_store = DiskObjectStore(db)
-        if not os.getenv("MEMORY_STORE", None):
-            self.store = DiskObjectStore(db)
+        
+        # if not os.getenv("MEMORY_STORE", None):
+        #     self.store = DiskObjectStore(db)
+
         self.environments = EnvironmentManager(db)
         self.setup = SetupManager(db)
         self.association_requests = AssociationRequestManager(db)
