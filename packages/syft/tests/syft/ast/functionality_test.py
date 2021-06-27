@@ -132,6 +132,10 @@ def test_len(custom_client: Client) -> None:
     assert result == result_from_ptr
 
 
+@pytest.mark.skip(
+    reason="@trask: Skipping because checking for length is asking for private data which should probably be its"
+    + "own service with specific logic about length looking. DM me if this functionality is necessary for you."
+)
 def test_iter(custom_client: Client) -> None:
     """Unit test to check iterator of the class"""
     a_ptr = custom_client.module_test.A()
