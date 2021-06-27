@@ -59,12 +59,10 @@ class MPCTensor(PassthroughTensor):
     @staticmethod
     def _get_shares_from_remote_secret(secret, shape, parties):
         # stdlib
-        import pdb
+        import pdb; pdb.set_trace()
 
-        pdb.set_trace()
         shares = []
         dummy_val = 0
-
         for i, party in enumerate(parties):
             if party == secret.client:
                 remote_share = secret.generate_przs(shape, i)

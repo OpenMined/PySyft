@@ -46,9 +46,6 @@ class ShareTensor(PassthroughTensor):
         # syft relative
         from .fixed_precision_tensor import FixedPrecisionTensor
 
-        if not isinstance(secret, np.ndarray):
-            secret = np.array([secret])
-
         if not isinstance(secret, FixedPrecisionTensor):
             secret = FixedPrecisionTensor(value=secret)
 

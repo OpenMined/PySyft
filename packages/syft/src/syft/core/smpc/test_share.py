@@ -18,8 +18,8 @@ share_2 = ShareTensor(rank=1, value=value, seed_generators=seeds[1:])
 print(share_1)
 print(share_2)
 
-share_1.generate_przs(shape=value.shape)
-share_2.generate_przs(shape=value.shape)
+# share_1.generate_przs(shape=value.shape)
+# share_2.generate_przs(shape=value.shape)
 
 print(share_1)
 print(share_2)
