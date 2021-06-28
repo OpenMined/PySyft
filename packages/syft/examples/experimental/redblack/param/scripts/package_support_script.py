@@ -7,6 +7,7 @@ Generates:
 """
 # stdlib
 import argparse
+import importlib
 import inspect
 import json
 import pkgutil
@@ -63,7 +64,7 @@ def set_classes(modules_list: TypeAny) -> TypeAny:
 
 def class_import(name: TypeAny) -> TypeAny:
     components = name.split(".")
-    mod = __import__(components[0])
+    mod = importlib.import_module(components[0])
     for comp in components[1:]:
         mod = getattr(mod, comp)
     return mod
@@ -127,6 +128,8 @@ def main() -> None:
     list_submodules(modules_list, package)
 
     classes_list = list(set_classes(modules_list))
+
+    print(f"Number of classes {len(classes_list)}")
 
     allowlist, debug_list = dict_allowlist(classes_list)
 
