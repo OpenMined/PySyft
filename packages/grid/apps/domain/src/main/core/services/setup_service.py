@@ -1,12 +1,9 @@
 # stdlib
-from datetime import datetime
-import secrets
 from typing import List
 from typing import Type
 from typing import Union
 
 # third party
-from flask import current_app as app
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
@@ -16,19 +13,13 @@ from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.service.auth import service_auth
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
-from syft.core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
 from syft.grid.messages.setup_messages import CreateInitialSetUpMessage
 from syft.grid.messages.setup_messages import CreateInitialSetUpResponse
 from syft.grid.messages.setup_messages import GetSetUpMessage
 from syft.grid.messages.setup_messages import GetSetUpResponse
 
 # grid relative
-from ...core.database.environment.environment import states
-from ...core.infrastructure import AWS_Serverfull
-from ...core.infrastructure import AWS_Serverless
-from ...core.infrastructure import Config
-from ...core.infrastructure import Provider
-from ..database.setup.setup import SetupConfig
+from ..database.tables.setup import SetupConfig
 from ..database.utils import model_to_json
 from ..exceptions import AuthorizationError
 from ..exceptions import InvalidParameterValueError

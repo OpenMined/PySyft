@@ -10,7 +10,6 @@ from src.main.core.database import Role
 from src.main.core.database import User
 from src.main.core.database import create_role
 from src.main.core.database import create_user
-from src.main.core.database import model_to_json
 
 payload = {
     "name": "mario mario",

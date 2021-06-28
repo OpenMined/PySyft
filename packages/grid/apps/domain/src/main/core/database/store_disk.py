@@ -5,7 +5,6 @@ from typing import Optional
 from typing import ValuesView
 
 # third party
-from flask import current_app as app
 from nacl.encoding import HexEncoder
 from nacl.signing import VerifyKey
 import syft
@@ -16,8 +15,8 @@ from syft.core.store.storeable_object import StorableObject
 from torch import Tensor
 
 # grid relative
-from .bin_storage.bin_obj import BinObject
-from .bin_storage.bin_obj import ObjectMetadata
+from .tables.bin_obj import BinObject
+from .tables.bin_obj import ObjectMetadata
 
 ENCODING = "UTF-8"
 
