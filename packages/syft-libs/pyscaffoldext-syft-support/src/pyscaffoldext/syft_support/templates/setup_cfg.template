@@ -53,6 +53,9 @@ where = src
 exclude =
     tests
 
+[options.package_data]
+* = package-support.json
+
 [options.extras_require]
 # Add here additional requirements for extra features, to install with:
 # `pip install ${name}[PDF]` like:
