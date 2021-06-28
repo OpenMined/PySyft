@@ -34,6 +34,9 @@ def list_submodules(list_name: TypeAny, package_name: TypeAny) -> TypeAny:
     for loader, module_name, is_pkg in pkgutil.walk_packages(
         package_name.__path__, package_name.__name__ + "."
     ):
+        if "test" in module_name:
+            continue
+            # inspect.ismodule(__import__('sklearn.neighbors.tests.test_neighbors_tree')) is True
         list_name.append(module_name)
         try:
             module_name = __import__(module_name, fromlist="dummylist")
@@ -43,20 +46,27 @@ def list_submodules(list_name: TypeAny, package_name: TypeAny) -> TypeAny:
             list_submodules(list_name, module_name)
 
 
-def set_classes(modules_list: TypeAny) -> TypeAny:
+def set_classes(modules_list: TypeAny, root_module: str) -> TypeAny:
 
     classes_set = set()
     # print(f'Len of modules_list {len(modules_list)}')
     for i in modules_list:
-        module = __import__(i)
+        module = importlib.import_module(i)
         # print(f'{module} {i}')
         for ax in dir(module):
             # print(ax)
             # print(f' {module.__name__}, {ax}')
             t = getattr(module, ax)
-
             if inspect.isclass(t):
-                classes_set.add(module.__name__ + "." + t.__name__)
+                mod_name = t.__module__.split(".")
+                if root_module == mod_name[0]:
+                    # print(f'{t} {t.__module__}')
+                    # classes_set.add(module.__name__ + "." + t.__name__) # Number of classes 1224
+                    classes_set.add(
+                        t.__module__ + "." + t.__name__
+                    )  # number of classes 500
+                # else:
+                # print(f'in else {t.__name__} {t.__class__} {module} {root_module}')
 
     # print(f'Len of classes_set {len(classes_set)}')
     return classes_set
@@ -80,7 +90,10 @@ def dict_allowlist(classes_list: TypeAny) -> TypeAny:
         for ax in dir(class_):
             # print(f'{ax} {class_}')
             # module = class_
-            t = getattr(class_, ax)
+            t = getattr(class_, ax)  # Sometimes it return None
+            if t is None:
+                # print('None')
+                continue
             if inspect.ismethod(t) or inspect.isfunction(t):
                 # print(f't for debug: {t} {module}')
                 try:
@@ -127,12 +140,14 @@ def main() -> None:
 
     list_submodules(modules_list, package)
 
-    classes_list = list(set_classes(modules_list))
+    classes_list = list(set_classes(modules_list, package_name))
 
     print(f"Number of classes {len(classes_list)}")
 
+    debug_list = []
     allowlist, debug_list = dict_allowlist(classes_list)
 
+    print(f"len(allowlist) = {len(allowlist)}")
     package_support = {}
 
     package_support["lib"] = package_name
