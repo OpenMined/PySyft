@@ -118,6 +118,13 @@ class ShareTensor(PassthroughTensor, Serializable):
 
         return fpt
 
+    def __add__(self, other, node, seed=42):
+        # The seed is used to generate the item ids:
+        # TODO: implement the planner
+        actions = None
+        res = SMPCPlannerExecute(node, actions)
+        return res
+
     def _object2proto(self) -> ShareTensor_PB:
         if isinstance(self.child, np.ndarray):
             return ShareTensor_PB(array=serialize(self.child), rank=self.rank)

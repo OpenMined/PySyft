@@ -191,7 +191,11 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                 else:
                     method = functools.partial(method, resolved_self.data)
 
-                result = method(*upcasted_args, **upcasted_kwargs)
+                if "ShareTensor" in self.path:
+                    upcasted_kwargs["node"] = node
+                    result_actions = method(*upcasted_args, **upcasted_kwargs)
+                else:
+                    result = method(*upcasted_args, **upcasted_kwargs)
 
         # TODO: add numpy support https://github.com/OpenMined/PySyft/issues/5164
         if "numpy." in str(type(result)):
