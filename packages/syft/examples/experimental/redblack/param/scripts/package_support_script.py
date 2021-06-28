@@ -1,3 +1,10 @@
+"""
+Running script: python package_support_script.py -l xgboost -d 1
+Generates:
+
+1. package_support.json
+2. lib.debug.log with all the methods/functions not added to ast with the reason.
+"""
 # stdlib
 import argparse
 import inspect
@@ -12,10 +19,10 @@ from typing_inspect import get_origin
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    "-d", dest="debug", type=int, help="Set it to one to get debug files", default=0
+    "-l", dest="lib", required=True, help="name of the model to be added to ast"
 )
 parser.add_argument(
-    "-l", dest="lib", required=True, help="name of the model to be added to ast"
+    "-d", dest="debug", type=int, help="Set it to one to get debug files", default=0
 )
 args = parser.parse_args()
 
@@ -35,20 +42,23 @@ def list_submodules(list_name: TypeAny, package_name: TypeAny) -> TypeAny:
             list_submodules(list_name, module_name)
 
 
-def list_classes(modules_list: TypeAny) -> TypeAny:
+def set_classes(modules_list: TypeAny) -> TypeAny:
 
-    classes_list = list()
-
-    for module in modules_list:
-        module = __import__(module)
+    classes_set = set()
+    # print(f'Len of modules_list {len(modules_list)}')
+    for i in modules_list:
+        module = __import__(i)
+        # print(f'{module} {i}')
         for ax in dir(module):
             # print(ax)
             # print(f' {module.__name__}, {ax}')
             t = getattr(module, ax)
-            if inspect.isclass(t):
-                classes_list.append(module.__name__ + "." + t.__name__)
 
-    return classes_list
+            if inspect.isclass(t):
+                classes_set.add(module.__name__ + "." + t.__name__)
+
+    # print(f'Len of classes_set {len(classes_set)}')
+    return classes_set
 
 
 def class_import(name: TypeAny) -> TypeAny:
@@ -76,33 +86,27 @@ def dict_allowlist(classes_list: TypeAny) -> TypeAny:
                     # try block
                     d = typing.get_type_hints(t)
                     if not d:
-                        debug_list.append(
-                            f"{class_.__name__}.{t.__name__}: type hints absent"
-                        )
+                        debug_list.append(f"{i}.{t.__name__}: type hints absent")
                     else:
                         if "return" in d.keys():
                             if isinstance(d["return"], typing._GenericAlias):  # type: ignore
                                 # print(type(d['return']))
                                 # print(get_origin(d['return']))
-                                allowlist[
-                                    class_.__name__ + "." + t.__name__
-                                ] = get_origin(d["return"]).__name__
+                                allowlist[i + "." + t.__name__] = get_origin(
+                                    d["return"]
+                                ).__name__
                             else:
                                 # print(d['return'])
-                                allowlist[class_.__name__ + "." + t.__name__] = d[
-                                    "return"
-                                ].__name__
+                                allowlist[i + "." + t.__name__] = d["return"].__name__
 
                             # allowlist[module.__name__ + '.' + t.__name__] = d['return'].__name__
                         else:
                             debug_list.append(
-                                f"{class_.__name__}.{t.__name__}: return key absent in {d}"
+                                f"{i}.{t.__name__}: return key absent in {d}"
                             )
 
                 except Exception as e:
-                    debug_list.append(
-                        f"{class_.__name__}.{t.__name__}: exception occoured /n/t{e}"
-                    )
+                    debug_list.append(f"{i}.{t.__name__}: exception occoured \n\t{e}")
 
     return allowlist, debug_list
 
@@ -122,7 +126,7 @@ def main() -> None:
 
     list_submodules(modules_list, package)
 
-    classes_list = list_classes(modules_list)
+    classes_list = list(set_classes(modules_list))
 
     allowlist, debug_list = dict_allowlist(classes_list)
 
@@ -137,7 +141,10 @@ def main() -> None:
         json.dump(package_support, outfile)
 
     if DEBUG:
-        print(debug_list)
+        # print(debug_list)
+        with open("lib.debug.log", "w") as f:
+            for item in debug_list:
+                f.write(f"{item}\n")
 
 
 if __name__ == "__main__":

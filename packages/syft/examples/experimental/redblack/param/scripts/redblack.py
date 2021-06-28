@@ -58,6 +58,7 @@ def scraping_lib(root_module: TypeAny) -> TypeAny:
             if inspect.isclass(t):
                 # Commenting because allowlist should only contain methods
                 # allowlist[module.__name__ + '.' + t.__name__] = module.__name__ + '.' + t.__name__
+                q.put(t)
                 classes_list.append(module.__name__ + "." + t.__name__)
             if inspect.ismethod(t) or inspect.isfunction(t):
                 # print(f't for debug: {t} {module}')
