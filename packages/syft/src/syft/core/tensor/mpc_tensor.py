@@ -1,6 +1,7 @@
 # stdlib
 from functools import lru_cache
 from functools import reduce
+import operator
 
 # third party
 import numpy as np
@@ -39,6 +40,7 @@ class MPCTensor(PassthroughTensor):
             )
 
         res = MPCTensor._mpc_from_shares(shares, parties)
+        self.mpc_shape = shape
 
         super().__init__(res)
 
@@ -114,3 +116,22 @@ class MPCTensor(PassthroughTensor):
             result_fp = result_fp + fpt
         result = result_fp.decode()
         return result
+
+    @staticmethod
+    def __get_shape(x_shape, y_shape, operator):
+        res = operator(np.empty(x_shape), np.empty(y_shape)).shape
+        return res
+
+    def __add__(self, other):
+        if isinstance(other, MPCTensor):
+            res_shares = [operator.add(a, b) for a, b in zip(self.child, other.child)]
+        elif isinstance(other, np.ndarray):
+            # Only party with rank 0 will add the value
+            res_shares = [operator.add(self.child[0], other)]
+            res_shares.extend(self.child[1:])
+        else:
+            raise ValueError(f"other should be a numpy like structure, but it is {type(other)}")
+        new_shape = MPCTensor.__get_shape(self.mpc_shape, other.mpc_shape, operator.add)
+        res = MPCTensor(shares = res_shares, shape=new_shape)
+
+        return res
