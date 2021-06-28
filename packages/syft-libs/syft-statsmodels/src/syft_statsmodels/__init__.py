@@ -24,12 +24,23 @@ def read_package_support() -> Dict[str, TypeAny]:
     ]
     classes = []
     for path in data["classes"]:
-        module, classname = path.rsplit(".", 1)
+        if isinstance(path, list):
+            if not len(path) == 2:
+                raise ValueError(
+                    "Error at {}.\nUse [PATH,RETURN_TYPE] or PATH to specify a class.".format(
+                        path
+                    )
+                )
+
+            path, return_type = path
+        else:
+            return_type = path
+        module, classname = return_type.rsplit(".", 1)
         klass = getattr(import_module(module), classname)
 
         if not inspect.isclass(klass):
             raise TypeError(f"{path} is not a class.")
-        classes.append((path, path, klass))
+        classes.append((path, return_type, klass))
 
     return {
         "lib": data["lib"],

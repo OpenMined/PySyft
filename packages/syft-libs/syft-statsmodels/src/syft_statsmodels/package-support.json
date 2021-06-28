@@ -10,7 +10,7 @@
     "statsmodels.iolib.summary"
   ],
   "classes": [
-    "statsmodels.genmod.generalized_linear_model.GLM",
+    ["statsmodels.genmod.generalized_linear_model.GLM","statsmodels.genmod.generalized_linear_model.GLM"],
     "statsmodels.genmod.generalized_linear_model.GLMResults",
     "statsmodels.genmod.generalized_linear_model.GLMResultsWrapper",
     "statsmodels.iolib.summary.Summary",
