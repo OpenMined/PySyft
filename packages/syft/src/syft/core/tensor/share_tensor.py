@@ -16,6 +16,43 @@ from ..common.serde.deserialize import _deserialize as deserialize
 from ..common.serde.serializable import bind_protobuf
 from ..common.serde.serialize import _serialize as serialize
 
+from ...core.node.common.action.run_class_method_action import RunClassMethodAction
+import operator
+import time
+
+MAPPINGS_OPS = {
+    "mpc_add": operator.add
+}
+
+def SMPCPlannerExecute(actions, node):
+    for action in actions:
+        operation, _self_id, args_ids, kwargs_ids = action
+        op = MAPPINGS_OPS[operation]
+
+        args = None
+        kwargs = None
+        _self = None
+        for i in range(10):
+            try:
+                _self = node.store[_self_id]
+                args = [node.store[arg_id] for arg_id in args_ids]
+                kwargs = {key: node.store[kwarg_id]for key, kwarg_id in kwargs_ids}
+
+            except KeyError:
+                # For the object to reach the store and retry
+                time.sleep(1)
+
+
+        if _self is None or args is None or kwargs is None:
+            raise Exception("Abort since could not retrieve _self/args/kwargs!")
+
+        res = operation(_self, *args, **kwargs)
+
+    return res
+
+
+
+
 
 @bind_protobuf
 class ShareTensor(PassthroughTensor, Serializable):
@@ -42,6 +79,7 @@ class ShareTensor(PassthroughTensor, Serializable):
         self.min_value, self.max_value = ShareTensor.compute_min_max_from_ring(
             self.ring_size
         )
+        self.planner_active = True
         super().__init__(value)
 
     @staticmethod
@@ -118,11 +156,20 @@ class ShareTensor(PassthroughTensor, Serializable):
 
         return fpt
 
-    def __add__(self, other, node, seed=42):
-        # The seed is used to generate the item ids:
-        # TODO: implement the planner
-        actions = None
-        res = SMPCPlannerExecute(node, actions)
+    def __add__(self, other, node, seed):
+        if self.planner_active:
+            if isinstance(other, ShareTensor):
+                # All parties should add the other share
+                actions = [("mpc_add", self.id_at_location, [other.id_at_location], {}, -1)]
+            else:
+                # Only rank 1 would add that public value
+                actions = [("mpc_add", self.id_at_location, [other.id_at_location], {}, 1)]
+
+            self.planner_active = False
+            res = SMPCPlannerExecute(actions, node)
+        else:
+            res = self + other
+
         return res
 
     def _object2proto(self) -> ShareTensor_PB:

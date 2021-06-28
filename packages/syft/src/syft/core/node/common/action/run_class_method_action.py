@@ -192,8 +192,9 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     method = functools.partial(method, resolved_self.data)
 
                 if "ShareTensor" in self.path:
-                    upcasted_kwargs["node"] = node
-                    result_actions = method(*upcasted_args, **upcasted_kwargs)
+                    upcasted_kwargs["seed"] = 42 # Used to generate the same ids
+                    upcasted_kwargs["node"] = node # Used for getting the object from the store
+                    result = method(*upcasted_args, **upcasted_kwargs)
                 else:
                     result = method(*upcasted_args, **upcasted_kwargs)
 
