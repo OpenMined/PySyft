@@ -27,7 +27,6 @@ ten = th.rand((1000, 4))
 ds = ExampleDataset(ten)
 
 
-@pytest.mark.skip(reason="Hypothesis: serde never truly worked")
 @pytest.mark.slow
 def test_remote_dataset(client: sy.VirtualMachineClient) -> None:
     filename = "ds1.pt"
@@ -43,7 +42,6 @@ def test_remote_dataset(client: sy.VirtualMachineClient) -> None:
     os.unlink(filename)
 
 
-@pytest.mark.skip(reason="Hypothesis: serde never truly worked")
 @pytest.mark.slow
 def test_remote_dataloader(root_client: sy.VirtualMachineClient) -> None:
     filename = "ds2.pt"

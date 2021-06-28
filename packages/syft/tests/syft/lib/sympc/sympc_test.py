@@ -11,10 +11,6 @@ SessionManager = sympc.session.SessionManager
 MPCTensor = sympc.tensor.MPCTensor
 
 
-@pytest.mark.skip(
-    reason="This was broken when we switched from using a Dictionary obj store to a SQL one which means"
-    + "that there's missing serialization functionality. Please address when you can."
-)
 @pytest.mark.asyncio
 @pytest.mark.vendor(lib="sympc")
 def test_load_sympc() -> None:

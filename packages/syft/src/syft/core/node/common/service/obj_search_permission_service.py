@@ -145,8 +145,6 @@ class ImmediateObjectSearchPermissionUpdateService(ImmediateNodeServiceWithoutRe
         else:
             storable_object.search_permissions.pop(target_verify_key, None)
 
-        node.store[msg.target_object_id] = storable_object
-
     @staticmethod
     def message_handler_types() -> List[Type[ObjectSearchPermissionUpdateMessage]]:
         return [ObjectSearchPermissionUpdateMessage]

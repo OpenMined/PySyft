@@ -7,10 +7,6 @@ import syft as sy
 opacus = pytest.importorskip("opacus")
 
 
-@pytest.mark.skip(
-    reason="This was broken when we switched from using a Dictionary obj store to a SQL one which means"
-    + "that there's missing serialization functionality. Please address when you can."
-)
 @pytest.mark.vendor(lib="opacus")
 def test_remote_engine_simple(root_client: sy.VirtualMachineClient) -> None:
     remote_opacus = root_client.opacus
