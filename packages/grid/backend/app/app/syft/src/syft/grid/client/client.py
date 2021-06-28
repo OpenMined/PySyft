@@ -53,8 +53,9 @@ INSECURE_PYGRID_TOKEN = "9G9MJ06OQH"  # nosec
 class GridClient(DomainClient):
     def __init__(
         self,
-        credentials: Dict,
         url: str,
+        username: str,
+        password: str,
         conn_type: Type[ClientConnection],
         client_type: Type[Client],
         user_key: Optional[SigningKey] = None,
@@ -65,8 +66,8 @@ class GridClient(DomainClient):
         self.conn = conn_type(url=url)  # type: ignore
         self.client_type = client_type
 
-        if credentials:
-            metadata, _user_key = self.conn.login(credentials=credentials)  # type: ignore
+        if username and password:
+            metadata, _user_key = self.conn.login(username=username, password=password)  # type: ignore
             _user_key = SigningKey(_user_key.encode(), encoder=HexEncoder)
         else:
             metadata = self.conn._get_metadata()  # type: ignore

@@ -16,6 +16,10 @@ from app.utils import (
     verify_password_reset_token,
 )
 
+import syft as sy
+from .syft import domain
+import json
+
 router = APIRouter()
 
 
@@ -34,12 +38,17 @@ def login_access_token(
     elif not crud.user.is_active(user):
         raise HTTPException(status_code=400, detail="Inactive user")
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+
     return {
         "access_token": security.create_access_token(
             user.id, expires_delta=access_token_expires
         ),
         "token_type": "bearer",
+        "metadata": sy.serialize(domain.get_metadata_for_client())
+        .SerializeToString()
+        .decode("ISO-8859-1")
     }
+
 
 
 @router.post("/login/test-token", response_model=schemas.User)
