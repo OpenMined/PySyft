@@ -1,3 +1,4 @@
+import json
 from typing import Any, List
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
@@ -6,15 +7,17 @@ from sqlalchemy.orm import Session
 from app import crud, models, schemas
 from app.api import deps
 
-import json
-
 router = APIRouter()
 
+from syft.core.common.message import (
+    SignedImmediateSyftMessageWithoutReply,
+    SignedImmediateSyftMessageWithReply,
+)
+
 import syft as sy
-from syft.core.common.message import SignedImmediateSyftMessageWithReply
-from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 
 domain = sy.Domain("my domain")
+
 
 @router.get("/", response_model=str)
 def read_items(
@@ -36,9 +39,9 @@ def read_items(
     print(items)
     return "hello world"
 
+
 # @router.get("/metadata", response_model=str)
 # def metadata_route():
-#     # grid relative
 #     response_body = {
 #         "metadata": sy.serialize(domain.get_metadata_for_client())
 #         .SerializeToString()

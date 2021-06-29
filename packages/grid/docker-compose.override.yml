@@ -1,6 +1,5 @@
 version: "3.3"
 services:
-
   proxy:
     ports:
       - "80:80"
@@ -32,6 +31,9 @@ services:
     ports:
       - "5050:5050"
 
+  db:
+    ports:
+      - "5432:5432"
   flower:
     ports:
       - "5555:5555"
@@ -39,18 +41,22 @@ services:
   backend:
     ports:
       - "8888:8888"
+      - "8880:80"
     volumes:
       - ./backend/app:/app
+      - ../syft:/app/syft
+      - package-cache:/root/.cache
     environment:
       - JUPYTER=jupyter lab --ip=0.0.0.0 --allow-root --NotebookApp.custom_display_url=http://127.0.0.1:8888
       - SERVER_HOST=http://${DOMAIN?Variable not set}
+      - SYFT_USE_UVLOOP=0
     build:
       context: ./backend
       dockerfile: backend.dockerfile
       args:
         INSTALL_DEV: ${INSTALL_DEV-true}
         INSTALL_JUPYTER: ${INSTALL_JUPYTER-true}
-    # command: bash -c "while true; do sleep 1; done"  # Infinite loop to keep container live doing nothing
+    # command: bash -c "while true; do sleep 1; done" # Infinite loop to keep container live doing nothing
     command: /start-reload.sh
     labels:
       - traefik.enable=true
@@ -61,10 +67,13 @@ services:
   celeryworker:
     volumes:
       - ./backend/app:/app
+      - ../syft:/app/syft
+      - package-cache:/root/.cache
     environment:
       - RUN=celery worker -A app.worker -l info -Q main-queue -c 1
       - JUPYTER=jupyter lab --ip=0.0.0.0 --allow-root --NotebookApp.custom_display_url=http://127.0.0.1:8888
       - SERVER_HOST=http://${DOMAIN?Variable not set}
+      - SYFT_USE_UVLOOP=0
     build:
       context: ./backend
       dockerfile: celeryworker.dockerfile
@@ -87,3 +96,6 @@ networks:
   traefik-public:
     # For local dev, don't expect an external Traefik network
     external: false
+
+volumes:
+  package-cache:

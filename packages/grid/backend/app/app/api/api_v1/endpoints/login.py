@@ -1,3 +1,4 @@
+import json
 from datetime import timedelta
 from typing import Any
 
@@ -5,6 +6,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
+import syft as sy
 from app import crud, models, schemas
 from app.api import deps
 from app.core import security
@@ -16,9 +18,7 @@ from app.utils import (
     verify_password_reset_token,
 )
 
-import syft as sy
-from .syft import domain
-import json
+from .node import domain
 
 router = APIRouter()
 
@@ -46,9 +46,8 @@ def login_access_token(
         "token_type": "bearer",
         "metadata": sy.serialize(domain.get_metadata_for_client())
         .SerializeToString()
-        .decode("ISO-8859-1")
+        .decode("ISO-8859-1"),
     }
-
 
 
 @router.post("/login/test-token", response_model=schemas.User)
