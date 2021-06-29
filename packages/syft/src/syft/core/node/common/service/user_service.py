@@ -30,12 +30,12 @@ from syft.grid.messages.user_messages import UpdateUserResponse
 
 # syft relative
 from .....logger import traceback_and_raise
-from ..database import expand_user_object
-from ..database.utils import model_to_json
-from ..exceptions import AuthorizationError
-from ..exceptions import MissingRequestKeyError
-from ..exceptions import RoleNotFoundError
-from ..exceptions import UserNotFoundError
+from .....logger import debug
+from ..tables.utils import model_to_json
+#from ..exceptions import AuthorizationError
+#from ..exceptions import MissingRequestKeyError
+#from ..exceptions import RoleNotFoundError
+#from ..exceptions import UserNotFoundError
 
 
 def create_user_msg(
@@ -51,7 +51,8 @@ def create_user_msg(
     _role = msg.content.get("role", None)
 
     users = node.users
-
+    
+    '''
     if not _current_user_id:
         try:
             _current_user_id = users.first(
@@ -59,9 +60,11 @@ def create_user_msg(
             ).id
         except Exception as e:
             traceback_and_raise(e)
+    '''
 
     _admin_role = node.roles.first(name="Owner")
-
+    
+    '''
     # Check if email/password fields are empty
     if not _email or not _password:
         raise MissingRequestKeyError(
@@ -76,7 +79,8 @@ def create_user_msg(
         )
     except UserNotFoundError as e:
         traceback_and_raise(e)
-
+    '''
+    
     # 1 - Owner Type
     # Create Owner type User (First user to be registered)
     # This user type will use node root key
@@ -86,6 +90,7 @@ def create_user_msg(
         _verify_key = node.signing_key.verify_key.encode(encoder=HexEncoder).decode(
             "utf-8"
         )
+        
         _user = users.signup(
             email=_email,
             password=_password,
@@ -139,12 +144,11 @@ def create_user_msg(
         create_custom_user()
     else:
         create_standard_user()
-
     return CreateUserResponse(
-        address=msg.reply_to,
-        status_code=200,
-        content={"message": "User created successfully!"},
-    )
+            address=msg.reply_to,
+            status_code=200,
+            content={"message": "User created successfully!"},
+        )
 
 
 def update_user_msg(
@@ -272,20 +276,22 @@ def get_all_users_msg(
     verify_key: VerifyKey,
 ) -> GetUsersResponse:
     # Get Payload Content
+    '''
     try:
         _current_user_id = msg.content.get("current_user", None)
     except Exception:
         _current_user_id = None
-
+    '''
     users = node.users
-
+    
+    '''
     if not _current_user_id:
         _current_user_id = users.first(
             verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
         ).id
+    '''
 
-    _allowed = users.can_triage_requests(user_id=_current_user_id)
-
+    _allowed = True #users.can_triage_requests(user_id=_current_user_id)
     if _allowed:
         users = users.all()
         _msg = []
@@ -298,12 +304,11 @@ def get_all_users_msg(
             _msg.append(_user_json)
     else:
         raise AuthorizationError("You're not allowed to get User information!")
-
     return GetUsersResponse(
-        address=msg.reply_to,
-        status_code=200,
-        content=_msg,
-    )
+            address=msg.reply_to,
+            status_code=200,
+            content=_msg,
+        )
 
 
 def del_user_msg(
