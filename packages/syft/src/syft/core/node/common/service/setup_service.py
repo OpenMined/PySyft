@@ -19,6 +19,8 @@ from syft.grid.messages.setup_messages import GetSetUpMessage
 from syft.grid.messages.setup_messages import GetSetUpResponse
 
 # syft relative
+from .....logger import traceback_and_raise
+
 # grid relative
 from ..database.tables.setup import SetupConfig
 from ..database.utils import model_to_json
@@ -61,8 +63,8 @@ def create_initial_setup(
             _current_user_id = users.first(
                 verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
             ).id
-        except Exception:
-            pass
+        except Exception as e:
+            traceback_and_raise(e)
 
     _admin_role = node.roles.first(name="Owner")
 
@@ -92,7 +94,7 @@ def create_initial_setup(
     _node_private_key = node.signing_key.encode(encoder=HexEncoder).decode("utf-8")
     _verify_key = node.signing_key.verify_key.encode(encoder=HexEncoder).decode("utf-8")
     _admin_role = node.roles.first(name="Owner")
-    _user = users.signup(
+    _ = users.signup(
         email=_email,
         password=_password,
         role=_admin_role.id,
@@ -123,8 +125,8 @@ def get_setup(
             _current_user_id = users.first(
                 verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
             ).id
-        except Exception:
-            pass
+        except Exception as e:
+            traceback_and_raise(e)
 
     if users.role(user_id=_current_user_id).name != "Owner":
         raise AuthorizationError("You're not allowed to get setup configs!")

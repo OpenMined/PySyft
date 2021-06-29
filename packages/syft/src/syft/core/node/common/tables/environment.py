@@ -16,7 +16,7 @@ class Environment(BaseModel):
     provider = db.Column(db.String(255))
     region = db.Column(db.String(255))
     instance_type = db.Column(db.String(255))
-    address = db.Column(db.String(255), default="0.0.0.0")
+    address = db.Column(db.String(255), default="0.0.0.0")  # nosec
     syft_address = db.Column(db.String(255), default="")  # TODO
     created_at = db.Column(db.DateTime, default=datetime.now())
     destroyed_at = db.Column(db.DateTime, default=datetime.now())

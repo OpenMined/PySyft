@@ -29,7 +29,7 @@ from syft.grid.messages.user_messages import UpdateUserMessage
 from syft.grid.messages.user_messages import UpdateUserResponse
 
 # syft relative
-# grid relative
+from .....logger import traceback_and_raise
 from ..database import expand_user_object
 from ..database.utils import model_to_json
 from ..exceptions import AuthorizationError
@@ -57,8 +57,8 @@ def create_user_msg(
             _current_user_id = users.first(
                 verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
             ).id
-        except Exception:
-            pass
+        except Exception as e:
+            traceback_and_raise(e)
 
     _admin_role = node.roles.first(name="Owner")
 
@@ -74,8 +74,8 @@ def create_user_msg(
         raise AuthorizationError(
             message="You can't create a new User using this email!"
         )
-    except UserNotFoundError:
-        pass
+    except UserNotFoundError as e:
+        traceback_and_raise(e)
 
     # 1 - Owner Type
     # Create Owner type User (First user to be registered)

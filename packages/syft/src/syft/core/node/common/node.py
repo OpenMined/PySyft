@@ -79,7 +79,6 @@ class DuplicateRequestException(Exception):
     pass
 
 
-
 class Node(AbstractNode):
 
     """
