@@ -30,7 +30,6 @@ from syft.grid.messages.user_messages import UpdateUserResponse
 
 # syft relative
 from .....logger import traceback_and_raise
-from .....logger import debug
 from ..tables.utils import model_to_json
 #from ..exceptions import AuthorizationError
 #from ..exceptions import MissingRequestKeyError
@@ -53,12 +52,14 @@ def create_user_msg(
     users = node.users
     
     '''
+
     if not _current_user_id:
         try:
             _current_user_id = users.first(
                 verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
             ).id
         except Exception as e:
+            print(e)
             traceback_and_raise(e)
     '''
 

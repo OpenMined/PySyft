@@ -29,11 +29,11 @@ def create_storable(
 class BinObjectManager(ObjectStore):
     def __init__(
         self,
-        db_session: Session,
+        db: Session,
         bin_obj_table: DeclarativeMeta,
         bin_obj_metadata_table: DeclarativeMeta,
     ) -> None:
-        self.db_session = db_session
+        self.db = db
         self.bin_obj_table = bin_obj_table
         self.bin_obj_metadata_table = bin_obj_metadata_table
 

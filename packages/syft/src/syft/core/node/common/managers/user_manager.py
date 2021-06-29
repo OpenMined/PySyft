@@ -1,6 +1,7 @@
 # stdlib
 from typing import List
 from typing import Union
+from typing import Any
 
 # third party
 from bcrypt import checkpw
@@ -22,8 +23,8 @@ class UserManager(DatabaseManager):
 
     def __init__(self, database):
         self._schema = UserManager.schema
-        self.roles = RoleManager(database)
         self.db = database
+        self.roles = RoleManager(database)
 
     @property
     def common_users(self) -> list:

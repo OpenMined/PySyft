@@ -17,6 +17,7 @@ class Role(Base):
     can_manage_infrastructure = Column(Boolean(), default=False)
     can_upload_data = Column(Boolean(), default=False)
 
+
     def __str__(self):
         return (
             f"<Role id: {self.id}, name: {self.name}, "

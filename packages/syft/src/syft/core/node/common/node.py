@@ -67,8 +67,10 @@ from .service.obj_search_permission_service import (
 from .service.obj_search_service import ImmediateObjectSearchService
 from .service.repr_service import ReprService
 from .service.resolve_pointer_type_service import ResolvePointerTypeService
+from .service.user_service import UserManagerService
 from .tables.bin_obj import BinObject
 from .tables.bin_obj_metadata import BinObjectMetadata
+from .managers.user_manager import UserManager
 
 # this generic type for Client bound by Client
 ClientT = TypeVar("ClientT", bound=Client)
@@ -109,7 +111,7 @@ class Node(AbstractNode):
         db_path: Optional[str] = None,
         TableBase: Any = None,
         engine: Any = None,
-        db_session: Any = None,
+        db: Any = None,
     ):
 
         # The node has a name - it exists purely to help the
@@ -127,25 +129,26 @@ class Node(AbstractNode):
 
         # If not provided a session connecting us to the database, let's just
         # initialize a database in memory
-        if db_session is None:
+        if db is None:
 
             # If a DB engine isn't provided then
             if engine is None:
                 engine = create_engine("sqlite://", echo=False)
 
-            db_session = sessionmaker(bind=engine)()
+            db = sessionmaker(bind=engine)()
 
         # cache these variables on self
         self.TableBase = TableBase
         self.engine = engine
-        self.db_session = db_session
+        self.db = db
 
         # select which database tables we want to create
         self.bin_obj_table = BinObject(self.TableBase)
         self.bin_obj_metadata_table = BinObjectMetadata(self.TableBase)
 
         # launch the tables in the database
-        self.TableBase.metadata.create_all(engine)
+        # Tudor: experimental
+        # self.TableBase.metadata.create_all(engine)
 
         # Any object that needs to be stored on a node is stored here
         # More specifically, all collections of objects are found here
@@ -155,7 +158,7 @@ class Node(AbstractNode):
         # self.store is the elastic memory.
 
         self.store = BinObjectManager(
-            db_session=self.db_session,
+            db=self.db,
             bin_obj_table=self.bin_obj_table,
             bin_obj_metadata_table=self.bin_obj_metadata_table,
         )
@@ -170,7 +173,6 @@ class Node(AbstractNode):
         # a reference to what node type this node is. This attribute
         # provides that ability.
         self.node_type = type(self).__name__
-
         # ABOUT SERVICES AND MESSAGES
 
         # Each service corresponds to one or more message types which
@@ -234,7 +236,6 @@ class Node(AbstractNode):
         self.immediate_services_with_reply.append(ImmediateObjectSearchService)
         self.immediate_services_with_reply.append(GetReprService)
         self.immediate_services_with_reply.append(ResolvePointerTypeService)
-
         # for services which can run at a later time and do not return a reply
         self.eventual_services_without_reply = list()
         self.eventual_services_without_reply.append(

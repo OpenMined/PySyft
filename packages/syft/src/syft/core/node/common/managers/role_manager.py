@@ -11,9 +11,7 @@ from .database_manager import DatabaseManager
 
 
 class RoleManager(DatabaseManager):
-
     schema = Role
-
     def __init__(self, database):
         self._schema = RoleManager.schema
         self.db = database
