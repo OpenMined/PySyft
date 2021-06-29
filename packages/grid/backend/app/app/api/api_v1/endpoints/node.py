@@ -7,6 +7,9 @@ from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
+from app.db.session import engine, SessionLocal
+from app.db.base_class import Base
+from syft import Domain
 
 router = APIRouter()
 
@@ -17,15 +20,13 @@ from syft.core.common.message import (
 
 import syft as sy
 
-domain = sy.Domain("my domain")
-
 
 @router.get("/", response_model=str)
 def read_items(
     db: Session = Depends(deps.get_db),
     skip: int = 0,
     limit: int = 100,
-    current_user: models.User = Depends(deps.get_current_active_user),
+    current_user: Any = Depends(deps.get_current_active_user),
 ) -> Any:
     """
     Retrieve items.
@@ -40,15 +41,15 @@ def read_items(
 
 
 @router.get("/metadata", response_model=str)
-def syft_metadata():
+def syft_metadata(domain: Domain = Depends(deps.get_db)):
     return Response(domain.get_metadata_for_client()._object2proto().SerializeToString(), media_type="application/octet-stream")
- 
+
 
 
 @router.post("/pysyft", response_model=str)
 async def syft(
     request: Request,
-#    db: Session = Depends(deps.get_db),
+    domain: Domain = Depends(deps.get_db),
 #    skip: int = 0,
 #    limit: int = 100,
 #    current_user: models.User = Depends(deps.get_current_active_user),

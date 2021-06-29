@@ -1,14 +1,16 @@
 # stdlib
 from typing import List
 from typing import Union
+from typing import Any
 
 # syft relative
 # grid relative
-from ..database import BaseModel
+# from ..database import BaseModel
 
 
 class DatabaseManager:
-    def register(self, **kwargs) -> BaseModel:
+    # Tudor: hack
+    def register(self, **kwargs) -> Any:
         """Register e  new object into the database.
 
         Args:
@@ -21,7 +23,8 @@ class DatabaseManager:
         self.db.session.commit()
         return _obj
 
-    def query(self, **kwargs) -> Union[None, BaseModel]:
+    # def query(self, **kwargs) -> Union[None, BaseModel]:
+    def query(self, **kwargs) -> Any:
         """Query db objects filtering by parameters
         Args:
             parameters : List of parameters used to filter.
@@ -29,12 +32,13 @@ class DatabaseManager:
         objects = self.db.session.query(self._schema).filter_by(**kwargs).all()
         return objects
 
-    def first(self, **kwargs) -> Union[None, BaseModel]:
+    # def first(self, **kwargs) -> Union[None, BaseModel]:
+    def first(self, **kwargs) -> Any:
         """Query db objects filtering by parameters
         Args:
             parameters : List of parameters used to filter.
         """
-        objects = self.db.session.query(self._schema).filter_by(**kwargs).first()
+        objects = self.db.query(self._schema).filter_by(**kwargs).first()
         return objects
 
     def last(self, **kwargs):
@@ -49,7 +53,8 @@ class DatabaseManager:
         obj = self.db.session.query(self._schema).filter_by(**kwargs).all()[-1]
         return obj
 
-    def all(self) -> List[BaseModel]:
+    # def all(self) -> List[BaseModel]:
+    def all(self) -> Any:
         return list(self.db.session.query(self._schema).all())
 
     def delete(self, **kwargs):

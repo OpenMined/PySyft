@@ -7,18 +7,15 @@ from flask_sqlalchemy import BaseQuery
 
 # syft relative
 # grid relative
-from ..database.tables.roles import Role
-from ..exceptions import RoleNotFoundError
+# from ..exceptions import RoleNotFoundError
 from .database_manager import DatabaseManager
 
 
 class RoleManager(DatabaseManager):
-
-    schema = Role
-
-    def __init__(self, database):
-        self._schema = RoleManager.schema
-        self.db = database
+    def __init__(self, db_session, engine, TableBase):
+        self._schema = TableBase
+        self.db = db_session
+        self.engine = engine
 
     @property
     def user_role(self):

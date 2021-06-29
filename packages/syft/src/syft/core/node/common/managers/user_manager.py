@@ -1,6 +1,7 @@
 # stdlib
 from typing import List
 from typing import Union
+from typing import Any
 
 # third party
 from bcrypt import checkpw
@@ -9,21 +10,20 @@ from bcrypt import hashpw
 
 # syft relative
 # grid relative
-from ..database.tables.user import User
-from ..exceptions import InvalidCredentialsError
-from ..exceptions import UserNotFoundError
+from ..tables.user import create_user_table
+# from ..exceptions import InvalidCredentialsError
+# from ..exceptions import UserNotFoundError
 from .database_manager import DatabaseManager
 from .role_manager import RoleManager
 
 
+
 class UserManager(DatabaseManager):
-
-    schema = User
-
-    def __init__(self, database):
-        self._schema = UserManager.schema
-        self.roles = RoleManager(database)
-        self.db = database
+    def __init__(self, db_session, engine, TableBase):
+        self._schema = create_user_table(db_session, TableBase)
+        self.db = db_session
+        self.engine = engine
+        self.roles = RoleManager(db_session, engine, TableBase)
 
     @property
     def common_users(self) -> list:
@@ -59,13 +59,17 @@ class UserManager(DatabaseManager):
             raise UserNotFoundError
         return results
 
-    def first(self, **kwargs) -> Union[None, User]:
+    #Tudor: hack
+    # def first(self, **kwargs) -> Union[None, User]:
+    def first(self, **kwargs) -> Any:
         result = super().first(**kwargs)
         if not result:
             raise UserNotFoundError
         return result
 
-    def login(self, email: str, password: str) -> User:
+    # Tudor: hack
+    # def login(self, email: str, password: str) -> User:
+    def login(self, email: str, password: str) -> Any:
         return self.__login_validation(email, password)
 
     def set(
