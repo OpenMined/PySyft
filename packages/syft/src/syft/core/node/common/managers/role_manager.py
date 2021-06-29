@@ -1,14 +1,12 @@
 # stdlib
 from typing import List
 from typing import Union
-
-# third party
-from flask_sqlalchemy import BaseQuery
+from typing import Any
 
 # syft relative
 # grid relative
-from ..database.tables.roles import Role
-from ..exceptions import RoleNotFoundError
+from ..tables.roles import Role
+#from ..exceptions import RoleNotFoundError
 from .database_manager import DatabaseManager
 
 
@@ -36,7 +34,7 @@ class RoleManager(DatabaseManager):
     def admin_role(self):
         return self.first(name="Administrator")
 
-    def _common_roles(self) -> BaseQuery:
+    def _common_roles(self) -> Any:
         return self.db.session.query(self._schema).filter_by(
             can_triage_requests=False,
             can_edit_settings=False,

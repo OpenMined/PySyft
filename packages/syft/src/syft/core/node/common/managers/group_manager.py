@@ -3,10 +3,11 @@ from typing import List
 
 # syft relative
 # grid relative
-from ..database.tables.groups import Group
-from ..database.tables.usergroup import UserGroup
-from ..exceptions import GroupNotFoundError
+from ..tables.groups import Group
+from ..tables.usergroup import UserGroup
+#from ..exceptions import GroupNotFoundError
 from .database_manager import DatabaseManager
+from sqlalchemy.orm import sessionmaker
 
 
 class GroupManager(DatabaseManager):
@@ -45,7 +46,8 @@ class GroupManager(DatabaseManager):
         return [assoc.user for assoc in _associations]
 
     def get_groups(self, user_id: str):
-        _associations = self.db.session.query(self._association_schema).filter_by(
+        session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
+        _associations = session_local.query(self._association_schema).filter_by(
             user=user_id
         )
         return [assoc.group for assoc in _associations]

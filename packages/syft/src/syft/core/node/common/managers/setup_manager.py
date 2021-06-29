@@ -4,8 +4,8 @@ from typing import Union
 
 # syft relative
 # grid relative
-from ..database.tables.setup import SetupConfig
-from ..exceptions import SetupNotFoundError
+from ..tables.setup import SetupConfig
+#from ..exceptions import SetupNotFoundError
 from .database_manager import DatabaseManager
 
 

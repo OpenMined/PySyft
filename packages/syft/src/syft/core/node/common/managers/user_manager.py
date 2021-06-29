@@ -9,16 +9,16 @@ from bcrypt import hashpw
 
 # syft relative
 # grid relative
-from ..database.tables.user import User
-from ..exceptions import InvalidCredentialsError
-from ..exceptions import UserNotFoundError
+from ..tables.user import SyftUser
+#from ..exceptions import InvalidCredentialsError
+#from ..exceptions import UserNotFoundError
 from .database_manager import DatabaseManager
 from .role_manager import RoleManager
 
 
 class UserManager(DatabaseManager):
 
-    schema = User
+    schema = SyftUser
 
     def __init__(self, database):
         self._schema = UserManager.schema
@@ -59,13 +59,13 @@ class UserManager(DatabaseManager):
             raise UserNotFoundError
         return results
 
-    def first(self, **kwargs) -> Union[None, User]:
+    def first(self, **kwargs) -> Union[None, SyftUser]:
         result = super().first(**kwargs)
         if not result:
             raise UserNotFoundError
         return result
 
-    def login(self, email: str, password: str) -> User:
+    def login(self, email: str, password: str) -> SyftUser:
         return self.__login_validation(email, password)
 
     def set(

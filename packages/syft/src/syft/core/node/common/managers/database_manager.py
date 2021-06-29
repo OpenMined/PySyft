@@ -1,14 +1,15 @@
 # stdlib
 from typing import List
 from typing import Union
+from typing import Any
 
 # syft relative
 # grid relative
-from ..database import BaseModel
+from sqlalchemy.orm import sessionmaker
 
 
 class DatabaseManager:
-    def register(self, **kwargs) -> BaseModel:
+    def register(self, **kwargs) -> Any:
         """Register e  new object into the database.
 
         Args:
@@ -17,24 +18,27 @@ class DatabaseManager:
             object: Database Object
         """
         _obj = self._schema(**kwargs)
-        self.db.session.add(_obj)
-        self.db.session.commit()
+        session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
+        session_local.add(_obj)
+        session_local.commit()
         return _obj
 
-    def query(self, **kwargs) -> Union[None, BaseModel]:
+    def query(self, **kwargs) -> Union[None, Any]:
         """Query db objects filtering by parameters
         Args:
             parameters : List of parameters used to filter.
         """
-        objects = self.db.session.query(self._schema).filter_by(**kwargs).all()
+        session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
+        objects = session_local.query(self._schema).filter_by(**kwargs).all()
         return objects
 
-    def first(self, **kwargs) -> Union[None, BaseModel]:
+    def first(self, **kwargs) -> Union[None, Any]:
         """Query db objects filtering by parameters
         Args:
             parameters : List of parameters used to filter.
         """
-        objects = self.db.session.query(self._schema).filter_by(**kwargs).first()
+        session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
+        objects = session_local.query(self._schema).filter_by(**kwargs).first()
         return objects
 
     def last(self, **kwargs):
@@ -45,12 +49,13 @@ class DatabaseManager:
         Return:
             obj: Last object instance.
         """
-
-        obj = self.db.session.query(self._schema).filter_by(**kwargs).all()[-1]
+        session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
+        obj = session_local.query(self._schema).filter_by(**kwargs).all()[-1]
         return obj
 
-    def all(self) -> List[BaseModel]:
-        return list(self.db.session.query(self._schema).all())
+    def all(self) -> List[Any]:
+        session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
+        return list(session_local.query(self._schema).all())
 
     def delete(self, **kwargs):
         """Delete an object from the database.
@@ -58,18 +63,22 @@ class DatabaseManager:
         Args:
             parameters: Parameters used to filter the object.
         """
-        object_to_delete = self.query(**kwargs)[0]
-        self.db.session.delete(object_to_delete)
-        self.db.session.commit()
+        session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
+        object_to_delete = session_local.query(**kwargs)[0]
+        session_local.delete(object_to_delete)
+        session_local.commit()
 
     def modify(self, query, values):
         """Modifies one or many records."""
-        self.db.session.query(self._schema).filter_by(**query).update(values)
-        self.db.session.commit()
+        session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
+        session_local.query(self._schema).filter_by(**query).update(values)
+        session_local.commit()
 
     def contain(self, **kwargs) -> bool:
-        objects = self.db.session.query(self._schema).filter_by(**kwargs).all()
+        session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
+        objects = session_local.query(self._schema).filter_by(**kwargs).all()
         return len(objects) != 0
 
     def __len__(self) -> int:
-        return self.db.session.query(self._schema).count()
+        session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)() 
+        return session_local.query(self._schema).count()

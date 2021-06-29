@@ -9,8 +9,8 @@ from syft.core.node.domain.service import RequestStatus
 
 # syft relative
 # grid relative
-from ..database.tables.request import Request
-from ..exceptions import RequestError
+from ..tables.request import Request
+#from ..exceptions import RequestError
 from .database_manager import DatabaseManager
 
 

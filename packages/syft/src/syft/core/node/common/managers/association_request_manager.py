@@ -6,9 +6,9 @@ from typing import Union
 
 # syft relative
 # grid relative
-from ..database.tables.association import Association
-from ..database.tables.association_request import AssociationRequest
-from ..exceptions import AssociationRequestError
+from ..tables.association import Association
+from ..tables.association_request import AssociationRequest
+#from ..exceptions import AssociationRequestError
 from .database_manager import DatabaseManager
 from .role_manager import RoleManager
 
