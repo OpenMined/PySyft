@@ -22,7 +22,7 @@ RUN echo 'deb http://deb.debian.org/debian testing main' >> /etc/apt/sources.lis
 RUN --mount=type=cache,target=/var/cache/apt \
     apt-get update && \
     apt-get install -yqq \
-    gcc-9 g++-9 libc6 git python3-dev libssl-dev libffi-dev && \
+    gcc gcc-9 g++-9 libc6 git python3-dev libssl-dev libffi-dev && \
     rm -rf /var/lib/apt/lists/*
 
 # update pip
