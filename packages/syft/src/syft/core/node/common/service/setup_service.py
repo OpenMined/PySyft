@@ -22,12 +22,12 @@ from syft.grid.messages.setup_messages import GetSetUpResponse
 from .....logger import traceback_and_raise
 
 # grid relative
-from ..database.tables.setup import SetupConfig
-from ..database.utils import model_to_json
-from ..exceptions import AuthorizationError
-from ..exceptions import InvalidParameterValueError
-from ..exceptions import MissingRequestKeyError
-from ..exceptions import OwnerAlreadyExistsError
+from ..tables.setup import SetupConfig
+from ..tables.utils import model_to_json
+#from ..exceptions import AuthorizationError
+#from ..exceptions import InvalidParameterValueError
+#from ..exceptions import MissingRequestKeyError
+#from ..exceptions import OwnerAlreadyExistsError
 
 
 def create_initial_setup(

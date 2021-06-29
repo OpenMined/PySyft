@@ -34,8 +34,7 @@ from syft.grid.messages.dataset_messages import UpdateDatasetResponse
 
 # syft relative
 # grid relative
-from ..database import expand_user_object
-from ..database.utils import model_to_json
+from ..tables.utils import model_to_json
 from ..datasets.dataset_ops import create_dataset
 from ..datasets.dataset_ops import delete_dataset
 from ..datasets.dataset_ops import get_all_datasets

@@ -27,11 +27,11 @@ from syft.grid.messages.role_messages import UpdateRoleResponse
 
 # syft relative
 # grid relative
-from ..database.utils import model_to_json
-from ..exceptions import AuthorizationError
-from ..exceptions import MissingRequestKeyError
-from ..exceptions import RequestError
-from ..exceptions import RoleNotFoundError
+from ..tables.utils import model_to_json
+#from ..exceptions import AuthorizationError
+#from ..exceptions import MissingRequestKeyError
+#from ..exceptions import RequestError
+#from ..exceptions import RoleNotFoundError
 
 
 def create_role_msg(
