@@ -1,15 +1,15 @@
 # grid relative
 # syft relative
-from .. import BaseModel
-from .. import db
+from . import Base
+from sqlalchemy import Boolean, Column, Integer, String, ForeignKey
 
 
-class UserGroup(BaseModel):
+class UserGroup(Base):
     __tablename__ = "usergroup"
 
-    id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
-    user = db.Column(db.Integer, db.ForeignKey("user.id"))
-    group = db.Column(db.Integer, db.ForeignKey("group.id"))
+    id = Column(Integer(), primary_key=True, autoincrement=True)
+    user = Column(Integer, ForeignKey("syft_user.id"))
+    group = Column(Integer, ForeignKey("group.id"))
 
     def __str__(self):
         return f"<UserGroup id: {self.id}, user: {self.user}, " f"group: {self.group}>"

@@ -1,10 +1,10 @@
 # grid relative
 # syft relative
-from .. import BaseModel
-from .. import db
+from . import Base
+from sqlalchemy import Boolean, Column, Integer, String, DateTime
 
 
-class Association(BaseModel):
+class Association(Base):
     """Association.
 
     Columns:
@@ -16,10 +16,10 @@ class Association(BaseModel):
 
     __tablename__ = "association"
 
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    date = db.Column(db.DateTime())
-    name = db.Column(db.String(255))
-    address = db.Column(db.String(255))
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    date = Column(DateTime())
+    name = Column(String(255))
+    address = Column(String(255))
 
     def __str__(self):
         return f"< Association id : {self.id}, Name: {self.name}, Address: {self.address}, Date: {self.date}>"

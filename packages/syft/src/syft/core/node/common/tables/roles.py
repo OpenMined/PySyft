@@ -1,21 +1,21 @@
 # grid relative
 # syft relative
-from .. import BaseModel
-from .. import db
+from . import Base
+from sqlalchemy import Boolean, Column, Integer, String, ForeignKey
 
 
-class Role(BaseModel):
+class Role(Base):
     __tablename__ = "role"
 
-    id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
-    name = db.Column(db.String(255))
-    can_triage_requests = db.Column(db.Boolean(), default=False)
-    can_edit_settings = db.Column(db.Boolean(), default=False)
-    can_create_users = db.Column(db.Boolean(), default=False)
-    can_create_groups = db.Column(db.Boolean(), default=False)
-    can_edit_roles = db.Column(db.Boolean(), default=False)
-    can_manage_infrastructure = db.Column(db.Boolean(), default=False)
-    can_upload_data = db.Column(db.Boolean(), default=False)
+    id = Column(Integer(), primary_key=True, autoincrement=True)
+    name = Column(String(255))
+    can_triage_requests = Column(Boolean(), default=False)
+    can_edit_settings = Column(Boolean(), default=False)
+    can_create_users = Column(Boolean(), default=False)
+    can_create_groups = Column(Boolean(), default=False)
+    can_edit_roles = Column(Boolean(), default=False)
+    can_manage_infrastructure = Column(Boolean(), default=False)
+    can_upload_data = Column(Boolean(), default=False)
 
     def __str__(self):
         return (

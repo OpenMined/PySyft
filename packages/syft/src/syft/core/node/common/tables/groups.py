@@ -1,14 +1,13 @@
 # grid relative
 # syft relative
-from .. import BaseModel
-from .. import db
+from . import Base
+from sqlalchemy import Boolean, Column, Integer, String
 
-
-class Group(BaseModel):
+class Group(Base):
     __tablename__ = "group"
 
-    id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
-    name = db.Column(db.String(255))
+    id = Column(Integer(), primary_key=True, autoincrement=True)
+    name = Column(String(255))
 
     def __str__(self):
         return f"<Group id: {self.id}, name: {self.name}>"

@@ -1,10 +1,10 @@
 # grid relative
 # syft relative
-from .. import BaseModel
-from .. import db
+from . import Base
+from sqlalchemy import Boolean, Column, Integer, String, DateTime
 
 
-class AssociationRequest(BaseModel):
+class AssociationRequest(Base):
     """Association Request.
 
     Columns:
@@ -19,14 +19,14 @@ class AssociationRequest(BaseModel):
 
     __tablename__ = "association_request"
 
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    date = db.Column(db.DateTime())
-    name = db.Column(db.String(255))
-    address = db.Column(db.String(255))
-    sender_address = db.Column(db.String(255))
-    accepted = db.Column(db.Boolean(), default=False)
-    pending = db.Column(db.Boolean(), default=True)
-    handshake_value = db.Column(db.String(255))
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    date = Column(DateTime())
+    name = Column(String(255))
+    address = Column(String(255))
+    sender_address = Column(String(255))
+    accepted = Column(Boolean(), default=False)
+    pending = Column(Boolean(), default=True)
+    handshake_value = Column(String(255))
 
     def __str__(self):
         return f"< Association Request id : {self.id}, Name: {self.name}, Address: {self.address} , pending: {self.pending}, accepted: {self.accepted}, Date: {self.date}>"

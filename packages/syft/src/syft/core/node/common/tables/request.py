@@ -1,10 +1,10 @@
 # grid relative
 # syft relative
-from .. import BaseModel
-from .. import db
+from . import Base
+from sqlalchemy import Boolean, Column, Integer, String, DateTime, JSON, ForeignKey
 
 
-class Request(BaseModel):
+class Request(Base):
     """Request.
 
     Columns:
@@ -21,17 +21,17 @@ class Request(BaseModel):
 
     __tablename__ = "request"
 
-    id = db.Column(db.String(255), primary_key=True)
-    date = db.Column(db.DateTime())
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
-    user_name = db.Column(db.String(255))
-    object_id = db.Column(db.String(255))
-    reason = db.Column(db.String(255))
-    status = db.Column(db.String(255), default="pending")
-    request_type = db.Column(db.String(255))
-    verify_key = db.Column(db.String(255))
-    object_type = db.Column(db.String(255))
-    tags = db.Column(db.JSON())
+    id = Column(String(255), primary_key=True)
+    date = Column(DateTime())
+    user_id = Column(Integer, ForeignKey("syft_user.id"))
+    user_name = Column(String(255))
+    object_id = Column(String(255))
+    reason = Column(String(255))
+    status = Column(String(255), default="pending")
+    request_type = Column(String(255))
+    verify_key = Column(String(255))
+    object_type = Column(String(255))
+    tags = Column(JSON())
 
     def __str__(self):
         return f"< Request id : {self.id}, user: {self.user_id}, Date: {self.date}, Object: {self.object_id}, reason: {self.reason}, status: {self.status}, type: {self.type} >"

@@ -1,15 +1,15 @@
 # grid relative
 # syft relative
-from .. import BaseModel
-from .. import db
+from . import Base
+from sqlalchemy import Boolean, Column, Integer, String, ForeignKey
 
 
-class UserEnvironment(BaseModel):
+class UserEnvironment(Base):
     __tablename__ = "userenvironment"
 
-    id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
-    user = db.Column(db.Integer, db.ForeignKey("user.id"))
-    environment = db.Column(db.Integer, db.ForeignKey("environment.id"))
+    id = Column(Integer(), primary_key=True, autoincrement=True)
+    user = Column(Integer, ForeignKey("syft_user.id"))
+    environment = Column(Integer, ForeignKey("environment.id"))
 
     def __str__(self):
         return (
