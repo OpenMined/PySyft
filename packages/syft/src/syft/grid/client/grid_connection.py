@@ -93,7 +93,6 @@ class GridHTTPConnection(HTTPConnection):
         :return: returns node metadata
         :rtype: str of bytes
         """
-
         # allow retry when connecting in CI
         session = requests.Session()
         retry = Retry(connect=3, backoff_factor=0.5)
@@ -102,11 +101,10 @@ class GridHTTPConnection(HTTPConnection):
         session.mount("https://", adapter)
 
         response = session.get(self.base_url + "/metadata")
-        content = json.loads(response.text)
-
-        metadata = content["metadata"].encode("ISO-8859-1")
+        print("Response: ", type(response.content)) 
+        print("Response: ", response.content)
         metadata_pb = Metadata_PB()
-        metadata_pb.ParseFromString(metadata)
+        metadata_pb.ParseFromString(response.content)
 
         return metadata_pb
 
