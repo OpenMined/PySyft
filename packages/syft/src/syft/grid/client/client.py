@@ -54,11 +54,11 @@ class GridClient(DomainClient):
     def __init__(
         self,
         url: str,
-        username: str,
-        password: str,
         conn_type: Type[ClientConnection],
         client_type: Type[Client],
         user_key: Optional[SigningKey] = None,
+        username: str = "",
+        password: str = "",
     ) -> None:
 
         # Use Server metadata
@@ -235,7 +235,6 @@ def connect(
     user_key: Optional[SigningKey] = None,
 ) -> GridClient:
     return GridClient(
-        credentials=credentials,
         url=url,
         conn_type=conn_type,
         client_type=DomainClient,
