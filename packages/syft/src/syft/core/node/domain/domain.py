@@ -33,11 +33,25 @@ from .service import RequestAnswerMessageService
 from .service import RequestMessage
 from .service import RequestService
 from .service import RequestStatus
-from .service.accept_or_deny_request_service import AcceptOrDenyRequestService
-from .service.get_all_requests_service import GetAllRequestsService
-from .service.request_handler_service import GetAllRequestHandlersService
-from .service.request_handler_service import UpdateRequestHandlerService
+#from ..common.service.dataset_service import DatasetManagerService
+from ..common.service.group_service import GroupManagerService
+#from ..common.service.infra_service import DomainInfrastructureService
+#from ..common.service.request_service import RequestService
+#from ..common.service.request_service import RequestServiceWithoutReply
+from ..common.service.role_service import RoleManagerService
+from ..common.service.setup_service import SetUpService
+from ..common.service.tensor_service import RegisterTensorService
+#from ..common.service.transfer_service import TransferObjectService
+from ..common.service.user_service import UserManagerService
+from ..common.service.association_request import AssociationRequestService
 
+from ..common.managers.association_request_manager import AssociationRequestManager
+from ..common.managers.environment_manager import EnvironmentManager
+from ..common.managers.group_manager import GroupManager
+from ..common.managers.request_manager import RequestManager
+from ..common.managers.role_manager import RoleManager
+from ..common.managers.setup_manager import SetupManager
+from ..common.managers.user_manager import UserManager
 
 class Domain(Node):
     domain: SpecificLocation
@@ -58,6 +72,7 @@ class Domain(Node):
         verify_key: Optional[VerifyKey] = None,
         root_key: Optional[VerifyKey] = None,
         db_path: Optional[str] = None,
+        db_engine: Any = None,
     ):
         super().__init__(
             name=name,
@@ -73,13 +88,39 @@ class Domain(Node):
         self.domain = SpecificLocation(name=self.name)
         self.root_key = root_key
 
+
+        # Database Management Instances
+        self.users = UserManager(db_engine)
+        self.roles = RoleManager(db_engine)
+        self.groups = GroupManager(db_engine)
+        #self.disk_store = DiskObjectStore(db_engine)
+        self.environments = EnvironmentManager(db_engine)
+        self.setup = SetupManager(db_engine)
+        self.association_requests = AssociationRequestManager(db_engine)
+        self.data_requests = RequestManager(db_engine)
+
+
+
         self.immediate_services_without_reply.append(RequestService)
-        self.immediate_services_without_reply.append(AcceptOrDenyRequestService)
-        self.immediate_services_without_reply.append(UpdateRequestHandlerService)
+        #self.immediate_services_without_reply.append(AcceptOrDenyRequestService)
+        #self.immediate_services_without_reply.append(UpdateRequestHandlerService)
 
         self.immediate_services_with_reply.append(RequestAnswerMessageService)
-        self.immediate_services_with_reply.append(GetAllRequestsService)
-        self.immediate_services_with_reply.append(GetAllRequestHandlersService)
+        #self.immediate_services_with_reply.append(GetAllRequestsService)
+        #self.immediate_services_with_reply.append(GetAllRequestHandlersService)
+
+
+        # Grid Domain Services
+        self.immediate_services_with_reply.append(AssociationRequestService)
+        #self.immediate_services_with_reply.append(DomainInfrastructureService)
+        self.immediate_services_with_reply.append(SetUpService)
+        self.immediate_services_with_reply.append(RegisterTensorService)
+        self.immediate_services_with_reply.append(RoleManagerService)
+        self.immediate_services_with_reply.append(UserManagerService)
+        #self.immediate_services_with_reply.append(DatasetManagerService)
+        self.immediate_services_with_reply.append(GroupManagerService)
+        #self.immediate_services_with_reply.append(TransferObjectService)
+        #self.immediate_services_with_reply.append(RequestService)
 
         self.requests: List[RequestMessage] = list()
         # available_device_types = set()
