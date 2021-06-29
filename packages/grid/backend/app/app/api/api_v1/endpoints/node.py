@@ -7,6 +7,10 @@ from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
+from app.db.session import engine,SessionLocal
+
+from syft.core.node.common.tables import Base
+from syft.core.node.common.tables.utils import seed_db
 
 router = APIRouter()
 
@@ -17,8 +21,9 @@ from syft.core.common.message import (
 
 import syft as sy
 
-domain = sy.Domain("my domain")
-
+domain = sy.Domain("my domain", db_engine=engine)
+Base.metadata.create_all(engine)
+seed_db(SessionLocal())
 
 @router.get("/", response_model=str)
 def read_items(
