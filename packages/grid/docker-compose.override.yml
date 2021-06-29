@@ -45,9 +45,10 @@ services:
     volumes:
       - ./backend/app:/app
       - ../syft:/app/syft
+      - ../../notebooks:/notebooks
       - package-cache:/root/.cache
     environment:
-      - JUPYTER=jupyter lab --ip=0.0.0.0 --allow-root --NotebookApp.custom_display_url=http://127.0.0.1:8888
+      - JUPYTER=jupyter lab --ip=0.0.0.0 --allow-root --NotebookApp.custom_display_url=http://127.0.0.1:8888 --notebook-dir=/notebooks
       - SERVER_HOST=http://${DOMAIN?Variable not set}
       - SYFT_USE_UVLOOP=0
     build:
@@ -68,10 +69,11 @@ services:
     volumes:
       - ./backend/app:/app
       - ../syft:/app/syft
+      - ../../notebooks:/notebooks
       - package-cache:/root/.cache
     environment:
       - RUN=celery worker -A app.worker -l info -Q main-queue -c 1
-      - JUPYTER=jupyter lab --ip=0.0.0.0 --allow-root --NotebookApp.custom_display_url=http://127.0.0.1:8888
+      - JUPYTER=jupyter lab --ip=0.0.0.0 --allow-root --NotebookApp.custom_display_url=http://127.0.0.1:8888 --notebook-dir=/notebooks
       - SERVER_HOST=http://${DOMAIN?Variable not set}
       - SYFT_USE_UVLOOP=0
     build:
