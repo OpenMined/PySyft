@@ -20,7 +20,9 @@ fileConfig(config.config_file_name)
 # target_metadata = mymodel.Base.metadata
 # target_metadata = None
 
-from app.db.base import Base  # noqa
+from syft.core.node.common.tables.bin_obj import BinObject
+# from app.db.base import Base  # noqa
+from syft.core.node.common.tables import Base
 
 target_metadata = Base.metadata
 

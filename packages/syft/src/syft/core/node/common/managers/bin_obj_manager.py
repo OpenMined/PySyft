@@ -15,6 +15,9 @@ from syft.core.common.uid import UID
 from syft.core.store import ObjectStore
 from syft.core.store.storeable_object import StorableObject
 
+from ..tables.bin_obj import BinObject
+from ..tables.bin_obj_metadata import ObjectMetadata
+
 ENCODING = "UTF-8"
 
 
@@ -29,13 +32,9 @@ def create_storable(
 class BinObjectManager(ObjectStore):
     def __init__(
         self,
-        db: Session,
-        bin_obj_table: DeclarativeMeta,
-        bin_obj_metadata_table: DeclarativeMeta,
+        db: Session
     ) -> None:
         self.db = db
-        self.bin_obj_table = bin_obj_table
-        self.bin_obj_metadata_table = bin_obj_metadata_table
 
     def get_object(self, key: UID) -> Optional[StorableObject]:
         try:
@@ -54,10 +53,10 @@ class BinObjectManager(ObjectStore):
         return str(self.values())
 
     def __len__(self) -> int:
-        return self.db_session.query(self.bin_obj_metadata_table).count()
+        return self.db.query(ObjectMetadata).count()
 
     def keys(self) -> KeysView[UID]:
-        keys = self.db_session.query(self.bin_obj_table.id).all()
+        keys = self.db.query(BinObject.id).all()
         keys = [UID.from_string(k[0]) for k in keys]
         return keys
 
@@ -75,7 +74,7 @@ class BinObjectManager(ObjectStore):
 
     def __contains__(self, key: UID) -> bool:
         return (
-            self.db_session.query(self.bin_obj_table)
+            self.db.query(BinObject)
             .filter_by(id=str(key.value))
             .first()
             is not None
@@ -83,12 +82,12 @@ class BinObjectManager(ObjectStore):
 
     def __getitem__(self, key: UID) -> StorableObject:
         bin_obj = (
-            self.db_session.query(self.bin_obj_table)
+            self.db.query(BinObject)
             .filter_by(id=str(key.value))
             .first()
         )
         obj_metadata = (
-            self.db_session.query(self.bin_obj_metadata_table)
+            self.db.query(ObjectMetadata)
             .filter_by(obj=str(key.value))
             .first()
         )
@@ -117,9 +116,9 @@ class BinObjectManager(ObjectStore):
 
     def __setitem__(self, key: UID, value: StorableObject) -> None:
 
-        bin_obj = self.bin_obj_table(id=str(key.value), object=value.data)
+        bin_obj = BinObject(id=str(key.value), object=value.data)
         # metadata_dict = storable_to_dict(value)
-        metadata_obj = self.bin_obj_metadata_table(
+        metadata_obj = ObjectMetadata(
             obj=bin_obj.id,
             tags=value.tags,
             description=value.description,
@@ -135,33 +134,33 @@ class BinObjectManager(ObjectStore):
         if self.__contains__(key):
             self.delete(key)
 
-        self.db_session.add(bin_obj)
-        self.db_session.add(metadata_obj)
-        self.db_session.commit()
+        self.db.add(bin_obj)
+        self.db.add(metadata_obj)
+        self.db.commit()
 
     def delete(self, key: UID) -> None:
 
         try:
             object_to_delete = (
-                self.db_session.query(self.bin_obj_table)
+                self.db.query(BinObject)
                 .filter_by(id=str(key.value))
                 .first()
             )
             metadata_to_delete = (
-                self.db_session.query(self.bin_obj_metadata_table)
+                self.db.query(BinObject)
                 .filter_by(obj=str(key.value))
                 .first()
             )
-            self.db_session.delete(object_to_delete)
-            self.db_session.delete(metadata_to_delete)
-            self.db_session.commit()
+            self.db.delete(object_to_delete)
+            self.db.delete(metadata_to_delete)
+            self.db.commit()
         except Exception as e:
             print(f"{type(self)} Exception in __delitem__ error {key}. {e}")
 
     def clear(self) -> None:
-        self.db_session.query(self.bin_obj_table).delete()
-        self.db_session.query(self.bin_obj_metadata_table).delete()
-        self.db_session.commit()
+        self.db.query(BinObject).delete()
+        self.db.query(ObjectMetadata).delete()
+        self.db.commit()
 
     def __repr__(self) -> str:
         return str(self.values())

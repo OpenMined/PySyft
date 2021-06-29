@@ -69,7 +69,7 @@ from .service.repr_service import ReprService
 from .service.resolve_pointer_type_service import ResolvePointerTypeService
 from .service.user_service import UserManagerService
 from .tables.bin_obj import BinObject
-from .tables.bin_obj_metadata import BinObjectMetadata
+from .tables.bin_obj_metadata import ObjectMetadata
 from .managers.user_manager import UserManager
 
 # this generic type for Client bound by Client
@@ -142,10 +142,6 @@ class Node(AbstractNode):
         self.engine = engine
         self.db = db
 
-        # select which database tables we want to create
-        self.bin_obj_table = BinObject(self.TableBase)
-        self.bin_obj_metadata_table = BinObjectMetadata(self.TableBase)
-
         # launch the tables in the database
         # Tudor: experimental
         # self.TableBase.metadata.create_all(engine)
@@ -158,9 +154,7 @@ class Node(AbstractNode):
         # self.store is the elastic memory.
 
         self.store = BinObjectManager(
-            db=self.db,
-            bin_obj_table=self.bin_obj_table,
-            bin_obj_metadata_table=self.bin_obj_metadata_table,
+            db=self.db
         )
 
         # We need to register all the services once a node is created

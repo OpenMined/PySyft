@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
-from app.db.session import engine,SessionLocal
+from app.db.session import engine, SessionLocal
 from syft.core.node.common.tables import Base
 from syft.core.node.common.tables.utils import seed_db
 from syft import Domain
