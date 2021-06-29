@@ -41,13 +41,8 @@ def read_items(
 
 @router.get("/metadata", response_model=str)
 def syft_metadata():
-    response_body = {
-         "metadata": sy.serialize(domain.get_metadata_for_client())
-         .SerializeToString()
-         .decode("ISO-8859-1")
-     }
-    return json.dumps(response_body)
-
+    return Response(domain.get_metadata_for_client()._object2proto().SerializeToString(), media_type="application/octet-stream")
+ 
 
 
 @router.post("/pysyft", response_model=str)
