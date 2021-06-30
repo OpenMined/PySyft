@@ -79,7 +79,7 @@ class GridHTTPConnection(HTTPConnection):
         content = json.loads(response.text)
         # If fail
         if response.status_code != requests.codes.ok:
-            raise Exception(content["error"])
+            raise Exception(content["detail"])
 
         metadata = content["metadata"].encode("ISO-8859-1")
         metadata_pb = Metadata_PB()
