@@ -20,7 +20,7 @@ from syft.lib import VendorLibraryImportException
 from syft.lib import _load_lib
 from syft.lib import vendor_requirements_available
 
-# syft relative
+# relative
 from .syft.notebooks import free_port
 
 logger.remove()

@@ -21,8 +21,7 @@ from syft.grid.client.grid_connection import GridHTTPConnection
 from syft.grid.messages.network_search_message import NetworkSearchMessage
 from syft.grid.messages.network_search_message import NetworkSearchResponse
 
-# syft relative
-# grid relative
+# relative
 from ..database.utils import model_to_json
 from ..exceptions import AuthorizationError
 from ..exceptions import InvalidParameterValueError

@@ -1,4 +1,4 @@
-# syft relative
+# relative
 from .device_type import DeviceType
 from .specs.cpu import CPU
 from .specs.cpu import CpuArchitectureTypes

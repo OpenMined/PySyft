@@ -13,7 +13,7 @@ from nacl.signing import SigningKey
 import names
 from pandas import DataFrame
 
-# syft relative
+# relative
 from ...core.common.message import EventualSyftMessageWithoutReply
 from ...core.common.message import ImmediateSyftMessageWithReply
 from ...core.common.message import ImmediateSyftMessageWithoutReply

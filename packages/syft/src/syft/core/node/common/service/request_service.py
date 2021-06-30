@@ -49,14 +49,13 @@ from syft.grid.messages.request_messages import UpdateRequestMessage
 from syft.grid.messages.request_messages import UpdateRequestResponse
 from syft.util import validate_type
 
-# syft relative
-# grid relative
-from ..tables.utils import model_to_json
+# relative
 from ..datasets.dataset_ops import update_dataset_metadata
 from ..exceptions import AuthorizationError
 from ..exceptions import InvalidParameterValueError
 from ..exceptions import MissingRequestKeyError
 from ..exceptions import RequestError
+from ..tables.utils import model_to_json
 
 
 def create_request_msg(

@@ -2,10 +2,10 @@
 from typing import List
 from typing import Union
 
-# syft relative
-# grid relative
+# relative
 from ..tables.setup import SetupConfig
-#from ..exceptions import SetupNotFoundError
+
+# from ..exceptions import SetupNotFoundError
 from .database_manager import DatabaseManager
 
 

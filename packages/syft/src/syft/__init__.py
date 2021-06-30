@@ -75,7 +75,7 @@ from syft.lib.torch.module import Module  # noqa: F401
 from syft.lib.torch.module import SyModule  # noqa: F401
 from syft.lib.torch.module import SySequential  # noqa: F401
 
-# syft relative
+# relative
 # Package Imports
 from . import lib  # noqa: F401
 from . import logger  # noqa: F401

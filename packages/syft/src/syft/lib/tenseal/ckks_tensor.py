@@ -1,7 +1,7 @@
 # third party
 import tenseal as ts
 
-# syft relative
+# relative
 from ...generate_wrapper import GenerateWrapper
 from ...proto.lib.tenseal.vector_pb2 import TenSEALVector as TenSEALVector_PB
 from ..util import full_name_with_name

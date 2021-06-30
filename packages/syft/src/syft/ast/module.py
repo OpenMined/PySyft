@@ -10,7 +10,7 @@ from typing import List
 from typing import Optional
 from typing import Union
 
-# syft relative
+# relative
 from .. import ast
 from ..ast.callable import Callable
 from ..logger import traceback_and_raise

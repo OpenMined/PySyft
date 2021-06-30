@@ -5,7 +5,7 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
-# syft relative
+# relative
 from ..... import serialize
 from .....logger import critical
 from .....logger import debug

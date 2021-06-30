@@ -12,7 +12,7 @@ from syft.core.node.common.client import Client
 from syft.core.test import module_test
 from syft.lib import lib_ast
 
-# syft relative
+# relative
 from .functionality_test import module_test_methods
 from .functionality_test import update_ast_test
 

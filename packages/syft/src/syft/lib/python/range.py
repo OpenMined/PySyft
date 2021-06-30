@@ -6,7 +6,7 @@ from typing import Union
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft relative
+# relative
 from ... import deserialize
 from ...core.common import UID
 from ...core.common.serde.serializable import bind_protobuf

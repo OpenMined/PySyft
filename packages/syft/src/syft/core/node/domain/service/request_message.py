@@ -8,7 +8,7 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
-# syft relative
+# relative
 from ..... import deserialize
 from ..... import serialize
 from .....logger import critical

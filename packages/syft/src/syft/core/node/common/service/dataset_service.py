@@ -32,9 +32,7 @@ from syft.grid.messages.dataset_messages import GetDatasetsResponse
 from syft.grid.messages.dataset_messages import UpdateDatasetMessage
 from syft.grid.messages.dataset_messages import UpdateDatasetResponse
 
-# syft relative
-# grid relative
-from ..tables.utils import model_to_json
+# relative
 from ..datasets.dataset_ops import create_dataset
 from ..datasets.dataset_ops import delete_dataset
 from ..datasets.dataset_ops import get_all_datasets
@@ -48,6 +46,7 @@ from ..exceptions import DatasetNotFoundError
 from ..exceptions import MissingRequestKeyError
 from ..exceptions import RoleNotFoundError
 from ..exceptions import UserNotFoundError
+from ..tables.utils import model_to_json
 
 ENCODING = "UTF-8"
 

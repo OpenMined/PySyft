@@ -13,21 +13,13 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-# syft absolute
-from syft.proto.core.common import (
-    common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
-)
-
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/core/common/recursive_serde.proto",
     package="syft.core.common",
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b"\n'proto/core/common/recursive_serde.proto\x12\x10syft.core.common\x1a%proto/core/common/common_object.proto\"<\n\x0eRecursiveSerde\x12\x0c\n\x04\x64\x61ta\x18\x01 \x01(\x0c\x12\x1c\n\x14\x66ully_qualified_name\x18\x02 \x01(\tb\x06proto3",
-    dependencies=[
-        proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
-    ],
+    serialized_pb=b"\n'proto/core/common/recursive_serde.proto\x12\x10syft.core.common\"<\n\x0eRecursiveSerde\x12\x0c\n\x04\x64\x61ta\x18\x01 \x01(\x0c\x12\x1c\n\x14\x66ully_qualified_name\x18\x02 \x01(\tb\x06proto3",
 )
 
 
@@ -86,8 +78,8 @@ _RECURSIVESERDE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=100,
-    serialized_end=160,
+    serialized_start=61,
+    serialized_end=121,
 )
 
 DESCRIPTOR.message_types_by_name["RecursiveSerde"] = _RECURSIVESERDE

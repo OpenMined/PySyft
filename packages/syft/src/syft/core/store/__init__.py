@@ -1,4 +1,4 @@
-# syft relative
+# relative
 from .dataset import Dataset
 from .store_disk import DiskObjectStore
 from .store_interface import ObjectStore

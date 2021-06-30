@@ -13,7 +13,7 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import pandas as pd
 
-# syft relative
+# relative
 from .... import serialize
 from ....lib import create_lib_ast
 from ....logger import critical

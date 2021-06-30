@@ -8,7 +8,7 @@ from typing import Tuple as TypeTuple
 import statsmodels
 import statsmodels.api as sm
 
-# syft relative
+# relative
 from . import family  # noqa: 401
 from . import results  # noqa: 401
 from ...ast import add_classes

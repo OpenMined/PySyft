@@ -10,7 +10,7 @@ from typing import Optional
 # third party
 import requests
 
-# syft relative
+# relative
 from ...core.common.environment import is_jupyter
 from ...core.node.common.client import Client
 from ...core.node.domain.domain import Domain

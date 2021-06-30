@@ -4,7 +4,7 @@ from typing import Union
 # third party
 from google.protobuf.message import Message
 
-# syft relative
+# relative
 from ....logger import debug
 from ....logger import traceback_and_raise
 from ....proto.util.data_message_pb2 import DataMessage

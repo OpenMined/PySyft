@@ -6,7 +6,7 @@ from typing import Type
 # third party
 from pandas import DataFrame
 
-# syft relative
+# relative
 from ....core.common.serde.deserialize import _deserialize
 from ....core.pointer.pointer import Pointer
 from ....proto.core.io.address_pb2 import Address as Address_PB

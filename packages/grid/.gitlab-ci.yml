@@ -26,7 +26,7 @@ build-stag:
   tags:
     - build
     - test
-    
+
 build-prod:
   stage: build
   script:
@@ -39,7 +39,7 @@ build-prod:
 
 deploy-stag:
   stage: deploy
-  script: 
+  script:
     - >
       DOMAIN=stag.grid.openmined.org
       TRAEFIK_TAG=stag.grid.openmined.org

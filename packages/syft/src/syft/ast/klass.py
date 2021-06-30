@@ -15,7 +15,7 @@ from typing import Tuple
 from typing import Union
 import warnings
 
-# syft relative
+# relative
 from .. import ast
 from .. import lib
 from ..ast.callable import Callable
@@ -293,6 +293,7 @@ def wrap_iterator(attrs: Dict[str, Union[str, CallableT, property]]) -> None:
             Returns:
                 Iterable: syft Iterator.
             """
+            # syft absolute
             # syft absolute
             from syft.lib.python.iterator import Iterator
 

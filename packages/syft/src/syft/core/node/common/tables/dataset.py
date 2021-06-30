@@ -1,5 +1,4 @@
-# grid relative
-# syft relative
+# relative
 from .. import BaseModel
 from .. import db
 

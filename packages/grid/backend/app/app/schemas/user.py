@@ -1,6 +1,9 @@
+# stdlib
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr
+# third party
+from pydantic import BaseModel
+from pydantic import EmailStr
 
 
 # Shared properties

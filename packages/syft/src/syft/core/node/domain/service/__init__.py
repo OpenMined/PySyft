@@ -1,4 +1,4 @@
-# syft relative
+# relative
 from .request_answer_message import RequestAnswerMessage  # noqa: F401
 from .request_answer_message import RequestAnswerMessageService  # noqa: F401
 from .request_answer_message import RequestAnswerResponse  # noqa: F401

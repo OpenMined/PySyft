@@ -10,7 +10,7 @@ from sympc.protocol.protocol import Protocol
 from sympc.session import Session
 from sympc.store import CryptoStore
 
-# syft relative
+# relative
 from ...logger import warning
 from ...proto.lib.sympc.session_pb2 import MPCSession as MPCSession_PB
 from ..python import Dict

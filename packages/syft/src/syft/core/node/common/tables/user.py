@@ -1,7 +1,12 @@
-# grid relative
-# syft relative
+# third party
+from sqlalchemy import Boolean
+from sqlalchemy import Column
+from sqlalchemy import ForeignKey
+from sqlalchemy import Integer
+from sqlalchemy import String
+
+# relative
 from . import Base
-from sqlalchemy import Boolean, Column, Integer, String, ForeignKey
 
 
 class SyftUser(Base):
@@ -17,6 +22,7 @@ class SyftUser(Base):
 
     def __str__(self):
         return f"<User id: {self.id}, email: {self.email}, " f"role: {self.role}>"
+
 
 def create_user(email, hashed_password, salt, private_key, role):
     new_user = SyftUser(

@@ -4,7 +4,7 @@ from typing import Optional
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft relative
+# relative
 from .... import serialize
 from ....proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
 from ....util import validate_type

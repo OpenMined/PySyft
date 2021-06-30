@@ -1,7 +1,12 @@
-# grid relative
-# syft relative
+# third party
+from sqlalchemy import Boolean
+from sqlalchemy import Column
+from sqlalchemy import ForeignKey
+from sqlalchemy import Integer
+from sqlalchemy import String
+
+# relative
 from . import Base
-from sqlalchemy import Boolean, Column, Integer, String, ForeignKey
 
 
 class UserEnvironment(Base):

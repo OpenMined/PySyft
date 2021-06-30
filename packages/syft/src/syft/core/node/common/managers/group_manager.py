@@ -1,13 +1,15 @@
 # stdlib
 from typing import List
 
-# syft relative
-# grid relative
+# third party
+from sqlalchemy.orm import sessionmaker
+
+# relative
 from ..tables.groups import Group
 from ..tables.usergroup import UserGroup
-#from ..exceptions import GroupNotFoundError
 from .database_manager import DatabaseManager
-from sqlalchemy.orm import sessionmaker
+
+# from ..exceptions import GroupNotFoundError
 
 
 class GroupManager(DatabaseManager):

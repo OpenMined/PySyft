@@ -3,7 +3,7 @@ from typing import Optional
 from urllib.parse import ParseResult
 from urllib.parse import urlparse
 
-# syft relative
+# relative
 from ..logger import traceback_and_raise
 from .fl_job import FLJob
 from .model_centric_fl_worker import ModelCentricFLWorker

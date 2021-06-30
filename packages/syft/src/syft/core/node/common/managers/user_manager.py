@@ -1,18 +1,18 @@
 # stdlib
+from typing import Any
 from typing import List
 from typing import Union
-from typing import Any
 
 # third party
 from bcrypt import checkpw
 from bcrypt import gensalt
 from bcrypt import hashpw
 
-# syft relative
-# grid relative
+# relative
 from ..tables.user import SyftUser
-#from ..exceptions import InvalidCredentialsError
-#from ..exceptions import UserNotFoundError
+
+# from ..exceptions import InvalidCredentialsError
+# from ..exceptions import UserNotFoundError
 from .database_manager import DatabaseManager
 from .role_manager import RoleManager
 

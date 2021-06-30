@@ -4,7 +4,7 @@ import json
 # third party
 import requests
 
-# syft relative
+# relative
 from ...core.common.message import SignedEventualSyftMessageWithoutReply
 from ...core.common.message import SignedImmediateSyftMessageWithReply
 from ...core.common.message import SignedImmediateSyftMessageWithoutReply

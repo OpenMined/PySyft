@@ -1,30 +1,39 @@
-import json
+# stdlib
 from datetime import timedelta
+import json
 from typing import Any
 
-from fastapi import APIRouter, Body, Depends, HTTPException
+# third party
+from fastapi import APIRouter
+from fastapi import Body
+from fastapi import Depends
+from fastapi import HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
+# syft absolute
 import syft as sy
-from app import crud, models, schemas
+from syft import Domain
+
+# grid absolute
+from app import crud
+from app import models
+from app import schemas
 from app.api import deps
 from app.core import security
 from app.core.config import settings
 from app.core.security import get_password_hash
-from app.utils import (
-    generate_password_reset_token,
-    send_reset_password_email,
-    verify_password_reset_token,
-)
-from syft import Domain
+from app.utils import generate_password_reset_token
+from app.utils import send_reset_password_email
+from app.utils import verify_password_reset_token
 
 router = APIRouter()
 
 
 @router.post("/login/access-token", response_model=schemas.Token)
 def login_access_token(
-    domain: Domain = Depends(deps.get_db), form_data: OAuth2PasswordRequestForm = Depends()
+    domain: Domain = Depends(deps.get_db),
+    form_data: OAuth2PasswordRequestForm = Depends(),
 ) -> Any:
     """
     OAuth2 compatible token login, get an access token for future requests

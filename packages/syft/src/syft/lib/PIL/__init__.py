@@ -7,7 +7,7 @@ from typing import Tuple as TypeTuple
 # third party
 import PIL
 
-# syft relative
+# relative
 from . import image  # noqa: 401
 from ...ast import add_classes
 from ...ast import add_methods

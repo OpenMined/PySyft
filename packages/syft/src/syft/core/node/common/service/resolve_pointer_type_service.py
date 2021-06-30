@@ -7,7 +7,7 @@ from typing import Type
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
-# syft relative
+# relative
 from ..... import serialize
 from .....core.common.serde.serializable import bind_protobuf
 from .....proto.core.node.common.service.resolve_pointer_type_service_pb2 import (

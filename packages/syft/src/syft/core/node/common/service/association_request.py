@@ -28,12 +28,12 @@ from syft.grid.messages.association_messages import RespondAssociationRequestRes
 from syft.grid.messages.association_messages import SendAssociationRequestMessage
 from syft.grid.messages.association_messages import SendAssociationRequestResponse
 
-# syft relative
-# grid relative
+# relative
 from ..tables.utils import model_to_json
-#from ..exceptions import AuthorizationError
-#from ..exceptions import MissingRequestKeyError
-#from ..exceptions import UserNotFoundError
+
+# from ..exceptions import AuthorizationError
+# from ..exceptions import MissingRequestKeyError
+# from ..exceptions import UserNotFoundError
 
 
 def send_association_request_msg(

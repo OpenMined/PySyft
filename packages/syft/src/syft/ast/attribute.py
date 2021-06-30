@@ -8,7 +8,7 @@ from typing import List
 from typing import Optional
 from typing import Union
 
-# syft relative
+# relative
 from .. import ast
 from ..core.node.abstract.node import AbstractNodeClient
 from ..logger import traceback_and_raise

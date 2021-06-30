@@ -6,7 +6,7 @@ from typing import Union
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
-# syft relative
+# relative
 from ....logger import error
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage

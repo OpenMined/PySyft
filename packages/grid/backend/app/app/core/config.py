@@ -1,7 +1,18 @@
+# stdlib
 import secrets
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Union
 
-from pydantic import AnyHttpUrl, BaseSettings, EmailStr, HttpUrl, PostgresDsn, validator
+# third party
+from pydantic import AnyHttpUrl
+from pydantic import BaseSettings
+from pydantic import EmailStr
+from pydantic import HttpUrl
+from pydantic import PostgresDsn
+from pydantic import validator
 
 
 class Settings(BaseSettings):

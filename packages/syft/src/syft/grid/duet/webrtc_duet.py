@@ -34,7 +34,7 @@ from typing import Optional
 # third party
 from nacl.signing import SigningKey
 
-# syft relative
+# relative
 from ... import serialize
 from ...core.io.route import SoloRoute
 from ...core.node.common.metadata import Metadata

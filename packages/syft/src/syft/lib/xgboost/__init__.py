@@ -12,7 +12,7 @@ from typing import Tuple as TypeTuple
 # third party
 import xgboost as xgb
 
-# syft relative
+# relative
 from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules

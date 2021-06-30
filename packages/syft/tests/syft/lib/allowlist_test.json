@@ -10242,15 +10242,6 @@
             "reason": "untested"
           }
         ]
-      },
-      "shape": {
-        "profile": "tensor_method_noinput",
-        "skip": [
-          {
-            "lte_version": "1.8.1",
-            "reason": "untested"
-          }
-        ]
       }
     }
   }

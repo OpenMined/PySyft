@@ -3,7 +3,7 @@ from typing import Any
 from typing import List
 from typing import Optional
 
-# syft relative
+# relative
 from ..common.uid import UID
 from .serde import Serializable
 

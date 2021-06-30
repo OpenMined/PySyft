@@ -1,6 +1,9 @@
+# third party
 from sqlalchemy.orm import Session
 
-from app import crud, schemas
+# grid absolute
+from app import crud
+from app import schemas
 from app.core.config import settings
 from app.db import base  # noqa: F401
 

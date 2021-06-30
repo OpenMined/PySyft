@@ -2,7 +2,7 @@
 from typing import Any
 from typing import Callable
 
-# syft relative
+# relative
 from ...messages.role_messages import CreateRoleMessage
 from ...messages.role_messages import DeleteRoleMessage
 from ...messages.role_messages import GetRoleMessage

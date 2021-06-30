@@ -1,10 +1,9 @@
 # stdlib
+from typing import Any
 from typing import List
 from typing import Union
-from typing import Any
 
-# syft relative
-# grid relative
+# third party
 from sqlalchemy.orm import sessionmaker
 
 
@@ -80,5 +79,5 @@ class DatabaseManager:
         return len(objects) != 0
 
     def __len__(self) -> int:
-        session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)() 
+        session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
         return session_local.query(self._schema).count()

@@ -12,7 +12,7 @@ from typing import Union
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
-# syft relative
+# relative
 from ....lib.python import String
 from ....logger import critical
 from ....logger import debug
@@ -25,26 +25,6 @@ from ...io.location import Location
 from ...io.location import SpecificLocation
 from ..common.action.get_object_action import GetObjectAction
 from ..common.client import Client
-from ..common.node import Node
-from ..device import Device
-from ..device import DeviceClient
-from .client import DomainClient
-from .service import RequestAnswerMessageService
-from .service import RequestMessage
-from .service import RequestService
-from .service import RequestStatus
-#from ..common.service.dataset_service import DatasetManagerService
-from ..common.service.group_service import GroupManagerService
-#from ..common.service.infra_service import DomainInfrastructureService
-#from ..common.service.request_service import RequestService
-#from ..common.service.request_service import RequestServiceWithoutReply
-from ..common.service.role_service import RoleManagerService
-from ..common.service.setup_service import SetUpService
-from ..common.service.tensor_service import RegisterTensorService
-#from ..common.service.transfer_service import TransferObjectService
-from ..common.service.user_service import UserManagerService
-from ..common.service.association_request import AssociationRequestService
-
 from ..common.managers.association_request_manager import AssociationRequestManager
 from ..common.managers.environment_manager import EnvironmentManager
 from ..common.managers.group_manager import GroupManager
@@ -52,6 +32,29 @@ from ..common.managers.request_manager import RequestManager
 from ..common.managers.role_manager import RoleManager
 from ..common.managers.setup_manager import SetupManager
 from ..common.managers.user_manager import UserManager
+from ..common.node import Node
+from ..common.service.association_request import AssociationRequestService
+
+# from ..common.service.dataset_service import DatasetManagerService
+from ..common.service.group_service import GroupManagerService
+
+# from ..common.service.infra_service import DomainInfrastructureService
+# from ..common.service.request_service import RequestService
+# from ..common.service.request_service import RequestServiceWithoutReply
+from ..common.service.role_service import RoleManagerService
+from ..common.service.setup_service import SetUpService
+from ..common.service.tensor_service import RegisterTensorService
+
+# from ..common.service.transfer_service import TransferObjectService
+from ..common.service.user_service import UserManagerService
+from ..device import Device
+from ..device import DeviceClient
+from .client import DomainClient
+from .service import RequestAnswerMessageService
+from .service import RequestMessage
+from .service import RequestService
+from .service import RequestStatus
+
 
 class Domain(Node):
     domain: SpecificLocation
@@ -89,39 +92,35 @@ class Domain(Node):
         self.domain = SpecificLocation(name=self.name)
         self.root_key = root_key
 
-
         # Database Management Instances
         self.users = UserManager(db_engine)
         self.roles = RoleManager(db_engine)
         self.groups = GroupManager(db_engine)
-        #self.disk_store = DiskObjectStore(db_engine)
+        # self.disk_store = DiskObjectStore(db_engine)
         self.environments = EnvironmentManager(db_engine)
         self.setup = SetupManager(db_engine)
         self.association_requests = AssociationRequestManager(db_engine)
         self.data_requests = RequestManager(db_engine)
 
-
-
         self.immediate_services_without_reply.append(RequestService)
-        #self.immediate_services_without_reply.append(AcceptOrDenyRequestService)
-        #self.immediate_services_without_reply.append(UpdateRequestHandlerService)
+        # self.immediate_services_without_reply.append(AcceptOrDenyRequestService)
+        # self.immediate_services_without_reply.append(UpdateRequestHandlerService)
 
         self.immediate_services_with_reply.append(RequestAnswerMessageService)
-        #self.immediate_services_with_reply.append(GetAllRequestsService)
-        #self.immediate_services_with_reply.append(GetAllRequestHandlersService)
-
+        # self.immediate_services_with_reply.append(GetAllRequestsService)
+        # self.immediate_services_with_reply.append(GetAllRequestHandlersService)
 
         # Grid Domain Services
         self.immediate_services_with_reply.append(AssociationRequestService)
-        #self.immediate_services_with_reply.append(DomainInfrastructureService)
+        # self.immediate_services_with_reply.append(DomainInfrastructureService)
         self.immediate_services_with_reply.append(SetUpService)
         self.immediate_services_with_reply.append(RegisterTensorService)
         self.immediate_services_with_reply.append(RoleManagerService)
         self.immediate_services_with_reply.append(UserManagerService)
-        #self.immediate_services_with_reply.append(DatasetManagerService)
+        # self.immediate_services_with_reply.append(DatasetManagerService)
         self.immediate_services_with_reply.append(GroupManagerService)
-        #self.immediate_services_with_reply.append(TransferObjectService)
-        #self.immediate_services_with_reply.append(RequestService)
+        # self.immediate_services_with_reply.append(TransferObjectService)
+        # self.immediate_services_with_reply.append(RequestService)
 
         self.requests: List[RequestMessage] = list()
         # available_device_types = set()

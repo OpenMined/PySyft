@@ -7,7 +7,7 @@ from typing import Type
 # third party
 from nacl.signing import VerifyKey
 
-# syft relative
+# relative
 from .....logger import traceback_and_raise
 from ...abstract.node import AbstractNode
 

@@ -1,10 +1,14 @@
+# future
 from __future__ import with_statement
 
+# stdlib
+from logging.config import fileConfig
 import os
 
+# third party
 from alembic import context
-from sqlalchemy import engine_from_config, pool
-from logging.config import fileConfig
+from sqlalchemy import engine_from_config
+from sqlalchemy import pool
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -20,11 +24,13 @@ fileConfig(config.config_file_name)
 # target_metadata = mymodel.Base.metadata
 # target_metadata = None
 
-from syft.core.node.common.tables.bin_obj import BinObject
-# from app.db.base import Base  # noqa
+# syft absolute
 from syft.core.node.common.tables import Base
+from syft.core.node.common.tables.bin_obj import BinObject
 
 target_metadata = Base.metadata
+
+# from app.db.base import Base  # noqa
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -71,7 +77,9 @@ def run_migrations_online():
     configuration = config.get_section(config.config_ini_section)
     configuration["sqlalchemy.url"] = get_url()
     connectable = engine_from_config(
-        configuration, prefix="sqlalchemy.", poolclass=pool.NullPool,
+        configuration,
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
     )
 
     with connectable.connect() as connection:

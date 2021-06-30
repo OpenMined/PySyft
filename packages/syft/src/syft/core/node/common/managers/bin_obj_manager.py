@@ -15,6 +15,7 @@ from syft.core.common.uid import UID
 from syft.core.store import ObjectStore
 from syft.core.store.storeable_object import StorableObject
 
+# relative
 from ..tables.bin_obj import BinObject
 from ..tables.bin_obj_metadata import ObjectMetadata
 from sqlalchemy.orm import sessionmaker
@@ -31,10 +32,7 @@ def create_storable(
 
 
 class BinObjectManager(ObjectStore):
-    def __init__(
-        self,
-        db: Session
-    ) -> None:
+    def __init__(self, db: Session) -> None:
         self.db = db
 
     def get_object(self, key: UID) -> Optional[StorableObject]:
@@ -79,26 +77,15 @@ class BinObjectManager(ObjectStore):
 
     def __contains__(self, key: UID) -> bool:
         local_session = sessionmaker(bind=self.db)()
-        result =  (
-            local_session.query(BinObject)
-            .filter_by(id=str(key.value))
-            .first()
-            is not None
-        )
+        result = local_session.query(BinObject).filter_by(id=str(key.value)).first() is not None
         local_session.close()
         return result
 
     def __getitem__(self, key: UID) -> StorableObject:
         local_session = sessionmaker(bind=self.db)()
-        bin_obj = (
-            local_session.query(BinObject)
-            .filter_by(id=str(key.value))
-            .first()
-        )
+        bin_obj = local_session.query(BinObject).filter_by(id=str(key.value)).first()
         obj_metadata = (
-            local_session.query(ObjectMetadata)
-            .filter_by(obj=str(key.value))
-            .first()
+            local_session.query(ObjectMetadata).filter_by(obj=str(key.value)).first()
         )
 
         if not bin_obj or not obj_metadata:
@@ -153,17 +140,14 @@ class BinObjectManager(ObjectStore):
     def delete(self, key: UID) -> None:
         try:
             local_session = sessionmaker(bind=self.db)()
+            
+            object_to_delete = (
+                local_session.query(BinObject).filter_by(id=str(key.value)).first()
+            )
             metadata_to_delete = (
-                local_session.query(ObjectMetadata)
-                .filter_by(obj=str(key.value))
-                .first()
+                local_session.query(ObjectMetadata).filter_by(obj=str(key.value)).first()
             )
 
-            object_to_delete = (
-                local_session.query(BinObject)
-                .filter_by(id=str(key.value))
-                .first()
-            )
             local_session.delete(metadata_to_delete)
             local_session.delete(object_to_delete)
             local_session.commit()

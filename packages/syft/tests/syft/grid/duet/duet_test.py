@@ -12,7 +12,7 @@ import pytest
 # syft absolute
 from syft.grid.duet import test_duet_network
 
-# syft relative
+# relative
 from .duet_scenarios_tests import register_duet_scenarios
 from .process_test import SyftTestProcess
 

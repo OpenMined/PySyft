@@ -6,7 +6,7 @@ from typing import Type
 # third party
 from nacl.signing import VerifyKey
 
-# syft relative
+# relative
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ...abstract.node import AbstractNode
 from ...common.service.node_service import EventualNodeServiceWithoutReply
