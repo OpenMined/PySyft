@@ -23,10 +23,10 @@ from .....logger import traceback_and_raise
 from ..tables.setup import SetupConfig
 from ..tables.utils import model_to_json
 
-# from ..exceptions import AuthorizationError
-# from ..exceptions import InvalidParameterValueError
-# from ..exceptions import MissingRequestKeyError
-# from ..exceptions import OwnerAlreadyExistsError
+from ..exceptions import AuthorizationError
+from ..exceptions import InvalidParameterValueError
+from ..exceptions import MissingRequestKeyError
+from ..exceptions import OwnerAlreadyExistsError
 
 
 def create_initial_setup(
@@ -56,14 +56,6 @@ def create_initial_setup(
     _current_user_id = msg.content.get("current_user", None)
 
     users = node.users
-
-    if not _current_user_id:
-        try:
-            _current_user_id = users.first(
-                verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
-            ).id
-        except Exception as e:
-            traceback_and_raise(e)
 
     _admin_role = node.roles.first(name="Owner")
 
