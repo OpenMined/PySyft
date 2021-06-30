@@ -1,7 +1,6 @@
 syntax = "proto3";
 
 package syft.core.common;
-import "proto/core/common/common_object.proto";
 
 message RecursiveSerde {
   bytes data = 1;

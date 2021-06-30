@@ -13,7 +13,6 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-# third party
 # syft absolute
 from syft.proto.core.io import address_pb2 as proto_dot_core_dot_io_dot_address__pb2
 from syft.proto.core.store import (

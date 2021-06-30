@@ -13,7 +13,6 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-# third party
 # syft absolute
 from syft.proto.lib.petlib import bn_pb2 as proto_dot_lib_dot_petlib_dot_bn__pb2
 from syft.proto.lib.python import tuple_pb2 as proto_dot_lib_dot_python_dot_tuple__pb2
