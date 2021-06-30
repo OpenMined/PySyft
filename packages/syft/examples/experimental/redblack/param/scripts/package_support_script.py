@@ -62,9 +62,18 @@ def set_classes(modules_list: TypeAny, root_module: str) -> TypeAny:
                 if root_module == mod_name[0]:
                     # print(f'{t} {t.__module__}')
                     # classes_set.add(module.__name__ + "." + t.__name__) # Number of classes 1224
+                    classes_set.add(i + "." + ax)
+                    """
                     classes_set.add(
                         t.__module__ + "." + t.__name__
-                    )  # number of classes 500
+                    )  # for sklearn: number of classes 500
+
+                    """
+                    if t.__module__ == "xgboost.core":
+                        print(
+                            f'{t.__module__ + "." + t.__name__} and {module.__name__ + "." + t.__name__}'
+                        )
+
                 # else:
                 # print(f'in else {t.__name__} {t.__class__} {module} {root_module}')
 
