@@ -101,8 +101,6 @@ class GridHTTPConnection(HTTPConnection):
         session.mount("https://", adapter)
 
         response = session.get(self.base_url + "/metadata")
-        print("Response: ", type(response.content)) 
-        print("Response: ", response.content)
         metadata_pb = Metadata_PB()
         metadata_pb.ParseFromString(response.content)
 
