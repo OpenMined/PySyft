@@ -32,10 +32,10 @@ from syft.grid.messages.user_messages import UpdateUserResponse
 from .....logger import traceback_and_raise
 from ..tables.utils import model_to_json
 
-# from ..exceptions import AuthorizationError
-# from ..exceptions import MissingRequestKeyError
-# from ..exceptions import RoleNotFoundError
-# from ..exceptions import UserNotFoundError
+from ..exceptions import AuthorizationError
+from ..exceptions import MissingRequestKeyError
+from ..exceptions import RoleNotFoundError
+from ..exceptions import UserNotFoundError
 
 
 def create_user_msg(
@@ -53,7 +53,6 @@ def create_user_msg(
     users = node.users
 
     """
-
     if not _current_user_id:
         try:
             _current_user_id = users.first(
@@ -63,9 +62,7 @@ def create_user_msg(
             print(e)
             traceback_and_raise(e)
     """
-
     _admin_role = node.roles.first(name="Owner")
-
     """
     # Check if email/password fields are empty
     if not _email or not _password:
@@ -138,7 +135,7 @@ def create_user_msg(
                 "utf-8"
             ),
         )
-
+        
     # Main logic
     if not len(users):
         create_owner_user()
