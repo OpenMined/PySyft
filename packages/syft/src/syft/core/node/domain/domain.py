@@ -83,6 +83,7 @@ class Domain(Node):
             signing_key=signing_key,
             verify_key=verify_key,
             db_path=db_path,
+            db_engine=db_engine,
         )
         # specific location with name
         self.domain = SpecificLocation(name=self.name)
