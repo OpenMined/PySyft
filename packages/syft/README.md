@@ -32,17 +32,35 @@ Most software libraries let you compute over the information you own and see ins
 
 The Syft ecosystem seeks to change this system, allowing you to write software which can compute over information you do not own on machines you do not have (total) control over. This not only includes servers in the cloud, but also personal desktops, laptops, mobile phones, websites, and edge devices. Wherever your data wants to live in your ownership, the Syft ecosystem exists to help keep it there while allowing it to be used privately for computation.
 
+## 0.5.0 Release
+
+The current stable release is `0.5.0` which is available on:
+
+- [PyPI](https://pypi.org/project/syft/)
+- [Docker Hub](https://hub.docker.com/u/openmined)
+
+For many use cases you can simply use:
+
+```
+$ pip install syft
+```
+
+If you are developing against this version please use the [`syft_0.5.0`](https://github.com/OpenMined/pysyft/tree/syft_0.5.0) branch.
+
+## Examples
+
+The examples inside the `/packages/syft/examples/` folder are currently compatible with `0.5.0` however we will be updating and moving examples down to the root `/notebooks` folder in the `dev` branch as we begin work on `0.6.0`.
+
 ## Mono Repo 🚝
 
 This repo contains multiple projects which work together, namely PySyft and PyGrid.
-PyGrid will be added soon, in the mean time this is the directory structure.
 
 ```
 OpenMined/PySyft
-├── README.md   <-- You are here 📌
+├── README.md
 └── packages
-    ├── grid    <-- The Grid droids from OpenMined/PyGrid
-    └── syft    <-- The Syft droids you are looking for 👋🏽
+    ├── grid    <-- Code formerly @ OpenMined/PyGrid
+    └── syft    <-- You are here 📌
 ```
 
 _NOTE_ Changing the entire folder structure will likely result in some minor issues.
