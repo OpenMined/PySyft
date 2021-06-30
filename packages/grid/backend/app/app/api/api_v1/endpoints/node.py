@@ -1,12 +1,11 @@
 import json
 from typing import Any, List
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.orm import Session
 
-from app import crud, models, schemas
-from app.api import deps
+from app import crud
+#from app.api import deps
 from app.db.session import engine, SessionLocal
 from syft.core.node.common.tables import Base
 from syft.core.node.common.tables.utils import seed_db
@@ -24,24 +23,6 @@ import syft as sy
 domain = sy.Domain("my domain", db_engine=engine)
 Base.metadata.create_all(engine)
 seed_db(SessionLocal())
-
-@router.get("/", response_model=str)
-def read_items(
-    db: Session = Depends(deps.get_db),
-    skip: int = 0,
-    limit: int = 100,
-    current_user: Any = Depends(deps.get_current_active_user),
-) -> Any:
-    """
-    Retrieve items.
-    """
-    if crud.user.is_superuser(current_user):
-        items = crud.item.get_multi(db, skip=skip, limit=limit)
-    else:
-        items = crud.item.get_multi_by_owner(
-            db=db, owner_id=current_user.id, skip=skip, limit=limit
-        )
-    return "hello world"
 
 
 @router.get("/metadata", response_model=str)
