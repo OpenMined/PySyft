@@ -8,6 +8,7 @@ from fastapi import APIRouter
 from fastapi import Body
 from fastapi import Depends
 from fastapi import HTTPException
+from fastapi import Response
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
@@ -26,37 +27,36 @@ from app.core.security import get_password_hash
 from app.utils import generate_password_reset_token
 from app.utils import send_reset_password_email
 from app.utils import verify_password_reset_token
-
+from app.core.node import domain
 router = APIRouter()
 
 
-@router.post("/login/access-token", response_model=schemas.Token)
+@router.post("/login/access-token", response_model=str)
 def login_access_token(
-    domain: Domain = Depends(deps.get_db),
+    db: Session = Depends(deps.get_db),
     form_data: OAuth2PasswordRequestForm = Depends(),
 ) -> Any:
     """
     OAuth2 compatible token login, get an access token for future requests
     """
-    db = domain.db
-    user = crud.user.authenticate(
-        db, email=form_data.username, password=form_data.password
-    )
-    if not user:
-        raise HTTPException(status_code=400, detail="Incorrect email or password")
-    elif not crud.user.is_active(user):
-        raise HTTPException(status_code=400, detail="Inactive user")
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
 
-    return {
-        "access_token": security.create_access_token(
-            user.id, expires_delta=access_token_expires
+    is_valid = domain.users.login(email=form_data.username, password=form_data.password)
+
+    if not is_valid:
+        raise HTTPException(status_code=400, detail="Incorrect email or password")
+    else:
+        user  = domain.users.first(email=form_data.username)
+
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    return Response(
+        json.dumps(
+            {
+                "access_token": security.create_access_token(user.id, expires_delta=access_token_expires),
+                "token_type": "bearer"
+            }
         ),
-        "token_type": "bearer",
-        "metadata": sy.serialize(domain.get_metadata_for_client())
-        .SerializeToString()
-        .decode("ISO-8859-1"),
-    }
+        media_type="application/json"
+    )
 
 
 @router.post("/login/test-token", response_model=schemas.User)
