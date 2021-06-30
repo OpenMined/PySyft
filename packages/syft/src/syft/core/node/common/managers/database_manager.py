@@ -29,6 +29,7 @@ class DatabaseManager:
         """
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
         objects = session_local.query(self._schema).filter_by(**kwargs).all()
+        session_local.close()
         return objects
 
     def first(self, **kwargs) -> Union[None, Any]:
@@ -38,6 +39,7 @@ class DatabaseManager:
         """
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
         objects = session_local.query(self._schema).filter_by(**kwargs).first()
+        session_local.close()
         return objects
 
     def last(self, **kwargs):
@@ -50,11 +52,14 @@ class DatabaseManager:
         """
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
         obj = session_local.query(self._schema).filter_by(**kwargs).all()[-1]
+        session_local.close()
         return obj
 
     def all(self) -> List[Any]:
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
-        return list(session_local.query(self._schema).all())
+        result =  list(session_local.query(self._schema).all())
+        session_local.close()
+        return result
 
     def delete(self, **kwargs):
         """Delete an object from the database.
@@ -66,18 +71,23 @@ class DatabaseManager:
         object_to_delete = session_local.query(**kwargs)[0]
         session_local.delete(object_to_delete)
         session_local.commit()
+        session_local.close()
 
     def modify(self, query, values):
         """Modifies one or many records."""
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
         session_local.query(self._schema).filter_by(**query).update(values)
         session_local.commit()
+        session_local.close()
 
     def contain(self, **kwargs) -> bool:
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
         objects = session_local.query(self._schema).filter_by(**kwargs).all()
+        session_local.close()
         return len(objects) != 0
 
     def __len__(self) -> int:
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
-        return session_local.query(self._schema).count()
+        result = session_local.query(self._schema).count()
+        session_local.close()
+        return result
