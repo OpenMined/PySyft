@@ -23,8 +23,8 @@ from ..connections.http_connection import HTTPConnection
 
 
 class GridHTTPConnection(HTTPConnection):
-    LOGIN_ROUTE = "/users/login"
-    SYFT_ROUTE = "/pysyft"
+    LOGIN_ROUTE = "/login/access-token"
+    SYFT_ROUTE = "/syft"
     SYFT_MULTIPART_ROUTE = "/pysyft_multipart"
     SIZE_THRESHOLD = 20971520  # 20 MB
 
@@ -43,8 +43,8 @@ class GridHTTPConnection(HTTPConnection):
 
         header = {}
 
-        if self.session_token:
-            header["token"] = self.session_token
+        if self.session_token and self.token_type:
+            header=dict(Authorization='Bearer ' + json.loads('{"auth_token":"'+self.session_token+'","token_type":"'+self.token_type+'"}')['auth_token'])
 
         header["Content-Type"] = "application/octet-stream"  # type: ignore
 
@@ -66,13 +66,17 @@ class GridHTTPConnection(HTTPConnection):
 
     def login(self, credentials: Dict) -> Tuple:
         # Login request
+        headers = {
+            'accept': 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded',
+        }
+
         response = requests.post(
-            url=self.base_url + GridHTTPConnection.LOGIN_ROUTE, json=credentials
+            url=self.base_url + GridHTTPConnection.LOGIN_ROUTE, data=credentials, headers=headers
         )
 
         # Response
         content = json.loads(response.text)
-
         # If fail
         if response.status_code != requests.codes.ok:
             raise Exception(content["error"])
@@ -83,7 +87,8 @@ class GridHTTPConnection(HTTPConnection):
 
         # If success
         # Save session token
-        self.session_token = content["token"]
+        self.session_token = content["access_token"]
+        self.token_type = content["token_type"]
 
         # Return node metadata / user private key
         return (metadata_pb, content["key"])
