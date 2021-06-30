@@ -9,7 +9,7 @@ class ObjectMetadata(Base):  # type: ignore
     __tablename__ = "obj_metadata"
 
     id = Column(Integer(), primary_key=True, autoincrement=True)
-    obj = Column(Integer(), ForeignKey("bin_object.id"))
+    obj = Column(String(256), ForeignKey("bin_object.id", ondelete="CASCADE"))
     tags = Column(JSON())
     description = Column(String())
     name = Column(String())

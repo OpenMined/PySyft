@@ -1,14 +1,14 @@
 # grid relative
 # syft relative
-from .. import BaseModel
-from .. import db
+from . import Base
+from sqlalchemy import Column, String, JSON
 
 
-class JsonObject(BaseModel):
+class JsonObject(Base):
     __tablename__ = "json_object"
 
-    id = db.Column(db.String(), primary_key=True)
-    binary = db.Column(db.JSON())
+    id = db.Column(String(), primary_key=True)
+    binary = db.Column(JSON())
 
     def __str__(self):
         return f"<JsonObject id: {self.id}>"

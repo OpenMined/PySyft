@@ -1,26 +1,26 @@
 # grid relative
 # syft relative
-from .. import BaseModel
-from .. import db
+from . import Base
+from sqlalchemy import Column, Integer, String, ForeignKey
 
 
-class StorageMetadata(BaseModel):
+class StorageMetadata(Base):
     __tablename__ = "storage_metadata"
 
-    id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
-    length = db.Column(db.Integer())
+    id = Column(Integer(), primary_key=True, autoincrement=True)
+    length = Column(Integer())
 
     def __str__(self):
         return f"<StorageMetadata length: {self.length}>"
 
 
-def get_metadata(db):
+def get_metadata(db_session):
 
-    metadata = db.session.query(StorageMetadata).first()
+    metadata = db_session.query(StorageMetadata).first()
 
     if metadata is None:
         metadata = StorageMetadata(length=0)
-        db.session.add(metadata)
-        db.session.commit()
+        db_session.add(metadata)
+        db_session.commit()
 
     return metadata
