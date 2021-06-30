@@ -13,8 +13,8 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 # syft absolute
-import syft as sy
 from syft import Domain
+from syft import serialize
 
 # grid absolute
 from app import crud
@@ -28,6 +28,7 @@ from app.utils import generate_password_reset_token
 from app.utils import send_reset_password_email
 from app.utils import verify_password_reset_token
 from app.core.node import domain
+
 router = APIRouter()
 
 
@@ -52,7 +53,9 @@ def login_access_token(
         json.dumps(
             {
                 "access_token": security.create_access_token(user.id, expires_delta=access_token_expires),
-                "token_type": "bearer"
+                "token_type": "bearer",
+                "metadata": serialize(domain.get_metadata_for_client()).SerializeToString().decode("ISO-8859-1"),
+                "key": user.private_key
             }
         ),
         media_type="application/json"
