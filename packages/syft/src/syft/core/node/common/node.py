@@ -110,7 +110,7 @@ class Node(AbstractNode):
         verify_key: Optional[VerifyKey] = None,
         db_path: Optional[str] = None,
         TableBase: Any = None,
-        engine: Any = None,
+        db_engine: Any = None,
         db: Any = None,
     ):
 
@@ -132,14 +132,14 @@ class Node(AbstractNode):
         if db is None:
 
             # If a DB engine isn't provided then
-            if engine is None:
+            if db_engine is None:
                 engine = create_engine("sqlite://", echo=False)
 
-            db = sessionmaker(bind=engine)()
+            db = sessionmaker(bind=db_engine)()
 
         # cache these variables on self
         self.TableBase = TableBase
-        self.engine = engine
+        self.db_engine = db_engine
         self.db = db
 
         # launch the tables in the database
@@ -152,9 +152,10 @@ class Node(AbstractNode):
         # on a Node if there is a chance that the collections could
         # become quite numerous (or otherwise fill up RAM).
         # self.store is the elastic memory.
+        
 
         self.store = BinObjectManager(
-            db=self.db
+            db=self.db_engine
         )
 
         # We need to register all the services once a node is created
