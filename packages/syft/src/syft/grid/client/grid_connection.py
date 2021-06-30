@@ -105,7 +105,7 @@ class GridHTTPConnection(HTTPConnection):
         session.mount("http://", adapter)
         session.mount("https://", adapter)
 
-        response = session.get(self.base_url + "/metadata")
+        response = session.get(self.base_url + "/syft/metadata")
         metadata_pb = Metadata_PB()
         metadata_pb.ParseFromString(response.content)
 
