@@ -51,7 +51,7 @@ INSECURE_PYGRID_TOKEN = "9G9MJ06OQH"  # nosec
 
 
 class GridClient(DomainClient):
-    def __init__(
+    def __init__(  # nosec
         self,
         url: str,
         conn_type: Type[ClientConnection],
