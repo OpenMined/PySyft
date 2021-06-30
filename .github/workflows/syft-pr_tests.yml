@@ -76,6 +76,7 @@ jobs:
           ls
           cp .pre-commit-config.yaml ../../
       - uses: pre-commit/action@v2.0.3
+        continue-on-error: true
       # with:
       #   extra_args: --files ${{ steps.file_changes.outputs.files}} # apply only to changed files.
 
@@ -110,7 +111,7 @@ jobs:
       #     git diff --name-only $(git merge-base ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }}) | xargs docstr-coverage --accept-empty
 
   python-tests-latest-versions:
-    needs: [python-linting]
+    # needs: [python-linting]
     strategy:
       max-parallel: 3
       matrix:
@@ -174,7 +175,7 @@ jobs:
           pytest -m libs -n 1 -k "tenseal" --suppress-no-test-exit-code --durations=50
 
   python-nb-examples:
-    needs: [python-linting]
+    # needs: [python-linting]
     runs-on: ${{ matrix.os }}
     strategy:
       max-parallel: 1
