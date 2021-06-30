@@ -1,32 +1,21 @@
 # stdlib
-from typing import Any
-from typing import Generator
+from typing import Any, Generator
 
 # third party
-from fastapi import Depends
-from fastapi import HTTPException
-from fastapi import status
+from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
-# syft absolute
-import syft as sy
-
 # grid absolute
-from app import crud
-from app import models
-from app import schemas
+from app import crud, schemas
 from app.core import security
 from app.core.config import settings
+from app.core.node import domain
 from app.db.session import SessionLocal
 
-from app.core.node import domain
-
-reusable_oauth2 = OAuth2PasswordBearer(
-    tokenUrl=f"{settings.API_V1_STR}/login/access-token"
-)
+reusable_oauth2 = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/login")
 
 
 def get_db() -> Generator:
