@@ -17,6 +17,7 @@ from app.core.node import domain
 
 router = APIRouter()
 
+
 @router.get("/metadata", response_model=str)
 async def syft_metadata():
     return Response(
@@ -24,8 +25,10 @@ async def syft_metadata():
         media_type="application/octet-stream",
     )
 
+
 @router.post("", response_model=str)
-async def syft( request: Request,
+async def syft(
+    request: Request,
     #    skip: int = 0,
     #    limit: int = 100,
     #    current_user: models.User = Depends(deps.get_current_active_user),

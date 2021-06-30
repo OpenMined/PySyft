@@ -1,63 +1,63 @@
 # stdlib
 from datetime import timedelta
-import json
 from typing import Any
 
 # third party
-from fastapi import APIRouter
-from fastapi import Body
-from fastapi import Depends
-from fastapi import HTTPException
-from fastapi import Response
-from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
-
-# syft absolute
-from syft import Domain
-from syft import serialize
+from fastapi import APIRouter, Body, Depends, HTTPException
+from fastapi.responses import JSONResponse
 from syft.core.node.common.exceptions import InvalidCredentialsError
 
 # grid absolute
-from app import crud
-from app import schemas
+from app import crud, schemas
 from app.api import deps
 from app.core import security
 from app.core.config import settings
-from app.core.security import get_password_hash
-from app.utils import generate_password_reset_token
-from app.utils import send_reset_password_email
-from app.utils import verify_password_reset_token
 from app.core.node import domain
+from app.core.security import get_password_hash
+from app.utils import (
+    generate_password_reset_token,
+    send_reset_password_email,
+    verify_password_reset_token,
+)
+
+# syft absolute
+from syft import Domain, serialize
 
 router = APIRouter()
 
 
-@router.post("/login/access-token", response_model=str)
+@router.post("/login", status_code=200, response_class=JSONResponse)
 def login_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends(),
+    email: str = Body(..., example="info@openmined.org"),
+    password: str = Body(..., example="changethis"),
 ) -> Any:
     """
-    OAuth2 compatible token login, get an access token for future requests
+    You must pass valid credentials to log in. An account in any of the network
+    domains is sufficient for logging in.
     """
     try:
-        domain.users.login(email=form_data.username, password=form_data.password)
+        domain.users.login(email=email, password=password)
     except InvalidCredentialsError:
         raise HTTPException(status_code=401, detail="Incorrect email or password")
 
-    user = domain.users.first(email=form_data.username)
+    user = domain.users.first(email=email)
 
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    return Response(
-        json.dumps(
-            {
-                "access_token": security.create_access_token(user.id, expires_delta=access_token_expires),
-                "token_type": "bearer",
-                "metadata": serialize(domain.get_metadata_for_client()).SerializeToString().decode("ISO-8859-1"),
-                "key": user.private_key
-            }
-        ),
-        media_type="application/json"
+    access_token = security.create_access_token(
+        user.id, expires_delta=access_token_expires
     )
+    metadata = (
+        serialize(domain.get_metadata_for_client())
+        .SerializeToString()
+        .decode("ISO-8859-1")
+    )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "metadata": metadata,
+        "key": user.private_key,
+    }
 
 
 @router.post("/login/test-token", response_model=schemas.User)

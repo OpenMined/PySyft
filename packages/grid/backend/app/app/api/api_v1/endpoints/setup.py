@@ -1,4 +1,4 @@
-from typing import Any 
+from typing import Any
 
 # third party
 from fastapi import APIRouter

@@ -152,7 +152,6 @@ class Node(AbstractNode):
         # on a Node if there is a chance that the collections could
         # become quite numerous (or otherwise fill up RAM).
         # self.store is the elastic memory.
-        
 
         self.store = BinObjectManager(db=self.db_engine)
 

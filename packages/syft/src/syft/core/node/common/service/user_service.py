@@ -135,7 +135,7 @@ def create_user_msg(
                 "utf-8"
             ),
         )
-        
+
     # Main logic
     if not len(users):
         create_owner_user()

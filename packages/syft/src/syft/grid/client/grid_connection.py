@@ -23,7 +23,7 @@ from ..connections.http_connection import HTTPConnection
 
 
 class GridHTTPConnection(HTTPConnection):
-    LOGIN_ROUTE = "/login/access-token"
+    LOGIN_ROUTE = "/login"
     SYFT_ROUTE = "/syft"
     SYFT_MULTIPART_ROUTE = "/pysyft_multipart"
     SIZE_THRESHOLD = 20971520  # 20 MB
@@ -44,7 +44,16 @@ class GridHTTPConnection(HTTPConnection):
         header = {}
 
         if self.session_token and self.token_type:
-            header=dict(Authorization='Bearer ' + json.loads('{"auth_token":"'+self.session_token+'","token_type":"'+self.token_type+'"}')['auth_token'])
+            header = dict(
+                Authorization="Bearer "
+                + json.loads(
+                    '{"auth_token":"'
+                    + self.session_token
+                    + '","token_type":"'
+                    + self.token_type
+                    + '"}'
+                )["auth_token"]
+            )
 
         header["Content-Type"] = "application/octet-stream"  # type: ignore
 
@@ -65,14 +74,9 @@ class GridHTTPConnection(HTTPConnection):
         return r
 
     def login(self, credentials: Dict) -> Tuple:
-        # Login request
-        headers = {
-            'accept': 'application/json',
-            'Content-Type': 'application/x-www-form-urlencoded',
-        }
-
         response = requests.post(
-            url=self.base_url + GridHTTPConnection.LOGIN_ROUTE, data=credentials, headers=headers
+            url=self.base_url + GridHTTPConnection.LOGIN_ROUTE,
+            json=credentials,
         )
 
         # Response

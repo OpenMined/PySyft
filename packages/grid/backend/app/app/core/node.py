@@ -1,4 +1,3 @@
-
 from syft.core.node.common.tables import Base
 from syft.core.node.common.tables.utils import seed_db
 from syft import Domain
