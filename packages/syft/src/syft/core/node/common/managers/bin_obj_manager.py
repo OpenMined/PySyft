@@ -119,6 +119,7 @@ class BinObjectManager(ObjectStore):
         bin_obj = BinObject(id=str(key.value), obj=value.data)
         # metadata_dict = storable_to_dict(value)
         metadata_obj = ObjectMetadata(
+            id=bin_obj.id,
             obj=bin_obj.id,
             tags=value.tags,
             description=value.description,
