@@ -13,12 +13,11 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 # syft absolute
-import syft as sy
 from syft import Domain
+from syft.core.node.common.exceptions import InvalidCredentialsError
 
 # grid absolute
 from app import crud
-from app import models
 from app import schemas
 from app.api import deps
 from app.core import security
@@ -33,19 +32,17 @@ router = APIRouter()
 
 @router.post("/login/access-token", response_model=str)
 def login_access_token(
-    db: Session = Depends(deps.get_db),
     form_data: OAuth2PasswordRequestForm = Depends(),
 ) -> Any:
     """
     OAuth2 compatible token login, get an access token for future requests
     """
+    try:
+        domain.users.login(email=form_data.username, password=form_data.password)
+    except InvalidCredentialsError:
+        raise HTTPException(status_code=401, detail="Incorrect email or password")
 
-    is_valid = domain.users.login(email=form_data.username, password=form_data.password)
-
-    if not is_valid:
-        raise HTTPException(status_code=400, detail="Incorrect email or password")
-    else:
-        user  = domain.users.first(email=form_data.username)
+    user = domain.users.first(email=form_data.username)
 
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     return Response(
