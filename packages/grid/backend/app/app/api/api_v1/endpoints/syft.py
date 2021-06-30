@@ -24,8 +24,7 @@ async def syft_metadata():
         media_type="application/octet-stream",
     )
 
-
-@router.post("/pysyft", response_model=str)
+@router.post("", response_model=str)
 async def syft( request: Request,
     #    skip: int = 0,
     #    limit: int = 100,
