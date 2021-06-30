@@ -44,7 +44,16 @@ class GridHTTPConnection(HTTPConnection):
         header = {}
 
         if self.session_token and self.token_type:
-            header=dict(Authorization='Bearer ' + json.loads('{"auth_token":"'+self.session_token+'","token_type":"'+self.token_type+'"}')['auth_token'])
+            header = dict(
+                Authorization="Bearer "
+                + json.loads(
+                    '{"auth_token":"'
+                    + self.session_token
+                    + '","token_type":"'
+                    + self.token_type
+                    + '"}'
+                )["auth_token"]
+            )
 
         header["Content-Type"] = "application/octet-stream"  # type: ignore
 

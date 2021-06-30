@@ -57,7 +57,7 @@ class DatabaseManager:
 
     def all(self) -> List[Any]:
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
-        result =  list(session_local.query(self._schema).all())
+        result = list(session_local.query(self._schema).all())
         session_local.close()
         return result
 

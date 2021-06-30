@@ -255,6 +255,6 @@ def login(
             "\n\nNo email and password defined in login() - connecting as anonymous user!!!\n"
         )
     else:
-        credentials = {"username": email, "password": password}
+        credentials = {"email": email, "password": password}
 
     return connect(url=url, credentials=credentials, conn_type=conn_type)

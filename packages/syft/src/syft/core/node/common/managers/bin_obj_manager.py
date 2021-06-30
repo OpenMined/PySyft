@@ -77,7 +77,10 @@ class BinObjectManager(ObjectStore):
 
     def __contains__(self, key: UID) -> bool:
         local_session = sessionmaker(bind=self.db)()
-        result = local_session.query(BinObject).filter_by(id=str(key.value)).first() is not None
+        result = (
+            local_session.query(BinObject).filter_by(id=str(key.value)).first()
+            is not None
+        )
         local_session.close()
         return result
 
@@ -140,12 +143,14 @@ class BinObjectManager(ObjectStore):
     def delete(self, key: UID) -> None:
         try:
             local_session = sessionmaker(bind=self.db)()
-            
+
             object_to_delete = (
                 local_session.query(BinObject).filter_by(id=str(key.value)).first()
             )
             metadata_to_delete = (
-                local_session.query(ObjectMetadata).filter_by(obj=str(key.value)).first()
+                local_session.query(ObjectMetadata)
+                .filter_by(obj=str(key.value))
+                .first()
             )
 
             local_session.delete(metadata_to_delete)
@@ -154,7 +159,6 @@ class BinObjectManager(ObjectStore):
             local_session.close()
         except Exception as e:
             print(f"{type(self)} Exception in __delitem__ error {key}. {e}")
-
 
     def clear(self) -> None:
         local_session = sessionmaker(bind=self.db)()
