@@ -10,7 +10,7 @@ from typing import Union
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
-# syft relative
+# relative
 from ..... import lib
 from ..... import serialize
 from .....logger import traceback_and_raise

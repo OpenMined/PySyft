@@ -24,7 +24,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-# syft relative
+# relative
 from ....lib import lib_ast
 from ....logger import debug
 from ....logger import error
@@ -49,6 +49,7 @@ from .action.exception_action import ExceptionMessage
 from .action.exception_action import UnknownPrivateException
 from .client import Client
 from .managers.bin_obj_manager import BinObjectManager
+from .managers.user_manager import UserManager
 from .metadata import Metadata
 from .service.auth import AuthorizationException
 from .service.child_node_lifecycle_service import ChildNodeLifecycleService
@@ -70,7 +71,6 @@ from .service.resolve_pointer_type_service import ResolvePointerTypeService
 from .service.user_service import UserManagerService
 from .tables.bin_obj import BinObject
 from .tables.bin_obj_metadata import ObjectMetadata
-from .managers.user_manager import UserManager
 
 # this generic type for Client bound by Client
 ClientT = TypeVar("ClientT", bound=Client)
@@ -153,9 +153,7 @@ class Node(AbstractNode):
         # become quite numerous (or otherwise fill up RAM).
         # self.store is the elastic memory.
 
-        self.store = BinObjectManager(
-            db=self.db
-        )
+        self.store = BinObjectManager(db=self.db)
 
         # We need to register all the services once a node is created
         # On the off chance someone forgot to do this (super unlikely)

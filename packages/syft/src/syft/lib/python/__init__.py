@@ -1,7 +1,7 @@
 # stdlib
 from typing import Optional
 
-# syft relative
+# relative
 from . import collections
 from ...ast import add_classes
 from ...ast import add_dynamic_objects

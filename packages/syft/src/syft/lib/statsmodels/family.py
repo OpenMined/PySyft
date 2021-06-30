@@ -5,7 +5,7 @@ from typing import Type
 # third party
 import statsmodels
 
-# syft relative
+# relative
 from ...generate_wrapper import GenerateWrapper
 from ...lib.python.primitive_factory import PrimitiveFactory
 from ...lib.python.string import String

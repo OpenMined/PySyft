@@ -12,7 +12,7 @@ from typing import Union
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
-# syft relative
+# relative
 from ..... import lib
 from ..... import serialize
 from .....proto.core.node.common.action.get_set_property_pb2 import (

@@ -7,11 +7,11 @@ from typing import Union
 from syft.core.common.uid import UID
 from syft.core.node.domain.service import RequestStatus
 
-# syft relative
-# grid relative
+# relative
 from ..tables.request import Request
-#from ..exceptions import RequestError
 from .database_manager import DatabaseManager
+
+# from ..exceptions import RequestError
 
 
 class RequestManager(DatabaseManager):

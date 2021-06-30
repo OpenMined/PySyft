@@ -1,7 +1,7 @@
 # third party
 import torch
 
-# syft relative
+# relative
 from ...generate_wrapper import GenerateWrapper
 from ...proto.lib.torch.size_pb2 import Size as TorchSize_PB
 

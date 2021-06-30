@@ -3,6 +3,8 @@ from typing import Any
 
 # third party
 from sqlalchemy import Column
+from sqlalchemy import ForeignKey
+from sqlalchemy import Integer
 from sqlalchemy import LargeBinary
 from sqlalchemy import String
 from sqlalchemy.orm.decl_api import DeclarativeMeta
@@ -11,8 +13,9 @@ from sqlalchemy.orm.decl_api import DeclarativeMeta
 from syft import deserialize
 from syft import serialize
 
+# relative
 from . import Base
-from sqlalchemy import Column, Integer, String, ForeignKey
+
 
 class BinObject(Base):  # type: ignore
     # __tablename__ = "bin_object"
@@ -31,4 +34,3 @@ class BinObject(Base):  # type: ignore
         # storing DataMessage, we should unwrap
         self.binary = serialize(value, to_bytes=True)  # TODO: techdebt fix
         # self.obj_name = type(value).__name__
-

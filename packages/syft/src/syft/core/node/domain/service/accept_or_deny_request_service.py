@@ -14,7 +14,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 from typing_extensions import final
 
-# syft relative
+# relative
 from ..... import serialize
 from .....logger import debug
 from .....logger import traceback_and_raise

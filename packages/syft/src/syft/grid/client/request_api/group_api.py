@@ -2,7 +2,7 @@
 from typing import Any
 from typing import Callable
 
-# syft relative
+# relative
 from ...messages.group_messages import CreateGroupMessage
 from ...messages.group_messages import DeleteGroupMessage
 from ...messages.group_messages import GetGroupMessage

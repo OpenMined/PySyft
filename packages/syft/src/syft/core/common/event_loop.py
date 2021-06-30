@@ -9,7 +9,7 @@ from typing import Optional
 # third party
 import nest_asyncio
 
-# syft relative
+# relative
 from ...logger import info
 from .environment import is_interactive
 from .environment import is_jupyter

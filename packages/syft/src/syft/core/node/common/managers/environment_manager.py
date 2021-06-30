@@ -2,12 +2,12 @@
 from typing import List
 from typing import Union
 
-# syft relative
-# grid relative
+# relative
 from ..tables.environment import Environment
 from ..tables.user_environment import UserEnvironment
-#from ..exceptions import EnvironmentNotFoundError
 from .database_manager import DatabaseManager
+
+# from ..exceptions import EnvironmentNotFoundError
 
 
 class EnvironmentManager(DatabaseManager):

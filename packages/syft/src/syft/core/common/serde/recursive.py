@@ -8,7 +8,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from syft import deserialize
 from syft import serialize
 
-# syft relative
+# relative
 from ....core.common.serde.serializable import bind_protobuf
 from ....lib.python.dict import Dict
 from ....proto.core.common.recursive_serde_pb2 import (

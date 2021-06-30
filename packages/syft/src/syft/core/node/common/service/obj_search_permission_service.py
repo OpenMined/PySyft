@@ -14,7 +14,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 from typing_extensions import final
 
-# syft relative
+# relative
 from ..... import serialize
 from .....proto.core.node.common.service.object_search_permission_update_message_pb2 import (
     ObjectSearchPermissionUpdateMessage as ObjectSearchPermissionUpdateMessage_PB,

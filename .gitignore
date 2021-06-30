@@ -7,6 +7,7 @@
 .mypy_cache
 .python-version
 .vscode/
+.tox/
 
 # python stuff
 *__pycache__*

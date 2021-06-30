@@ -8,7 +8,7 @@ from typing import Optional
 from sqlitedict import SqliteDict
 from typing_extensions import Final
 
-# syft relative
+# relative
 from ... import serialize
 from ...logger import critical
 from ...logger import trace

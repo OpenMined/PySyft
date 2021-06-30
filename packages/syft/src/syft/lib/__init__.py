@@ -19,7 +19,7 @@ from cachetools.keys import hashkey
 from packaging import version
 import wrapt
 
-# syft relative
+# relative
 from ..ast.globals import Globals
 from ..core.node.abstract.node import AbstractNodeClient
 from ..lib.plan import create_plan_ast

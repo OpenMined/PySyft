@@ -13,7 +13,7 @@
 # # syft absolute
 # import syft as sy  # noqa F401
 #
-# # syft relative
+#
 # from ...grid.duet.process_test import SyftTestProcess
 #
 # ts = pytest.importorskip("tenseal")

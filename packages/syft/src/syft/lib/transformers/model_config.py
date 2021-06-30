@@ -2,7 +2,7 @@
 import transformers
 from transformers import PretrainedConfig
 
-# syft relative
+# relative
 from ... import deserialize
 from ...generate_wrapper import GenerateWrapper
 from ...lib.python.primitive_factory import PrimitiveFactory

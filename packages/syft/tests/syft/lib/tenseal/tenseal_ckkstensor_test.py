@@ -7,7 +7,7 @@
 # # syft absolute
 # import syft as sy
 #
-# # syft relative
+#
 # from .utils_test import decrypt
 #
 # ts = pytest.importorskip("tenseal")

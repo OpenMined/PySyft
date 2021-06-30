@@ -8,7 +8,7 @@ from typing import Any
 from typing import Optional
 from typing import Union
 
-# syft relative
+# relative
 from .. import python
 from ...core.common import UID
 from ...logger import traceback_and_raise

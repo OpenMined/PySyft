@@ -7,7 +7,7 @@ from typing import Tuple as TypeTuple
 # third party
 import zksk as zk  # noqa: 401 # required for pl.ec and pl.bn
 
-# syft relative
+# relative
 from . import nizk  # noqa: 401
 from . import secret  # noqa: 401
 from ...ast import add_classes

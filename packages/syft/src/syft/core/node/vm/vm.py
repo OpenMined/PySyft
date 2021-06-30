@@ -7,7 +7,7 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 from typing_extensions import final
 
-# syft relative
+# relative
 from ....logger import critical
 from ....logger import traceback_and_raise
 from ...common.message import SignedMessage
@@ -50,7 +50,8 @@ class VirtualMachine(Node):
 
         # specific location with name
         self.vm = SpecificLocation(name=self.name)
-        # syft relative
+
+        # relative
         from ..domain.service.vm_service import VMRequestAnswerMessageService
         from ..domain.service.vm_service import VMRequestService
 

@@ -1,9 +1,14 @@
-from datetime import datetime, timedelta
-from typing import Any, Union
+# stdlib
+from datetime import datetime
+from datetime import timedelta
+from typing import Any
+from typing import Union
 
+# third party
 from jose import jwt
 from passlib.context import CryptContext
 
+# grid absolute
 from app.core.config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

@@ -28,7 +28,7 @@ from syft.grid.messages.infra_messages import GetWorkerResponse
 from syft.grid.messages.infra_messages import GetWorkersMessage
 from syft.grid.messages.infra_messages import GetWorkersResponse
 
-# syft relative
+# relative
 from ...core.infrastructure import AWS_Serverfull
 from ...core.infrastructure import AZURE
 from ...core.infrastructure import Config
@@ -37,8 +37,6 @@ from ...core.infrastructure import Provider
 from ...core.infrastructure import aws_utils
 from ...core.infrastructure import azure_utils
 from ...core.infrastructure import gcp_utils
-
-# grid relative
 from ..database.tables.environment import states
 from ..database.utils import model_to_json
 from ..exceptions import AuthorizationError

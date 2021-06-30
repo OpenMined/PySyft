@@ -8,7 +8,7 @@ from typing import Union
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft relative
+# relative
 from ... import deserialize
 from ... import serialize
 from ...core.common import UID

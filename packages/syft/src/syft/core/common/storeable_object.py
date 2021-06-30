@@ -2,7 +2,7 @@
 from typing import List
 from typing import Optional
 
-# syft relative
+# relative
 from .serde.serializable import Serializable
 from .uid import UID
 

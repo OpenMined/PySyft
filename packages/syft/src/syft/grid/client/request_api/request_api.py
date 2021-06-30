@@ -10,7 +10,7 @@ from typing import Union
 # third party
 from pandas import DataFrame
 
-# syft relative
+# relative
 from ....core.common.message import SyftMessage
 from ..enums import RequestAPIFields
 

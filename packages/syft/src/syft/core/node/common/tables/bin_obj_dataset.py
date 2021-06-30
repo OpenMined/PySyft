@@ -1,6 +1,12 @@
+# third party
+from sqlalchemy import Column
+from sqlalchemy import ForeignKey
+from sqlalchemy import Integer
+from sqlalchemy import String
 
+# relative
 from . import Base
-from sqlalchemy import Column, Integer, String, ForeignKey
+
 
 class BinObjDataset(Base):
     __tablename__ = "bin_obj_dataset"

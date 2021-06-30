@@ -5,7 +5,7 @@ from typing import Callable
 from typing import Dict
 from typing import Optional
 
-# syft relative
+# relative
 from ...core.node.common.client import Client
 from ...core.node.vm.plan_vm import PlanVirtualMachine
 from ...core.pointer.pointer import Pointer

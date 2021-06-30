@@ -13,7 +13,7 @@ from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from requests_toolbelt.multipart import encoder
 
-# syft relative
+# relative
 from ...core.common.message import SyftMessage
 from ...core.common.serde.serialize import _serialize
 from ...proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
@@ -101,7 +101,7 @@ class GridHTTPConnection(HTTPConnection):
         session.mount("https://", adapter)
 
         response = session.get(self.base_url + "/metadata")
-        print("Response: ", type(response.content)) 
+        print("Response: ", type(response.content))
         print("Response: ", response.content)
         metadata_pb = Metadata_PB()
         metadata_pb.ParseFromString(response.content)

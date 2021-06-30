@@ -10,7 +10,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 from typing_extensions import final
 
-# syft relative
+# relative
 from ... import serialize
 from ...core.common.message import ImmediateSyftMessageWithReply
 from ...core.common.message import ImmediateSyftMessageWithoutReply

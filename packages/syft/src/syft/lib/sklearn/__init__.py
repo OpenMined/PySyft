@@ -14,7 +14,7 @@ from typing import Tuple as TypeTuple
 import sklearn
 import sklearn.linear_model
 
-# syft relative
+# relative
 from . import serializing_models  # noqa: 401
 from ...ast import add_classes
 from ...ast import add_methods

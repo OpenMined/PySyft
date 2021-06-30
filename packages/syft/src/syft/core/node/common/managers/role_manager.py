@@ -1,17 +1,18 @@
 # stdlib
+from typing import Any
 from typing import List
 from typing import Union
-from typing import Any
 
-# syft relative
-# grid relative
+# relative
 from ..tables.roles import Role
-#from ..exceptions import RoleNotFoundError
 from .database_manager import DatabaseManager
+
+# from ..exceptions import RoleNotFoundError
 
 
 class RoleManager(DatabaseManager):
     schema = Role
+
     def __init__(self, database):
         self._schema = RoleManager.schema
         self.db = database

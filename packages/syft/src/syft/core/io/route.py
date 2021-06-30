@@ -90,7 +90,7 @@ from typing import Union
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft relative
+# relative
 from ...logger import debug
 from ...logger import traceback_and_raise
 from ...proto.core.io.route_pb2 import SoloRoute as SoloRoute_PB

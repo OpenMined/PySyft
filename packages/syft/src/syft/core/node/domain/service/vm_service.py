@@ -5,7 +5,7 @@ from typing import Optional
 # third party
 from nacl.signing import VerifyKey
 
-# syft relative
+# relative
 from .....util import traceback_and_raise
 from ...abstract.node import AbstractNode
 from ...common.service.node_service import ImmediateNodeServiceWithReply

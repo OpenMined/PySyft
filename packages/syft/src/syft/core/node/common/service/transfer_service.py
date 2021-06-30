@@ -28,8 +28,7 @@ from syft.grid.messages.transfer_messages import SaveObjectMessage
 from syft.grid.messages.transfer_messages import SaveObjectResponse
 from syft.proto.core.io.address_pb2 import Address as Address_PB
 
-# syft relative
-# grid relative
+# relative
 from ...utils.executor import executor
 
 

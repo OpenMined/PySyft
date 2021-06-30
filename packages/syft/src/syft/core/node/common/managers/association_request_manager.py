@@ -4,13 +4,13 @@ from hashlib import sha256
 from typing import List
 from typing import Union
 
-# syft relative
-# grid relative
+# relative
 from ..tables.association import Association
 from ..tables.association_request import AssociationRequest
-#from ..exceptions import AssociationRequestError
 from .database_manager import DatabaseManager
 from .role_manager import RoleManager
+
+# from ..exceptions import AssociationRequestError
 
 
 class AssociationRequestManager(DatabaseManager):

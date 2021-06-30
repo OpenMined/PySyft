@@ -1,7 +1,7 @@
-# grid relative
+# relative
 from .groups import Group
-from .usergroup import UserGroup
 from .roles import Role
+from .usergroup import UserGroup
 
 
 def model_to_json(model):

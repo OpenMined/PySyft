@@ -1,7 +1,7 @@
 # stdlib
 from typing import Any
 
-# syft relative
+# relative
 from ...core.common import UID
 from ...core.common.serde.serializable import Serializable
 

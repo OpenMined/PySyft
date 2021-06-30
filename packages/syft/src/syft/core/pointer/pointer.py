@@ -98,7 +98,7 @@ from nacl.signing import VerifyKey
 # syft absolute
 import syft as sy
 
-# syft relative
+# relative
 from ...logger import debug
 from ...logger import error
 from ...logger import warning
@@ -218,7 +218,8 @@ class Pointer(AbstractPointer):
             if "You do not have permission to .get()" in str(
                 e
             ) or "UnknownPrivateException" in str(e):
-                # syft relative
+
+                # relative
                 from ..node.domain.service import RequestStatus
 
                 response_status = self.request(
@@ -257,7 +258,8 @@ class Pointer(AbstractPointer):
         :return: returns the downloaded data
         :rtype: Optional[StorableObject]
         """
-        # syft relative
+
+        # relative
         from ..node.domain.service import RequestStatus
 
         if self._exhausted:
@@ -402,7 +404,8 @@ class Pointer(AbstractPointer):
             This method should be used when the remote data associated with the pointer wants to be
             downloaded locally (or use .get() on the pointer).
         """
-        # syft relative
+
+        # relative
         from ..node.domain.service import RequestMessage
 
         # if you request non-blocking you don't need a timeout
@@ -434,7 +437,7 @@ class Pointer(AbstractPointer):
             if timeout_secs is None:
                 timeout_secs = 30  # default if not explicitly set
 
-            # syft relative
+            # relative
             from ..node.domain.service import RequestAnswerMessage
             from ..node.domain.service import RequestStatus
 
@@ -567,7 +570,8 @@ class Pointer(AbstractPointer):
         :param request_id: The request on which you are querying the status.
         :type request_id: UID
         """
-        # syft relative
+
+        # relative
         from ..node.domain.service import RequestAnswerMessage
 
         msg = RequestAnswerMessage(

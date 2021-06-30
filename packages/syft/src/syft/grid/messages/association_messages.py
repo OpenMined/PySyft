@@ -51,7 +51,7 @@ from syft.proto.grid.messages.association_messages_pb2 import (
     SendAssociationRequestResponse as SendAssociationRequestResponse_PB,
 )
 
-# syft relative
+# relative
 from ...core.common.serde.serializable import bind_protobuf
 
 

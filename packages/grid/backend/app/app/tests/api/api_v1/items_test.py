@@ -1,6 +1,8 @@
+# third party
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+# grid absolute
 from app.core.config import settings
 from app.tests.utils.item import create_random_item
 
@@ -10,7 +12,9 @@ def test_create_item(
 ) -> None:
     data = {"title": "Foo", "description": "Fighters"}
     response = client.post(
-        f"{settings.API_V1_STR}/items/", headers=superuser_token_headers, json=data,
+        f"{settings.API_V1_STR}/items/",
+        headers=superuser_token_headers,
+        json=data,
     )
     assert response.status_code == 200
     content = response.json()
@@ -25,7 +29,8 @@ def test_read_item(
 ) -> None:
     item = create_random_item(db)
     response = client.get(
-        f"{settings.API_V1_STR}/items/{item.id}", headers=superuser_token_headers,
+        f"{settings.API_V1_STR}/items/{item.id}",
+        headers=superuser_token_headers,
     )
     assert response.status_code == 200
     content = response.json()

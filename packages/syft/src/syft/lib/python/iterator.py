@@ -9,7 +9,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from syft import deserialize
 from syft import serialize
 
-# syft relative
+# relative
 from .. import python as py
 from ...core.common.serde.serializable import bind_protobuf
 from ...core.common.uid import UID

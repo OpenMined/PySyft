@@ -3,7 +3,7 @@ from typing import Any
 from typing import Callable
 from typing import Dict
 
-# syft relative
+# relative
 from ...messages.association_messages import DeleteAssociationRequestMessage
 from ...messages.association_messages import GetAssociationRequestMessage
 from ...messages.association_messages import GetAssociationRequestsMessage

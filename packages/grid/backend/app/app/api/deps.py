@@ -1,20 +1,28 @@
-from typing import Generator
+# stdlib
 from typing import Any
+from typing import Generator
 
-import syft as sy
-
-from fastapi import Depends, HTTPException, status
+# third party
+from fastapi import Depends
+from fastapi import HTTPException
+from fastapi import status
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
-from app import crud, models, schemas
+# syft absolute
+import syft as sy
+
+# grid absolute
+from app import crud
+from app import models
+from app import schemas
 from app.core import security
 from app.core.config import settings
+from app.db.base_class import Base
 from app.db.session import SessionLocal
 from app.db.session import engine
-from app.db.base_class import Base
 
 reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/login/access-token"
@@ -27,6 +35,7 @@ def get_db() -> Generator:
         yield db
     finally:
         db.close()
+
 
 # Tudor Hack
 def get_current_user(

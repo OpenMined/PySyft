@@ -8,7 +8,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 # syft absolute
 import syft
 
-# syft relative
+# relative
 from .core.common.serde.serializable import Serializable
 from .core.common.serde.serializable import bind_protobuf
 from .util import aggressive_set_attr

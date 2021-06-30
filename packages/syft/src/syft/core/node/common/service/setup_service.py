@@ -18,16 +18,15 @@ from syft.grid.messages.setup_messages import CreateInitialSetUpResponse
 from syft.grid.messages.setup_messages import GetSetUpMessage
 from syft.grid.messages.setup_messages import GetSetUpResponse
 
-# syft relative
+# relative
 from .....logger import traceback_and_raise
-
-# grid relative
 from ..tables.setup import SetupConfig
 from ..tables.utils import model_to_json
-#from ..exceptions import AuthorizationError
-#from ..exceptions import InvalidParameterValueError
-#from ..exceptions import MissingRequestKeyError
-#from ..exceptions import OwnerAlreadyExistsError
+
+# from ..exceptions import AuthorizationError
+# from ..exceptions import InvalidParameterValueError
+# from ..exceptions import MissingRequestKeyError
+# from ..exceptions import OwnerAlreadyExistsError
 
 
 def create_initial_setup(

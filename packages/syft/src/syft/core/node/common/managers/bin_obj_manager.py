@@ -15,6 +15,7 @@ from syft.core.common.uid import UID
 from syft.core.store import ObjectStore
 from syft.core.store.storeable_object import StorableObject
 
+# relative
 from ..tables.bin_obj import BinObject
 from ..tables.bin_obj_metadata import ObjectMetadata
 
@@ -30,10 +31,7 @@ def create_storable(
 
 
 class BinObjectManager(ObjectStore):
-    def __init__(
-        self,
-        db: Session
-    ) -> None:
+    def __init__(self, db: Session) -> None:
         self.db = db
 
     def get_object(self, key: UID) -> Optional[StorableObject]:
@@ -73,23 +71,12 @@ class BinObjectManager(ObjectStore):
         return values
 
     def __contains__(self, key: UID) -> bool:
-        return (
-            self.db.query(BinObject)
-            .filter_by(id=str(key.value))
-            .first()
-            is not None
-        )
+        return self.db.query(BinObject).filter_by(id=str(key.value)).first() is not None
 
     def __getitem__(self, key: UID) -> StorableObject:
-        bin_obj = (
-            self.db.query(BinObject)
-            .filter_by(id=str(key.value))
-            .first()
-        )
+        bin_obj = self.db.query(BinObject).filter_by(id=str(key.value)).first()
         obj_metadata = (
-            self.db.query(ObjectMetadata)
-            .filter_by(obj=str(key.value))
-            .first()
+            self.db.query(ObjectMetadata).filter_by(obj=str(key.value)).first()
         )
 
         if not bin_obj or not obj_metadata:
@@ -142,14 +129,10 @@ class BinObjectManager(ObjectStore):
 
         try:
             object_to_delete = (
-                self.db.query(BinObject)
-                .filter_by(id=str(key.value))
-                .first()
+                self.db.query(BinObject).filter_by(id=str(key.value)).first()
             )
             metadata_to_delete = (
-                self.db.query(BinObject)
-                .filter_by(obj=str(key.value))
-                .first()
+                self.db.query(BinObject).filter_by(obj=str(key.value)).first()
             )
             self.db.delete(object_to_delete)
             self.db.delete(metadata_to_delete)

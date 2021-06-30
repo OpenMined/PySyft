@@ -1,12 +1,18 @@
+# stdlib
+from datetime import datetime
+from datetime import timedelta
 import logging
-from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
+from typing import Dict
+from typing import Optional
 
+# third party
 import emails
 from emails.template import JinjaTemplate
 from jose import jwt
 
+# grid absolute
 from app.core.config import settings
 
 
@@ -93,7 +99,9 @@ def generate_password_reset_token(email: str) -> str:
     expires = now + delta
     exp = expires.timestamp()
     encoded_jwt = jwt.encode(
-        {"exp": exp, "nbf": now, "sub": email}, settings.SECRET_KEY, algorithm="HS256",
+        {"exp": exp, "nbf": now, "sub": email},
+        settings.SECRET_KEY,
+        algorithm="HS256",
     )
     return encoded_jwt
 
