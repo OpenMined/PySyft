@@ -57,8 +57,7 @@ class GridClient(DomainClient):
         conn_type: Type[ClientConnection],
         client_type: Type[Client],
         user_key: Optional[SigningKey] = None,
-        username: str = "",
-        password: str = "",
+        credentials: Dict = {},
     ) -> None:
 
         # Use Server metadata
@@ -66,8 +65,8 @@ class GridClient(DomainClient):
         self.conn = conn_type(url=url)  # type: ignore
         self.client_type = client_type
 
-        if username and password:
-            metadata, _user_key = self.conn.login(username=username, password=password)  # type: ignore
+        if credentials:
+            metadata, _user_key = self.conn.login(credentials=credentials)  # type: ignore
             _user_key = SigningKey(_user_key.encode(), encoder=HexEncoder)
         else:
             metadata = self.conn._get_metadata()  # type: ignore
@@ -239,6 +238,7 @@ def connect(
         conn_type=conn_type,
         client_type=DomainClient,
         user_key=user_key,
+        credentials=credentials,
     )
 
 
@@ -255,6 +255,6 @@ def login(
             "\n\nNo email and password defined in login() - connecting as anonymous user!!!\n"
         )
     else:
-        credentials = {"email": email, "password": password}
+        credentials = {"username": email, "password": password}
 
     return connect(url=url, credentials=credentials, conn_type=conn_type)
