@@ -17,6 +17,7 @@ from syft.core.store.storeable_object import StorableObject
 
 from ..tables.bin_obj import BinObject
 from ..tables.bin_obj_metadata import ObjectMetadata
+from sqlalchemy.orm import sessionmaker
 
 ENCODING = "UTF-8"
 
@@ -53,11 +54,15 @@ class BinObjectManager(ObjectStore):
         return str(self.values())
 
     def __len__(self) -> int:
-        return self.db.query(ObjectMetadata).count()
+        local_session = sessionmaker(bind=self.db)()
+        result = local_session.query(ObjectMetadata).count()
+        local_session.close()
 
     def keys(self) -> KeysView[UID]:
-        keys = self.db.query(BinObject.id).all()
+        local_session = sessionmaker(bind=self.db)()
+        keys = local_session.query(BinObject.id).all()
         keys = [UID.from_string(k[0]) for k in keys]
+        local_session.close()
         return keys
 
     def values(self) -> List[StorableObject]:
@@ -73,21 +78,25 @@ class BinObjectManager(ObjectStore):
         return values
 
     def __contains__(self, key: UID) -> bool:
-        return (
-            self.db.query(BinObject)
+        local_session = sessionmaker(bind=self.db)()
+        result =  (
+            local_session.query(BinObject)
             .filter_by(id=str(key.value))
             .first()
             is not None
         )
+        local_session.close()
+        return result
 
     def __getitem__(self, key: UID) -> StorableObject:
+        local_session = sessionmaker(bind=self.db)()
         bin_obj = (
-            self.db.query(BinObject)
+            local_session.query(BinObject)
             .filter_by(id=str(key.value))
             .first()
         )
         obj_metadata = (
-            self.db.query(ObjectMetadata)
+            local_session.query(ObjectMetadata)
             .filter_by(obj=str(key.value))
             .first()
         )
@@ -97,7 +106,7 @@ class BinObjectManager(ObjectStore):
 
         obj = StorableObject(
             id=UID.from_string(bin_obj.id),
-            data=bin_obj.object,
+            data=bin_obj.obj,
             description=obj_metadata.description,
             tags=obj_metadata.tags,
             read_permissions=dict(
@@ -112,11 +121,12 @@ class BinObjectManager(ObjectStore):
             ),
             # name=obj_metadata.name,
         )
+        local_session.close()
         return obj
 
     def __setitem__(self, key: UID, value: StorableObject) -> None:
 
-        bin_obj = BinObject(id=str(key.value), object=value.data)
+        bin_obj = BinObject(id=str(key.value), obj=value.data)
         # metadata_dict = storable_to_dict(value)
         metadata_obj = ObjectMetadata(
             obj=bin_obj.id,
@@ -134,33 +144,40 @@ class BinObjectManager(ObjectStore):
         if self.__contains__(key):
             self.delete(key)
 
-        self.db.add(bin_obj)
-        self.db.add(metadata_obj)
-        self.db.commit()
+        local_session = sessionmaker(bind=self.db)()
+        local_session.add(bin_obj)
+        local_session.add(metadata_obj)
+        local_session.commit()
+        local_session.close()
 
     def delete(self, key: UID) -> None:
-
         try:
-            object_to_delete = (
-                self.db.query(BinObject)
-                .filter_by(id=str(key.value))
-                .first()
-            )
+            local_session = sessionmaker(bind=self.db)()
             metadata_to_delete = (
-                self.db.query(BinObject)
+                local_session.query(ObjectMetadata)
                 .filter_by(obj=str(key.value))
                 .first()
             )
-            self.db.delete(object_to_delete)
-            self.db.delete(metadata_to_delete)
-            self.db.commit()
+
+            object_to_delete = (
+                local_session.query(BinObject)
+                .filter_by(id=str(key.value))
+                .first()
+            )
+            local_session.delete(metadata_to_delete)
+            local_session.delete(object_to_delete)
+            local_session.commit()
+            local_session.close()
         except Exception as e:
             print(f"{type(self)} Exception in __delitem__ error {key}. {e}")
 
+
     def clear(self) -> None:
-        self.db.query(BinObject).delete()
-        self.db.query(ObjectMetadata).delete()
-        self.db.commit()
+        local_session = sessionmaker(bind=self.db)()
+        local_session.query(BinObject).delete()
+        local_session.query(ObjectMetadata).delete()
+        local_session.commit()
+        local_session.close()
 
     def __repr__(self) -> str:
         return str(self.values())
