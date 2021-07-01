@@ -134,13 +134,6 @@ class GridClient(DomainClient):
                 "No Domain Name provided... picking randomly as: " + domain_name
             )
 
-        if "token" not in kwargs.keys():
-            kwargs["token"] = INSECURE_PYGRID_TOKEN
-            logging.info(
-                "No token provided... trying PyGrid Default (THIS IS NOT SAFE!!!): "
-                + kwargs["token"]
-            )
-
         kwargs["domain_name"] = domain_name
 
         response = self.conn.setup(**kwargs)  # type: ignore

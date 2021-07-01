@@ -184,12 +184,16 @@ class CreateInitialSetUpMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
         address: Address,
-        content: Dict,
+        email: str,
+        password: str,
+        domain_name: str,
         reply_to: Address,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
-        self.content = content
+        self.email = email
+        self.password = password
+        self.domain_name = domain_name
 
     def _object2proto(self) -> CreateInitialSetUpMessage_PB:
         """Returns a protobuf serialization of self.
@@ -206,7 +210,9 @@ class CreateInitialSetUpMessage(ImmediateSyftMessageWithReply):
         return CreateInitialSetUpMessage_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            content=json.dumps(self.content),
+            email=self.email,
+            password=self.password,
+            domain_name=self.domain_name,
             reply_to=serialize(self.reply_to),
         )
 
@@ -227,7 +233,9 @@ class CreateInitialSetUpMessage(ImmediateSyftMessageWithReply):
         return CreateInitialSetUpMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            content=json.loads(proto.content),
+            email=proto.email,
+            password=proto.password,
+            domain_name=proto.domain_name,
             reply_to=_deserialize(blob=proto.reply_to),
         )
 
@@ -255,13 +263,11 @@ class CreateInitialSetUpResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        status_code: int,
-        content: Dict,
+        service_response: str,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
-        self.status_code = status_code
-        self.content = content
+        self.service_response = service_response
 
     def _object2proto(self) -> CreateInitialSetUpResponse_PB:
         """Returns a protobuf serialization of self.
@@ -278,8 +284,7 @@ class CreateInitialSetUpResponse(ImmediateSyftMessageWithoutReply):
         return CreateInitialSetUpResponse_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            status_code=self.status_code,
-            content=json.dumps(self.content),
+            service_response=self.service_response,
         )
 
     @staticmethod
@@ -299,8 +304,7 @@ class CreateInitialSetUpResponse(ImmediateSyftMessageWithoutReply):
         return CreateInitialSetUpResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            status_code=proto.status_code,
-            content=json.loads(proto.content),
+            service_response=proto.service_response,
         )
 
     @staticmethod
