@@ -1,162 +1,275 @@
 # stdlib
 from typing import Any
 from typing import List
+from typing import Optional
 
 # third party
 from fastapi import APIRouter
 from fastapi import Body
 from fastapi import Depends
 from fastapi import HTTPException
-from fastapi.encoders import jsonable_encoder
-from pydantic.networks import EmailStr
+from fastapi.responses import JSONResponse
+from nacl.encoding import HexEncoder
+from nacl.signing import SigningKey
 from sqlalchemy.orm import Session
 
+# syft absolute
+from syft.core.node.common.action.exception_action import ExceptionMessage
+from syft.core.node.common.tables.utils import model_to_json
+
+# syft
+from syft.grid.messages.user_messages import CreateUserMessage
+from syft.grid.messages.user_messages import DeleteUserMessage
+from syft.grid.messages.user_messages import GetUserMessage
+from syft.grid.messages.user_messages import GetUsersMessage
+from syft.grid.messages.user_messages import SearchUsersMessage
+from syft.grid.messages.user_messages import UpdateUserMessage
+
 # grid absolute
-from app import crud
-from app import models
-from app import schemas
 from app.api import deps
-from app.core.config import settings
-from app.utils import send_new_account_email
+from app.core.node import domain
 
 router = APIRouter()
 
 
-# @router.get("/", response_model=List[schemas.User])
-# def read_users(
-#     db: Session = Depends(deps.get_db),
-#     skip: int = 0,
-#     limit: int = 100,
-#     current_user: models.User = Depends(deps.get_current_active_superuser),
-# ) -> Any:
-#     """
-#     Retrieve users.
-#     """
-#     users = crud.user.get_multi(db, skip=skip, limit=limit)
-#     return users
+@router.get("/me", status_code=200, response_class=JSONResponse)
+def get_setup(current_user: Any = Depends(deps.get_current_user)) -> Any:
+    """ Returns Current User Table """
+    user_dict = model_to_json(current_user)
+    user_dict["role"] = domain.roles.first(id=user_dict["role"]).name
+    del user_dict["private_key"]
+    return user_dict
 
 
-@router.post("/", response_model=schemas.User)
+@router.post("", status_code=201, response_class=JSONResponse)
 def create_user(
-    *,
-    db: Session = Depends(deps.get_db),
-    user_in: schemas.UserCreate,
-    current_user: object = Depends(deps.get_current_active_superuser),
-) -> Any:
+    current_user: Any = Depends(deps.get_current_user),
+    email: str = Body(..., example="info@openmined.org"),
+    password: str = Body(..., example="changethis"),
+    role: Optional[str] = Body(..., example="User"),
+):
+    """Creates new user user
+
+    Args:
+        current_user : Current session.
+        email: User email.
+        password: User password.
+        role: User role name.
+
+    Returns:
+        resp: JSON structure containing a log message
     """
-    Create new user.
-    """
-    user = crud.user.get_by_email(db, email=user_in.email)
-    if user:
-        raise HTTPException(
-            status_code=400,
-            detail="The user with this username already exists in the system.",
-        )
-    user = crud.user.create(db, obj_in=user_in)
-    if settings.EMAILS_ENABLED and user_in.email:
-        send_new_account_email(
-            email_to=user_in.email, username=user_in.email, password=user_in.password
-        )
-    return user
+    # Map User Key
+    user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
+
+    # Build Syft Message
+    msg = CreateUserMessage(
+        address=domain.address,
+        email=email,
+        password=password,
+        role=role,
+        reply_to=domain.address,
+    ).sign(signing_key=user_key)
+
+    # Process syft message
+    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+
+    # Handle Response types
+    resp = {}
+    if isinstance(reply, ExceptionMessage):
+        resp = {"error": reply.exception_msg}
+    else:
+        resp = {"message": reply.resp_msg}
+
+    return resp
 
 
-# @router.put("/me", response_model=schemas.User)
-# def update_user_me(
-#     *,
-#     db: Session = Depends(deps.get_db),
-#     password: str = Body(None),
-#     full_name: str = Body(None),
-#     email: EmailStr = Body(None),
-#     current_user: models.User = Depends(deps.get_current_active_user),
-# ) -> Any:
-#     """
-#     Update own user.
-#     """
-#     current_user_data = jsonable_encoder(current_user)
-#     user_in = schemas.UserUpdate(**current_user_data)
-#     if password is not None:
-#         user_in.password = password
-#     if full_name is not None:
-#         user_in.full_name = full_name
-#     if email is not None:
-#         user_in.email = email
-#     user = crud.user.update(db, db_obj=current_user, obj_in=user_in)
-#     return user
-#
-#
-# @router.get("/me", response_model=schemas.User)
-# def read_user_me(
-#     db: Session = Depends(deps.get_db),
-#     current_user: models.User = Depends(deps.get_current_active_user),
-# ) -> Any:
-#     """
-#     Get current user.
-#     """
-#     return current_user
-#
-#
-# @router.post("/open", response_model=schemas.User)
-# def create_user_open(
-#     *,
-#     db: Session = Depends(deps.get_db),
-#     password: str = Body(...),
-#     email: EmailStr = Body(...),
-#     full_name: str = Body(None),
-# ) -> Any:
-#     """
-#     Create new user without the need to be logged in.
-#     """
-#     if not settings.USERS_OPEN_REGISTRATION:
-#         raise HTTPException(
-#             status_code=403,
-#             detail="Open user registration is forbidden on this server",
-#         )
-#     user = crud.user.get_by_email(db, email=email)
-#     if user:
-#         raise HTTPException(
-#             status_code=400,
-#             detail="The user with this username already exists in the system",
-#         )
-#     user_in = schemas.UserCreate(password=password, email=email, full_name=full_name)
-#     user = crud.user.create(db, obj_in=user_in)
-#     return user
-#
-#
-# @router.get("/{user_id}", response_model=schemas.User)
-# def read_user_by_id(
-#     user_id: int,
-#     current_user: models.User = Depends(deps.get_current_active_user),
-#     db: Session = Depends(deps.get_db),
-# ) -> Any:
-#     """
-#     Get a specific user by id.
-#     """
-#     user = crud.user.get(db, id=user_id)
-#     if user == current_user:
-#         return user
-#     if not crud.user.is_superuser(current_user):
-#         raise HTTPException(
-#             status_code=400, detail="The user doesn't have enough privileges"
-#         )
-#     return user
-#
-#
-# @router.put("/{user_id}", response_model=schemas.User)
-# def update_user(
-#     *,
-#     db: Session = Depends(deps.get_db),
-#     user_id: int,
-#     user_in: schemas.UserUpdate,
-#     current_user: models.User = Depends(deps.get_current_active_superuser),
-# ) -> Any:
-#     """
-#     Update a user.
-#     """
-#     user = crud.user.get(db, id=user_id)
-#     if not user:
-#         raise HTTPException(
-#             status_code=404,
-#             detail="The user with this username does not exist in the system",
-#         )
-#     user = crud.user.update(db, db_obj=user, obj_in=user_in)
-#     return user
+@router.get("", status_code=200, response_class=JSONResponse)
+def get_all_users_route(
+    current_user: Any = Depends(deps.get_current_user),
+):
+    """Retrieves all registered users
+
+    Args:
+        current_user : Current session.
+    Returns:
+        resp: JSON structure containing registered users.
+    """
+    # Map User Key
+    user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
+
+    # Build Syft Message
+    msg = GetUsersMessage(address=domain.address, reply_to=domain.address).sign(
+        signing_key=user_key
+    )
+
+    # Process syft message
+    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+
+    # Handle Response types
+    resp = {}
+    if isinstance(reply, ExceptionMessage):
+        resp = {"error": reply.exception_msg}
+    else:
+        resp = reply.content
+
+    return resp
+
+
+@router.get("/{user_id}", status_code=200, response_class=JSONResponse)
+def get_specific_user_route(
+    user_id: int,
+    current_user: Any = Depends(deps.get_current_user),
+):
+    """Creates new user user
+
+    Args:
+        current_user : Current session.
+        user_id: Target user id.
+    Returns:
+        resp: JSON structure containing target user.
+    """
+
+    # Map User Key
+    user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
+
+    # Build Syft Message
+    msg = GetUserMessage(
+        address=domain.address, user_id=user_id, reply_to=domain.address
+    ).sign(signing_key=user_key)
+
+    # Process syft message
+    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+
+    # Handle Response types
+    resp = {}
+    if isinstance(reply, ExceptionMessage):
+        resp = {"error": reply.exception_msg}
+    else:
+        resp = reply.content
+
+    return resp
+
+
+@router.put("/{user_id}", status_code=200, response_class=JSONResponse)
+def update_use_route(
+    user_id: int,
+    current_user: Any = Depends(deps.get_current_user),
+    email: Optional[str] = Body(..., example="info@openmined.org"),
+    password: Optional[str] = Body(..., example="changethis"),
+    role: Optional[str] = Body(..., example="User"),
+):
+    """Changes user attributes
+
+    Args:
+        current_user : Current session.
+        user_id: Target user id.
+        email: New email.
+        password: New password.
+        role: New role name.
+
+    Returns:
+        resp: JSON structure containing a log message
+    """
+    # Map User Key
+    user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
+
+    # Build Syft Message
+    msg = UpdateUserMessage(
+        address=domain.address,
+        user_id=user_id,
+        email=email,
+        password=password,
+        role=role,
+        reply_to=domain.address,
+    ).sign(signing_key=user_key)
+
+    # Process syft message
+    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+
+    # Handle Response types
+    resp = {}
+    if isinstance(reply, ExceptionMessage):
+        resp = {"error": reply.exception_msg}
+    else:
+        resp = {"message": reply.resp_msg}
+
+    return resp
+
+
+@router.delete("/{user_id}", status_code=200, response_class=JSONResponse)
+def delete_user_role(
+    user_id: int,
+    current_user: Any = Depends(deps.get_current_user),
+):
+    """Deletes a user
+
+    Args:
+        user_id: Target user id.
+        current_user : Current session.
+
+    Returns:
+        resp: JSON structure containing a log message
+    """
+    # Map User Key
+    user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
+
+    # Build Syft Message
+    msg = DeleteUserMessage(
+        address=domain.address, user_id=user_id, reply_to=domain.address
+    ).sign(signing_key=user_key)
+
+    # Process syft message
+    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+
+    # Handle Response types
+    resp = {}
+    if isinstance(reply, ExceptionMessage):
+        resp = {"error": reply.exception_msg}
+    else:
+        resp = {"message": reply.resp_msg}
+
+    return resp
+
+
+@router.post("/search", status_code=200, response_class=JSONResponse)
+def search_users_route(
+    current_user: Any = Depends(deps.get_current_user),
+    email: Optional[str] = Body(..., example="info@openmined.org"),
+    groups: Optional[str] = Body(..., example="OM Group"),
+    role: Optional[str] = Body(..., example="User"),
+):
+    """Filter users by using it's properties
+
+    Args:
+        current_user : Current session.
+        email: Filter email.
+        role: Filter role name.
+        groups: Filter group name.
+
+    Returns:
+        resp: JSON structure containing search results.
+    """
+    # Map User Key
+    user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
+
+    # Build Syft Message
+    msg = SearchUsersMessage(
+        address=domain.address,
+        email=email,
+        groups=groups,
+        role=role,
+        reply_to=domain.address,
+    ).sign(signing_key=user_key)
+
+    # Process syft message
+    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+
+    # Handle Response types
+    resp = {}
+    if isinstance(reply, ExceptionMessage):
+        resp = {"error": reply.exception_msg}
+    else:
+        resp = reply.content
+
+    return resp
