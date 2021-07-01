@@ -52,7 +52,7 @@ def create_setup(
     if isinstance(reply, ExceptionMessage):
         resp = {"error": reply.exception_msg}
     else:
-        resp = {"message": reply.service_response}
+        resp = {"message": reply.resp_msg}
 
     return resp
 
