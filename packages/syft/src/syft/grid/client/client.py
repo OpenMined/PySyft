@@ -25,6 +25,7 @@ from ...core.io.address import Address
 from ...core.io.connection import ClientConnection
 from ...core.io.location.specific import SpecificLocation
 from ...core.io.route import SoloRoute
+from ...core.node.common.action.exception_action import ExceptionMessage
 from ...core.node.common.client import Client
 from ...core.node.device.client import DeviceClient
 from ...core.node.domain.client import DomainClient
@@ -201,23 +202,18 @@ class GridClient(DomainClient):
             content = {}
         signed_msg = self.__build_msg(grid_msg=grid_msg, content=content)
         response = self.send_immediate_msg_with_reply(msg=signed_msg)
-        # print("got this intermediary", response, type(response))
         return self.__process_response(response=response)
 
     def __build_msg(self, grid_msg: Any, content: Dict[Any, Any]) -> Any:
-        args = {
-            RequestAPIFields.ADDRESS: self.address,
-            RequestAPIFields.CONTENT: content,
-            RequestAPIFields.REPLY_TO: self.address,
-        }
-        return grid_msg(**args).sign(signing_key=self.signing_key)
+        content[RequestAPIFields.ADDRESS] = self.address
+        content[RequestAPIFields.REPLY_TO] = self.address
+        return grid_msg(**content).sign(signing_key=self.signing_key)
 
     def __process_response(self, response: SyftMessage) -> Dict[Any, Any]:
-        # print("calling __process_response", response, type(response))
-        if response.status_code == 200:  # type: ignore
-            return response.content  # type: ignore
+        if isinstance(response, ExceptionMessage):
+            raise response.exception_type
         else:
-            raise RequestAPIException(message=response.content[RequestAPIFields.ERROR])  # type: ignore
+            return response
 
 
 def connect(
