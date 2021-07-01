@@ -68,8 +68,7 @@ class DatabaseManager:
             parameters: Parameters used to filter the object.
         """
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
-        object_to_delete = session_local.query(**kwargs)[0]
-        session_local.delete(object_to_delete)
+        session_local.query(self._schema).filter_by(**kwargs).delete()
         session_local.commit()
         session_local.close()
 

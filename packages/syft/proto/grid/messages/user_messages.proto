@@ -10,29 +10,23 @@ import "proto/core/io/address.proto";
 message CreateUserMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-  string content = 3;
-  syft.core.io.Address reply_to = 4;
-}
-
-message CreateUserResponse {
-  syft.core.common.UID msg_id = 1;
-  int32 status_code = 2;
-  string content = 3;
-  syft.core.io.Address address = 4;
+  string email = 3;
+  string password = 4;
+  string role = 5;
+  syft.core.io.Address reply_to = 6;
 }
 
 // GET User
 message GetUserMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-  string content = 3;
+  int32 user_id = 3;
   syft.core.io.Address reply_to = 4;
 }
 
 
 message GetUserResponse {
   syft.core.common.UID msg_id = 1;
-  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
@@ -41,13 +35,11 @@ message GetUserResponse {
 message GetUsersMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-  string content = 3;
   syft.core.io.Address reply_to = 4;
 }
 
 message GetUsersResponse {
   syft.core.common.UID msg_id = 1;
-  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
@@ -56,43 +48,34 @@ message GetUsersResponse {
 message DeleteUserMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-  string content = 3;
+  int32 user_id = 3;
   syft.core.io.Address reply_to = 4;
-}
-
-message DeleteUserResponse {
-  syft.core.common.UID msg_id = 1;
-  int32 status_code = 2;
-  string content = 3;
-  syft.core.io.Address address = 4;
 }
 
 // UPDATE User
 message UpdateUserMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-  string content = 3;
-  syft.core.io.Address reply_to = 4;
-}
-
-message UpdateUserResponse {
-  syft.core.common.UID msg_id = 1;
-  int32 status_code = 2;
-  string content = 3;
-  syft.core.io.Address address = 4;
+  int32 user_id = 3;
+  string email = 4;
+  string password = 5;
+  string role = 6;
+  string groups = 7;
+  syft.core.io.Address reply_to = 8;
 }
 
 // Search Users
 message SearchUsersMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-  string content = 3;
-  syft.core.io.Address reply_to = 4;
+  string email = 3;
+  string role = 4;
+  string groups = 5;
+  syft.core.io.Address reply_to = 6;
 }
 
 message SearchUsersResponse {
   syft.core.common.UID msg_id = 1;
-  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
