@@ -277,7 +277,7 @@ def search_users_msg(
 ) -> SearchUsersResponse:
     user_parameters = {
         "email": msg.email,
-        "role": msg.role,
+        "role": node.roles.first(name=msg.role).id,
     }
 
     filter_parameters = lambda key: user_parameters[key]
@@ -289,7 +289,7 @@ def search_users_msg(
     if _allowed:
         try:
             users = node.users.query(**user_parameters)
-            if msg.group:
+            if msg.groups:
                 filtered_users = filter(
                     lambda x: node.groups.contain_association(
                         user=x.id, group=msg.group

@@ -1,17 +1,14 @@
 # stdlib
 from typing import Any
-from typing import List
 from typing import Optional
 
 # third party
 from fastapi import APIRouter
 from fastapi import Body
 from fastapi import Depends
-from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
-from sqlalchemy.orm import Session
 
 # syft absolute
 from syft.core.node.common.action.exception_action import ExceptionMessage
@@ -151,13 +148,13 @@ def get_specific_user_route(
     return resp
 
 
-@router.put("/{user_id}", status_code=200, response_class=JSONResponse)
+@router.patch("/{user_id}", status_code=200, response_class=JSONResponse)
 def update_use_route(
     user_id: int,
     current_user: Any = Depends(deps.get_current_user),
-    email: Optional[str] = Body(..., example="info@openmined.org"),
-    password: Optional[str] = Body(..., example="changethis"),
-    role: Optional[str] = Body(..., example="User"),
+    email: Optional[str] = Body(default=None, example="info@openmined.org"),
+    password: Optional[str] = Body(default=None, example="changethis"),
+    role: Optional[str] = Body(default=None, example="User"),
 ):
     """Changes user attributes
 
@@ -235,9 +232,9 @@ def delete_user_role(
 @router.post("/search", status_code=200, response_class=JSONResponse)
 def search_users_route(
     current_user: Any = Depends(deps.get_current_user),
-    email: Optional[str] = Body(..., example="info@openmined.org"),
-    groups: Optional[str] = Body(..., example="OM Group"),
-    role: Optional[str] = Body(..., example="User"),
+    email: Optional[str] = Body(default=None, example="info@openmined.org"),
+    groups: Optional[str] = Body(default=None, example="OM Group"),
+    role: Optional[str] = Body(default=None, example="User"),
 ):
     """Filter users by using it's properties
 
