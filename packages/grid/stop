@@ -1,3 +1,8 @@
+if [ -f .env ]
+then
+  export $(cat .env | sed 's/#.*//g' | xargs)
+fi
+
 while [ $# -gt 0 ]; do
   case "$1" in
     --name=*)
@@ -15,8 +20,7 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-printf "\n\nLaunching new domain node '%s'" "$name"
+printf "\n\nStopping domain node '%s'" "$name"
 printf " on port %s\n\n" "$port"
 
-DOMAIN_PORT=$port TRAEFIK_TAG=$name docker compose -p $name up
-
+DOMAIN_PORT=$port docker compose --file "docker-compose.override.yml" --project-name "$name" down
