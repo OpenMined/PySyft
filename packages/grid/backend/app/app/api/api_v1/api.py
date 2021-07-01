@@ -2,7 +2,10 @@
 from fastapi import APIRouter
 
 # grid absolute
-from app.api.api_v1.endpoints import login, setup, syft, users
+from app.api.api_v1.endpoints import login
+from app.api.api_v1.endpoints import setup
+from app.api.api_v1.endpoints import syft
+from app.api.api_v1.endpoints import users
 
 api_router = APIRouter()
 api_router.include_router(login.router, tags=["Grid Login"])

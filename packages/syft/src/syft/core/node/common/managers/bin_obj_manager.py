@@ -5,6 +5,7 @@ from typing import List
 from typing import Optional
 
 # third party
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.decl_api import DeclarativeMeta
 from sqlalchemy.orm.session import Session
 from torch import Tensor
@@ -18,7 +19,6 @@ from syft.core.store.storeable_object import StorableObject
 # relative
 from ..tables.bin_obj import BinObject
 from ..tables.bin_obj_metadata import ObjectMetadata
-from sqlalchemy.orm import sessionmaker
 
 ENCODING = "UTF-8"
 

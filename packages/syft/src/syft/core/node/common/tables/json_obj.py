@@ -1,7 +1,10 @@
-# grid relative
-# syft relative
+# third party
+from sqlalchemy import Column
+from sqlalchemy import JSON
+from sqlalchemy import String
+
+# relative
 from . import Base
-from sqlalchemy import Column, String, JSON
 
 
 class JsonObject(Base):

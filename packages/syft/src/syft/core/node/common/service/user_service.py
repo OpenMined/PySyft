@@ -30,12 +30,11 @@ from syft.grid.messages.user_messages import UpdateUserResponse
 
 # relative
 from .....logger import traceback_and_raise
-from ..tables.utils import model_to_json
-
 from ..exceptions import AuthorizationError
 from ..exceptions import MissingRequestKeyError
 from ..exceptions import RoleNotFoundError
 from ..exceptions import UserNotFoundError
+from ..tables.utils import model_to_json
 
 
 def create_user_msg(

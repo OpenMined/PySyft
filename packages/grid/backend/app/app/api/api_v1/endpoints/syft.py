@@ -7,10 +7,10 @@ from fastapi import Request
 from fastapi import Response
 
 # syft absolute
+from syft import deserialize
+from syft import serialize
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
-from syft import serialize
-from syft import deserialize
 
 # grid absolute
 from app.core.node import domain

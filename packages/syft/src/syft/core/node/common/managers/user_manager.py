@@ -9,10 +9,9 @@ from bcrypt import gensalt
 from bcrypt import hashpw
 
 # relative
-from ..tables.user import SyftUser
-
 from ..exceptions import InvalidCredentialsError
 from ..exceptions import UserNotFoundError
+from ..tables.user import SyftUser
 from .database_manager import DatabaseManager
 from .role_manager import RoleManager
 
