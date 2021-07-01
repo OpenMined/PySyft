@@ -7,6 +7,8 @@ from typing import Union
 from bcrypt import checkpw
 from bcrypt import gensalt
 from bcrypt import hashpw
+from nacl.encoding import HexEncoder
+from nacl.signing import VerifyKey
 
 # relative
 from ..exceptions import InvalidCredentialsError
@@ -93,38 +95,51 @@ class UserManager(DatabaseManager):
 
         self.modify({"id": user_id}, {key: value})
 
-    def can_create_users(self, user_id: str) -> bool:
-        role = self.role(user_id=user_id)
-        if role:
-            return role.can_create_users
-        else:
-            return False
-
-    def can_upload_data(self, user_id: str) -> bool:
-        role = self.role(user_id=user_id)
-        if role:
-            return role.can_upload_data
-        else:
-            return False
-
-    def can_triage_requests(self, user_id: str) -> bool:
-        return self.role(user_id=user_id).can_triage_requests
-
-    def can_manage_infrastructure(self, user_id: str) -> bool:
-        return self.role(user_id=user_id).can_manage_infrastructure
-
-    def can_edit_roles(self, user_id: str) -> bool:
-        return self.role(user_id=user_id).can_edit_roles
-
-    def can_create_groups(self, user_id: str) -> bool:
-        return self.role(user_id=user_id).can_create_groups
-
-    def role(self, user_id: int):
+    def can_create_users(self, verify_key: VerifyKey) -> bool:
         try:
-            user = self.first(id=user_id)
-            return self.roles.first(id=user.role)
+            return self.role(verify_key=verify_key).can_create_users
         except UserNotFoundError:
             return False
+
+    def can_upload_data(self, verify_key: VerifyKey) -> bool:
+        try:
+            return self.role(verify_key=verify_key).can_upload_data
+        except UserNotFoundError:
+            return False
+
+    def can_triage_requests(self, verify_key: VerifyKey) -> bool:
+        try:
+            return self.role(verify_key=verify_key).can_triage_requests
+        except UserNotFoundError:
+            return False
+
+    def can_manage_infrastructure(self, verify_key: VerifyKey) -> bool:
+        try:
+            return self.role(verify_key=verify_key).can_manage_infrastructure
+        except UserNotFoundError:
+            return False
+
+    def can_edit_roles(self, verify_key: VerifyKey) -> bool:
+        try:
+            return self.role(verify_key=verify_key).can_edit_roles
+        except UserNotFoundError:
+            return False
+
+    def can_create_groups(self, verify_key: VerifyKey) -> bool:
+        try:
+            return self.role(verify_key=verify_key).can_create_groups
+        except UserNotFoundError:
+            return False
+
+    def role(self, verify_key: VerifyKey):
+        user_id = self.get_user(verify_key).id
+        user = self.first(id=user_id)
+        return self.roles.first(id=user.role)
+
+    def get_user(self, verify_key: VerifyKey) -> Any:
+        return self.first(
+            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+        )
 
     def __login_validation(self, email: str, password: str) -> bool:
         try:

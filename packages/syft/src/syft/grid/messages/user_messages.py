@@ -19,13 +19,7 @@ from syft.proto.grid.messages.user_messages_pb2 import (
     CreateUserMessage as CreateUserMessage_PB,
 )
 from syft.proto.grid.messages.user_messages_pb2 import (
-    CreateUserResponse as CreateUserResponse_PB,
-)
-from syft.proto.grid.messages.user_messages_pb2 import (
     DeleteUserMessage as DeleteUserMessage_PB,
-)
-from syft.proto.grid.messages.user_messages_pb2 import (
-    DeleteUserResponse as DeleteUserResponse_PB,
 )
 from syft.proto.grid.messages.user_messages_pb2 import (
     GetUserMessage as GetUserMessage_PB,
@@ -48,9 +42,6 @@ from syft.proto.grid.messages.user_messages_pb2 import (
 from syft.proto.grid.messages.user_messages_pb2 import (
     UpdateUserMessage as UpdateUserMessage_PB,
 )
-from syft.proto.grid.messages.user_messages_pb2 import (
-    UpdateUserResponse as UpdateUserResponse_PB,
-)
 
 
 @bind_protobuf
@@ -59,12 +50,16 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
         address: Address,
-        content: Dict,
+        email: str,
+        password: str,
         reply_to: Address,
+        role: Optional[str] = "",
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
-        self.content = content
+        self.email = email
+        self.password = password
+        self.role = role
 
     def _object2proto(self) -> CreateUserMessage_PB:
         """Returns a protobuf serialization of self.
@@ -81,7 +76,9 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
         return CreateUserMessage_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            content=json.dumps(self.content),
+            email=self.email,
+            password=self.password,
+            role=self.role,
             reply_to=serialize(self.reply_to),
         )
 
@@ -102,7 +99,9 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
         return CreateUserMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            content=json.loads(proto.content),
+            email=proto.email,
+            password=proto.password,
+            role=proto.role,
             reply_to=_deserialize(blob=proto.reply_to),
         )
 
@@ -126,88 +125,16 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
 
 @bind_protobuf
 @final
-class CreateUserResponse(ImmediateSyftMessageWithoutReply):
-    def __init__(
-        self,
-        address: Address,
-        status_code: int,
-        content: Dict,
-        msg_id: Optional[UID] = None,
-    ):
-        super().__init__(address=address, msg_id=msg_id)
-        self.status_code = status_code
-        self.content = content
-
-    def _object2proto(self) -> CreateUserResponse_PB:
-        """Returns a protobuf serialization of self.
-        As a requirement of all objects which inherit from Serializable,
-        this method transforms the current object into the corresponding
-        Protobuf object so that it can be further serialized.
-        :return: returns a protobuf object
-        :rtype: SignalingOfferMessage_PB
-        .. note::
-            This method is purely an internal method. Please use serialize(object) or one of
-            the other public serialization methods if you wish to serialize an
-            object.
-        """
-        return CreateUserResponse_PB(
-            msg_id=serialize(self.id),
-            address=serialize(self.address),
-            status_code=self.status_code,
-            content=json.dumps(self.content),
-        )
-
-    @staticmethod
-    def _proto2object(
-        proto: CreateUserResponse_PB,
-    ) -> "CreateUserResponse":
-        """Creates a SignalingOfferMessage from a protobuf
-        As a requirement of all objects which inherit from Serializable,
-        this method transforms a protobuf object into an instance of this class.
-        :return: returns an instance of SignalingOfferMessage
-        :rtype: SignalingOfferMessage
-        .. note::
-            This method is purely an internal method. Please use syft.deserialize()
-            if you wish to deserialize an object.
-        """
-
-        return CreateUserResponse(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
-            status_code=proto.status_code,
-            content=json.loads(proto.content),
-        )
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """Return the type of protobuf object which stores a class of this type
-        As a part of serialization and deserialization, we need the ability to
-        lookup the protobuf object type directly from the object type. This
-        static method allows us to do this.
-        Importantly, this method is also used to create the reverse lookup ability within
-        the metaclass of Serializable. In the metaclass, it calls this method and then
-        it takes whatever type is returned from this method and adds an attribute to it
-        with the type of this class attached to it. See the MetaSerializable class for
-        details.
-        :return: the type of protobuf object which corresponds to this class.
-        :rtype: GeneratedProtocolMessageType
-        """
-
-        return CreateUserResponse_PB
-
-
-@bind_protobuf
-@final
 class GetUserMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
         address: Address,
-        content: Dict,
+        user_id: int,
         reply_to: Address,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
-        self.content = content
+        self.user_id = user_id
 
     def _object2proto(self) -> GetUserMessage_PB:
         """Returns a protobuf serialization of self.
@@ -224,7 +151,7 @@ class GetUserMessage(ImmediateSyftMessageWithReply):
         return GetUserMessage_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            content=json.dumps(self.content),
+            user_id=self.user_id,
             reply_to=serialize(self.reply_to),
         )
 
@@ -245,7 +172,7 @@ class GetUserMessage(ImmediateSyftMessageWithReply):
         return GetUserMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            content=json.loads(proto.content),
+            user_id=proto.user_id,
             reply_to=_deserialize(blob=proto.reply_to),
         )
 
@@ -273,12 +200,10 @@ class GetUserResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        status_code: int,
         content: Dict,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
-        self.status_code = status_code
         self.content = content
 
     def _object2proto(self) -> GetUserResponse_PB:
@@ -296,7 +221,6 @@ class GetUserResponse(ImmediateSyftMessageWithoutReply):
         return GetUserResponse_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            status_code=self.status_code,
             content=json.dumps(self.content),
         )
 
@@ -317,7 +241,6 @@ class GetUserResponse(ImmediateSyftMessageWithoutReply):
         return GetUserResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            status_code=proto.status_code,
             content=json.loads(proto.content),
         )
 
@@ -345,12 +268,10 @@ class GetUsersMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
         address: Address,
-        content: Dict,
         reply_to: Address,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
-        self.content = content
 
     def _object2proto(self) -> GetUsersMessage_PB:
         """Returns a protobuf serialization of self.
@@ -367,7 +288,6 @@ class GetUsersMessage(ImmediateSyftMessageWithReply):
         return GetUsersMessage_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            content=json.dumps(self.content),
             reply_to=serialize(self.reply_to),
         )
 
@@ -388,7 +308,6 @@ class GetUsersMessage(ImmediateSyftMessageWithReply):
         return GetUsersMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            content=json.loads(proto.content),
             reply_to=_deserialize(blob=proto.reply_to),
         )
 
@@ -416,12 +335,10 @@ class GetUsersResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        status_code: int,
         content: Dict,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
-        self.status_code = status_code
         self.content = content
 
     def _object2proto(self) -> GetUsersResponse_PB:
@@ -439,7 +356,6 @@ class GetUsersResponse(ImmediateSyftMessageWithoutReply):
         return GetUsersResponse_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            status_code=self.status_code,
             content=json.dumps(self.content),
         )
 
@@ -460,7 +376,6 @@ class GetUsersResponse(ImmediateSyftMessageWithoutReply):
         return GetUsersResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            status_code=proto.status_code,
             content=json.loads(proto.content),
         )
 
@@ -488,12 +403,20 @@ class UpdateUserMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
         address: Address,
-        content: Dict,
+        user_id: int,
         reply_to: Address,
         msg_id: Optional[UID] = None,
+        email: Optional[str] = "",
+        password: Optional[str] = "",
+        role: Optional[str] = "",
+        groups: Optional[str] = "",
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
-        self.content = content
+        self.user_id = user_id
+        self.email = email
+        self.password = password
+        self.role = role
+        self.groups = groups
 
     def _object2proto(self) -> UpdateUserMessage_PB:
         """Returns a protobuf serialization of self.
@@ -510,7 +433,11 @@ class UpdateUserMessage(ImmediateSyftMessageWithReply):
         return UpdateUserMessage_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            content=json.dumps(self.content),
+            user_id=self.user_id,
+            email=self.email,
+            password=self.password,
+            role=self.role,
+            groups=self.groups,
             reply_to=serialize(self.reply_to),
         )
 
@@ -531,7 +458,11 @@ class UpdateUserMessage(ImmediateSyftMessageWithReply):
         return UpdateUserMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            content=json.loads(proto.content),
+            user_id=proto.user_id,
+            email=proto.email,
+            password=proto.password,
+            role=proto.role,
+            groups=proto.groups,
             reply_to=_deserialize(blob=proto.reply_to),
         )
 
@@ -555,88 +486,16 @@ class UpdateUserMessage(ImmediateSyftMessageWithReply):
 
 @bind_protobuf
 @final
-class UpdateUserResponse(ImmediateSyftMessageWithoutReply):
-    def __init__(
-        self,
-        address: Address,
-        status_code: int,
-        content: Dict,
-        msg_id: Optional[UID] = None,
-    ):
-        super().__init__(address=address, msg_id=msg_id)
-        self.status_code = status_code
-        self.content = content
-
-    def _object2proto(self) -> UpdateUserResponse_PB:
-        """Returns a protobuf serialization of self.
-        As a requirement of all objects which inherit from Serializable,
-        this method transforms the current object into the corresponding
-        Protobuf object so that it can be further serialized.
-        :return: returns a protobuf object
-        :rtype: SignalingOfferMessage_PB
-        .. note::
-            This method is purely an internal method. Please use serialize(object) or one of
-            the other public serialization methods if you wish to serialize an
-            object.
-        """
-        return UpdateUserResponse_PB(
-            msg_id=serialize(self.id),
-            address=serialize(self.address),
-            status_code=self.status_code,
-            content=json.dumps(self.content),
-        )
-
-    @staticmethod
-    def _proto2object(
-        proto: UpdateUserResponse_PB,
-    ) -> "UpdateUserResponse":
-        """Creates a SignalingOfferMessage from a protobuf
-        As a requirement of all objects which inherit from Serializable,
-        this method transforms a protobuf object into an instance of this class.
-        :return: returns an instance of SignalingOfferMessage
-        :rtype: SignalingOfferMessage
-        .. note::
-            This method is purely an internal method. Please use syft.deserialize()
-            if you wish to deserialize an object.
-        """
-
-        return UpdateUserResponse(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
-            status_code=proto.status_code,
-            content=json.loads(proto.content),
-        )
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """Return the type of protobuf object which stores a class of this type
-        As a part of serialization and deserialization, we need the ability to
-        lookup the protobuf object type directly from the object type. This
-        static method allows us to do this.
-        Importantly, this method is also used to create the reverse lookup ability within
-        the metaclass of Serializable. In the metaclass, it calls this method and then
-        it takes whatever type is returned from this method and adds an attribute to it
-        with the type of this class attached to it. See the MetaSerializable class for
-        details.
-        :return: the type of protobuf object which corresponds to this class.
-        :rtype: GeneratedProtocolMessageType
-        """
-
-        return UpdateUserResponse_PB
-
-
-@bind_protobuf
-@final
 class DeleteUserMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
         address: Address,
-        content: Dict,
+        user_id: int,
         reply_to: Address,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
-        self.content = content
+        self.user_id = user_id
 
     def _object2proto(self) -> DeleteUserMessage_PB:
         """Returns a protobuf serialization of self.
@@ -653,7 +512,7 @@ class DeleteUserMessage(ImmediateSyftMessageWithReply):
         return DeleteUserMessage_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            content=json.dumps(self.content),
+            user_id=self.user_id,
             reply_to=serialize(self.reply_to),
         )
 
@@ -674,7 +533,7 @@ class DeleteUserMessage(ImmediateSyftMessageWithReply):
         return DeleteUserMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            content=json.loads(proto.content),
+            user_id=proto.user_id,
             reply_to=_deserialize(blob=proto.reply_to),
         )
 
@@ -698,88 +557,20 @@ class DeleteUserMessage(ImmediateSyftMessageWithReply):
 
 @bind_protobuf
 @final
-class DeleteUserResponse(ImmediateSyftMessageWithoutReply):
-    def __init__(
-        self,
-        address: Address,
-        status_code: int,
-        content: Dict,
-        msg_id: Optional[UID] = None,
-    ):
-        super().__init__(address=address, msg_id=msg_id)
-        self.status_code = status_code
-        self.content = content
-
-    def _object2proto(self) -> DeleteUserResponse_PB:
-        """Returns a protobuf serialization of self.
-        As a requirement of all objects which inherit from Serializable,
-        this method transforms the current object into the corresponding
-        Protobuf object so that it can be further serialized.
-        :return: returns a protobuf object
-        :rtype: SignalingOfferMessage_PB
-        .. note::
-            This method is purely an internal method. Please use serialize(object) or one of
-            the other public serialization methods if you wish to serialize an
-            object.
-        """
-        return DeleteUserResponse_PB(
-            msg_id=serialize(self.id),
-            address=serialize(self.address),
-            status_code=self.status_code,
-            content=json.dumps(self.content),
-        )
-
-    @staticmethod
-    def _proto2object(
-        proto: DeleteUserResponse_PB,
-    ) -> "DeleteUserResponse":
-        """Creates a SignalingOfferMessage from a protobuf
-        As a requirement of all objects which inherit from Serializable,
-        this method transforms a protobuf object into an instance of this class.
-        :return: returns an instance of SignalingOfferMessage
-        :rtype: SignalingOfferMessage
-        .. note::
-            This method is purely an internal method. Please use syft.deserialize()
-            if you wish to deserialize an object.
-        """
-
-        return DeleteUserResponse(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
-            status_code=proto.status_code,
-            content=json.loads(proto.content),
-        )
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """Return the type of protobuf object which stores a class of this type
-        As a part of serialization and deserialization, we need the ability to
-        lookup the protobuf object type directly from the object type. This
-        static method allows us to do this.
-        Importantly, this method is also used to create the reverse lookup ability within
-        the metaclass of Serializable. In the metaclass, it calls this method and then
-        it takes whatever type is returned from this method and adds an attribute to it
-        with the type of this class attached to it. See the MetaSerializable class for
-        details.
-        :return: the type of protobuf object which corresponds to this class.
-        :rtype: GeneratedProtocolMessageType
-        """
-
-        return DeleteUserResponse_PB
-
-
-@bind_protobuf
-@final
 class SearchUsersMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
         address: Address,
-        content: Dict,
         reply_to: Address,
         msg_id: Optional[UID] = None,
+        email: Optional[str] = "",
+        role: Optional[str] = "",
+        groups: Optional[str] = "",
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
-        self.content = content
+        self.email = email
+        self.role = role
+        self.groups = groups
 
     def _object2proto(self) -> SearchUsersMessage_PB:
         """Returns a protobuf serialization of self.
@@ -796,7 +587,9 @@ class SearchUsersMessage(ImmediateSyftMessageWithReply):
         return SearchUsersMessage_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            content=json.dumps(self.content),
+            email=self.email,
+            role=self.role,
+            groups=self.groups,
             reply_to=serialize(self.reply_to),
         )
 
@@ -817,7 +610,9 @@ class SearchUsersMessage(ImmediateSyftMessageWithReply):
         return SearchUsersMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            content=json.loads(proto.content),
+            email=proto.email,
+            role=proto.role,
+            groups=proto.groups,
             reply_to=_deserialize(blob=proto.reply_to),
         )
 
@@ -845,12 +640,10 @@ class SearchUsersResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        status_code: int,
         content: Dict,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
-        self.status_code = status_code
         self.content = content
 
     def _object2proto(self) -> SearchUsersResponse_PB:
@@ -868,7 +661,6 @@ class SearchUsersResponse(ImmediateSyftMessageWithoutReply):
         return SearchUsersResponse_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            status_code=self.status_code,
             content=json.dumps(self.content),
         )
 
@@ -889,7 +681,6 @@ class SearchUsersResponse(ImmediateSyftMessageWithoutReply):
         return SearchUsersResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            status_code=proto.status_code,
             content=json.loads(proto.content),
         )
 
