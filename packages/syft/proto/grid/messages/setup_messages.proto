@@ -14,12 +14,6 @@ message CreateInitialSetUpMessage {
   syft.core.io.Address reply_to = 6;
 }
 
-message CreateInitialSetUpResponse {
-  syft.core.common.UID msg_id = 1;
-  string service_response = 3;
-  syft.core.io.Address address = 4;
-}
-
 message GetSetUpMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;

@@ -14,9 +14,9 @@ from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.service.auth import service_auth
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
 from syft.grid.messages.setup_messages import CreateInitialSetUpMessage
-from syft.grid.messages.setup_messages import CreateInitialSetUpResponse
 from syft.grid.messages.setup_messages import GetSetUpMessage
 from syft.grid.messages.setup_messages import GetSetUpResponse
+from syft.grid.messages.success_resp_message import SuccessResponseMessage
 
 # relative
 from .....logger import traceback_and_raise
@@ -30,7 +30,7 @@ from ..tables.utils import model_to_json
 
 def create_initial_setup(
     msg: CreateInitialSetUpMessage, node: AbstractNode, verify_key: VerifyKey
-) -> CreateInitialSetUpResponse:
+) -> SuccessResponseMessage:
     # 1 - Should not run if Node has an owner
     if len(node.users):
         raise OwnerAlreadyExistsError
@@ -60,9 +60,9 @@ def create_initial_setup(
     # 5 - Save Node SetUp Configs
     node.setup.register(domain_name=msg.domain_name)
 
-    return CreateInitialSetUpResponse(
+    return SuccessResponseMessage(
         address=msg.reply_to,
-        service_response="Running initial setup!",
+        resp_msg="Running initial setup!",
     )
 
 
@@ -110,7 +110,7 @@ class SetUpService(ImmediateNodeServiceWithReply):
             GetSetUpMessage,
         ],
         verify_key: VerifyKey,
-    ) -> Union[CreateInitialSetUpResponse, GetSetUpResponse,]:
+    ) -> Union[SuccessResponseMessage, GetSetUpResponse,]:
         return SetUpService.msg_handler_map[type(msg)](
             msg=msg, node=node, verify_key=verify_key
         )

@@ -19,9 +19,6 @@ from syft.proto.grid.messages.setup_messages_pb2 import (
     CreateInitialSetUpMessage as CreateInitialSetUpMessage_PB,
 )
 from syft.proto.grid.messages.setup_messages_pb2 import (
-    CreateInitialSetUpResponse as CreateInitialSetUpResponse_PB,
-)
-from syft.proto.grid.messages.setup_messages_pb2 import (
     GetSetUpMessage as GetSetUpMessage_PB,
 )
 from syft.proto.grid.messages.setup_messages_pb2 import (
@@ -255,74 +252,6 @@ class CreateInitialSetUpMessage(ImmediateSyftMessageWithReply):
         """
 
         return CreateInitialSetUpMessage_PB
-
-
-@bind_protobuf
-@final
-class CreateInitialSetUpResponse(ImmediateSyftMessageWithoutReply):
-    def __init__(
-        self,
-        address: Address,
-        service_response: str,
-        msg_id: Optional[UID] = None,
-    ):
-        super().__init__(address=address, msg_id=msg_id)
-        self.service_response = service_response
-
-    def _object2proto(self) -> CreateInitialSetUpResponse_PB:
-        """Returns a protobuf serialization of self.
-        As a requirement of all objects which inherit from Serializable,
-        this method transforms the current object into the corresponding
-        Protobuf object so that it can be further serialized.
-        :return: returns a protobuf object
-        :rtype: SignalingOfferMessage_PB
-        .. note::
-            This method is purely an internal method. Please use serialize(object) or one of
-            the other public serialization methods if you wish to serialize an
-            object.
-        """
-        return CreateInitialSetUpResponse_PB(
-            msg_id=serialize(self.id),
-            address=serialize(self.address),
-            service_response=self.service_response,
-        )
-
-    @staticmethod
-    def _proto2object(
-        proto: CreateInitialSetUpResponse_PB,
-    ) -> "CreateInitialSetUpResponse":
-        """Creates a SignalingOfferMessage from a protobuf
-        As a requirement of all objects which inherit from Serializable,
-        this method transforms a protobuf object into an instance of this class.
-        :return: returns an instance of SignalingOfferMessage
-        :rtype: SignalingOfferMessage
-        .. note::
-            This method is purely an internal method. Please use syft.deserialize()
-            if you wish to deserialize an object.
-        """
-
-        return CreateInitialSetUpResponse(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
-            service_response=proto.service_response,
-        )
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """Return the type of protobuf object which stores a class of this type
-        As a part of serialization and deserialization, we need the ability to
-        lookup the protobuf object type directly from the object type. This
-        static method allows us to do this.
-        Importantly, this method is also used to create the reverse lookup ability within
-        the metaclass of Serializable. In the metaclass, it calls this method and then
-        it takes whatever type is returned from this method and adds an attribute to it
-        with the type of this class attached to it. See the MetaSerializable class for
-        details.
-        :return: the type of protobuf object which corresponds to this class.
-        :rtype: GeneratedProtocolMessageType
-        """
-
-        return CreateInitialSetUpResponse_PB
 
 
 @bind_protobuf
