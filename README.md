@@ -93,7 +93,14 @@ Run the [FastAPI](https://fastapi.tiangolo.com/) Dev environment using:
 
 ```
 $ cd packages/grid
-$ docker-compose up
+$ source .env && docker compose up
+```
+
+## Rebuilding Docker Containers
+
+```
+$ cd packages/grid
+$ docker compose build
 ```
 
 ### Tox
