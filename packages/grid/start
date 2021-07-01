@@ -1,0 +1,22 @@
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --name=*)
+      name="${1#*=}"
+      ;;
+    --port=*)
+      port="${1#*=}"
+      ;;
+    *)
+      printf "***************************\n"
+      printf "* Error: Invalid argument.*\n"
+      printf "***************************\n"
+      exit 1
+  esac
+  shift
+done
+
+printf "The Argument name is %s" "$name"
+printf "The Argument arg_1 is %s" "$arg1"
+
+DOMAIN_PORT=$port TRAEFIK_TAG=$name docker compose -p $name up
+
