@@ -31,74 +31,38 @@ from ..tables.utils import model_to_json
 def create_initial_setup(
     msg: CreateInitialSetUpMessage, node: AbstractNode, verify_key: VerifyKey
 ) -> CreateInitialSetUpResponse:
-    # Should not run if Domain has an owner
+    # 1 - Should not run if Node has an owner
     if len(node.users):
         raise OwnerAlreadyExistsError
 
-    _email = msg.content.get("email", None)
-    _password = msg.content.get("password", None)
-
-    # Get Payload Content
-    configs = {
-        "domain_name": msg.content.get("domain_name", ""),
-        "private_key": msg.content.get("private_key", ""),
-        "aws_credentials": msg.content.get("aws_credentials", ""),
-        "gcp_credentials": msg.content.get("gcp_credentials", ""),
-        "azure_credentials": msg.content.get("azure_credentials", ""),
-        "cache_strategy": msg.content.get("cache_strategy", ""),
-        "replicate_db": msg.content.get("replicate_db", False),
-        "auto_scale": msg.content.get("auto_scale", False),
-        "tensor_expiration_policy": msg.content.get("tensor_expiration_policy", 0),
-        "allow_user_signup": msg.content.get("allow_user_signup", False),
-    }
-
-    _current_user_id = msg.content.get("current_user", None)
-
-    users = node.users
-
-    _admin_role = node.roles.first(name="Owner")
-
-    _mandatory_request_fields = _email and _password and configs["domain_name"]
-
-    # Check if email/password/node_name fields are empty
+    # 2 - Check if email/password/node_name fields are empty
+    _mandatory_request_fields = msg.email and msg.password and msg.domain_name
     if not _mandatory_request_fields:
         raise MissingRequestKeyError(
             message="Invalid request payload, empty fields (email/password/domain_name)!"
         )
 
-    config_obj = SetupConfig(**configs)
+    # 3 - Change Node Name
+    node.name = msg.domain_name
 
-    # Change Node Name
-    node.name = config_obj.domain_name
-
-    # Change Node Root Key (if requested)
-    if config_obj.private_key != "":
-        try:
-            private_key = SigningKey(config_obj.encode("utf-8"), encoder=HexEncoder)
-        except Exception:
-            raise InvalidParameterValueError("Invalid Signing Key!")
-        node.root_key = private_key
-        node.verify_key = private_key.verify_key
-
-    # Create Admin User
+    # 4 - Create Admin User
     _node_private_key = node.signing_key.encode(encoder=HexEncoder).decode("utf-8")
     _verify_key = node.signing_key.verify_key.encode(encoder=HexEncoder).decode("utf-8")
-    _admin_role = node.roles.first(name="Owner")
-    _ = users.signup(
-        email=_email,
-        password=_password,
+    _admin_role = node.roles.owner_role
+    _ = node.users.signup(
+        email=msg.email,
+        password=msg.password,
         role=_admin_role.id,
         private_key=_node_private_key,
         verify_key=_verify_key,
     )
 
-    # Final status / message
-    final_msg = "Running initial setup!"
-    node.setup.register(**configs)
+    # 5 - Save Node SetUp Configs
+    node.setup.register(domain_name=msg.domain_name)
+
     return CreateInitialSetUpResponse(
         address=msg.reply_to,
-        status_code=200,
-        content={"message": final_msg},
+        service_response="Running initial setup!",
     )
 
 

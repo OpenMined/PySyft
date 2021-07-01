@@ -1,10 +1,9 @@
-version: "3.3"
+version: "3.8"
 services:
-
   proxy:
     image: traefik:v2.2
     networks:
-      - ${TRAEFIK_PUBLIC_NETWORK?Variable not set}
+      - "${TRAEFIK_PUBLIC_NETWORK?Variable not set}"
       - default
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -84,7 +83,7 @@ services:
   pgadmin:
     image: dpage/pgadmin4
     networks:
-      - ${TRAEFIK_PUBLIC_NETWORK?Variable not set}
+      - "${TRAEFIK_PUBLIC_NETWORK?Variable not set}"
       - default
     depends_on:
       - db
@@ -114,7 +113,7 @@ services:
   flower:
     image: mher/flower
     networks:
-      - ${TRAEFIK_PUBLIC_NETWORK?Variable not set}
+      - "${TRAEFIK_PUBLIC_NETWORK?Variable not set}"
       - default
     env_file:
       - .env
@@ -138,7 +137,7 @@ services:
         - traefik.http.services.${STACK_NAME?Variable not set}-flower.loadbalancer.server.port=5555
 
   backend:
-    image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
+    image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}"
     depends_on:
       - db
     env_file:
@@ -152,7 +151,7 @@ services:
       context: ./backend
       dockerfile: backend.dockerfile
       args:
-        INSTALL_DEV: ${INSTALL_DEV-false}
+        INSTALL_DEV: "${INSTALL_DEV-false}"
     deploy:
       labels:
         - traefik.enable=true
@@ -161,7 +160,7 @@ services:
         - traefik.http.services.${STACK_NAME?Variable not set}-backend.loadbalancer.server.port=80
 
   celeryworker:
-    image: '${DOCKER_IMAGE_CELERYWORKER?Variable not set}:${TAG-latest}'
+    image: "${DOCKER_IMAGE_CELERYWORKER?Variable not set}:${TAG-latest}"
     depends_on:
       - db
       - queue
@@ -176,10 +175,10 @@ services:
       context: ./backend
       dockerfile: celeryworker.dockerfile
       args:
-        INSTALL_DEV: ${INSTALL_DEV-false}
+        INSTALL_DEV: "${INSTALL_DEV-false}"
 
   frontend:
-    image: '${DOCKER_IMAGE_FRONTEND?Variable not set}:${TAG-latest}'
+    image: "${DOCKER_IMAGE_FRONTEND?Variable not set}:${TAG-latest}"
     build:
       context: ./frontend
       args:
