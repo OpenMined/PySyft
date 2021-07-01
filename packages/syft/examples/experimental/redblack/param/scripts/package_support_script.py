@@ -120,7 +120,17 @@ def dict_allowlist(classes_list: TypeAny) -> TypeAny:
                                 ).__name__
                             else:
                                 # print(d['return'])
-                                allowlist[i + "." + t.__name__] = d["return"].__name__
+                                if d["return"].__module__ == "builtins":
+                                    # avoid outputs like 'builtins.str'
+                                    allowlist[i + "." + t.__name__] = d[
+                                        "return"
+                                    ].__qualname__
+                                else:
+                                    allowlist[i + "." + t.__name__] = (
+                                        d["return"].__module__
+                                        + "."
+                                        + d["return"].__name__
+                                    )
 
                             # allowlist[module.__name__ + '.' + t.__name__] = d['return'].__name__
                         else:
