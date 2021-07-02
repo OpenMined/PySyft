@@ -1,8 +1,13 @@
 # stdlib
 from base64 import b64decode
 from base64 import b64encode
+import csv
+from datetime import datetime
+import io
+import json
 from json import dumps
 import secrets
+import tarfile
 from typing import List
 from typing import Type
 from typing import Union
@@ -11,36 +16,30 @@ from typing import Union
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+import numpy as np
+import torch as th
 
 # syft absolute
+from syft.core.common.group import VERIFYALL
 from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.common.uid import UID
 from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.service.auth import service_auth
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
-from syft.core.store import Dataset
 from syft.core.store.storeable_object import StorableObject
 from syft.grid.messages.dataset_messages import CreateDatasetMessage
-from syft.grid.messages.dataset_messages import CreateDatasetResponse
 from syft.grid.messages.dataset_messages import DeleteDatasetMessage
-from syft.grid.messages.dataset_messages import DeleteDatasetResponse
 from syft.grid.messages.dataset_messages import GetDatasetMessage
 from syft.grid.messages.dataset_messages import GetDatasetResponse
 from syft.grid.messages.dataset_messages import GetDatasetsMessage
 from syft.grid.messages.dataset_messages import GetDatasetsResponse
 from syft.grid.messages.dataset_messages import UpdateDatasetMessage
-from syft.grid.messages.dataset_messages import UpdateDatasetResponse
+from syft.grid.messages.success_resp_message import SuccessResponseMessage
+from syft.lib.python import Dict
+from syft.lib.python import List as SyftList
 
 # relative
-from ..datasets.dataset_ops import create_dataset
-from ..datasets.dataset_ops import delete_dataset
-from ..datasets.dataset_ops import get_all_datasets
-from ..datasets.dataset_ops import get_all_datasets_metadata
-from ..datasets.dataset_ops import get_all_relations
-from ..datasets.dataset_ops import get_dataset_metadata
-from ..datasets.dataset_ops import get_specific_dataset_and_relations
-from ..datasets.dataset_ops import update_dataset
 from ..exceptions import AuthorizationError
 from ..exceptions import DatasetNotFoundError
 from ..exceptions import MissingRequestKeyError
@@ -55,24 +54,54 @@ def create_dataset_msg(
     msg: CreateDatasetMessage,
     node: AbstractNode,
     verify_key: VerifyKey,
-) -> CreateDatasetResponse:
-    # Get Payload Content
-    _current_user_id = msg.content.get("current_user", None)
-    users = node.users
-
-    _allowed = users.can_upload_data(user_id=_current_user_id)
+) -> SuccessResponseMessage:
+    # Check key permissions
+    _allowed = node.users.can_upload_data(verify_key=verify_key)
 
     if _allowed:
-        _dataset = msg.content.get("dataset", None)
-        storage = node.disk_store
-        _json = create_dataset(_dataset)
+        file_obj = io.BytesIO(msg.dataset)
+        tar_obj = tarfile.open(fileobj=file_obj)
+        tar_obj.extractall()
+        dataset_id = node.datasets.register(**msg.metadata)
+        data = []
+        for item in tar_obj.members:
+            if not item.isdir():
+                reader = csv.reader(
+                    tar_obj.extractfile(item.name).read().decode().split("\n"),
+                    delimiter=",",
+                )
+                dataset = []
+
+                for row in reader:
+                    if len(row) != 0:
+                        dataset.append(row)
+                dataset = np.array(dataset, dtype=np.float)
+                df = th.tensor(dataset, dtype=th.float32)
+                id_at_location = UID()
+
+                # Step 2: create message which contains object to send
+                storable = StorableObject(
+                    id=id_at_location,
+                    data=df,
+                    tags=["#" + item.name.split("/")[-1]],
+                    search_permissions={VERIFYALL: None},
+                    read_permissions={node.verify_key: node.id, verify_key: None},
+                )
+                node.store[storable.id] = storable
+
+                node.datasets.add(
+                    name=item.name,
+                    dataset_id=dataset_id,
+                    obj_id=str(id_at_location.value),
+                    dtype=df.__class__.__name__,
+                    shape=str(tuple(df.shape)),
+                )
     else:
         raise AuthorizationError("You're not allowed to upload data!")
 
-    return CreateDatasetResponse(
+    return SuccessResponseMessage(
         address=msg.reply_to,
-        status_code=200,
-        content=_json,
+        resp_msg="Dataset Created Successfully!",
     )
 
 
@@ -81,19 +110,7 @@ def get_dataset_metadata_msg(
     node: AbstractNode,
     verify_key: VerifyKey,
 ) -> GetDatasetResponse:
-    # Get Payload Content
-    _dataset_id = msg.content.get("dataset_id", None)
-    _current_user_id = msg.content.get("current_user", None)
-    users = node.users
-    if not _current_user_id:
-        _current_user_id = users.first(
-            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
-        ).id
-
-    _msg = {}
-
-    storage = node.disk_store
-    ds, objs = get_specific_dataset_and_relations(_dataset_id)
+    ds, objs = node.datasets.get(msg.dataset_id)
     if not ds:
         raise DatasetNotFoundError
     dataset_json = model_to_json(ds)
@@ -101,11 +118,9 @@ def get_dataset_metadata_msg(
         {"name": obj.name, "id": obj.obj, "dtype": obj.dtype, "shape": obj.shape}
         for obj in objs
     ]
-
     return GetDatasetResponse(
         address=msg.reply_to,
-        status_code=200,
-        content=dataset_json,
+        content=Dict(dataset_json),
     )
 
 
@@ -114,22 +129,10 @@ def get_all_datasets_metadata_msg(
     node: AbstractNode,
     verify_key: VerifyKey,
 ) -> GetDatasetsResponse:
-    # Get Payload Content
-    _current_user_id = msg.content.get("current_user", None)
-    users = node.users
-    users = node.users
-    if not _current_user_id:
-        _current_user_id = users.first(
-            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
-        ).id
-
-    _msg = {}
-
-    storage = node.disk_store
     datasets = []
-    for dataset in get_all_datasets():
+    for dataset in node.datasets.all():
         ds = model_to_json(dataset)
-        objs = get_all_relations(dataset.id)
+        _, objs = node.datasets.get(dataset.id)
         ds["data"] = [
             {
                 "name": obj.name,
@@ -140,11 +143,9 @@ def get_all_datasets_metadata_msg(
             for obj in objs
         ]
         datasets.append(ds)
-
     return GetDatasetsResponse(
         address=msg.reply_to,
-        status_code=200,
-        content=datasets,
+        content=SyftList(datasets),
     )
 
 
@@ -152,33 +153,24 @@ def update_dataset_msg(
     msg: UpdateDatasetMessage,
     node: AbstractNode,
     verify_key: VerifyKey,
-) -> UpdateDatasetResponse:
+) -> SuccessResponseMessage:
     # Get Payload Content
-    _current_user_id = msg.content.get("current_user", None)
-    _dataset_id = msg.content.get("dataset_id", None)
-    _tags = msg.content.get("tags", [])
-    _description = msg.content.get("description", "")
-    _manifest = msg.content.get("manifest", "")
-
-    users = node.users
-    if not _current_user_id:
-        _current_user_id = users.first(
-            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
-        ).id
-
-    _allowed = users.can_upload_data(user_id=_current_user_id)
-
+    _allowed = node.users.can_upload_data(verify_key=verify_key)
     _msg = {}
     if _allowed:
-        storage = node.disk_store
-        _msg = update_dataset(_dataset_id, _tags, _manifest, _description)
+        metadata = {
+            key: msg.metadata[key].upcast()
+            for (key, value) in msg.metadata.items()
+            if msg.metadata[key] != None
+        }
+
+        _msg = node.datasets.set(dataset_id=msg.dataset_id, metadata=metadata)
     else:
         raise AuthorizationError("You're not allowed to upload data!")
 
-    return UpdateDatasetResponse(
+    return SuccessResponseMessage(
         address=msg.reply_to,
-        status_code=204,
-        content={"message": "Dataset updated successfully!"},
+        resp_msg="Dataset updated successfully!",
     )
 
 
@@ -186,29 +178,17 @@ def delete_dataset_msg(
     msg: UpdateDatasetMessage,
     node: AbstractNode,
     verify_key: VerifyKey,
-) -> DeleteDatasetResponse:
-    # Get Payload Content
-    _current_user_id = msg.content.get("current_user", None)
-    _dataset_id = msg.content.get("dataset_id", None)
-
-    users = node.users
-    if not _current_user_id:
-        _current_user_id = users.first(
-            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
-        ).id
-
-    _allowed = users.can_upload_data(user_id=_current_user_id)
+) -> SuccessResponseMessage:
+    _allowed = node.users.can_upload_data(verify_key=verify_key)
 
     if _allowed:
-        storage = node.disk_store
-        delete_dataset(_dataset_id)
+        node.datasets.delete(id=msg.dataset_id)
     else:
         raise AuthorizationError("You're not allowed to upload data!")
 
-    return DeleteDatasetResponse(
+    return SuccessResponseMessage(
         address=msg.reply_to,
-        status_code=204,
-        content={"message": "Dataset deleted successfully!"},
+        resp_msg="Dataset deleted successfully!",
     )
 
 
@@ -234,13 +214,7 @@ class DatasetManagerService(ImmediateNodeServiceWithReply):
             DeleteDatasetMessage,
         ],
         verify_key: VerifyKey,
-    ) -> Union[
-        CreateDatasetResponse,
-        GetDatasetResponse,
-        GetDatasetsResponse,
-        UpdateDatasetResponse,
-        DeleteDatasetResponse,
-    ]:
+    ) -> Union[SuccessResponseMessage, GetDatasetResponse, GetDatasetsResponse,]:
         return DatasetManagerService.msg_handler_map[type(msg)](
             msg=msg, node=node, verify_key=verify_key
         )

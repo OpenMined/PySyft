@@ -1,12 +1,19 @@
+# third party
+from sqlalchemy import Boolean
+from sqlalchemy import Column
+from sqlalchemy import ForeignKey
+from sqlalchemy import Integer
+from sqlalchemy import JSON
+from sqlalchemy import String
+
 # relative
-from .. import BaseModel
-from .. import db
+from . import Base
 
 
-class Dataset(BaseModel):
+class Dataset(Base):
     __tablename__ = "dataset"
 
-    id = db.Column(db.String(256), primary_key=True)
-    manifest = db.Column(db.String(2048))
-    description = db.Column(db.String(2048))
-    tags = db.Column(db.JSON())
+    id = Column(String(256), primary_key=True)
+    manifest = Column(String(2048))
+    description = Column(String(2048))
+    tags = Column(JSON())
