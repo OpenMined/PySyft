@@ -17,6 +17,11 @@ class SetupManager(DatabaseManager):
         self._schema = SetupManager.schema
         self.db = database
 
+    @property
+    def node_name(self):
+        setup = super().all()[0]
+        return setup.domain_name
+
     def first(self, **kwargs) -> Union[None, List]:
         result = super().first(**kwargs)
         if not result:
