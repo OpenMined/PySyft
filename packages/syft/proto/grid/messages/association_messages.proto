@@ -10,88 +10,60 @@ import "proto/core/io/address.proto";
 message SendAssociationRequestMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-  string content = 3;
-  syft.core.io.Address reply_to = 4;
+  string name = 3;
+  string target = 4;
+  string sender = 5;
+  syft.core.io.Address reply_to = 6;
 }
-
-message SendAssociationRequestResponse {
-  syft.core.common.UID msg_id = 1;
-  int32 status_code = 2;
-  string content = 3;
-  syft.core.io.Address address = 4;
-}
-
 
 message ReceiveAssociationRequestMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-  string content = 3;
-  syft.core.io.Address reply_to = 4;
+  string name = 3;
+  string handshake = 4;
+  string sender = 5;
+  string target = 6;
+  syft.core.io.Address reply_to = 7;
 }
-
-message ReceiveAssociationRequestResponse {
-  syft.core.common.UID msg_id = 1;
-  int32 status_code = 2;
-  string content = 3;
-  syft.core.io.Address address = 4;
-}
-
 
 message RespondAssociationRequestMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-  string content = 3;
-  syft.core.io.Address reply_to = 4;
+  string value = 3;
+  string target = 4;
+  string handshake = 5;
+  string sender = 6;
+  syft.core.io.Address reply_to = 7;
 }
-
-message RespondAssociationRequestResponse {
-  syft.core.common.UID msg_id = 1;
-  int32 status_code = 2;
-  string content = 3;
-  syft.core.io.Address address = 4;
-}
-
 
 message GetAssociationRequestMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-  string content = 3;
+  int32 association_id = 3;
   syft.core.io.Address reply_to = 4;
 }
 
 message GetAssociationRequestResponse {
   syft.core.common.UID msg_id = 1;
-  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
 
-
 message GetAssociationRequestsMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-  string content = 3;
   syft.core.io.Address reply_to = 4;
 }
 
 message GetAssociationRequestsResponse {
   syft.core.common.UID msg_id = 1;
-  int32 status_code = 2;
   string content = 3;
   syft.core.io.Address address = 4;
 }
-
 
 message DeleteAssociationRequestMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-  string content = 3;
+  int32 association_id = 3;
   syft.core.io.Address reply_to = 4;
-}
-
-message DeleteAssociationRequestResponse {
-  syft.core.common.UID msg_id = 1;
-  int32 status_code = 2;
-  string content = 3;
-  syft.core.io.Address address = 4;
 }

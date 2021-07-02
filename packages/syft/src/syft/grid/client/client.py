@@ -48,8 +48,6 @@ from .request_api.worker_api import WorkerRequestAPI
 
 DEFAULT_PYGRID_PORT = 80
 DEFAULT_PYGRID_ADDRESS = f"http://127.0.0.1:{DEFAULT_PYGRID_PORT}"
-INSECURE_PYGRID_TOKEN = "9G9MJ06OQH"  # nosec
-
 
 class GridClient(DomainClient):
     def __init__(  # nosec
@@ -232,12 +230,11 @@ def connect(
 
 
 def login(
+    url: str = DEFAULT_PYGRID_ADDRESS,
     email: Optional[str] = None,
     password: Optional[str] = None,
-    url: str = DEFAULT_PYGRID_ADDRESS,
     conn_type: Type[ClientConnection] = GridHTTPConnection,
 ) -> GridClient:
-
     if email is None or password is None:
         credentials = {}
         logging.info(
@@ -245,5 +242,4 @@ def login(
         )
     else:
         credentials = {"email": email, "password": password}
-
     return connect(url=url, credentials=credentials, conn_type=conn_type)

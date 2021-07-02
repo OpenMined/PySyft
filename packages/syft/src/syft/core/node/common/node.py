@@ -66,6 +66,7 @@ from .service.obj_search_permission_service import (
     ImmediateObjectSearchPermissionUpdateService,
 )
 from .service.obj_search_service import ImmediateObjectSearchService
+from .service.remote_add_service import RemoteAddService
 from .service.repr_service import ReprService
 from .service.resolve_pointer_type_service import ResolvePointerTypeService
 from .service.user_service import UserManagerService
@@ -228,6 +229,7 @@ class Node(AbstractNode):
         self.immediate_services_with_reply.append(ImmediateObjectSearchService)
         self.immediate_services_with_reply.append(GetReprService)
         self.immediate_services_with_reply.append(ResolvePointerTypeService)
+        self.immediate_services_with_reply.append(RemoteAddService)
         # for services which can run at a later time and do not return a reply
         self.eventual_services_without_reply = list()
         self.eventual_services_without_reply.append(

@@ -13,6 +13,7 @@ from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 
 # grid absolute
+from app.core.celery_app import celery_app
 from app.core.node import domain
 
 router = APIRouter()
@@ -48,3 +49,26 @@ async def syft(
     else:
         domain.recv_eventual_msg_without_reply(msg=obj_msg)
     return ""
+
+
+@router.post("/submit-task", response_model=str, status_code=201)
+def test_celery(word: Any) -> Any:
+    """
+    Test Celery worker.
+    """
+    response = celery_app.send_task("app.worker.test_celery", args=[word])
+    return f"Task ID: {response.id}"
+
+
+@router.get("/check-tasks/{task_id}", response_model=str)
+def get_status(task_id):
+    task_result = celery_app.AsyncResult(task_id)
+    result = {
+        "task_id": task_id,
+        "task_status": task_result.status,
+        "task_result": task_result.result,
+    }
+    # stdlib
+    import json
+
+    return json.dumps(result)
