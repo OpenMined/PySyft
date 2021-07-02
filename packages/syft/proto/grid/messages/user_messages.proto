@@ -4,6 +4,7 @@ package syft.grid.messages;
 
 import "proto/core/common/common_object.proto";
 import "proto/core/io/address.proto";
+import "proto/lib/python/dict.proto";
 
 
 // CREATE User
@@ -24,11 +25,10 @@ message GetUserMessage {
   syft.core.io.Address reply_to = 4;
 }
 
-
 message GetUserResponse {
   syft.core.common.UID msg_id = 1;
-  string content = 3;
-  syft.core.io.Address address = 4;
+  syft.lib.python.Dict content = 2;
+  syft.core.io.Address address = 3;
 }
 
 // GET ALL Users
@@ -40,8 +40,8 @@ message GetUsersMessage {
 
 message GetUsersResponse {
   syft.core.common.UID msg_id = 1;
-  string content = 3;
-  syft.core.io.Address address = 4;
+  repeated syft.lib.python.Dict content = 2;
+  syft.core.io.Address address = 3;
 }
 
 // Delete User
@@ -76,6 +76,6 @@ message SearchUsersMessage {
 
 message SearchUsersResponse {
   syft.core.common.UID msg_id = 1;
-  string content = 3;
-  syft.core.io.Address address = 4;
+  repeated syft.lib.python.Dict content = 2;
+  syft.core.io.Address address = 3;
 }

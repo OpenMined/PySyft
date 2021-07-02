@@ -4,6 +4,7 @@ package syft.grid.messages;
 
 import "proto/core/common/common_object.proto";
 import "proto/core/io/address.proto";
+import "proto/lib/python/dict.proto";
 
 
 // CREATE Role
@@ -33,7 +34,7 @@ message GetRoleMessage {
 
 message GetRoleResponse {
   syft.core.common.UID msg_id = 1;
-  string content = 2;
+  syft.lib.python.Dict content = 2;
   syft.core.io.Address address = 3;
 }
 
@@ -46,7 +47,7 @@ message GetRolesMessage {
 
 message GetRolesResponse {
   syft.core.common.UID msg_id = 1;
-  string content = 2;
+  repeated syft.lib.python.Dict content = 2;
   syft.core.io.Address address = 3;
 }
 

@@ -18,6 +18,7 @@ from syft.proto.core.common import (
     common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
 )
 from syft.proto.core.io import address_pb2 as proto_dot_core_dot_io_dot_address__pb2
+from syft.proto.lib.python import dict_pb2 as proto_dot_lib_dot_python_dot_dict__pb2
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/grid/messages/role_messages.proto",
@@ -25,10 +26,11 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\'proto/grid/messages/role_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\xda\x02\n\x11\x43reateRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x1b\n\x13\x63\x61n_triage_requests\x18\x04 \x01(\x08\x12\x19\n\x11\x63\x61n_edit_settings\x18\x05 \x01(\x08\x12\x18\n\x10\x63\x61n_create_users\x18\x06 \x01(\x08\x12\x19\n\x11\x63\x61n_create_groups\x18\x07 \x01(\x08\x12\x16\n\x0e\x63\x61n_edit_roles\x18\x08 \x01(\x08\x12!\n\x19\x63\x61n_manage_infrastructure\x18\t \x01(\x08\x12\x17\n\x0f\x63\x61n_upload_data\x18\n \x01(\x08\x12\'\n\x08reply_to\x18\x0b \x01(\x0b\x32\x15.syft.core.io.Address"\x99\x01\n\x0eGetRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07role_id\x18\x03 \x01(\x05\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"q\n\x0fGetRoleResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07\x63ontent\x18\x02 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address"\x89\x01\n\x0fGetRolesMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"r\n\x10GetRolesResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07\x63ontent\x18\x02 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address"\xeb\x02\n\x11UpdateRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x1b\n\x13\x63\x61n_triage_requests\x18\x04 \x01(\x08\x12\x19\n\x11\x63\x61n_edit_settings\x18\x05 \x01(\x08\x12\x18\n\x10\x63\x61n_create_users\x18\x06 \x01(\x08\x12\x19\n\x11\x63\x61n_create_groups\x18\x07 \x01(\x08\x12\x16\n\x0e\x63\x61n_edit_roles\x18\x08 \x01(\x08\x12!\n\x19\x63\x61n_manage_infrastructure\x18\t \x01(\x08\x12\x17\n\x0f\x63\x61n_upload_data\x18\n \x01(\x08\x12\x0f\n\x07role_id\x18\x0b \x01(\x05\x12\'\n\x08reply_to\x18\x0c \x01(\x0b\x32\x15.syft.core.io.Address"\x9c\x01\n\x11\x44\x65leteRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07role_id\x18\x03 \x01(\x05\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
+    serialized_pb=b'\n\'proto/grid/messages/role_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto\x1a\x1bproto/lib/python/dict.proto"\xda\x02\n\x11\x43reateRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x1b\n\x13\x63\x61n_triage_requests\x18\x04 \x01(\x08\x12\x19\n\x11\x63\x61n_edit_settings\x18\x05 \x01(\x08\x12\x18\n\x10\x63\x61n_create_users\x18\x06 \x01(\x08\x12\x19\n\x11\x63\x61n_create_groups\x18\x07 \x01(\x08\x12\x16\n\x0e\x63\x61n_edit_roles\x18\x08 \x01(\x08\x12!\n\x19\x63\x61n_manage_infrastructure\x18\t \x01(\x08\x12\x17\n\x0f\x63\x61n_upload_data\x18\n \x01(\x08\x12\'\n\x08reply_to\x18\x0b \x01(\x0b\x32\x15.syft.core.io.Address"\x99\x01\n\x0eGetRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07role_id\x18\x03 \x01(\x05\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x88\x01\n\x0fGetRoleResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x02 \x01(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address"\x89\x01\n\x0fGetRolesMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x89\x01\n\x10GetRolesResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x02 \x03(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address"\xeb\x02\n\x11UpdateRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x1b\n\x13\x63\x61n_triage_requests\x18\x04 \x01(\x08\x12\x19\n\x11\x63\x61n_edit_settings\x18\x05 \x01(\x08\x12\x18\n\x10\x63\x61n_create_users\x18\x06 \x01(\x08\x12\x19\n\x11\x63\x61n_create_groups\x18\x07 \x01(\x08\x12\x16\n\x0e\x63\x61n_edit_roles\x18\x08 \x01(\x08\x12!\n\x19\x63\x61n_manage_infrastructure\x18\t \x01(\x08\x12\x17\n\x0f\x63\x61n_upload_data\x18\n \x01(\x08\x12\x0f\n\x07role_id\x18\x0b \x01(\x05\x12\'\n\x08reply_to\x18\x0c \x01(\x0b\x32\x15.syft.core.io.Address"\x9c\x01\n\x11\x44\x65leteRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07role_id\x18\x03 \x01(\x05\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
+        proto_dot_lib_dot_python_dot_dict__pb2.DESCRIPTOR,
     ],
 )
 
@@ -259,8 +261,8 @@ _CREATEROLEMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=132,
-    serialized_end=478,
+    serialized_start=161,
+    serialized_end=507,
 )
 
 
@@ -357,8 +359,8 @@ _GETROLEMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=481,
-    serialized_end=634,
+    serialized_start=510,
+    serialized_end=663,
 )
 
 
@@ -394,11 +396,11 @@ _GETROLERESPONSE = _descriptor.Descriptor(
             full_name="syft.grid.messages.GetRoleResponse.content",
             index=1,
             number=2,
-            type=9,
-            cpp_type=9,
+            type=11,
+            cpp_type=10,
             label=1,
             has_default_value=False,
-            default_value=b"".decode("utf-8"),
+            default_value=None,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -436,8 +438,8 @@ _GETROLERESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=636,
-    serialized_end=749,
+    serialized_start=666,
+    serialized_end=802,
 )
 
 
@@ -515,8 +517,8 @@ _GETROLESMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=752,
-    serialized_end=889,
+    serialized_start=805,
+    serialized_end=942,
 )
 
 
@@ -552,11 +554,11 @@ _GETROLESRESPONSE = _descriptor.Descriptor(
             full_name="syft.grid.messages.GetRolesResponse.content",
             index=1,
             number=2,
-            type=9,
-            cpp_type=9,
-            label=1,
+            type=11,
+            cpp_type=10,
+            label=3,
             has_default_value=False,
-            default_value=b"".decode("utf-8"),
+            default_value=[],
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -594,8 +596,8 @@ _GETROLESRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=891,
-    serialized_end=1005,
+    serialized_start=945,
+    serialized_end=1082,
 )
 
 
@@ -844,8 +846,8 @@ _UPDATEROLEMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1008,
-    serialized_end=1371,
+    serialized_start=1085,
+    serialized_end=1448,
 )
 
 
@@ -942,8 +944,8 @@ _DELETEROLEMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1374,
-    serialized_end=1530,
+    serialized_start=1451,
+    serialized_end=1607,
 )
 
 _CREATEROLEMESSAGE.fields_by_name[
@@ -968,6 +970,9 @@ _GETROLERESPONSE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
 _GETROLERESPONSE.fields_by_name[
+    "content"
+].message_type = proto_dot_lib_dot_python_dot_dict__pb2._DICT
+_GETROLERESPONSE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 _GETROLESMESSAGE.fields_by_name[
@@ -982,6 +987,9 @@ _GETROLESMESSAGE.fields_by_name[
 _GETROLESRESPONSE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_GETROLESRESPONSE.fields_by_name[
+    "content"
+].message_type = proto_dot_lib_dot_python_dot_dict__pb2._DICT
 _GETROLESRESPONSE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
