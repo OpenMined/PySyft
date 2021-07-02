@@ -18,6 +18,7 @@ from syft.proto.core.common import (
     common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
 )
 from syft.proto.core.io import address_pb2 as proto_dot_core_dot_io_dot_address__pb2
+from syft.proto.lib.python import dict_pb2 as proto_dot_lib_dot_python_dot_dict__pb2
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/grid/messages/dataset_messages.proto",
@@ -25,10 +26,11 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n*proto/grid/messages/dataset_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\x9f\x01\n\x14\x43reateDatasetMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x8c\x01\n\x15\x43reateDatasetResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9c\x01\n\x11GetDatasetMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x89\x01\n\x12GetDatasetResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\xa0\x01\n\x15GetDatasetInfoMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x8d\x01\n\x16GetDatasetInfoResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9d\x01\n\x12GetDatasetsMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x8a\x01\n\x13GetDatasetsResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\xa1\x01\n\x16GetDatasetsInfoMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x8e\x01\n\x17GetDatasetsInfoResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9f\x01\n\x14SearchDatasetMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x8c\x01\n\x15SearchDatasetResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9f\x01\n\x14UpdateDatasetMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x8c\x01\n\x15UpdateDatasetResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9f\x01\n\x14\x44\x65leteDatasetMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x8c\x01\n\x15\x44\x65leteDatasetResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
+    serialized_pb=b"\n*proto/grid/messages/dataset_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto\x1a\x1bproto/lib/python/dict.proto\"\x9f\x01\n\x14\x43reateDatasetMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x64\x61taset\x18\x03 \x01(\x0c\x12'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address\"\x9f\x01\n\x11GetDatasetMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x12\n\ndataset_id\x18\x03 \x01(\x05\x12'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address\"\xa1\x01\n\x12GetDatasetResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12'\n\x08metadata\x18\x03 \x01(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address\"\x8c\x01\n\x12GetDatasetsMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address\"\xab\x01\n\x13GetDatasetsResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x30\n\x11\x64\x61tasets_metadata\x18\x03 \x03(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address\"\xcb\x01\n\x14UpdateDatasetMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x12\n\ndataset_id\x18\x03 \x01(\x05\x12'\n\x08metadata\x18\x04 \x01(\x0b\x32\x15.syft.lib.python.Dict\x12'\n\x08reply_to\x18\x05 \x01(\x0b\x32\x15.syft.core.io.Address\"\xa2\x01\n\x14\x44\x65leteDatasetMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x12\n\ndataset_id\x18\x03 \x01(\x05\x12'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3",
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
+        proto_dot_lib_dot_python_dot_dict__pb2.DESCRIPTOR,
     ],
 )
 
@@ -80,15 +82,15 @@ _CREATEDATASETMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="content",
-            full_name="syft.grid.messages.CreateDatasetMessage.content",
+            name="dataset",
+            full_name="syft.grid.messages.CreateDatasetMessage.dataset",
             index=2,
             number=3,
-            type=9,
+            type=12,
             cpp_type=9,
             label=1,
             has_default_value=False,
-            default_value=b"".decode("utf-8"),
+            default_value=b"",
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -126,106 +128,8 @@ _CREATEDATASETMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=135,
-    serialized_end=294,
-)
-
-
-_CREATEDATASETRESPONSE = _descriptor.Descriptor(
-    name="CreateDatasetResponse",
-    full_name="syft.grid.messages.CreateDatasetResponse",
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    create_key=_descriptor._internal_create_key,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name="msg_id",
-            full_name="syft.grid.messages.CreateDatasetResponse.msg_id",
-            index=0,
-            number=1,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="status_code",
-            full_name="syft.grid.messages.CreateDatasetResponse.status_code",
-            index=1,
-            number=2,
-            type=5,
-            cpp_type=1,
-            label=1,
-            has_default_value=False,
-            default_value=0,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="content",
-            full_name="syft.grid.messages.CreateDatasetResponse.content",
-            index=2,
-            number=3,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=b"".decode("utf-8"),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.grid.messages.CreateDatasetResponse.address",
-            index=3,
-            number=4,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax="proto3",
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=297,
-    serialized_end=437,
+    serialized_start=164,
+    serialized_end=323,
 )
 
 
@@ -276,15 +180,15 @@ _GETDATASETMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="content",
-            full_name="syft.grid.messages.GetDatasetMessage.content",
+            name="dataset_id",
+            full_name="syft.grid.messages.GetDatasetMessage.dataset_id",
             index=2,
             number=3,
-            type=9,
-            cpp_type=9,
+            type=5,
+            cpp_type=1,
             label=1,
             has_default_value=False,
-            default_value=b"".decode("utf-8"),
+            default_value=0,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -322,8 +226,8 @@ _GETDATASETMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=440,
-    serialized_end=596,
+    serialized_start=326,
+    serialized_end=485,
 )
 
 
@@ -374,15 +278,15 @@ _GETDATASETRESPONSE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="content",
-            full_name="syft.grid.messages.GetDatasetResponse.content",
+            name="metadata",
+            full_name="syft.grid.messages.GetDatasetResponse.metadata",
             index=2,
             number=3,
-            type=9,
-            cpp_type=9,
+            type=11,
+            cpp_type=10,
             label=1,
             has_default_value=False,
-            default_value=b"".decode("utf-8"),
+            default_value=None,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -420,204 +324,8 @@ _GETDATASETRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=599,
-    serialized_end=736,
-)
-
-
-_GETDATASETINFOMESSAGE = _descriptor.Descriptor(
-    name="GetDatasetInfoMessage",
-    full_name="syft.grid.messages.GetDatasetInfoMessage",
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    create_key=_descriptor._internal_create_key,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name="msg_id",
-            full_name="syft.grid.messages.GetDatasetInfoMessage.msg_id",
-            index=0,
-            number=1,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.grid.messages.GetDatasetInfoMessage.address",
-            index=1,
-            number=2,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="content",
-            full_name="syft.grid.messages.GetDatasetInfoMessage.content",
-            index=2,
-            number=3,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=b"".decode("utf-8"),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="reply_to",
-            full_name="syft.grid.messages.GetDatasetInfoMessage.reply_to",
-            index=3,
-            number=4,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax="proto3",
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=739,
-    serialized_end=899,
-)
-
-
-_GETDATASETINFORESPONSE = _descriptor.Descriptor(
-    name="GetDatasetInfoResponse",
-    full_name="syft.grid.messages.GetDatasetInfoResponse",
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    create_key=_descriptor._internal_create_key,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name="msg_id",
-            full_name="syft.grid.messages.GetDatasetInfoResponse.msg_id",
-            index=0,
-            number=1,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="status_code",
-            full_name="syft.grid.messages.GetDatasetInfoResponse.status_code",
-            index=1,
-            number=2,
-            type=5,
-            cpp_type=1,
-            label=1,
-            has_default_value=False,
-            default_value=0,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="content",
-            full_name="syft.grid.messages.GetDatasetInfoResponse.content",
-            index=2,
-            number=3,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=b"".decode("utf-8"),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.grid.messages.GetDatasetInfoResponse.address",
-            index=3,
-            number=4,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax="proto3",
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=902,
-    serialized_end=1043,
+    serialized_start=488,
+    serialized_end=649,
 )
 
 
@@ -668,28 +376,9 @@ _GETDATASETSMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="content",
-            full_name="syft.grid.messages.GetDatasetsMessage.content",
-            index=2,
-            number=3,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=b"".decode("utf-8"),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
             name="reply_to",
             full_name="syft.grid.messages.GetDatasetsMessage.reply_to",
-            index=3,
+            index=2,
             number=4,
             type=11,
             cpp_type=10,
@@ -714,8 +403,8 @@ _GETDATASETSMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1046,
-    serialized_end=1203,
+    serialized_start=652,
+    serialized_end=792,
 )
 
 
@@ -766,15 +455,15 @@ _GETDATASETSRESPONSE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="content",
-            full_name="syft.grid.messages.GetDatasetsResponse.content",
+            name="datasets_metadata",
+            full_name="syft.grid.messages.GetDatasetsResponse.datasets_metadata",
             index=2,
             number=3,
-            type=9,
-            cpp_type=9,
-            label=1,
+            type=11,
+            cpp_type=10,
+            label=3,
             has_default_value=False,
-            default_value=b"".decode("utf-8"),
+            default_value=[],
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -812,400 +501,8 @@ _GETDATASETSRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1206,
-    serialized_end=1344,
-)
-
-
-_GETDATASETSINFOMESSAGE = _descriptor.Descriptor(
-    name="GetDatasetsInfoMessage",
-    full_name="syft.grid.messages.GetDatasetsInfoMessage",
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    create_key=_descriptor._internal_create_key,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name="msg_id",
-            full_name="syft.grid.messages.GetDatasetsInfoMessage.msg_id",
-            index=0,
-            number=1,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.grid.messages.GetDatasetsInfoMessage.address",
-            index=1,
-            number=2,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="content",
-            full_name="syft.grid.messages.GetDatasetsInfoMessage.content",
-            index=2,
-            number=3,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=b"".decode("utf-8"),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="reply_to",
-            full_name="syft.grid.messages.GetDatasetsInfoMessage.reply_to",
-            index=3,
-            number=4,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax="proto3",
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=1347,
-    serialized_end=1508,
-)
-
-
-_GETDATASETSINFORESPONSE = _descriptor.Descriptor(
-    name="GetDatasetsInfoResponse",
-    full_name="syft.grid.messages.GetDatasetsInfoResponse",
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    create_key=_descriptor._internal_create_key,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name="msg_id",
-            full_name="syft.grid.messages.GetDatasetsInfoResponse.msg_id",
-            index=0,
-            number=1,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="status_code",
-            full_name="syft.grid.messages.GetDatasetsInfoResponse.status_code",
-            index=1,
-            number=2,
-            type=5,
-            cpp_type=1,
-            label=1,
-            has_default_value=False,
-            default_value=0,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="content",
-            full_name="syft.grid.messages.GetDatasetsInfoResponse.content",
-            index=2,
-            number=3,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=b"".decode("utf-8"),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.grid.messages.GetDatasetsInfoResponse.address",
-            index=3,
-            number=4,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax="proto3",
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=1511,
-    serialized_end=1653,
-)
-
-
-_SEARCHDATASETMESSAGE = _descriptor.Descriptor(
-    name="SearchDatasetMessage",
-    full_name="syft.grid.messages.SearchDatasetMessage",
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    create_key=_descriptor._internal_create_key,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name="msg_id",
-            full_name="syft.grid.messages.SearchDatasetMessage.msg_id",
-            index=0,
-            number=1,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.grid.messages.SearchDatasetMessage.address",
-            index=1,
-            number=2,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="content",
-            full_name="syft.grid.messages.SearchDatasetMessage.content",
-            index=2,
-            number=3,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=b"".decode("utf-8"),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="reply_to",
-            full_name="syft.grid.messages.SearchDatasetMessage.reply_to",
-            index=3,
-            number=4,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax="proto3",
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=1656,
-    serialized_end=1815,
-)
-
-
-_SEARCHDATASETRESPONSE = _descriptor.Descriptor(
-    name="SearchDatasetResponse",
-    full_name="syft.grid.messages.SearchDatasetResponse",
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    create_key=_descriptor._internal_create_key,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name="msg_id",
-            full_name="syft.grid.messages.SearchDatasetResponse.msg_id",
-            index=0,
-            number=1,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="status_code",
-            full_name="syft.grid.messages.SearchDatasetResponse.status_code",
-            index=1,
-            number=2,
-            type=5,
-            cpp_type=1,
-            label=1,
-            has_default_value=False,
-            default_value=0,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="content",
-            full_name="syft.grid.messages.SearchDatasetResponse.content",
-            index=2,
-            number=3,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=b"".decode("utf-8"),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.grid.messages.SearchDatasetResponse.address",
-            index=3,
-            number=4,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax="proto3",
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=1818,
-    serialized_end=1958,
+    serialized_start=795,
+    serialized_end=966,
 )
 
 
@@ -1256,89 +553,10 @@ _UPDATEDATASETMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="content",
-            full_name="syft.grid.messages.UpdateDatasetMessage.content",
+            name="dataset_id",
+            full_name="syft.grid.messages.UpdateDatasetMessage.dataset_id",
             index=2,
             number=3,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=b"".decode("utf-8"),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="reply_to",
-            full_name="syft.grid.messages.UpdateDatasetMessage.reply_to",
-            index=3,
-            number=4,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax="proto3",
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=1961,
-    serialized_end=2120,
-)
-
-
-_UPDATEDATASETRESPONSE = _descriptor.Descriptor(
-    name="UpdateDatasetResponse",
-    full_name="syft.grid.messages.UpdateDatasetResponse",
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    create_key=_descriptor._internal_create_key,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name="msg_id",
-            full_name="syft.grid.messages.UpdateDatasetResponse.msg_id",
-            index=0,
-            number=1,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="status_code",
-            full_name="syft.grid.messages.UpdateDatasetResponse.status_code",
-            index=1,
-            number=2,
             type=5,
             cpp_type=1,
             label=1,
@@ -1354,15 +572,15 @@ _UPDATEDATASETRESPONSE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="content",
-            full_name="syft.grid.messages.UpdateDatasetResponse.content",
-            index=2,
-            number=3,
-            type=9,
-            cpp_type=9,
+            name="metadata",
+            full_name="syft.grid.messages.UpdateDatasetMessage.metadata",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
             label=1,
             has_default_value=False,
-            default_value=b"".decode("utf-8"),
+            default_value=None,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -1373,10 +591,10 @@ _UPDATEDATASETRESPONSE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.grid.messages.UpdateDatasetResponse.address",
-            index=3,
-            number=4,
+            name="reply_to",
+            full_name="syft.grid.messages.UpdateDatasetMessage.reply_to",
+            index=4,
+            number=5,
             type=11,
             cpp_type=10,
             label=1,
@@ -1400,8 +618,8 @@ _UPDATEDATASETRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=2123,
-    serialized_end=2263,
+    serialized_start=969,
+    serialized_end=1172,
 )
 
 
@@ -1452,15 +670,15 @@ _DELETEDATASETMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="content",
-            full_name="syft.grid.messages.DeleteDatasetMessage.content",
+            name="dataset_id",
+            full_name="syft.grid.messages.DeleteDatasetMessage.dataset_id",
             index=2,
             number=3,
-            type=9,
-            cpp_type=9,
+            type=5,
+            cpp_type=1,
             label=1,
             has_default_value=False,
-            default_value=b"".decode("utf-8"),
+            default_value=0,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -1498,106 +716,8 @@ _DELETEDATASETMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=2266,
-    serialized_end=2425,
-)
-
-
-_DELETEDATASETRESPONSE = _descriptor.Descriptor(
-    name="DeleteDatasetResponse",
-    full_name="syft.grid.messages.DeleteDatasetResponse",
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    create_key=_descriptor._internal_create_key,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name="msg_id",
-            full_name="syft.grid.messages.DeleteDatasetResponse.msg_id",
-            index=0,
-            number=1,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="status_code",
-            full_name="syft.grid.messages.DeleteDatasetResponse.status_code",
-            index=1,
-            number=2,
-            type=5,
-            cpp_type=1,
-            label=1,
-            has_default_value=False,
-            default_value=0,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="content",
-            full_name="syft.grid.messages.DeleteDatasetResponse.content",
-            index=2,
-            number=3,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=b"".decode("utf-8"),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.grid.messages.DeleteDatasetResponse.address",
-            index=3,
-            number=4,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax="proto3",
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=2428,
-    serialized_end=2568,
+    serialized_start=1175,
+    serialized_end=1337,
 )
 
 _CREATEDATASETMESSAGE.fields_by_name[
@@ -1608,12 +728,6 @@ _CREATEDATASETMESSAGE.fields_by_name[
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 _CREATEDATASETMESSAGE.fields_by_name[
     "reply_to"
-].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_CREATEDATASETRESPONSE.fields_by_name[
-    "msg_id"
-].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_CREATEDATASETRESPONSE.fields_by_name[
-    "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 _GETDATASETMESSAGE.fields_by_name[
     "msg_id"
@@ -1628,21 +742,9 @@ _GETDATASETRESPONSE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
 _GETDATASETRESPONSE.fields_by_name[
-    "address"
-].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETDATASETINFOMESSAGE.fields_by_name[
-    "msg_id"
-].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_GETDATASETINFOMESSAGE.fields_by_name[
-    "address"
-].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETDATASETINFOMESSAGE.fields_by_name[
-    "reply_to"
-].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETDATASETINFORESPONSE.fields_by_name[
-    "msg_id"
-].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_GETDATASETINFORESPONSE.fields_by_name[
+    "metadata"
+].message_type = proto_dot_lib_dot_python_dot_dict__pb2._DICT
+_GETDATASETRESPONSE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 _GETDATASETSMESSAGE.fields_by_name[
@@ -1658,36 +760,9 @@ _GETDATASETSRESPONSE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
 _GETDATASETSRESPONSE.fields_by_name[
-    "address"
-].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETDATASETSINFOMESSAGE.fields_by_name[
-    "msg_id"
-].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_GETDATASETSINFOMESSAGE.fields_by_name[
-    "address"
-].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETDATASETSINFOMESSAGE.fields_by_name[
-    "reply_to"
-].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETDATASETSINFORESPONSE.fields_by_name[
-    "msg_id"
-].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_GETDATASETSINFORESPONSE.fields_by_name[
-    "address"
-].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_SEARCHDATASETMESSAGE.fields_by_name[
-    "msg_id"
-].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_SEARCHDATASETMESSAGE.fields_by_name[
-    "address"
-].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_SEARCHDATASETMESSAGE.fields_by_name[
-    "reply_to"
-].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_SEARCHDATASETRESPONSE.fields_by_name[
-    "msg_id"
-].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_SEARCHDATASETRESPONSE.fields_by_name[
+    "datasets_metadata"
+].message_type = proto_dot_lib_dot_python_dot_dict__pb2._DICT
+_GETDATASETSRESPONSE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 _UPDATEDATASETMESSAGE.fields_by_name[
@@ -1697,13 +772,10 @@ _UPDATEDATASETMESSAGE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 _UPDATEDATASETMESSAGE.fields_by_name[
+    "metadata"
+].message_type = proto_dot_lib_dot_python_dot_dict__pb2._DICT
+_UPDATEDATASETMESSAGE.fields_by_name[
     "reply_to"
-].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_UPDATEDATASETRESPONSE.fields_by_name[
-    "msg_id"
-].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_UPDATEDATASETRESPONSE.fields_by_name[
-    "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 _DELETEDATASETMESSAGE.fields_by_name[
     "msg_id"
@@ -1713,29 +785,14 @@ _DELETEDATASETMESSAGE.fields_by_name[
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 _DELETEDATASETMESSAGE.fields_by_name[
     "reply_to"
-].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_DELETEDATASETRESPONSE.fields_by_name[
-    "msg_id"
-].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_DELETEDATASETRESPONSE.fields_by_name[
-    "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 DESCRIPTOR.message_types_by_name["CreateDatasetMessage"] = _CREATEDATASETMESSAGE
-DESCRIPTOR.message_types_by_name["CreateDatasetResponse"] = _CREATEDATASETRESPONSE
 DESCRIPTOR.message_types_by_name["GetDatasetMessage"] = _GETDATASETMESSAGE
 DESCRIPTOR.message_types_by_name["GetDatasetResponse"] = _GETDATASETRESPONSE
-DESCRIPTOR.message_types_by_name["GetDatasetInfoMessage"] = _GETDATASETINFOMESSAGE
-DESCRIPTOR.message_types_by_name["GetDatasetInfoResponse"] = _GETDATASETINFORESPONSE
 DESCRIPTOR.message_types_by_name["GetDatasetsMessage"] = _GETDATASETSMESSAGE
 DESCRIPTOR.message_types_by_name["GetDatasetsResponse"] = _GETDATASETSRESPONSE
-DESCRIPTOR.message_types_by_name["GetDatasetsInfoMessage"] = _GETDATASETSINFOMESSAGE
-DESCRIPTOR.message_types_by_name["GetDatasetsInfoResponse"] = _GETDATASETSINFORESPONSE
-DESCRIPTOR.message_types_by_name["SearchDatasetMessage"] = _SEARCHDATASETMESSAGE
-DESCRIPTOR.message_types_by_name["SearchDatasetResponse"] = _SEARCHDATASETRESPONSE
 DESCRIPTOR.message_types_by_name["UpdateDatasetMessage"] = _UPDATEDATASETMESSAGE
-DESCRIPTOR.message_types_by_name["UpdateDatasetResponse"] = _UPDATEDATASETRESPONSE
 DESCRIPTOR.message_types_by_name["DeleteDatasetMessage"] = _DELETEDATASETMESSAGE
-DESCRIPTOR.message_types_by_name["DeleteDatasetResponse"] = _DELETEDATASETRESPONSE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 CreateDatasetMessage = _reflection.GeneratedProtocolMessageType(
@@ -1748,17 +805,6 @@ CreateDatasetMessage = _reflection.GeneratedProtocolMessageType(
     },
 )
 _sym_db.RegisterMessage(CreateDatasetMessage)
-
-CreateDatasetResponse = _reflection.GeneratedProtocolMessageType(
-    "CreateDatasetResponse",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _CREATEDATASETRESPONSE,
-        "__module__": "proto.grid.messages.dataset_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.CreateDatasetResponse)
-    },
-)
-_sym_db.RegisterMessage(CreateDatasetResponse)
 
 GetDatasetMessage = _reflection.GeneratedProtocolMessageType(
     "GetDatasetMessage",
@@ -1782,28 +828,6 @@ GetDatasetResponse = _reflection.GeneratedProtocolMessageType(
 )
 _sym_db.RegisterMessage(GetDatasetResponse)
 
-GetDatasetInfoMessage = _reflection.GeneratedProtocolMessageType(
-    "GetDatasetInfoMessage",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _GETDATASETINFOMESSAGE,
-        "__module__": "proto.grid.messages.dataset_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetDatasetInfoMessage)
-    },
-)
-_sym_db.RegisterMessage(GetDatasetInfoMessage)
-
-GetDatasetInfoResponse = _reflection.GeneratedProtocolMessageType(
-    "GetDatasetInfoResponse",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _GETDATASETINFORESPONSE,
-        "__module__": "proto.grid.messages.dataset_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetDatasetInfoResponse)
-    },
-)
-_sym_db.RegisterMessage(GetDatasetInfoResponse)
-
 GetDatasetsMessage = _reflection.GeneratedProtocolMessageType(
     "GetDatasetsMessage",
     (_message.Message,),
@@ -1826,50 +850,6 @@ GetDatasetsResponse = _reflection.GeneratedProtocolMessageType(
 )
 _sym_db.RegisterMessage(GetDatasetsResponse)
 
-GetDatasetsInfoMessage = _reflection.GeneratedProtocolMessageType(
-    "GetDatasetsInfoMessage",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _GETDATASETSINFOMESSAGE,
-        "__module__": "proto.grid.messages.dataset_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetDatasetsInfoMessage)
-    },
-)
-_sym_db.RegisterMessage(GetDatasetsInfoMessage)
-
-GetDatasetsInfoResponse = _reflection.GeneratedProtocolMessageType(
-    "GetDatasetsInfoResponse",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _GETDATASETSINFORESPONSE,
-        "__module__": "proto.grid.messages.dataset_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetDatasetsInfoResponse)
-    },
-)
-_sym_db.RegisterMessage(GetDatasetsInfoResponse)
-
-SearchDatasetMessage = _reflection.GeneratedProtocolMessageType(
-    "SearchDatasetMessage",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _SEARCHDATASETMESSAGE,
-        "__module__": "proto.grid.messages.dataset_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.SearchDatasetMessage)
-    },
-)
-_sym_db.RegisterMessage(SearchDatasetMessage)
-
-SearchDatasetResponse = _reflection.GeneratedProtocolMessageType(
-    "SearchDatasetResponse",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _SEARCHDATASETRESPONSE,
-        "__module__": "proto.grid.messages.dataset_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.SearchDatasetResponse)
-    },
-)
-_sym_db.RegisterMessage(SearchDatasetResponse)
-
 UpdateDatasetMessage = _reflection.GeneratedProtocolMessageType(
     "UpdateDatasetMessage",
     (_message.Message,),
@@ -1881,17 +861,6 @@ UpdateDatasetMessage = _reflection.GeneratedProtocolMessageType(
 )
 _sym_db.RegisterMessage(UpdateDatasetMessage)
 
-UpdateDatasetResponse = _reflection.GeneratedProtocolMessageType(
-    "UpdateDatasetResponse",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _UPDATEDATASETRESPONSE,
-        "__module__": "proto.grid.messages.dataset_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.UpdateDatasetResponse)
-    },
-)
-_sym_db.RegisterMessage(UpdateDatasetResponse)
-
 DeleteDatasetMessage = _reflection.GeneratedProtocolMessageType(
     "DeleteDatasetMessage",
     (_message.Message,),
@@ -1902,17 +871,6 @@ DeleteDatasetMessage = _reflection.GeneratedProtocolMessageType(
     },
 )
 _sym_db.RegisterMessage(DeleteDatasetMessage)
-
-DeleteDatasetResponse = _reflection.GeneratedProtocolMessageType(
-    "DeleteDatasetResponse",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _DELETEDATASETRESPONSE,
-        "__module__": "proto.grid.messages.dataset_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.DeleteDatasetResponse)
-    },
-)
-_sym_db.RegisterMessage(DeleteDatasetResponse)
 
 
 # @@protoc_insertion_point(module_scope)
