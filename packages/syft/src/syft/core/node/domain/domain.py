@@ -26,6 +26,7 @@ from ...io.location import SpecificLocation
 from ..common.action.get_object_action import GetObjectAction
 from ..common.client import Client
 from ..common.managers.association_request_manager import AssociationRequestManager
+from ..common.managers.dataset_manager import DatasetManager
 from ..common.managers.environment_manager import EnvironmentManager
 from ..common.managers.group_manager import GroupManager
 from ..common.managers.request_manager import RequestManager
@@ -34,8 +35,7 @@ from ..common.managers.setup_manager import SetupManager
 from ..common.managers.user_manager import UserManager
 from ..common.node import Node
 from ..common.service.association_request import AssociationRequestService
-
-# from ..common.service.dataset_service import DatasetManagerService
+from ..common.service.dataset_service import DatasetManagerService
 from ..common.service.group_service import GroupManagerService
 
 # from ..common.service.infra_service import DomainInfrastructureService
@@ -96,11 +96,11 @@ class Domain(Node):
         self.users = UserManager(db_engine)
         self.roles = RoleManager(db_engine)
         self.groups = GroupManager(db_engine)
-        # self.disk_store = DiskObjectStore(db_engine)
         self.environments = EnvironmentManager(db_engine)
         self.setup = SetupManager(db_engine)
         self.association_requests = AssociationRequestManager(db_engine)
         self.data_requests = RequestManager(db_engine)
+        self.datasets = DatasetManager(db_engine)
 
         self.immediate_services_without_reply.append(RequestService)
         # self.immediate_services_without_reply.append(AcceptOrDenyRequestService)
@@ -117,7 +117,7 @@ class Domain(Node):
         self.immediate_services_with_reply.append(RegisterTensorService)
         self.immediate_services_with_reply.append(RoleManagerService)
         self.immediate_services_with_reply.append(UserManagerService)
-        # self.immediate_services_with_reply.append(DatasetManagerService)
+        self.immediate_services_with_reply.append(DatasetManagerService)
         self.immediate_services_with_reply.append(GroupManagerService)
         # self.immediate_services_with_reply.append(TransferObjectService)
         # self.immediate_services_with_reply.append(RequestService)
