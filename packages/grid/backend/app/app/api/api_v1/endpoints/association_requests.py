@@ -34,15 +34,15 @@ def send_association_request(
     target: str = Body(..., example="http://<target_address>/api/v1"),
     sender: str = Body(..., example="http://<node_address>/api/v1"),
 ) -> Any:
-    ''' Sends a new association request to the target address
-        Args:
-            current_user : Current session.
-            name: Association request name.
-            target: Target address.
-            sender: Sender address.
-        Returns:
-            resp: JSON structure containing a log message
-    '''
+    """Sends a new association request to the target address
+    Args:
+        current_user : Current session.
+        name: Association request name.
+        target: Target address.
+        sender: Sender address.
+    Returns:
+        resp: JSON structure containing a log message
+    """
     # Map User Key
     user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
 
@@ -76,16 +76,16 @@ def receive_association_request(
     sender: str = Body(..., example="http://<node_address>/api/v1"),
     target: str = Body(..., example="http://<target_address>/api/v1"),
 ):
-    ''' Receives a new association request to the sender address
-        Args:
-            current_user : Current session.
-            name: Association request name.
-            handshake: Code attached to this association request.
-            target: Target address.
-            sender: Sender address.
-        Returns:
-            resp: JSON structure containing a log message
-    '''
+    """Receives a new association request to the sender address
+    Args:
+        current_user : Current session.
+        name: Association request name.
+        handshake: Code attached to this association request.
+        target: Target address.
+        sender: Sender address.
+    Returns:
+        resp: JSON structure containing a log message
+    """
     # Map User Key
     user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
 
@@ -118,17 +118,17 @@ def respond_association_request(
     target: str = Body(..., example="http://<target_address>/api/v1"),
     sender: str = Body(..., example="http://<node_address>/api/v1"),
 ):
-    ''' Replies an association request
+    """Replies an association request
 
-        Args:
-            current_user : Current session.
-            name: Association request name.
-            handshake: Code attached to this association request.
-            target: Target address.
-            sender: Sender address.
-        Returns:
-            resp: JSON structure containing a log message
-    '''
+    Args:
+        current_user : Current session.
+        name: Association request name.
+        handshake: Code attached to this association request.
+        target: Target address.
+        sender: Sender address.
+    Returns:
+        resp: JSON structure containing a log message
+    """
     # Map User Key
     user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
 
@@ -159,12 +159,12 @@ def respond_association_request(
 def get_all_association_requests(
     current_user: Any = Depends(deps.get_current_user),
 ):
-    ''' Retrieves all association requests
-        Args:
-            current_user : Current session.
-        Returns:
-            resp: JSON structure containing registered association requests.
-    '''
+    """Retrieves all association requests
+    Args:
+        current_user : Current session.
+    Returns:
+        resp: JSON structure containing registered association requests.
+    """
     # Map User Key
     user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
 
@@ -191,13 +191,13 @@ def get_specific_association_route(
     association_request_id: int,
     current_user: Any = Depends(deps.get_current_user),
 ):
-    ''' Retrieves specific association
-        Args:
-            current_user : Current session.
-            association_request_id: Association request ID.
-        Returns:
-            resp: JSON structure containing specific association request.
-    '''
+    """Retrieves specific association
+    Args:
+        current_user : Current session.
+        association_request_id: Association request ID.
+    Returns:
+        resp: JSON structure containing specific association request.
+    """
     # Map User Key
     user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
 
@@ -228,13 +228,13 @@ def delete_association_route(
     association_request_id: int,
     current_user: Any = Depends(deps.get_current_user),
 ):
-    ''' Deletes specific association
-        Args:
-            current_user : Current session.
-            association_request_id: Association request ID.
-        Returns:
-            resp: JSON structure containing a log message
-    '''
+    """Deletes specific association
+    Args:
+        current_user : Current session.
+        association_request_id: Association request ID.
+    Returns:
+        resp: JSON structure containing a log message
+    """
     # Map User Key
     user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
 

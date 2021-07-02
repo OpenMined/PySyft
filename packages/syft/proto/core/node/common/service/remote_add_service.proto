@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package syft.core.node.common.service;
+
+import "proto/core/common/common_object.proto";
+import "proto/core/io/address.proto";
+
+message RemoteAddMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  syft.core.io.Address reply_to = 3;
+  int64 num = 4;
+}
+
+message RemoteAddReplyMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  int64 num = 3;
+}
