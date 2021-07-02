@@ -14,7 +14,6 @@ from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.service.auth import service_auth
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
-from syft.core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
 from syft.grid.messages.success_resp_message import SuccessResponseMessage
 from syft.grid.messages.user_messages import CreateUserMessage
 from syft.grid.messages.user_messages import DeleteUserMessage
@@ -27,10 +26,8 @@ from syft.grid.messages.user_messages import SearchUsersResponse
 from syft.grid.messages.user_messages import UpdateUserMessage
 
 # relative
-from .....logger import traceback_and_raise
 from ..exceptions import AuthorizationError
 from ..exceptions import MissingRequestKeyError
-from ..exceptions import RoleNotFoundError
 from ..exceptions import UserNotFoundError
 from ..tables.utils import model_to_json
 

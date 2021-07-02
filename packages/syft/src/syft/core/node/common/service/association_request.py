@@ -6,17 +6,17 @@ from typing import Union
 
 # third party
 from nacl.encoding import HexEncoder
+from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 from requests import post
 from requests.exceptions import ConnectionError
 
 # syft absolute
-import syft
+import syft as sy
 from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.service.auth import service_auth
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
-from syft.core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
 from syft.grid.messages.association_messages import DeleteAssociationRequestMessage
 from syft.grid.messages.association_messages import GetAssociationRequestMessage
 from syft.grid.messages.association_messages import GetAssociationRequestResponse
@@ -28,10 +28,9 @@ from syft.grid.messages.association_messages import SendAssociationRequestMessag
 from syft.grid.messages.success_resp_message import SuccessResponseMessage
 
 # relative
-# from ..exceptions import AuthorizationError
-# from ..exceptions import MissingRequestKeyError
-# from ..exceptions import UserNotFoundError
 from ..exceptions import AssociationRequestError
+from ..exceptions import AuthorizationError
+from ..exceptions import MissingRequestKeyError
 from ..tables.utils import model_to_json
 
 
@@ -151,7 +150,7 @@ def respond_association_request_msg(
         msg = ReceiveAssociationRequestMessage(
             address=node_client.address,
             name=msg.name,
-            handshake=handshake_value,
+            handshake=msg.handshake,
             sender=msg.sender,
             target=msg.target,
             reply_to=node_client.address,

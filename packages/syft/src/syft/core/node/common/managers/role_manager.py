@@ -4,10 +4,9 @@ from typing import List
 from typing import Union
 
 # relative
+from ..exceptions import RoleNotFoundError
 from ..tables.roles import Role
 from .database_manager import DatabaseManager
-
-# from ..exceptions import RoleNotFoundError
 
 
 class RoleManager(DatabaseManager):
