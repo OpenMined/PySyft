@@ -13,81 +13,60 @@ from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.service.auth import service_auth
 from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
-from syft.core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
 from syft.grid.messages.role_messages import CreateRoleMessage
-from syft.grid.messages.role_messages import CreateRoleResponse
 from syft.grid.messages.role_messages import DeleteRoleMessage
-from syft.grid.messages.role_messages import DeleteRoleResponse
 from syft.grid.messages.role_messages import GetRoleMessage
 from syft.grid.messages.role_messages import GetRoleResponse
 from syft.grid.messages.role_messages import GetRolesMessage
 from syft.grid.messages.role_messages import GetRolesResponse
 from syft.grid.messages.role_messages import UpdateRoleMessage
-from syft.grid.messages.role_messages import UpdateRoleResponse
+from syft.grid.messages.success_resp_message import SuccessResponseMessage
 
 # relative
+from ..exceptions import AuthorizationError
+from ..exceptions import MissingRequestKeyError
+from ..exceptions import RequestError
+from ..exceptions import RoleNotFoundError
 from ..tables.utils import model_to_json
-
-# from ..exceptions import AuthorizationError
-# from ..exceptions import MissingRequestKeyError
-# from ..exceptions import RequestError
-# from ..exceptions import RoleNotFoundError
 
 
 def create_role_msg(
     msg: CreateRoleMessage,
     node: AbstractNode,
     verify_key: VerifyKey,
-) -> CreateRoleResponse:
-    _name = msg.content.get("name", None)
-    _can_triage_requests = msg.content.get("can_triage_requests", False)
-    _can_edit_settings = msg.content.get("can_edit_settings", False)
-    _can_create_users = msg.content.get("can_create_users", False)
-    _can_create_groups = msg.content.get("can_create_groups", False)
-    _can_edit_roles = msg.content.get("can_edit_roles", False)
-    _can_manage_infrastructure = msg.content.get("can_manage_infrastructure", False)
-    _can_upload_data = msg.content.get("can_upload_data", False)
-    _current_user_id = msg.content.get("current_user", False)
+) -> SuccessResponseMessage:
+    # Check key permissions
+    _allowed = node.users.can_edit_roles(verify_key=verify_key)
 
-    users = node.users
-
-    if not _current_user_id:
-        _current_user_id = users.first(
-            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
-        ).id
-
-    __allowed = users.can_edit_roles(user_id=_current_user_id)
-
-    if not _name:
+    if not msg.name:
         raise MissingRequestKeyError(
             message="Invalid request payload, empty fields (name)!"
         )
 
     # Check if this role name was already registered
     try:
-        node.roles.first(name=_name)
+        node.roles.first(name=msg.name)
         raise RequestError(message="The role name already exists!")
     except RoleNotFoundError:
         pass
 
-    if __allowed:
+    if _allowed:
         node.roles.register(
-            name=_name,
-            can_triage_requests=_can_triage_requests,
-            can_edit_settings=_can_edit_settings,
-            can_create_users=_can_create_users,
-            can_create_groups=_can_create_groups,
-            can_edit_roles=_can_edit_roles,
-            can_manage_infrastructure=_can_manage_infrastructure,
-            can_upload_data=_can_upload_data,
+            name=msg.name,
+            can_triage_requests=msg.can_triage_requests,
+            can_edit_settings=msg.can_edit_settings,
+            can_create_users=msg.can_create_users,
+            can_create_groups=msg.can_create_groups,
+            can_edit_roles=msg.can_edit_roles,
+            can_manage_infrastructure=msg.can_manage_infrastructure,
+            can_upload_data=msg.can_upload_data,
         )
     else:
         raise AuthorizationError("You're not allowed to create a new Role!")
 
-    return CreateRoleResponse(
+    return SuccessResponseMessage(
         address=msg.reply_to,
-        status_code=200,
-        content={"msg": "Role created successfully!"},
+        resp_msg="Role created successfully!",
     )
 
 
@@ -95,44 +74,33 @@ def update_role_msg(
     msg: UpdateRoleMessage,
     node: AbstractNode,
     verify_key: VerifyKey,
-) -> UpdateRoleResponse:
-    _role_id = msg.content.get("role_id", None)
-    _current_user_id = msg.content.get("current_user", None)
-
-    if not _current_user_id:
-        _current_user_id = node.users.first(
-            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
-        ).id
+) -> SuccessResponseMessage:
 
     params = {
-        "name": msg.content.get("name", ""),
-        "can_triage_requests": msg.content.get("can_triage_requests", None),
-        "can_edit_settings": msg.content.get("can_edit_settings", None),
-        "can_create_users": msg.content.get("can_create_users", None),
-        "can_create_groups": msg.content.get("can_create_groups", None),
-        "can_edit_roles": msg.content.get("can_edit_roles", None),
-        "can_manage_infrastructure": msg.content.get("can_manage_infrastructure", None),
-        "can_upload_data": msg.content.get("can_upload_data", None),
+        "name": msg.name,
+        "can_triage_requests": msg.can_triage_requests,
+        "can_edit_settings": msg.can_edit_settings,
+        "can_create_users": msg.can_create_users,
+        "can_create_groups": msg.can_create_groups,
+        "can_edit_roles": msg.can_edit_roles,
+        "can_manage_infrastructure": msg.can_manage_infrastructure,
+        "can_upload_data": msg.can_upload_data,
     }
 
-    filter_parameters = lambda key: (params[key] != None)
-    filtered_parameters = filter(filter_parameters, params.keys())
-    role_parameters = {key: params[key] for key in filtered_parameters}
-
-    if not _role_id:
+    if not msg.role_id:
         raise MissingRequestKeyError
 
-    _allowed = node.users.can_edit_roles(user_id=_current_user_id)
+    # Check Key permissions
+    _allowed = node.users.can_edit_roles(verify_key=verify_key)
 
     if _allowed:
-        node.roles.set(role_id=_role_id, params=role_parameters)
+        node.roles.set(role_id=msg.role_id, params=params)
     else:
         raise AuthorizationError("You're not authorized to edit this role!")
 
-    return UpdateRoleResponse(
+    return SuccessResponseMessage(
         address=msg.reply_to,
-        status_code=200,
-        content={"msg": "Role updated successfully!"},
+        resp_msg="Role updated successfully!",
     )
 
 
@@ -141,29 +109,17 @@ def get_role_msg(
     node: AbstractNode,
     verify_key: VerifyKey,
 ) -> GetRoleResponse:
-    _role_id = msg.content.get("role_id", None)
-    _current_user_id = msg.content.get("current_user", None)
 
-    users = node.users
-
-    if not _current_user_id:
-        _current_user_id = users.first(
-            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
-        ).id
-
-    _allowed = users.can_triage_requests(user_id=_current_user_id)
+    # Check Key permissions
+    _allowed = node.users.can_triage_requests(verify_key=verify_key)
 
     if _allowed:
-        role = node.roles.first(id=_role_id)
+        role = node.roles.first(id=msg.role_id)
         _msg = model_to_json(role)
     else:
         raise AuthorizationError("You're not allowed to get User information!")
 
-    return GetRoleResponse(
-        address=msg.reply_to,
-        status_code=200,
-        content=_msg,
-    )
+    return GetRoleResponse(address=msg.reply_to, content=_msg)
 
 
 def get_all_roles_msg(
@@ -171,19 +127,8 @@ def get_all_roles_msg(
     node: AbstractNode,
     verify_key: VerifyKey,
 ) -> GetRolesResponse:
-    try:
-        _current_user_id = msg.content.get("current_user", None)
-    except Exception:
-        _current_user_id = None
 
-    users = node.users
-
-    if not _current_user_id:
-        _current_user_id = users.first(
-            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
-        ).id
-
-    _allowed = users.can_triage_requests(user_id=_current_user_id)
+    _allowed = node.users.can_triage_requests(verify_key=verify_key)
 
     if _allowed:
         roles = node.roles.all()
@@ -191,38 +136,24 @@ def get_all_roles_msg(
     else:
         raise AuthorizationError("You're not allowed to get Role information!")
 
-    return GetRolesResponse(address=msg.reply_to, status_code=200, content=_msg)
+    return GetRolesResponse(address=msg.reply_to, content=_msg)
 
 
 def del_role_msg(
     msg: DeleteRoleMessage,
     node: AbstractNode,
     verify_key: VerifyKey,
-) -> DeleteRoleResponse:
-    _role_id = msg.content.get("role_id", None)
-    _current_user_id = msg.content.get("current_user", None)
-
-    users = node.users
-
-    if not _current_user_id:
-        _current_user_id = users.first(
-            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
-        ).id
-
-    if not _role_id:
-        raise MissingRequestKeyError
-
-    _allowed = node.users.can_edit_roles(user_id=_current_user_id)
+) -> SuccessResponseMessage:
+    _allowed = node.users.can_edit_roles(verify_key=verify_key)
 
     if _allowed:
-        node.roles.delete(id=_role_id)
+        node.roles.delete(id=msg.role_id)
     else:
         raise AuthorizationError("You're not authorized to delete this role!")
 
-    return DeleteRoleResponse(
+    return SuccessResponseMessage(
         address=msg.reply_to,
-        status_code=200,
-        content={"msg": "Role has been deleted!"},
+        resp_msg="Role has been deleted!",
     )
 
 
@@ -248,13 +179,7 @@ class RoleManagerService(ImmediateNodeServiceWithReply):
             DeleteRoleMessage,
         ],
         verify_key: VerifyKey,
-    ) -> Union[
-        CreateRoleResponse,
-        UpdateRoleResponse,
-        GetRoleResponse,
-        GetRolesResponse,
-        DeleteRoleResponse,
-    ]:
+    ) -> Union[SuccessResponseMessage, GetRoleResponse, GetRolesResponse,]:
         return RoleManagerService.msg_handler_map[type(msg)](
             msg=msg, node=node, verify_key=verify_key
         )
