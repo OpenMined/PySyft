@@ -27,7 +27,7 @@ from app.core.node import domain
 router = APIRouter()
 
 
-@router.get("/request", status_code=200, response_class=JSONResponse)
+@router.post("/request", status_code=200, response_class=JSONResponse)
 def send_association_request(
     current_user: Any = Depends(deps.get_current_user),
     name: str = Body(..., example="Nodes Association Request"),
@@ -70,7 +70,6 @@ def send_association_request(
 
 @router.post("/receive", status_code=201, response_class=JSONResponse)
 def receive_association_request(
-    current_user: Any = Depends(deps.get_current_user),
     name: str = Body(..., example="Nodes Association Request"),
     handshake: str = Body(..., example="<hash_code>"),
     sender: str = Body(..., example="http://<node_address>/api/v1"),
@@ -86,16 +85,15 @@ def receive_association_request(
     Returns:
         resp: JSON structure containing a log message
     """
-    # Map User Key
-    user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
-
     # Build Syft Message
     msg = ReceiveAssociationRequestMessage(
         address=domain.address,
+        name=name,
         handshake=handshake,
         sender=sender,
+        target=target,
         reply_to=domain.address,
-    ).sign(signing_key=user_key)
+    ).sign(signing_key=SigningKey.generate())
 
     # Process syft message
     reply = domain.recv_immediate_msg_with_reply(msg=msg).message

@@ -7,6 +7,12 @@ from syft.core.node.common.tables.utils import seed_db
 from app.db.session import SessionLocal
 from app.db.session import engine
 
-domain = Domain("my domain", db_engine=engine)
+domain = Domain("Domain", db_engine=engine)
 Base.metadata.create_all(engine)
-seed_db(SessionLocal())
+
+if len(domain.setup):  # Check if setup was defined previously
+    domain.name = domain.setup.node_name
+
+
+if not len(domain.roles):  # Check if roles were registered previously
+    seed_db(SessionLocal())

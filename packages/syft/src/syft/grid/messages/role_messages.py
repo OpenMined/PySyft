@@ -19,13 +19,7 @@ from syft.proto.grid.messages.role_messages_pb2 import (
     CreateRoleMessage as CreateRoleMessage_PB,
 )
 from syft.proto.grid.messages.role_messages_pb2 import (
-    CreateRoleResponse as CreateRoleResponse_PB,
-)
-from syft.proto.grid.messages.role_messages_pb2 import (
     DeleteRoleMessage as DeleteRoleMessage_PB,
-)
-from syft.proto.grid.messages.role_messages_pb2 import (
-    DeleteRoleResponse as DeleteRoleResponse_PB,
 )
 from syft.proto.grid.messages.role_messages_pb2 import (
     GetRoleMessage as GetRoleMessage_PB,
@@ -42,9 +36,6 @@ from syft.proto.grid.messages.role_messages_pb2 import (
 from syft.proto.grid.messages.role_messages_pb2 import (
     UpdateRoleMessage as UpdateRoleMessage_PB,
 )
-from syft.proto.grid.messages.role_messages_pb2 import (
-    UpdateRoleResponse as UpdateRoleResponse_PB,
-)
 
 
 @bind_protobuf
@@ -53,12 +44,26 @@ class CreateRoleMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
         address: Address,
-        content: Dict,
+        name: str,
         reply_to: Address,
+        can_triage_requests: bool = False,
+        can_edit_settings: bool = False,
+        can_create_users: bool = False,
+        can_create_groups: bool = False,
+        can_edit_roles: bool = False,
+        can_manage_infrastructure: bool = False,
+        can_upload_data: bool = False,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
-        self.content = content
+        self.name = name
+        self.can_triage_requests = can_triage_requests
+        self.can_edit_settings = can_edit_settings
+        self.can_create_users = can_create_users
+        self.can_create_groups = can_create_groups
+        self.can_edit_roles = can_edit_roles
+        self.can_manage_infrastructure = can_manage_infrastructure
+        self.can_upload_data = can_upload_data
 
     def _object2proto(self) -> CreateRoleMessage_PB:
         """Returns a protobuf serialization of self.
@@ -75,7 +80,14 @@ class CreateRoleMessage(ImmediateSyftMessageWithReply):
         return CreateRoleMessage_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            content=json.dumps(self.content),
+            name=self.name,
+            can_triage_requests=self.can_triage_requests,
+            can_edit_settings=self.can_edit_settings,
+            can_create_users=self.can_create_users,
+            can_create_groups=self.can_create_groups,
+            can_edit_roles=self.can_edit_roles,
+            can_manage_infrastructure=self.can_manage_infrastructure,
+            can_upload_data=self.can_upload_data,
             reply_to=serialize(self.reply_to),
         )
 
@@ -96,7 +108,14 @@ class CreateRoleMessage(ImmediateSyftMessageWithReply):
         return CreateRoleMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            content=json.loads(proto.content),
+            name=proto.name,
+            can_triage_requests=proto.can_triage_requests,
+            can_edit_settings=proto.can_edit_settings,
+            can_create_users=proto.can_create_users,
+            can_create_groups=proto.can_create_groups,
+            can_edit_roles=proto.can_edit_roles,
+            can_manage_infrastructure=proto.can_manage_infrastructure,
+            can_upload_data=proto.can_upload_data,
             reply_to=_deserialize(blob=proto.reply_to),
         )
 
@@ -120,88 +139,16 @@ class CreateRoleMessage(ImmediateSyftMessageWithReply):
 
 @bind_protobuf
 @final
-class CreateRoleResponse(ImmediateSyftMessageWithoutReply):
-    def __init__(
-        self,
-        address: Address,
-        status_code: int,
-        content: Dict,
-        msg_id: Optional[UID] = None,
-    ):
-        super().__init__(address=address, msg_id=msg_id)
-        self.status_code = status_code
-        self.content = content
-
-    def _object2proto(self) -> CreateRoleResponse_PB:
-        """Returns a protobuf serialization of self.
-        As a requirement of all objects which inherit from Serializable,
-        this method transforms the current object into the corresponding
-        Protobuf object so that it can be further serialized.
-        :return: returns a protobuf object
-        :rtype: SignalingOfferMessage_PB
-        .. note::
-            This method is purely an internal method. Please use serialize(object) or one of
-            the other public serialization methods if you wish to serialize an
-            object.
-        """
-        return CreateRoleResponse_PB(
-            msg_id=serialize(self.id),
-            address=serialize(self.address),
-            status_code=self.status_code,
-            content=json.dumps(self.content),
-        )
-
-    @staticmethod
-    def _proto2object(
-        proto: CreateRoleResponse_PB,
-    ) -> "CreateRoleResponse":
-        """Creates a SignalingOfferMessage from a protobuf
-        As a requirement of all objects which inherit from Serializable,
-        this method transforms a protobuf object into an instance of this class.
-        :return: returns an instance of SignalingOfferMessage
-        :rtype: SignalingOfferMessage
-        .. note::
-            This method is purely an internal method. Please use syft.deserialize()
-            if you wish to deserialize an object.
-        """
-
-        return CreateRoleResponse(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
-            status_code=proto.status_code,
-            content=json.loads(proto.content),
-        )
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """Return the type of protobuf object which stores a class of this type
-        As a part of serialization and deserialization, we need the ability to
-        lookup the protobuf object type directly from the object type. This
-        static method allows us to do this.
-        Importantly, this method is also used to create the reverse lookup ability within
-        the metaclass of Serializable. In the metaclass, it calls this method and then
-        it takes whatever type is returned from this method and adds an attribute to it
-        with the type of this class attached to it. See the MetaSerializable class for
-        details.
-        :return: the type of protobuf object which corresponds to this class.
-        :rtype: GeneratedProtocolMessageType
-        """
-
-        return CreateRoleResponse_PB
-
-
-@bind_protobuf
-@final
 class GetRoleMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
         address: Address,
-        content: Dict,
+        role_id: int,
         reply_to: Address,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
-        self.content = content
+        self.role_id = role_id
 
     def _object2proto(self) -> GetRoleMessage_PB:
         """Returns a protobuf serialization of self.
@@ -218,7 +165,7 @@ class GetRoleMessage(ImmediateSyftMessageWithReply):
         return GetRoleMessage_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            content=json.dumps(self.content),
+            role_id=self.role_id,
             reply_to=serialize(self.reply_to),
         )
 
@@ -239,7 +186,7 @@ class GetRoleMessage(ImmediateSyftMessageWithReply):
         return GetRoleMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            content=json.loads(proto.content),
+            role_id=proto.role_id,
             reply_to=_deserialize(blob=proto.reply_to),
         )
 
@@ -267,12 +214,10 @@ class GetRoleResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        status_code: int,
         content: Dict,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
-        self.status_code = status_code
         self.content = content
 
     def _object2proto(self) -> GetRoleResponse_PB:
@@ -290,7 +235,6 @@ class GetRoleResponse(ImmediateSyftMessageWithoutReply):
         return GetRoleResponse_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            status_code=self.status_code,
             content=json.dumps(self.content),
         )
 
@@ -311,7 +255,6 @@ class GetRoleResponse(ImmediateSyftMessageWithoutReply):
         return GetRoleResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            status_code=proto.status_code,
             content=json.loads(proto.content),
         )
 
@@ -339,12 +282,10 @@ class GetRolesMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
         address: Address,
-        content: Dict,
         reply_to: Address,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
-        self.content = content
 
     def _object2proto(self) -> GetRolesMessage_PB:
         """Returns a protobuf serialization of self.
@@ -361,7 +302,6 @@ class GetRolesMessage(ImmediateSyftMessageWithReply):
         return GetRolesMessage_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            content=json.dumps(self.content),
             reply_to=serialize(self.reply_to),
         )
 
@@ -382,7 +322,6 @@ class GetRolesMessage(ImmediateSyftMessageWithReply):
         return GetRolesMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            content=json.loads(proto.content),
             reply_to=_deserialize(blob=proto.reply_to),
         )
 
@@ -410,12 +349,10 @@ class GetRolesResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        status_code: int,
         content: Dict,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
-        self.status_code = status_code
         self.content = content
 
     def _object2proto(self) -> GetRolesResponse_PB:
@@ -433,7 +370,6 @@ class GetRolesResponse(ImmediateSyftMessageWithoutReply):
         return GetRolesResponse_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            status_code=self.status_code,
             content=json.dumps(self.content),
         )
 
@@ -454,7 +390,6 @@ class GetRolesResponse(ImmediateSyftMessageWithoutReply):
         return GetRolesResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            status_code=proto.status_code,
             content=json.loads(proto.content),
         )
 
@@ -482,12 +417,28 @@ class UpdateRoleMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
         address: Address,
-        content: Dict,
+        role_id: int,
+        name: str,
+        can_triage_requests: bool,
+        can_edit_settings: bool,
+        can_create_users: bool,
+        can_create_groups: bool,
+        can_edit_roles: bool,
+        can_manage_infrastructure: bool,
+        can_upload_data: bool,
         reply_to: Address,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
-        self.content = content
+        self.name = name
+        self.can_triage_requests = can_triage_requests
+        self.can_edit_settings = can_edit_settings
+        self.can_create_users = can_create_users
+        self.can_create_groups = can_create_groups
+        self.can_edit_roles = can_edit_roles
+        self.can_manage_infrastructure = can_manage_infrastructure
+        self.can_upload_data = can_upload_data
+        self.role_id = role_id
 
     def _object2proto(self) -> UpdateRoleMessage_PB:
         """Returns a protobuf serialization of self.
@@ -504,7 +455,15 @@ class UpdateRoleMessage(ImmediateSyftMessageWithReply):
         return UpdateRoleMessage_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            content=json.dumps(self.content),
+            name=self.name,
+            can_triage_requests=self.can_triage_requests,
+            can_edit_settings=self.can_edit_settings,
+            can_create_users=self.can_create_users,
+            can_create_groups=self.can_create_groups,
+            can_edit_roles=self.can_edit_roles,
+            can_manage_infrastructure=self.can_manage_infrastructure,
+            can_upload_data=self.can_upload_data,
+            role_id=self.role_id,
             reply_to=serialize(self.reply_to),
         )
 
@@ -525,7 +484,15 @@ class UpdateRoleMessage(ImmediateSyftMessageWithReply):
         return UpdateRoleMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            content=json.loads(proto.content),
+            name=proto.name,
+            can_triage_requests=proto.can_triage_requests,
+            can_edit_settings=proto.can_edit_settings,
+            can_create_users=proto.can_create_users,
+            can_create_groups=proto.can_create_groups,
+            can_edit_roles=proto.can_edit_roles,
+            can_manage_infrastructure=proto.can_manage_infrastructure,
+            can_upload_data=proto.can_upload_data,
+            role_id=proto.role_id,
             reply_to=_deserialize(blob=proto.reply_to),
         )
 
@@ -549,88 +516,16 @@ class UpdateRoleMessage(ImmediateSyftMessageWithReply):
 
 @bind_protobuf
 @final
-class UpdateRoleResponse(ImmediateSyftMessageWithoutReply):
-    def __init__(
-        self,
-        address: Address,
-        status_code: int,
-        content: Dict,
-        msg_id: Optional[UID] = None,
-    ):
-        super().__init__(address=address, msg_id=msg_id)
-        self.status_code = status_code
-        self.content = content
-
-    def _object2proto(self) -> UpdateRoleResponse_PB:
-        """Returns a protobuf serialization of self.
-        As a requirement of all objects which inherit from Serializable,
-        this method transforms the current object into the corresponding
-        Protobuf object so that it can be further serialized.
-        :return: returns a protobuf object
-        :rtype: SignalingOfferMessage_PB
-        .. note::
-            This method is purely an internal method. Please use serialize(object) or one of
-            the other public serialization methods if you wish to serialize an
-            object.
-        """
-        return UpdateRoleResponse_PB(
-            msg_id=serialize(self.id),
-            address=serialize(self.address),
-            status_code=self.status_code,
-            content=json.dumps(self.content),
-        )
-
-    @staticmethod
-    def _proto2object(
-        proto: UpdateRoleResponse_PB,
-    ) -> "UpdateRoleResponse":
-        """Creates a SignalingOfferMessage from a protobuf
-        As a requirement of all objects which inherit from Serializable,
-        this method transforms a protobuf object into an instance of this class.
-        :return: returns an instance of SignalingOfferMessage
-        :rtype: SignalingOfferMessage
-        .. note::
-            This method is purely an internal method. Please use syft.deserialize()
-            if you wish to deserialize an object.
-        """
-
-        return UpdateRoleResponse(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
-            status_code=proto.status_code,
-            content=json.loads(proto.content),
-        )
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """Return the type of protobuf object which stores a class of this type
-        As a part of serialization and deserialization, we need the ability to
-        lookup the protobuf object type directly from the object type. This
-        static method allows us to do this.
-        Importantly, this method is also used to create the reverse lookup ability within
-        the metaclass of Serializable. In the metaclass, it calls this method and then
-        it takes whatever type is returned from this method and adds an attribute to it
-        with the type of this class attached to it. See the MetaSerializable class for
-        details.
-        :return: the type of protobuf object which corresponds to this class.
-        :rtype: GeneratedProtocolMessageType
-        """
-
-        return UpdateRoleResponse_PB
-
-
-@bind_protobuf
-@final
 class DeleteRoleMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
         address: Address,
-        content: Dict,
+        role_id: int,
         reply_to: Address,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
-        self.content = content
+        self.role_id = role_id
 
     def _object2proto(self) -> DeleteRoleMessage_PB:
         """Returns a protobuf serialization of self.
@@ -647,7 +542,7 @@ class DeleteRoleMessage(ImmediateSyftMessageWithReply):
         return DeleteRoleMessage_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            content=json.dumps(self.content),
+            role_id=self.role_id,
             reply_to=serialize(self.reply_to),
         )
 
@@ -668,7 +563,7 @@ class DeleteRoleMessage(ImmediateSyftMessageWithReply):
         return DeleteRoleMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            content=json.loads(proto.content),
+            role_id=proto.role_id,
             reply_to=_deserialize(blob=proto.reply_to),
         )
 
@@ -688,75 +583,3 @@ class DeleteRoleMessage(ImmediateSyftMessageWithReply):
         """
 
         return DeleteRoleMessage_PB
-
-
-@bind_protobuf
-@final
-class DeleteRoleResponse(ImmediateSyftMessageWithoutReply):
-    def __init__(
-        self,
-        address: Address,
-        status_code: int,
-        content: Dict,
-        msg_id: Optional[UID] = None,
-    ):
-        super().__init__(address=address, msg_id=msg_id)
-        self.status_code = status_code
-        self.content = content
-
-    def _object2proto(self) -> DeleteRoleResponse_PB:
-        """Returns a protobuf serialization of self.
-        As a requirement of all objects which inherit from Serializable,
-        this method transforms the current object into the corresponding
-        Protobuf object so that it can be further serialized.
-        :return: returns a protobuf object
-        :rtype: SignalingOfferMessage_PB
-        .. note::
-            This method is purely an internal method. Please use serialize(object) or one of
-            the other public serialization methods if you wish to serialize an
-            object.
-        """
-        return DeleteRoleResponse_PB(
-            msg_id=serialize(self.id),
-            address=serialize(self.address),
-            status_code=self.status_code,
-            content=json.dumps(self.content),
-        )
-
-    @staticmethod
-    def _proto2object(
-        proto: DeleteRoleResponse_PB,
-    ) -> "DeleteRoleResponse":
-        """Creates a SignalingOfferMessage from a protobuf
-        As a requirement of all objects which inherit from Serializable,
-        this method transforms a protobuf object into an instance of this class.
-        :return: returns an instance of SignalingOfferMessage
-        :rtype: SignalingOfferMessage
-        .. note::
-            This method is purely an internal method. Please use syft.deserialize()
-            if you wish to deserialize an object.
-        """
-
-        return DeleteRoleResponse(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
-            status_code=proto.status_code,
-            content=json.loads(proto.content),
-        )
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """Return the type of protobuf object which stores a class of this type
-        As a part of serialization and deserialization, we need the ability to
-        lookup the protobuf object type directly from the object type. This
-        static method allows us to do this.
-        Importantly, this method is also used to create the reverse lookup ability within
-        the metaclass of Serializable. In the metaclass, it calls this method and then
-        it takes whatever type is returned from this method and adds an attribute to it
-        with the type of this class attached to it. See the MetaSerializable class for
-        details.
-        :return: the type of protobuf object which corresponds to this class.
-        :rtype: GeneratedProtocolMessageType
-        """
-
-        return DeleteRoleResponse_PB
