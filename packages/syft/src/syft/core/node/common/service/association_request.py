@@ -11,6 +11,7 @@ from requests import post
 from requests.exceptions import ConnectionError
 
 # syft absolute
+import syft
 from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.service.auth import service_auth
@@ -49,33 +50,28 @@ def send_association_request_msg(
     # Check Key permissions
     allowed = node.users.can_manage_infrastructure(verify_key=verify_key)
     if allowed:
-
         # Create a new association request object
         association_request_obj = node.association_requests.create_association_request(
             msg.name, msg.target, msg.sender
         )
         handshake_value = association_request_obj.handshake_value
 
-        # Create POST request to the target address
-        payload = {
-            "name": msg.name,
-            "target": msg.sender,
-            "handshake": handshake_value,
-            "sender": msg.target,
-        }
-        url = msg.target + "/association-requests/receive"
+        # Build an association request to send to the target
+        user_priv_key = SigningKey(
+            node.get_user(verify_key).private_key.encode(), encoder=HexEncoder
+        )
+        node_client = sy.login(url=msg.target)
+        msg = ReceiveAssociationRequestMessage(
+            address=node_client.address,
+            name=msg.name,
+            handshake=handshake_value,
+            sender=msg.sender,
+            target=msg.target,
+            reply_to=node_client.address,
+        ).sign(signing_key=user_priv_key)
 
-        try:
-            response = post(url=url, json=payload)
-            _success = response.status_code == 200
-        except ConnectionError:  # Invalid address/port
-            _success = False
-
-        # If request fail
-        if not _success:
-            raise AssociationRequestError(
-                "Association request could not be sent! Please, try again."
-            )
+        # Send the message to the target
+        node_client.send_immediate_msg_with_reply(msg=msg)
     else:  # If not authorized
         raise AuthorizationError("You're not allowed to create an Association Request!")
 
@@ -113,7 +109,7 @@ def recv_association_request_msg(
         )
 
     else:
-        # Set the status of the Association Request according to the "value" field recived
+        # Set the status of the Association Request according to the "value" field received
         if msg.value:
             association_requests.set(msg.handshake, msg.value)
         else:
@@ -144,30 +140,23 @@ def respond_association_request_msg(
     allowed = node.users.can_manage_infrastructure(verify_key=verify_key)
 
     if allowed:
-        # Set the status of the Association Request according to the "value" field recived
-        association_requests = node.association_requests
-        association_requests.set(msg.handshake, msg.value)
+        # Set the status of the Association Request according to the "value" field received
+        node.association_requests.set(msg.handshake, msg.value)
 
-        # Create POST request to the address recived in the body
-        payload = {
-            "target": msg.sender,
-            "handshake": msg.handshake,
-            "value": msg.value,
-            "sender": msg.target,
-        }
-        url = msg.target + "/association-requests/receive"
+        user_priv_key = SigningKey(
+            node.get_user(verify_key).private_key.encode(), encoder=HexEncoder
+        )
 
-        try:
-            response = post(url=url, json=payload)
-            _success = response.status_code == 200
-        except ConnectionError:  # Invalid address/port
-            _success = False
-
-        # If request fail
-        if not _success:
-            raise AssociationRequestError(
-                "Association request could not be sent! Please, try again."
-            )
+        node_client = sy.login(url=msg.target)
+        msg = ReceiveAssociationRequestMessage(
+            address=node_client.address,
+            name=msg.name,
+            handshake=handshake_value,
+            sender=msg.sender,
+            target=msg.target,
+            reply_to=node_client.address,
+        ).sign(signing_key=user_priv_key)
+        node_client.send_immediate_msg_with_reply(msg=msg)
     else:  # If not allowed
         raise AuthorizationError("You're not allowed to create an Association Request!")
 
