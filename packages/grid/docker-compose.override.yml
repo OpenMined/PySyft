@@ -43,6 +43,17 @@ services:
   flower:
     ports:
       - "5555"
+    command:
+      - "--broker=amqp://guest@queue:5672//"
+      # For the "Broker" tab to work in the flower UI, uncomment the following command argument,
+      # and change the queue service's image as well
+      - "--broker_api=http://guest:guest@queue:15672/api//"
+
+  queue:
+    image: rabbitmq:3-management
+    ports:
+      - "5672"
+      - "15672"
 
   backend:
     ports:
