@@ -31,7 +31,7 @@ router = APIRouter()
 
 @router.get("/me", status_code=200, response_class=JSONResponse)
 def me_route(current_user: Any = Depends(deps.get_current_user)) -> Any:
-    """ Returns Current User Table """
+    """Returns Current User Table"""
     user_dict = model_to_json(current_user)
     user_dict["role"] = domain.roles.first(id=user_dict["role"]).name
     del user_dict["private_key"]
@@ -108,7 +108,7 @@ def get_all_users_route(
     if isinstance(reply, ExceptionMessage):
         resp = {"error": reply.exception_msg}
     else:
-        resp = reply.content
+        resp = [user.upcast() for user in reply.content]
 
     return resp
 
@@ -143,7 +143,7 @@ def get_specific_user_route(
     if isinstance(reply, ExceptionMessage):
         resp = {"error": reply.exception_msg}
     else:
-        resp = reply.content
+        resp = reply.content.upcast()
 
     return resp
 

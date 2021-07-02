@@ -1,5 +1,4 @@
 # stdlib
-import json
 from typing import Any
 
 # third party
@@ -7,7 +6,6 @@ from fastapi import APIRouter
 from fastapi import Body
 from fastapi import Depends
 from fastapi import Request
-from fastapi import Response
 from fastapi.responses import JSONResponse
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey

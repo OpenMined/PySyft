@@ -40,7 +40,7 @@ def create_role_route(
     can_manage_infrastructure: bool = Body(False, example="false"),
     can_upload_data: bool = Body(False, example="false"),
 ):
-    """ Creates a new PyGrid role.
+    """Creates a new PyGrid role.
 
     Args:
         current_user : Current session.
@@ -112,7 +112,7 @@ def get_all_roles_route(
     if isinstance(reply, ExceptionMessage):
         resp = {"error": reply.exception_msg}
     else:
-        resp = reply.content
+        resp = [role.upcast() for role in reply.content]
 
     return resp
 
@@ -147,7 +147,7 @@ def get_specific_role_route(
     if isinstance(reply, ExceptionMessage):
         resp = {"error": reply.exception_msg}
     else:
-        resp = reply.content
+        resp = reply.content.upcast()
 
     return resp
 
