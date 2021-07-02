@@ -1,6 +1,10 @@
-# third party
-from typing import Callable, Dict, Any, List
+# stdlib
+from typing import Any
+from typing import Callable
+from typing import Dict
+from typing import List
 
+# third party
 import pytest
 
 # syft absolute
@@ -8,15 +12,13 @@ import syft
 from syft import deserialize
 from syft import serialize
 from syft.core.io.address import Address
-from syft.grid.messages.dataset_messages import (
-    CreateDatasetMessage,
-    GetDatasetsMessage,
-    GetDatasetsResponse,
-    UpdateDatasetMessage,
-    DeleteDatasetMessage,
-)
+from syft.grid.messages.dataset_messages import CreateDatasetMessage
+from syft.grid.messages.dataset_messages import DeleteDatasetMessage
 from syft.grid.messages.dataset_messages import GetDatasetMessage
 from syft.grid.messages.dataset_messages import GetDatasetResponse
+from syft.grid.messages.dataset_messages import GetDatasetsMessage
+from syft.grid.messages.dataset_messages import GetDatasetsResponse
+from syft.grid.messages.dataset_messages import UpdateDatasetMessage
 
 metadata = syft.lib.python.Dict(
     {"name": "Dataset", "fields": ["age", "height", "weight"]}
