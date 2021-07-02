@@ -44,11 +44,14 @@ class GridRequestAPI:
 
     def get(self, **kwargs: Any) -> Any:
         return self.to_obj(
-            self.__send(grid_msg=self.__get_message, content=kwargs).content
+            self.__send(grid_msg=self.__get_message, content=kwargs).content.upcast()
         )
 
     def all(self, pandas: bool = False) -> Union[DataFrame, Dict[Any, Any]]:
-        result = self.__send(grid_msg=self.__get_all_message).content
+        result = [
+            content.upcast()
+            for content in self.__send(grid_msg=self.__get_all_message).content
+        ]
         if pandas:
             result = DataFrame(result)
 

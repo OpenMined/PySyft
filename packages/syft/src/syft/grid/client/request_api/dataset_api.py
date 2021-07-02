@@ -1,5 +1,6 @@
 # stdlib
 import ast
+import logging
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -16,6 +17,7 @@ from ...messages.dataset_messages import DeleteDatasetMessage
 from ...messages.dataset_messages import GetDatasetMessage
 from ...messages.dataset_messages import GetDatasetsMessage
 from ...messages.dataset_messages import UpdateDatasetMessage
+from ..enums import RequestAPIFields
 from ..enums import ResponseObjectEnum
 from .request_api import GridRequestAPI
 
@@ -34,9 +36,9 @@ class DatasetRequestAPI(GridRequestAPI):
         self.conn = conn
         self.client = client
 
-    def create(self, path: str) -> Dict[str, str]:  # type: ignore
-        response = self.conn.send_files(path)  # type: ignore
-        return self.to_obj(response)
+    def create(self, path: str, **kwargs) -> Dict[str, str]:  # type: ignore
+        response = self.conn.send_files(path, metadata=kwargs)  # type: ignore
+        logging.info(response[RequestAPIFields.MESSAGE])
 
     def __getitem__(self, key: Union[str, int, slice]) -> Any:
         # optionally we should be able to pass in the index of the dataset we want

@@ -11,7 +11,6 @@ from typing import Tuple
 import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
-from requests_toolbelt.multipart import encoder
 
 # relative
 from ...core.common.message import SyftMessage
@@ -124,28 +123,27 @@ class GridHTTPConnection(HTTPConnection):
         else:
             raise RequestAPIException(response.get(RequestAPIFields.ERROR))
 
-    def send_files(self, file_path: str) -> Dict[str, Any]:
-        session = requests.Session()
+    def send_files(self, file_path: str, metadata: Dict = {}) -> Dict[str, Any]:
+        header = {}
 
-        with open(file_path, "rb") as f:
-
-            form = encoder.MultipartEncoder(
-                {
-                    "file": (file_path, f, "application/octet-stream"),
-                }
+        if self.session_token and self.token_type:
+            header = dict(
+                Authorization="Bearer "
+                + json.loads(
+                    '{"auth_token":"'
+                    + self.session_token
+                    + '","token_type":"'
+                    + self.token_type
+                    + '"}'
+                )["auth_token"]
             )
 
-            headers = {
-                "Prefer": "respond-async",
-                "Content-Type": form.content_type,
-                "token": self.session_token,
-            }
+        files = {
+            "metadata": (None, json.dumps(metadata), "text/plain"),
+            "file": (file_path, open(file_path, "rb"), "application/octet-stream"),
+        }
 
-            resp = session.post(
-                self.base_url + "/data-centric/datasets", headers=headers, data=form
-            )
-
-        session.close()
+        resp = requests.post(self.base_url + "/datasets", files=files, headers=header)
 
         return json.loads(resp.content)
 
