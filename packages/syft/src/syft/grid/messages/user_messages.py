@@ -1,6 +1,7 @@
 # stdlib
 import json
 from typing import Dict
+from typing import List
 from typing import Optional
 
 # third party
@@ -221,7 +222,7 @@ class GetUserResponse(ImmediateSyftMessageWithoutReply):
         return GetUserResponse_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            content=json.dumps(self.content),
+            content=serialize(self.content),
         )
 
     @staticmethod
@@ -241,7 +242,7 @@ class GetUserResponse(ImmediateSyftMessageWithoutReply):
         return GetUserResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            content=json.loads(proto.content),
+            content=_deserialize(proto.content),
         )
 
     @staticmethod
@@ -335,7 +336,7 @@ class GetUsersResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        content: Dict,
+        content: List[Dict],
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
@@ -353,11 +354,12 @@ class GetUsersResponse(ImmediateSyftMessageWithoutReply):
             the other public serialization methods if you wish to serialize an
             object.
         """
-        return GetUsersResponse_PB(
+        msg = GetUsersResponse_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            content=json.dumps(self.content),
         )
+        _ = [msg.content.append(serialize(content)) for content in self.content]
+        return msg
 
     @staticmethod
     def _proto2object(
@@ -372,11 +374,10 @@ class GetUsersResponse(ImmediateSyftMessageWithoutReply):
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
-
         return GetUsersResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            content=json.loads(proto.content),
+            content=[_deserialize(content) for content in proto.content],
         )
 
     @staticmethod
