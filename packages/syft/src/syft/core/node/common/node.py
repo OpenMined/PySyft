@@ -316,7 +316,7 @@ class Node(AbstractNode):
             name=self.name if self.name else "",
             id=self.id,
             node=self.target_id,
-            type=str(type(self).__name__),
+            node_type=str(type(self).__name__),
         )
 
     @property

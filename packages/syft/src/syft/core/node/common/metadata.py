@@ -18,7 +18,7 @@ from ...io.location import Location
 @bind_protobuf
 class Metadata(Serializable):
     def __init__(
-        self, node: Location, name: str = "", id: Optional[UID] = None, type: str = ""
+        self, node: Location, name: str = "", id: Optional[UID] = None, node_type: str = ""
     ):
         super().__init__()
         self.name = name
@@ -27,7 +27,7 @@ class Metadata(Serializable):
             self.id = id
         else:
             self.id = UID()
-        self.type = type
+        self.node_type = node_type
 
     def _object2proto(self) -> Metadata_PB:
         """Returns a protobuf serialization of self.
@@ -45,7 +45,7 @@ class Metadata(Serializable):
             object.
         """
         return Metadata_PB(
-            name=self.name, id=serialize(self.id), node=serialize(self.node), type=type
+            name=self.name, id=serialize(self.id), node=serialize(self.node), node_type=self.node_type
         )
 
     @staticmethod
@@ -67,7 +67,7 @@ class Metadata(Serializable):
             id=validate_type(_deserialize(blob=proto.id), UID, optional=True),
             name=proto.name,
             node=validate_type(_deserialize(blob=proto.node), Location),
-            type=proto.type,
+            node_type=proto.node_type,
         )
 
     @staticmethod
