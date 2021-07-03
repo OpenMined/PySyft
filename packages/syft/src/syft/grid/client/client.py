@@ -97,8 +97,6 @@ class GridClient(DomainClient):
         )
 
 
-
-
 def connect(
     url: str = DEFAULT_PYGRID_ADDRESS,
     conn_type: Type[ClientConnection] = GridHTTPConnection,

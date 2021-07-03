@@ -45,6 +45,7 @@ from .messages.transfer_messages import LoadObjectMessage
 from .enums import PyGridClientEnums
 from .enums import RequestAPIFields
 
+
 class RequestQueueClient:
     def __init__(self, client: Client) -> None:
         self.client = client
@@ -322,7 +323,7 @@ class DomainClient(Client):
 
     # TODO: these appear to be tech debt but I don't want to delete them unless we're sure.
     # So leaving commented for now
-    
+
     # def send_immediate_msg_with_reply(
     #     self,
     #     msg: Union[SignedImmediateSyftMessageWithReply, ImmediateSyftMessageWithReply],
