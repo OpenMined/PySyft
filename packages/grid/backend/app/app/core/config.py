@@ -94,6 +94,7 @@ class Settings(BaseSettings):
     USERS_OPEN_REGISTRATION: bool = False
 
     DOMAIN_NAME: str
+    NODE_TYPE: str = "Domain"
 
     class Config:
         case_sensitive = True

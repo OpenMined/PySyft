@@ -7,8 +7,17 @@ from syft.core.node.common.tables.utils import seed_db
 # grid absolute
 from app.db.session import SessionLocal
 from app.db.session import engine
+from app.core.config import settings
 
-node = Network("Domain", db_engine=engine)
+if settings.NODE_TYPE == "Domain":
+    node = Domain("Domain", db_engine=engine)
+elif settings.NODE_TYPE == "Network":
+    node = Network("Network", db_engine=engine)
+else:
+    raise Exception("Don't know NODE_TYPE " + str(settings.NODE_TYPE) + ". Please set "+\
+                    "NODE_TYPE to either 'Domain' or 'Network'.")
+
+node.loud_print()
 Base.metadata.create_all(engine)
 
 if len(node.setup):  # Check if setup was defined previously

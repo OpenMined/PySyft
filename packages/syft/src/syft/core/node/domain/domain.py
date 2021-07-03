@@ -138,6 +138,56 @@ class Domain(Node):
         # run the handlers in an asyncio future
         asyncio.ensure_future(self.run_handlers())
 
+    def loud_print(self):
+        print("""
+                          `-+yy+-`                               
+                        .:oydddddhyo:.                           
+                     `/yhdddddddddddhys:`                        
+                 .`   ./shdddddddddhys/.   ``                    
+             `./shhs/.`  .:oydddhyo:.   .:osyo:.`                
+          `-oydmmmmmmdy+-`  `-//-`  `-/syhhhhhyyo/-`             
+        `+hmmmmmmmmmmddddy+`      `/shhhhhhhhhyyyyys/`           
+         `-ohdmmmmmmmddy+-`  `::.  `-/syhhhhhhyyys/-`            
+      -o-`   ./yhddhs/.  `./shddhs/.`  .:oyyhyo:.   `./.         
+      -ddhs/.`  .::`  `-+ydddddddddhs+-`  `--`   `-+oyy-         
+      -dddddhs+-   `/shdddddddddddddhhhyo:`   .:+syyyyy-         
+      -ddddddddh.  -hdddddddddddddddhhhhyy-  `syyyyyyyy-         
+      -dddddhhhh-  -hhhhhhddddddddhhyyysss-  `ssssysyyy-         
+      -hhhhhhhhh-  -hhyyyyyyhhddhyysssssss-  `sssssssss-         
+       `-+yhhhhh.  -yyyyyyyyyyysssssssssss-  `ssssso/-`          
+       `   ./syy.  -yyyyyyyyyyysssssssssss-  `sso:.   `          
+      -y+:`   `-`  -yyyyyyyyssssssssssssss-  `-`   `-/o-         
+      -hhhyo/.     `+ssyyssssssssssssssss+`     .:+ssss-         
+      -yyyyyyys/`     ./osssssssssssso/.`    `/osssssss-         
+      -yyyyyyyyy.  ``    `:+sssoso+:.    ``  `sssssssss-         
+      -yyyyyyyys.  -so/.     -//-`    .:os-  `sssssssss-         
+      `+syyyssss.  -sssso/-`      `-/ossss-  `ssssssss+`         
+         .:ossss.  .ssssssss+`  `+ooooosss-  `sssso:.            
+            `-+s.  .ssssssooo.  .oooooooos-  `o/-`               
+                   .sssoooooo.  .ooooooooo-                      
+                   `-/ooooooo.  `ooooooo/-`                      
+                       .:+ooo.  `ooo+:.`                         
+                          `-/.  `/-`                             
+                                                                 
+                                                                 
+                                                                 
+                                                                 
+                                                                 
+``````````                 ``````````            ```          `` 
+``       ``               ```      ```            `           `` 
+``       ``  ```     ```  ``             ``````  ```   ````````` 
+``     ````   ``    ```   ``    ``````   ```     ```  ```    ``` 
+`````````      ``  ```    ``     `````   ``      ```  ``      `` 
+``              `` ``     ``        ``   ``      ```  ``      `` 
+``              ````      ````    ````   ``      ```  ```    ``` 
+``               ```        ````````     ``      ``    ````````` 
+               ```                                               
+              ```                __
+                                |  \  _   _   _  .  _
+                                |__/ (_) ||| (_| | | )
+
+""")
+
     @property
     def icon(self) -> str:
         return "🏰"

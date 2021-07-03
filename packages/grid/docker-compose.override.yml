@@ -69,6 +69,7 @@ services:
       - SERVER_HOST=http://${DOMAIN?Variable not set}
       - SYFT_USE_UVLOOP=0
       - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
+      - NODE_TYPE=${NODE_TYPE?Variable not set}
     build:
       context: ./backend
       dockerfile: backend.dockerfile
