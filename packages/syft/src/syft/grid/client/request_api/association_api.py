@@ -9,9 +9,10 @@ from ...messages.association_messages import GetAssociationRequestMessage
 from ...messages.association_messages import GetAssociationRequestsMessage
 from ...messages.association_messages import RespondAssociationRequestMessage
 from ...messages.association_messages import SendAssociationRequestMessage
-from ..enums import AssociationRequestResponses
-from ..enums import RequestAPIFields
-from ..enums import ResponseObjectEnum
+from ....core.node.domain.enums import RequestAPIFields
+from ....core.node.domain.enums import ResponseObjectEnum
+from ....core.node.domain.enums import AssociationRequestResponses
+
 from ..exceptions import PyGridClientException
 from .request_api import GridRequestAPI
 

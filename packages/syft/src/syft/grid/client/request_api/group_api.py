@@ -8,7 +8,7 @@ from ...messages.group_messages import DeleteGroupMessage
 from ...messages.group_messages import GetGroupMessage
 from ...messages.group_messages import GetGroupsMessage
 from ...messages.group_messages import UpdateGroupMessage
-from ..enums import ResponseObjectEnum
+from ....core.node.domain.enums import ResponseObjectEnum
 from .request_api import GridRequestAPI
 
 

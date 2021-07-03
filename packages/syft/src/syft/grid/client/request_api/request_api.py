@@ -12,7 +12,7 @@ from pandas import DataFrame
 
 # relative
 from ....core.common.message import SyftMessage
-from ..enums import RequestAPIFields
+from ....core.node.domain.enums import RequestAPIFields
 
 
 class GridRequestAPI:

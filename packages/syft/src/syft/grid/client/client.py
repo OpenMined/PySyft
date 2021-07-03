@@ -2,45 +2,24 @@
 import logging
 import sys
 import time
-from typing import Any
 from typing import Dict
-from typing import List
 from typing import Optional
 from typing import Type
-from typing import Union
 
 # third party
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
-import names
-from pandas import DataFrame
 import requests
 
 # relative
-from ...core.common.message import EventualSyftMessageWithoutReply
-from ...core.common.message import ImmediateSyftMessageWithReply
-from ...core.common.message import ImmediateSyftMessageWithoutReply
-from ...core.common.message import SignedImmediateSyftMessageWithReply
-from ...core.common.message import SignedImmediateSyftMessageWithoutReply
-from ...core.common.message import SyftMessage
-from ...core.common.serde.serialize import _serialize as serialize  # noqa: F401
 from ...core.io.address import Address
 from ...core.io.connection import ClientConnection
-from ...core.io.location.specific import SpecificLocation
 from ...core.io.route import SoloRoute
-from ...core.node.common.action.exception_action import ExceptionMessage
 from ...core.node.common.client import Client
 from ...core.node.device.client import DeviceClient
 from ...core.node.domain.client import DomainClient
 from ...core.node.network.client import NetworkClient
 from ...core.node.vm.client import VirtualMachineClient
-from ...core.pointer.pointer import Pointer
-from ..messages.network_search_message import NetworkSearchMessage
-from ..messages.setup_messages import GetSetUpMessage
-from ..messages.transfer_messages import LoadObjectMessage
-from .enums import PyGridClientEnums
-from .enums import RequestAPIFields
-from .exceptions import RequestAPIException
 from .grid_connection import GridHTTPConnection
 from .request_api.association_api import AssociationRequestAPI
 from .request_api.dataset_api import DatasetRequestAPI
@@ -117,105 +96,7 @@ class GridClient(DomainClient):
             send=self.__perform_grid_request, conn=self.conn, client=self
         )
 
-    def load(
-        self, obj_ptr: Type[Pointer], address: Address, pointable: bool = False
-    ) -> None:
-        content = {
-            RequestAPIFields.ADDRESS: serialize(address)
-            .SerializeToString()  # type: ignore
-            .decode(PyGridClientEnums.ENCODING),
-            RequestAPIFields.UID: str(obj_ptr.id_at_location.value),
-            RequestAPIFields.POINTABLE: pointable,
-        }
-        self.__perform_grid_request(grid_msg=LoadObjectMessage, content=content)
 
-    def setup(self, *, domain_name: Optional[str], **kwargs: Any) -> Any:
-
-        if domain_name is None:
-            domain_name = names.get_full_name() + "'s Domain"
-            logging.info(
-                "No Domain Name provided... picking randomly as: " + domain_name
-            )
-
-        kwargs["domain_name"] = domain_name
-
-        response = self.conn.setup(**kwargs)  # type: ignore
-        logging.info(response[RequestAPIFields.MESSAGE])
-
-    def get_setup(self, **kwargs: Any) -> Any:
-        return self.__perform_grid_request(grid_msg=GetSetUpMessage, content=kwargs)
-
-    def search(self, query: List, pandas: bool = False) -> Any:
-        response = self.__perform_grid_request(
-            grid_msg=NetworkSearchMessage, content={RequestAPIFields.QUERY: query}
-        )
-        if pandas:
-            response = DataFrame(response)
-
-        return response
-
-    def send_immediate_msg_with_reply(
-        self,
-        msg: Union[SignedImmediateSyftMessageWithReply, ImmediateSyftMessageWithReply],
-        route_index: int = 0,
-    ) -> Union[
-        SignedImmediateSyftMessageWithoutReply, ImmediateSyftMessageWithoutReply
-    ]:
-        return super(GridClient, self).send_immediate_msg_with_reply(  # type: ignore
-            msg=msg, route_index=route_index
-        )
-
-    def send_immediate_msg_without_reply(
-        self,
-        msg: Union[
-            SignedImmediateSyftMessageWithoutReply, ImmediateSyftMessageWithoutReply
-        ],
-        route_index: int = 0,
-    ) -> None:
-        super(GridClient, self).send_immediate_msg_without_reply(
-            msg=msg, route_index=route_index
-        )
-
-    def send_eventual_msg_without_reply(
-        self,
-        msg: EventualSyftMessageWithoutReply,
-        route_index: int = 0,
-    ) -> None:
-        return super(GridClient, self).send_eventual_msg_without_reply(
-            msg=msg, route_index=route_index
-        )
-
-    def __route_client_location(
-        self, client_type: Any, location: SpecificLocation
-    ) -> Dict[Any, Any]:
-        locations: Dict[Any, Optional[SpecificLocation]] = {
-            NetworkClient: None,
-            DomainClient: None,
-            DeviceClient: None,
-            VirtualMachineClient: None,
-        }
-        locations[client_type] = location
-        return locations
-
-    def __perform_grid_request(
-        self, grid_msg: Any, content: Optional[Dict[Any, Any]] = None
-    ) -> Dict[Any, Any]:
-        if content is None:
-            content = {}
-        signed_msg = self.__build_msg(grid_msg=grid_msg, content=content)
-        response = self.send_immediate_msg_with_reply(msg=signed_msg)
-        return self.__process_response(response=response)
-
-    def __build_msg(self, grid_msg: Any, content: Dict[Any, Any]) -> Any:
-        content[RequestAPIFields.ADDRESS] = self.address
-        content[RequestAPIFields.REPLY_TO] = self.address
-        return grid_msg(**content).sign(signing_key=self.signing_key)
-
-    def __process_response(self, response: SyftMessage) -> Dict[Any, Any]:
-        if isinstance(response, ExceptionMessage):
-            raise response.exception_type
-        else:
-            return response
 
 
 def connect(

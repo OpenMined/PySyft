@@ -14,8 +14,8 @@ from nacl.signing import SigningKey
 from syft.core.node.common.action.exception_action import ExceptionMessage
 
 # syft
-from syft.grid.messages.setup_messages import CreateInitialSetUpMessage
-from syft.grid.messages.setup_messages import GetSetUpMessage
+from syft.core.node.common.service.setup_service import CreateInitialSetUpMessage
+from syft.core.node.common.service.setup_service import GetSetUpMessage
 
 # grid absolute
 from app.api import deps

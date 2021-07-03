@@ -17,8 +17,8 @@ from ...messages.dataset_messages import DeleteDatasetMessage
 from ...messages.dataset_messages import GetDatasetMessage
 from ...messages.dataset_messages import GetDatasetsMessage
 from ...messages.dataset_messages import UpdateDatasetMessage
-from ..enums import RequestAPIFields
-from ..enums import ResponseObjectEnum
+from ....core.node.domain.enums import ResponseObjectEnum
+from ....core.node.domain.enums import RequestAPIFields
 from .request_api import GridRequestAPI
 
 

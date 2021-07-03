@@ -16,7 +16,7 @@ from requests.packages.urllib3.util.retry import Retry
 from ...core.common.message import SyftMessage
 from ...core.common.serde.serialize import _serialize
 from ...proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
-from ..client.enums import RequestAPIFields
+from ...core.node.domain.enums import RequestAPIFields
 from ..client.exceptions import RequestAPIException
 from ..connections.http_connection import HTTPConnection
 

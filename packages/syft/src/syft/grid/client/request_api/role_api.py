@@ -8,7 +8,7 @@ from ...messages.role_messages import DeleteRoleMessage
 from ...messages.role_messages import GetRoleMessage
 from ...messages.role_messages import GetRolesMessage
 from ...messages.role_messages import UpdateRoleMessage
-from ..enums import ResponseObjectEnum
+from ....core.node.domain.enums import ResponseObjectEnum
 from .request_api import GridRequestAPI
 
 
