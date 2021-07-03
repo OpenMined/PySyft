@@ -30,7 +30,6 @@ class RequestQueueClient:
     @property
     def requests(self) -> List[RequestMessage]:
         # syft absolute
-        # syft absolute
         from syft.core.node.domain.service.get_all_requests_service import (
             GetAllRequestsMessage,
         )
@@ -150,7 +149,6 @@ class RequestQueueClient:
 
     def _update_handler(self, request_handler: Dict[str, Any], keep: bool) -> None:
         # syft absolute
-        # syft absolute
         from syft.core.node.domain.service.request_handler_service import (
             UpdateRequestHandlerMessage,
         )
@@ -167,7 +165,6 @@ class RequestHandlerQueueClient:
 
     @property
     def handlers(self) -> List[Dict]:
-        # syft absolute
         # syft absolute
         from syft.core.node.domain.service.request_handler_service import (
             GetAllRequestHandlersMessage,

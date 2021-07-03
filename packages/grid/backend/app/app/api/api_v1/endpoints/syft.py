@@ -28,7 +28,7 @@ async def syft_metadata():
 
 
 @router.post("", response_model=str)
-async def syft(
+async def syft_route(
     request: Request,
     #    skip: int = 0,
     #    limit: int = 100,

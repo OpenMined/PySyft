@@ -21,6 +21,8 @@ from syft.grid.messages.role_messages import GetRolesMessage
 from syft.grid.messages.role_messages import GetRolesResponse
 from syft.grid.messages.role_messages import UpdateRoleMessage
 from syft.grid.messages.success_resp_message import SuccessResponseMessage
+from syft.lib.python import Dict as SyftDict
+from syft.lib.python import List as SyftList
 
 # relative
 from ..exceptions import AuthorizationError
@@ -119,7 +121,7 @@ def get_role_msg(
     else:
         raise AuthorizationError("You're not allowed to get User information!")
 
-    return GetRoleResponse(address=msg.reply_to, content=_msg)
+    return GetRoleResponse(address=msg.reply_to, content=SyftDict(_msg))
 
 
 def get_all_roles_msg(
@@ -136,7 +138,7 @@ def get_all_roles_msg(
     else:
         raise AuthorizationError("You're not allowed to get Role information!")
 
-    return GetRolesResponse(address=msg.reply_to, content=_msg)
+    return GetRolesResponse(address=msg.reply_to, content=SyftList(_msg))
 
 
 def del_role_msg(

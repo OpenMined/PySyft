@@ -46,11 +46,13 @@ class CreateDatasetMessage(ImmediateSyftMessageWithReply):
         self,
         address: Address,
         dataset: bin,
+        metadata: Dict,
         reply_to: Address,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.dataset = dataset
+        self.metadata = metadata
 
     def _object2proto(self) -> CreateDatasetMessage_PB:
         """Returns a protobuf serialization of self.
@@ -68,6 +70,7 @@ class CreateDatasetMessage(ImmediateSyftMessageWithReply):
             msg_id=serialize(self.id),
             address=serialize(self.address),
             dataset=self.dataset,
+            metadata=serialize(self.metadata),
             reply_to=serialize(self.reply_to),
         )
 
@@ -89,6 +92,7 @@ class CreateDatasetMessage(ImmediateSyftMessageWithReply):
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             dataset=proto.dataset,
+            metadata=_deserialize(proto.metadata),
             reply_to=_deserialize(blob=proto.reply_to),
         )
 
@@ -116,7 +120,7 @@ class GetDatasetMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
         address: Address,
-        dataset_id: int,
+        dataset_id: str,
         reply_to: Address,
         msg_id: Optional[UID] = None,
     ):
@@ -187,13 +191,11 @@ class GetDatasetResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        status_code: int,
-        metadata: Dict,
+        content: Dict,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
-        self.status_code = status_code
-        self.metadata = metadata
+        self.content = content
 
     def _object2proto(self) -> GetDatasetResponse_PB:
         """Returns a protobuf serialization of self.
@@ -210,8 +212,7 @@ class GetDatasetResponse(ImmediateSyftMessageWithoutReply):
         return GetDatasetResponse_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            status_code=self.status_code,
-            metadata=serialize(self.metadata),
+            content=serialize(self.content),
         )
 
     @staticmethod
@@ -231,8 +232,7 @@ class GetDatasetResponse(ImmediateSyftMessageWithoutReply):
         return GetDatasetResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            status_code=proto.status_code,
-            metadata=_deserialize(proto.metadata),
+            content=_deserialize(proto.content),
         )
 
     @staticmethod
@@ -326,13 +326,11 @@ class GetDatasetsResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        status_code: int,
-        datasets_metadata: List[Dict],
+        content: List[Dict],
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
-        self.status_code = status_code
-        self.datasets_metadata = datasets_metadata
+        self.content = content
 
     def _object2proto(self) -> GetDatasetsResponse_PB:
         """Returns a protobuf serialization of self.
@@ -349,12 +347,8 @@ class GetDatasetsResponse(ImmediateSyftMessageWithoutReply):
         msg = GetDatasetsResponse_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            status_code=self.status_code,
         )
-        _ = [
-            msg.datasets_metadata.append(serialize(dataset_metadata))
-            for dataset_metadata in self.datasets_metadata
-        ]
+        _ = [msg.content.append(serialize(content)) for content in self.content]
         return msg
 
     @staticmethod
@@ -374,11 +368,7 @@ class GetDatasetsResponse(ImmediateSyftMessageWithoutReply):
         return GetDatasetsResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            status_code=proto.status_code,
-            datasets_metadata=[
-                _deserialize(dataset_metadata)
-                for dataset_metadata in proto.datasets_metadata
-            ],
+            content=[_deserialize(content) for content in proto.content],
         )
 
     @staticmethod
@@ -405,7 +395,7 @@ class UpdateDatasetMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
         address: Address,
-        dataset_id: int,
+        dataset_id: str,
         metadata: Dict,
         reply_to: Address,
         msg_id: Optional[UID] = None,
@@ -480,7 +470,7 @@ class DeleteDatasetMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
         address: Address,
-        dataset_id: int,
+        dataset_id: str,
         reply_to: Address,
         msg_id: Optional[UID] = None,
     ):

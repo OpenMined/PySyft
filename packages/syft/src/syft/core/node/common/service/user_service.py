@@ -24,6 +24,8 @@ from syft.grid.messages.user_messages import GetUsersResponse
 from syft.grid.messages.user_messages import SearchUsersMessage
 from syft.grid.messages.user_messages import SearchUsersResponse
 from syft.grid.messages.user_messages import UpdateUserMessage
+from syft.lib.python import Dict as SyftDict
+from syft.lib.python import List as SyftList
 
 # relative
 from ..exceptions import AuthorizationError
@@ -202,7 +204,7 @@ def get_user_msg(
 
     return GetUserResponse(
         address=msg.reply_to,
-        content=_msg,
+        content=SyftDict(_msg),
     )
 
 
@@ -237,7 +239,7 @@ def get_all_users_msg(
 
     return GetUsersResponse(
         address=msg.reply_to,
-        content=_msg,
+        content=SyftList(_msg),
     )
 
 

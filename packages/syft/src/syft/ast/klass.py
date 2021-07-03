@@ -294,7 +294,6 @@ def wrap_iterator(attrs: Dict[str, Union[str, CallableT, property]]) -> None:
                 Iterable: syft Iterator.
             """
             # syft absolute
-            # syft absolute
             from syft.lib.python.iterator import Iterator
 
             if not hasattr(self, "__len__"):
