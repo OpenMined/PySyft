@@ -18,18 +18,9 @@ from ...common.message import SyftMessage
 from ...common.uid import UID
 from ...io.location import Location
 from ...io.location import SpecificLocation
-from ..common.node import Node
 from ..domain.client import DomainClient
 from ..domain.domain import Domain
 from .client import NetworkClient
-from ..common.managers.setup_manager import SetupManager
-from ..common.managers.role_manager import RoleManager
-from ..common.managers.user_manager import UserManager
-from ..common.managers.group_manager import GroupManager
-from ..common.service.role_service import RoleManagerService
-from ..common.service.setup_service import SetUpService
-from ..common.service.user_service import UserManagerService
-from ..common.service.group_service import GroupManagerService
 from ..common.managers.association_request_manager import AssociationRequestManager
 from ..common.managers.dataset_manager import DatasetManager
 from ..common.managers.environment_manager import EnvironmentManager
@@ -42,22 +33,14 @@ from ..common.node import Node
 from ..common.service.association_request import AssociationRequestService
 from ..common.service.dataset_service import DatasetManagerService
 from ..common.service.group_service import GroupManagerService
-
-# from ..common.service.infra_service import DomainInfrastructureService
-# from ..common.service.request_service import RequestService
-# from ..common.service.request_service import RequestServiceWithoutReply
 from ..common.service.role_service import RoleManagerService
 from ..common.service.setup_service import SetUpService
 from ..common.service.tensor_service import RegisterTensorService
-
-# from ..common.service.transfer_service import TransferObjectService
 from ..common.service.user_service import UserManagerService
-from ..device import Device
-from ..device import DeviceClient
 from ..domain.service import RequestAnswerMessageService
 from ..domain.service import RequestMessage
 from ..domain.service import RequestService
-from ..domain.service import RequestStatus
+
 
 class Network(Node):
 
