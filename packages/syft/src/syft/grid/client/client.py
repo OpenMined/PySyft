@@ -66,7 +66,7 @@ class GridClient(DomainClient):
         # Create a new Solo Route using the selected connection type
         route = SoloRoute(destination=spec_location, connection=self.conn)
 
-        location_args = self.__route_client_location(
+        location_args = self._route_client_location(
             client_type=self.client_type, location=spec_location
         )
 
@@ -83,17 +83,17 @@ class GridClient(DomainClient):
             signing_key=_user_key,
         )
 
-        self.groups = GroupRequestAPI(send=self.__perform_grid_request)
-        self.users = UserRequestAPI(send=self.__perform_grid_request)
-        self.roles = RoleRequestAPI(send=self.__perform_grid_request)
+        self.groups = GroupRequestAPI(send=self._perform_grid_request)
+        self.users = UserRequestAPI(send=self._perform_grid_request)
+        self.roles = RoleRequestAPI(send=self._perform_grid_request)
         self.workers = WorkerRequestAPI(
-            send=self.__perform_grid_request, domain_client=self
+            send=self._perform_grid_request, domain_client=self
         )
         self.association_requests = AssociationRequestAPI(
-            send=self.__perform_grid_request
+            send=self._perform_grid_request
         )
         self.datasets = DatasetRequestAPI(
-            send=self.__perform_grid_request, conn=self.conn, client=self
+            send=self._perform_grid_request, conn=self.conn, client=self
         )
 
 

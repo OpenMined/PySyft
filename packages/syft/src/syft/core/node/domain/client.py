@@ -21,6 +21,7 @@ from ...io.address import Address
 from ...io.route import Route
 from ..common.client import Client
 from .service import RequestMessage
+from ....core import node
 
 
 from typing import Any
@@ -319,50 +320,53 @@ class DomainClient(Client):
 
         return response
 
-    def send_immediate_msg_with_reply(
-        self,
-        msg: Union[SignedImmediateSyftMessageWithReply, ImmediateSyftMessageWithReply],
-        route_index: int = 0,
-    ) -> Union[
-        SignedImmediateSyftMessageWithoutReply, ImmediateSyftMessageWithoutReply
-    ]:
-        return DomainClient.send_immediate_msg_with_reply(  # type: ignore
-            msg=msg, route_index=route_index
-        )
+    # TODO: these appear to be tech debt but I don't want to delete them unless we're sure.
+    # So leaving commented for now
+    
+    # def send_immediate_msg_with_reply(
+    #     self,
+    #     msg: Union[SignedImmediateSyftMessageWithReply, ImmediateSyftMessageWithReply],
+    #     route_index: int = 0,
+    # ) -> Union[
+    #     SignedImmediateSyftMessageWithoutReply, ImmediateSyftMessageWithoutReply
+    # ]:
+    #     return self.send_immediate_msg_with_reply(  # type: ignore
+    #         msg=msg, route_index=route_index
+    #     )
+    #
+    # def send_immediate_msg_without_reply(
+    #     self,
+    #     msg: Union[
+    #         SignedImmediateSyftMessageWithoutReply, ImmediateSyftMessageWithoutReply
+    #     ],
+    #     route_index: int = 0,
+    # ) -> None:
+    #     self.send_immediate_msg_without_reply(
+    #         msg=msg, route_index=route_index
+    #     )
+    #
+    # def send_eventual_msg_without_reply(
+    #     self,
+    #     msg: EventualSyftMessageWithoutReply,
+    #     route_index: int = 0,
+    # ) -> None:
+    #     self.send_eventual_msg_without_reply(
+    #         msg=msg, route_index=route_index
+    #     )
 
-    def send_immediate_msg_without_reply(
-        self,
-        msg: Union[
-            SignedImmediateSyftMessageWithoutReply, ImmediateSyftMessageWithoutReply
-        ],
-        route_index: int = 0,
-    ) -> None:
-        DomainClient.send_immediate_msg_without_reply(
-            msg=msg, route_index=route_index
-        )
+    def _route_client_location(
+        self, client_type: Any, location: SpecificLocation
+    ) -> Dict[Any, Any]:
+        locations: Dict[Any, Optional[SpecificLocation]] = {
+            node.network.client.NetworkClient: None,
+            DomainClient: None,
+            node.device.client.DeviceClient: None,
+            node.vm.client.VirtualMachineClient: None,
+        }
+        locations[client_type] = location
+        return locations
 
-    def send_eventual_msg_without_reply(
-        self,
-        msg: EventualSyftMessageWithoutReply,
-        route_index: int = 0,
-    ) -> None:
-        DomainClient.send_eventual_msg_without_reply(
-            msg=msg, route_index=route_index
-        )
-
-    # def __route_client_location(
-    #     self, client_type: Any, location: SpecificLocation
-    # ) -> Dict[Any, Any]:
-    #     locations: Dict[Any, Optional[SpecificLocation]] = {
-    #         NetworkClient: None,
-    #         DomainClient: None,
-    #         DeviceClient: None,
-    #         VirtualMachineClient: None,
-    #     }
-    #     locations[client_type] = location
-    #     return locations
-
-    def __perform_grid_request(
+    def _perform_grid_request(
         self, grid_msg: Any, content: Optional[Dict[Any, Any]] = None
     ) -> Dict[Any, Any]:
         if content is None:
