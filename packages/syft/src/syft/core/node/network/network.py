@@ -125,52 +125,52 @@ class Network(Node):
     def loud_print(self):
         # tprint("Grid", "alpha")
         print(
-            """                          `-+yy+-`                               
-                        .:oydddddhyo:.                           
-                     `/yhdddddddddddhys:`                        
-                 .`   ./shdddddddddhys/.   ``                    
-             `./shhs/.`  .:oydddhyo:.   .:osyo:.`                
-          `-oydmmmmmmdy+-`  `-//-`  `-/syhhhhhyyo/-`             
-        `+hmmmmmmmmmmddddy+`      `/shhhhhhhhhyyyyys/`           
-         `-ohdmmmmmmmddy+-`  `::.  `-/syhhhhhhyyys/-`            
-      -o-`   ./yhddhs/.  `./shddhs/.`  .:oyyhyo:.   `./.         
-      -ddhs/.`  .::`  `-+ydddddddddhs+-`  `--`   `-+oyy-         
-      -dddddhs+-   `/shdddddddddddddhhhyo:`   .:+syyyyy-         
-      -ddddddddh.  -hdddddddddddddddhhhhyy-  `syyyyyyyy-         
-      -dddddhhhh-  -hhhhhhddddddddhhyyysss-  `ssssysyyy-         
-      -hhhhhhhhh-  -hhyyyyyyhhddhyysssssss-  `sssssssss-         
-       `-+yhhhhh.  -yyyyyyyyyyysssssssssss-  `ssssso/-`          
-       `   ./syy.  -yyyyyyyyyyysssssssssss-  `sso:.   `          
-      -y+:`   `-`  -yyyyyyyyssssssssssssss-  `-`   `-/o-         
-      -hhhyo/.     `+ssyyssssssssssssssss+`     .:+ssss-         
-      -yyyyyyys/`     ./osssssssssssso/.`    `/osssssss-         
-      -yyyyyyyyy.  ``    `:+sssoso+:.    ``  `sssssssss-         
-      -yyyyyyyys.  -so/.     -//-`    .:os-  `sssssssss-         
-      `+syyyssss.  -sssso/-`      `-/ossss-  `ssssssss+`         
-         .:ossss.  .ssssssss+`  `+ooooosss-  `sssso:.            
-            `-+s.  .ssssssooo.  .oooooooos-  `o/-`               
-                   .sssoooooo.  .ooooooooo-                      
-                   `-/ooooooo.  `ooooooo/-`                      
-                       .:+ooo.  `ooo+:.`                         
-                          `-/.  `/-`                             
-                                                                 
-                                                                 
-                                                                 
-                                                                 
-                                                                 
-``````````                 ``````````            ```          `` 
-``       ``               ```      ```            `           `` 
-``       ``  ```     ```  ``             ``````  ```   ````````` 
-``     ````   ``    ```   ``    ``````   ```     ```  ```    ``` 
-`````````      ``  ```    ``     `````   ``      ```  ``      `` 
-``              `` ``     ``        ``   ``      ```  ``      `` 
-``              ````      ````    ````   ``      ```  ```    ``` 
-``               ```        ````````     ``      ``    ````````` 
-               ```                                               
-              ```  
+            """                          `-+yy+-`
+                        .:oydddddhyo:.
+                     `/yhdddddddddddhys:`
+                 .`   ./shdddddddddhys/.   ``
+             `./shhs/.`  .:oydddhyo:.   .:osyo:.`
+          `-oydmmmmmmdy+-`  `-//-`  `-/syhhhhhyyo/-`
+        `+hmmmmmmmmmmddddy+`      `/shhhhhhhhhyyyyys/`
+         `-ohdmmmmmmmddy+-`  `::.  `-/syhhhhhhyyys/-`
+      -o-`   ./yhddhs/.  `./shddhs/.`  .:oyyhyo:.   `./.
+      -ddhs/.`  .::`  `-+ydddddddddhs+-`  `--`   `-+oyy-
+      -dddddhs+-   `/shdddddddddddddhhhyo:`   .:+syyyyy-
+      -ddddddddh.  -hdddddddddddddddhhhhyy-  `syyyyyyyy-
+      -dddddhhhh-  -hhhhhhddddddddhhyyysss-  `ssssysyyy-
+      -hhhhhhhhh-  -hhyyyyyyhhddhyysssssss-  `sssssssss-
+       `-+yhhhhh.  -yyyyyyyyyyysssssssssss-  `ssssso/-`
+       `   ./syy.  -yyyyyyyyyyysssssssssss-  `sso:.   `
+      -y+:`   `-`  -yyyyyyyyssssssssssssss-  `-`   `-/o-
+      -hhhyo/.     `+ssyyssssssssssssssss+`     .:+ssss-
+      -yyyyyyys/`     ./osssssssssssso/.`    `/osssssss-
+      -yyyyyyyyy.  ``    `:+sssoso+:.    ``  `sssssssss-
+      -yyyyyyyys.  -so/.     -//-`    .:os-  `sssssssss-
+      `+syyyssss.  -sssso/-`      `-/ossss-  `ssssssss+`
+         .:ossss.  .ssssssss+`  `+ooooosss-  `sssso:.
+            `-+s.  .ssssssooo.  .oooooooos-  `o/-`
+                   .sssoooooo.  .ooooooooo-
+                   `-/ooooooo.  `ooooooo/-`
+                       .:+ooo.  `ooo+:.`
+                          `-/.  `/-`
+
+
+
+
+
+``````````                 ``````````            ```          ``
+``       ``               ```      ```            `           ``
+``       ``  ```     ```  ``             ``````  ```   `````````
+``     ````   ``    ```   ``    ``````   ```     ```  ```    ```
+`````````      ``  ```    ``     `````   ``      ```  ``      ``
+``              `` ``     ``        ``   ``      ```  ``      ``
+``              ````      ````    ````   ``      ```  ```    ```
+``               ```        ````````     ``      ``    `````````
+               ```
+              ```
                                 |\ |  _ |_      _   _ |
                                 | \| (- |_ \)/ (_) |  |(
-                                
+
 """
         )
 
