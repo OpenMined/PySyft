@@ -28,7 +28,7 @@ printf " on port %s\n\n" "$port"
 
 name=$(md5 <<< $name)
 
-DOMAIN_PORT=$port docker compose --file "docker-compose.override.yml" --project-name "$name" down
+DOMAIN_PORT=$port DOMAIN_NAME=$name docker compose --file "docker-compose.override.yml" --project-name "$name" down
 
 if [ -z ${keep_db+x} ]; then
     printf "Deleting database.... (set --keep_db=True to keep database in the future)\n"
