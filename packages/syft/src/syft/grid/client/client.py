@@ -263,11 +263,13 @@ def login(
         )
     else:
         credentials = {"email": email, "password": password}
+
+    # connecting to domain
     domain = connect(url=url, credentials=credentials, conn_type=conn_type)
+
+    # bit of fanciness
     sys.stdout.write(" done! \t Logging into")
     sys.stdout.write(" " + str(domain.name) + "... ")
-    time.sleep(1)
-    # sys.stdout.write(" as " + email + "... ")
-    # time.sleep(0.5)
+    time.sleep(1) # ok maybe too fancy... but c'mon don't you want to be fancy?
     print("done!")
     return domain
