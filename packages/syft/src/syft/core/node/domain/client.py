@@ -17,11 +17,6 @@ from pandas import DataFrame
 
 # relative
 from ....core import node
-from ....core.common.message import EventualSyftMessageWithoutReply
-from ....core.common.message import ImmediateSyftMessageWithReply
-from ....core.common.message import ImmediateSyftMessageWithoutReply
-from ....core.common.message import SignedImmediateSyftMessageWithReply
-from ....core.common.message import SignedImmediateSyftMessageWithoutReply
 from ....core.common.message import SyftMessage
 from ....core.common.serde.serialize import _serialize as serialize  # noqa: F401
 from ....core.io.location.specific import SpecificLocation
@@ -316,40 +311,6 @@ class DomainClient(Client):
             response = DataFrame(response)
 
         return response
-
-    # TODO: these appear to be tech debt but I don't want to delete them unless we're sure.
-    # So leaving commented for now
-
-    # def send_immediate_msg_with_reply(
-    #     self,
-    #     msg: Union[SignedImmediateSyftMessageWithReply, ImmediateSyftMessageWithReply],
-    #     route_index: int = 0,
-    # ) -> Union[
-    #     SignedImmediateSyftMessageWithoutReply, ImmediateSyftMessageWithoutReply
-    # ]:
-    #     return self.send_immediate_msg_with_reply(  # type: ignore
-    #         msg=msg, route_index=route_index
-    #     )
-    #
-    # def send_immediate_msg_without_reply(
-    #     self,
-    #     msg: Union[
-    #         SignedImmediateSyftMessageWithoutReply, ImmediateSyftMessageWithoutReply
-    #     ],
-    #     route_index: int = 0,
-    # ) -> None:
-    #     self.send_immediate_msg_without_reply(
-    #         msg=msg, route_index=route_index
-    #     )
-    #
-    # def send_eventual_msg_without_reply(
-    #     self,
-    #     msg: EventualSyftMessageWithoutReply,
-    #     route_index: int = 0,
-    # ) -> None:
-    #     self.send_eventual_msg_without_reply(
-    #         msg=msg, route_index=route_index
-    #     )
 
     def _route_client_location(
         self, client_type: Any, location: SpecificLocation
