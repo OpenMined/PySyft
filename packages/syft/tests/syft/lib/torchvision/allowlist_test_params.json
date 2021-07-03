@@ -48,7 +48,7 @@
     "torchvision.transforms.functional.adjust_brightness": "(pil_img, 0.5)",
     "torchvision.transforms.functional.adjust_contrast": "(pil_img, 0.5)",
     "torchvision.transforms.functional.adjust_gamma": "(pil_img, 1, 0.5)",
-    "torchvision.transforms.functional.adjust_hue": "(pil_img, 0)",
+    "torchvision.transforms.functional.adjust_hue": "(img = pil_img, hue_factor = 0)",
     "torchvision.transforms.functional.adjust_saturation": "(pil_img, 0.5)",
     "torchvision.transforms.functional.adjust_sharpness": "(pil_img, 0.5)",
     "torchvision.transforms.functional.affine": "(pil_img,0.2,[1,2],0.2,[1,2])",

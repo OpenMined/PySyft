@@ -30,7 +30,7 @@ def pil_img() -> Any:
         return PIL.Image.open(img_file).convert("RGB")
     else:
         cwd = os.getcwd()
-        img_file = cwd + "/syft/docs/img/logo.png"
+        img_file = cwd + "/docs/img/logo.png"
         return PIL.Image.open(img_file).convert("RGB")
 
 
