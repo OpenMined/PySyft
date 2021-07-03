@@ -1,41 +1,16 @@
 # stdlib
+import json
+from typing import Dict
 from typing import List
+from typing import Optional
 from typing import Type
 from typing import Union
 
 # third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
-
-# syft absolute
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.node.abstract.node import AbstractNode
-from syft.core.node.common.service.auth import service_auth
-from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
-
-# from syft.grid.messages.setup_messages import CreateInitialSetUpMessage
-# from syft.grid.messages.setup_messages import GetSetUpMessage
-# from syft.grid.messages.setup_messages import GetSetUpResponse
-from syft.grid.messages.success_resp_message import SuccessResponseMessage
-
-# relative
-from .....logger import traceback_and_raise
-from ..exceptions import AuthorizationError
-from ..exceptions import InvalidParameterValueError
-from ..exceptions import MissingRequestKeyError
-from ..exceptions import OwnerAlreadyExistsError
-from ..tables.setup import SetupConfig
-from ..tables.utils import model_to_json
-
-
-# stdlib
-import json
-from typing import Dict
-from typing import Optional
-
-# third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import final
 
 # syft absolute
@@ -46,6 +21,14 @@ from syft.core.common.serde.deserialize import _deserialize
 from syft.core.common.serde.serializable import bind_protobuf
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
+from syft.core.node.abstract.node import AbstractNode
+from syft.core.node.common.service.auth import service_auth
+from syft.core.node.common.service.node_service import ImmediateNodeServiceWithReply
+
+# from syft.grid.messages.setup_messages import CreateInitialSetUpMessage
+# from syft.grid.messages.setup_messages import GetSetUpMessage
+# from syft.grid.messages.setup_messages import GetSetUpResponse
+from syft.grid.messages.success_resp_message import SuccessResponseMessage
 from syft.proto.grid.messages.setup_messages_pb2 import (
     CreateInitialSetUpMessage as CreateInitialSetUpMessage_PB,
 )
@@ -61,6 +44,15 @@ from syft.proto.grid.messages.setup_messages_pb2 import (
 from syft.proto.grid.messages.setup_messages_pb2 import (
     UpdateSetupResponse as UpdateSetupResponse_PB,
 )
+
+# relative
+from .....logger import traceback_and_raise
+from ..exceptions import AuthorizationError
+from ..exceptions import InvalidParameterValueError
+from ..exceptions import MissingRequestKeyError
+from ..exceptions import OwnerAlreadyExistsError
+from ..tables.setup import SetupConfig
+from ..tables.utils import model_to_json
 
 
 @bind_protobuf

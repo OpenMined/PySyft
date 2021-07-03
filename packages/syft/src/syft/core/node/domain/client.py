@@ -1,34 +1,22 @@
 # stdlib
+import logging
 import time
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Type
-import logging
+from typing import Union
 
 # third party
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+import names
 import pandas as pd
+from pandas import DataFrame
 
 # relative
-from ....logger import traceback_and_raise
-from ....util import validate_field
-from ...common.uid import UID
-from ...io.location import Location
-from ...io.address import Address
-from ...io.route import Route
-from ..common.client import Client
-from .service import RequestMessage
 from ....core import node
-
-
-from typing import Any
-from typing import List
-from typing import Union
-import names
-from pandas import DataFrame
 from ....core.common.message import EventualSyftMessageWithoutReply
 from ....core.common.message import ImmediateSyftMessageWithReply
 from ....core.common.message import ImmediateSyftMessageWithoutReply
@@ -39,11 +27,19 @@ from ....core.common.serde.serialize import _serialize as serialize  # noqa: F40
 from ....core.io.location.specific import SpecificLocation
 from ....core.node.common.action.exception_action import ExceptionMessage
 from ....core.pointer.pointer import Pointer
-from .messages.network_search_message import NetworkSearchMessage
+from ....logger import traceback_and_raise
+from ....util import validate_field
+from ...common.uid import UID
+from ...io.address import Address
+from ...io.location import Location
+from ...io.route import Route
+from ..common.client import Client
 from ..common.service.setup_service import GetSetUpMessage
-from .messages.transfer_messages import LoadObjectMessage
 from .enums import PyGridClientEnums
 from .enums import RequestAPIFields
+from .messages.network_search_message import NetworkSearchMessage
+from .messages.transfer_messages import LoadObjectMessage
+from .service import RequestMessage
 
 
 class RequestQueueClient:

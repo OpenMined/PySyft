@@ -3,12 +3,12 @@ from typing import Any
 from typing import Callable
 
 # relative
+from ....core.node.domain.enums import ResponseObjectEnum
 from ...messages.user_messages import CreateUserMessage
 from ...messages.user_messages import DeleteUserMessage
 from ...messages.user_messages import GetUserMessage
 from ...messages.user_messages import GetUsersMessage
 from ...messages.user_messages import UpdateUserMessage
-from ....core.node.domain.enums import ResponseObjectEnum
 from .request_api import GridRequestAPI
 
 

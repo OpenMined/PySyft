@@ -12,13 +12,13 @@ from pandas import DataFrame
 # relative
 from ....core.io.connection import ClientConnection
 from ....core.node.domain.client import DomainClient
+from ....core.node.domain.enums import RequestAPIFields
+from ....core.node.domain.enums import ResponseObjectEnum
 from ...messages.dataset_messages import CreateDatasetMessage
 from ...messages.dataset_messages import DeleteDatasetMessage
 from ...messages.dataset_messages import GetDatasetMessage
 from ...messages.dataset_messages import GetDatasetsMessage
 from ...messages.dataset_messages import UpdateDatasetMessage
-from ....core.node.domain.enums import ResponseObjectEnum
-from ....core.node.domain.enums import RequestAPIFields
 from .request_api import GridRequestAPI
 
 
