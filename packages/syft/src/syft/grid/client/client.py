@@ -1,13 +1,13 @@
 # stdlib
 import logging
+import sys
+import time
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Type
 from typing import Union
-import sys
-import time
 
 # third party
 from nacl.encoding import HexEncoder
@@ -222,7 +222,7 @@ def connect(
     url: str = DEFAULT_PYGRID_ADDRESS,
     conn_type: Type[ClientConnection] = GridHTTPConnection,
     credentials: Dict = {},
-    user_key: Optional[SigningKey] = None
+    user_key: Optional[SigningKey] = None,
 ) -> GridClient:
     return GridClient(
         url=url,
@@ -233,14 +233,13 @@ def connect(
     )
 
 
-
 def login(
     url: str = None,
     port: int = None,
     email: Optional[str] = None,
     password: Optional[str] = None,
     conn_type: Type[ClientConnection] = GridHTTPConnection,
-    verbose=True
+    verbose=True,
 ) -> GridClient:
 
     if port is None:
@@ -273,7 +272,7 @@ def login(
         # bit of fanciness
         sys.stdout.write(" done! \t Logging into")
         sys.stdout.write(" " + str(domain.name) + "... ")
-        time.sleep(1) # ok maybe too fancy... but c'mon don't you want to be fancy?
+        time.sleep(1)  # ok maybe too fancy... but c'mon don't you want to be fancy?
         print("done!")
 
     return domain

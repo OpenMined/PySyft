@@ -1,10 +1,10 @@
 # stdlib
 import asyncio
+from typing import Any
+from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Union
-from typing import Any
-from typing import List
-from typing import Dict
 
 # third party
 from nacl.signing import SigningKey
@@ -18,9 +18,6 @@ from ...common.message import SyftMessage
 from ...common.uid import UID
 from ...io.location import Location
 from ...io.location import SpecificLocation
-from ..domain.client import DomainClient
-from ..domain.domain import Domain
-from .client import NetworkClient
 from ..common.managers.association_request_manager import AssociationRequestManager
 from ..common.managers.dataset_manager import DatasetManager
 from ..common.managers.environment_manager import EnvironmentManager
@@ -37,9 +34,12 @@ from ..common.service.role_service import RoleManagerService
 from ..common.service.setup_service import SetUpService
 from ..common.service.tensor_service import RegisterTensorService
 from ..common.service.user_service import UserManagerService
+from ..domain.client import DomainClient
+from ..domain.domain import Domain
 from ..domain.service import RequestAnswerMessageService
 from ..domain.service import RequestMessage
 from ..domain.service import RequestService
+from .client import NetworkClient
 
 
 class Network(Node):
@@ -72,7 +72,7 @@ class Network(Node):
             signing_key=signing_key,
             verify_key=verify_key,
             db_path=db_path,
-            db_engine=db_engine
+            db_engine=db_engine,
         )
 
         # specific location with name
@@ -89,22 +89,22 @@ class Network(Node):
         self.data_requests = RequestManager(db_engine)
         self.datasets = DatasetManager(db_engine)
 
-        self.immediate_services_without_reply.append(RequestService)
+        # self.immediate_services_without_reply.append(RequestService)
         # self.immediate_services_without_reply.append(AcceptOrDenyRequestService)
         # self.immediate_services_without_reply.append(UpdateRequestHandlerService)
 
-        self.immediate_services_with_reply.append(RequestAnswerMessageService)
+        # self.immediate_services_with_reply.append(RequestAnswerMessageService)
         # self.immediate_services_with_reply.append(GetAllRequestsService)
         # self.immediate_services_with_reply.append(GetAllRequestHandlersService)
 
         # Grid Domain Services
-        self.immediate_services_with_reply.append(AssociationRequestService)
+        # self.immediate_services_with_reply.append(AssociationRequestService)
         # self.immediate_services_with_reply.append(DomainInfrastructureService)
         self.immediate_services_with_reply.append(SetUpService)
         self.immediate_services_with_reply.append(RegisterTensorService)
         self.immediate_services_with_reply.append(RoleManagerService)
         self.immediate_services_with_reply.append(UserManagerService)
-        self.immediate_services_with_reply.append(DatasetManagerService)
+        # self.immediate_services_with_reply.append(DatasetManagerService)
         self.immediate_services_with_reply.append(GroupManagerService)
         # self.immediate_services_with_reply.append(TransferObjectService)
         # self.immediate_services_with_reply.append(RequestService)
@@ -124,7 +124,8 @@ class Network(Node):
 
     def loud_print(self):
         # tprint("Grid", "alpha")
-        print("""                          `-+yy+-`                               
+        print(
+            """                          `-+yy+-`                               
                         .:oydddddhyo:.                           
                      `/yhdddddddddddhys:`                        
                  .`   ./shdddddddddhys/.   ``                    
@@ -170,7 +171,8 @@ class Network(Node):
                                 |\ |  _ |_      _   _ |
                                 | \| (- |_ \)/ (_) |  |(
                                 
-""")
+"""
+        )
 
     @property
     def icon(self) -> str:

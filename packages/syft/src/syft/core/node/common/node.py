@@ -313,7 +313,10 @@ class Node(AbstractNode):
 
     def get_metadata_for_client(self) -> Metadata:
         return Metadata(
-            name=self.name if self.name else "", id=self.id, node=self.target_id
+            name=self.name if self.name else "",
+            id=self.id,
+            node=self.target_id,
+            type=str(type(self).__name__),
         )
 
     @property

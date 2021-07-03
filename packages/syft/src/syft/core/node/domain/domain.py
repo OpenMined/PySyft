@@ -139,7 +139,8 @@ class Domain(Node):
         asyncio.ensure_future(self.run_handlers())
 
     def loud_print(self):
-        print("""
+        print(
+            """
                           `-+yy+-`                               
                         .:oydddddhyo:.                           
                      `/yhdddddddddddhys:`                        
@@ -186,7 +187,8 @@ class Domain(Node):
                                 |  \  _   _   _  .  _
                                 |__/ (_) ||| (_| | | )
 
-""")
+"""
+        )
 
     @property
     def icon(self) -> str:

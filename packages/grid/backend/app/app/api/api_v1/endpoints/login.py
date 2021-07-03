@@ -11,9 +11,9 @@ from fastapi.responses import JSONResponse
 
 # syft absolute
 from syft import Domain
-from syft.core.node.common.node import Node
 from syft import serialize
 from syft.core.node.common.exceptions import InvalidCredentialsError
+from syft.core.node.common.node import Node
 
 # grid absolute
 from app import crud
