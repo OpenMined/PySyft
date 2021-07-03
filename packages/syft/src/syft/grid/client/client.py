@@ -222,7 +222,7 @@ def connect(
     url: str = DEFAULT_PYGRID_ADDRESS,
     conn_type: Type[ClientConnection] = GridHTTPConnection,
     credentials: Dict = {},
-    user_key: Optional[SigningKey] = None,
+    user_key: Optional[SigningKey] = None
 ) -> GridClient:
     return GridClient(
         url=url,
@@ -240,6 +240,7 @@ def login(
     email: Optional[str] = None,
     password: Optional[str] = None,
     conn_type: Type[ClientConnection] = GridHTTPConnection,
+    verbose=True
 ) -> GridClient:
 
     if port is None:
@@ -252,7 +253,8 @@ def login(
         except Exception as e:
             url = "http://localhost:" + str(port)
 
-    sys.stdout.write("Connecting to " + str(url) + "...")
+    if verbose:
+        sys.stdout.write("Connecting to " + str(url) + "...")
 
     url += "/api/v1"
 
@@ -267,9 +269,10 @@ def login(
     # connecting to domain
     domain = connect(url=url, credentials=credentials, conn_type=conn_type)
 
-    # bit of fanciness
-    sys.stdout.write(" done! \t Logging into")
-    sys.stdout.write(" " + str(domain.name) + "... ")
-    time.sleep(1) # ok maybe too fancy... but c'mon don't you want to be fancy?
-    print("done!")
+    if verbose:
+        # bit of fanciness
+        sys.stdout.write(" done! \t Logging into")
+        sys.stdout.write(" " + str(domain.name) + "... ")
+        time.sleep(1) # ok maybe too fancy... but c'mon don't you want to be fancy?
+        print("done!")
     return domain
