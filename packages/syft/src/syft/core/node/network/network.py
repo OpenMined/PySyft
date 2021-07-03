@@ -1,6 +1,7 @@
 # stdlib
 from typing import Optional
 from typing import Union
+from typing import Any
 
 # third party
 from nacl.signing import SigningKey
@@ -17,6 +18,10 @@ from ..common.node import Node
 from ..domain.client import DomainClient
 from ..domain.domain import Domain
 from .client import NetworkClient
+from ..common.managers.setup_manager import SetupManager
+from ..common.managers.role_manager import RoleManager
+from ..common.managers.user_manager import UserManager
+from ..common.managers.group_manager import GroupManager
 
 
 class Network(Node):
@@ -36,6 +41,9 @@ class Network(Node):
         vm: Optional[Location] = None,
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
+        root_key: Optional[VerifyKey] = None,
+        db_path: Optional[str] = None,
+        db_engine: Any = None,
     ):
         super().__init__(
             name=name,
@@ -45,14 +53,26 @@ class Network(Node):
             vm=vm,
             signing_key=signing_key,
             verify_key=verify_key,
+            db_path=db_path,
+            db_engine=db_engine
         )
 
         # specific location with name
         self.network = SpecificLocation(name=self.name)
+        self.root_key = root_key
+
+        # # Database Management Instances
+        self.users = UserManager(db_engine)
+        self.roles = RoleManager(db_engine)
+        self.groups = GroupManager(db_engine)
+        self.setup = SetupManager(db_engine)
+        # self.environments = EnvironmentManager(db_engine)
+        # self.association_requests = AssociationRequestManager(db_engine)
+        # self.data_requests = RequestManager(db_engine)
+        # self.datasets = DatasetManager(db_engine)
 
         self._register_services()
         self.post_init()
-
     @property
     def icon(self) -> str:
         return "🔗"

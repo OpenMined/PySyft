@@ -1,5 +1,6 @@
 # syft absolute
 from syft import Domain
+from syft import Network
 from syft.core.node.common.tables import Base
 from syft.core.node.common.tables.utils import seed_db
 
@@ -7,7 +8,7 @@ from syft.core.node.common.tables.utils import seed_db
 from app.db.session import SessionLocal
 from app.db.session import engine
 
-domain = Domain("Domain", db_engine=engine)
+domain = Network("Domain", db_engine=engine)
 Base.metadata.create_all(engine)
 
 if len(domain.setup):  # Check if setup was defined previously
