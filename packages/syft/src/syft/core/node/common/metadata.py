@@ -18,7 +18,11 @@ from ...io.location import Location
 @bind_protobuf
 class Metadata(Serializable):
     def __init__(
-        self, node: Location, name: str = "", id: Optional[UID] = None, node_type: str = ""
+        self,
+        node: Location,
+        name: str = "",
+        id: Optional[UID] = None,
+        node_type: str = "",
     ):
         super().__init__()
         self.name = name
@@ -45,7 +49,10 @@ class Metadata(Serializable):
             object.
         """
         return Metadata_PB(
-            name=self.name, id=serialize(self.id), node=serialize(self.node), node_type=self.node_type
+            name=self.name,
+            id=serialize(self.id),
+            node=serialize(self.node),
+            node_type=self.node_type,
         )
 
     @staticmethod

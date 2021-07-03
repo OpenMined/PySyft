@@ -25,7 +25,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n%proto/core/node/common/metadata.proto\x12\x15syft.core.node.common\x1a%proto/core/common/common_object.proto\x1a\x1cproto/core/io/location.proto"w\n\x08Metadata\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0c\n\x04name\x18\x02 \x01(\t\x12,\n\x04node\x18\x03 \x01(\x0b\x32\x1e.syft.core.io.SpecificLocation\x12\x0c\n\x04type\x18\x04 \x01(\tb\x06proto3',
+    serialized_pb=b'\n%proto/core/node/common/metadata.proto\x12\x15syft.core.node.common\x1a%proto/core/common/common_object.proto\x1a\x1cproto/core/io/location.proto"|\n\x08Metadata\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0c\n\x04name\x18\x02 \x01(\t\x12,\n\x04node\x18\x03 \x01(\x0b\x32\x1e.syft.core.io.SpecificLocation\x12\x11\n\tnode_type\x18\x04 \x01(\tb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_location__pb2.DESCRIPTOR,
@@ -99,8 +99,8 @@ _METADATA = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="type",
-            full_name="syft.core.node.common.Metadata.type",
+            name="node_type",
+            full_name="syft.core.node.common.Metadata.node_type",
             index=3,
             number=4,
             type=9,
@@ -127,7 +127,7 @@ _METADATA = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=133,
-    serialized_end=252,
+    serialized_end=257,
 )
 
 _METADATA.fields_by_name[
