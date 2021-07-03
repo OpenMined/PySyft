@@ -275,4 +275,5 @@ def login(
         sys.stdout.write(" " + str(domain.name) + "... ")
         time.sleep(1) # ok maybe too fancy... but c'mon don't you want to be fancy?
         print("done!")
+
     return domain

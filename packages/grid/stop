@@ -11,6 +11,9 @@ while [ $# -gt 0 ]; do
     --port=*)
       port="${1#*=}"
       ;;
+    --keep_db=*)
+      keep_db="${1#*=}"
+      ;;
     *)
       printf "***************************\n"
       printf "* Error: Invalid argument.*\n"
@@ -27,6 +30,19 @@ name=$(md5 <<< $name)
 
 DOMAIN_PORT=$port docker compose --file "docker-compose.override.yml" --project-name "$name" down
 
-printf "Deleting database..."
+if [ -z ${keep_db+x} ]; then
+    printf "Deleting database.... (set --keep_db=True to keep database in the future)\n"
+    docker volume rm ${name}_app-db-data
+else
 
-docker volume rm ${name}_app-db-data
+    keep_db=$(echo $keep_db | tr "[A-Z]" "[a-z]") # upper to lower
+
+    if [ "$keep_db" = "true" ] ; then
+        echo 'Not deleting database because --keep_db=True';
+    else
+        printf "Deleting database because --keep_db=False\n"
+        docker volume rm ${name}_app-db-data
+    fi
+fi
+
+
