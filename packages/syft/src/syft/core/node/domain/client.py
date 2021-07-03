@@ -44,6 +44,7 @@ class RequestQueueClient:
 
     @property
     def requests(self) -> List[RequestMessage]:
+
         # syft absolute
         from syft.core.node.domain.service.get_all_requests_service import (
             GetAllRequestsMessage,
