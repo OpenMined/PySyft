@@ -24,7 +24,7 @@ from syft.grid.messages.user_messages import UpdateUserMessage
 
 # grid absolute
 from app.api import deps
-from app.core.node import domain
+from app.core.node import node
 
 router = APIRouter()
 
@@ -61,15 +61,15 @@ def create_user(
 
     # Build Syft Message
     msg = CreateUserMessage(
-        address=domain.address,
+        address=node.address,
         email=email,
         password=password,
         role=role,
-        reply_to=domain.address,
+        reply_to=node.address,
     ).sign(signing_key=user_key)
 
     # Process syft message
-    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+    reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
     resp = {}
@@ -96,12 +96,12 @@ def get_all_users_route(
     user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
 
     # Build Syft Message
-    msg = GetUsersMessage(address=domain.address, reply_to=domain.address).sign(
+    msg = GetUsersMessage(address=node.address, reply_to=node.address).sign(
         signing_key=user_key
     )
 
     # Process syft message
-    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+    reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
     resp = {}
@@ -132,11 +132,11 @@ def get_specific_user_route(
 
     # Build Syft Message
     msg = GetUserMessage(
-        address=domain.address, user_id=user_id, reply_to=domain.address
+        address=node.address, user_id=user_id, reply_to=node.address
     ).sign(signing_key=user_key)
 
     # Process syft message
-    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+    reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
     resp = {}
@@ -173,16 +173,16 @@ def update_use_route(
 
     # Build Syft Message
     msg = UpdateUserMessage(
-        address=domain.address,
+        address=node.address,
         user_id=user_id,
         email=email,
         password=password,
         role=role,
-        reply_to=domain.address,
+        reply_to=node.address,
     ).sign(signing_key=user_key)
 
     # Process syft message
-    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+    reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
     resp = {}
@@ -213,11 +213,11 @@ def delete_user_role(
 
     # Build Syft Message
     msg = DeleteUserMessage(
-        address=domain.address, user_id=user_id, reply_to=domain.address
+        address=node.address, user_id=user_id, reply_to=node.address
     ).sign(signing_key=user_key)
 
     # Process syft message
-    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+    reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
     resp = {}
@@ -252,15 +252,15 @@ def search_users_route(
 
     # Build Syft Message
     msg = SearchUsersMessage(
-        address=domain.address,
+        address=node.address,
         email=email,
         groups=groups,
         role=role,
-        reply_to=domain.address,
+        reply_to=node.address,
     ).sign(signing_key=user_key)
 
     # Process syft message
-    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+    reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
     resp = {}

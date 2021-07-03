@@ -23,7 +23,7 @@ from syft.grid.messages.role_messages import UpdateRoleMessage
 
 # grid absolute
 from app.api import deps
-from app.core.node import domain
+from app.core.node import node
 
 router = APIRouter()
 
@@ -60,7 +60,7 @@ def create_role_route(
 
     # Build Syft Message
     msg = CreateRoleMessage(
-        address=domain.address,
+        address=node.address,
         name=name,
         can_triage_requests=can_triage_requests,
         can_edit_settings=can_edit_settings,
@@ -69,11 +69,11 @@ def create_role_route(
         can_edit_roles=can_edit_roles,
         can_manage_infrastructure=can_manage_infrastructure,
         can_upload_data=can_upload_data,
-        reply_to=domain.address,
+        reply_to=node.address,
     ).sign(signing_key=user_key)
 
     # Process syft message
-    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+    reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
     resp = {}
@@ -100,12 +100,12 @@ def get_all_roles_route(
     user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
 
     # Build Syft Message
-    msg = GetRolesMessage(address=domain.address, reply_to=domain.address).sign(
+    msg = GetRolesMessage(address=node.address, reply_to=node.address).sign(
         signing_key=user_key
     )
 
     # Process syft message
-    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+    reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
     resp = {}
@@ -136,11 +136,11 @@ def get_specific_role_route(
 
     # Build Syft Message
     msg = GetRoleMessage(
-        address=domain.address, role_id=role_id, reply_to=domain.address
+        address=node.address, role_id=role_id, reply_to=node.address
     ).sign(signing_key=user_key)
 
     # Process syft message
-    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+    reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
     resp = {}
@@ -186,7 +186,7 @@ def update_use_route(
 
     # Build Syft Message
     msg = UpdateRoleMessage(
-        address=domain.address,
+        address=node.address,
         role_id=role_id,
         name=name,
         can_triage_requests=can_triage_requests,
@@ -196,11 +196,11 @@ def update_use_route(
         can_edit_roles=can_edit_roles,
         can_manage_infrastructure=can_manage_infrastructure,
         can_upload_data=can_upload_data,
-        reply_to=domain.address,
+        reply_to=node.address,
     ).sign(signing_key=user_key)
 
     # Process syft message
-    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+    reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
     resp = {}
@@ -230,11 +230,11 @@ def delete_user_role(
 
     # Build Syft Message
     msg = DeleteRoleMessage(
-        address=domain.address, role_id=role_id, reply_to=domain.address
+        address=node.address, role_id=role_id, reply_to=node.address
     ).sign(signing_key=user_key)
 
     # Process syft message
-    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+    reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
     resp = {}

@@ -22,7 +22,7 @@ from syft.grid.messages.association_messages import SendAssociationRequestMessag
 
 # grid absolute
 from app.api import deps
-from app.core.node import domain
+from app.core.node import node
 
 router = APIRouter()
 
@@ -48,15 +48,15 @@ def send_association_request(
 
     # Build Syft Message
     msg = SendAssociationRequestMessage(
-        address=domain.address,
+        address=node.address,
         name=name,
         target=target,
         sender=sender,
-        reply_to=domain.address,
+        reply_to=node.address,
     ).sign(signing_key=user_key)
 
     # Process syft message
-    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+    reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
     resp = {}
@@ -87,16 +87,16 @@ def receive_association_request(
     """
     # Build Syft Message
     msg = ReceiveAssociationRequestMessage(
-        address=domain.address,
+        address=node.address,
         name=name,
         handshake=handshake,
         sender=sender,
         target=target,
-        reply_to=domain.address,
+        reply_to=node.address,
     ).sign(signing_key=SigningKey.generate())
 
     # Process syft message
-    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+    reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
     resp = {}
@@ -132,16 +132,16 @@ def respond_association_request(
 
     # Build Syft Message
     msg = RespondAssociationRequestMessage(
-        address=domain.address,
+        address=node.address,
         value=value,
         handshake=handshake,
         target=target,
         sender=sender,
-        reply_to=domain.address,
+        reply_to=node.address,
     ).sign(signing_key=user_key)
 
     # Process syft message
-    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+    reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
     resp = {}

@@ -31,7 +31,7 @@ from syft.lib.python import Dict as SyftDict
 
 # grid absolute
 from app.api import deps
-from app.core.node import domain
+from app.core.node import node
 
 router = APIRouter()
 
@@ -56,14 +56,14 @@ def upload_dataset_route(
     metadata = json.loads(metadata)
 
     msg = CreateDatasetMessage(
-        address=domain.address,
+        address=node.address,
         dataset=file.file.read(),
         metadata=SyftDict(metadata),
-        reply_to=domain.address,
+        reply_to=node.address,
     ).sign(signing_key=user_key)
 
     # Process syft message
-    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+    reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
     resp = {}
@@ -90,12 +90,12 @@ def get_all_dataset_metadata_route(
     user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
 
     # Build Syft Message
-    msg = GetDatasetsMessage(address=domain.address, reply_to=domain.address).sign(
+    msg = GetDatasetsMessage(address=node.address, reply_to=node.address).sign(
         signing_key=user_key
     )
 
     # Process syft message
-    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+    reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
     resp = {}
@@ -126,11 +126,11 @@ def get_specific_dataset_metadata_route(
 
     # Build Syft Message
     msg = GetDatasetMessage(
-        address=domain.address, dataset_id=dataset_id, reply_to=domain.address
+        address=node.address, dataset_id=dataset_id, reply_to=node.address
     ).sign(signing_key=user_key)
 
     # Process syft message
-    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+    reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
     resp = {}
@@ -163,14 +163,14 @@ def update_dataset_metadata_route(
 
     # Build Syft Message
     msg = UpdateDatasetMessage(
-        address=domain.address,
+        address=node.address,
         dataset_id=dataset_id,
         metadata=metadata,
-        reply_to=domain.address,
+        reply_to=node.address,
     ).sign(signing_key=user_key)
 
     # Process syft message
-    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+    reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
     resp = {}

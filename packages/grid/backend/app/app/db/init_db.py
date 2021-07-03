@@ -6,7 +6,7 @@ from app import crud
 from app import schemas
 from app.core.config import settings
 from app.db import base  # noqa: F401
-from app.core.node import domain
+from app.core.node import node
 from syft.grid.messages.setup_messages import CreateInitialSetUpMessage
 # make sure all SQL Alchemy models are imported (app.db.base) before initializing DB
 # otherwise, SQL Alchemy might fail to initialize relationships properly
@@ -21,15 +21,15 @@ def init_db(db: Session) -> None:
 
     # Build Syft Message
     msg = CreateInitialSetUpMessage(
-        address=domain.address,
+        address=node.address,
         email=settings.FIRST_SUPERUSER,
         password=settings.FIRST_SUPERUSER_PASSWORD,
         domain_name=settings.DOMAIN_NAME,
-        reply_to=domain.address,
-    ).sign(signing_key=domain.signing_key)
+        reply_to=node.address,
+    ).sign(signing_key=node.signing_key)
 
     # Process syft message
-    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+    reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
 
     user = crud.user.get_by_email(db, email=settings.FIRST_SUPERUSER)

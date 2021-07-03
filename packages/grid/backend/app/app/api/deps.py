@@ -16,7 +16,7 @@ from app import crud
 from app import schemas
 from app.core import security
 from app.core.config import settings
-from app.core.node import domain
+from app.core.node import node
 from app.db.session import SessionLocal
 
 reusable_oauth2 = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/login")
@@ -44,7 +44,7 @@ def get_current_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Could not validate credentials",
         )
-    user = domain.users.first(id=token_data.sub)
+    user = node.users.first(id=token_data.sub)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user

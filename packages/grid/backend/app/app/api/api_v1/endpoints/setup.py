@@ -19,7 +19,7 @@ from syft.grid.messages.setup_messages import GetSetUpMessage
 
 # grid absolute
 from app.api import deps
-from app.core.node import domain
+from app.core.node import node
 
 router = APIRouter()
 
@@ -35,15 +35,15 @@ def create_setup(
     """
     # Build Syft Message
     msg = CreateInitialSetUpMessage(
-        address=domain.address,
+        address=node.address,
         email=email,
         password=password,
         domain_name=domain_name,
-        reply_to=domain.address,
-    ).sign(signing_key=domain.signing_key)
+        reply_to=node.address,
+    ).sign(signing_key=node.signing_key)
 
     # Process syft message
-    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+    reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
     resp = {}
@@ -61,10 +61,10 @@ def get_setup(
 ) -> Any:
     user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
 
-    msg = GetSetUpMessage(address=domain.address, reply_to=domain.address).sign(
+    msg = GetSetUpMessage(address=node.address, reply_to=node.address).sign(
         signing_key=user_key
     )
 
-    reply = domain.recv_immediate_msg_with_reply(msg=msg)
+    reply = node.recv_immediate_msg_with_reply(msg=msg)
 
     return {"message": reply.message.content}
