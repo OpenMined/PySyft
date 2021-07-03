@@ -20,39 +20,59 @@ from ...core.node.common.action.run_class_method_action import RunClassMethodAct
 import operator
 import time
 
-MAPPINGS_OPS = {
+
+def smpc_add(self_id, other_id, seed, node):
+    other = node.store[other_id].data
+    if isinstance(other, ShareTensor):
+        # All parties should add the other share
+        actions = [("mpc_add", [self_id, other_id], {}, ())]
+    else:
+        # Only rank 1 would add that public value
+        actions = [("mpc_add", [self_id, other_id], {}, (1))]
+
+    return actions
+
+MAP_FUNC_TO_ACTION = {
+    "__add__": smpc_add
+}
+
+
+_MAP_ACTION_TO_FUNCTION = {
     "mpc_add": operator.add
 }
 
-def SMPCPlannerExecute(actions, node):
-    for action in actions:
-        operation, _self_id, args_ids, kwargs_ids = action
-        op = MAPPINGS_OPS[operation]
 
-        args = None
-        kwargs = None
-        _self = None
-        for i in range(10):
-            try:
-                _self = node.store[_self_id]
-                args = [node.store[arg_id] for arg_id in args_ids]
-                kwargs = {key: node.store[kwarg_id]for key, kwarg_id in kwargs_ids}
+def _try_action_with_retry(action):
+    operation, args_ids, kwargs_ids = action
+    func = _MAP_ACTION_TO_FUNCTION[operation]
 
-            except KeyError:
-                # For the object to reach the store and retry
-                time.sleep(1)
+    args = None
+    kwargs = None
 
 
-        if _self is None or args is None or kwargs is None:
-            raise Exception("Abort since could not retrieve _self/args/kwargs!")
+    for i in range(10):
+        try:
+            _self = node.store[_self_id]
+            args = [node.store[arg_id] for arg_id in args_ids]
+            kwargs = {key: node.store[kwarg_id]for key, kwarg_id in kwargs_ids}
+            res = func(*args, **kwargs)
 
-        res = operation(_self, *args, **kwargs)
+        except KeyError:
+            # For the object to reach the store and retry
+            time.sleep(1)
+
+
+    if args is None or kwargs is None:
+        raise Exception("Abort since could not retrieve args/kwargs!")
 
     return res
 
+def SMPCExecute(actions, node):
+    for action in actions[:-1]:
+        _try_action_with_retry(action)
 
-
-
+    res = _try_action_with_retry(actions[-1])
+    return res
 
 @bind_protobuf
 class ShareTensor(PassthroughTensor, Serializable):
@@ -156,21 +176,24 @@ class ShareTensor(PassthroughTensor, Serializable):
 
         return fpt
 
-    def __add__(self, other, node, seed):
-        if self.planner_active:
-            if isinstance(other, ShareTensor):
-                # All parties should add the other share
-                actions = [("mpc_add", self.id_at_location, [other.id_at_location], {}, -1)]
-            else:
-                # Only rank 1 would add that public value
-                actions = [("mpc_add", self.id_at_location, [other.id_at_location], {}, 1)]
+    def __add__(self, other):
+        return self.child + other.child
 
-            self.planner_active = False
-            res = SMPCPlannerExecute(actions, node)
-        else:
-            res = self + other
 
-        return res
+    def __mul__(self, other, node, seed):
+        ...
+
+    @staticmethod
+    def get_action_generator_from_op(operation_str):
+        return MAP_FUNC_TO_ACTION[method_name]
+
+
+    @staticmethod
+    def filter_actions_after_rank(rank, actions):
+        new_actions = [action[:3] for action in actions if rank in action[3]]
+        return new_actions
+
+
 
     def _object2proto(self) -> ShareTensor_PB:
         if isinstance(self.child, np.ndarray):

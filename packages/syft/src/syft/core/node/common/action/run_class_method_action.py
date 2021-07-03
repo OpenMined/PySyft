@@ -155,7 +155,17 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
             method_name = self.path.split(".")[-1]
 
-            if (
+            if "ShareTensor" in self.path and self.path:
+                from ....tensor.share_tensor import SMPCExecute
+                from ....tensor.share_tensor import ShareTensor
+
+                func = ShareTensor.get_action_generator_from_op(method_name)
+                args_id = [arg.id_at_location for arg in self.args]
+                kwargs = {"seed": 42, "node": node} # TODO
+                actions = func(self._self.id_at_location, *args_id, **kwargs)
+                actions = ShareTensor.filter_actions_after_rank(resolved_self.data, actions)
+                result = SMPCExecute(actions, node)
+            elif (
                 isinstance(resolved_self.data, Plan)
                 and method_name == "__call__"
                 or (
@@ -191,12 +201,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                 else:
                     method = functools.partial(method, resolved_self.data)
 
-                if "ShareTensor" in self.path:
-                    upcasted_kwargs["seed"] = 42 # Used to generate the same ids
-                    upcasted_kwargs["node"] = node # Used for getting the object from the store
-                    result = method(*upcasted_args, **upcasted_kwargs)
-                else:
-                    result = method(*upcasted_args, **upcasted_kwargs)
+                result = method(*upcasted_args, **upcasted_kwargs)
 
         # TODO: add numpy support https://github.com/OpenMined/PySyft/issues/5164
         if "numpy." in str(type(result)):
