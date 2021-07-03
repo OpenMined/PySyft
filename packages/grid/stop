@@ -23,4 +23,10 @@ done
 printf "\n\nStopping domain node '%s'" "$name"
 printf " on port %s\n\n" "$port"
 
+name=$(md5 <<< $name)
+
 DOMAIN_PORT=$port docker compose --file "docker-compose.override.yml" --project-name "$name" down
+
+printf "Deleting database..."
+
+docker volume rm ${name}_app-db-data

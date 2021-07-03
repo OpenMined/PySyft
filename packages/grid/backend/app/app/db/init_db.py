@@ -6,7 +6,8 @@ from app import crud
 from app import schemas
 from app.core.config import settings
 from app.db import base  # noqa: F401
-
+from app.core.node import domain
+from syft.grid.messages.setup_messages import CreateInitialSetUpMessage
 # make sure all SQL Alchemy models are imported (app.db.base) before initializing DB
 # otherwise, SQL Alchemy might fail to initialize relationships properly
 # for more details: https://github.com/tiangolo/full-stack-fastapi-postgresql/issues/28
@@ -17,6 +18,19 @@ def init_db(db: Session) -> None:
     # But if you don't want to use migrations, create
     # the tables un-commenting the next line
     # Base.metadata.create_all(bind=engine)z§
+
+    # Build Syft Message
+    msg = CreateInitialSetUpMessage(
+        address=domain.address,
+        email=settings.FIRST_SUPERUSER,
+        password=settings.FIRST_SUPERUSER_PASSWORD,
+        domain_name=settings.DOMAIN_NAME,
+        reply_to=domain.address,
+    ).sign(signing_key=domain.signing_key)
+
+    # Process syft message
+    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+
 
     user = crud.user.get_by_email(db, email=settings.FIRST_SUPERUSER)
     if not user:

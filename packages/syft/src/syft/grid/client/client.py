@@ -6,12 +6,15 @@ from typing import List
 from typing import Optional
 from typing import Type
 from typing import Union
+import sys
+import time
 
 # third party
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 import names
 from pandas import DataFrame
+import requests
 
 # relative
 from ...core.common.message import EventualSyftMessageWithoutReply
@@ -229,12 +232,29 @@ def connect(
     )
 
 
+
 def login(
-    url: str = DEFAULT_PYGRID_ADDRESS,
+    url: str = None,
+    port: int = None,
     email: Optional[str] = None,
     password: Optional[str] = None,
     conn_type: Type[ClientConnection] = GridHTTPConnection,
 ) -> GridClient:
+
+    if port is None:
+        raise Exception("You must specify a port.")
+
+    if url is None:
+        try:
+            url = "http://docker-host:" + str(port)
+            requests.get(url)
+        except Exception as e:
+            url = "http://localhost:" + str(port)
+
+    sys.stdout.write("Connecting to " + str(url) + "...")
+
+    url += "/api/v1"
+
     if email is None or password is None:
         credentials = {}
         logging.info(
@@ -242,4 +262,11 @@ def login(
         )
     else:
         credentials = {"email": email, "password": password}
-    return connect(url=url, credentials=credentials, conn_type=conn_type)
+    domain = connect(url=url, credentials=credentials, conn_type=conn_type)
+    sys.stdout.write(" done! \t Logging into")
+    sys.stdout.write(" " + str(domain.name) + "... ")
+    time.sleep(1)
+    # sys.stdout.write(" as " + email + "... ")
+    # time.sleep(0.5)
+    print("done!")
+    return domain

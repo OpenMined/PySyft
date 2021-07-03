@@ -68,6 +68,7 @@ services:
       - JUPYTER=jupyter lab --ip=0.0.0.0 --allow-root --NotebookApp.custom_display_url=http://127.0.0.1:8888 --notebook-dir=/notebooks
       - SERVER_HOST=http://${DOMAIN?Variable not set}
       - SYFT_USE_UVLOOP=0
+      - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
     build:
       context: ./backend
       dockerfile: backend.dockerfile
@@ -93,6 +94,7 @@ services:
       - JUPYTER=jupyter lab --ip=0.0.0.0 --allow-root --NotebookApp.custom_display_url=http://127.0.0.1:8888 --notebook-dir=/notebooks
       - SERVER_HOST=http://${DOMAIN?Variable not set}
       - SYFT_USE_UVLOOP=0
+      - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
     build:
       context: ./backend
       dockerfile: celeryworker.dockerfile

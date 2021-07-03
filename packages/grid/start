@@ -1,6 +1,9 @@
 #!/bin/bash
 while [ $# -gt 0 ]; do
   case "$1" in
+    --tag=*)
+      tag="${1#*=}"
+      ;;
     --name=*)
       name="${1#*=}"
       ;;
@@ -19,5 +22,7 @@ done
 printf "\n\nLaunching new domain node '%s'" "$name"
 printf " on port %s\n\n" "$port"
 
-DOMAIN_PORT=$port TRAEFIK_TAG=$name docker compose -p $name up
+tag=$(md5 <<< $name)
+
+DOMAIN_PORT=$port TRAEFIK_TAG=$tag DOMAIN_NAME=$name docker compose -p $tag up
 

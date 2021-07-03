@@ -68,7 +68,7 @@ class Client(AbstractNodeClient):
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
     ):
-        name = f"{name} Client" if name is not None else None
+        name = f"{name}" if name is not None else None
         super().__init__(
             name=name, network=network, domain=domain, device=device, vm=vm
         )
