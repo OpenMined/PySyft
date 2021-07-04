@@ -20,3 +20,4 @@ share2 = ShareTensor(rank=0, value=value2)
 share2_ptr = share2.send(client)
 
 share3_ptr = share1_ptr + share2_ptr
+print(share3_ptr.get())

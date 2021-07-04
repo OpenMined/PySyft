@@ -17,6 +17,7 @@ from ..common.serde.serializable import bind_protobuf
 from ..common.serde.serialize import _serialize as serialize
 
 from ...core.node.common.action.run_class_method_action import RunClassMethodAction
+from ... import lib
 import operator
 import time
 
@@ -42,7 +43,7 @@ _MAP_ACTION_TO_FUNCTION = {
 }
 
 
-def _try_action_with_retry(action):
+def _try_action_with_retry(action, node):
     operation, args_ids, kwargs_ids = action
     func = _MAP_ACTION_TO_FUNCTION[operation]
 
@@ -52,10 +53,15 @@ def _try_action_with_retry(action):
 
     for i in range(10):
         try:
-            _self = node.store[_self_id]
-            args = [node.store[arg_id] for arg_id in args_ids]
-            kwargs = {key: node.store[kwarg_id]for key, kwarg_id in kwargs_ids}
-            res = func(*args, **kwargs)
+            args = [node.store[arg_id].data for arg_id in args_ids]
+            kwargs = {key: node.store[kwarg_id].data for key, kwarg_id in kwargs_ids}
+            (
+                upcasted_args,
+                upcasted_kwargs,
+            ) = lib.python.util.upcast_args_and_kwargs(args, kwargs)
+
+
+            res = func(*upcasted_args, **upcasted_kwargs)
 
         except KeyError:
             # For the object to reach the store and retry
@@ -71,7 +77,7 @@ def SMPCExecute(actions, node):
     for action in actions[:-1]:
         _try_action_with_retry(action)
 
-    res = _try_action_with_retry(actions[-1])
+    res = _try_action_with_retry(actions[-1], node)
     return res
 
 @bind_protobuf
@@ -185,12 +191,12 @@ class ShareTensor(PassthroughTensor, Serializable):
 
     @staticmethod
     def get_action_generator_from_op(operation_str):
-        return MAP_FUNC_TO_ACTION[method_name]
+        return MAP_FUNC_TO_ACTION[operation_str]
 
 
     @staticmethod
     def filter_actions_after_rank(rank, actions):
-        new_actions = [action[:3] for action in actions if rank in action[3]]
+        new_actions = [action[:3] for action in actions if rank in action[3] or len(action[3]) == 0]
         return new_actions
 
 
