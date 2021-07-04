@@ -1,8 +1,9 @@
 # stdlib
 from typing import Any
-from typing import Callable
+from typing import Type
 
 # relative
+from ....core.node.common.node import Node
 from ....core.node.domain.enums import ResponseObjectEnum
 from ...messages.user_messages import CreateUserMessage
 from ...messages.user_messages import DeleteUserMessage
@@ -13,14 +14,14 @@ from .request_api import GridRequestAPI
 
 
 class UserRequestAPI(GridRequestAPI):
-    def __init__(self, send: Callable):
+    def __init__(self, node: Type[Node]):
         super().__init__(
+            node=node,
             create_msg=CreateUserMessage,
             get_msg=GetUserMessage,
             get_all_msg=GetUsersMessage,
             update_msg=UpdateUserMessage,
             delete_msg=DeleteUserMessage,
-            send=send,
             response_key=ResponseObjectEnum.USER,
         )
 

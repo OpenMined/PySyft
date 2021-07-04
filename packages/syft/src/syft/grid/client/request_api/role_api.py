@@ -1,8 +1,10 @@
 # stdlib
 from typing import Any
 from typing import Callable
+from typing import Type
 
 # relative
+from ....core.node.common.node import Node
 from ....core.node.domain.enums import ResponseObjectEnum
 from ...messages.role_messages import CreateRoleMessage
 from ...messages.role_messages import DeleteRoleMessage
@@ -13,14 +15,14 @@ from .request_api import GridRequestAPI
 
 
 class RoleRequestAPI(GridRequestAPI):
-    def __init__(self, send: Callable):
+    def __init__(self, node: Type[Node]):
         super().__init__(
+            node=node,
             create_msg=CreateRoleMessage,
             get_msg=GetRoleMessage,
             get_all_msg=GetRolesMessage,
             update_msg=UpdateRoleMessage,
             delete_msg=DeleteRoleMessage,
-            send=send,
             response_key=ResponseObjectEnum.ROLE,
         )
 

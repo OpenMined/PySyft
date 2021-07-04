@@ -1,8 +1,9 @@
 # stdlib
 from typing import Any
-from typing import Callable
+from typing import Type
 
 # relative
+from ....core.node.common.node import Node
 from ....core.node.domain.enums import ResponseObjectEnum
 from ...messages.group_messages import CreateGroupMessage
 from ...messages.group_messages import DeleteGroupMessage
@@ -13,14 +14,14 @@ from .request_api import GridRequestAPI
 
 
 class GroupRequestAPI(GridRequestAPI):
-    def __init__(self, send: Callable):
+    def __init__(self, node: Type[Node]):
         super().__init__(
+            node=node,
             create_msg=CreateGroupMessage,
             get_msg=GetGroupMessage,
             get_all_msg=GetGroupsMessage,
             update_msg=UpdateGroupMessage,
             delete_msg=DeleteGroupMessage,
-            send=send,
             response_key=ResponseObjectEnum.GROUP,
         )
 

@@ -4,6 +4,7 @@ import logging
 from typing import Any
 from typing import Callable
 from typing import Dict
+from typing import Type
 from typing import Union
 
 # third party
@@ -11,6 +12,7 @@ from pandas import DataFrame
 
 # relative
 from ....core.io.connection import ClientConnection
+from ....core.node.common.node import Node
 from ....core.node.domain.client import DomainClient
 from ....core.node.domain.enums import RequestAPIFields
 from ....core.node.domain.enums import ResponseObjectEnum
@@ -23,21 +25,19 @@ from .request_api import GridRequestAPI
 
 
 class DatasetRequestAPI(GridRequestAPI):
-    def __init__(self, send: Callable, conn: ClientConnection, client: DomainClient):
+    def __init__(self, node: Type[Node]):
         super().__init__(
+            node=node,
             create_msg=CreateDatasetMessage,
             get_msg=GetDatasetMessage,
             get_all_msg=GetDatasetsMessage,
             update_msg=UpdateDatasetMessage,
             delete_msg=DeleteDatasetMessage,
-            send=send,
             response_key=ResponseObjectEnum.DATASET,
         )
-        self.conn = conn
-        self.client = client
 
     def create(self, path: str, **kwargs) -> Dict[str, str]:  # type: ignore
-        response = self.conn.send_files(path, metadata=kwargs)  # type: ignore
+        response = self.node.conn.send_files(path, metadata=kwargs)  # type: ignore
         logging.info(response[RequestAPIFields.MESSAGE])
 
     def __getitem__(self, key: Union[str, int, slice]) -> Any:
@@ -56,7 +56,7 @@ class DatasetRequestAPI(GridRequestAPI):
         dataset_obj.pandas = DataFrame(dataset_obj.data)
         datasets = []
 
-        pointers = self.client.store
+        pointers = self.node.store
         for data in dataset_obj.data:
             _class_name = ResponseObjectEnum.DATA.capitalize()
             data_obj = type(_class_name, (object,), data)()
@@ -66,7 +66,7 @@ class DatasetRequestAPI(GridRequestAPI):
 
         dataset_obj.files = datasets
         type(dataset_obj).__getitem__ = lambda x, i: x.data[i]
-        dataset_obj.client = self.client
+        dataset_obj.node = self.node
         return Dataset(dataset_obj)
 
     def _repr_html_(self) -> str:
@@ -85,9 +85,9 @@ class Dataset:
     def __getitem__(self, key: Union[str, int]) -> Any:
         if isinstance(key, int):
             obj_id = self.dataset_metadata.data[key]["id"].replace("-", "")
-            return self.dataset_metadata.client.store[obj_id]
+            return self.dataset_metadata.node.store[obj_id]
         elif isinstance(key, str):
-            return self.dataset_metadata.client.store[key.replace("-", "")]
+            return self.dataset_metadata.node.store[key.replace("-", "")]
 
     def _repr_html_(self) -> str:
         id = "<b>Id: </b>" + str(self.id) + "<br />"

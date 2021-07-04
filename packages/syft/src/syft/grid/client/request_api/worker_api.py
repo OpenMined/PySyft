@@ -8,6 +8,7 @@ from pandas import DataFrame
 
 # relative
 from ....core.common.serde.deserialize import _deserialize
+from ....core.node.common.node import Node
 from ....core.node.domain.enums import PyGridClientEnums
 from ....core.node.domain.enums import RequestAPIFields
 from ....core.node.domain.enums import ResponseObjectEnum
@@ -24,21 +25,19 @@ from .request_api import GridRequestAPI
 
 
 class WorkerRequestAPI(GridRequestAPI):
-    def __init__(self, send: Callable, domain_client: Any):
+    def __init__(self, node: Type[Node]):
         super().__init__(
+            node=node,
             create_msg=CreateWorkerMessage,
             get_msg=GetWorkerMessage,
             get_all_msg=GetWorkersMessage,
             update_msg=UpdateWorkerMessage,
             delete_msg=DeleteWorkerMessage,
-            send=send,
             response_key=ResponseObjectEnum.WORKER,
         )
 
-        self.domain_client = domain_client
-
     def instance_type(self, pandas: bool = False) -> Any:
-        result = self.send(grid_msg=GetWorkerInstanceTypesMessage)
+        result = self.perform_api_request(grid_msg=GetWorkerInstanceTypesMessage)
         if pandas:
             max_size = len(min(result.values()))  # Why min/max functions were switched?
             for key in result.keys():
@@ -62,11 +61,11 @@ class WorkerRequestAPI(GridRequestAPI):
         addr_pb = Address_PB()
         addr_pb.ParseFromString(_raw_addr)
 
-        _worker_obj = self.domain_client.__class__(
+        _worker_obj = self.node.__class__(
             credentials={},
-            url=self.domain_client.conn.base_url,
-            conn_type=self.domain_client.conn.__class__,
-            client_type=self.domain_client.client_type,
+            url=self.node.conn.base_url,
+            conn_type=self.node.conn.__class__,
+            client_type=self.node.client_type,
         )
         _worker_obj.proxy_address = _deserialize(blob=addr_pb)
         _worker_obj.domain = _worker_obj.proxy_address.domain
@@ -82,7 +81,7 @@ class WorkerRequestAPI(GridRequestAPI):
                 RequestAPIFields.ADDRESS: _worker_obj.address,
                 RequestAPIFields.CONTENT: {
                     RequestAPIFields.UID: str(obj_ptr.id_at_location.value),
-                    RequestAPIFields.DOMAIN_ADDRESS: self.domain_client.conn.base_url,
+                    RequestAPIFields.DOMAIN_ADDRESS: self.node.conn.base_url,
                 },
             }
             signed_msg = SaveObjectMessage(
