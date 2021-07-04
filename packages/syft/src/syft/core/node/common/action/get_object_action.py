@@ -165,9 +165,11 @@ class GetObjectAction(ImmediateActionWithReply):
         reply_to: Address,
         msg_id: Optional[UID] = None,
         delete_obj: bool = True,
+        flight:bool = True,
     ):
         self.id_at_location = id_at_location
         self.delete_obj = delete_obj
+        self.flight = flight
 
         # the logger needs self.id_at_location to be set already - so we call this later
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -196,17 +198,20 @@ class GetObjectAction(ImmediateActionWithReply):
                     + "Please submit a request."
                 )
                 traceback_and_raise(AuthorizationException(log))
-
+            print('get object eecute action: ', type(storable_object.data))
             flight_transfer = False
-            try:
-                #TODO (flight): add flight/WebRTC choice param
-                if 'numpy.ndarray' in str(type(storable_object.data)):
-                    flight_transfer = True
-                    #TODO: send flight data in background
-                    node.flight_client.put_object(self.id_at_location, storable_object.data)
-            except:
-                print("numpy.ndarray flight transfer failed. Using WebRTC instead.")
-                flight_transfer = False
+            if self.flight:
+                # try:
+                if True:
+                    #TODO (flight): add flight/WebRTC choice param
+                    if 'Tensor' in str(type(storable_object.data)):
+                        #TODO (flight): send flight data in background
+                        node.flight_client.put_object(self.id_at_location, storable_object.data.numpy())
+                        print('Using flight for data transfer')
+                        flight_transfer = True
+                # except:
+                #     print('Tensor flight transfer failed. Using WebRTC instead.')
+                #     flight_transfer = False
                 
             msg = []
             if flight_transfer:
@@ -263,6 +268,7 @@ class GetObjectAction(ImmediateActionWithReply):
             address=serialize(self.address, to_proto=True),
             reply_to=serialize(self.reply_to, to_proto=True),
             delete_obj=self.delete_obj,
+            flight=self.flight,
         )
 
     @staticmethod
@@ -286,6 +292,7 @@ class GetObjectAction(ImmediateActionWithReply):
             address=_deserialize(blob=proto.address),
             reply_to=_deserialize(blob=proto.reply_to),
             delete_obj=proto.delete_obj,
+            flight=proto.flight,
         )
 
     @staticmethod

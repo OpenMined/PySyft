@@ -28,7 +28,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n.proto/core/node/common/action/get_object.proto\x12\x1csyft.core.node.common.action\x1a%proto/core/common/common_object.proto\x1a#proto/core/store/store_object.proto\x1a\x1bproto/core/io/address.proto"\xcc\x01\n\x0fGetObjectAction\x12-\n\x0eid_at_location\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12%\n\x06msg_id\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x12\n\ndelete_obj\x18\x05 \x01(\x08"\xb0\x01\n\x18GetObjectResponseMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12,\n\x03obj\x18\x02 \x01(\x0b\x32\x1f.syft.core.store.StorableObject\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x17\n\x0f\x66light_transfer\x18\x04 \x01(\x08\x62\x06proto3',
+    serialized_pb=b'\n.proto/core/node/common/action/get_object.proto\x12\x1csyft.core.node.common.action\x1a%proto/core/common/common_object.proto\x1a#proto/core/store/store_object.proto\x1a\x1bproto/core/io/address.proto"\xdc\x01\n\x0fGetObjectAction\x12-\n\x0eid_at_location\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12%\n\x06msg_id\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x12\n\ndelete_obj\x18\x05 \x01(\x08\x12\x0e\n\x06\x66light\x18\x06 \x01(\x08"\xbd\x01\n\x18GetObjectResponseMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x31\n\x03obj\x18\x02 \x01(\x0b\x32\x1f.syft.core.store.StorableObjectH\x00\x88\x01\x01\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x17\n\x0f\x66light_transfer\x18\x04 \x01(\x08\x42\x06\n\x04_objb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_store_dot_store__object__pb2.DESCRIPTOR,
@@ -140,6 +140,25 @@ _GETOBJECTACTION = _descriptor.Descriptor(
             file=DESCRIPTOR,
             create_key=_descriptor._internal_create_key,
         ),
+        _descriptor.FieldDescriptor(
+            name="flight",
+            full_name="syft.core.node.common.action.GetObjectAction.flight",
+            index=5,
+            number=6,
+            type=8,
+            cpp_type=7,
+            label=1,
+            has_default_value=False,
+            default_value=False,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -150,7 +169,7 @@ _GETOBJECTACTION = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=186,
-    serialized_end=390,
+    serialized_end=406,
 )
 
 
@@ -246,9 +265,18 @@ _GETOBJECTRESPONSEMESSAGE = _descriptor.Descriptor(
     is_extendable=False,
     syntax="proto3",
     extension_ranges=[],
-    oneofs=[],
-    serialized_start=393,
-    serialized_end=569,
+    oneofs=[
+        _descriptor.OneofDescriptor(
+            name="_obj",
+            full_name="syft.core.node.common.action.GetObjectResponseMessage._obj",
+            index=0,
+            containing_type=None,
+            create_key=_descriptor._internal_create_key,
+            fields=[],
+        ),
+    ],
+    serialized_start=409,
+    serialized_end=598,
 )
 
 _GETOBJECTACTION.fields_by_name[
@@ -272,6 +300,12 @@ _GETOBJECTRESPONSEMESSAGE.fields_by_name[
 _GETOBJECTRESPONSEMESSAGE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
+_GETOBJECTRESPONSEMESSAGE.oneofs_by_name["_obj"].fields.append(
+    _GETOBJECTRESPONSEMESSAGE.fields_by_name["obj"]
+)
+_GETOBJECTRESPONSEMESSAGE.fields_by_name[
+    "obj"
+].containing_oneof = _GETOBJECTRESPONSEMESSAGE.oneofs_by_name["_obj"]
 DESCRIPTOR.message_types_by_name["GetObjectAction"] = _GETOBJECTACTION
 DESCRIPTOR.message_types_by_name["GetObjectResponseMessage"] = _GETOBJECTRESPONSEMESSAGE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)

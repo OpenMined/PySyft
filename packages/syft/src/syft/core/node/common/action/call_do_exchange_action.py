@@ -4,6 +4,7 @@ from typing import Optional
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
+import torch as th
 
 # syft relative
 from ..... import serialize
@@ -24,11 +25,13 @@ class CallDoExchangeAction(ImmediateActionWithoutReply, Serializable):
     def __init__(
         self,
         obj_id: UID,
+        obj: StorableObject,
         address: Address,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
         self.obj_id = obj_id
+        self.obj = obj
 
     def __repr__(self) -> str:
         obj_str = str(self.obj_id)
@@ -39,25 +42,34 @@ class CallDoExchangeAction(ImmediateActionWithoutReply, Serializable):
             if len(obj_str) < 50
             else obj_str[:50] + " ... " + obj_str[neg_index:]
         )
-        return f"SaveObjectAction {obj_str}"
+        return f"CallDoExchangeAction {obj_str}"
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         print(self.obj_id)
-        obj = node.flight_client.get_object(self.obj_id).to_pandas()[str(self.obj_id.value)].to_numpy()
-        print(obj)
+        recvd_data = node.flight_client.get_object(self.obj_id).to_pandas()[str(self.obj_id.value)].to_numpy()
+        recvd_data = th.from_numpy(recvd_data)
+        self.obj.data = recvd_data
+        print(self.obj)
+        self.obj.read_permissions = {
+            node.verify_key: node.id,
+            verify_key: None,  # we dont have the passed in sender's UID
+        }
         #TODO [IMP] (flight): adding object into store with permissions
-        # node.store[str(self.obj_id.value)] = obj
+        print('execute ac: ', node)
+        node.store[self.obj_id] = self.obj
 
     def _object2proto(self) -> CallDoExchangeAction_PB:
         # obj_name = self.obj_name._object2proto()
+        obj = self.obj._object2proto()
         addr = serialize(self.address)
-        return CallDoExchangeAction_PB(obj_id=serialize(self.obj_id), address=addr)
+        return CallDoExchangeAction_PB(obj_id=serialize(self.obj_id), obj=obj, address=addr)
 
     @staticmethod
     def _proto2object(proto: CallDoExchangeAction_PB) -> "CallDoExchangeAction":
         obj_id = _deserialize(blob=proto.obj_id)
+        obj = _deserialize(blob=proto.obj)
         addr = _deserialize(blob=proto.address)
-        return CallDoExchangeAction(obj_id=obj_id, address=addr)
+        return CallDoExchangeAction(obj_id=obj_id, obj=obj, address=addr)
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:

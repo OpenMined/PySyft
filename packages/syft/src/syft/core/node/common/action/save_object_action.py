@@ -47,6 +47,8 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
             node.verify_key: node.id,
             verify_key: None,  # we dont have the passed in sender's UID
         }
+        print('ex_action: ', node)
+        print(type(self.obj))
         node.store[self.obj.id] = self.obj
 
     def _object2proto(self) -> SaveObjectAction_PB:

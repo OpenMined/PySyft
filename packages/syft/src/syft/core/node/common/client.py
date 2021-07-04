@@ -224,7 +224,7 @@ class Client(AbstractNodeClient):
             )
             debug(output)
             msg = msg.sign(signing_key=self.signing_key)
-
+        print('client call send_immediate_msg_with_reply', type(self.routes[route_index]), self.routes[route_index])
         response = self.routes[route_index].send_immediate_msg_with_reply(msg=msg)
         if response.is_valid:
             # check if we have an ExceptionMessage to trigger a local exception
@@ -377,6 +377,7 @@ class StoreClient:
 
     @property
     def store(self) -> List[Pointer]:
+        print('generating object search message')
         msg = ObjectSearchMessage(
             address=self.client.address, reply_to=self.client.address
         )
@@ -384,6 +385,7 @@ class StoreClient:
         results = getattr(
             self.client.send_immediate_msg_with_reply(msg=msg), "results", None
         )
+        print(type(self.client))
         if results is None:
             traceback_and_raise(ValueError("TODO"))
 

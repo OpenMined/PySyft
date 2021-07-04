@@ -174,6 +174,7 @@ class SoloRoute(Route):
     def send_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
+        print('solo route call: ', type(self.connection), self.connection)
         return self.connection.send_immediate_msg_with_reply(msg=msg)
 
     def _object2proto(self) -> SoloRoute_PB:

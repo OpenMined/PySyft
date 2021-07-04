@@ -455,7 +455,7 @@ class Node(AbstractNode):
     ) -> Union[SyftMessage, None]:
 
         self.message_counter += 1
-
+        print(type(msg), msg.message, type(msg.message))
         debug(f"> Processing 📨 {msg.pprint} @ {self.pprint} {msg.message}")
         if self.message_is_for_me(msg=msg):
             debug(

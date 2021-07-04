@@ -1,4 +1,5 @@
 import pyarrow as pa
+import torch
 from pyarrow.lib import tobytes
 from pyarrow.util import pathlib, find_free_port
 from pyarrow.tests import util
@@ -18,16 +19,21 @@ class FlightClientDuet(FlightClient):
     def get_object(self, obj_id):
         descriptor = flight.FlightDescriptor.for_command(str('get' + str(obj_id.value)).encode('utf-8'))
         writer, reader = super().do_exchange(descriptor)
-        return reader.read_all()
+        data = reader.read_all()
+        return data
 
     def put_object(self, obj_id, obj):
         obj_id_str = str('put' + str(obj_id.value))
         descriptor = flight.FlightDescriptor.for_command(obj_id_str.encode('utf-8'))
-        writer, reader = super().do_exchange(descriptor)
 
         #TODO (flight): use appropriate arrow types
         data = pa.Table.from_arrays([
                 pa.array(obj)
             ], names=[obj_id_str[3:]])
+        print('put object: ', obj.shape)
+
+        # writer, _ = super().do_put(descriptor, data.schema)
+        writer, _ = super().do_exchange(descriptor)
         writer.begin(data.schema)
         writer.write_table(data)
+        writer.close()

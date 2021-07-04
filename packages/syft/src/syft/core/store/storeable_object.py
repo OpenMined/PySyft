@@ -126,13 +126,14 @@ class StorableObject(AbstractStorableObject):
         id = sy.serialize(self.id)
         proto.id.CopyFrom(id)
 
-        # Step 2: Save the type of wrapper to use to deserialize
-        proto.data_type = get_fully_qualified_name(obj=self._data)
+        if self._data is not None:
+            # Step 2: Save the type of wrapper to use to deserialize
+            proto.data_type = get_fully_qualified_name(obj=self._data)
 
-        # Step 3: Serialize data to protobuf and pack into proto
-        data = self._data._object2proto()
+            # Step 3: Serialize data to protobuf and pack into proto
+            data = self._data._object2proto()
 
-        proto.data.Pack(data)
+            proto.data.Pack(data)
 
         if hasattr(self, "description"):
             # Step 4: save the description into proto
@@ -169,20 +170,22 @@ class StorableObject(AbstractStorableObject):
         if not isinstance(id, UID):
             traceback_and_raise(ValueError("TODO"))
 
-        # Step 2: get the type of wrapper to use to deserialize
-        data_type = index_syft_by_module_name(fully_qualified_name=proto.data_type)
-
-        # Step 3: get the protobuf type we deserialize for .data
-        schematic_type = data_type.get_protobuf_schema()  # type: ignore
-
-        # Step 4: Deserialize data from protobuf
         data = None
-        if callable(schematic_type):
-            data = schematic_type()
-            descriptor = getattr(schematic_type, "DESCRIPTOR", None)
-            if descriptor is not None and proto.data.Is(descriptor):
-                proto.data.Unpack(data)
-            data = data_type._proto2object(proto=data)  # type: ignore
+        if proto.HasField('data_type'):
+            # Step 2: get the type of wrapper to use to deserialize
+            data_type = index_syft_by_module_name(fully_qualified_name=proto.data_type)
+
+            # Step 3: get the protobuf type we deserialize for .data
+            schematic_type = data_type.get_protobuf_schema()  # type: ignore
+
+            # Step 4: Deserialize data from protobuf
+            data = None
+            if callable(schematic_type):
+                data = schematic_type()
+                descriptor = getattr(schematic_type, "DESCRIPTOR", None)
+                if descriptor is not None and proto.data.Is(descriptor):
+                    proto.data.Unpack(data)
+                data = data_type._proto2object(proto=data)  # type: ignore
 
         # Step 5: get the description from proto
         description = proto.description if proto.description else ""

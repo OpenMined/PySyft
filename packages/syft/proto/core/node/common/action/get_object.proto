@@ -12,6 +12,7 @@ message GetObjectAction {
   syft.core.io.Address address = 3;
   syft.core.io.Address reply_to = 4;
   bool delete_obj = 5;
+  bool flight = 6;
 }
 
 message GetObjectResponseMessage {

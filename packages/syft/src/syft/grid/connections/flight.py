@@ -137,7 +137,7 @@ class OrderedChunk:
         return cls(idx, data)
 
 
-class WebRTCConnection(BidirectionalConnection):
+class FlightWebRTCConnection(BidirectionalConnection):
     loop: Any
 
     def __init__(self, node: AbstractNode) -> None:

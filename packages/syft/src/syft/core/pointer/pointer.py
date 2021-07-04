@@ -157,7 +157,7 @@ class Pointer(AbstractPointer):
         # has already been made
         self._exhausted = False
 
-    def _get(self, delete_obj: bool = True, verbose: bool = False) -> StorableObject:
+    def _get(self, delete_obj: bool = True, verbose: bool = False, flight: bool = True) -> StorableObject:
         """Method to download a remote object from a pointer object if you have the right
         permissions.
 
@@ -174,13 +174,17 @@ class Pointer(AbstractPointer):
             address=self.client.address,
             reply_to=self.client.address,
             delete_obj=delete_obj,
+            flight=flight,
         )
+        
+        print(self.client, type(self.client))
 
         response = self.client.send_immediate_msg_with_reply(msg=obj_msg)
 
         if response.flight_transfer:
             #TODO (flight): add wait till object received via flight (+ implementing background send)
             #TODO (flight): potentially add non-blocking get
+            print(self.client, type(self.client))
             return self.client.flight_server.retrieve_accessible(self.id_at_location) 
         else:
             obj = response.data
@@ -258,6 +262,7 @@ class Pointer(AbstractPointer):
         reason: str = "",
         delete_obj: bool = True,
         verbose: bool = False,
+        flight: bool = True,
     ) -> Optional[StorableObject]:
         """Method to download a remote object from a pointer object if you have the right
         permissions. Optionally can block while waiting for approval.
@@ -274,7 +279,7 @@ class Pointer(AbstractPointer):
             )
 
         if not request_block:
-            result = self._get(delete_obj=delete_obj, verbose=verbose)
+            result = self._get(delete_obj=delete_obj, verbose=verbose, flight=flight)
         else:
             response_status = self.request(
                 reason=reason,
@@ -286,7 +291,7 @@ class Pointer(AbstractPointer):
                 response_status is not None
                 and response_status == RequestStatus.Accepted
             ):
-                result = self._get(delete_obj=delete_obj, verbose=verbose)
+                result = self._get(delete_obj=delete_obj, verbose=verbose, flight=flight)
             else:
                 return None
 

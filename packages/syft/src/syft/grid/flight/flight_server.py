@@ -45,19 +45,27 @@ class FlightServerDuet(FlightServerBase):
 
     def do_exchange_read(self, obj_id, reader, writer):
         data = reader.read_all()
+        print('do_exchange_read', data.shape)
         self.accessible[obj_id] = data
 
     def do_exchange_write(self, obj_id, reader, writer, obj_id_str):
         #TODO (flight): use appropriate arrow types
-        data = pa.Table.from_arrays([
+        data = pa.RecordBatch.from_arrays([
                 pa.array(self.accessible[obj_id])
             ], names=[obj_id_str[3:]])
         writer.begin(data.schema)
-        writer.write_table(data)
+        writer.write_batch(data)
+
+    def do_put(self, context, descriptor, reader, writer):
+        self.do_exchange(context, descriptor, reader, writer)
 
     def add_accessible(self, obj, id_at_location):
         self.accessible[id_at_location] = obj
     
     def retrieve_accessible(self, id_at_location):
         #TODO (flight): fix this mess (use appropriate arrow types)
-        return self.accessible.get(id_at_location, None).to_pandas()[str(id_at_location.value)].to_numpy()
+        try:
+            return self.accessible.get(id_at_location, None).to_pandas()[str(id_at_location.value)].to_numpy()
+        except:
+            print('Unable to get from dict', self.accessible)
+        # return self.accessible.get(id_at_location, None).to_pandas()[str(id_at_location.value)].to_numpy()
