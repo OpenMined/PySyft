@@ -1,5 +1,7 @@
 # stdlib
 from typing import Optional
+from typing import Any
+from typing import List
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -124,6 +126,10 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
             )
         return data
 
+    @data.setter
+    def data(self, value: Any) -> Any:
+        self.obj.data = value
+
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         """Return the type of protobuf object which stores a class of this type
@@ -165,7 +171,7 @@ class GetObjectAction(ImmediateActionWithReply):
         reply_to: Address,
         msg_id: Optional[UID] = None,
         delete_obj: bool = True,
-        flight:bool = True,
+        flight:bool = False,
     ):
         self.id_at_location = id_at_location
         self.delete_obj = delete_obj
@@ -198,27 +204,15 @@ class GetObjectAction(ImmediateActionWithReply):
                     + "Please submit a request."
                 )
                 traceback_and_raise(AuthorizationException(log))
-            print('get object eecute action: ', type(storable_object.data))
-            flight_transfer = False
-            if self.flight:
-                # try:
-                if True:
-                    #TODO (flight): add flight/WebRTC choice param
-                    if 'Tensor' in str(type(storable_object.data)):
-                        #TODO (flight): send flight data in background
-                        node.flight_client.put_object(self.id_at_location, storable_object.data.numpy())
-                        print('Using flight for data transfer')
-                        flight_transfer = True
-                # except:
-                #     print('Tensor flight transfer failed. Using WebRTC instead.')
-                #     flight_transfer = False
-                
             msg = []
-            if flight_transfer:
-                msg = GetObjectResponseMessage(address=self.reply_to, msg_id=None, flight_transfer=flight_transfer)
+            if self.flight and 'Tensor' in str(type(storable_object.data)):
+                node.flight_server.add_accessible(storable_object.data, self.id_at_location)
+                storable_object.data = None
+                obj = validate_type(storable_object.clean_copy(), StorableObject)
+                msg = GetObjectResponseMessage(obj=obj, address=self.reply_to, msg_id=None, flight_transfer=True)
             else:
                 obj = validate_type(storable_object.clean_copy(), StorableObject)
-                msg = GetObjectResponseMessage(obj=obj, address=self.reply_to, msg_id=None, flight_transfer=flight_transfer)
+                msg = GetObjectResponseMessage(obj=obj, address=self.reply_to, msg_id=None, flight_transfer=False)
 
             if self.delete_obj:
                 try:

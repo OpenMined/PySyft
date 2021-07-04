@@ -205,9 +205,7 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
             )
 
         try:
-            print('immediate store: ', node.store)
             for obj in node.store.get_objects_of_type(obj_type=object):
-                print('immediate object search service call')
                 # if this tensor allows anyone to search for it, then one of its keys
                 # has a VERIFYALL in it.
                 contains_all_in_permissions = any(

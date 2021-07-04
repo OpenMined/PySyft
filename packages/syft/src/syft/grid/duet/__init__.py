@@ -26,6 +26,7 @@ from .exchange_ids import OpenGridTokenManualInputExchanger
 from .om_signaling_client import register
 from .ui import LOGO_URL
 from .webrtc_duet import Duet as WebRTCDuet  # noqa: F811
+from .webrtc_flight_duet import Duet as WebRTCFlightDuet  # noqa: F811
 
 if is_jupyter:
     # third party
@@ -218,7 +219,7 @@ def launch_duet(
 
     info("♫♫♫ > Connecting...", print=True)
 
-    _ = WebRTCDuet(
+    _ = WebRTCFlightDuet(
         node=my_domain,
         target_id=target_id,
         signaling_client=signaling_client,
@@ -232,13 +233,6 @@ def launch_duet(
     if logging:
         begin_duet_logger(my_domain=my_domain)
     info(print=True)
-
-    #TODO (flight): handle outside localhost (hard)
-    #TODO (flight): get available ports
-    scheme = "grpc+tcp"
-    host = "localhost"
-    port = 8999
-    my_domain.flight_client = FlightClientDuet(f"{scheme}://{host}:{port}")
 
     return out_duet
 
@@ -295,7 +289,7 @@ def join_duet(
         credential=signaling_client.duet_id
     )
 
-    duet = WebRTCDuet(
+    duet = WebRTCFlightDuet(
         node=my_domain,
         target_id=target_id,
         signaling_client=signaling_client,
@@ -304,22 +298,5 @@ def join_duet(
     info(print=True)
     info("♫♫♫ > " + bcolors.OKGREEN + "CONNECTED!" + bcolors.ENDC, print=True)
     # begin_duet_client_logger(duet.node)
-
-    #TODO (flight): handle outside localhost (hard)
-    #TODO (flight): get available ports
-
-    flight_args = {
-        'scheme': 'grpc+tcp',
-        'tls': False,
-        'host': 'localhost',
-        'port': 8999,
-        'verify_client': False,
-        'root_certificates': None,
-        'auth_handler': None,
-    }
-
-    flight_server = FlightServerDuet(flight_args)
-    threading.Thread(target=flight_server.serve).start()
-    duet.flight_server = flight_server
 
     return duet

@@ -15,7 +15,7 @@ from pyarrow.flight import (
 from ...core.common.uid import UID
 
 class FlightServerDuet(FlightServerBase):
-    def __init__(self, flight_args):
+    def __init__(self, flight_args, node):
         location = '{}://{}:{}'.format(flight_args['scheme'], flight_args['host'], flight_args['port'])
         tls_certificates = []
         if flight_args['tls']:
@@ -25,6 +25,8 @@ class FlightServerDuet(FlightServerBase):
         auth_handler = flight_args['auth_handler']
         
         self.accessible = dict()
+        self.node = node
+        self.node.flight_server = self
 
         super(FlightServerDuet, self).__init__(
             location, auth_handler, tls_certificates, verify_client,
@@ -45,13 +47,12 @@ class FlightServerDuet(FlightServerBase):
 
     def do_exchange_read(self, obj_id, reader, writer):
         data = reader.read_all()
-        print('do_exchange_read', data.shape)
         self.accessible[obj_id] = data
 
     def do_exchange_write(self, obj_id, reader, writer, obj_id_str):
         #TODO (flight): use appropriate arrow types
         data = pa.RecordBatch.from_arrays([
-                pa.array(self.accessible[obj_id])
+                self.accessible[obj_id]
             ], names=[obj_id_str[3:]])
         writer.begin(data.schema)
         writer.write_batch(data)
@@ -60,12 +61,11 @@ class FlightServerDuet(FlightServerBase):
         self.do_exchange(context, descriptor, reader, writer)
 
     def add_accessible(self, obj, id_at_location):
-        self.accessible[id_at_location] = obj
+        self.accessible[id_at_location] = pa.array(obj.numpy())
     
     def retrieve_accessible(self, id_at_location):
         #TODO (flight): fix this mess (use appropriate arrow types)
         try:
             return self.accessible.get(id_at_location, None).to_pandas()[str(id_at_location.value)].to_numpy()
         except:
-            print('Unable to get from dict', self.accessible)
-        # return self.accessible.get(id_at_location, None).to_pandas()[str(id_at_location.value)].to_numpy()
+            pass

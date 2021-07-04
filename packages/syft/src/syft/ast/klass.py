@@ -404,9 +404,6 @@ class Class(Callable):
             # would break their dict attr usage
             # Issue: https://github.com/OpenMined/PySyft/issues/5322
 
-            #TODO (flight): currently only for duet client with WebRTCConnection, make it work for other clients
-            #TODO (flight): add flight/WebRTC choice param
-
             if outer_self.pointer_name not in {"DataFramePointer", "SeriesPointer"}:
                 attach_tags(self, tags)
                 attach_description(self, description)
@@ -427,34 +424,16 @@ class Class(Callable):
                 ptr.gc_enabled = False
             else:
                 ptr.gc_enabled = True
-
-            flight_enabled = False
-            try:
-                if outer_self.pointer_name == "TensorPointer":
-                    client.flight_server.add_accessible(self.numpy(), id_at_location)
-                    storable = StorableObject(
-                        id=ptr.id_at_location,
-                        data=None,
-                        tags=tags,
-                        description=description,
-                        search_permissions={VERIFYALL: None} if pointable else {},
-                    )
-                    obj_msg = CallDoExchangeAction(id_at_location, obj=storable, address=client.address)
-                    print('Tensorpoiner flight')
-                    flight_enabled = True
-            except:
-                pass
             
-            if not flight_enabled:
-                # Step 2: create message which contains object to send
-                storable = StorableObject(
-                    id=ptr.id_at_location,
-                    data=self,
-                    tags=tags,
-                    description=description,
-                    search_permissions={VERIFYALL: None} if pointable else {},
-                )
-                obj_msg = SaveObjectAction(obj=storable, address=client.address)
+            # Step 2: create message which contains object to send
+            storable = StorableObject(
+                id=ptr.id_at_location,
+                data=self,
+                tags=tags,
+                description=description,
+                search_permissions={VERIFYALL: None} if pointable else {},
+            )
+            obj_msg = SaveObjectAction(obj=storable, address=client.address)
 
             # Step 3: send message
             client.send_immediate_msg_without_reply(msg=obj_msg)

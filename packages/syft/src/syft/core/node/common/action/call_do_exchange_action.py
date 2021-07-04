@@ -45,17 +45,15 @@ class CallDoExchangeAction(ImmediateActionWithoutReply, Serializable):
         return f"CallDoExchangeAction {obj_str}"
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
-        print(self.obj_id)
-        recvd_data = node.flight_client.get_object(self.obj_id).to_pandas()[str(self.obj_id.value)].to_numpy()
+        recvd_data = None
+        while recvd_data is None:
+            recvd_data = node.flight_server.retrieve_accessible(self.obj_id)
         recvd_data = th.from_numpy(recvd_data)
         self.obj.data = recvd_data
-        print(self.obj)
         self.obj.read_permissions = {
             node.verify_key: node.id,
             verify_key: None,  # we dont have the passed in sender's UID
         }
-        #TODO [IMP] (flight): adding object into store with permissions
-        print('execute ac: ', node)
         node.store[self.obj_id] = self.obj
 
     def _object2proto(self) -> CallDoExchangeAction_PB:

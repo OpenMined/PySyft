@@ -20,7 +20,7 @@ class FlightClientDuet(FlightClient):
         descriptor = flight.FlightDescriptor.for_command(str('get' + str(obj_id.value)).encode('utf-8'))
         writer, reader = super().do_exchange(descriptor)
         data = reader.read_all()
-        return data
+        return torch.from_numpy(data.to_pandas()[str(obj_id.value)].to_numpy())
 
     def put_object(self, obj_id, obj):
         obj_id_str = str('put' + str(obj_id.value))
@@ -30,7 +30,6 @@ class FlightClientDuet(FlightClient):
         data = pa.Table.from_arrays([
                 pa.array(obj)
             ], names=[obj_id_str[3:]])
-        print('put object: ', obj.shape)
 
         # writer, _ = super().do_put(descriptor, data.schema)
         writer, _ = super().do_exchange(descriptor)
