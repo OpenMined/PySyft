@@ -2,7 +2,7 @@
 from sqlalchemy.orm import Session
 
 # syft absolute
-from syft.grid.messages.setup_messages import CreateInitialSetUpMessage
+from syft.core.node.common.service.setup_service import CreateInitialSetUpMessage
 
 # grid absolute
 from app import crud
