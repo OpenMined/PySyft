@@ -313,33 +313,17 @@ class DomainClient(Client):
 
         return response
 
-    def _route_client_location(
-        self, client_type: Any, location: SpecificLocation
-    ) -> Dict[Any, Any]:
-        locations: Dict[Any, Optional[SpecificLocation]] = {
-            node.network.client.NetworkClient: None,
-            DomainClient: None,
-            node.device.client.DeviceClient: None,
-            node.vm.client.VirtualMachineClient: None,
-        }
-        locations[client_type] = location
-        return locations
-
     def _perform_grid_request(
         self, grid_msg: Any, content: Optional[Dict[Any, Any]] = None
     ) -> Dict[Any, Any]:
         if content is None:
             content = {}
-        signed_msg = self.__build_msg(grid_msg=grid_msg, content=content)
-        response = self.send_immediate_msg_with_reply(msg=signed_msg)
-        return self.__process_response(response=response)
-
-    def __build_msg(self, grid_msg: Any, content: Dict[Any, Any]) -> Any:
+        # Build Syft Message
         content[RequestAPIFields.ADDRESS] = self.address
         content[RequestAPIFields.REPLY_TO] = self.address
-        return grid_msg(**content).sign(signing_key=self.signing_key)
-
-    def __process_response(self, response: SyftMessage) -> Dict[Any, Any]:
+        signed_msg = grid_msg(**content).sign(signing_key=self.signing_key)
+        # Send to the dest
+        response = self.send_immediate_msg_with_reply(msg=signed_msg)
         if isinstance(response, ExceptionMessage):
             raise response.exception_type
         else:
