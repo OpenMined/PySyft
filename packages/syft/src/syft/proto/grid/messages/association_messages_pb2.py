@@ -18,6 +18,7 @@ from syft.proto.core.common import (
     common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
 )
 from syft.proto.core.io import address_pb2 as proto_dot_core_dot_io_dot_address__pb2
+from syft.proto.lib.python import dict_pb2 as proto_dot_lib_dot_python_dot_dict__pb2
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/grid/messages/association_messages.proto",
@@ -25,10 +26,11 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n.proto/grid/messages/association_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\xc5\x01\n\x1dSendAssociationRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x0e\n\x06target\x18\x04 \x01(\t\x12\x0e\n\x06sender\x18\x05 \x01(\t\x12\'\n\x08reply_to\x18\x06 \x01(\x0b\x32\x15.syft.core.io.Address"\xdb\x01\n ReceiveAssociationRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x11\n\thandshake\x18\x04 \x01(\t\x12\x0e\n\x06sender\x18\x05 \x01(\t\x12\x0e\n\x06target\x18\x06 \x01(\t\x12\'\n\x08reply_to\x18\x07 \x01(\x0b\x32\x15.syft.core.io.Address"\xdc\x01\n RespondAssociationRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\r\n\x05value\x18\x03 \x01(\t\x12\x0e\n\x06target\x18\x04 \x01(\t\x12\x11\n\thandshake\x18\x05 \x01(\t\x12\x0e\n\x06sender\x18\x06 \x01(\t\x12\'\n\x08reply_to\x18\x07 \x01(\x0b\x32\x15.syft.core.io.Address"\xae\x01\n\x1cGetAssociationRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x16\n\x0e\x61ssociation_id\x18\x03 \x01(\x05\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x7f\n\x1dGetAssociationRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x97\x01\n\x1dGetAssociationRequestsMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x80\x01\n\x1eGetAssociationRequestsResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\xb1\x01\n\x1f\x44\x65leteAssociationRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x16\n\x0e\x61ssociation_id\x18\x03 \x01(\x05\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
+    serialized_pb=b'\n.proto/grid/messages/association_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto\x1a\x1bproto/lib/python/dict.proto"\xda\x01\n\x1dSendAssociationRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0e\n\x06reason\x18\x03 \x01(\t\x12\x0e\n\x06target\x18\x04 \x01(\t\x12\x0e\n\x06sender\x18\x05 \x01(\t\x12\x11\n\tnode_name\x18\x06 \x01(\t\x12\'\n\x08reply_to\x18\x07 \x01(\x0b\x32\x15.syft.core.io.Address"\xfc\x01\n ReceiveAssociationRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0e\n\x06sender\x18\x04 \x01(\t\x12\x0c\n\x04name\x18\x05 \x01(\t\x12\r\n\x05\x65mail\x18\x06 \x01(\t\x12\x0e\n\x06reason\x18\x07 \x01(\t\x12\x11\n\tnode_name\x18\x08 \x01(\t\x12\x10\n\x08response\x18\t \x01(\t\x12\'\n\x08reply_to\x18\n \x01(\x0b\x32\x15.syft.core.io.Address"\xcf\x01\n RespondAssociationRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x10\n\x08response\x18\x03 \x01(\t\x12\x0e\n\x06target\x18\x04 \x01(\t\x12\x11\n\tnode_name\x18\x06 \x01(\t\x12\'\n\x08reply_to\x18\x07 \x01(\x0b\x32\x15.syft.core.io.Address"\xae\x01\n\x1cGetAssociationRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x16\n\x0e\x61ssociation_id\x18\x03 \x01(\x05\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x96\x01\n\x1dGetAssociationRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x02 \x01(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address"\x97\x01\n\x1dGetAssociationRequestsMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x97\x01\n\x1eGetAssociationRequestsResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x02 \x03(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\xb1\x01\n\x1f\x44\x65leteAssociationRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x16\n\x0e\x61ssociation_id\x18\x03 \x01(\x05\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
+        proto_dot_lib_dot_python_dot_dict__pb2.DESCRIPTOR,
     ],
 )
 
@@ -80,8 +82,8 @@ _SENDASSOCIATIONREQUESTMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="name",
-            full_name="syft.grid.messages.SendAssociationRequestMessage.name",
+            name="reason",
+            full_name="syft.grid.messages.SendAssociationRequestMessage.reason",
             index=2,
             number=3,
             type=9,
@@ -137,10 +139,29 @@ _SENDASSOCIATIONREQUESTMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="reply_to",
-            full_name="syft.grid.messages.SendAssociationRequestMessage.reply_to",
+            name="node_name",
+            full_name="syft.grid.messages.SendAssociationRequestMessage.node_name",
             index=5,
             number=6,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.SendAssociationRequestMessage.reply_to",
+            index=6,
+            number=7,
             type=11,
             cpp_type=10,
             label=1,
@@ -164,8 +185,8 @@ _SENDASSOCIATIONREQUESTMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=139,
-    serialized_end=336,
+    serialized_start=168,
+    serialized_end=386,
 )
 
 
@@ -216,28 +237,9 @@ _RECEIVEASSOCIATIONREQUESTMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="name",
-            full_name="syft.grid.messages.ReceiveAssociationRequestMessage.name",
+            name="sender",
+            full_name="syft.grid.messages.ReceiveAssociationRequestMessage.sender",
             index=2,
-            number=3,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=b"".decode("utf-8"),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="handshake",
-            full_name="syft.grid.messages.ReceiveAssociationRequestMessage.handshake",
-            index=3,
             number=4,
             type=9,
             cpp_type=9,
@@ -254,9 +256,9 @@ _RECEIVEASSOCIATIONREQUESTMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="sender",
-            full_name="syft.grid.messages.ReceiveAssociationRequestMessage.sender",
-            index=4,
+            name="name",
+            full_name="syft.grid.messages.ReceiveAssociationRequestMessage.name",
+            index=3,
             number=5,
             type=9,
             cpp_type=9,
@@ -273,10 +275,67 @@ _RECEIVEASSOCIATIONREQUESTMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="target",
-            full_name="syft.grid.messages.ReceiveAssociationRequestMessage.target",
-            index=5,
+            name="email",
+            full_name="syft.grid.messages.ReceiveAssociationRequestMessage.email",
+            index=4,
             number=6,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reason",
+            full_name="syft.grid.messages.ReceiveAssociationRequestMessage.reason",
+            index=5,
+            number=7,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="node_name",
+            full_name="syft.grid.messages.ReceiveAssociationRequestMessage.node_name",
+            index=6,
+            number=8,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="response",
+            full_name="syft.grid.messages.ReceiveAssociationRequestMessage.response",
+            index=7,
+            number=9,
             type=9,
             cpp_type=9,
             label=1,
@@ -294,8 +353,8 @@ _RECEIVEASSOCIATIONREQUESTMESSAGE = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name="reply_to",
             full_name="syft.grid.messages.ReceiveAssociationRequestMessage.reply_to",
-            index=6,
-            number=7,
+            index=8,
+            number=10,
             type=11,
             cpp_type=10,
             label=1,
@@ -319,8 +378,8 @@ _RECEIVEASSOCIATIONREQUESTMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=339,
-    serialized_end=558,
+    serialized_start=389,
+    serialized_end=641,
 )
 
 
@@ -371,8 +430,8 @@ _RESPONDASSOCIATIONREQUESTMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="value",
-            full_name="syft.grid.messages.RespondAssociationRequestMessage.value",
+            name="response",
+            full_name="syft.grid.messages.RespondAssociationRequestMessage.response",
             index=2,
             number=3,
             type=9,
@@ -409,28 +468,9 @@ _RESPONDASSOCIATIONREQUESTMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="handshake",
-            full_name="syft.grid.messages.RespondAssociationRequestMessage.handshake",
+            name="node_name",
+            full_name="syft.grid.messages.RespondAssociationRequestMessage.node_name",
             index=4,
-            number=5,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=b"".decode("utf-8"),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="sender",
-            full_name="syft.grid.messages.RespondAssociationRequestMessage.sender",
-            index=5,
             number=6,
             type=9,
             cpp_type=9,
@@ -449,7 +489,7 @@ _RESPONDASSOCIATIONREQUESTMESSAGE = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name="reply_to",
             full_name="syft.grid.messages.RespondAssociationRequestMessage.reply_to",
-            index=6,
+            index=5,
             number=7,
             type=11,
             cpp_type=10,
@@ -474,8 +514,8 @@ _RESPONDASSOCIATIONREQUESTMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=561,
-    serialized_end=781,
+    serialized_start=644,
+    serialized_end=851,
 )
 
 
@@ -572,8 +612,8 @@ _GETASSOCIATIONREQUESTMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=784,
-    serialized_end=958,
+    serialized_start=854,
+    serialized_end=1028,
 )
 
 
@@ -608,12 +648,12 @@ _GETASSOCIATIONREQUESTRESPONSE = _descriptor.Descriptor(
             name="content",
             full_name="syft.grid.messages.GetAssociationRequestResponse.content",
             index=1,
-            number=3,
-            type=9,
-            cpp_type=9,
+            number=2,
+            type=11,
+            cpp_type=10,
             label=1,
             has_default_value=False,
-            default_value=b"".decode("utf-8"),
+            default_value=None,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -627,7 +667,7 @@ _GETASSOCIATIONREQUESTRESPONSE = _descriptor.Descriptor(
             name="address",
             full_name="syft.grid.messages.GetAssociationRequestResponse.address",
             index=2,
-            number=4,
+            number=3,
             type=11,
             cpp_type=10,
             label=1,
@@ -651,8 +691,8 @@ _GETASSOCIATIONREQUESTRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=960,
-    serialized_end=1087,
+    serialized_start=1031,
+    serialized_end=1181,
 )
 
 
@@ -730,8 +770,8 @@ _GETASSOCIATIONREQUESTSMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1090,
-    serialized_end=1241,
+    serialized_start=1184,
+    serialized_end=1335,
 )
 
 
@@ -766,12 +806,12 @@ _GETASSOCIATIONREQUESTSRESPONSE = _descriptor.Descriptor(
             name="content",
             full_name="syft.grid.messages.GetAssociationRequestsResponse.content",
             index=1,
-            number=3,
-            type=9,
-            cpp_type=9,
-            label=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=3,
             has_default_value=False,
-            default_value=b"".decode("utf-8"),
+            default_value=[],
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -809,8 +849,8 @@ _GETASSOCIATIONREQUESTSRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1244,
-    serialized_end=1372,
+    serialized_start=1338,
+    serialized_end=1489,
 )
 
 
@@ -907,8 +947,8 @@ _DELETEASSOCIATIONREQUESTMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1375,
-    serialized_end=1552,
+    serialized_start=1492,
+    serialized_end=1669,
 )
 
 _SENDASSOCIATIONREQUESTMESSAGE.fields_by_name[
@@ -951,6 +991,9 @@ _GETASSOCIATIONREQUESTRESPONSE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
 _GETASSOCIATIONREQUESTRESPONSE.fields_by_name[
+    "content"
+].message_type = proto_dot_lib_dot_python_dot_dict__pb2._DICT
+_GETASSOCIATIONREQUESTRESPONSE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 _GETASSOCIATIONREQUESTSMESSAGE.fields_by_name[
@@ -965,6 +1008,9 @@ _GETASSOCIATIONREQUESTSMESSAGE.fields_by_name[
 _GETASSOCIATIONREQUESTSRESPONSE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_GETASSOCIATIONREQUESTSRESPONSE.fields_by_name[
+    "content"
+].message_type = proto_dot_lib_dot_python_dot_dict__pb2._DICT
 _GETASSOCIATIONREQUESTSRESPONSE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS

@@ -15,15 +15,16 @@ class RequestAPIFields(str, Enum):
     REPLY_TO = "reply_to"
     MESSAGE = "message"
     ERROR = "error"
-    VALUE = "value"
-    HANDSHAKE = "handshake"
-    SENDER_ADDRESS = "sender_address"
+    RESPONSE = "response"
     DOMAIN_ADDRESS = "domain_address"
+    NODE_NAME = "node_name"
+    TARGET = "target"
 
 
 class AssociationRequestResponses(str, Enum):
-    ACCEPT = "accept"
-    DENY = "deny"
+    ACCEPT = "ACCEPTED"
+    DENY = "REJECTED"
+    PENDING = "PENDING"
 
 
 class ResponseObjectEnum(str, Enum):
