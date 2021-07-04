@@ -112,7 +112,9 @@ def update_user_msg(
     node: AbstractNode,
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
-    _valid_parameters = msg.email or msg.password or msg.role or msg.groups
+    _valid_parameters = (
+        msg.email or msg.password or msg.role or msg.groups or msg.name
+    )
     _same_user = int(node.users.get_user(verify_key).id) == msg.user_id
     _allowed = _same_user or node.users.can_create_users(verify_key=verify_key)
 
@@ -120,7 +122,7 @@ def update_user_msg(
 
     if not _valid_parameters:
         raise MissingRequestKeyError(
-            "Missing json fields ( email,password,role,groups )"
+            "Missing json fields ( email,password,role,groups, name )"
         )
 
     if not _allowed:
@@ -137,6 +139,10 @@ def update_user_msg(
     elif msg.password:
         node.users.set(user_id=msg.user_id, password=msg.password)
 
+    # Change Name Request
+    elif msg.name:
+        node.users.set(user_id=msg.user_id, name=msg.name)
+
     # Change Role Request
     elif msg.role:
         target_user = node.users.first(id=msg.user_id)
@@ -144,7 +150,9 @@ def update_user_msg(
             msg.role != node.roles.owner_role.name  # Target Role != Owner
             and target_user.role
             != node.roles.owner_role.id  # Target User Role != Owner
-            and node.users.can_create_users(verify_key=verify_key)  # Key Permissions
+            and node.users.can_create_users(
+                verify_key=verify_key
+            )  # Key Permissions
         )
 
         # If all premises were respected
@@ -154,7 +162,9 @@ def update_user_msg(
         elif msg.role == node.roles.owner_role.name:
             raise AuthorizationError("You can't change it to Owner role!")
         elif target_user.role == node.roles.owner_role.id:
-            raise AuthorizationError("You're not allowed to change Owner user roles!")
+            raise AuthorizationError(
+                "You're not allowed to change Owner user roles!"
+            )
         else:
             raise AuthorizationError("You're not allowed to change User roles!")
 
@@ -166,7 +176,9 @@ def update_user_msg(
         )
         # If all premises were respected
         if _allowed and _valid_groups:
-            node.groups.update_user_association(user_id=msg.user_id, groups=msg.groups)
+            node.groups.update_user_association(
+                user_id=msg.user_id, groups=msg.groups
+            )
         else:
             raise AuthorizationError("You're not allowed to change User groups!")
 

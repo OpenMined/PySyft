@@ -56,11 +56,13 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
         reply_to: Address,
         role: Optional[str] = "",
         msg_id: Optional[UID] = None,
+        name: Optional[str] = "",
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.email = email
         self.password = password
         self.role = role
+        self.name = name
 
     def _object2proto(self) -> CreateUserMessage_PB:
         """Returns a protobuf serialization of self.
@@ -80,6 +82,7 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
             email=self.email,
             password=self.password,
             role=self.role,
+            name=self.name,
             reply_to=serialize(self.reply_to),
         )
 
@@ -102,6 +105,7 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
             address=_deserialize(blob=proto.address),
             email=proto.email,
             password=proto.password,
+            name=proto.name,
             role=proto.role,
             reply_to=_deserialize(blob=proto.reply_to),
         )
@@ -411,6 +415,7 @@ class UpdateUserMessage(ImmediateSyftMessageWithReply):
         password: Optional[str] = "",
         role: Optional[str] = "",
         groups: Optional[str] = "",
+        name: Optional[str] = "",
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.user_id = user_id
@@ -418,6 +423,7 @@ class UpdateUserMessage(ImmediateSyftMessageWithReply):
         self.password = password
         self.role = role
         self.groups = groups
+        self.name = name
 
     def _object2proto(self) -> UpdateUserMessage_PB:
         """Returns a protobuf serialization of self.
@@ -439,6 +445,7 @@ class UpdateUserMessage(ImmediateSyftMessageWithReply):
             password=self.password,
             role=self.role,
             groups=self.groups,
+            name=self.name,
             reply_to=serialize(self.reply_to),
         )
 
@@ -464,6 +471,7 @@ class UpdateUserMessage(ImmediateSyftMessageWithReply):
             password=proto.password,
             role=proto.role,
             groups=proto.groups,
+            name=proto.name,
             reply_to=_deserialize(blob=proto.reply_to),
         )
 
@@ -567,11 +575,13 @@ class SearchUsersMessage(ImmediateSyftMessageWithReply):
         email: Optional[str] = "",
         role: Optional[str] = "",
         groups: Optional[str] = "",
+        name: Optional[str] = "",
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.email = email
         self.role = role
         self.groups = groups
+        self.name
 
     def _object2proto(self) -> SearchUsersMessage_PB:
         """Returns a protobuf serialization of self.
@@ -591,6 +601,7 @@ class SearchUsersMessage(ImmediateSyftMessageWithReply):
             email=self.email,
             role=self.role,
             groups=self.groups,
+            name=self.name,
             reply_to=serialize(self.reply_to),
         )
 
@@ -614,6 +625,7 @@ class SearchUsersMessage(ImmediateSyftMessageWithReply):
             email=proto.email,
             role=proto.role,
             groups=proto.groups,
+            name=proto.name,
             reply_to=_deserialize(blob=proto.reply_to),
         )
 

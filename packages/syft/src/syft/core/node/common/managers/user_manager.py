@@ -76,6 +76,7 @@ class UserManager(DatabaseManager):
         email: str = None,
         password: str = None,
         role: int = 0,
+        name: str = "",
     ) -> None:
         if not self.contain(id=user_id):
             raise UserNotFoundError
@@ -90,6 +91,9 @@ class UserManager(DatabaseManager):
         elif role != 0:
             key = "role"
             value = role
+        elif name:
+            key = "name"
+            value = name
         else:
             raise Exception
 
