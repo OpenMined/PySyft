@@ -64,7 +64,7 @@ def test_initial_setup(client, database, cleanup):
     database.session.commit()
 
     result = client.post(
-        "/setup/",
+        "/setup",
         json={
             "email": "ionesio@email.com",
             "password": "testing",
@@ -72,7 +72,7 @@ def test_initial_setup(client, database, cleanup):
         },
     )
     assert result.status_code == 200
-    assert result.get_json() == {"msg": "Running initial setup!"}
+    assert result.get_json() == {"message": "Running initial setup!"}
 
 
 def test_get_setup(client, database, cleanup):
@@ -88,7 +88,7 @@ def test_get_setup(client, database, cleanup):
         "token": token.decode("UTF-8"),
     }
     client.post(
-        "/setup/",
+        "/setup",
         json={
             "email": "ionesio@email.com",
             "password": "testing",
@@ -97,7 +97,7 @@ def test_get_setup(client, database, cleanup):
     )
 
     result = client.get(
-        "/setup/",
+        "/setup",
         headers=headers,
     )
 

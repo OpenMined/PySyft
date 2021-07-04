@@ -78,7 +78,7 @@ def setup_domain() -> None:
 def pygrid_domain(xprocess: Any) -> Generator:
     class Starter(ProcessStarter):
         # startup pattern
-        pattern = "App started"
+        pattern = "is Ready"
 
         # command to start process
         pygrid_path = os.environ.get(

@@ -1,5 +1,4 @@
 # stdlib
-from typing import Dict
 from typing import List
 from typing import Union
 
@@ -9,8 +8,7 @@ from bcrypt import gensalt
 from bcrypt import hashpw
 
 # grid relative
-from ..database.users.user import User
-from ..exceptions import AuthorizationError
+from ..database.tables.user import User
 from ..exceptions import InvalidCredentialsError
 from ..exceptions import UserNotFoundError
 from .database_manager import DatabaseManager
