@@ -39,70 +39,52 @@ def connect(
     user_key: Optional[SigningKey] = None,
     client_type: Optional[Client] = DomainClient,
 ) -> Client:
-    class GridClient(client_type):
-        def __init__(  # nosec
-            self,
-            url: str,
-            conn_type: Type[ClientConnection],
-            client_type: Type[Client],
-            user_key: Optional[SigningKey] = None,
-            credentials: Dict = {},
-        ) -> None:
+    # Use Server metadata
+    # to build client route
+    conn = conn_type(url=url)  # type: ignore
+    client_type = client_type
 
-            # Use Server metadata
-            # to build client route
-            self.conn = conn_type(url=url)  # type: ignore
-            self.client_type = client_type
+    if credentials:
+        metadata, _user_key = conn.login(credentials=credentials)  # type: ignore
+        _user_key = SigningKey(_user_key.encode(), encoder=HexEncoder)
+    else:
+        metadata = conn._get_metadata()  # type: ignore
+        if not user_key:
+            _user_key = SigningKey.generate()
+        else:
+            _user_key = user_key
 
-            if credentials:
-                metadata, _user_key = self.conn.login(credentials=credentials)  # type: ignore
-                _user_key = SigningKey(_user_key.encode(), encoder=HexEncoder)
-            else:
-                metadata = self.conn._get_metadata()  # type: ignore
-                if not user_key:
-                    _user_key = SigningKey.generate()
-                else:
-                    _user_key = user_key
+    (
+        spec_location,
+        name,
+        client_id,
+    ) = client_type.deserialize_client_metadata_from_node(metadata=metadata)
 
-            (
-                spec_location,
-                name,
-                client_id,
-            ) = self.client_type.deserialize_client_metadata_from_node(
-                metadata=metadata
-            )
+    # Create a new Solo Route using the selected connection type
+    route = SoloRoute(destination=spec_location, connection=conn)
 
-            # Create a new Solo Route using the selected connection type
-            route = SoloRoute(destination=spec_location, connection=self.conn)
+    location_args: Dict[Any, Optional[SpecificLocation]] = {
+        NetworkClient: None,
+        DomainClient: None,
+        DeviceClient: None,
+        VirtualMachineClient: None,
+    }
+    location_args[client_type] = spec_location
 
-            location_args: Dict[Any, Optional[SpecificLocation]] = {
-                NetworkClient: None,
-                DomainClient: None,
-                DeviceClient: None,
-                VirtualMachineClient: None,
-            }
-            location_args[self.client_type] = spec_location
+    proxy_address: Optional[Address] = None
 
-            self.proxy_address: Optional[Address] = None
-
-            # Create a new client using the selected client type
-            super().__init__(
-                network=location_args[NetworkClient],
-                domain=location_args[DomainClient],
-                device=location_args[DeviceClient],
-                vm=location_args[VirtualMachineClient],
-                name=name,
-                routes=[route],
-                signing_key=_user_key,
-            )
-
-    return GridClient(
-        url=url,
-        conn_type=conn_type,
-        client_type=client_type,
-        user_key=user_key,
-        credentials=credentials,
+    # Create a new client using the selected client type
+    node = client_type(
+        network=location_args[NetworkClient],
+        domain=location_args[DomainClient],
+        device=location_args[DeviceClient],
+        vm=location_args[VirtualMachineClient],
+        name=name,
+        routes=[route],
+        signing_key=_user_key,
     )
+
+    return node
 
 
 def login(
