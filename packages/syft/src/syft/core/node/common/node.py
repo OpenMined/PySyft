@@ -288,6 +288,10 @@ class Node(AbstractNode):
     def get_root_client(self, routes: Optional[List[Route]] = None) -> ClientT:
         client: ClientT = self.get_client(routes=routes)
         self.root_verify_key = client.verify_key
+        try:
+            client.flight_server = self.flight_server
+        except:
+            pass
         return client
 
     def get_metadata_for_client(self) -> Metadata:

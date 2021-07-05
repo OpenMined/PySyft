@@ -48,7 +48,7 @@ class CallDoExchangeAction(ImmediateActionWithoutReply, Serializable):
         recvd_data = None
         while recvd_data is None:
             recvd_data = node.flight_server.retrieve_accessible(self.obj_id)
-        recvd_data = th.from_numpy(recvd_data)
+        print("CALL DO EXECUTE", type(recvd_data))
         self.obj.data = recvd_data
         self.obj.read_permissions = {
             node.verify_key: node.id,

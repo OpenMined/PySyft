@@ -91,12 +91,15 @@ class Duet(WebRTCDuet):
         )
 
         self.flight_enabled = True
+        location = ('localhost', 8999)
+
         # If this peer will not start the signaling process
         if not offer:
-            scheme = "grpc+tcp"
-            host = "localhost"
-            port = 8999
-            self.flight_client = FlightClientDuet(f"{scheme}://{host}:{port}")
+            # scheme = "grpc+tcp"
+            # host = "localhost"
+            # port = 8999
+            # self.flight_client = FlightClientDuet(f"{scheme}://{host}:{port}")
+            self.flight_client = FlightClientDuet(location)
         else:
             # Push a WebRTC offer request to the address.
             flight_args = {
@@ -107,6 +110,7 @@ class Duet(WebRTCDuet):
                     'verify_client': False,
                     'root_certificates': None,
                     'auth_handler': None,
+                    'location': location,
                 }
             flight_server = FlightServerDuet(flight_args, node)
             threading.Thread(target=flight_server.serve).start()
@@ -124,9 +128,9 @@ class Duet(WebRTCDuet):
         if isinstance(msg, SaveObjectAction) and self.flight_enabled:
             if "Tensor" in str(type(msg.obj.data)):
                 print("USING FLIGHT")
-                # put_thread = threading.Thread(target=self.flight_client.put_object, args=(msg.obj.id, msg.obj.data.numpy()))
-                # put_thread.start()
-                self.flight_client.put_object(msg.obj.id, msg.obj.data.numpy())
+                put_thread = threading.Thread(target=self.flight_client.put_object, args=(msg.obj.id, msg.obj.data.numpy()))
+                put_thread.start()
+                # self.flight_client.put_object(msg.obj.id, msg.obj.data.numpy())
                 storable = StorableObject(
                     id=msg.obj.id,
                     data=None,
@@ -145,12 +149,11 @@ class Duet(WebRTCDuet):
         route_index: int = 0,
     ) -> SyftMessage:
         if isinstance(msg, GetObjectAction) and self.flight_enabled:
-            print("USING FLIGHT")
             msg.flight = True
             response = WebRTCDuet.send_immediate_msg_with_reply(self, msg, route_index)
             if response.flight_transfer:
-                if response.flight_transfer:
-                    data = self.flight_client.get_object(msg.id_at_location)
+                print("USING FLIGHT")
+                data = self.flight_client.get_object(msg.id_at_location)
                 response.data = data
             return response
         else:

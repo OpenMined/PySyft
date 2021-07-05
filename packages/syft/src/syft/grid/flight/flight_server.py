@@ -3,7 +3,7 @@ import pyarrow as pa
 from pyarrow.lib import tobytes
 from pyarrow.util import pathlib, find_free_port
 from pyarrow.tests import util
-
+import torch
 from pyarrow import flight
 from pyarrow.flight import (
     FlightClient, FlightServerBase,
@@ -17,6 +17,7 @@ from ...core.common.uid import UID
 class FlightServerDuet(FlightServerBase):
     def __init__(self, flight_args, node):
         location = '{}://{}:{}'.format(flight_args['scheme'], flight_args['host'], flight_args['port'])
+        location = flight_args['location']
         tls_certificates = []
         if flight_args['tls']:
             NotImplementedError
@@ -47,25 +48,22 @@ class FlightServerDuet(FlightServerBase):
 
     def do_exchange_read(self, obj_id, reader, writer):
         data = reader.read_all()
-        self.accessible[obj_id] = data
+        print(type(data))
+        self.accessible[obj_id] = data[str(obj_id.value)]
 
     def do_exchange_write(self, obj_id, reader, writer, obj_id_str):
-        #TODO (flight): use appropriate arrow types
         data = pa.RecordBatch.from_arrays([
                 self.accessible[obj_id]
             ], names=[obj_id_str[3:]])
         writer.begin(data.schema)
         writer.write_batch(data)
 
-    def do_put(self, context, descriptor, reader, writer):
-        self.do_exchange(context, descriptor, reader, writer)
-
     def add_accessible(self, obj, id_at_location):
         self.accessible[id_at_location] = pa.array(obj.numpy())
+        self.accessible['dim'+str(id_at_location.value)] = pa.array(obj.numpy().shape)
     
     def retrieve_accessible(self, id_at_location):
-        #TODO (flight): fix this mess (use appropriate arrow types)
-        try:
-            return self.accessible.get(id_at_location, None).to_pandas()[str(id_at_location.value)].to_numpy()
-        except:
-            pass
+        raw_data = self.accessible.get(id_at_location, None)
+        if raw_data is not None:
+            return torch.from_numpy(raw_data.to_numpy())
+        return raw_data

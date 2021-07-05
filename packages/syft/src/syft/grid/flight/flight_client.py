@@ -27,12 +27,12 @@ class FlightClientDuet(FlightClient):
         descriptor = flight.FlightDescriptor.for_command(obj_id_str.encode('utf-8'))
 
         #TODO (flight): use appropriate arrow types
-        data = pa.Table.from_arrays([
+        data = pa.RecordBatch.from_arrays([
                 pa.array(obj)
             ], names=[obj_id_str[3:]])
 
         # writer, _ = super().do_put(descriptor, data.schema)
         writer, _ = super().do_exchange(descriptor)
         writer.begin(data.schema)
-        writer.write_table(data)
+        writer.write_batch(data)
         writer.close()
