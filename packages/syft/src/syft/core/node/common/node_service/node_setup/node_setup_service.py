@@ -20,6 +20,8 @@ from syft.core.node.common.node_service.node_service import (
 
 # relative
 from ......logger import traceback_and_raise
+from .....common import UID
+from .....io.location import SpecificLocation
 from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
 from ...exceptions import OwnerAlreadyExistsError
@@ -30,11 +32,34 @@ from .node_setup_messages import GetSetUpMessage
 from .node_setup_messages import GetSetUpResponse
 
 
+def set_node_uid(node: AbstractNode):
+    try:
+        setup = node.setup.first()
+    except Exception as e:
+        print("Missing Setup Table entry", e)
+
+    try:
+        node_id = UID.from_string(setup.node_id)
+    except Exception as e:
+        print(f"Invalid Node UID in Setup Table. {setup.node_id}")
+        raise e
+
+    location = SpecificLocation(name=setup.domain_name, id=node_id)
+    # TODO: Fix with proper isinstance when the class will import
+    if type(node).__name__ == "Domain":
+        node.domain = location
+    elif type(node).__name__ == "Network":
+        node.network = location
+    print(f"Finished setting Node UID. {location}")
+
+
 def create_initial_setup(
     msg: CreateInitialSetUpMessage, node: AbstractNode, verify_key: VerifyKey
 ) -> SuccessResponseMessage:
+
     # 1 - Should not run if Node has an owner
     if len(node.users):
+        set_node_uid(node=node)  # make sure the node always has the same UID
         raise OwnerAlreadyExistsError
 
     # 2 - Check if email/password/node_name fields are empty
@@ -60,7 +85,9 @@ def create_initial_setup(
     )
 
     # 5 - Save Node SetUp Configs
-    node.setup.register(domain_name=msg.domain_name)
+    node_id = UID()
+    node.setup.register(domain_name=msg.domain_name, node_id=node_id.no_dash)
+    set_node_uid(node=node)
 
     return SuccessResponseMessage(
         address=msg.reply_to,
