@@ -61,7 +61,7 @@ def get_serde() -> TypeList[TypeDict[str, TypeAny]]:
         module_path = "{}.serde.{}".format(dir_name, basename(f)[:-3])
         serde_module = import_module(module_path)
         serde = getattr(serde_module, "serde")
-        
+
         if isinstance(serde, Iterable) and not isinstance(serde, dict):
             serde_objs.extend(serde)
         else:

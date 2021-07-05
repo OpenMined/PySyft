@@ -15,7 +15,9 @@ import sys
 import typing
 from types import ModuleType
 from typing import Any as TypeAny
-from typing import Dict, Optional
+from typing import Dict
+from typing import List as TypeList
+from typing import Optional, Union
 
 # third party
 from typing_inspect import get_origin
@@ -171,10 +173,10 @@ def dict_allowlist(classes_list: TypeAny) -> TypeAny:
 
 
 def generate_package_support(
-    package: ModuleType, output_file: Optional[str] = None, debug=False
-) -> str:
+    package: ModuleType, output_file: Optional[str] = None, debug: bool = False
+) -> Optional[str]:
     package_name = package.__name__
-    modules_list = [package_name]  # type: ignore
+    modules_list = [package_name]
 
     list_submodules(modules_list, package)
 
@@ -186,7 +188,7 @@ def generate_package_support(
     allowlist, debug_list = dict_allowlist(classes_list)
 
     print(f"len(allowlist) = {len(allowlist)}")
-    package_support = {}
+    package_support: Dict[str, Union[str, TypeList[TypeAny]]] = {}
 
     package_support["lib"] = package_name
     package_support["classes"] = classes_list
@@ -204,6 +206,7 @@ def generate_package_support(
         with open("lib.debug.log", "w") as f:
             for item in debug_list:
                 f.write(f"{item}\n")
+    return  # type: ignore
 
 
 if __name__ == "__main__":

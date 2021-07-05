@@ -6,7 +6,8 @@ import pytest
 
 # syft absolute
 import syft as sy
-import syft_xgboost
+
+import syft_xgboost  # noqa: 401
 
 try:
     np = pytest.importorskip("numpy")
