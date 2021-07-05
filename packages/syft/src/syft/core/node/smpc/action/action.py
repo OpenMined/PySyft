@@ -1,54 +1,60 @@
 # stdlib
+import operator
 from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+import numpy as np
 
 # syft absolute
 from syft import lib
 
 # syft relative
 from .....proto.core.node.smpc.action.smpc_action_pb2 import SMPCAction as SMPCAction_PB
-from ....common import ImmediateActionWithoutReply
 from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
+from ...common.action.common import ImmediateActionWithoutReply
 
 
 def smpc_add(self_id, other_id, seed, node):
+    # There is no need to use the generator for addition
+
+    generator_id = np.random.default_rng(seed)
     other = node.store[other_id].data
+
     # TODO: Instaciate Actual Action with ImmediateActionWithoutReply
+    actions = []
     if isinstance(other, ShareTensor):
-        # All parties should add the other share
-        actions = [("mpc_add", [self_id, other_id], {}, ())]
+        # All parties should add the other share if empty list
+        actions.append(
+            SMPCAction(
+                "mpc_add",
+                args_ids=[self_id, other_id],
+                kwargs_ids={},
+                ranks_to_run_action=[],
+            )
+        )
     else:
         # Only rank 0 (the first party) would add that public value
-        actions = [("mpc_add", [self_id, other_id], {}, (0,))]
+        actions.append(
+            SMPCAction(
+                "mpc_add",
+                args_ids=[self_id, other_id],
+                kwargs_ids={},
+                ranks_to_run_action=[0],
+            )
+        )
 
     return actions
 
 
-def smpc_test(self_id, seed, node):
-    generator = np.random.default_rng(seed)
-
-    other_id = UID(UUID(bytes=generator.bytes(16)))
-
-    actions = [("print", [self_id, other_id], {}, ())]
-    return actions
-
-
-def print_operation(self, other):
-    print(self)
-    print(other)
-
-
-MAP_FUNC_TO_ACTION = {"__add__": smpc_add, "smpc_test": smpc_test}
+MAP_FUNC_TO_ACTION = {"__add__": smpc_add}
 
 
 _MAP_ACTION_TO_FUNCTION = {
     "mpc_add": operator.add,
-    "print": print_operation,
 }
 
 
@@ -65,7 +71,7 @@ class SMPCAction(ImmediateActionWithoutReply):
         args_id,
         kwargs_id,
         result_id,
-        rank,
+        ranks_to_run_action,
         address: Address,
         msg_id: Optional[UID] = None,
     ):
@@ -74,9 +80,17 @@ class SMPCAction(ImmediateActionWithoutReply):
         self.args_id = id_args
         self.kwargs_id = id_kwargs
         self.result_id = result_id
-        self.rank = rank
+        self.ranks_to_run_action = ranks_to_run_action
         self.address = address
         self.msg_id = msg_id
+
+    @staticmethod
+    def filter_actions_after_rank(rank, actions):
+        return [
+            action
+            for action in actions
+            if x.rank_to_run_action == [] or rank in x.rank_to_run_action
+        ]
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         operation, args_ids, kwargs_ids = action
@@ -129,7 +143,6 @@ class SMPCAction(ImmediateActionWithoutReply):
             self_id=serialize(self.self_id),
             args_id=list(map(lambda x: serialize(x), self.args_id)),
             kwargs_id={k: serialize(v) for k, v in self.kwargs_id.items()},
-            rank=serialize(self.rank),
             id_at_location=serialize(self.id_at_location),
             address=serialize(self.address),
             msg_id=serialize(self.id),
@@ -152,7 +165,6 @@ class SMPCAction(ImmediateActionWithoutReply):
 
         return SMPCAction(
             name_action=name_action,
-            rank=proto.rank,
             args_id=_deserialize(proto.args_id),
             kwargs_id={k: v for k, v in proto.kwargs_id.items()},
             id_at_location=_deserialize(blob=proto.id_at_location),

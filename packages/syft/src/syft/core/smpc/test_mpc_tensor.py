@@ -16,10 +16,7 @@ clients = [vm.get_client() for vm in vms]
 remote_value_1 = clients[0].syft.core.tensor.tensor.Tensor(np.array([[1, 2, 3, 4, -5]]))
 
 mpc_tensor_1 = MPCTensor(
-    parties=clients,
-    secret=remote_value_1,
-    shape=(1, 5),
-    seed_shares=52
+    parties=clients, secret=remote_value_1, shape=(1, 5), seed_shares=52
 )
 print(mpc_tensor_1)
 

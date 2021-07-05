@@ -1,13 +1,15 @@
+# stdlib
+import time
+from uuid import UUID
+
 # third party
 import numpy as np
-import time
 
 # syft absolute
 import syft as sy
+from syft.core.common.uid import UID
 from syft.core.tensor.fixed_precision_tensor import FixedPrecisionTensor
 from syft.core.tensor.share_tensor import ShareTensor
-from syft.core.common.uid import UID
-from uuid import UUID
 
 
 def thread_func():
@@ -17,6 +19,7 @@ def thread_func():
     generator = np.random.default_rng(seed=42)
     id_other = UID(UUID(bytes=generator.bytes(16)))
     share2_ptr = share2.send(client, id_at_location=id_other)
+
 
 vm = sy.VirtualMachine(name="alice")
 client = vm.get_client()
