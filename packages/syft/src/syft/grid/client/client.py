@@ -92,6 +92,7 @@ def login(
     if port is None and not url:  # if url is used, we can ignore port
         raise Exception("You must specify a port.")
 
+    # TODO: build multiple route objects and let the Client decide which one to use
     if url is None:
         try:
             url = "http://docker-host:" + str(port)
