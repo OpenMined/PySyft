@@ -43,6 +43,10 @@ class FlightServerDuet(FlightServerBase):
             return self.do_exchange_write(obj_id, reader, writer, obj_id_str)
         elif obj_id_str[:3] == 'put':
             return self.do_exchange_read(obj_id, reader, writer)
+        elif obj_id_str[:3] == 'dgt':
+            return self.do_exchange_dim_write(obj_id, reader, writer, obj_id_str)
+        elif obj_id_str[:3] == 'dpt':
+            return self.do_exchange_dim_read(obj_id, reader, writer)
         else:
             raise Exception
 
@@ -57,13 +61,30 @@ class FlightServerDuet(FlightServerBase):
             ], names=[obj_id_str[3:]])
         writer.begin(data.schema)
         writer.write_batch(data)
+        writer.close()
+
+    def do_exchange_dim_write(self, obj_id, reader, writer, obj_id_str):
+        data = pa.RecordBatch.from_arrays([
+                self.accessible['dim'+str(obj_id.value)]
+            ], names=[obj_id_str[3:]])
+        writer.begin(data.schema)
+        writer.write_batch(data)
+        writer.close()
+
+    def do_exchange_dim_read(self, obj_id, reader, writer):
+        data = reader.read_all()
+        print(type(data))
+        self.accessible['dim'+str(obj_id.value)] = data[str(obj_id.value)]
 
     def add_accessible(self, obj, id_at_location):
-        self.accessible[id_at_location] = pa.array(obj.numpy())
+        self.accessible[id_at_location] = pa.array(obj.numpy().reshape(-1))
         self.accessible['dim'+str(id_at_location.value)] = pa.array(obj.numpy().shape)
     
     def retrieve_accessible(self, id_at_location):
         raw_data = self.accessible.get(id_at_location, None)
         if raw_data is not None:
+            obj_dim = self.accessible.get('dim'+str(id_at_location.value), None)
+            if obj_dim is not None:
+                return torch.from_numpy(raw_data.to_numpy().reshape(obj_dim.to_numpy()))
             return torch.from_numpy(raw_data.to_numpy())
         return raw_data

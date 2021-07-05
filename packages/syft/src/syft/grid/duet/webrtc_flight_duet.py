@@ -128,7 +128,7 @@ class Duet(WebRTCDuet):
         if isinstance(msg, SaveObjectAction) and self.flight_enabled:
             if "Tensor" in str(type(msg.obj.data)):
                 print("USING FLIGHT")
-                put_thread = threading.Thread(target=self.flight_client.put_object, args=(msg.obj.id, msg.obj.data.numpy()))
+                put_thread = threading.Thread(target=self.flight_client.put_object, args=(msg.obj.id, msg.obj.data))
                 put_thread.start()
                 # self.flight_client.put_object(msg.obj.id, msg.obj.data.numpy())
                 storable = StorableObject(
