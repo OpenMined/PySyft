@@ -78,6 +78,7 @@ jobs:
           pip install -r requirements.unstable.txt
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
+          pip install "pillow<=8.2.0"
 
       - name: Scan for security issues
         run: |
@@ -98,6 +99,62 @@ jobs:
           pytest -m libs --co
           pytest -m libs -n auto -k "not tenseal" --suppress-no-test-exit-code
           pytest -m libs -n 1 -k "tenseal" --suppress-no-test-exit-code
+
+  pygrid-integration-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        branches: ["dev"]
+        python-version: [3.7, 3.8, 3.9]
+        torch-version: [1.8.1]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ matrix.branches }}
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip --default-timeout=60
+
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('./setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - name: Install Dependencies
+        run: |
+          pip install packaging --default-timeout=60
+          python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
+          grep -A 3 "torch_ecosystem" setup.cfg
+          pip install -r requirements.unstable.txt
+          pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
+          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
+          pip install "pillow<=8.2.0"
+
+      - name: Test PyGrid
+        run: |
+          pytest ../grid/apps/domain/tests
+          pytest ../grid/apps/network/tests
+          pytest ../grid/apps/worker/tests
+          python ./scripts/mnist.py
+          pytest -m grid -p no:randomly -p no:xdist -p no:benchmark
 
   pytorch-tests-all-versions:
     if: github.repository == 'OpenMined/PySyft' # don't run on forks
@@ -151,6 +208,7 @@ jobs:
           grep -A 3 "torch_ecosystem" setup.cfg
           pip install -r requirements.unstable.txt
           pip install -e .[dev] -f https://download.pytorch.org/whl/torch_stable.html
+          pip install "pillow<=8.2.0"
 
       - name: Check import works without dev packages
         run: |
