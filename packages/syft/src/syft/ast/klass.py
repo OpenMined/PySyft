@@ -161,6 +161,78 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
 
         return result
 
+    def run_smpc_class_method(
+        __self: Any,
+        seed: int,
+        *args: Tuple[Any, ...],
+        **kwargs: Any,
+    ) -> object:
+        """Run remote class method and get pointer to returned object.
+
+        Args:
+            *args: Args list of class method.
+            **kwargs: Keyword args of class method.
+
+        Returns:
+            Pointer to object returned by class method.
+        """
+        from syft.core.tensor.share_tensor import ShareTensor
+        import numpy as np
+
+        generator = np.random.default_rng(seed)
+
+        MAP_FUNC_TO_NR_ACTIONS = {"__add__", 1}
+
+        nr_ops = MAP_FUNC_TO_NR_ACTIONS[ShareTensor.attr_path_and_name.split(".")[-1]]
+        for _ in range(nr_ops):
+            generator.bytes(16)
+
+        id_at_location = UID(UUID(bytes=generator.bytes(16)))
+        # we want to get the return type which matches the attr_path_and_name
+        # so we ask lib_ast for the return type name that matches out
+        # attr_path_and_name and then use that to get the actual pointer klass
+        # then set the result to that pointer klass
+        return_type_name = __self.client.lib_ast.query(
+            attr_path_and_name
+        ).return_type_name
+        resolved_pointer_type = __self.client.lib_ast.query(return_type_name)
+        result = resolved_pointer_type.pointer_type(client=__self.client)
+        result.id_at_location = id_at_location
+
+        # first downcast anything primitive which is not already PyPrimitive
+        (
+            downcast_args,
+            downcast_kwargs,
+        ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+
+        # then we convert anything which isnt a pointer into a pointer
+        pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+            args=downcast_args, kwargs=downcast_kwargs, client=__self.client
+        )
+
+        cmd = RunClassMethodAction(
+            path=attr_path_and_name,
+            _self=__self,
+            args=pointer_args,
+            kwargs=pointer_kwargs,
+            id_at_location=result_id_at_location,
+            address=__self.client.address,
+        )
+        __self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=__self,
+            args=args,
+            kwargs=kwargs,
+        )
+
+        return result
+
+    if "ShareTensor" in attr_path_and_name:
+        run_smpc_class_method
+
     return run_class_method
 
 

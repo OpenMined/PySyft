@@ -8,6 +8,7 @@ import numpy as np
 # syft absolute
 from syft.core.tensor.fixed_precision_tensor import FixedPrecisionTensor
 from syft.core.tensor.passthrough import PassthroughTensor
+from syft import lib
 
 # syft relative
 from ...core.common.serde.serializable import Serializable
@@ -16,96 +17,29 @@ from ..common.serde.deserialize import _deserialize as deserialize
 from ..common.serde.serializable import bind_protobuf
 from ..common.serde.serialize import _serialize as serialize
 
-from ...core.node.common.action.run_class_method_action import RunClassMethodAction
-from ... import lib
+from ...core.node.smpc.action.action import SMPCAction
+from ...core.common.uid import UID
+from uuid import UUID
 import operator
 import time
 
 
-def smpc_add(self_id, other_id, seed, node):
-    other = node.store[other_id].data
-    if isinstance(other, ShareTensor):
-        # All parties should add the other share
-        actions = [("mpc_add", [self_id, other_id], {}, ())]
-    else:
-        # Only rank 1 would add that public value
-        actions = [("mpc_add", [self_id, other_id], {}, (1))]
-
-    return actions
-
-MAP_FUNC_TO_ACTION = {
-    "__add__": smpc_add
-}
-
-
-_MAP_ACTION_TO_FUNCTION = {
-    "mpc_add": operator.add
-}
-
-
-def _try_action_with_retry(action, node):
-    operation, args_ids, kwargs_ids = action
-    func = _MAP_ACTION_TO_FUNCTION[operation]
-
-    args = None
-    kwargs = None
-
-
-    for i in range(10):
-        try:
-            args = [node.store[arg_id].data for arg_id in args_ids]
-            kwargs = {key: node.store[kwarg_id].data for key, kwarg_id in kwargs_ids}
-            (
-                upcasted_args,
-                upcasted_kwargs,
-            ) = lib.python.util.upcast_args_and_kwargs(args, kwargs)
-
-
-            res = func(*upcasted_args, **upcasted_kwargs)
-
-        except KeyError:
-            # For the object to reach the store and retry
-            time.sleep(1)
-
-
-    if args is None or kwargs is None:
-        raise Exception("Abort since could not retrieve args/kwargs!")
-
-    return res
-
-def SMPCExecute(actions, node):
-    for action in actions[:-1]:
-        _try_action_with_retry(action)
-
-    res = _try_action_with_retry(actions[-1], node)
-    return res
-
 @bind_protobuf
 class ShareTensor(PassthroughTensor, Serializable):
     def __init__(
-        self, rank, ring_size=2 ** 64, value=None, seed=None, seeds_przs_generators=None
+        self, rank, ring_size=2 ** 64, value=None, seed_ids=None
     ):
-        if seeds_przs_generators is None:
-            self.seeds_przs_generators = [0, 1]
+        if seed_ids is None:
+            self.seed_ids = 42
         else:
-            self.seeds_przs_generators = seeds_przs_generators
+            self.seed_ids = seed_ids
 
-        if seed is None:
-            self.seed = 42
-        else:
-            self.seed = seed
-
-        # TODO: This is not secure
-        self.generators_przs = [
-            np.random.default_rng(seed) for seed in self.seeds_przs_generators
-        ]
-        self.generator_ids = np.random.default_rng(self.seed)
+        self.generator_ids = np.random.default_rng(self.seed_ids)
         self.rank = rank
         self.ring_size = ring_size
         self.min_value, self.max_value = ShareTensor.compute_min_max_from_ring(
             self.ring_size
         )
-        self.planner_active = True
         super().__init__(value)
 
     @staticmethod
@@ -115,12 +49,14 @@ class ShareTensor(PassthroughTensor, Serializable):
         max_value = (ring_size - 1) // 2
         return min_value, max_value
 
+    """ TODO: Remove this -- we would use generate_przs since the scenario we are testing is that
+    the secret is remotly
     @staticmethod
     def generate_shares(secret, nr_shares, ring_size=2 ** 64):
         # syft relative
         from .fixed_precision_tensor import FixedPrecisionTensor
 
-        if not isinstance(secret, FixedPrecisionTensor):
+        if not isinstance(secret, (int, FixedPrecisionTensor)):
             secret = FixedPrecisionTensor(value=secret)
 
         shape = secret.shape
@@ -154,39 +90,34 @@ class ShareTensor(PassthroughTensor, Serializable):
             shares.append(share_fpt)
 
         return shares
+    """
 
     @staticmethod
-    def generate_przs(value, shape, rank, seeds_przs_generators):
+    def generate_przs(value, shape, rank, nr_parties, seed_shares):
         # syft absolute
         from syft.core.tensor.tensor import Tensor
 
         if value is None:
-            value = Tensor(np.zeros(shape))
+            value = Tensor(np.zeros(shape, dtype=np.int64))
 
-        fpt = value
+        generator_shares = np.random.default_rng(seed_shares)
+
         share = value.child
         if not isinstance(share, ShareTensor):
-            fpt = FixedPrecisionTensor(value=share)
-            fpt.child = ShareTensor(
-                value=fpt.child, rank=rank, seeds_przs_generators=seeds_przs_generators
+            share = ShareTensor(
+                value=share, rank=rank
             )
-            share = fpt.child
 
-        share_1 = share.generators_przs[0].integers(
-            low=share.min_value, high=share.max_value
-        )
-        share_2 = share.generators_przs[1].integers(
-            low=share.min_value, high=share.max_value
-        )
-        share.child += share_1 - share_2
+        shares = [generator_shares.integers(low=share.min_value, high=share.max_value) for _ in range(nr_parties)]
+        share.child += shares[rank] - shares[(rank + 1) % nr_parties]
+        return share
 
-        return fpt
+    # Dummy stuff
+    def __add__(self, other, node):
 
-    def __add__(self, other):
         return self.child + other.child
 
-
-    def __mul__(self, other, node, seed):
+    def smpc_test(self):
         ...
 
     @staticmethod
@@ -195,11 +126,16 @@ class ShareTensor(PassthroughTensor, Serializable):
 
 
     @staticmethod
-    def filter_actions_after_rank(rank, actions):
+    def filter_actions_after_rank(data, actions):
+        if isinstance(data, FixedPrecisionTensor):
+            data = data.child
+
+        if isinstance(data, ShareTensor):
+            rank = data.rank
+        else:
+            raise ValueError("Expecting at one point to find the ShareTensor")
         new_actions = [action[:3] for action in actions if rank in action[3] or len(action[3]) == 0]
         return new_actions
-
-
 
     def _object2proto(self) -> ShareTensor_PB:
         if isinstance(self.child, np.ndarray):

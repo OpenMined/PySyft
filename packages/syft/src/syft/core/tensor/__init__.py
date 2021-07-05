@@ -148,6 +148,7 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
 
         # Share Tensor Operations
         ("syft.core.tensor.share_tensor.ShareTensor.__add__", "syft.core.tensor.share_tensor.ShareTensor"),
+        ("syft.core.tensor.share_tensor.ShareTensor.smpc_test", "syft.core.tensor.share_tensor.ShareTensor"),
     ]
 
     add_modules(ast, modules)
