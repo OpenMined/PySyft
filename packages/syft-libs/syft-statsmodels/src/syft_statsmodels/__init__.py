@@ -6,23 +6,25 @@ import os
 from importlib import import_module
 from os.path import basename
 from typing import Any as TypeAny
-from typing import Dict, Iterable
+from typing import Dict as TypeDict
+from typing import Iterable
 from typing import List as TypeList
+from typing import Tuple as TypeTuple
 
 # syft absolute
 import syft as sy
 
 
-def read_package_support() -> Dict[str, TypeAny]:
+def read_package_support() -> TypeDict[str, TypeList[TypeTuple[TypeAny, ...]]]:
     with open(
         os.path.join(os.path.dirname(__file__), "package-support.json"), "r"
     ) as f:
         data = json.load(f)
 
-    modules = [
+    modules: TypeList[TypeTuple[TypeAny, ...]] = [
         (module_name, import_module(module_name)) for module_name in data["modules"]
     ]
-    classes = []
+    classes: TypeList[TypeTuple[TypeAny, ...]] = []
     for path in data["classes"]:
         if isinstance(path, list):
             if not len(path) == 2:
@@ -31,7 +33,6 @@ def read_package_support() -> Dict[str, TypeAny]:
                         path
                     )
                 )
-
             path, return_type = path
         else:
             return_type = path
@@ -50,8 +51,8 @@ def read_package_support() -> Dict[str, TypeAny]:
     }
 
 
-def get_serde() -> TypeList[Dict[str, TypeAny]]:
-    serde_objs: TypeList[Dict[str, TypeAny]] = []
+def get_serde() -> TypeList[TypeDict[str, TypeAny]]:
+    serde_objs: TypeList[TypeDict[str, TypeAny]] = []
     dir_path = os.path.dirname(__file__)
     _, dir_name = dir_path.rsplit("/", 1)
 
@@ -60,7 +61,8 @@ def get_serde() -> TypeList[Dict[str, TypeAny]]:
         module_path = "{}.serde.{}".format(dir_name, basename(f)[:-3])
         serde_module = import_module(module_path)
         serde = getattr(serde_module, "serde")
-        if isinstance(serde, Iterable) and not isinstance(serde, Dict):
+        
+        if isinstance(serde, Iterable) and not isinstance(serde, dict):
             serde_objs.extend(serde)
         else:
             serde_objs.append(serde)
