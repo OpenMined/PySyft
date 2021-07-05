@@ -3,11 +3,9 @@ import logging
 import sys
 import time
 from typing import Any
-from typing import Callable
 from typing import Dict
 from typing import Optional
 from typing import Type
-import weakref
 
 # third party
 from nacl.encoding import HexEncoder
@@ -15,15 +13,12 @@ from nacl.signing import SigningKey
 import requests
 
 # relative
-from ...core.io.address import Address
 from ...core.io.connection import ClientConnection
 from ...core.io.location.specific import SpecificLocation
 from ...core.io.route import SoloRoute
-from ...core.node.common.action.exception_action import ExceptionMessage
 from ...core.node.common.client import Client
 from ...core.node.device.client import DeviceClient
 from ...core.node.domain.client import DomainClient
-from ...core.node.domain.enums import RequestAPIFields
 from ...core.node.network.client import NetworkClient
 from ...core.node.vm.client import VirtualMachineClient
 from .grid_connection import GridHTTPConnection
@@ -70,8 +65,6 @@ def connect(
         VirtualMachineClient: None,
     }
     location_args[client_type] = spec_location
-
-    proxy_address: Optional[Address] = None
 
     # Create a new client using the selected client type
     node = client_type(
