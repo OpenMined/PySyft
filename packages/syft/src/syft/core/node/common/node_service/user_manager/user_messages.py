@@ -405,7 +405,7 @@ class GetUsersResponse(ImmediateSyftMessageWithoutReply):
 @bind_protobuf
 @final
 class UpdateUserMessage(ImmediateSyftMessageWithReply):
-    def __init__(
+    def __init__(  # nosec
         self,
         address: Address,
         user_id: int,
