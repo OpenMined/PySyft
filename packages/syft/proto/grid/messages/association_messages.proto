@@ -14,7 +14,7 @@ message SendAssociationRequestMessage {
   string reason = 3;
   string target = 4;
   string sender = 5;
-  string node_name = 6; 
+  string node_name = 6;
   syft.core.io.Address reply_to = 7;
 }
 
