@@ -31,7 +31,8 @@ done
 printf "\n\nStopping domain node '%s'" "$name"
 printf " on port %s\n\n" "$port"
 
-name=$(md5 <<< $name)
+name=$(echo -n $name | md5sum); echo $name
+name="$( cut -d ' ' -f 1 <<< "$name" )"
 
 DOMAIN_PORT=$port DOMAIN_NAME=$name NODE_TYPE=$type docker compose --file "docker-compose.override.yml" --project-name "$name" down
 

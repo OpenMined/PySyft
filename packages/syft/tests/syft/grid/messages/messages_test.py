@@ -5,24 +5,26 @@ import pytest
 import syft as sy
 from syft.core.common.message import AbstractMessage
 from syft.core.io.address import Address
-from syft.grid.messages import association_messages
-from syft.grid.messages import dataset_messages
-from syft.grid.messages import group_messages
-from syft.grid.messages import infra_messages
-from syft.grid.messages import request_messages
-from syft.grid.messages import role_messages
-from syft.grid.messages import setup_messages
-from syft.grid.messages import tensor_messages
+from syft.core.node.common.service.association_request import (
+    association_request_messages,
+)
+from syft.core.node.common.service.dataset_manager import dataset_manager_messages
+from syft.core.node.common.service.group_manager import group_manager_messages
+from syft.core.node.common.service.infra_manager import infra_manager_messages
+from syft.core.node.common.service.node_setup import node_setup_messages
+from syft.core.node.common.service.request_receiver import request_receiver_messages
+from syft.core.node.common.service.role_manager import role_manager_messages
+from syft.core.node.common.service.tensor_manager import tensor_manager_messages
 
 messages = {
-    # association_messages
+    # association_request_messages
     "DeleteAssociationRequest": {
-        "module": association_messages,
+        "module": association_request_messages,
         "request_content": {"association_request_id": "21656565"},
         "response_content": {"msg": "Association Request Deleted status_codefully!"},
     },
     "GetAssociationRequest": {
-        "module": association_messages,
+        "module": association_request_messages,
         "request_content": {"association_request_id": "87564178"},
         "response_content": {
             "entity": "OpenMined",
@@ -32,7 +34,7 @@ messages = {
         },
     },
     "GetAssociationRequests": {
-        "module": association_messages,
+        "module": association_request_messages,
         "request_content": {},
         "response_content": {
             "association-requests": [
@@ -58,26 +60,26 @@ messages = {
         },
     },
     "ReceiveAssociationRequest": {
-        "module": association_messages,
+        "module": association_request_messages,
         "request_content": {},
         "response_content": {},
     },
     "RespondAssociationRequest": {
-        "module": association_messages,
+        "module": association_request_messages,
         "request_content": {"association_request_id": "87564178", "status": "accept"},
         "response_content": {"msg": "Response registered status_codefully!"},
     },
     "SendAssociationRequest": {
-        "module": association_messages,
+        "module": association_request_messages,
         "request_content": {
             "domain-name": "My-Domain",
             "domain-address": "http://url:5000",
         },
         "response_content": {"msg": "Association Request Accepted status_codefully!"},
     },
-    # dataset_messages
+    # dataset_manager_messages
     "CreateDataset": {
-        "module": dataset_messages,
+        "module": dataset_manager_messages,
         "request_content": {
             "dataset": ["<tensor_id>", "<tensor_id>", "<tensor_id>", "<tensor_id>"],
             "description": "Dataset Description",
@@ -89,12 +91,12 @@ messages = {
         "response_content": {"msg": "Dataset created succesfully!"},
     },
     "DeleteDataset": {
-        "module": dataset_messages,
+        "module": dataset_manager_messages,
         "request_content": {"dataset_id": "f2a6as5d16fasd"},
         "response_content": {"msg": "Dataset deleted successfully!"},
     },
     "GetDataset": {
-        "module": dataset_messages,
+        "module": dataset_manager_messages,
         "request_content": {"dataset_id": "eqw9e4a5d846"},
         "response_content": {
             "dataset": ["<tensor_id>", "<tensor_id>", "<tensor_id>", "<tensor_id>"],
@@ -106,7 +108,7 @@ messages = {
         },
     },
     "GetDatasets": {
-        "module": dataset_messages,
+        "module": dataset_manager_messages,
         "request_content": {},
         "response_content": {
             "workers": {
@@ -140,7 +142,7 @@ messages = {
         },
     },
     "UpdateDataset": {
-        "module": dataset_messages,
+        "module": dataset_manager_messages,
         "request_content": {
             "dataset": ["<tensor_id>", "<tensor_id>", "<tensor_id>", "<tensor_id>"],
             "description": "Dataset Description",
@@ -151,9 +153,9 @@ messages = {
         },
         "response_content": {"msg": "Dataset updated successfully!"},
     },
-    # group_messages
+    # group_manager_messages
     "CreateGroup": {
-        "module": group_messages,
+        "module": group_manager_messages,
         "request_content": {
             "group-name": "Heart diseases group",
             "members": ["user-id1", "user-id2", "user-id3"],
@@ -166,12 +168,12 @@ messages = {
         "response_content": {"msg": "Group Created Successfully!"},
     },
     "DeleteGroup": {
-        "module": group_messages,
+        "module": group_manager_messages,
         "request_content": {"group_id": "f2a6as5d16fasd"},
         "response_content": {"msg": "Group deleted Successfully!"},
     },
     "GetGroup": {
-        "module": group_messages,
+        "module": group_manager_messages,
         "request_content": {"group-id": "eqw9e4a5d846"},
         "response_content": {
             "group-id": "eqw9e4a5d846",
@@ -185,7 +187,7 @@ messages = {
         },
     },
     "GetGroups": {
-        "module": group_messages,
+        "module": group_manager_messages,
         "request_content": {},
         "response_content": {
             "groups": {
@@ -211,7 +213,7 @@ messages = {
         },
     },
     "UpdateGroup": {
-        "module": group_messages,
+        "module": group_manager_messages,
         "request_content": {
             "group-id": "eqw9e4a5d846",
             "group-name": "Brain diseases group",
@@ -224,9 +226,9 @@ messages = {
         },
         "response_content": {"msg": "Group updated successfully!"},
     },
-    # infra_messages
+    # infra_manager_messages
     "CreateWorker": {
-        "module": infra_messages,
+        "module": infra_manager_messages,
         "request_content": {
             "settings": {
                 "instance-size": "t4g.medium",
@@ -238,12 +240,12 @@ messages = {
         "response_content": {"msg": "Worker Environment Created Successfully!"},
     },
     "DeleteWorker": {
-        "module": infra_messages,
+        "module": infra_manager_messages,
         "request_content": {"worker_id": "f2a6as5d16fasd"},
         "response_content": {"msg": "Worker Environment deleted Successfully!"},
     },
     "GetWorker": {
-        "module": infra_messages,
+        "module": infra_manager_messages,
         "request_content": {"worker-id": "eqw9e4a5d846"},
         "response_content": {
             "worker-id": "eqw9e4a5d846",
@@ -253,7 +255,7 @@ messages = {
         },
     },
     "GetWorkers": {
-        "module": infra_messages,
+        "module": infra_manager_messages,
         "request_content": {},
         "response_content": {
             "workers": {
@@ -272,7 +274,7 @@ messages = {
         },
     },
     "UpdateWorker": {
-        "module": infra_messages,
+        "module": infra_manager_messages,
         "request_content": {
             "worker-id": "eqw9e4a5d846",
             "settings": {
@@ -284,9 +286,9 @@ messages = {
         },
         "response_content": {"msg": "Worker Environment updated successfully!"},
     },
-    # role_messages
+    # role_manager_messages
     "CreateRole": {
-        "module": role_messages,
+        "module": role_manager_messages,
         "request_content": {
             "name": "Role Sample",
             "can_triage_results": True,
@@ -298,12 +300,12 @@ messages = {
         "response_content": {"msg": "Role created succesfully!"},
     },
     "DeleteRole": {
-        "module": role_messages,
+        "module": role_manager_messages,
         "request_content": {"role_id": "f2a6as5d16fasd"},
         "response_content": {"msg": "Role has been deleted!"},
     },
     "GetRole": {
-        "module": role_messages,
+        "module": role_manager_messages,
         "request_content": {"request_id": "eqw9e4a5d846"},
         "response_content": {
             "name": "Role Sample",
@@ -315,7 +317,7 @@ messages = {
         },
     },
     "GetRoles": {
-        "module": role_messages,
+        "module": role_manager_messages,
         "request_content": {},
         "response_content": {
             "workers": {
@@ -339,7 +341,7 @@ messages = {
         },
     },
     "UpdateRole": {
-        "module": role_messages,
+        "module": role_manager_messages,
         "request_content": {
             "role_id": "9a4f9dasd6",
             "name": "Role Sample",
@@ -351,9 +353,9 @@ messages = {
         },
         "response_content": {"msg": "Role has been updated successfully!"},
     },
-    # setup_messages
+    # node_setup_messages
     "CreateInitialSetUp": {
-        "module": setup_messages,
+        "module": node_setup_messages,
         "request_content": {
             "settings": {
                 "cloud-admin-token": "d84we35ad3a1d59a84sd9",
@@ -367,7 +369,7 @@ messages = {
         "response_content": {"msg": "Initial setup registered successfully!"},
     },
     "GetSetUp": {
-        "module": setup_messages,
+        "module": node_setup_messages,
         "request_content": {},
         "response_content": {
             "settings": {
@@ -380,9 +382,9 @@ messages = {
             }
         },
     },
-    # tensor_messages
+    # tensor_manager_messages
     "CreateTensor": {
-        "module": tensor_messages,
+        "module": tensor_manager_messages,
         "request_content": {
             "tensor": [1, 2, 3, 4, 5, 6],
             "description": "Tensor Description",
@@ -392,12 +394,12 @@ messages = {
         "response_content": {"msg": "Tensor created succesfully!"},
     },
     "DeleteTensor": {
-        "module": tensor_messages,
+        "module": tensor_manager_messages,
         "request_content": {"tensor_id": "f2a6as5d16fasd"},
         "response_content": {"msg": "Tensor deleted successfully!"},
     },
     "GetTensor": {
-        "module": tensor_messages,
+        "module": tensor_manager_messages,
         "request_content": {"tensor_id": "eqw9e4a5d846"},
         "response_content": {
             "description": "Tensor description",
@@ -405,7 +407,7 @@ messages = {
         },
     },
     "GetTensors": {
-        "module": tensor_messages,
+        "module": tensor_manager_messages,
         "request_content": {},
         "response_content": {
             "workers": {
@@ -425,7 +427,7 @@ messages = {
         },
     },
     "UpdateTensor": {
-        "module": tensor_messages,
+        "module": tensor_manager_messages,
         "request_content": {
             "tensor_id": "546a4d51",
             "tensor": [1, 2, 3, 4, 5, 6],
@@ -435,9 +437,9 @@ messages = {
         },
         "response_content": {"msg": "Tensor updated successfully!"},
     },
-    # request_messages
+    # request_receiver_messages
     "CreateRequest": {
-        "module": request_messages,
+        "module": request_receiver_messages,
         "request_content": {
             "dataset-id": "68a465aer3adf",
             "user-id": "user-id7",
@@ -446,12 +448,12 @@ messages = {
         "response_content": {"msg": "Request sent succesfully!"},
     },
     "DeleteRequest": {
-        "module": request_messages,
+        "module": request_receiver_messages,
         "request_content": {"request_id": "f2a6as5d16fasd"},
         "response_content": {"msg": "Data Request has been deleted!"},
     },
     "GetRequest": {
-        "module": request_messages,
+        "module": request_receiver_messages,
         "request_content": {"request_id": "eqw9e4a5d846"},
         "response_content": {
             "request_id": "asfdaead131",
@@ -461,7 +463,7 @@ messages = {
         },
     },
     "GetRequests": {
-        "module": request_messages,
+        "module": request_receiver_messages,
         "request_content": {},
         "response_content": {
             "workers": {
@@ -479,7 +481,7 @@ messages = {
         },
     },
     "UpdateRequest": {
-        "module": request_messages,
+        "module": request_receiver_messages,
         "request_content": {
             "request_id": "546a4d51",
             "dataset-id": "68a465aer3adf",

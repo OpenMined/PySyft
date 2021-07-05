@@ -12,13 +12,27 @@ import syft
 from syft import deserialize
 from syft import serialize
 from syft.core.io.address import Address
-from syft.grid.messages.dataset_messages import CreateDatasetMessage
-from syft.grid.messages.dataset_messages import DeleteDatasetMessage
-from syft.grid.messages.dataset_messages import GetDatasetMessage
-from syft.grid.messages.dataset_messages import GetDatasetResponse
-from syft.grid.messages.dataset_messages import GetDatasetsMessage
-from syft.grid.messages.dataset_messages import GetDatasetsResponse
-from syft.grid.messages.dataset_messages import UpdateDatasetMessage
+from syft.core.node.common.service.dataset_manager.dataset_manager_messages import (
+    CreateDatasetMessage,
+)
+from syft.core.node.common.service.dataset_manager.dataset_manager_messages import (
+    DeleteDatasetMessage,
+)
+from syft.core.node.common.service.dataset_manager.dataset_manager_messages import (
+    GetDatasetMessage,
+)
+from syft.core.node.common.service.dataset_manager.dataset_manager_messages import (
+    GetDatasetResponse,
+)
+from syft.core.node.common.service.dataset_manager.dataset_manager_messages import (
+    GetDatasetsMessage,
+)
+from syft.core.node.common.service.dataset_manager.dataset_manager_messages import (
+    GetDatasetsResponse,
+)
+from syft.core.node.common.service.dataset_manager.dataset_manager_messages import (
+    UpdateDatasetMessage,
+)
 
 metadata = syft.lib.python.Dict(
     {"name": "Dataset", "fields": ["age", "height", "weight"]}

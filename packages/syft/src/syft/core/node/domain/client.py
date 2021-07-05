@@ -29,12 +29,18 @@ from ...io.address import Address
 from ...io.location import Location
 from ...io.route import Route
 from ..common.client import Client
-from ..common.service.setup_service import GetSetUpMessage
+from ..common.request_api.association_api import AssociationRequestAPI
+from ..common.request_api.dataset_api import DatasetRequestAPI
+from ..common.request_api.group_api import GroupRequestAPI
+from ..common.request_api.role_api import RoleRequestAPI
+from ..common.request_api.user_api import UserRequestAPI
+from ..common.request_api.worker_api import WorkerRequestAPI
+from ..common.service.network_search.network_search_messages import NetworkSearchMessage
+from ..common.service.node_setup.node_setup_messages import GetSetUpMessage
+from ..common.service.object_transfer.object_transfer_messages import LoadObjectMessage
+from ..common.service.request_receiver.request_receiver_messages import RequestMessage
 from .enums import PyGridClientEnums
 from .enums import RequestAPIFields
-from .messages.network_search_message import NetworkSearchMessage
-from .messages.transfer_messages import LoadObjectMessage
-from .service import RequestMessage
 
 
 class RequestQueueClient:
@@ -276,6 +282,13 @@ class DomainClient(Client):
         self.requests = RequestQueueClient(client=self)
         self.post_init()
 
+        self.groups = GroupRequestAPI(node=self)
+        self.users = UserRequestAPI(node=self)
+        self.roles = RoleRequestAPI(node=self)
+        self.workers = WorkerRequestAPI(node=self)
+        self.association = AssociationRequestAPI(node=self)
+        self.datasets = DatasetRequestAPI(node=self)
+
     def load(
         self, obj_ptr: Type[Pointer], address: Address, pointable: bool = False
     ) -> None:
@@ -312,6 +325,14 @@ class DomainClient(Client):
             response = DataFrame(response)
 
         return response
+
+    def apply_to_network(self, target: str, reason: str):
+        self.association.create(
+            target=target,
+            sender=self.conn.base_url.replace("/api/v1", ""),
+            reason=reason,
+            node_name=self.name,
+        )
 
     def _perform_grid_request(
         self, grid_msg: Any, content: Optional[Dict[Any, Any]] = None

@@ -20,21 +20,20 @@ from ...io.location import Location
 from ...io.location import SpecificLocation
 from ..common.managers.association_request_manager import AssociationRequestManager
 from ..common.managers.group_manager import GroupManager
-from ..common.managers.request_manager import RequestManager
 from ..common.managers.role_manager import RoleManager
 from ..common.managers.setup_manager import SetupManager
 from ..common.managers.user_manager import UserManager
 from ..common.node import Node
-from ..common.service.association_request import AssociationRequestService
-from ..common.service.group_service import GroupManagerService
-from ..common.service.role_service import RoleManagerService
-from ..common.service.setup_service import SetUpService
-from ..common.service.user_service import UserManagerService
+from ..common.service.association_request.association_request_service import (
+    AssociationRequestService,
+)
+from ..common.service.group_manager.group_manager_service import GroupManagerService
+from ..common.service.node_setup.node_setup_service import NodeSetupService
+from ..common.service.request_receiver.request_receiver_messages import RequestMessage
+from ..common.service.role_manager.role_manager_service import RoleManagerService
+from ..common.service.user_manager.user_manager_service import UserManagerService
 from ..domain.client import DomainClient
 from ..domain.domain import Domain
-from ..domain.service import RequestAnswerMessageService
-from ..domain.service import RequestMessage
-from ..domain.service import RequestService
 from .client import NetworkClient
 
 
@@ -84,7 +83,7 @@ class Network(Node):
 
         # Grid Network Services
         self.immediate_services_with_reply.append(AssociationRequestService)
-        self.immediate_services_with_reply.append(SetUpService)
+        self.immediate_services_with_reply.append(NodeSetupService)
         self.immediate_services_with_reply.append(RoleManagerService)
         self.immediate_services_with_reply.append(UserManagerService)
         self.immediate_services_with_reply.append(GroupManagerService)

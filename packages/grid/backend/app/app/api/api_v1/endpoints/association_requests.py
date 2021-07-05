@@ -13,12 +13,24 @@ from nacl.signing import SigningKey
 from syft.core.node.common.action.exception_action import ExceptionMessage
 
 # syft
-from syft.grid.messages.association_messages import DeleteAssociationRequestMessage
-from syft.grid.messages.association_messages import GetAssociationRequestMessage
-from syft.grid.messages.association_messages import GetAssociationRequestsMessage
-from syft.grid.messages.association_messages import ReceiveAssociationRequestMessage
-from syft.grid.messages.association_messages import RespondAssociationRequestMessage
-from syft.grid.messages.association_messages import SendAssociationRequestMessage
+from syft.core.node.common.service.association_request.association_request_messages import (
+    DeleteAssociationRequestMessage,
+)
+from syft.core.node.common.service.association_request.association_request_messages import (
+    GetAssociationRequestMessage,
+)
+from syft.core.node.common.service.association_request.association_request_messages import (
+    GetAssociationRequestsMessage,
+)
+from syft.core.node.common.service.association_request.association_request_messages import (
+    ReceiveAssociationRequestMessage,
+)
+from syft.core.node.common.service.association_request.association_request_messages import (
+    RespondAssociationRequestMessage,
+)
+from syft.core.node.common.service.association_request.association_request_messages import (
+    SendAssociationRequestMessage,
+)
 
 # grid absolute
 from app.api import deps

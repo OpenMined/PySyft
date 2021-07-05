@@ -5,7 +5,9 @@ from typing import Union
 
 # syft absolute
 from syft.core.common.uid import UID
-from syft.core.node.domain.service import RequestStatus
+from syft.core.node.common.service.request_receiver.request_receiver_messages import (
+    RequestStatus,
+)
 
 # relative
 from ..tables.request import Request

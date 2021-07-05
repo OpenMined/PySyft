@@ -27,12 +27,6 @@ from ...core.node.domain.enums import RequestAPIFields
 from ...core.node.network.client import NetworkClient
 from ...core.node.vm.client import VirtualMachineClient
 from .grid_connection import GridHTTPConnection
-from .request_api.association_api import AssociationRequestAPI
-from .request_api.dataset_api import DatasetRequestAPI
-from .request_api.group_api import GroupRequestAPI
-from .request_api.role_api import RoleRequestAPI
-from .request_api.user_api import UserRequestAPI
-from .request_api.worker_api import WorkerRequestAPI
 
 DEFAULT_PYGRID_PORT = 80
 DEFAULT_PYGRID_ADDRESS = f"http://127.0.0.1:{DEFAULT_PYGRID_PORT}"
@@ -102,20 +96,12 @@ def connect(
                 signing_key=_user_key,
             )
 
-            self.groups = GroupRequestAPI(node=self)
-            self.users = UserRequestAPI(node=self)
-            self.roles = RoleRequestAPI(node=self)
-            self.workers = WorkerRequestAPI(node=self)
-            self.association = AssociationRequestAPI(node=self)
-            self.datasets = DatasetRequestAPI(node=self)
-
-        def apply_to_network(self, target: str, reason: str):
-            self.association.create(
-                target=target,
-                sender=self.conn.base_url.replace("/api/v1", ""),
-                reason=reason,
-                node_name=self.name,
-            )
+            # self.groups = GroupRequestAPI(node=self)
+            # self.users = UserRequestAPI(node=self)
+            # self.roles = RoleRequestAPI(node=self)
+            # self.workers = WorkerRequestAPI(node=self)
+            # self.association = AssociationRequestAPI(node=self)
+            # self.datasets = DatasetRequestAPI(node=self)
 
     return GridClient(
         url=url,
@@ -135,7 +121,7 @@ def login(
     verbose=True,
 ) -> Client:
 
-    if port is None and not url: # if url is used, we can ignore port
+    if port is None and not url:  # if url is used, we can ignore port
         raise Exception("You must specify a port.")
 
     if url is None:

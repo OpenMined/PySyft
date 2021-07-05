@@ -34,26 +34,32 @@ from ..common.managers.role_manager import RoleManager
 from ..common.managers.setup_manager import SetupManager
 from ..common.managers.user_manager import UserManager
 from ..common.node import Node
-from ..common.service.association_request import AssociationRequestService
-from ..common.service.dataset_service import DatasetManagerService
-from ..common.service.group_service import GroupManagerService
+from ..common.service.association_request.association_request_service import (
+    AssociationRequestService,
+)
+from ..common.service.dataset_manager.dataset_manager_service import (
+    DatasetManagerService,
+)
+from ..common.service.group_manager.group_manager_service import GroupManagerService
+from ..common.service.node_setup.node_setup_service import NodeSetupService
+from ..common.service.request_answer.request_answer_messages import RequestStatus
+from ..common.service.request_answer.request_answer_service import RequestAnswerService
+from ..common.service.request_receiver.request_receiver_messages import RequestMessage
+from ..common.service.request_receiver.request_receiver_service import (
+    RequestReceiverService,
+)
 
 # from ..common.service.infra_service import DomainInfrastructureService
 # from ..common.service.request_service import RequestService
 # from ..common.service.request_service import RequestServiceWithoutReply
-from ..common.service.role_service import RoleManagerService
-from ..common.service.setup_service import SetUpService
-from ..common.service.tensor_service import RegisterTensorService
+from ..common.service.role_manager.role_manager_service import RoleManagerService
+from ..common.service.tensor_manager.tensor_manager_service import TensorManagerService
 
 # from ..common.service.transfer_service import TransferObjectService
-from ..common.service.user_service import UserManagerService
+from ..common.service.user_manager.user_manager_service import UserManagerService
 from ..device import Device
 from ..device import DeviceClient
 from .client import DomainClient
-from .service import RequestAnswerMessageService
-from .service import RequestMessage
-from .service import RequestService
-from .service import RequestStatus
 
 
 class Domain(Node):
@@ -102,19 +108,19 @@ class Domain(Node):
         self.data_requests = RequestManager(db_engine)
         self.datasets = DatasetManager(db_engine)
 
-        self.immediate_services_without_reply.append(RequestService)
+        self.immediate_services_without_reply.append(RequestReceiverService)
         # self.immediate_services_without_reply.append(AcceptOrDenyRequestService)
         # self.immediate_services_without_reply.append(UpdateRequestHandlerService)
 
-        self.immediate_services_with_reply.append(RequestAnswerMessageService)
+        self.immediate_services_with_reply.append(RequestAnswerService)
         # self.immediate_services_with_reply.append(GetAllRequestsService)
         # self.immediate_services_with_reply.append(GetAllRequestHandlersService)
 
         # Grid Domain Services
         self.immediate_services_with_reply.append(AssociationRequestService)
         # self.immediate_services_with_reply.append(DomainInfrastructureService)
-        self.immediate_services_with_reply.append(SetUpService)
-        self.immediate_services_with_reply.append(RegisterTensorService)
+        self.immediate_services_with_reply.append(NodeSetupService)
+        self.immediate_services_with_reply.append(TensorManagerService)
         self.immediate_services_with_reply.append(RoleManagerService)
         self.immediate_services_with_reply.append(UserManagerService)
         self.immediate_services_with_reply.append(DatasetManagerService)

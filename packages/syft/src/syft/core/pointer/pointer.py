@@ -110,8 +110,8 @@ from ..common.uid import UID
 from ..io.address import Address
 from ..node.abstract.node import AbstractNode
 from ..node.common.action.get_object_action import GetObjectAction
-from ..node.common.service.get_repr_service import GetReprMessage
-from ..node.common.service.obj_search_permission_service import (
+from ..node.common.service.get_repr.get_repr_service import GetReprMessage
+from ..node.common.service.object_search_permission_update.obj_search_permission_messages import (
     ObjectSearchPermissionUpdateMessage,
 )
 from ..store.storeable_object import StorableObject
@@ -260,7 +260,9 @@ class Pointer(AbstractPointer):
         """
 
         # relative
-        from ..node.domain.service import RequestStatus
+        from ..node.common.service.request_receiver.request_receiver_messages import (
+            RequestStatus,
+        )
 
         if self._exhausted:
             raise ReferenceError(

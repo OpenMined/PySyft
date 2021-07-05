@@ -12,14 +12,24 @@ from nacl.signing import SigningKey
 
 # syft absolute
 from syft.core.node.common.action.exception_action import ExceptionMessage
-from syft.core.node.common.tables.utils import model_to_json
 
 # syft
-from syft.grid.messages.role_messages import CreateRoleMessage
-from syft.grid.messages.role_messages import DeleteRoleMessage
-from syft.grid.messages.role_messages import GetRoleMessage
-from syft.grid.messages.role_messages import GetRolesMessage
-from syft.grid.messages.role_messages import UpdateRoleMessage
+from syft.core.node.common.service.role_manager.role_manager_messages import (
+    CreateRoleMessage,
+)
+from syft.core.node.common.service.role_manager.role_manager_messages import (
+    DeleteRoleMessage,
+)
+from syft.core.node.common.service.role_manager.role_manager_messages import (
+    GetRoleMessage,
+)
+from syft.core.node.common.service.role_manager.role_manager_messages import (
+    GetRolesMessage,
+)
+from syft.core.node.common.service.role_manager.role_manager_messages import (
+    UpdateRoleMessage,
+)
+from syft.core.node.common.tables.utils import model_to_json
 
 # grid absolute
 from app.api import deps

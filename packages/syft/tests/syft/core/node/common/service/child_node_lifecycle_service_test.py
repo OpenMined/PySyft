@@ -4,7 +4,7 @@ import pytest
 # syft absolute
 import syft as sy
 from syft import serialize
-from syft.core.node.common.service.child_node_lifecycle_service import (
+from syft.core.node.common.service.child_node_lifecycle.child_node_lifecycle_messages import (
     RegisterChildNodeMessage,
 )
 

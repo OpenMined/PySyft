@@ -4,8 +4,10 @@ import torch as th
 
 # syft absolute
 from syft.core.common.message import SyftMessage
+from syft.core.node.common.service.request_receiver.request_receiver_messages import (
+    RequestStatus,
+)
 from syft.core.node.domain import Domain
-from syft.core.node.domain.service import RequestStatus
 
 
 @pytest.mark.asyncio

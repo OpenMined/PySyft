@@ -1,8 +1,6 @@
 # stdlib
 from typing import Any
 from typing import Dict
-from typing import List
-from typing import Union
 
 # third party
 from sqlalchemy.orm import sessionmaker

@@ -52,11 +52,11 @@ class VirtualMachine(Node):
         self.vm = SpecificLocation(name=self.name)
 
         # relative
-        from ..domain.service.vm_service import VMRequestAnswerMessageService
-        from ..domain.service.vm_service import VMRequestService
+        from ..common.service.vm_request_service.vm_service import (
+            VMRequestAnswerService,
+        )
 
-        self.immediate_services_without_reply.append(VMRequestService)
-        self.immediate_services_with_reply.append(VMRequestAnswerMessageService)
+        self.immediate_services_with_reply.append(VMRequestAnswerService)
         # All node subclasses have to call this at the end of their __init__
         self._register_services()
         self.post_init()

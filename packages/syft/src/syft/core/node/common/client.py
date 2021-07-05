@@ -39,14 +39,16 @@ from ...io.location import SpecificLocation
 from ...io.route import Route
 from ...io.route import SoloRoute
 from ...io.virtual import VirtualClientConnection
-from ...node.common.service.obj_search_service import ObjectSearchMessage
-from ...node.common.service.remote_add_service import RemoteAddMessage
 from ...pointer.garbage_collection import GarbageCollection
 from ...pointer.garbage_collection import gc_get_default_strategy
 from ...pointer.pointer import Pointer
 from ..abstract.node import AbstractNodeClient
 from .action.exception_action import ExceptionMessage
-from .service.child_node_lifecycle_service import RegisterChildNodeMessage
+from .service.child_node_lifecycle.child_node_lifecycle_service import (
+    RegisterChildNodeMessage,
+)
+from .service.object_search.obj_search_service import ObjectSearchMessage
+from .service.testing_services.remote_add_service import RemoteAddMessage
 
 
 class Client(AbstractNodeClient):

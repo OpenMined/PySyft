@@ -1,6 +1,5 @@
 # stdlib
 from datetime import datetime
-from hashlib import sha256
 from typing import List
 from typing import Union
 

@@ -12,15 +12,27 @@ from nacl.signing import SigningKey
 
 # syft absolute
 from syft.core.node.common.action.exception_action import ExceptionMessage
-from syft.core.node.common.tables.utils import model_to_json
 
 # syft
-from syft.grid.messages.user_messages import CreateUserMessage
-from syft.grid.messages.user_messages import DeleteUserMessage
-from syft.grid.messages.user_messages import GetUserMessage
-from syft.grid.messages.user_messages import GetUsersMessage
-from syft.grid.messages.user_messages import SearchUsersMessage
-from syft.grid.messages.user_messages import UpdateUserMessage
+from syft.core.node.common.service.user_manager.user_manager_service import (
+    CreateUserMessage,
+)
+from syft.core.node.common.service.user_manager.user_manager_service import (
+    DeleteUserMessage,
+)
+from syft.core.node.common.service.user_manager.user_manager_service import (
+    GetUserMessage,
+)
+from syft.core.node.common.service.user_manager.user_manager_service import (
+    GetUsersMessage,
+)
+from syft.core.node.common.service.user_manager.user_manager_service import (
+    SearchUsersMessage,
+)
+from syft.core.node.common.service.user_manager.user_manager_service import (
+    UpdateUserMessage,
+)
+from syft.core.node.common.tables.utils import model_to_json
 
 # grid absolute
 from app.api import deps
