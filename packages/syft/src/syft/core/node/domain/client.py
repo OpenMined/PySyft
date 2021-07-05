@@ -48,11 +48,18 @@ class RequestQueueClient:
         self.client = client
         self.handlers = RequestHandlerQueueClient(client=client)
 
+        self.groups = GroupRequestAPI(node=self)
+        self.users = UserRequestAPI(node=self)
+        self.roles = RoleRequestAPI(node=self)
+        self.workers = WorkerRequestAPI(node=self)
+        self.association = AssociationRequestAPI(node=self)
+        self.datasets = DatasetRequestAPI(node=self)
+
     @property
     def requests(self) -> List[RequestMessage]:
 
         # syft absolute
-        from syft.core.node.domain.service.get_all_requests_service import (
+        from syft.core.node.common.service.get_all_requests.get_all_requests_messages import (
             GetAllRequestsMessage,
         )
 

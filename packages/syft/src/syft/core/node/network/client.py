@@ -14,6 +14,12 @@ from ...io.location import Location
 from ...io.location import SpecificLocation
 from ...io.route import Route
 from ..common.client import Client
+from ..common.request_api.association_api import AssociationRequestAPI
+from ..common.request_api.dataset_api import DatasetRequestAPI
+from ..common.request_api.group_api import GroupRequestAPI
+from ..common.request_api.role_api import RoleRequestAPI
+from ..common.request_api.user_api import UserRequestAPI
+from ..common.request_api.worker_api import WorkerRequestAPI
 
 
 @final
@@ -42,6 +48,13 @@ class NetworkClient(Client):
             signing_key=signing_key,
             verify_key=verify_key,
         )
+
+        self.groups = GroupRequestAPI(node=self)
+        self.users = UserRequestAPI(node=self)
+        self.roles = RoleRequestAPI(node=self)
+        self.workers = WorkerRequestAPI(node=self)
+        self.association = AssociationRequestAPI(node=self)
+        self.datasets = DatasetRequestAPI(node=self)
 
         self.post_init()
 

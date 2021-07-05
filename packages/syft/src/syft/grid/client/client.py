@@ -96,13 +96,6 @@ def connect(
                 signing_key=_user_key,
             )
 
-            # self.groups = GroupRequestAPI(node=self)
-            # self.users = UserRequestAPI(node=self)
-            # self.roles = RoleRequestAPI(node=self)
-            # self.workers = WorkerRequestAPI(node=self)
-            # self.association = AssociationRequestAPI(node=self)
-            # self.datasets = DatasetRequestAPI(node=self)
-
     return GridClient(
         url=url,
         conn_type=conn_type,
