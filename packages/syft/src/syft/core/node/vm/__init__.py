@@ -2,7 +2,7 @@
 from typing import Dict  # noqa: F401
 
 # relative
-from ..common.service.node_service import NodeService  # noqa: F401
+from ..common.node_service.node_service import NodeService  # noqa: F401
 from .client import VirtualMachineClient
 from .vm import VirtualMachine
 

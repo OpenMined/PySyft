@@ -3,13 +3,13 @@ from syft import deserialize
 from syft import serialize
 from syft.core.common import UID
 from syft.core.io.address import Address
-from syft.core.node.common.service.request_answer.request_answer_messages import (
+from syft.core.node.common.node_service.request_answer.request_answer_messages import (
     RequestAnswerMessage,
 )
-from syft.core.node.common.service.request_answer.request_answer_messages import (
+from syft.core.node.common.node_service.request_answer.request_answer_messages import (
     RequestAnswerResponse,
 )
-from syft.core.node.common.service.request_receiver.request_receiver_messages import (
+from syft.core.node.common.node_service.request_receiver.request_receiver_messages import (
     RequestStatus,
 )
 

@@ -29,16 +29,22 @@ from ...io.address import Address
 from ...io.location import Location
 from ...io.route import Route
 from ..common.client import Client
-from ..common.request_api.association_api import AssociationRequestAPI
-from ..common.request_api.dataset_api import DatasetRequestAPI
-from ..common.request_api.group_api import GroupRequestAPI
-from ..common.request_api.role_api import RoleRequestAPI
-from ..common.request_api.user_api import UserRequestAPI
-from ..common.request_api.worker_api import WorkerRequestAPI
-from ..common.service.network_search.network_search_messages import NetworkSearchMessage
-from ..common.service.node_setup.node_setup_messages import GetSetUpMessage
-from ..common.service.object_transfer.object_transfer_messages import LoadObjectMessage
-from ..common.service.request_receiver.request_receiver_messages import RequestMessage
+from ..common.client_manager.association_api import AssociationRequestAPI
+from ..common.client_manager.dataset_api import DatasetRequestAPI
+from ..common.client_manager.group_api import GroupRequestAPI
+from ..common.client_manager.role_api import RoleRequestAPI
+from ..common.client_manager.user_api import UserRequestAPI
+from ..common.client_manager.worker_api import WorkerRequestAPI
+from ..common.node_service.network_search.network_search_messages import (
+    NetworkSearchMessage,
+)
+from ..common.node_service.node_setup.node_setup_messages import GetSetUpMessage
+from ..common.node_service.object_transfer.object_transfer_messages import (
+    LoadObjectMessage,
+)
+from ..common.node_service.request_receiver.request_receiver_messages import (
+    RequestMessage,
+)
 from .enums import PyGridClientEnums
 from .enums import RequestAPIFields
 
@@ -59,7 +65,7 @@ class RequestQueueClient:
     def requests(self) -> List[RequestMessage]:
 
         # syft absolute
-        from syft.core.node.common.service.get_all_requests.get_all_requests_messages import (
+        from syft.core.node.common.node_service.get_all_requests.get_all_requests_messages import (
             GetAllRequestsMessage,
         )
 

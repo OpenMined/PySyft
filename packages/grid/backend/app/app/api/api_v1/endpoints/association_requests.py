@@ -13,22 +13,22 @@ from nacl.signing import SigningKey
 from syft.core.node.common.action.exception_action import ExceptionMessage
 
 # syft
-from syft.core.node.common.service.association_request.association_request_messages import (
+from syft.core.node.common.node_service.association_request.association_request_messages import (
     DeleteAssociationRequestMessage,
 )
-from syft.core.node.common.service.association_request.association_request_messages import (
+from syft.core.node.common.node_service.association_request.association_request_messages import (
     GetAssociationRequestMessage,
 )
-from syft.core.node.common.service.association_request.association_request_messages import (
+from syft.core.node.common.node_service.association_request.association_request_messages import (
     GetAssociationRequestsMessage,
 )
-from syft.core.node.common.service.association_request.association_request_messages import (
+from syft.core.node.common.node_service.association_request.association_request_messages import (
     ReceiveAssociationRequestMessage,
 )
-from syft.core.node.common.service.association_request.association_request_messages import (
+from syft.core.node.common.node_service.association_request.association_request_messages import (
     RespondAssociationRequestMessage,
 )
-from syft.core.node.common.service.association_request.association_request_messages import (
+from syft.core.node.common.node_service.association_request.association_request_messages import (
     SendAssociationRequestMessage,
 )
 

@@ -52,7 +52,7 @@ class VirtualMachine(Node):
         self.vm = SpecificLocation(name=self.name)
 
         # relative
-        from ..common.service.vm_request_service.vm_service import (
+        from ..common.node_service.vm_request_service.vm_service import (
             VMRequestAnswerService,
         )
 

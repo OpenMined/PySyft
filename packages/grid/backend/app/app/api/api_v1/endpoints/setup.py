@@ -14,10 +14,12 @@ from nacl.signing import SigningKey
 from syft.core.node.common.action.exception_action import ExceptionMessage
 
 # syft
-from syft.core.node.common.service.node_setup.node_setup_service import (
+from syft.core.node.common.node_service.node_setup.node_setup_service import (
     CreateInitialSetUpMessage,
 )
-from syft.core.node.common.service.node_setup.node_setup_service import GetSetUpMessage
+from syft.core.node.common.node_service.node_setup.node_setup_service import (
+    GetSetUpMessage,
+)
 
 # grid absolute
 from app.api import deps

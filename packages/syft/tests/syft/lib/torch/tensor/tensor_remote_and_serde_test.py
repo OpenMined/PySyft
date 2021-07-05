@@ -7,7 +7,7 @@ import torch as th
 
 # syft absolute
 import syft as sy
-from syft.core.node.common.service.auth import AuthorizationException
+from syft.core.node.common.node_service.auth import AuthorizationException
 
 
 @pytest.mark.slow

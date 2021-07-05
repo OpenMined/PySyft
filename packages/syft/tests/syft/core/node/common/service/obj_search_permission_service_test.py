@@ -3,10 +3,10 @@ import torch as th
 
 # syft absolute
 import syft as sy
-from syft.core.node.common.service.obj_search_permission_service import (
+from syft.core.node.common.node_service.obj_search_permission_service import (
     ImmediateObjectSearchPermissionUpdateService,
 )
-from syft.core.node.common.service.obj_search_permission_service import (
+from syft.core.node.common.node_service.obj_search_permission_service import (
     ObjectSearchPermissionUpdateMessage,
 )
 

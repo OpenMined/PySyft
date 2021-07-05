@@ -6,7 +6,7 @@ from sqlalchemy.ext.declarative import as_declarative
 from sqlalchemy.ext.declarative import declared_attr
 
 # syft absolute
-from syft.core.node.common.tables import Base
+from syft.core.node.common.node_table import Base
 
 #
 # @as_declarative()

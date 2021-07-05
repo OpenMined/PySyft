@@ -5,16 +5,18 @@ import pytest
 import syft as sy
 from syft.core.common.message import AbstractMessage
 from syft.core.io.address import Address
-from syft.core.node.common.service.association_request import (
+from syft.core.node.common.node_service.association_request import (
     association_request_messages,
 )
-from syft.core.node.common.service.dataset_manager import dataset_manager_messages
-from syft.core.node.common.service.group_manager import group_manager_messages
-from syft.core.node.common.service.infra_manager import infra_manager_messages
-from syft.core.node.common.service.node_setup import node_setup_messages
-from syft.core.node.common.service.request_receiver import request_receiver_messages
-from syft.core.node.common.service.role_manager import role_manager_messages
-from syft.core.node.common.service.tensor_manager import tensor_manager_messages
+from syft.core.node.common.node_service.dataset_manager import dataset_manager_messages
+from syft.core.node.common.node_service.group_manager import group_manager_messages
+from syft.core.node.common.node_service.infra_manager import infra_manager_messages
+from syft.core.node.common.node_service.node_setup import node_setup_messages
+from syft.core.node.common.node_service.request_receiver import (
+    request_receiver_messages,
+)
+from syft.core.node.common.node_service.role_manager import role_manager_messages
+from syft.core.node.common.node_service.tensor_manager import tensor_manager_messages
 
 messages = {
     # association_request_messages

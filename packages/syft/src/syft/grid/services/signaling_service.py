@@ -21,9 +21,11 @@ from ...core.common.uid import UID
 from ...core.io.address import Address
 from ...core.node.abstract.node import AbstractNode
 from ...core.node.common.metadata import Metadata
-from ...core.node.common.service.auth import service_auth
-from ...core.node.common.service.node_service import ImmediateNodeServiceWithReply
-from ...core.node.common.service.node_service import ImmediateNodeServiceWithoutReply
+from ...core.node.common.node_service.auth import service_auth
+from ...core.node.common.node_service.node_service import (
+    ImmediateNodeServiceWithoutReply,
+)
+from ...core.node.common.node_service.node_service import ImmediateNodeServiceWithReply
 from ...proto.grid.service.signaling_service_pb2 import (
     AnswerPullRequestMessage as AnswerPullRequestMessage_PB,
 )

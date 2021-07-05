@@ -26,7 +26,7 @@ from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
-from ..service.auth import AuthorizationException
+from ..node_service.auth import AuthorizationException
 from .common import ImmediateActionWithReply
 
 

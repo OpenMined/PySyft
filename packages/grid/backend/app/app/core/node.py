@@ -1,8 +1,8 @@
 # syft absolute
 from syft import Domain
 from syft import Network
-from syft.core.node.common.tables import Base
-from syft.core.node.common.tables.utils import seed_db
+from syft.core.node.common.node_table import Base
+from syft.core.node.common.node_table.utils import seed_db
 
 # grid absolute
 from app.core.config import settings

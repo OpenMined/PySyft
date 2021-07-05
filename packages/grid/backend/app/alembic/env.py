@@ -25,8 +25,8 @@ fileConfig(config.config_file_name)
 # target_metadata = None
 
 # syft absolute
-from syft.core.node.common.tables import Base
-from syft.core.node.common.tables.bin_obj import BinObject
+from syft.core.node.common.node_table import Base
+from syft.core.node.common.node_table.bin_obj import BinObject
 
 target_metadata = Base.metadata
 

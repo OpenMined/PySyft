@@ -18,20 +18,24 @@ from ...common.message import SyftMessage
 from ...common.uid import UID
 from ...io.location import Location
 from ...io.location import SpecificLocation
-from ..common.managers.association_request_manager import AssociationRequestManager
-from ..common.managers.group_manager import GroupManager
-from ..common.managers.role_manager import RoleManager
-from ..common.managers.setup_manager import SetupManager
-from ..common.managers.user_manager import UserManager
 from ..common.node import Node
-from ..common.service.association_request.association_request_service import (
+from ..common.node_manager.association_request_manager import AssociationRequestManager
+from ..common.node_manager.group_manager import GroupManager
+from ..common.node_manager.role_manager import RoleManager
+from ..common.node_manager.setup_manager import SetupManager
+from ..common.node_manager.user_manager import UserManager
+from ..common.node_service.association_request.association_request_service import (
     AssociationRequestService,
 )
-from ..common.service.group_manager.group_manager_service import GroupManagerService
-from ..common.service.node_setup.node_setup_service import NodeSetupService
-from ..common.service.request_receiver.request_receiver_messages import RequestMessage
-from ..common.service.role_manager.role_manager_service import RoleManagerService
-from ..common.service.user_manager.user_manager_service import UserManagerService
+from ..common.node_service.group_manager.group_manager_service import (
+    GroupManagerService,
+)
+from ..common.node_service.node_setup.node_setup_service import NodeSetupService
+from ..common.node_service.request_receiver.request_receiver_messages import (
+    RequestMessage,
+)
+from ..common.node_service.role_manager.role_manager_service import RoleManagerService
+from ..common.node_service.user_manager.user_manager_service import UserManagerService
 from ..domain.client import DomainClient
 from ..domain.domain import Domain
 from .client import NetworkClient

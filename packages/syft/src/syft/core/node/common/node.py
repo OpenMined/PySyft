@@ -45,47 +45,47 @@ from ...io.route import Route
 from ...io.route import SoloRoute
 from ...io.virtual import create_virtual_connection
 from ..abstract.node import AbstractNode
-from ..common.service.auth import AuthorizationException
-from ..common.service.child_node_lifecycle.child_node_lifecycle_service import (
+from ..common.node_service.auth import AuthorizationException
+from ..common.node_service.child_node_lifecycle.child_node_lifecycle_service import (
     ChildNodeLifecycleService,
 )
-from ..common.service.get_repr.get_repr_service import GetReprService
-from ..common.service.heritage_update.heritage_update_service import (
+from ..common.node_service.get_repr.get_repr_service import GetReprService
+from ..common.node_service.heritage_update.heritage_update_service import (
     HeritageUpdateService,
 )
-from ..common.service.msg_forwarding.msg_forwarding_service import (
+from ..common.node_service.msg_forwarding.msg_forwarding_service import (
     SignedMessageWithReplyForwardingService,
 )
-from ..common.service.msg_forwarding.msg_forwarding_service import (
+from ..common.node_service.msg_forwarding.msg_forwarding_service import (
     SignedMessageWithoutReplyForwardingService,
 )
-from ..common.service.node_service import EventualNodeServiceWithoutReply
-from ..common.service.node_service import ImmediateNodeServiceWithReply
-from ..common.service.object_action.obj_action_service import (
+from ..common.node_service.node_service import EventualNodeServiceWithoutReply
+from ..common.node_service.node_service import ImmediateNodeServiceWithReply
+from ..common.node_service.object_action.obj_action_service import (
     EventualObjectActionServiceWithoutReply,
 )
-from ..common.service.object_action.obj_action_service import (
+from ..common.node_service.object_action.obj_action_service import (
     ImmediateObjectActionServiceWithReply,
 )
-from ..common.service.object_action.obj_action_service import (
+from ..common.node_service.object_action.obj_action_service import (
     ImmediateObjectActionServiceWithoutReply,
 )
-from ..common.service.object_search.obj_search_service import (
+from ..common.node_service.object_search.obj_search_service import (
     ImmediateObjectSearchService,
 )
-from ..common.service.object_search_permission_update.obj_search_permission_service import (
+from ..common.node_service.object_search_permission_update.obj_search_permission_service import (
     ImmediateObjectSearchPermissionUpdateService,
 )
-from ..common.service.resolve_pointer_type.resolve_pointer_type_service import (
+from ..common.node_service.resolve_pointer_type.resolve_pointer_type_service import (
     ResolvePointerTypeService,
 )
-from ..common.service.testing_services.remote_add_service import RemoteAddService
-from ..common.service.testing_services.repr_service import ReprService
+from ..common.node_service.testing_services.remote_add_service import RemoteAddService
+from ..common.node_service.testing_services.repr_service import ReprService
 from .action.exception_action import ExceptionMessage
 from .action.exception_action import UnknownPrivateException
 from .client import Client
-from .managers.bin_obj_manager import BinObjectManager
 from .metadata import Metadata
+from .node_manager.bin_obj_manager import BinObjectManager
 
 # this generic type for Client bound by Client
 ClientT = TypeVar("ClientT", bound=Client)

@@ -25,38 +25,46 @@ from ...io.location import Location
 from ...io.location import SpecificLocation
 from ..common.action.get_object_action import GetObjectAction
 from ..common.client import Client
-from ..common.managers.association_request_manager import AssociationRequestManager
-from ..common.managers.dataset_manager import DatasetManager
-from ..common.managers.environment_manager import EnvironmentManager
-from ..common.managers.group_manager import GroupManager
-from ..common.managers.request_manager import RequestManager
-from ..common.managers.role_manager import RoleManager
-from ..common.managers.setup_manager import SetupManager
-from ..common.managers.user_manager import UserManager
 from ..common.node import Node
-from ..common.service.association_request.association_request_service import (
+from ..common.node_manager.association_request_manager import AssociationRequestManager
+from ..common.node_manager.dataset_manager import DatasetManager
+from ..common.node_manager.environment_manager import EnvironmentManager
+from ..common.node_manager.group_manager import GroupManager
+from ..common.node_manager.request_manager import RequestManager
+from ..common.node_manager.role_manager import RoleManager
+from ..common.node_manager.setup_manager import SetupManager
+from ..common.node_manager.user_manager import UserManager
+from ..common.node_service.association_request.association_request_service import (
     AssociationRequestService,
 )
-from ..common.service.dataset_manager.dataset_manager_service import (
+from ..common.node_service.dataset_manager.dataset_manager_service import (
     DatasetManagerService,
 )
-from ..common.service.group_manager.group_manager_service import GroupManagerService
-from ..common.service.node_setup.node_setup_service import NodeSetupService
-from ..common.service.request_answer.request_answer_messages import RequestStatus
-from ..common.service.request_answer.request_answer_service import RequestAnswerService
-from ..common.service.request_receiver.request_receiver_messages import RequestMessage
-from ..common.service.request_receiver.request_receiver_service import (
+from ..common.node_service.group_manager.group_manager_service import (
+    GroupManagerService,
+)
+from ..common.node_service.node_setup.node_setup_service import NodeSetupService
+from ..common.node_service.request_answer.request_answer_messages import RequestStatus
+from ..common.node_service.request_answer.request_answer_service import (
+    RequestAnswerService,
+)
+from ..common.node_service.request_receiver.request_receiver_messages import (
+    RequestMessage,
+)
+from ..common.node_service.request_receiver.request_receiver_service import (
     RequestReceiverService,
 )
 
 # from ..common.service.infra_service import DomainInfrastructureService
 # from ..common.service.request_service import RequestService
 # from ..common.service.request_service import RequestServiceWithoutReply
-from ..common.service.role_manager.role_manager_service import RoleManagerService
-from ..common.service.tensor_manager.tensor_manager_service import TensorManagerService
+from ..common.node_service.role_manager.role_manager_service import RoleManagerService
+from ..common.node_service.tensor_manager.tensor_manager_service import (
+    TensorManagerService,
+)
 
 # from ..common.service.transfer_service import TransferObjectService
-from ..common.service.user_manager.user_manager_service import UserManagerService
+from ..common.node_service.user_manager.user_manager_service import UserManagerService
 from ..device import Device
 from ..device import DeviceClient
 from .client import DomainClient

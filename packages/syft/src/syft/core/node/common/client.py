@@ -44,11 +44,11 @@ from ...pointer.garbage_collection import gc_get_default_strategy
 from ...pointer.pointer import Pointer
 from ..abstract.node import AbstractNodeClient
 from .action.exception_action import ExceptionMessage
-from .service.child_node_lifecycle.child_node_lifecycle_service import (
+from .node_service.child_node_lifecycle.child_node_lifecycle_service import (
     RegisterChildNodeMessage,
 )
-from .service.object_search.obj_search_service import ObjectSearchMessage
-from .service.testing_services.remote_add_service import RemoteAddMessage
+from .node_service.object_search.obj_search_service import ObjectSearchMessage
+from .node_service.testing_services.remote_add_service import RemoteAddMessage
 
 
 class Client(AbstractNodeClient):

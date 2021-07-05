@@ -18,19 +18,19 @@ from nacl.signing import SigningKey
 
 # syft absolute
 from syft.core.node.common.action.exception_action import ExceptionMessage
-from syft.core.node.common.service.dataset_manager.dataset_manager_messages import (
+from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
     CreateDatasetMessage,
 )
-from syft.core.node.common.service.dataset_manager.dataset_manager_messages import (
+from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
     DeleteDatasetMessage,
 )
-from syft.core.node.common.service.dataset_manager.dataset_manager_messages import (
+from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
     GetDatasetMessage,
 )
-from syft.core.node.common.service.dataset_manager.dataset_manager_messages import (
+from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
     GetDatasetsMessage,
 )
-from syft.core.node.common.service.dataset_manager.dataset_manager_messages import (
+from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
     UpdateDatasetMessage,
 )
 from syft.lib.python import Dict as SyftDict

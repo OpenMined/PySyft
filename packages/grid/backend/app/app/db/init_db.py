@@ -2,7 +2,7 @@
 from sqlalchemy.orm import Session
 
 # syft absolute
-from syft.core.node.common.service.node_setup.node_setup_messages import (
+from syft.core.node.common.node_service.node_setup.node_setup_messages import (
     CreateInitialSetUpMessage,
 )
 
