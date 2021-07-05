@@ -178,12 +178,11 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
         """
         from syft.core.tensor.share_tensor import ShareTensor
         import numpy as np
+        from syft.core.node.smpc.action.action import MAP_FUNC_TO_NR_GENERATOR_INVOKES
 
         generator = np.random.default_rng(seed)
 
-        MAP_FUNC_TO_NR_ACTIONS = {"__add__", 1}
-
-        nr_ops = MAP_FUNC_TO_NR_ACTIONS[ShareTensor.attr_path_and_name.split(".")[-1]]
+        nr_ops = MAP_FUNC_TO_NR_GENERATOR_INVOKES[ShareTensor.attr_path_and_name.split(".")[-1]]
         for _ in range(nr_ops):
             generator.bytes(16)
 

@@ -17,7 +17,6 @@ from ..common.serde.deserialize import _deserialize as deserialize
 from ..common.serde.serializable import bind_protobuf
 from ..common.serde.serialize import _serialize as serialize
 
-from ...core.node.smpc.action.action import SMPCAction
 from ...core.common.uid import UID
 from uuid import UUID
 import operator
@@ -26,9 +25,7 @@ import time
 
 @bind_protobuf
 class ShareTensor(PassthroughTensor, Serializable):
-    def __init__(
-        self, rank, ring_size=2 ** 64, value=None, seed_ids=None
-    ):
+    def __init__(self, rank, ring_size=2 ** 64, value=None, seed_ids=None):
         if seed_ids is None:
             self.seed_ids = 42
         else:
@@ -104,38 +101,21 @@ class ShareTensor(PassthroughTensor, Serializable):
 
         share = value.child
         if not isinstance(share, ShareTensor):
-            share = ShareTensor(
-                value=share, rank=rank
-            )
+            share = ShareTensor(value=share, rank=rank)
 
-        shares = [generator_shares.integers(low=share.min_value, high=share.max_value) for _ in range(nr_parties)]
+        shares = [
+            generator_shares.integers(low=share.min_value, high=share.max_value)
+            for _ in range(nr_parties)
+        ]
         share.child += shares[rank] - shares[(rank + 1) % nr_parties]
         return share
 
     # Dummy stuff
-    def __add__(self, other, node):
-
-        return self.child + other.child
+    def __add__(self):
+        ...
 
     def smpc_test(self):
         ...
-
-    @staticmethod
-    def get_action_generator_from_op(operation_str):
-        return MAP_FUNC_TO_ACTION[operation_str]
-
-
-    @staticmethod
-    def filter_actions_after_rank(data, actions):
-        if isinstance(data, FixedPrecisionTensor):
-            data = data.child
-
-        if isinstance(data, ShareTensor):
-            rank = data.rank
-        else:
-            raise ValueError("Expecting at one point to find the ShareTensor")
-        new_actions = [action[:3] for action in actions if rank in action[3] or len(action[3]) == 0]
-        return new_actions
 
     def _object2proto(self) -> ShareTensor_PB:
         if isinstance(self.child, np.ndarray):

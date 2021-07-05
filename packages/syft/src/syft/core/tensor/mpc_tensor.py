@@ -115,8 +115,6 @@ class MPCTensor(PassthroughTensor):
 
         if not is_share_tensor:
             result = result.decode()
-        import pdb; pdb.set_trace()
-
         return result
 
     @staticmethod
@@ -126,7 +124,6 @@ class MPCTensor(PassthroughTensor):
 
     def __add__(self, other):
         if isinstance(other, MPCTensor):
-            import pdb; pdb.set_trace()
             res_shares = [operator.add(a, b) for a, b in zip(self.child, other.child)]
         else:
             res_shares = [operator.add(a, b) for a, b in zip(self.child, other)]

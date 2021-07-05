@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n-proto/core/node/smpc/action/smpc_action.proto\x12\x1csyft.core.node.common.action\x1a%proto/core/common/common_object.proto\x1a proto/core/pointer/pointer.proto\x1a\x1bproto/core/io/address.proto\"\x88\x03\n\nSMPCAction\x12\x13\n\x0bname_action\x18\x01 \x01(\t\x12\'\n\x08_self_id\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61rgs_id\x18\x03 \x03(\x0b\x32\x15.syft.core.common.UID\x12I\n\tkwargs_id\x18\x04 \x03(\x0b\x32\x36.syft.core.node.common.action.SMPCAction.KwargsIdEntry\x12-\n\x0eid_at_location\x18\x06 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x07 \x01(\x0b\x32\x15.syft.core.io.Address\x12%\n\x06msg_id\x18\x08 \x01(\x0b\x32\x15.syft.core.common.UID\x1aK\n\rKwargsIdEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12)\n\x05value\x18\x02 \x01(\x0b\x32\x1a.syft.core.pointer.Pointer:\x02\x38\x01\x62\x06proto3'
+  serialized_pb=b'\n-proto/core/node/smpc/action/smpc_action.proto\x12\x1csyft.core.node.common.action\x1a%proto/core/common/common_object.proto\x1a proto/core/pointer/pointer.proto\x1a\x1bproto/core/io/address.proto\"\x87\x03\n\nSMPCAction\x12\x13\n\x0bname_action\x18\x01 \x01(\t\x12&\n\x07self_id\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61rgs_id\x18\x03 \x03(\x0b\x32\x15.syft.core.common.UID\x12I\n\tkwargs_id\x18\x04 \x03(\x0b\x32\x36.syft.core.node.common.action.SMPCAction.KwargsIdEntry\x12-\n\x0eid_at_location\x18\x06 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x07 \x01(\x0b\x32\x15.syft.core.io.Address\x12%\n\x06msg_id\x18\x08 \x01(\x0b\x32\x15.syft.core.common.UID\x1aK\n\rKwargsIdEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12)\n\x05value\x18\x02 \x01(\x0b\x32\x1a.syft.core.pointer.Pointer:\x02\x38\x01\x62\x06proto3'
   ,
   dependencies=[proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,proto_dot_core_dot_pointer_dot_pointer__pb2.DESCRIPTOR,proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,])
 
@@ -63,8 +63,8 @@ _SMPCACTION_KWARGSIDENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=499,
-  serialized_end=574,
+  serialized_start=498,
+  serialized_end=573,
 )
 
 _SMPCACTION = _descriptor.Descriptor(
@@ -83,7 +83,7 @@ _SMPCACTION = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='_self_id', full_name='syft.core.node.common.action.SMPCAction._self_id', index=1,
+      name='self_id', full_name='syft.core.node.common.action.SMPCAction.self_id', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -137,12 +137,12 @@ _SMPCACTION = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=182,
-  serialized_end=574,
+  serialized_end=573,
 )
 
 _SMPCACTION_KWARGSIDENTRY.fields_by_name['value'].message_type = proto_dot_core_dot_pointer_dot_pointer__pb2._POINTER
 _SMPCACTION_KWARGSIDENTRY.containing_type = _SMPCACTION
-_SMPCACTION.fields_by_name['_self_id'].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_SMPCACTION.fields_by_name['self_id'].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
 _SMPCACTION.fields_by_name['args_id'].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
 _SMPCACTION.fields_by_name['kwargs_id'].message_type = _SMPCACTION_KWARGSIDENTRY
 _SMPCACTION.fields_by_name['id_at_location'].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID

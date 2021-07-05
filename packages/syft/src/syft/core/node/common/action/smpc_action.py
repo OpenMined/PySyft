@@ -1,39 +1,53 @@
 # stdlib
 import operator
+from typing import List
 from typing import Optional
+from uuid import UUID
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from nacl.signing import VerifyKey
 import numpy as np
 
 # syft absolute
 from syft import lib
 
 # syft relative
+from ..... import serialize
 from .....proto.core.node.smpc.action.smpc_action_pb2 import SMPCAction as SMPCAction_PB
 from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
+from ....tensor.share_tensor import ShareTensor
+from ...abstract.node import AbstractNode
 from ...common.action.common import ImmediateActionWithoutReply
+
+MAP_FUNC_TO_NR_GENERATOR_INVOKES = {"__add__": 0}
 
 
 def smpc_add(self_id, other_id, seed, node):
-    # There is no need to use the generator for addition
+    generator = np.random.default_rng(seed)
 
-    generator_id = np.random.default_rng(seed)
+    for _ in range(MAP_FUNC_TO_NR_GENERATOR_INVOKES["__add__"]):
+        generator.bytes(16)
+
+    result_id = UID(UUID(bytes=generator.bytes(16)))
+
     other = node.store[other_id].data
 
-    # TODO: Instaciate Actual Action with ImmediateActionWithoutReply
     actions = []
     if isinstance(other, ShareTensor):
         # All parties should add the other share if empty list
         actions.append(
             SMPCAction(
                 "mpc_add",
-                args_ids=[self_id, other_id],
-                kwargs_ids={},
+                self_id=self_id,
+                args_id=[other_id],
+                kwargs_id={},
                 ranks_to_run_action=[],
+                result_id=result_id,
+                address=node.address,
             )
         )
     else:
@@ -41,9 +55,12 @@ def smpc_add(self_id, other_id, seed, node):
         actions.append(
             SMPCAction(
                 "mpc_add",
-                args_ids=[self_id, other_id],
-                kwargs_ids={},
+                self_id=self_id,
+                args_id=[other_id],
+                kwargs_id={},
                 ranks_to_run_action=[0],
+                result_id=result_id,
+                address=node.address,
             )
         )
 
@@ -66,30 +83,32 @@ def SMPCExecute(actions, node):
 @bind_protobuf
 class SMPCAction(ImmediateActionWithoutReply):
     def __init__(
+        self,
         name_action,
         self_id,
         args_id,
         kwargs_id,
         result_id,
-        ranks_to_run_action,
         address: Address,
+        ranks_to_run_action: Optional[List[int]] = None,
         msg_id: Optional[UID] = None,
     ):
         self.name_action = name_action
         self.self_id = self_id
-        self.args_id = id_args
-        self.kwargs_id = id_kwargs
-        self.result_id = result_id
+        self.args_id = args_id
+        self.kwargs_id = kwargs_id
+        self.id_at_location = result_id
         self.ranks_to_run_action = ranks_to_run_action
         self.address = address
         self.msg_id = msg_id
+        super().__init__(address=address, msg_id=msg_id)
 
     @staticmethod
     def filter_actions_after_rank(rank, actions):
         return [
             action
             for action in actions
-            if x.rank_to_run_action == [] or rank in x.rank_to_run_action
+            if action.ranks_to_run_action == [] or rank in action.ranks_to_run_action
         ]
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
@@ -121,6 +140,10 @@ class SMPCAction(ImmediateActionWithoutReply):
             raise Exception("Abort since could not retrieve args/kwargs!")
 
         return res
+
+    @staticmethod
+    def get_action_generator_from_op(operation_str):
+        return MAP_FUNC_TO_ACTION[operation_str]
 
     def _object2proto(self) -> SMPCAction_PB:
         """Returns a protobuf serialization of self.
@@ -164,10 +187,11 @@ class SMPCAction(ImmediateActionWithoutReply):
         """
 
         return SMPCAction(
-            name_action=name_action,
-            args_id=_deserialize(proto.args_id),
+            name_action=proto.name_action,
+            self_id=_deserialize(blob=proto.self_id),
+            args_id=list(map(lambda x: _deserialize(blob=x), proto.args_id)),
             kwargs_id={k: v for k, v in proto.kwargs_id.items()},
-            id_at_location=_deserialize(blob=proto.id_at_location),
+            result_id=_deserialize(blob=proto.id_at_location),
             address=_deserialize(blob=proto.address),
             msg_id=_deserialize(blob=proto.msg_id),
         )
