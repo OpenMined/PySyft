@@ -1,10 +1,22 @@
 # third party
 import numpy as np
+import time
 
 # syft absolute
 import syft as sy
 from syft.core.tensor.fixed_precision_tensor import FixedPrecisionTensor
 from syft.core.tensor.share_tensor import ShareTensor
+from syft.core.common.uid import UID
+from uuid import UUID
+
+
+def thread_func():
+    time.sleep(4)
+    print("Sending other share with id {id_other}")
+
+    generator = np.random.default_rng(seed=42)
+    id_other = UID(UUID(bytes=generator.bytes(16)))
+    share2_ptr = share2.send(client, id_at_location=id_other)
 
 vm = sy.VirtualMachine(name="alice")
 client = vm.get_client()
@@ -17,7 +29,11 @@ share1_ptr = share1.send(client)
 
 value2 = np.array([100])
 share2 = ShareTensor(rank=0, value=value2)
-share2_ptr = share2.send(client)
 
-share3_ptr = share1_ptr + share2_ptr
+
+share3_ptr = share1_ptr.smpc_test()
+
+thread = Thread(thread_func)
+
+
 print(share3_ptr.get())
