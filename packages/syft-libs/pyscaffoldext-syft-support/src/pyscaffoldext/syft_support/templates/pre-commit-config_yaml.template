@@ -1,4 +1,4 @@
-files: ^packages/syft
+files: ^packages/syft-libs/${name}
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v3.4.0
@@ -20,21 +20,21 @@ repos:
     rev: 3.9.1
     hooks:
       - id: flake8
-        args: ["--config=packages/syft/setup.cfg"]
+        args: ["--config=packages/syft-libs/${name}/setup.cfg"]
         # additional_dependencies:
         # - flake8-kwarger
         # - darglint
-        exclude: ^(packages/syft/src/syft/proto|packages/syft/examples/duet)
+        exclude: ^(packages/syft-libs/${name}/src/${package}/proto)
   - repo: https://github.com/psf/black
     rev: 21.4b0
     hooks:
       - id: black
-        exclude: ^(packages/syft/src/syft/proto|examples/duet)
+        exclude: ^(packages/syft-libs/${name}/src/${package}/proto)
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v0.812
     hooks:
       - id: mypy
-        exclude: ^(packages/syft/src/syft/proto|packages/syft/tests/syft/lib/python|packages/syft/examples/duet|packages/syft-libs)
+        exclude: ^(packages/syft-libs/${name}/src/${package}/proto)
         args: [
             "--ignore-missing-imports",
             "--scripts-are-modules",
