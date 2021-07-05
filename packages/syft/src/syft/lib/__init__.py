@@ -274,3 +274,8 @@ def post_import_hook_third_party(module: TypeAny) -> None:
     # warning(msg, print=True)
     # warnings.warn(msg, DeprecationWarning)
     load(module.__name__, ignore_warning=True)
+
+
+def support_packages():
+    return sys.modules["__SYFT_PACKAGE_SUPPORT"]
+    

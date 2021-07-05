@@ -30,14 +30,17 @@ bind_lib = ""
 
 def register_library(lib: str, update_ast: Callable, objects):
     load(lib, ignore_warning=True)
-    if "_SYFT_PACKAGE_SUPPORT" not in sys.modules:
-        sys.modules["_SYFT_PACKAGE_SUPPORT"] = []
-    sys.modules["_SYFT_PACKAGE_SUPPORT"].append(lib)
+    if "__SYFT_PACKAGE_SUPPORT" not in sys.modules:
+        sys.modules["__SYFT_PACKAGE_SUPPORT"] = []
+    sys.modules["__SYFT_PACKAGE_SUPPORT"].append(lib)
     bind_library(lib)
 
 
 def bind_library(lib: str):
     global bind_lib
+    bind_lib=f"sy.{lib}"
     package = "syft.lib"
     module_path = f"{package}.{lib}"
-    bind_lib = sys.modules[module_path]
+    globals()[bind_lib] = sys.modules[module_path]
+
+
