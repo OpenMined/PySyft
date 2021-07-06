@@ -132,7 +132,14 @@ def launch(name, type, port, tag, keep_db, host="localhost"):
     type=str,
     help="Optional: the underlying docker tag used (Default: 'domain_'+md5(name)",
 )
-def land(type, name, port, tag):
+@click.option(
+    "--keep-db/--delete-db",
+    default=False,
+    required=False,
+    type=bool,
+    help="""If restarting a node that already existed, don't/do reset the database (Default: deletes the db)""",
+)
+def land(type, name, port, tag, keep_db):
 
     if tag == "" and name == "":
         raise Exception(
@@ -182,6 +189,11 @@ def land(type, name, port, tag):
     cmd = "cd " + install_path + ";export $(cat .env | sed 's/#.*//g' | xargs);" + cmd
     print(cmd)
     subprocess.call(cmd, shell=True)
+
+    if not keep_db:
+        print("Deleting database for node...")
+        subprocess.call("docker volume rm " + tag + "_app-db-data", shell=True)
+        print()
 
 
 cli.add_command(launch)
