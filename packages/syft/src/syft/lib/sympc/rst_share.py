@@ -51,9 +51,7 @@ def proto2object(proto: ReplicatedSharedTensor_PB) -> ReplicatedSharedTensor:
         if session is None:
             raise ValueError(f"The session {proto.session_uuid} could not be found")
 
-        config = dataclasses.asdict(session.config)
-    else:
-        config = syft.deserialize(proto.config, from_proto=True)
+    config = syft.deserialize(proto.config, from_proto=True)
 
     output_shares = []
 
