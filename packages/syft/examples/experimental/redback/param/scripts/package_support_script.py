@@ -51,31 +51,30 @@ def set_classes(modules_list: TypeAny, root_module: str) -> TypeAny:
     classes_set = set()
     # print(f'Len of modules_list {len(modules_list)}')
     for i in modules_list:
-        module = importlib.import_module(i)
-        # print(f'{module} {i}')
-        for ax in dir(module):
-            # print(ax)
-            # print(f' {module.__name__}, {ax}')
-            t = getattr(module, ax)
-            if inspect.isclass(t):
-                mod_name = t.__module__.split(".")
-                if root_module == mod_name[0]:
-                    # print(f'{t} {t.__module__}')
-                    # classes_set.add(module.__name__ + "." + t.__name__) # Number of classes 1224
-                    classes_set.add(i + "." + ax)
-                    """
-                    classes_set.add(
-                        t.__module__ + "." + t.__name__
-                    )  # for sklearn: number of classes 500
+        try:
+            module = importlib.import_module(i)
+            # print(f'{module} {i}')
+            for ax in dir(module):
+                # print(ax)
+                # print(f' {module.__name__}, {ax}')
+                t = getattr(module, ax)
+                if inspect.isclass(t):
+                    mod_name = t.__module__.split(".")
+                    if root_module == mod_name[0]:
+                        # print(f'{t} {t.__module__}')
+                        # classes_set.add(module.__name__ + "." + t.__name__) # Number of classes 1224
+                        classes_set.add(i + "." + ax)
+                        """
+                        classes_set.add(
+                            t.__module__ + "." + t.__name__
+                        )  # for sklearn: number of classes 500
 
-                    """
-                    if t.__module__ == "xgboost.core":
-                        print(
-                            f'{t.__module__ + "." + t.__name__} and {module.__name__ + "." + t.__name__}'
-                        )
+                        """
 
-                # else:
-                # print(f'in else {t.__name__} {t.__class__} {module} {root_module}')
+                    # else:
+                    # print(f'in else {t.__name__} {t.__class__} {module} {root_module}')
+        except Exception as e:
+            print(f"set_classes: module_name = {i}: exception occoured \n\t{e}")
 
     # print(f'Len of classes_set {len(classes_set)}')
     return classes_set
@@ -155,9 +154,11 @@ def main() -> None:
         print(f"Package {package_name} not found...")
         sys.exit(1)
 
-    modules_list = []  # type: ignore
+    modules_list = [package_name]
 
     list_submodules(modules_list, package)
+
+    print(f"Number of modules {len(modules_list)}")
 
     classes_list = list(set_classes(modules_list, package_name))
 
