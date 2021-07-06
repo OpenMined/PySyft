@@ -1,17 +1,15 @@
 # syft absolute
-from syft import Domain
-from syft import Network
 from syft.core.node.common.node_table import Base
 from syft.core.node.common.node_table.utils import seed_db
 
 # grid absolute
 from app.core.config import settings
-from app.db.session import SessionLocal
-from app.db.session import engine
+from app.db.session import SessionLocal, engine
+from syft import Domain, Network
 
-if settings.NODE_TYPE == "Domain":
+if settings.NODE_TYPE.lower() == "domain":
     node = Domain("Domain", db_engine=engine)
-elif settings.NODE_TYPE == "Network":
+elif settings.NODE_TYPE.loser() == "network":
     node = Network("Network", db_engine=engine)
 else:
     raise Exception(
