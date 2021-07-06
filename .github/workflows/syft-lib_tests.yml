@@ -106,7 +106,7 @@ jobs:
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
           pip install -r requirements.unstable.txt
-          pip install -e . -f https://download.pytorch.org/whl/torch_stable.html
+          pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
 
       - name: Install Support lib
@@ -114,10 +114,10 @@ jobs:
           pwd
           find . -type d -name "syft-*" -exec bash -c 'pip install $0' {} \;
 
-      - name: Scan for security issues
-        run: |
-          bandit -r src
-          safety check
+      # - name: Scan for security issues
+      #   run: |
+      #     bandit -r src
+      #     safety check
 
       - name: Install libomp for XGBoost
         if: startsWith(runner.os, 'macos')
