@@ -12,7 +12,9 @@ import requests
 from .lib import check_docker
 from .lib import motorcycle
 
-install_path = os.path.dirname(os.path.realpath(__file__))
+install_path = os.path.abspath(
+    os.path.join(os.path.realpath(__file__), "../../../grid/")
+)
 
 
 @click.group()
@@ -99,10 +101,6 @@ def launch(name, type, port, tag, keep_db, host="localhost"):
     cmd += " NODE_TYPE=" + type
     cmd += " docker compose -p " + tag
     cmd += " up"
-
-    install_path = os.path.abspath(
-        os.path.join(os.path.realpath(__file__), "../../../grid/")
-    )
 
     cmd = "cd " + install_path + ";" + cmd
     print(cmd)
