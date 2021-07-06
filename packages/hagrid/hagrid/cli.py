@@ -1,28 +1,42 @@
-import click
-from .lib import motorcycle
+# stdlib
+import hashlib
 import os
 import subprocess
 
+# third party
+import click
+import names
+
+# relative
+from .lib import motorcycle
+
 install_path = os.path.dirname(os.path.realpath(__file__))
+
 
 @click.group()
 def cli():
     pass
 
+
 @click.command(help="Have your new program say Hi to you!")
-@click.argument('type', type=click.Choice(['domain', 'network']))
-@click.option('--name', default="", required=False, type=str)
-@click.option('--port', default=8081, required=False, type=int)
-@click.option('--tag', default="", required=False, type=str)
+@click.argument("type", type=click.Choice(["domain", "network"]))
+@click.option("--name", default="", required=False, type=str)
+@click.option("--port", default=8081, required=False, type=int)
+@click.option("--tag", default="", required=False, type=str)
 def launch(type, name, port, tag):
 
+    if name == "":
+        name = names.get_full_name() + "'s " + type.capitalize()
+
     if tag != "":
-        if ' ' in tag:
+        if " " in tag:
             raise Exception("Can't have spaces in --tag. Try something without spaces.")
+    else:
+        tag = hashlib.md5(name.encode("utf8")).hexdigest()
 
-    docker, compose, word, version = os.popen('docker compose version', 'r').read().split()
-
-
+    docker, compose, word, version = (
+        os.popen("docker compose version", "r").read().split()
+    )
 
     motorcycle()
 
@@ -35,17 +49,20 @@ def launch(type, name, port, tag):
 
     print("\n")
 
-    cmd = "DOMAIN_PORT="+str(port)
-    cmd += " TRAEFIK_TAG="+tag
-    cmd += " DOMAIN_NAME=\""+name+"\""
-    cmd += " NODE_TYPE="+type
+    cmd = "DOMAIN_PORT=" + str(port)
+    cmd += " TRAEFIK_TAG=" + tag
+    cmd += ' DOMAIN_NAME="' + name + '"'
+    cmd += " NODE_TYPE=" + type
     cmd += " docker compose -p " + tag
     cmd += " up"
 
-    install_path =os.path.abspath(os.path.join(os.path.realpath(__file__), '../../../grid/'))
+    install_path = os.path.abspath(
+        os.path.join(os.path.realpath(__file__), "../../../grid/")
+    )
 
     cmd = "cd " + install_path + ";" + cmd
     print(cmd)
     subprocess.call(cmd, shell=True)
+
 
 cli.add_command(launch)
