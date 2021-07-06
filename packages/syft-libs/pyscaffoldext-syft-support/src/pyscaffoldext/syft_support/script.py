@@ -60,7 +60,7 @@ def set_classes(
                 # print(ax)
                 # print(f' {module.__name__}, {ax}')
                 t = getattr(module, ax)
-                if inspect.isclass(t):
+                if inspect.isclass(t):  # classes in modules
                     mod_name = t.__module__.split(".")
                     if root_module == mod_name[0]:
                         # print(f'{t} {t.__module__}')
@@ -75,6 +75,9 @@ def set_classes(
 
                     # else:
                     # print(f'in else {t.__name__} {t.__class__} {module} {root_module}')
+
+                # ToDo: add methods/fuctions in modules to allowlist
+                # Example: `statsmodels.api.add_constant`
         except Exception as e:
             # print(f"set_classes: module_name = {i}: exception occoured \n\t{e}")
             debug_list.append(
