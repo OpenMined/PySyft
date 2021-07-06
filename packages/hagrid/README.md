@@ -8,9 +8,9 @@ A Hagrid is a HAppy GRID!
 ```bash
 pip install -r requirements.txt
 pip install -e .
-
-# NOTE: don't use 'python setup.py install' or 'pip install .'
 ```
+
+> **_NOTE:_**  Don't use `python setup.py install` or `pip install .` without the `-e`
 
 ## Launch a Node
 
