@@ -163,7 +163,6 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
 
     def run_smpc_class_method(
         __self: Any,
-        seed: int,
         *args: Tuple[Any, ...],
         **kwargs: Any,
     ) -> object:
@@ -178,15 +177,19 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
         """
         from syft.core.tensor.share_tensor import ShareTensor
         import numpy as np
-        from syft.core.node.smpc.action.action import MAP_FUNC_TO_NR_GENERATOR_INVOKES
+        from uuid import UUID
+        from syft.core.node.common.action.smpc_action import MAP_FUNC_TO_NR_GENERATOR_INVOKES
 
+        # TODO: Seed should always be regenerated for every operation
+        seed = 42
         generator = np.random.default_rng(seed)
 
-        nr_ops = MAP_FUNC_TO_NR_GENERATOR_INVOKES[ShareTensor.attr_path_and_name.split(".")[-1]]
+        nr_ops = MAP_FUNC_TO_NR_GENERATOR_INVOKES[attr_path_and_name.split(".")[-1]]
         for _ in range(nr_ops):
             generator.bytes(16)
 
         id_at_location = UID(UUID(bytes=generator.bytes(16)))
+        print(f"Run SMPC CLASS METHOD {id_at_location}")
         # we want to get the return type which matches the attr_path_and_name
         # so we ask lib_ast for the return type name that matches out
         # attr_path_and_name and then use that to get the actual pointer klass
@@ -214,7 +217,7 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
             _self=__self,
             args=pointer_args,
             kwargs=pointer_kwargs,
-            id_at_location=result_id_at_location,
+            id_at_location=result.id_at_location,
             address=__self.client.address,
         )
         __self.client.send_immediate_msg_without_reply(msg=cmd)
@@ -230,7 +233,7 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
         return result
 
     if "ShareTensor" in attr_path_and_name:
-        run_smpc_class_method
+        return run_smpc_class_method
 
     return run_class_method
 

@@ -68,5 +68,6 @@ class SignedNodeServiceWithReply(ImmediateNodeService):
 class SignedNodeServiceWithoutReply(ImmediateNodeService):
     pass
 
+
 class SMPCAction(ImmediateNodeService):
     pass

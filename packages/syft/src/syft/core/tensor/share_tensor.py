@@ -110,9 +110,17 @@ class ShareTensor(PassthroughTensor, Serializable):
         share.child += shares[rank] - shares[(rank + 1) % nr_parties]
         return share
 
-    # Dummy stuff
-    def __add__(self):
-        ...
+    def __add__(self, other):
+        if isinstance(other, ShareTensor):
+            return ShareTensor(value=self.child + other.child, rank=self.rank)
+        else:
+            raise ValueError("Expected other to be ShareTensor")
+
+    def __mul__(self, other):
+        if isinstance(other, ShareTensor):
+            raise ValueError("Private Multiplication not yet implemented")
+        else:
+            return ShareTensor(value=self.child * other, rank=self.rank)
 
     def smpc_test(self):
         ...

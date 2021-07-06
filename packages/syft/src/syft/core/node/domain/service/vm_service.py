@@ -14,6 +14,7 @@ from .request_answer_message import RequestAnswerMessage
 from .request_answer_message import RequestAnswerResponse
 from .request_message import RequestMessage
 from .request_message import RequestStatus
+from ...common.action.smpc_action import SMPCAction
 
 
 class VMRequestService(ImmediateNodeServiceWithoutReply):
@@ -54,3 +55,15 @@ class VMRequestAnswerMessageService(ImmediateNodeServiceWithReply):
         return RequestAnswerResponse(
             request_id=msg.request_id, address=address, status=status
         )
+
+
+class VMSMPCService(ImmediateNodeServiceWithoutReply):
+    @staticmethod
+    def message_handler_types() -> List[type]:
+        return [SMPCAction]
+
+    @staticmethod
+    def process(
+        node: AbstractNode, msg: RequestMessage, verify_key: Optional[VerifyKey] = None
+    ) -> None:
+        msg.execute_action(node, verify_key)

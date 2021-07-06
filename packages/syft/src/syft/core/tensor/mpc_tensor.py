@@ -1,6 +1,7 @@
 # stdlib
 from functools import lru_cache
 from functools import reduce
+import itertools
 import operator
 
 # third party
@@ -19,12 +20,7 @@ def is_pointer(val):
 
 class MPCTensor(PassthroughTensor):
     def __init__(
-        self,
-        parties=None,
-        secret=None,
-        shares=None,
-        shape=None,
-        seed_shares=None
+        self, parties=None, secret=None, shares=None, shape=None, seed_shares=None
     ):
         if secret is None and shares is None:
             raise ValueError("Secret or shares should be populated!")
@@ -126,9 +122,22 @@ class MPCTensor(PassthroughTensor):
         if isinstance(other, MPCTensor):
             res_shares = [operator.add(a, b) for a, b in zip(self.child, other.child)]
         else:
-            res_shares = [operator.add(a, b) for a, b in zip(self.child, other)]
+            res_shares = [operator.add(a, b) for a, b in zip(self.child, itertools.repeat(other))]
 
         new_shape = MPCTensor.__get_shape(self.mpc_shape, other.mpc_shape, operator.add)
-        res = MPCTensor(shares = res_shares, shape=new_shape)
+        res = MPCTensor(shares=res_shares, shape=new_shape)
+
+        return res
+
+    def __mul__(self, other):
+        if isinstance(other, MPCTensor):
+            raise ValueError("Private multiplication not yet implemented!")
+        else:
+            res_shares = [
+                operator.mul(a, b) for a, b in zip(self.child, itertools.repeat(other))
+            ]
+
+        new_shape = MPCTensor.__get_shape(self.mpc_shape, other.shape, operator.mul)
+        res = MPCTensor(shares=res_shares, shape=new_shape)
 
         return res

@@ -23,7 +23,7 @@ from ....tensor.share_tensor import ShareTensor
 from ...abstract.node import AbstractNode
 from ...common.action.common import ImmediateActionWithoutReply
 
-MAP_FUNC_TO_NR_GENERATOR_INVOKES = {"__add__": 0}
+MAP_FUNC_TO_NR_GENERATOR_INVOKES = {"__add__": 0, "__mul__": 0}
 
 
 def smpc_add(self_id, other_id, seed, node):
@@ -33,7 +33,6 @@ def smpc_add(self_id, other_id, seed, node):
         generator.bytes(16)
 
     result_id = UID(UUID(bytes=generator.bytes(16)))
-
     other = node.store[other_id].data
 
     actions = []
@@ -67,11 +66,41 @@ def smpc_add(self_id, other_id, seed, node):
     return actions
 
 
-MAP_FUNC_TO_ACTION = {"__add__": smpc_add}
+def smpc_mul(self_id, other_id, seed, node):
+    generator = np.random.default_rng(seed)
+
+    for _ in range(MAP_FUNC_TO_NR_GENERATOR_INVOKES["__mul__"]):
+        generator.bytes(16)
+
+    result_id = UID(UUID(bytes=generator.bytes(16)))
+    other = node.store[other_id].data
+
+    actions = []
+    if isinstance(other, ShareTensor):
+        raise ValueError("Not yet implemented Private Multiplication")
+    else:
+        # All ranks should multiply by that public value
+        actions.append(
+            SMPCAction(
+                "mpc_mul",
+                self_id=self_id,
+                args_id=[other_id],
+                kwargs_id={},
+                ranks_to_run_action=[],
+                result_id=result_id,
+                address=node.address,
+            )
+        )
+
+    return actions
+
+
+MAP_FUNC_TO_ACTION = {"__add__": smpc_add, "__mul__": smpc_mul}
 
 
 _MAP_ACTION_TO_FUNCTION = {
     "mpc_add": operator.add,
+    "mpc_mul": operator.mul,
 }
 
 
@@ -112,26 +141,25 @@ class SMPCAction(ImmediateActionWithoutReply):
         ]
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
-        operation, args_ids, kwargs_ids = action
-        func = _MAP_ACTION_TO_FUNCTION[operation]
+        func = _MAP_ACTION_TO_FUNCTION[self.name_action]
 
         args = None
         kwargs = None
 
         for i in range(10):
             try:
-                args = [node.store[arg_id].data for arg_id in args_ids]
+                _self = node.store.get_object(key=self.self_id).data
+                args = [node.store[arg_id].data for arg_id in self.args_id]
                 kwargs = {
-                    key: node.store[kwarg_id].data for key, kwarg_id in kwargs_ids
+                    key: node.store[kwarg_id].data for key, kwarg_id in self.kwargs_id
                 }
                 (
                     upcasted_args,
                     upcasted_kwargs,
                 ) = lib.python.util.upcast_args_and_kwargs(args, kwargs)
-
-                res = func(*upcasted_args, **upcasted_kwargs)
+                res = func(_self, *upcasted_args, **upcasted_kwargs)
+                node.store[self.id_at_location] = res
                 break
-
             except KeyError:
                 # For the object to reach the store and retry
                 time.sleep(1)

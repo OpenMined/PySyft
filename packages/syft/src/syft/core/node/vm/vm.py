@@ -53,8 +53,10 @@ class VirtualMachine(Node):
         # syft relative
         from ..domain.service.vm_service import VMRequestAnswerMessageService
         from ..domain.service.vm_service import VMRequestService
+        from ..domain.service.vm_service import VMSMPCService
 
         self.immediate_services_without_reply.append(VMRequestService)
+        self.immediate_services_without_reply.append(VMSMPCService)
         self.immediate_services_with_reply.append(VMRequestAnswerMessageService)
         # All node subclasses have to call this at the end of their __init__
         self._register_services()
