@@ -12,7 +12,7 @@ pip install -e .
 
 ## Usage Examples
 
-![alt text](cli.png)
+![alt text](cli2.png)
 
 ## Conventions
 
