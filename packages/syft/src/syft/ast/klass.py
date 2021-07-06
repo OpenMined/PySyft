@@ -178,9 +178,11 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
         from syft.core.tensor.share_tensor import ShareTensor
         import numpy as np
         from uuid import UUID
-        from syft.core.node.common.action.smpc_action import MAP_FUNC_TO_NR_GENERATOR_INVOKES
+        from syft.core.node.common.action.smpc_action import (
+            MAP_FUNC_TO_NR_GENERATOR_INVOKES,
+        )
 
-        # TODO: Seed should always be regenerated for every operation
+        # TODO: Seed should always be regenerated for every operation and sent
         seed = 42
         generator = np.random.default_rng(seed)
 
@@ -189,7 +191,7 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
             generator.bytes(16)
 
         id_at_location = UID(UUID(bytes=generator.bytes(16)))
-        print(f"Run SMPC CLASS METHOD {id_at_location}")
+
         # we want to get the return type which matches the attr_path_and_name
         # so we ask lib_ast for the return type name that matches out
         # attr_path_and_name and then use that to get the actual pointer klass
@@ -664,7 +666,7 @@ class Class(Callable):
                 attach_description(self, description)
 
             if id_at_location is None:
-               id_at_location = UID()
+                id_at_location = UID()
 
             # Step 1: create pointer which will point to result
             ptr = getattr(outer_self, outer_self.pointer_name)(

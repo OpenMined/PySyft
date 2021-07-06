@@ -14,8 +14,11 @@ from syft import lib
 
 # syft relative
 from ..... import serialize
-from .....proto.core.node.smpc.action.smpc_action_pb2 import SMPCAction as SMPCAction_PB
+from .....proto.core.node.common.action.smpc_action_pb2 import (
+    SMPCAction as SMPCAction_PB,
+)
 from ....common.serde.deserialize import _deserialize
+from ....common.serde.serializable import Serializable
 from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
@@ -104,11 +107,6 @@ _MAP_ACTION_TO_FUNCTION = {
 }
 
 
-def SMPCExecute(actions, node):
-    for action in actions:
-        _try_action_with_retry(action, node)
-
-
 @bind_protobuf
 class SMPCAction(ImmediateActionWithoutReply):
     def __init__(
@@ -145,29 +143,15 @@ class SMPCAction(ImmediateActionWithoutReply):
 
         args = None
         kwargs = None
-
-        for i in range(10):
-            try:
-                _self = node.store.get_object(key=self.self_id).data
-                args = [node.store[arg_id].data for arg_id in self.args_id]
-                kwargs = {
-                    key: node.store[kwarg_id].data for key, kwarg_id in self.kwargs_id
-                }
-                (
-                    upcasted_args,
-                    upcasted_kwargs,
-                ) = lib.python.util.upcast_args_and_kwargs(args, kwargs)
-                res = func(_self, *upcasted_args, **upcasted_kwargs)
-                node.store[self.id_at_location] = res
-                break
-            except KeyError:
-                # For the object to reach the store and retry
-                time.sleep(1)
-
-        if args is None or kwargs is None:
-            raise Exception("Abort since could not retrieve args/kwargs!")
-
-        return res
+        _self = node.store.get_object(key=self.self_id).data
+        args = [node.store[arg_id].data for arg_id in self.args_id]
+        kwargs = {key: node.store[kwarg_id].data for key, kwarg_id in self.kwargs_id}
+        (
+            upcasted_args,
+            upcasted_kwargs,
+        ) = lib.python.util.upcast_args_and_kwargs(args, kwargs)
+        res = func(_self, *upcasted_args, **upcasted_kwargs)
+        node.store[self.id_at_location] = res
 
     @staticmethod
     def get_action_generator_from_op(operation_str):
@@ -195,8 +179,6 @@ class SMPCAction(ImmediateActionWithoutReply):
             args_id=list(map(lambda x: serialize(x), self.args_id)),
             kwargs_id={k: serialize(v) for k, v in self.kwargs_id.items()},
             id_at_location=serialize(self.id_at_location),
-            address=serialize(self.address),
-            msg_id=serialize(self.id),
         )
 
     @staticmethod
@@ -220,8 +202,7 @@ class SMPCAction(ImmediateActionWithoutReply):
             args_id=list(map(lambda x: _deserialize(blob=x), proto.args_id)),
             kwargs_id={k: v for k, v in proto.kwargs_id.items()},
             result_id=_deserialize(blob=proto.id_at_location),
-            address=_deserialize(blob=proto.address),
-            msg_id=_deserialize(blob=proto.msg_id),
+            address=proto,
         )
 
     @staticmethod
