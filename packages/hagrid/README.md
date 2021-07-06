@@ -8,15 +8,13 @@ A Hagrid is a HAppy GRID!
 ```bash
 pip install -r requirements.txt
 pip install -e .
+
+# NOTE: don't use 'python setup.py install' or 'pip install .'
 ```
 
-## Usage Examples
+## Launch a Node
 
 ![alt text](cli2.png)
-
-## Conventions
-
-This template aims to reflect python standards and best practices by having a proper module and package oriented structure. But feel free to customize for your own needs!
 
 ## Credits
 
