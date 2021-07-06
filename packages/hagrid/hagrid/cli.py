@@ -9,7 +9,8 @@ import names
 import requests
 
 # relative
-from .lib import check_docker, motorcycle
+from .lib import check_docker
+from .lib import motorcycle
 
 install_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -40,9 +41,16 @@ def cli():
     default="",
     required=False,
     type=str,
-    help="""Optional: the underlying docker tag used (Default: 'domain_'+md5(name)""",
+    help="Optional: the underlying docker tag used (Default: 'domain_'+md5(name)",
 )
-def launch(type, name, port, tag, host="localhost"):
+@click.option(
+    "--keep-db/--delete-db",
+    default=False,
+    required=False,
+    type=bool,
+    help="""If restarting a node that already existed, don't/do reset the database (Default: deletes the db)""",
+)
+def launch(type, name, port, tag, keep_db, host="localhost"):
 
     if name == "":
         name = names.get_full_name() + "'s " + type.capitalize()
@@ -66,6 +74,11 @@ def launch(type, name, port, tag, host="localhost"):
             port = port + 1
         except requests.ConnectionError as e:
             port_available = True
+
+    if not keep_db:
+        print("Deleting database for node...")
+        subprocess.call("docker volume rm " + tag + "_app-db-data", shell=True)
+        print()
 
     version = check_docker()
 
@@ -98,9 +111,27 @@ def launch(type, name, port, tag, host="localhost"):
 
 @click.command(help="Stop a running PyGrid domain/network node.")
 @click.argument("type", type=click.Choice(["domain", "network"]))
-@click.option("--name", default="", required=False, type=str)
-@click.option("--port", default=8081, required=False, type=int)
-@click.option("--tag", default="", required=False, type=str)
+@click.option(
+    "--name",
+    default="",
+    required=False,
+    type=str,
+    help="The name of your new domain/network node. (Default: <randomly generated>)",
+)
+@click.option(
+    "--port",
+    default=8081,
+    required=False,
+    type=int,
+    help="The public port your node exposes. (Default: 8081)",
+)
+@click.option(
+    "--tag",
+    default="",
+    required=False,
+    type=str,
+    help="Optional: the underlying docker tag used (Default: 'domain_'+md5(name)",
+)
 def land(type, name, port, tag):
 
     if tag == "" and name == "":
