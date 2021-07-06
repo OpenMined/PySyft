@@ -112,7 +112,7 @@ jobs:
       - name: Install Support lib
         run: |
           pwd
-          find . -type d -name "syft-*" -exec bash -c 'pip install $0' {} \;
+          find . -type d -name "syft-*" -exec pip install {} \;
 
       # - name: Scan for security issues
       #   run: |
