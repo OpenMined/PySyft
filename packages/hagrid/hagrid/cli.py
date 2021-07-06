@@ -134,7 +134,7 @@ def launch(name, type, port, tag, keep_db, host="localhost"):
 )
 @click.option(
     "--keep-db/--delete-db",
-    default=False,
+    default=True,
     required=False,
     type=bool,
     help="""If restarting a node that already existed, don't/do reset the database (Default: deletes the db)""",
