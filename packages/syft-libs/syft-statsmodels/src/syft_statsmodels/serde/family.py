@@ -1,15 +1,15 @@
 # stdlib
-from typing import Dict
-from typing import Type
+from typing import Dict, Type
+
+# syft absolute
+from syft.lib.python.primitive_factory import PrimitiveFactory
+from syft.lib.python.string import String
 
 # third party
 import statsmodels
 
 # syft relative
-from ...generate_wrapper import GenerateWrapper
-from ...lib.python.primitive_factory import PrimitiveFactory
-from ...lib.python.string import String
-from ...proto.lib.statsmodels.family_pb2 import FamilyProto
+from ..proto.family_pb2 import FamilyProto  # type: ignore
 
 FAMILY_2_STR: Dict[Type[statsmodels.genmod.families.family.Family], str] = {
     statsmodels.genmod.families.family.Binomial: "Binomial",
@@ -51,7 +51,6 @@ def object2proto(obj: Type[statsmodels.genmod.families.family.Family]) -> Family
     link_name_prim = PrimitiveFactory.generate_primitive(value=link_name)
     family_name_proto = family_name_prim._object2proto()
     link_name_proto = link_name_prim._object2proto()
-
     return FamilyProto(family=family_name_proto, link=link_name_proto)
 
 
@@ -62,11 +61,13 @@ def proto2object(proto: FamilyProto) -> Type[statsmodels.genmod.families.family.
     return obj
 
 
-for fam in FAMILY_2_STR.keys():
-    GenerateWrapper(
-        wrapped_type=fam,
-        import_path="statsmodels.genmod.families.family" + fam.__class__.__name__,
-        protobuf_scheme=FamilyProto,
-        type_object2proto=object2proto,
-        type_proto2object=proto2object,
-    )
+serde = [
+    {
+        "wrapped_type": fam,
+        "import_path": "statsmodels.genmod.families.family" + fam.__class__.__name__,
+        "protobuf_scheme": FamilyProto,
+        "type_object2proto": object2proto,
+        "type_proto2object": proto2object,
+    }
+    for fam in FAMILY_2_STR.keys()
+]

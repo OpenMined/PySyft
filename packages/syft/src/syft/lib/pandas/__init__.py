@@ -39,6 +39,8 @@ def create_ast(client: TypeAny = None) -> Globals:
     ]
 
     methods: TypeList[TypeTuple[str, str]] = [
+        ("pandas.read_csv","pandas.DataFrame"),
+        ("pandas.read_json","pandas.DataFrame"),
         ("pandas.json_normalize", "pandas.DataFrame"),
         ("pandas.DataFrame.__getitem__", "pandas.Series"),
         ("pandas.DataFrame.__setitem__", "pandas.Series"),

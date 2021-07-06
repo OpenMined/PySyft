@@ -1,0 +1,15 @@
+{
+  "lib": "xyz",
+  "modules": [
+    "foo",
+    "foo.abc"
+  ],
+  "classes": [
+    "foo.X",
+    "foo.abc.A"
+  ],
+  "methods": [
+    ["method", "returntype"],
+    ["foo.bar.f","foo.type"],
+    ]
+}

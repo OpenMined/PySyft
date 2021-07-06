@@ -59,6 +59,7 @@ def create_ast(client: TypeAny) -> Globals:
         ("xgboost.XGBRegressor", "xgboost.XGBRegressor", xgb.XGBRegressor),
         ("xgboost.XGBRFRegressor", "xgboost.XGBRFRegressor", xgb.XGBRFRegressor),
         # ("xgboost.dask.DaskXGBRFRegressor"), Currently dask is not supported in syft
+        ("xgboost.XGBRanker", "xgboost.XGBRanker", xgb.XGBRanker),
     ]
 
     methods = [
@@ -74,6 +75,8 @@ def create_ast(client: TypeAny) -> Globals:
         ("xgboost.XGBRegressor.predict", "numpy.ndarray"),
         ("xgboost.XGBRFRegressor.fit", "xgboost.XGBRFClassifier"),
         ("xgboost.XGBRFRegressor.predict", "numpy.ndarray"),
+        ("xgboost.XGBRanker.fit", "xgboost.XGBRanker"),
+        ("xgboost.XGBRanker.predict", "numpy.ndarray"),
     ]
 
     add_modules(ast, modules)
