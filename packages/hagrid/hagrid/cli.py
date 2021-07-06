@@ -36,6 +36,8 @@ def launch(type, name, port, tag):
     else:
         tag = hashlib.md5(name.encode("utf8")).hexdigest()
 
+    tag = type + "_" + tag
+
     result = (
         os.popen(docker_compose + " version", "r").read()
     )
