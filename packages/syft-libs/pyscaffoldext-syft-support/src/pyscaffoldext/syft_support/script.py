@@ -46,7 +46,9 @@ def list_submodules(list_name: TypeAny, package_name: TypeAny) -> TypeAny:
             list_submodules(list_name, module_name)
 
 
-def set_classes(modules_list: TypeAny, root_module: str) -> TypeAny:
+def set_classes(
+    modules_list: TypeAny, root_module: str, debug_list: TypeAny
+) -> TypeAny:
 
     classes_set = set()
     # print(f'Len of modules_list {len(modules_list)}')
@@ -74,10 +76,13 @@ def set_classes(modules_list: TypeAny, root_module: str) -> TypeAny:
                     # else:
                     # print(f'in else {t.__name__} {t.__class__} {module} {root_module}')
         except Exception as e:
-            print(f"set_classes: module_name = {i}: exception occoured \n\t{e}")
+            # print(f"set_classes: module_name = {i}: exception occoured \n\t{e}")
+            debug_list.append(
+                f"set_classes: module_name = {i}: exception occoured \n\t{e}"
+            )
 
     # print(f'Len of classes_set {len(classes_set)}')
-    return classes_set
+    return classes_set, debug_list
 
 
 def class_import(name: TypeAny) -> TypeAny:
@@ -88,11 +93,11 @@ def class_import(name: TypeAny) -> TypeAny:
     return mod
 
 
-def dict_allowlist(classes_list: TypeAny) -> TypeAny:
+def dict_allowlist(classes_set: TypeAny, debug_list: TypeAny) -> TypeAny:
 
     allowlist = {}
-    debug_list = list()
-    for i in classes_list:
+
+    for i in classes_set:
         class_ = class_import(i)
         # print(class_)
         for ax in dir(class_):
@@ -155,23 +160,23 @@ def main() -> None:
         sys.exit(1)
 
     modules_list = [package_name]
+    debug_list = list()  # type: ignore
 
     list_submodules(modules_list, package)
 
     print(f"Number of modules {len(modules_list)}")
 
-    classes_list = list(set_classes(modules_list, package_name))
+    classes_set, debug_list = set_classes(modules_list, package_name, debug_list)
 
-    print(f"Number of classes {len(classes_list)}")
+    print(f"Number of classes {len(classes_set)}")
 
-    debug_list = []
-    allowlist, debug_list = dict_allowlist(classes_list)
+    allowlist, debug_list = dict_allowlist(classes_set, debug_list)
 
     print(f"len(allowlist) = {len(allowlist)}")
     package_support = {}
 
     package_support["lib"] = package_name
-    package_support["class"] = classes_list
+    package_support["class"] = list(classes_set)
     package_support["modules"] = modules_list
     package_support["methods"] = allowlist
 
