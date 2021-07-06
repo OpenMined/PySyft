@@ -9,7 +9,7 @@ from syft import Domain, Network
 
 if settings.NODE_TYPE.lower() == "domain":
     node = Domain("Domain", db_engine=engine)
-elif settings.NODE_TYPE.loser() == "network":
+elif settings.NODE_TYPE.lower() == "network":
     node = Network("Network", db_engine=engine)
 else:
     raise Exception(
