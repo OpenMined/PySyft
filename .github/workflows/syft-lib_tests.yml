@@ -110,9 +110,9 @@ jobs:
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
 
       - name: Install Support lib
-        run: /
+        run: |
           pwd
-          find . -type d -name "syft-*" -exec pip install {} \;
+          find . -type d -name "syft-*" -exec bash -c 'pip install $0' {} \;
 
       - name: Scan for security issues
         run: |
