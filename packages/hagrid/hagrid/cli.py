@@ -21,13 +21,13 @@ def cli():
 
 
 @click.command(help="Start a new PyGrid domain/network node!")
-@click.argument("type", type=click.Choice(["domain", "network"]))
+@click.argument("name", type=str)
 @click.option(
-    "--name",
-    default="",
+    "--type",
+    default="domain",
     required=False,
-    type=str,
-    help="The name of your new domain/network node. (Default: <randomly generated>)",
+    type=click.Choice(["domain", "network"]),
+    help="The type of node you would like to deploy.",
 )
 @click.option(
     "--port",
@@ -50,7 +50,7 @@ def cli():
     type=bool,
     help="""If restarting a node that already existed, don't/do reset the database (Default: deletes the db)""",
 )
-def launch(type, name, port, tag, keep_db, host="localhost"):
+def launch(name, type, port, tag, keep_db, host="localhost"):
 
     if name == "":
         name = names.get_full_name() + "'s " + type.capitalize()
@@ -110,13 +110,13 @@ def launch(type, name, port, tag, keep_db, host="localhost"):
 
 
 @click.command(help="Stop a running PyGrid domain/network node.")
-@click.argument("type", type=click.Choice(["domain", "network"]))
+@click.argument("name", type=str)
 @click.option(
-    "--name",
-    default="",
+    "--type",
+    default="domain",
     required=False,
-    type=str,
-    help="The name of your new domain/network node. (Default: <randomly generated>)",
+    type=click.Choice(["domain", "network"]),
+    help="The type of node you would like to terminate.",
 )
 @click.option(
     "--port",
@@ -153,7 +153,7 @@ def land(type, name, port, tag):
 
     version = check_docker()
 
-    motorcycle()
+    # motorcycle()
 
     print("Launching a " + str(type) + " PyGrid node on port " + str(port) + "!\n")
     print("  - TYPE: " + str(type))
