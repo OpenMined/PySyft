@@ -23,7 +23,7 @@ def cli():
 
 
 @click.command(help="Start a new PyGrid domain/network node!")
-@click.argument("name", type=str)
+@click.argument("name", type=str, nargs=-1)
 @click.option(
     "--type",
     default="domain",
@@ -53,6 +53,11 @@ def cli():
     help="""If restarting a node that already existed, don't/do reset the database (Default: deletes the db)""",
 )
 def launch(name, type, port, tag, keep_db, host="localhost"):
+
+    _name = ""
+    for word in name:
+        _name += word + " "
+    name = _name[:-1]
 
     if name == "":
         name = names.get_full_name() + "'s " + type.capitalize()
@@ -108,7 +113,7 @@ def launch(name, type, port, tag, keep_db, host="localhost"):
 
 
 @click.command(help="Stop a running PyGrid domain/network node.")
-@click.argument("name", type=str)
+@click.argument("name", type=str, nargs=-1)
 @click.option(
     "--type",
     default="domain",
@@ -138,6 +143,11 @@ def launch(name, type, port, tag, keep_db, host="localhost"):
     help="""If restarting a node that already existed, don't/do reset the database (Default: deletes the db)""",
 )
 def land(type, name, port, tag, keep_db):
+
+    _name = ""
+    for word in name:
+        _name += word + " "
+    name = _name[:-1]
 
     if tag == "" and name == "":
         raise Exception(
