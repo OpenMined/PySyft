@@ -55,21 +55,21 @@ def get_serde() -> TypeList[TypeDict[str, TypeAny]]:
 
     dir_path = Path(os.path.dirname(__file__))
     serde_dir = dir_path / "serde"
+    if serde_dir.exists():
+        for f in serde_dir.iterdir():
+            if f.name.endswith(".py"):
+                module_path = f"{f.parent.parent.stem}.serde.{f.stem}"
+                serde_module = import_module(module_path)
+                try:
+                    serde = getattr(serde_module, "serde")
+                except AttributeError:
+                    print(f"WARN: No serde found in {module_path}")
+                    pass
 
-    for f in serde_dir.iterdir():
-        if f.name.endswith(".py"):
-            module_path = f"{f.parent.parent.stem}.serde.{f.stem}"
-            serde_module = import_module(module_path)
-            try:
-                serde = getattr(serde_module, "serde")
-            except AttributeError:
-                print(f"WARN: No serde found in {module_path}")
-                pass
-
-            if isinstance(serde, Iterable) and not isinstance(serde, dict):
-                serde_objs.extend(serde)
-            else:
-                serde_objs.append(serde)
+                if isinstance(serde, Iterable) and not isinstance(serde, dict):
+                    serde_objs.extend(serde)
+                else:
+                    serde_objs.append(serde)
 
     return serde_objs
 
