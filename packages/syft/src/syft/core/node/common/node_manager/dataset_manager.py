@@ -12,6 +12,8 @@ from ..node_table.dataset import Dataset
 from .database_manager import DatabaseManager
 
 
+from syft import serialize
+
 class DatasetManager(DatabaseManager):
 
     schema = Dataset
@@ -28,18 +30,44 @@ class DatasetManager(DatabaseManager):
         Returns:
             object: Database Object
         """
-        tags = list(map(str, kwargs.get("tags", [])))
-        manifest = str(kwargs.get("manifest", ""))
-        description = str(kwargs.get("description", ""))
+        try:
+            tags = list(map(str, kwargs.get("tags", [])))
+            manifest = str(kwargs.get("manifest", ""))
+            name = str(kwargs.get("name", ""))
+            description = str(kwargs.get("description", ""))
 
-        _obj = self._schema(
-            id=str(UID().value), tags=tags, manifest=manifest, description=description
-        )
-        session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
-        session_local.add(_obj)
-        obj_id = _obj.id
-        session_local.commit()
-        session_local.close()
+            print("All the dataset arguments:")
+            print(kwargs)
+
+            blob_metadata = {}
+            str_metadata = {}
+            for key, value in kwargs.items():
+                if key != "tags" and key != "manifest" and key != "description" and key != "name":
+                    if isinstance(key, str) and isinstance(value, str):
+                        str_metadata[key] = value
+                    else:
+                        blob_metadata[str(key)] = serialize(value, to_bytes=True).hex()
+
+
+            _obj = self._schema(
+                id=str(UID().value),
+                name=name,
+                tags=tags,
+                manifest=manifest,
+                description=description,
+                str_metadata=str_metadata,
+                blob_metadata=blob_metadata
+            )
+            session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
+            session_local.add(_obj)
+            obj_id = _obj.id
+            session_local.commit()
+            session_local.close()
+        except Exception as e:
+            print("\n\n\n")
+            print(e)
+            print("\n\n\n")
+
         return obj_id
 
     def add(self, name: str, dataset_id: int, obj_id: str, dtype: str, shape: str):

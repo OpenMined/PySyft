@@ -39,7 +39,7 @@ def expand_user_object(user, db):
 def seed_db(db):
 
     new_role = Role(
-        name="User",
+        name="Data Scientist",
         can_triage_requests=False,
         can_edit_settings=False,
         can_create_users=False,

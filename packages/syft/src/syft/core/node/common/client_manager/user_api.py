@@ -30,3 +30,17 @@ class UserRequestAPI(RequestAPI):
 
     def __delitem__(self, key: int) -> None:
         self.delete(user_id=key)
+
+    def create(self, **kwargs: Any) -> None:
+        try:
+            response = self.perform_api_request(
+                syft_msg=self._create_message, content=kwargs
+            )
+            logging.info(response.resp_msg)
+        except Exception as e:
+            for user in self.all():
+                if user['email'] == kwargs['email']:
+                    print("Ignoring: user with email:"+user['email']+" already exists")
+                    return
+            raise e
+

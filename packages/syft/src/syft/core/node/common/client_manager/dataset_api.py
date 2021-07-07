@@ -26,6 +26,7 @@ from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages
 from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
     UpdateDatasetMessage,
 )
+from syft import deserialize
 
 # relative
 from ....node.common.node import Node
@@ -91,9 +92,16 @@ class Dataset:
     def __init__(self, dataset_metadata: Any) -> None:
         self.dataset_metadata = dataset_metadata
         self.id = self.dataset_metadata.id
+        self.description = self.dataset_metadata.description
         self.tags = self.dataset_metadata.tags
         self.manifest = self.dataset_metadata.manifest
         self.pandas = self.dataset_metadata.pandas
+
+        for key, value in self.dataset_metadata.str_metadata.items():
+            setattr(self, key, value)
+
+        for key, value in self.dataset_metadata.blob_metadata.items():
+            setattr(self, key, deserialize(b''.fromhex(value), from_bytes=True))
 
     def __getitem__(self, key: Union[str, int]) -> Any:
         if isinstance(key, int):
@@ -110,3 +118,4 @@ class Dataset:
         table = self.pandas._repr_html_()
 
         return self.__repr__() + "<br /><br />" + id + tags + manifest + table
+

@@ -29,6 +29,7 @@ class RequestAPI:
         response_key: str = "",
     ):
         self.__create_message = create_msg
+        self._create_message = self.__create_message
         self.__get_message = get_msg
         self.__get_all_message = get_all_msg
         self.__update_message = update_msg
@@ -96,3 +97,5 @@ class RequestAPI:
         else:
             return response
 
+    def _repr_html_(self) -> str:
+        return self.all(pandas=True)._repr_html_()

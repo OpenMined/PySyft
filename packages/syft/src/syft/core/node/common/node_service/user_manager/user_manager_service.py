@@ -42,15 +42,11 @@ def create_user_msg(
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
 
-    print('create_user_msg')
-
     # Check if email/password fields are empty
     if not msg.email or not msg.password:
         raise MissingRequestKeyError(
             message="Invalid request payload, empty fields (email/password)!"
         )
-
-    print("A")
 
     # Check if this email was already registered
     try:
@@ -63,8 +59,6 @@ def create_user_msg(
         # If email not registered, a new user can be created.
         pass
 
-    print("B")
-
     # 2 - Custom Type
     # Create a custom user (with a custom role)
     # This user can only be created by using an account with "can_create_users" permissions
@@ -74,6 +68,7 @@ def create_user_msg(
             # Generate a new signing key
             _private_key = SigningKey.generate()
             _user = node.users.signup(
+                name=msg.name,
                 email=msg.email,
                 password=msg.password,
                 role=node.roles.first(name=msg.role).id,
@@ -91,49 +86,30 @@ def create_user_msg(
     # 3 - Standard type
     # Create a common user with no special permissions
     def create_standard_user():
-        print("create_standard_user")
+
         # Generate a new signing key
         _private_key = SigningKey.generate()
-        print(_private_key)
 
         encoded_pk = _private_key.encode(encoder=HexEncoder).decode("utf-8")
         encoded_vk = _private_key.verify_key.encode(encoder=HexEncoder).decode("utf-8")
 
-        print(msg.email)
-        print(msg.password)
-        print(node.roles.user_role.id)
-        print(encoded_pk)
-        print(encoded_vk)
-
-        u = node.users
-
-        print(u)
-
-        try:
-            _user = node.users.signup(
-                name=msg.name,
-                email=msg.email,
-                password=msg.password,
-                role=node.roles.user_role.id,
-                private_key=encoded_pk,
-                verify_key=encoded_vk,
-            )
-        except Exception as e:
-            print(e)
-        print(_user)
-
-    print("C")
+        _user = node.users.signup(
+            name=msg.name,
+            email=msg.email,
+            password=msg.password,
+            role=node.roles.first(name="Data Scientist").id,
+            private_key=encoded_pk,
+            verify_key=encoded_vk,
+        )
 
     # Main logic
     _allowed = node.users.can_create_users(verify_key=verify_key)
-    print("Allowed? :" + str(_allowed))
 
     if msg.role and _allowed:
         create_custom_user()
     else:
         create_standard_user()
 
-    print("D")
 
     return SuccessResponseMessage(
         address=msg.reply_to,
@@ -378,13 +354,9 @@ class UserManagerService(ImmediateNodeServiceWithReply):
         SearchUsersResponse,
     ]:
 
-        print("I've received a message:" + str(msg))
-
         reply = UserManagerService.msg_handler_map[type(msg)](
             msg=msg, node=node, verify_key=verify_key
         )
-
-        print("Response:" + str(reply))
 
         return reply
 

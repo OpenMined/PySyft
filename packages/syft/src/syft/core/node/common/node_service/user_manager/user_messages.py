@@ -51,12 +51,12 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
         address: Address,
+        name: str,
         email: str,
         password: str,
         reply_to: Address,
         role: Optional[str] = "",
         msg_id: Optional[UID] = None,
-        name: Optional[str] = "",
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.email = email
