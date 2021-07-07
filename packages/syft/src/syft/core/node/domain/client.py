@@ -430,4 +430,4 @@ class DomainClient(Client):
 
         binary_dataset = serialize(assets, to_bytes=True)
 
-        self.datasets.create(dataset=binary_dataset, metadata=metadata, platform="syft")
+        self.datasets.create_syft(dataset=binary_dataset, metadata=metadata, platform="syft")

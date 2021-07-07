@@ -46,7 +46,10 @@ class DatasetRequestAPI(RequestAPI):
             response_key=ResponseObjectEnum.DATASET,
         )
 
-    def create(self, path: str, **kwargs) -> Dict[str, str]:  # type: ignore
+    def create_syft(self, **kwargs):
+        return super().create(**kwargs)
+
+    def create_grid_ui(self,  path: str, **kwargs) -> Dict[str, str]:  # type: ignore
         response = self.node.conn.send_files(path, metadata=kwargs)  # type: ignore
         logging.info(response[RequestAPIFields.MESSAGE])
 
