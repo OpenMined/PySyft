@@ -2,6 +2,47 @@
 from setuptools import find_packages
 from setuptools import setup
 
+import subprocess
+import os
+
+hagrid_path = os.path.abspath(
+    os.path.join(os.path.realpath(__file__), "../../hagrid/")
+)
+
+syft_path = os.path.abspath(
+    os.path.join(os.path.realpath(__file__), "../../syft/")
+)
+
+grid_path = os.path.abspath(
+    os.path.join(os.path.realpath(__file__), "../../grid/")
+)
+print("\n\n\n")
+cmd = "cp -r " + syft_path + " " + hagrid_path + "/"
+print(cmd)
+subprocess.call(cmd, shell=True)
+
+cmd = "cp -r " + grid_path + " " + hagrid_path + "/"
+print(cmd)
+subprocess.call(cmd, shell=True)
+print("\n\n\n")
+
+
+
+def package_files(directory):
+    paths = []
+    for (path, directories, filenames) in os.walk(directory):
+        for filename in filenames:
+            path = os.path.join('..', path, filename)
+            _path = str(path)
+            if ".pyc" not in _path and "build/" not in _path:
+                paths.append(path)
+    return paths
+
+extra_files = package_files('./syft')
+extra_files = package_files('./grid')
+
+
+
 setup(
     name="hagrid",
     description="Happy Automation for Grid",
@@ -11,5 +52,7 @@ setup(
     install_requires=[
         "click",
     ],
+    package_data={"":extra_files},
+    include_package_data=True,
     entry_points={"console_scripts": ["hagrid = hagrid.cli:cli"]},
 )
