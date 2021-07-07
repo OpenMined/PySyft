@@ -205,7 +205,7 @@ services:
   frontend:
     image: "${DOCKER_IMAGE_FRONTEND?Variable not set}:${TAG-latest}"
     build:
-      context: ./frontend
+      context: ./ui
       args:
         FRONTEND_ENV: ${FRONTEND_ENV-production}
     deploy:

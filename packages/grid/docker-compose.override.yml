@@ -131,7 +131,7 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: ./ui
       args:
         FRONTEND_ENV: dev
     labels:
