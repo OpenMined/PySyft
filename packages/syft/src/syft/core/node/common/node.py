@@ -389,6 +389,7 @@ class Node(AbstractNode):
             )
 
         except Exception as e:
+            print(e)
             error(e)
             public_exception: Exception
             if isinstance(e, AuthorizationException):
@@ -506,6 +507,7 @@ class Node(AbstractNode):
 
             try:  # we use try/except here because it's marginally faster in Python
                 service = router[type(msg.message)]
+                print(service)
             except KeyError as e:
                 log = (
                     f"The node {self.id} of type {type(self)} cannot process messages of type "

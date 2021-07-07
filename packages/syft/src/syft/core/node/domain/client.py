@@ -14,6 +14,7 @@ from nacl.signing import VerifyKey
 import names
 import pandas as pd
 from pandas import DataFrame
+import pyarrow.lib
 
 # relative
 from ....core import node
@@ -420,3 +421,14 @@ class DomainClient(Client):
                 for tag in tags:
                     state[tag] = ptr
         return self.store.pandas
+
+    def load_dataset(self, assets: Any, **metadata):
+        # relative
+        from ....lib.python.util import downcast
+
+        assets = downcast(assets)
+        metadata = downcast(metadata)
+
+        binary_dataset = serialize(assets, to_bytes=True)
+
+        self.datasets.create(dataset=binary_dataset, metadata=metadata, platform="syft")

@@ -15,6 +15,7 @@ import numpy as np
 import torch as th
 
 # syft absolute
+from syft import deserialize
 from syft.core.common.group import VERIFYALL
 from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.common.uid import UID
@@ -43,6 +44,73 @@ from .dataset_manager_messages import UpdateDatasetMessage
 ENCODING = "UTF-8"
 
 
+def _handle_dataset_creation_grid_ui(
+    msg: CreateDatasetMessage, node: AbstractNode, verify_key: VerifyKey
+) -> SuccessResponseMessage:
+
+    file_obj = io.BytesIO(msg.dataset)
+    tar_obj = tarfile.open(fileobj=file_obj)
+    tar_obj.extractall()
+    dataset_id = node.datasets.register(**msg.metadata)
+    data = []
+    for item in tar_obj.members:
+        if not item.isdir():
+            reader = csv.reader(
+                tar_obj.extractfile(item.name).read().decode().split("\n"),
+                delimiter=",",
+            )
+            dataset = []
+
+            for row in reader:
+                if len(row) != 0:
+                    dataset.append(row)
+            dataset = np.array(dataset, dtype=np.float)
+            df = th.tensor(dataset, dtype=th.float32)
+            id_at_location = UID()
+
+            # Step 2: create message which contains object to send
+            storable = StorableObject(
+                id=id_at_location,
+                data=df,
+                tags=["#" + item.name.split("/")[-1]],
+                search_permissions={VERIFYALL: None},
+                read_permissions={node.verify_key: node.id, verify_key: None},
+            )
+            node.store[storable.id] = storable
+
+            node.datasets.add(
+                name=item.name,
+                dataset_id=dataset_id,
+                obj_id=str(id_at_location.value),
+                dtype=df.__class__.__name__,
+                shape=str(tuple(df.shape)),
+            )
+
+
+def _handle_dataset_creation_syft(msg, node, verify_key):
+    result = deserialize(msg.dataset, from_bytes=True)
+    dataset_id = node.datasets.register(**msg.metadata)
+
+    for table_name, table in result.items():
+        id_at_location = UID()
+
+        storable = StorableObject(
+            id=id_at_location,
+            data=table,
+            tags=[f"#{table_name}"],
+            search_permissions={VERIFYALL: None},
+            read_permissions={node.verify_key: node.id, verify_key: None},
+        )
+        node.store[storable.id] = storable
+        node.datasets.add(
+            name=table_name,
+            dataset_id=dataset_id,
+            obj_id=str(id_at_location.value),
+            dtype=str(table.__class__.__name__),
+            shape=str(table.shape)
+        )
+
+
 def create_dataset_msg(
     msg: CreateDatasetMessage,
     node: AbstractNode,
@@ -51,46 +119,13 @@ def create_dataset_msg(
     # Check key permissions
     _allowed = node.users.can_upload_data(verify_key=verify_key)
 
-    if _allowed:
-        file_obj = io.BytesIO(msg.dataset)
-        tar_obj = tarfile.open(fileobj=file_obj)
-        tar_obj.extractall()
-        dataset_id = node.datasets.register(**msg.metadata)
-        data = []
-        for item in tar_obj.members:
-            if not item.isdir():
-                reader = csv.reader(
-                    tar_obj.extractfile(item.name).read().decode().split("\n"),
-                    delimiter=",",
-                )
-                dataset = []
-
-                for row in reader:
-                    if len(row) != 0:
-                        dataset.append(row)
-                dataset = np.array(dataset, dtype=np.float)
-                df = th.tensor(dataset, dtype=th.float32)
-                id_at_location = UID()
-
-                # Step 2: create message which contains object to send
-                storable = StorableObject(
-                    id=id_at_location,
-                    data=df,
-                    tags=["#" + item.name.split("/")[-1]],
-                    search_permissions={VERIFYALL: None},
-                    read_permissions={node.verify_key: node.id, verify_key: None},
-                )
-                node.store[storable.id] = storable
-
-                node.datasets.add(
-                    name=item.name,
-                    dataset_id=dataset_id,
-                    obj_id=str(id_at_location.value),
-                    dtype=df.__class__.__name__,
-                    shape=str(tuple(df.shape)),
-                )
-    else:
+    if not _allowed:
         raise AuthorizationError("You're not allowed to upload data!")
+
+    if msg.platform == "syft":
+        _handle_dataset_creation_syft(msg, node, verify_key)
+    elif msg.platform == "grid-ui":
+        _handle_dataset_creation_grid_ui(msg, node, verify_key)
 
     return SuccessResponseMessage(
         address=msg.reply_to,

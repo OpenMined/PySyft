@@ -46,10 +46,6 @@ class DatasetRequestAPI(RequestAPI):
             response_key=ResponseObjectEnum.DATASET,
         )
 
-    def create(self, path: str, **kwargs) -> Dict[str, str]:  # type: ignore
-        response = self.node.conn.send_files(path, metadata=kwargs)  # type: ignore
-        logging.info(response[RequestAPIFields.MESSAGE])
-
     def __getitem__(self, key: Union[str, int, slice]) -> Any:
         # optionally we should be able to pass in the index of the dataset we want
         # according to the order displayed when displayed as a pandas table
@@ -97,7 +93,8 @@ class Dataset:
             obj_id = self.dataset_metadata.data[key]["id"].replace("-", "")
             return self.dataset_metadata.node.store[obj_id]
         elif isinstance(key, str):
-            return self.dataset_metadata.node.store[key.replace("-", "")]
+            id = self.dataset_metadata.pandas[self.dataset_metadata.pandas["name"] == key].id.values[0]
+            return self.dataset_metadata.node.store[id.replace("-", "")]
 
     def _repr_html_(self) -> str:
         id = "<b>Id: </b>" + str(self.id) + "<br />"

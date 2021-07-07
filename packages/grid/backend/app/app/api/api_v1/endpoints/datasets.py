@@ -1,9 +1,6 @@
 # stdlib
-import io
 import json
 from typing import Any
-from typing import List
-from typing import Optional
 
 # third party
 from fastapi import APIRouter
@@ -58,6 +55,7 @@ def upload_dataset_route(
         resp: JSON structure containing a log message.
     """
     # Map User Key
+    print("Saluuuuut")
     user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
     metadata = json.loads(metadata)
 

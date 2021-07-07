@@ -13,6 +13,7 @@ message CreateDatasetMessage {
   bytes dataset = 3;
   syft.lib.python.Dict metadata = 4;
   syft.core.io.Address reply_to = 5;
+  string platform = 6;
 }
 
 

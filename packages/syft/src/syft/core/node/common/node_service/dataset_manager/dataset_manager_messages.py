@@ -48,11 +48,13 @@ class CreateDatasetMessage(ImmediateSyftMessageWithReply):
         dataset: bin,
         metadata: Dict,
         reply_to: Address,
+        platform: str,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.dataset = dataset
         self.metadata = metadata
+        self.platform = platform
 
     def _object2proto(self) -> CreateDatasetMessage_PB:
         """Returns a protobuf serialization of self.
@@ -72,6 +74,7 @@ class CreateDatasetMessage(ImmediateSyftMessageWithReply):
             dataset=self.dataset,
             metadata=serialize(self.metadata),
             reply_to=serialize(self.reply_to),
+            platform=self.platform
         )
 
     @staticmethod
@@ -94,6 +97,7 @@ class CreateDatasetMessage(ImmediateSyftMessageWithReply):
             dataset=proto.dataset,
             metadata=_deserialize(proto.metadata),
             reply_to=_deserialize(blob=proto.reply_to),
+            platform=proto.platform
         )
 
     @staticmethod

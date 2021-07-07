@@ -26,7 +26,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b"\n*proto/grid/messages/dataset_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto\x1a\x1bproto/lib/python/dict.proto\"\xc8\x01\n\x14\x43reateDatasetMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x64\x61taset\x18\x03 \x01(\x0c\x12'\n\x08metadata\x18\x04 \x01(\x0b\x32\x15.syft.lib.python.Dict\x12'\n\x08reply_to\x18\x05 \x01(\x0b\x32\x15.syft.core.io.Address\"\x9f\x01\n\x11GetDatasetMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x12\n\ndataset_id\x18\x03 \x01(\t\x12'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address\"\x8b\x01\n\x12GetDatasetResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x02 \x01(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\"\x8c\x01\n\x12GetDatasetsMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12'\n\x08reply_to\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\"\x8c\x01\n\x13GetDatasetsResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x02 \x03(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\"\xcb\x01\n\x14UpdateDatasetMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x12\n\ndataset_id\x18\x03 \x01(\t\x12'\n\x08metadata\x18\x04 \x01(\x0b\x32\x15.syft.lib.python.Dict\x12'\n\x08reply_to\x18\x05 \x01(\x0b\x32\x15.syft.core.io.Address\"\xa2\x01\n\x14\x44\x65leteDatasetMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x12\n\ndataset_id\x18\x03 \x01(\t\x12'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3",
+    serialized_pb=b"\n*proto/grid/messages/dataset_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto\x1a\x1bproto/lib/python/dict.proto\"\xda\x01\n\x14\x43reateDatasetMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x64\x61taset\x18\x03 \x01(\x0c\x12'\n\x08metadata\x18\x04 \x01(\x0b\x32\x15.syft.lib.python.Dict\x12'\n\x08reply_to\x18\x05 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x10\n\x08platform\x18\x06 \x01(\t\"\x9f\x01\n\x11GetDatasetMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x12\n\ndataset_id\x18\x03 \x01(\t\x12'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address\"\x8b\x01\n\x12GetDatasetResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x02 \x01(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\"\x8c\x01\n\x12GetDatasetsMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12'\n\x08reply_to\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\"\x8c\x01\n\x13GetDatasetsResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x02 \x03(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\"\xcb\x01\n\x14UpdateDatasetMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x12\n\ndataset_id\x18\x03 \x01(\t\x12'\n\x08metadata\x18\x04 \x01(\x0b\x32\x15.syft.lib.python.Dict\x12'\n\x08reply_to\x18\x05 \x01(\x0b\x32\x15.syft.core.io.Address\"\xa2\x01\n\x14\x44\x65leteDatasetMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x12\n\ndataset_id\x18\x03 \x01(\t\x12'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3",
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
@@ -138,6 +138,25 @@ _CREATEDATASETMESSAGE = _descriptor.Descriptor(
             file=DESCRIPTOR,
             create_key=_descriptor._internal_create_key,
         ),
+        _descriptor.FieldDescriptor(
+            name="platform",
+            full_name="syft.grid.messages.CreateDatasetMessage.platform",
+            index=5,
+            number=6,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -148,7 +167,7 @@ _CREATEDATASETMESSAGE = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=164,
-    serialized_end=364,
+    serialized_end=382,
 )
 
 
@@ -245,8 +264,8 @@ _GETDATASETMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=367,
-    serialized_end=526,
+    serialized_start=385,
+    serialized_end=544,
 )
 
 
@@ -324,8 +343,8 @@ _GETDATASETRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=529,
-    serialized_end=668,
+    serialized_start=547,
+    serialized_end=686,
 )
 
 
@@ -403,8 +422,8 @@ _GETDATASETSMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=671,
-    serialized_end=811,
+    serialized_start=689,
+    serialized_end=829,
 )
 
 
@@ -482,8 +501,8 @@ _GETDATASETSRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=814,
-    serialized_end=954,
+    serialized_start=832,
+    serialized_end=972,
 )
 
 
@@ -599,8 +618,8 @@ _UPDATEDATASETMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=957,
-    serialized_end=1160,
+    serialized_start=975,
+    serialized_end=1178,
 )
 
 
@@ -697,8 +716,8 @@ _DELETEDATASETMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1163,
-    serialized_end=1325,
+    serialized_start=1181,
+    serialized_end=1343,
 )
 
 _CREATEDATASETMESSAGE.fields_by_name[
