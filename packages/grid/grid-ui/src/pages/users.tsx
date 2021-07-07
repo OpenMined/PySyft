@@ -102,7 +102,7 @@ export default function Users() {
           Create user
         </NormalButton>
       </section>
-      {showCreateUserPanel && me?.permissions.canCreateUsers && (
+      {showCreateUserPanel && (
         <section>
           <UserCreate onClose={() => setOpen(false)} />
         </section>

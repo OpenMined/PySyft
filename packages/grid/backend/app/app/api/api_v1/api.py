@@ -9,6 +9,7 @@ from app.api.api_v1.endpoints import roles
 from app.api.api_v1.endpoints import setup
 from app.api.api_v1.endpoints import syft
 from app.api.api_v1.endpoints import users
+from app.api.api_v1.endpoints import status
 
 api_router = APIRouter()
 api_router.include_router(login.router, tags=["login"])
@@ -22,3 +23,4 @@ api_router.include_router(
     prefix="/association-requests",
     tags=["association-requests"],
 )
+api_router.include_router(status.router, prefix="/status")

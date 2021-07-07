@@ -220,9 +220,10 @@ function UserInfoPanel() {
 }
 
 interface UserSignUp {
+  name: string
   email: string
   password: string
-  roleId: string
+  role: string
 }
 
 export function UserCreate({onClose}: {onClose: () => void}) {
@@ -233,27 +234,17 @@ export function UserCreate({onClose}: {onClose: () => void}) {
     formState: {errors, isValid}
   } = useForm({mode: 'onTouched'})
   const {data: allRoles} = useQuery<Role[]>(cacheKeys.roles)
-  const options = allRoles?.map(role => ({value: String(role.id), label: role.name}))
+  const options = allRoles?.map(role => ({value: String(role.name), label: role.name}))
   const queryClient = useQueryClient()
   const invalidate = () => queryClient.invalidateQueries([cacheKeys.users])
 
-  const mutation = useMutation(
-    (user: UserSignUp) =>
-      api.post<User>(cacheKeys.users, user).then(() =>
-        api.get<User[]>(cacheKeys.users).then(res => {
-          const userList = res.data
-          const newUser = userList.find(u => u.email === user.email)
-          return api.put(`${cacheKeys.users}/${newUser.id}/role`, {role: parseInt(user.roleId)})
-        })
-      ),
-    {
-      onSuccess: () => {
-        invalidate()
-        reset()
-        typeof onClose === 'function' && onClose()
-      }
+  const mutation = useMutation((user: UserSignUp) => api.post<User>(cacheKeys.users, user), {
+    onSuccess: () => {
+      invalidate()
+      reset()
+      typeof onClose === 'function' && onClose()
     }
-  )
+  })
 
   const onSubmit = (values: UserSignUp) => {
     mutation.mutate(values)
@@ -262,7 +253,7 @@ export function UserCreate({onClose}: {onClose: () => void}) {
   return (
     <div className="p-8 space-y-6 rounded-md bg-blueGray-200">
       <header className="max-w-xl space-y-2">
-        <h2 className="text-xl font-medium">Create a new user</h2>
+        <h2 className="text-xl font-medium">Create a new users</h2>
         <p>
           PyGrid utilizes users and roles to appropriately permission data at a higher level. All users with the
           permission{' '}
@@ -272,6 +263,7 @@ export function UserCreate({onClose}: {onClose: () => void}) {
       </header>
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="max-w-md space-y-4">
+          <Input id="create-user-name" label="Full name" name="name" ref={register} error={errors.name} required />
           <Input id="create-user-email" label="User email" name="email" ref={register} error={errors.email} required />
           <Input
             id="create-user-password"
@@ -285,7 +277,7 @@ export function UserCreate({onClose}: {onClose: () => void}) {
           <Select
             id="create-user-roles"
             label="Change user role"
-            name="roleId"
+            name="role"
             placeholder="Select a role"
             options={options}
             className="overflow-hidden truncate"
