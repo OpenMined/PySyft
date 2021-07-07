@@ -77,6 +77,7 @@ def create_initial_setup(
     _verify_key = node.signing_key.verify_key.encode(encoder=HexEncoder).decode("utf-8")
     _admin_role = node.roles.owner_role
     _ = node.users.signup(
+        name=msg.name,
         email=msg.email,
         password=msg.password,
         role=_admin_role.id,

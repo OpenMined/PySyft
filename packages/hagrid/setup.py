@@ -1,4 +1,6 @@
-from setuptools import setup, find_packages
+# third party
+from setuptools import find_packages
+from setuptools import setup
 
 setup(
     name="hagrid",
@@ -9,9 +11,5 @@ setup(
     install_requires=[
         "click",
     ],
-    entry_points={
-        "console_scripts": [
-            "hagrid = hagrid.cli:cli"
-        ]
-    },
+    entry_points={"console_scripts": ["hagrid = hagrid.cli:cli"]},
 )

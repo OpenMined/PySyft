@@ -8,10 +8,11 @@ import "proto/core/io/address.proto";
 message CreateInitialSetUpMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-  string email = 3;
-  string password = 4;
-  string domain_name = 5;
-  syft.core.io.Address reply_to = 6;
+  string name = 3;
+  string email = 4;
+  string password = 5;
+  string domain_name = 6;
+  syft.core.io.Address reply_to = 7;
 }
 
 message GetSetUpMessage {

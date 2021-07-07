@@ -43,10 +43,17 @@ class UserManager(DatabaseManager):
         return org_users
 
     def signup(
-        self, email: str, password: str, role: int, private_key: str, verify_key: str
+        self,
+        name: str,
+        email: str,
+        password: str,
+        role: int,
+        private_key: str,
+        verify_key: str,
     ):
         salt, hashed = self.__salt_and_hash_password(password, 12)
         return self.register(
+            name=name,
             email=email,
             role=role,
             private_key=private_key,
