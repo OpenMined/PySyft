@@ -45,7 +45,7 @@ router = APIRouter()
 def me_route(current_user: Any = Depends(deps.get_current_user)) -> Any:
     """Returns Current User Table"""
     user_dict = model_to_json(current_user)
-    user_dict["role"] = domain.roles.first(id=user_dict["role"]).name
+    user_dict["role"] = node.roles.first(id=user_dict["role"]).name
     del user_dict["private_key"]
     return user_dict
 

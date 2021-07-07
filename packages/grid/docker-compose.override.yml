@@ -130,6 +130,9 @@ services:
         INSTALL_JUPYTER: "${INSTALL_JUPYTER-true}"
 
   frontend:
+    depends_on:
+      - db
+      - backend
     build:
       context: ./grid-ui
       args:

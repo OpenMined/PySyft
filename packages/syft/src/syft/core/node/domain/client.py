@@ -48,6 +48,8 @@ from ..common.node_service.request_receiver.request_receiver_messages import (
 from .enums import PyGridClientEnums
 from .enums import RequestAPIFields
 
+from syft import deserialize
+
 
 class RequestQueueClient:
     def __init__(self, client: Client) -> None:
@@ -72,6 +74,9 @@ class RequestQueueClient:
         msg = GetAllRequestsMessage(
             address=self.client.address, reply_to=self.client.address
         )
+
+        blob = serialize(msg, to_bytes=True)
+        msg = deserialize(blob, from_bytes=True)
 
         requests = self.client.send_immediate_msg_with_reply(msg=msg).requests  # type: ignore
 

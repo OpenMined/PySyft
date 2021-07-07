@@ -487,3 +487,6 @@ class StoreClient:
                 }
             )
         return pd.DataFrame(obj_lines)
+
+    def _repr_html_(self) -> str:
+        return self.pandas._repr_html_()

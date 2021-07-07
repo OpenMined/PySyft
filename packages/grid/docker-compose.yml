@@ -207,8 +207,8 @@ services:
     build:
       context: ./grid-ui
       args:
-        FRONTEND_ENV: ${FRONTEND_ENV-production}
-      target: "grid-ui-${FRONTEND_ENV-production}"
+        FRONTEND_ENV: ${FRONTEND_ENV-development}
+      target: "grid-ui-${FRONTEND_ENV-development}"
       dockerfile: ui.dockerfile
     restart: always
     volumes:

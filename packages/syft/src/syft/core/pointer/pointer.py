@@ -220,7 +220,7 @@ class Pointer(AbstractPointer):
             ) or "UnknownPrivateException" in str(e):
 
                 # relative
-                from ..node.domain.service import RequestStatus
+                from ..node.common.node_service.request_receiver.request_receiver_messages import RequestStatus
 
                 response_status = self.request(
                     reason="Calling remote print",
@@ -408,7 +408,7 @@ class Pointer(AbstractPointer):
         """
 
         # relative
-        from ..node.domain.service import RequestMessage
+        from ..node.common.node_service.request_receiver.request_receiver_messages import RequestMessage
 
         # if you request non-blocking you don't need a timeout
         # if you request blocking you need a timeout, so lets set a default on here

@@ -573,7 +573,7 @@ class ObjectRequestServiceWithoutReply(ImmediateNodeServiceWithoutReply):
         ],
         verify_key: VerifyKey,
     ) -> None:
-        RequestServiceWithoutReply.msg_handler_map[type(msg)](
+        ObjectRequestServiceWithoutReply.msg_handler_map[type(msg)](
             msg=msg, node=node, verify_key=verify_key
         )
 

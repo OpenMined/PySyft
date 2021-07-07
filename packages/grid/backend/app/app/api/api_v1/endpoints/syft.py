@@ -36,6 +36,7 @@ async def syft_route(
 ) -> Any:
 
     data = await request.body()
+    print(data)
     obj_msg = deserialize(blob=data, from_bytes=True)
     if isinstance(obj_msg, SignedImmediateSyftMessageWithReply):
         reply = node.recv_immediate_msg_with_reply(msg=obj_msg)

@@ -25,25 +25,28 @@ class GetAllRequestsService(ImmediateNodeServiceWithoutReply):
         msg: GetAllRequestsMessage,
         verify_key: Optional[VerifyKey] = None,
     ) -> GetAllRequestsResponseMessage:
-
-        if verify_key is None:
-            traceback_and_raise(
-                ValueError(
-                    "Can't process Request service without a given " "verification key"
+        try:
+            if verify_key is None:
+                traceback_and_raise(
+                    ValueError(
+                        "Can't process Request service without a given " "verification key"
+                    )
                 )
-            )
 
-        if verify_key == node.root_verify_key:
+            if verify_key == node.root_verify_key:
+                return GetAllRequestsResponseMessage(
+                    requests=node.requests, address=msg.reply_to
+                )
+
+            # only return requests which concern the user asking
+            valid_requests: List[RequestMessage] = list()
+            for request in node.requests:
+                if request.requester_verify_key == verify_key:
+                    valid_requests.append(request)
+
             return GetAllRequestsResponseMessage(
-                requests=node.requests, address=msg.reply_to
+                requests=valid_requests, address=msg.reply_to
             )
-
-        # only return requests which concern the user asking
-        valid_requests: List[RequestMessage] = list()
-        for request in node.requests:
-            if request.requester_verify_key == verify_key:
-                valid_requests.append(request)
-
-        return GetAllRequestsResponseMessage(
-            requests=valid_requests, address=msg.reply_to
-        )
+        except Exception as e:
+            print('\n\nSOMETHING WENT WRONG!!!\n\n')
+            print(e)
