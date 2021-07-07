@@ -64,6 +64,7 @@ repos:
     rev: 5.8.0
     hooks:
       - id: isort
+        exclude: ^(packages/syft-libs/\S*/proto)
         name: isort (python)
 
   # - repo: https://github.com/pycqa/pydocstyle
