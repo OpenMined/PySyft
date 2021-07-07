@@ -23,6 +23,9 @@ from ...core.node.network.client import NetworkClient
 from ...core.node.vm.client import VirtualMachineClient
 from .grid_connection import GridHTTPConnection
 
+from getpass import getpass
+
+
 DEFAULT_PYGRID_PORT = 80
 DEFAULT_PYGRID_ADDRESS = f"http://127.0.0.1:{DEFAULT_PYGRID_PORT}"
 
@@ -88,6 +91,10 @@ def login(
     conn_type: Type[ClientConnection] = GridHTTPConnection,
     verbose=True,
 ) -> Client:
+
+    if password is None:
+        print('Welcome ' + str(email) + "!")
+        password = getpass(prompt='Please enter you password:')
 
     if port is None and not url:  # if url is used, we can ignore port
         raise Exception("You must specify a port.")
