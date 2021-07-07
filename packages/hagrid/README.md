@@ -28,7 +28,7 @@ hagrid land slytherin
 ```
 You can specify ports if you want to:
 ```bash
-hagrid launch "Hufflepuff House" --port 8081
+hagrid launch Hufflepuff House --port 8081
 ```
 ... but if you don't it'll find an open one for you
 ```bash
