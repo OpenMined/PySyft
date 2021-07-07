@@ -52,12 +52,11 @@ def proto2object(proto: ShareTensor_PB) -> ShareTensor:
         if session is None:
             raise ValueError(f"The session {proto.session_uuid} could not be found")
 
-        config = dataclasses.asdict(session.config)
-    else:
-        config = syft.deserialize(proto.config, from_proto=True)
+    config = syft.deserialize(proto.config, from_proto=True)
 
     tensor = syft.deserialize(proto.tensor, from_proto=True)
     ring_size = int.from_bytes(proto.ring_size, "big")
+
     share = ShareTensor(data=None, config=Config(**config), ring_size=ring_size)
 
     if proto.session_uuid:
