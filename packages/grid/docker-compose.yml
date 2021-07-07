@@ -205,9 +205,16 @@ services:
   frontend:
     image: "${DOCKER_IMAGE_FRONTEND?Variable not set}:${TAG-latest}"
     build:
-      context: ./ui
+      context: ./grid-ui
       args:
         FRONTEND_ENV: ${FRONTEND_ENV-production}
+      target: "grid-ui-${FRONTEND_ENV-production}"
+      dockerfile: ui.dockerfile
+    restart: always
+    volumes:
+      - ./grid-ui/:/app
+      - /app/node_modules
+      - /app/.next
     deploy:
       labels:
         - traefik.enable=true

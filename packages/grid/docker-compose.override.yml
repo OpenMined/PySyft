@@ -131,9 +131,9 @@ services:
 
   frontend:
     build:
-      context: ./ui
+      context: ./grid-ui
       args:
-        FRONTEND_ENV: dev
+        FRONTEND_ENV: development
     labels:
       - traefik.enable=true
       - traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}
