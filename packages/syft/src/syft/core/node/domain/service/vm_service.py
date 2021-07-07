@@ -1,12 +1,17 @@
 # stdlib
-from queue import Queue
-from threading import Thread
+from collections import defaultdict
+from collections import deque
+from collections import namedtuple
+import threading
 import time
 from typing import List
 from typing import Optional
 
 # third party
 from nacl.signing import VerifyKey
+
+# syft absolute
+from syft import logger
 
 # syft relative
 from .....util import traceback_and_raise
@@ -60,33 +65,51 @@ class VMRequestAnswerMessageService(ImmediateNodeServiceWithReply):
         )
 
 
-def consume_smpc_actions_round_robin(queue):
+actions_lock = threading.Lock()
+NodeSMPCAction = namedtuple("NodeSMPCAction", ["node_lock", "smpc_actions"])
+actions_to_run_per_node = defaultdict(lambda: NodeSMPCAction(threading.Lock(), deque()))
+
+
+def consume_smpc_actions_round_robin():
     # Queue keeps a list of actions
 
     max_nr_retries = 10
     last_msg_id = None
     while True:
-        element = queue.get()
-        node, msg, verify_key, nr_retries = element
+        # Get a list of nodes
+        with actions_lock:
+            nodes = list(actions_to_run_per_node.keys())
 
-        print("Executing Actions")
-        if nr_retries > max_nr_retries:
-            raise ValueError(f"Retries to many times for {element}")
+        # Get one actions from each node in a Round Robin fashion and try to run it
+        for node in nodes:
+            with actions_to_run_per_node[node].node_lock:
+                if len(actions_to_run_per_node[node].smpc_actions) == 0:
+                    continue
 
-        if last_msg_id is not None and last_msg_id == msg.id:
-            # If there is only one list of actiosn
-            time.sleep(1)
+                node, msg, verify_key, nr_retries = actions_to_run_per_node[
+                    node
+                ].smpc_actions[0]
+                if nr_retries > max_nr_retries:
+                    raise ValueError(f"Retries to many times for {element}")
 
-        last_msg_id = msg.id
-        try:
-            msg.execute_action(node, verify_key)
-        except KeyError:
-            queue.put((node, msg, verify_key, nr_retries + 1))
+                try:
+                    # try to execute and pop if succeded
+                    msg.execute_action(node, verify_key)
+                    actions_to_run_per_node[node].smpc_actions.popleft()
+                except KeyError:
+                    logger.warning(
+                        f"Skip SMPC action {msg} since there was a key error when (probably) accessing the store"
+                    )
+
+                    if last_msg_id is not None and last_msg_id == msg.id:
+                        # If there is only one action in all the lists
+                        time.sleep(1)
+
+                last_msg_id = msg.id
 
 
-queue = Queue()
-thread_smpc_action = Thread(
-    target=consume_smpc_actions_round_robin, args=(queue,), daemon=True
+thread_smpc_action = threading.Thread(
+    target=consume_smpc_actions_round_robin, args=(), daemon=True
 )
 thread_smpc_action.start()
 
@@ -100,4 +123,8 @@ class VMSMPCService(ImmediateNodeServiceWithoutReply):
     def process(
         node: AbstractNode, msg: RequestMessage, verify_key: Optional[VerifyKey] = None
     ) -> None:
-        queue.put((node, msg, verify_key, 0))
+        with actions_lock:
+            with actions_to_run_per_node[node].node_lock:
+                actions_to_run_per_node[node].smpc_actions.append(
+                    (node, msg, verify_key, 0)
+                )
