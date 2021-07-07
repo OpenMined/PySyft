@@ -110,6 +110,7 @@ jobs:
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
 
       - name: Install Support lib
+        shell: bash
         run: |
           pwd
           find . -type d -name "syft-*" -exec pip install {} \;
