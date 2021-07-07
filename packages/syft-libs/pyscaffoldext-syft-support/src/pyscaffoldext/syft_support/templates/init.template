@@ -1,10 +1,9 @@
 # stdlib
-import glob
 import inspect
 import json
 import os
 from importlib import import_module
-from os.path import basename
+from pathlib import Path
 from typing import Any as TypeAny
 from typing import Dict as TypeDict
 from typing import Iterable
@@ -53,19 +52,24 @@ def read_package_support() -> TypeDict[str, TypeList[TypeTuple[TypeAny, ...]]]:
 
 def get_serde() -> TypeList[TypeDict[str, TypeAny]]:
     serde_objs: TypeList[TypeDict[str, TypeAny]] = []
-    dir_path = os.path.dirname(__file__)
-    dir_name = dir_path.rsplit("/", 1)[-1]
 
-    all_serde_modules = glob.glob(os.path.join(dir_path, "serde/*.py"))
-    for f in all_serde_modules:
-        module_path = "{}.serde.{}".format(dir_name, basename(f)[:-3])
-        serde_module = import_module(module_path)
-        serde = getattr(serde_module, "serde")
+    dir_path = Path(os.path.dirname(__file__))
+    serde_dir = dir_path / "serde"
 
-        if isinstance(serde, Iterable) and not isinstance(serde, dict):
-            serde_objs.extend(serde)
-        else:
-            serde_objs.append(serde)
+    for f in serde_dir.iterdir():
+        if f.name.endswith(".py"):
+            module_path = f"{f.parent.parent.stem}.serde.{f.stem}"
+            serde_module = import_module(module_path)
+            try:
+                serde = getattr(serde_module, "serde")
+            except AttributeError:
+                print(f"WARN: No serde found in {module_path}")
+                pass
+
+            if isinstance(serde, Iterable) and not isinstance(serde, dict):
+                serde_objs.extend(serde)
+            else:
+                serde_objs.append(serde)
 
     return serde_objs
 
