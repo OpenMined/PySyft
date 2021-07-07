@@ -14,7 +14,6 @@ from nacl.signing import VerifyKey
 import names
 import pandas as pd
 from pandas import DataFrame
-import pyarrow.lib
 
 # relative
 from ....core import node

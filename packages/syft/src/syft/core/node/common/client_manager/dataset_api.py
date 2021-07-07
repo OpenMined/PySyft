@@ -46,6 +46,10 @@ class DatasetRequestAPI(RequestAPI):
             response_key=ResponseObjectEnum.DATASET,
         )
 
+    def create(self, path: str, **kwargs) -> Dict[str, str]:  # type: ignore
+        response = self.node.conn.send_files(path, metadata=kwargs)  # type: ignore
+        logging.info(response[RequestAPIFields.MESSAGE])
+
     def __getitem__(self, key: Union[str, int, slice]) -> Any:
         # optionally we should be able to pass in the index of the dataset we want
         # according to the order displayed when displayed as a pandas table

@@ -34,12 +34,11 @@ async def syft_route(
     #    limit: int = 100,
     #    current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
+
     data = await request.body()
     obj_msg = deserialize(blob=data, from_bytes=True)
     if isinstance(obj_msg, SignedImmediateSyftMessageWithReply):
         reply = node.recv_immediate_msg_with_reply(msg=obj_msg)
-        print("Saloooot3")
-        print(reply)
         r = Response(
             serialize(obj=reply, to_bytes=True),
             media_type="application/octet-stream",
