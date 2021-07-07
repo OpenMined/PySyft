@@ -56,13 +56,13 @@ jobs:
           pip install black isort --default-timeout=60
           find . -name "build_proto.sh" -execdir bash -c 'cd .. && sh scripts/build_proto.sh'  \;
 
-      # - name: Hack pre-commit # https://github.com/pre-commit/action/issues/44
-      #   working-directory: ./packages/syft
-      #   run: |
-      #     pwd
-      #     ls
-      #     cp .pre-commit-config.yaml ../../
-      # - uses: pre-commit/action@v2.0.3
+      - name: Hack pre-commit # https://github.com/pre-commit/action/issues/44
+        working-directory: ./packages/syft
+        run: |
+          pwd
+          ls
+          cp .pre-commit-config.yaml ../../
+      - uses: pre-commit/action@v2.0.3
 
   lib-tests-latest:
     needs: [python-linting]
@@ -115,10 +115,11 @@ jobs:
           pwd
           find . -type d -name "syft-*" -exec pip install {} \;
 
-      # - name: Scan for security issues
-      #   run: |
-      #     bandit -r src
-      #     safety check
+      - name: Scan for security issues
+        shell: bash
+        run: |
+          find . -type d -name "syft-*" -exec bandit -vr {}/src \;
+          safety check
 
       - name: Install libomp for XGBoost
         if: startsWith(runner.os, 'macos')

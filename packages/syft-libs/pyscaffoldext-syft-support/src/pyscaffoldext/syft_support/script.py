@@ -12,12 +12,13 @@ import inspect
 import json
 import pkgutil
 import sys
-import typing
 from types import ModuleType
+import typing
 from typing import Any as TypeAny
 from typing import Dict
 from typing import List as TypeList
-from typing import Optional, Union
+from typing import Optional
+from typing import Union
 
 # third party
 from typing_inspect import get_origin

@@ -5,7 +5,6 @@ import pytest
 import syft as sy
 from syft import logger
 
-# syft relative
 # from .syft.notebooks import free_port
 
 logger.remove()
