@@ -114,57 +114,11 @@ def launch(name, type, port, tag, keep_db, host="localhost"):
 @click.command(help="Build (or re-build) PyGrid docker image.")
 def build():
 
-    # # # _name = ""
-    # # # for word in name:
-    # # #     _name += word + " "
-    # # # name = _name[:-1]
-    # # #
-    # # # if name == "":
-    # # #     name = names.get_full_name() + "'s " + type.capitalize()
-    # #
-    # # if tag != "":
-    # #     if " " in tag:
-    # #         raise Exception("Can't have spaces in --tag. Try something without spaces.")
-    # # else:
-    # #     tag = hashlib.md5(name.encode("utf8")).hexdigest()
-    # #
-    # # tag = type + "_" + tag
-    # #
-    # # # check port to make sure it's not in use - if it's in use then increment until it's not.
-    # port_available = False
-    # while not port_available:
-    #     try:
-    #         requests.get("http://" + host + ":" + str(port))
-    #         print(
-    #             str(port) + " doesn't seem to be available... trying " + str(port + 1)
-    #         )
-    #         port = port + 1
-    #     except requests.ConnectionError as e:
-    #         port_available = True
-    #
-    # if not keep_db:
-    #     print("Deleting database for node...")
-    #     subprocess.call("docker volume rm " + tag + "_app-db-data", shell=True)
-    #     print()
-
     version = check_docker()
-
-    # motorcycle()
-
-    # print("Launching a " + str(type) + " PyGrid node on port " + str(port) + "!\n")
-    # print("  - TYPE: " + str(type))
-    # print("  - NAME: " + str(name))
-    # print("  - TAG: " + str(tag))
-    # print("  - PORT: " + str(port))
-    # print("  - DOCKER: " + version)
 
     print("\n")
 
     cmd = ""
-    # cmd += "DOMAIN_PORT=" + str(port)
-    # cmd += " TRAEFIK_TAG=" + tag
-    # cmd += ' DOMAIN_NAME="' + name + '"'
-    # cmd += " NODE_TYPE=" + type
     cmd += " docker compose"
     cmd += " build"
 
