@@ -51,6 +51,21 @@ async def syft_route(
     return ""
 
 
+@router.post("/stream", response_model=str)
+async def syft_route(
+    request: Request,
+) -> Any:
+    data = await request.body()
+    obj_msg = deserialize(blob=data, from_bytes=True)
+    if isinstance(obj_msg, SignedImmediateSyftMessageWithReply):
+        raise Exception("MessageWithReply not supported on the stream endpoint")
+    elif isinstance(obj_msg, SignedImmediateSyftMessageWithoutReply):
+        node.recv_immediate_msg_without_reply(msg=obj_msg)
+    else:
+        raise Exception("MessageWithReply not supported on the stream endpoint")
+    return ""
+
+
 @router.post("/submit-task", response_model=str, status_code=201)
 def test_celery(word: Any) -> Any:
     """

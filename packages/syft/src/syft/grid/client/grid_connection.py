@@ -13,6 +13,8 @@ from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
 # relative
+from ...core.common.message import ImmediateSyftMessageWithoutReply
+from ...core.common.message import SignedImmediateSyftMessageWithoutReply
 from ...core.common.message import SyftMessage
 from ...core.common.serde.serialize import _serialize
 from ...core.node.domain.enums import RequestAPIFields
@@ -24,6 +26,7 @@ from ..connections.http_connection import HTTPConnection
 class GridHTTPConnection(HTTPConnection):
     LOGIN_ROUTE = "/login"
     SYFT_ROUTE = "/syft"
+    SYFT_ROUTE_STREAM = "/syft/stream"  # non blocking node
     SYFT_MULTIPART_ROUTE = "/pysyft_multipart"
     SIZE_THRESHOLD = 20971520  # 20 MB
 
@@ -56,12 +59,21 @@ class GridHTTPConnection(HTTPConnection):
 
         header["Content-Type"] = "application/octet-stream"  # type: ignore
 
+        route = GridHTTPConnection.SYFT_ROUTE
+        # if the message has no reply lets use the streaming endpoint
+        # this allows the streaming endpoint to run on an entirely different process
+        if isinstance(
+            msg,
+            (SignedImmediateSyftMessageWithoutReply, ImmediateSyftMessageWithoutReply),
+        ):
+            route = GridHTTPConnection.SYFT_ROUTE_STREAM
+
         # Perform HTTP request using base_url as a root address
         msg_bytes: bytes = _serialize(obj=msg, to_bytes=True)  # type: ignore
 
         if sys.getsizeof(msg_bytes) < GridHTTPConnection.SIZE_THRESHOLD:
             r = requests.post(
-                url=self.base_url + GridHTTPConnection.SYFT_ROUTE,
+                url=self.base_url + route,
                 data=msg_bytes,
                 headers=header,
             )

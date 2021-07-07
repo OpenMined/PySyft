@@ -152,6 +152,10 @@ class Domain(Node):
         # run the handlers in an asyncio future
         asyncio.ensure_future(self.run_handlers())
 
+    def post_init(self) -> None:
+        super().post_init()
+        self.set_node_uid()
+
     def loud_print(self):
         print(
             """

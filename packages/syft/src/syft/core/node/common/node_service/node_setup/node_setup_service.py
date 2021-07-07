@@ -86,9 +86,11 @@ def create_initial_setup(
     )
 
     # 5 - Save Node SetUp Configs
-    node_id = UID()
-    node.setup.register(domain_name=msg.domain_name, node_id=node_id.no_dash)
-    set_node_uid(node=node)
+    try:
+        node_id = node.target_id.id
+        node.setup.register(domain_name=msg.domain_name, node_id=node_id.no_dash)
+    except Exception as e:
+        print(f"Failed to save setup to database", e)
 
     return SuccessResponseMessage(
         address=msg.reply_to,
