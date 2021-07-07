@@ -41,6 +41,7 @@ from ...common.message import SyftMessage
 from ...common.uid import UID
 from ...io.address import Address
 from ...io.location import Location
+from ...io.location import SpecificLocation
 from ...io.route import Route
 from ...io.route import SoloRoute
 from ...io.virtual import create_virtual_connection
@@ -296,6 +297,28 @@ class Node(AbstractNode):
 
         # For logging the number of messages received
         self.message_counter = 0
+
+    def set_node_uid(self) -> None:
+        try:
+            setup = self.setup.first()
+            # if its empty it will be set during CreateInitialSetUpMessage
+            if setup.node_id != "":
+                try:
+                    node_id = UID.from_string(setup.node_id)
+                except Exception as e:
+                    print(f"Invalid Node UID in Setup Table. {setup.node_id}")
+                    raise e
+
+                location = SpecificLocation(name=setup.domain_name, id=node_id)
+                # TODO: Fix with proper isinstance when the class will import
+                if type(self).__name__ == "Domain":
+                    self.domain = location
+                elif type(self).__name__ == "Network":
+                    self.network = location
+                print(f"Finished setting Node UID. {location}")
+        except Exception as e:
+            print("Setup hasnt run yet so ignoring set_node_uid")
+            pass
 
     @property
     def icon(self) -> str:

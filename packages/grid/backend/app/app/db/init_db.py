@@ -2,6 +2,7 @@
 from sqlalchemy.orm import Session
 
 # syft absolute
+import syft as sy
 from syft.core.node.common.node_service.node_setup.node_setup_messages import (
     CreateInitialSetUpMessage,
 )
@@ -27,6 +28,7 @@ def init_db(db: Session) -> None:
     # Build Syft Message
     msg = CreateInitialSetUpMessage(
         address=node.address,
+        name="Jane Doe",
         email=settings.FIRST_SUPERUSER,
         password=settings.FIRST_SUPERUSER_PASSWORD,
         domain_name=settings.DOMAIN_NAME,

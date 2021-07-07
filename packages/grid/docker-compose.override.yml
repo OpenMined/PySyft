@@ -81,8 +81,34 @@ services:
     labels:
       - traefik.enable=true
       - traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}
-      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-http.rule=PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)
+      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-http.rule=PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`) # WARNING: this wont match /api/v1/syft/stream because of length
       - traefik.http.services.${STACK_NAME?Variable not set}-backend.loadbalancer.server.port=80
+
+  backend_stream:
+    depends_on:
+      - db
+      - backend
+    volumes:
+      - ./backend/app:/app
+      - ../syft:/app/syft
+      - ./data/package-cache:/root/.cache
+    environment:
+      - SERVER_HOST=http://${DOMAIN?Variable not set}
+      - SYFT_USE_UVLOOP=0
+      - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
+      - NODE_TYPE=${NODE_TYPE?Variable not set}
+    build:
+      context: ./backend
+      dockerfile: backend.dockerfile
+      args:
+        INSTALL_DEV: "${INSTALL_DEV-true}"
+    # command: bash -c "while true; do sleep 1; done" # Infinite loop to keep container live doing nothing
+    command: "waitforit -address=http://backend:80/api/v1/syft/metadata -status=200 -timeout=600 -debug -- /start-reload.sh"
+    labels:
+      - traefik.enable=true
+      - traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}
+      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-stream-http.rule=PathPrefix(`/api`) && PathPrefix(`/api/v1/syft/stream`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`) # WARNING: this only matches /api/v1/syft/stream because of length
+      - traefik.http.services.${STACK_NAME?Variable not set}-backend-stream.loadbalancer.server.port=80
 
   celeryworker:
     volumes:
@@ -105,7 +131,7 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: ./ui
       args:
         FRONTEND_ENV: dev
     labels:

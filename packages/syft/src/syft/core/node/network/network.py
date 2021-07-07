@@ -105,6 +105,10 @@ class Network(Node):
 
         self.post_init()
 
+    def post_init(self) -> None:
+        super().post_init()
+        self.set_node_uid()
+
     def loud_print(self):
         # tprint("Grid", "alpha")
         print(

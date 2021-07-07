@@ -30,6 +30,7 @@ router = APIRouter()
 
 @router.post("", status_code=200, response_class=JSONResponse)
 def create_setup(
+    name: str = Body(..., example="Jane Doe"),
     email: str = Body(..., example="info@openmined.org"),
     password: str = Body(..., example="changethis"),
     domain_name: str = Body(..., example="OpenGrid"),
@@ -40,6 +41,7 @@ def create_setup(
     # Build Syft Message
     msg = CreateInitialSetUpMessage(
         address=node.address,
+        name=name,
         email=email,
         password=password,
         domain_name=domain_name,

@@ -9,9 +9,9 @@ from app.core.config import settings
 from app.db.session import SessionLocal
 from app.db.session import engine
 
-if settings.NODE_TYPE == "Domain":
+if settings.NODE_TYPE.lower() == "domain":
     node = Domain("Domain", db_engine=engine)
-elif settings.NODE_TYPE == "Network":
+elif settings.NODE_TYPE.lower() == "network":
     node = Network("Network", db_engine=engine)
 else:
     raise Exception(

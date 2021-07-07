@@ -181,6 +181,7 @@ class CreateInitialSetUpMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
         address: Address,
+        name: str,
         email: str,
         password: str,
         domain_name: str,
@@ -188,6 +189,7 @@ class CreateInitialSetUpMessage(ImmediateSyftMessageWithReply):
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
+        self.name = name
         self.email = email
         self.password = password
         self.domain_name = domain_name
@@ -207,6 +209,7 @@ class CreateInitialSetUpMessage(ImmediateSyftMessageWithReply):
         return CreateInitialSetUpMessage_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
+            name=self.name,
             email=self.email,
             password=self.password,
             domain_name=self.domain_name,
@@ -230,6 +233,7 @@ class CreateInitialSetUpMessage(ImmediateSyftMessageWithReply):
         return CreateInitialSetUpMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
+            name=proto.name,
             email=proto.email,
             password=proto.password,
             domain_name=proto.domain_name,
