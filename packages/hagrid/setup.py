@@ -16,7 +16,15 @@ syft_path = os.path.abspath(
 grid_path = os.path.abspath(
     os.path.join(os.path.realpath(__file__), "../../grid/")
 )
-print("\n\n\n")
+
+
+
+print("\n\n")
+print("PREPARING INSTALLATION:")
+print("\n")
+cmd = "rm -rf build; rm -rf dist; rm -rf grid; rm -rf syft;"
+print(cmd)
+subprocess.call(cmd, shell=True)
 cmd = "cp -r " + syft_path + " " + hagrid_path + "/"
 print(cmd)
 subprocess.call(cmd, shell=True)
@@ -24,7 +32,7 @@ subprocess.call(cmd, shell=True)
 cmd = "cp -r " + grid_path + " " + hagrid_path + "/"
 print(cmd)
 subprocess.call(cmd, shell=True)
-print("\n\n\n")
+print("\n\n")
 
 
 

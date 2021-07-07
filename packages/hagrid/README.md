@@ -22,13 +22,9 @@ python setup.py develop
 ```
 
 #### Step 2a: Full Installation (also PyPI)
-However, if you aren't actively developing PySyft and/or PyGrid, and you just want to install hagrid, you can also do so using the standard full install commands.
+However, if you aren't actively developing PySyft and/or PyGrid, and you just want to install hagrid, you can also do so using the standard full install command.
 ```bash
 pip install .
-```
-or
-```bash
-python setup.py install
 ```
 This will NOT hot-reload because it'll copy PySyft and PyGrid into a dedicated directory.
 
