@@ -134,6 +134,7 @@ services:
       context: ./grid-ui
       args:
         FRONTEND_ENV: development
+        NODE_TYPE: ${NODE_TYPE?Variable not set}
     labels:
       - traefik.enable=true
       - traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}
