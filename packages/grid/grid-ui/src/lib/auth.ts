@@ -29,5 +29,7 @@ export function logout() {
 }
 
 export function login(credentials: {email: string; password: string}): Promise<string | ErrorMessage> {
-  return domainAPI.post<{token: string}>('/users/login', credentials).then(response => setToken(response.data.token))
+  return domainAPI
+    .post<{accessToken: string}>('/login', credentials)
+    .then(response => setToken(response.data.accessToken))
 }

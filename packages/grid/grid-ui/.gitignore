@@ -36,3 +36,5 @@ yarn-error.log*
 tailwind.output.css
 
 .env*.local
+
+/cache

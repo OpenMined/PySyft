@@ -16,11 +16,13 @@ export function CheckAuthRoute({children}: Pages) {
   const publicRoutes = ['/offline', '/login', '/start']
   const isPublicRoute = publicRoutes.includes(router.route)
 
+  console.log({data})
+
   useEffect(() => {
-    if (data && !data.init) {
-      router.push('/start')
-      return null
-    }
+    // if (data) {
+    //   router.push('/start')
+    //   return null
+    // }
 
     if (!isPublicRoute) {
       if (isError) {
@@ -36,7 +38,7 @@ export function CheckAuthRoute({children}: Pages) {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data?.init])
+  }, [data])
 
   if (!data && !isPublicRoute) {
     return <LoadingPyGrid />

@@ -23,9 +23,10 @@ const instance = Axios.create({
 
 instance.interceptors.request.use((config: AxiosRequestConfig) => {
   const token = getToken()
+  console.log({token})
 
   if (config.headers && token) {
-    config.headers.token = token
+    config.headers.Authorization = `Bearer ${token}`
   }
 
   if (config.data && config.headers['Content-Type'] === 'application/json') {

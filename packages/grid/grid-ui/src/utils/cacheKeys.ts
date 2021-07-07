@@ -1,4 +1,4 @@
-export const DATA_CENTRIC = '/data-centric'
+export const DATA_CENTRIC = ''
 export const SETUP = '/setup'
 export const USERS = '/users'
 export const ROLES = '/roles'
@@ -12,5 +12,5 @@ export const cacheKeys = {
   me: `${USERS}/me`,
   roles: `${ROLES}`,
   settings: `${SETUP}`,
-  status: `${SETUP}/status`
+  status: `/status`
 }
