@@ -54,7 +54,7 @@ def read_package_support() -> TypeDict[str, TypeList[TypeTuple[TypeAny, ...]]]:
 def get_serde() -> TypeList[TypeDict[str, TypeAny]]:
     serde_objs: TypeList[TypeDict[str, TypeAny]] = []
     dir_path = os.path.dirname(__file__)
-    _, dir_name = dir_path.rsplit("/", 1)
+    dir_name = dir_path.rsplit("/", 1)[-1]
 
     all_serde_modules = glob.glob(os.path.join(dir_path, "serde/*.py"))
     for f in all_serde_modules:
