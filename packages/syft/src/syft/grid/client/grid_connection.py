@@ -24,6 +24,7 @@ from ..connections.http_connection import HTTPConnection
 
 
 class GridHTTPConnection(HTTPConnection):
+
     LOGIN_ROUTE = "/login"
     SYFT_ROUTE = "/syft"
     SYFT_ROUTE_STREAM = "/syft/stream"  # non blocking node

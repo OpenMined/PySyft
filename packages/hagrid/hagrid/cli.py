@@ -60,7 +60,7 @@ def launch(name, type, port, tag, keep_db, host="localhost"):
     name = _name[:-1]
 
     if name == "":
-        name = names.get_full_name() + "'s " + type.capitalize()
+        name = "The " + names.get_full_name() + " " + type.capitalize()
 
     if tag != "":
         if " " in tag:

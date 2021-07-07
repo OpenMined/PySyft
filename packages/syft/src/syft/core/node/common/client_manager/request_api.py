@@ -95,3 +95,4 @@ class RequestAPI:
             raise response.exception_type
         else:
             return response
+
