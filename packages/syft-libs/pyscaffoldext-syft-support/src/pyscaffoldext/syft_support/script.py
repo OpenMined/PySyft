@@ -119,7 +119,10 @@ def get_return_type(t: TypeAny, i: str) -> TypeAny:
         # try block
         d = typing.get_type_hints(t)
         if not d:
-            return 1, f"{i}.{t.__name__}: type hints absent"
+            return 0, "_syft_missing"
+            # Suggested by @Madhava, enginner can change it
+            # Semi-automated
+            # return 1, f"{i}.{t.__name__}: type hints absent"
             # debug_list.append(f"{i}.{t.__name__}: type hints absent")
         else:
             if "return" in d.keys():
@@ -160,8 +163,9 @@ def get_return_type(t: TypeAny, i: str) -> TypeAny:
                     f"{i}.{t.__name__}: return key absent in {d}"
                 )
                 """
-                return 1, f"{i}.{t.__name__}: return key absent in {d}"
 
+                # return 1, f"{i}.{t.__name__}: return key absent in {d}"
+                return 0, "_syft_return_absent"
     except Exception as e:
         return 1, f"{i}.{t.__name__}: exception occoured \n\t{e}"
         # debug_list.append(f"{i}.{t.__name__}: exception occoured \n\t{e}")
