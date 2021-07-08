@@ -50,11 +50,10 @@ def send_association_request_msg(
 
     # Check Key permissions
     allowed = node.users.can_manage_infrastructure(verify_key=verify_key)
-
     if allowed:
         # TODO: Remove mandatory parameter port
         # Why do we need to set a port if we already have the url?
-        target_client = sy.login(url=msg.target, port=80)
+        target_client = sy.connect(url=msg.target)
         user = node.users.get_user(verify_key=verify_key)
 
         # Build an association request to send to the target
@@ -70,10 +69,8 @@ def send_association_request_msg(
             sender=msg.sender,
             reply_to=target_client.address,
         ).sign(signing_key=user_priv_key)
-
         # Send the message to the target
         target_client.send_immediate_msg_with_reply(msg=network_msg)
-
         # Create a new association request object
         node.association_requests.create_association_request(
             node=target_client.name,
@@ -150,7 +147,7 @@ def respond_association_request_msg(
     allowed = node.users.can_manage_infrastructure(verify_key=verify_key)
 
     if allowed:
-        target_client = sy.login(url=msg.target, port=80)
+        target_client = sy.connect(url=msg.target)
 
         # Set the status of the Association Request according to the "value" field received
         node.association_requests.set(msg.node_name, msg.response)
@@ -181,7 +178,6 @@ def get_association_request_msg(
     node: AbstractNode,
     verify_key: VerifyKey,
 ) -> GetAssociationRequestResponse:
-
     # Check Key Permissions
     allowed = node.users.can_manage_infrastructure(verify_key=verify_key)
 
@@ -198,7 +194,6 @@ def get_association_request_msg(
         address=msg.reply_to,
         content=association_request_json,
     )
-
 
 def get_all_association_request_msg(
     msg: GetAssociationRequestsMessage,
