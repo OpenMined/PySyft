@@ -12,7 +12,6 @@
     repo: "{{ syft_repo }}"
     dest: "{{ syft_dir }}"
     version: "{{ syft_branch }}"
-    depth: "1"
   become_user: "{{ om_user }}"
   ignore_errors: yes
   when: vagrant is not defined
