@@ -96,6 +96,67 @@ def class_import(name: TypeAny) -> TypeAny:
     return mod
 
 
+def get_return_type(t: TypeAny, i: str) -> TypeAny:
+    """
+    Argument:
+    t: Name of method/function of the class
+    Returns:
+    is_error: (binary)
+        0: add returned string in allowlist
+        1: add returned list in debuglist
+    """
+    try:
+        # try block
+        d = typing.get_type_hints(t)
+        if not d:
+            return 1, f"{i}.{t.__name__}: type hints absent"
+            # debug_list.append(f"{i}.{t.__name__}: type hints absent")
+        else:
+            if "return" in d.keys():
+                if isinstance(d["return"], typing._GenericAlias):  # type: ignore
+                    # print(type(d['return']))
+                    # print(get_origin(d['return']))
+                    """
+                    allowlist[i + "." + t.__name__] = get_origin(
+                        d["return"]
+                    ).__name__
+                    """
+                    return 0, get_origin(d["return"]).__name__
+                else:
+                    # print(d['return'])
+                    if d["return"].__module__ == "builtins":
+                        # avoid outputs like 'builtins.str'
+                        """
+                        allowlist[i + "." + t.__name__] = d[
+                            "return"
+                        ].__qualname__
+                        """
+                        return 0, d["return"].__qualname__
+                    else:
+                        """
+                        allowlist[i + "." + t.__name__] = (
+                            d["return"].__module__
+                            + "."
+                            + d["return"].__name__
+                        )"""
+
+                        return 0, (d["return"].__module__ + "." + d["return"].__name__)
+
+                # allowlist[module.__name__ + '.' + t.__name__] = d['return'].__name__
+            else:
+
+                """
+                debug_list.append(
+                    f"{i}.{t.__name__}: return key absent in {d}"
+                )
+                """
+                return 1, f"{i}.{t.__name__}: return key absent in {d}"
+
+    except Exception as e:
+        return 1, f"{i}.{t.__name__}: exception occoured \n\t{e}"
+        # debug_list.append(f"{i}.{t.__name__}: exception occoured \n\t{e}")
+
+
 def dict_allowlist(classes_set: TypeAny, debug_list: TypeAny) -> TypeAny:
 
     allowlist = {}
@@ -110,8 +171,16 @@ def dict_allowlist(classes_set: TypeAny, debug_list: TypeAny) -> TypeAny:
             if t is None:
                 # print('None')
                 continue
+
             if inspect.ismethod(t) or inspect.isfunction(t):
                 # print(f't for debug: {t} {module}')
+                is_error, string = get_return_type(t, i)
+                if is_error:
+                    debug_list.append(string)
+                else:
+                    allowlist[i + "." + t.__name__] = string
+                """
+
                 try:
                     # try block
                     d = typing.get_type_hints(t)
@@ -147,7 +216,7 @@ def dict_allowlist(classes_set: TypeAny, debug_list: TypeAny) -> TypeAny:
 
                 except Exception as e:
                     debug_list.append(f"{i}.{t.__name__}: exception occoured \n\t{e}")
-
+                """
     return allowlist, debug_list
 
 
@@ -183,7 +252,7 @@ def main() -> None:
     package_support["modules"] = modules_list
     package_support["methods"] = allowlist
 
-    with open("package_support.json", "w") as outfile:
+    with open("package_support_2.json", "w") as outfile:
         json.dump(package_support, outfile)
 
     if DEBUG:
