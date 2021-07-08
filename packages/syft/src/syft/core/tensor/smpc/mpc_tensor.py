@@ -8,14 +8,14 @@ import operator
 import numpy as np
 
 # syft absolute
+from syft import logger
 from syft.core.tensor.passthrough import PassthroughTensor
-from syft.core.tensor.share_tensor import ShareTensor
+from syft.core.tensor.smpc.share_tensor import ShareTensor
 from syft.core.tensor.tensor import Tensor
 
-
-def is_pointer(val):
-    if "Pointer" in type(val).__name__:
-        return True
+# syft relative
+from .utils import ispointer
+from .utils import parallel_execution
 
 
 class MPCTensor(PassthroughTensor):
@@ -46,7 +46,7 @@ class MPCTensor(PassthroughTensor):
         if not isinstance(shares, list):
             raise ValueError("_mpc_from_shares expected a list of shares")
 
-        if is_pointer(shares[0]):
+        if ispointer(shares[0]):
             # Remote shares
             return shares
         else:
@@ -60,7 +60,7 @@ class MPCTensor(PassthroughTensor):
 
     @staticmethod
     def _get_shares_from_secret(secret, parties, shape, seed_shares):
-        if is_pointer(secret):
+        if ispointer(secret):
             if shape is None:
                 raise ValueError("Shape must be specified when the secret is remote")
             return MPCTensor._get_shares_from_remote_secret(
@@ -79,7 +79,7 @@ class MPCTensor(PassthroughTensor):
                 value = None
 
             remote_share = (
-                party.syft.core.tensor.share_tensor.ShareTensor.generate_przs(
+                party.syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs(
                     rank=i,
                     nr_parties=len(parties),
                     value=value,
@@ -99,6 +99,12 @@ class MPCTensor(PassthroughTensor):
         return shares
 
     def reconstruct(self):
+        shares = [share for share in self.child]
+
+        # Try to get the shares for 10 seconds
+        # We do this because we use ImemediateActionWithoutReply and a RoundRobin Scheduler
+        # for actions (in the VM setup) and we might not have the resulting share at the
+        # end of the call
         local_shares = [share.get() for share in self.child]
         is_share_tensor = isinstance(local_shares[0], ShareTensor)
 
@@ -122,7 +128,7 @@ class MPCTensor(PassthroughTensor):
         if isinstance(other, MPCTensor):
             res_shares = [operator.add(a, b) for a, b in zip(self.child, other.child)]
         else:
-            res_shares = [operator.add(a, b) for a, b in zip(self.child, itertools.repeat(other))]
+            raise ValueError("Add works only for the MPCTensor at the moment!")
 
         new_shape = MPCTensor.__get_shape(self.mpc_shape, other.mpc_shape, operator.add)
         res = MPCTensor(shares=res_shares, shape=new_shape)

@@ -166,13 +166,11 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                 actions = SMPCAction.filter_actions_after_rank(
                     resolved_self.data, actions
                 )
+
                 client = node.get_client()
                 for action in actions:
                     client.send_immediate_msg_without_reply(msg=action)
-                import time
-
-                time.sleep(1)
-                result = node.store[self.id_at_location]
+                return
             elif (
                 isinstance(resolved_self.data, Plan)
                 and method_name == "__call__"

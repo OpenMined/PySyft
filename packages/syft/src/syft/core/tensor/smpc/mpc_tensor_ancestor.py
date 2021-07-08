@@ -1,6 +1,6 @@
 # syft absolute
 from syft.core.tensor.manager import TensorChainManager
-from syft.core.tensor.share_tensor import ShareTensor
+from syft.core.tensor.smpc.share_tensor import ShareTensor
 
 
 def is_pointer(val):

@@ -1,26 +1,25 @@
 # stdlib
 from functools import lru_cache
+import operator
+import time
+from uuid import UUID
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 
 # syft absolute
+from syft import lib
 from syft.core.tensor.fixed_precision_tensor import FixedPrecisionTensor
 from syft.core.tensor.passthrough import PassthroughTensor
-from syft import lib
 
 # syft relative
-from ...core.common.serde.serializable import Serializable
-from ...proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB
-from ..common.serde.deserialize import _deserialize as deserialize
-from ..common.serde.serializable import bind_protobuf
-from ..common.serde.serialize import _serialize as serialize
-
-from ...core.common.uid import UID
-from uuid import UUID
-import operator
-import time
+from ....core.common.serde.serializable import Serializable
+from ....core.common.uid import UID
+from ....proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB
+from ...common.serde.deserialize import _deserialize as deserialize
+from ...common.serde.serializable import bind_protobuf
+from ...common.serde.serialize import _serialize as serialize
 
 
 @bind_protobuf
@@ -121,9 +120,6 @@ class ShareTensor(PassthroughTensor, Serializable):
             raise ValueError("Private Multiplication not yet implemented")
         else:
             return ShareTensor(value=self.child * other, rank=self.rank)
-
-    def smpc_test(self):
-        ...
 
     def _object2proto(self) -> ShareTensor_PB:
         if isinstance(self.child, np.ndarray):

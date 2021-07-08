@@ -103,7 +103,7 @@ def consume_smpc_actions_round_robin():
 
                     if last_msg_id is not None and last_msg_id == msg.id:
                         # If there is only one action in all the lists
-                        time.sleep(1)
+                        time.sleep(0.5)
 
                 last_msg_id = msg.id
 

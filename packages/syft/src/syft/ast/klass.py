@@ -175,7 +175,7 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
         Returns:
             Pointer to object returned by class method.
         """
-        from syft.core.tensor.share_tensor import ShareTensor
+        from syft.core.tensor.smpc.share_tensor import ShareTensor
         import numpy as np
         from uuid import UUID
         from syft.core.node.common.action.smpc_action import (

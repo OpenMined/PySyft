@@ -8,13 +8,13 @@ import torch
 # syft absolute
 import syft as sy
 from syft import logger
-from syft.core.tensor.mpc_tensor import MPCTensor
+from syft.core.tensor.smpc.mpc_tensor import MPCTensor
 from syft.core.tensor.tensor import Tensor
 
 logger.remove()
 
 vms = [
-    sy.VirtualMachine(name=name) for name in ["alice", "bob", "tudor", "theo", "andrew"]
+    sy.VirtualMachine(name=name) for name in ["alice", "bob", "theo", "andrew"]
 ]
 clients = [vm.get_client() for vm in vms]
 

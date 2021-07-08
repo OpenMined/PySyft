@@ -16,7 +16,7 @@ from ..common.serde.serialize import _serialize as serialize
 from .ancestors import AutogradTensorAncestor
 from .ancestors import PhiTensorAncestor
 from .fixed_precision_tensor_ancestor import FixedPrecisionTensorAncestor
-from .mpc_tensor_ancestor import MPCTensorAncestor
+from .smpc.mpc_tensor_ancestor import MPCTensorAncestor
 from .passthrough import PassthroughTensor
 
 

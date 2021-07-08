@@ -14,6 +14,7 @@ from syft import lib
 
 # syft relative
 from ..... import serialize
+from .....logger import traceback_and_raise
 from .....proto.core.node.common.action.smpc_action_pb2 import (
     SMPCAction as SMPCAction_PB,
 )
@@ -22,7 +23,8 @@ from ....common.serde.serializable import Serializable
 from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
-from ....tensor.share_tensor import ShareTensor
+from ....store.storeable_object import StorableObject
+from ....tensor.smpc.share_tensor import ShareTensor
 from ...abstract.node import AbstractNode
 from ...common.action.common import ImmediateActionWithoutReply
 
@@ -143,15 +145,45 @@ class SMPCAction(ImmediateActionWithoutReply):
 
         args = None
         kwargs = None
-        _self = node.store.get_object(key=self.self_id).data
+        store_object_self = node.store.get_object(key=self.self_id)
+        _self = store_object_self.data
         args = [node.store[arg_id].data for arg_id in self.args_id]
         kwargs = {key: node.store[kwarg_id].data for key, kwarg_id in self.kwargs_id}
         (
             upcasted_args,
             upcasted_kwargs,
         ) = lib.python.util.upcast_args_and_kwargs(args, kwargs)
-        res = func(_self, *upcasted_args, **upcasted_kwargs)
-        node.store[self.id_at_location] = res
+        result = func(_self, *upcasted_args, **upcasted_kwargs)
+
+        if lib.python.primitive_factory.isprimitive(value=result):
+            # Wrap in a SyPrimitive
+            result = lib.python.primitive_factory.PrimitiveFactory.generate_primitive(
+                value=result, id=self.id_at_location
+            )
+        else:
+            # TODO: overload all methods to incorporate this automatically
+            if hasattr(result, "id"):
+                try:
+                    if hasattr(result, "_id"):
+                        # set the underlying id
+                        result._id = self.id_at_location
+                    else:
+                        result.id = self.id_at_location
+
+                    if result.id != self.id_at_location:
+                        raise AttributeError("IDs don't match")
+                except AttributeError as e:
+                    err = f"Unable to set id on result {type(result)}. {e}"
+                    traceback_and_raise(Exception(err))
+
+        if not isinstance(result, StorableObject):
+            result = StorableObject(
+                id=self.id_at_location,
+                data=result,
+                read_permissions=store_object_self.read_permissions,
+            )
+
+        node.store[self.id_at_location] = result
 
     @staticmethod
     def get_action_generator_from_op(operation_str):
