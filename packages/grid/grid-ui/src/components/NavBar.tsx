@@ -9,15 +9,15 @@ import {useMe, useRequests, useDomainStatus} from '@/lib/data'
 import {useAuth} from '@/context/auth-context'
 
 const navigation = [
-  {name: 'Datasets', href: '/datasets', current: false},
-  {name: 'Models', href: '/models', current: false},
-  {name: 'Requests', href: '/requests', current: false},
-  {name: 'Tensors', href: '/tensors', current: false},
-  {name: 'Users', href: '/users', current: false},
-  {name: 'Roles & Permissions', href: '/permissions', current: false},
-  {name: 'Dashboard', href: '/dashboard', current: false},
-  // {name: 'Infrastructure', href: '#', current: false}, // TODO: Check support
-  {name: 'Settings', href: '/settings', current: false}
+  {name: 'Datasets', href: '/datasets'},
+  {name: 'Models', href: '/models'},
+  {name: 'Requests', href: '/requests'},
+  {name: 'Tensors', href: '/tensors'},
+  {name: 'Users', href: '/users'},
+  {name: 'Roles & Permissions', href: '/permissions'},
+  {name: 'Dashboard', href: '/dashboard'},
+  {name: 'Networks', href: '#'}, //networks'},
+  {name: 'Settings', href: '/settings'}
 ]
 
 const SidebarContext = createContext(null)
