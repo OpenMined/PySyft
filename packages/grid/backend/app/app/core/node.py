@@ -9,6 +9,11 @@ from app.core.config import settings
 from app.db.session import SessionLocal
 from app.db.session import engine
 
+import sys
+from syft import logger
+logger.add(sink=sys.stdout, level="DEBUG")
+
+
 if settings.NODE_TYPE.lower() == "domain":
     node = Domain("Domain", db_engine=engine)
 elif settings.NODE_TYPE.lower() == "network":

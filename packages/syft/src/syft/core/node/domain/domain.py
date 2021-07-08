@@ -58,6 +58,7 @@ from ..common.node_service.request_receiver.request_receiver_service import (
 # from ..common.service.infra_service import DomainInfrastructureService
 # from ..common.service.request_service import RequestService
 # from ..common.service.request_service import RequestServiceWithoutReply
+from ..common.node_service.object_request.object_request_service import ObjectRequestServiceWithoutReply
 from ..common.node_service.role_manager.role_manager_service import RoleManagerService
 from ..common.node_service.tensor_manager.tensor_manager_service import (
     TensorManagerService,
@@ -121,7 +122,7 @@ class Domain(Node):
         # self.immediate_services_without_reply.append(UpdateRequestHandlerService)
 
         self.immediate_services_with_reply.append(RequestAnswerService)
-        # self.immediate_services_with_reply.append(GetAllRequestsService)
+        self.immediate_services_with_reply.append(ObjectRequestServiceWithoutReply)
         # self.immediate_services_with_reply.append(GetAllRequestHandlersService)
 
         # Grid Domain Services
