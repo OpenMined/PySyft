@@ -47,10 +47,13 @@ def list_submodules(list_name: TypeAny, package_name: TypeAny) -> TypeAny:
 
 
 def set_classes(
-    modules_list: TypeAny, root_module: str, debug_list: TypeAny
+    modules_list: TypeAny,
+    root_module: str,
+    debug_list: TypeAny,
 ) -> TypeAny:
 
     classes_set = set()
+    allowlist = {}
     # print(f'Len of modules_list {len(modules_list)}')
     for i in modules_list:
         try:
@@ -78,6 +81,13 @@ def set_classes(
 
                 # ToDo: add methods/fuctions in modules to allowlist
                 # Example: `statsmodels.api.add_constant`
+                if inspect.ismethod(t) or inspect.isfunction(t):
+                    # print(f't for debug: {t} {module}')
+                    is_error, string = get_return_type(t, i)
+                    if is_error:
+                        debug_list.append(string)
+                    else:
+                        allowlist[i + "." + t.__name__] = string
         except Exception as e:
             # print(f"set_classes: module_name = {i}: exception occoured \n\t{e}")
             debug_list.append(
@@ -85,7 +95,7 @@ def set_classes(
             )
 
     # print(f'Len of classes_set {len(classes_set)}')
-    return classes_set, debug_list
+    return classes_set, debug_list, allowlist
 
 
 def class_import(name: TypeAny) -> TypeAny:
@@ -157,9 +167,11 @@ def get_return_type(t: TypeAny, i: str) -> TypeAny:
         # debug_list.append(f"{i}.{t.__name__}: exception occoured \n\t{e}")
 
 
-def dict_allowlist(classes_set: TypeAny, debug_list: TypeAny) -> TypeAny:
+def dict_allowlist(
+    classes_set: TypeAny, debug_list: TypeAny, allowlist: dict
+) -> TypeAny:
 
-    allowlist = {}
+    # allowlist = {}
 
     for i in classes_set:
         class_ = class_import(i)
@@ -238,11 +250,13 @@ def main() -> None:
 
     print(f"Number of modules {len(modules_list)}")
 
-    classes_set, debug_list = set_classes(modules_list, package_name, debug_list)
+    classes_set, debug_list, allowlist = set_classes(
+        modules_list, package_name, debug_list
+    )
 
     print(f"Number of classes {len(classes_set)}")
 
-    allowlist, debug_list = dict_allowlist(classes_set, debug_list)
+    allowlist, debug_list = dict_allowlist(classes_set, debug_list, allowlist)
 
     print(f"len(allowlist) = {len(allowlist)}")
     package_support = {}
