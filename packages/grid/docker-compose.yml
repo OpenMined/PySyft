@@ -1,6 +1,7 @@
 version: "3.8"
 services:
   proxy:
+    restart: always
     image: traefik:v2.2
     networks:
       - "${TRAEFIK_PUBLIC_NETWORK?Variable not set}"
@@ -68,6 +69,7 @@ services:
         - traefik.http.routers.${STACK_NAME?Variable not set}-proxy-http.middlewares=${STACK_NAME?Variable not set}-www-redirect,${STACK_NAME?Variable not set}-https-redirect
 
   db:
+    restart: always
     image: postgres:12
     volumes:
       - app-db-data:/var/lib/postgresql/data/pgdata
@@ -81,6 +83,7 @@ services:
           - node.labels.${STACK_NAME?Variable not set}.app-db-data == true
 
   pgadmin:
+    restart: always
     image: dpage/pgadmin4
     networks:
       - "${TRAEFIK_PUBLIC_NETWORK?Variable not set}"
@@ -104,6 +107,7 @@ services:
         - traefik.http.services.${STACK_NAME?Variable not set}-pgadmin.loadbalancer.server.port=5050
 
   queue:
+    restart: always
     image: rabbitmq:3
     # Using the below image instead is required to enable the "Broker" tab in the flower UI:
     # image: rabbitmq:3-management
@@ -111,6 +115,7 @@ services:
     # You also have to change the flower command
 
   flower:
+    restart: always
     image: mher/flower:0.9.7
     networks:
       - "${TRAEFIK_PUBLIC_NETWORK?Variable not set}"
@@ -136,6 +141,7 @@ services:
         - traefik.http.routers.${STACK_NAME?Variable not set}-flower-https.tls.certresolver=le
         - traefik.http.services.${STACK_NAME?Variable not set}-flower.loadbalancer.server.port=5555
   backend:
+    restart: always
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}"
     depends_on:
       - db
@@ -159,6 +165,7 @@ services:
         - traefik.http.services.${STACK_NAME?Variable not set}-backend.loadbalancer.server.port=80
 
   backend_stream:
+    restart: always
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}"
     depends_on:
       - db
@@ -185,6 +192,7 @@ services:
         - traefik.http.services.${STACK_NAME?Variable not set}-backend-stream.loadbalancer.server.port=80
 
   celeryworker:
+    restart: always
     image: "${DOCKER_IMAGE_CELERYWORKER?Variable not set}:${TAG-latest}"
     depends_on:
       - db
@@ -203,6 +211,7 @@ services:
         INSTALL_DEV: "${INSTALL_DEV-false}"
 
   frontend:
+    restart: always
     image: "${DOCKER_IMAGE_FRONTEND?Variable not set}:${TAG-latest}"
     build:
       context: ./grid-ui
@@ -210,7 +219,6 @@ services:
         FRONTEND_ENV: ${FRONTEND_ENV-development}
       target: "grid-ui-${FRONTEND_ENV-development}"
       dockerfile: ui.dockerfile
-    restart: always
     volumes:
       - ./grid-ui/:/app
       - /app/node_modules

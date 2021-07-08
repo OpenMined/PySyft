@@ -107,7 +107,7 @@ def _handle_dataset_creation_syft(msg, node, verify_key):
             dataset_id=dataset_id,
             obj_id=str(id_at_location.value),
             dtype=str(table.__class__.__name__),
-            shape=str(table.shape)
+            shape=str(table.shape),
         )
 
 

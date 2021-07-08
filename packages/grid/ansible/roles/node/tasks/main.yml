@@ -1,0 +1,24 @@
+---
+- name: Apply system changes
+  import_tasks: system.yml
+  when: deploy_only is not defined
+
+- name: Install docker
+  import_tasks: docker.yml
+  when: deploy_only is not defined
+
+- name: Clone PySyft Repo
+  git:
+    repo: "{{ syft_repo }}"
+    dest: "{{ syft_dir }}"
+    version: "{{ syft_branch }}"
+  become_user: "{{ om_user }}"
+  ignore_errors: yes
+  when: vagrant is not defined
+
+- name: PySyft Repo Update Cron Job
+  ansible.builtin.cron:
+    name: "Update PySyft Repo"
+    job: "cd {{ syft_dir }} && git checkout {{ syft_branch }} --force && git pull && chown -R om:om ."
+  become: yes
+  when: vagrant is not defined

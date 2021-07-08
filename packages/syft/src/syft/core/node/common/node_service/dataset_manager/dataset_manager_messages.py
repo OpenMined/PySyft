@@ -74,7 +74,7 @@ class CreateDatasetMessage(ImmediateSyftMessageWithReply):
             dataset=self.dataset,
             metadata=serialize(self.metadata),
             reply_to=serialize(self.reply_to),
-            platform=self.platform
+            platform=self.platform,
         )
 
     @staticmethod
@@ -97,7 +97,7 @@ class CreateDatasetMessage(ImmediateSyftMessageWithReply):
             dataset=proto.dataset,
             metadata=_deserialize(proto.metadata),
             reply_to=_deserialize(blob=proto.reply_to),
-            platform=proto.platform
+            platform=proto.platform,
         )
 
     @staticmethod

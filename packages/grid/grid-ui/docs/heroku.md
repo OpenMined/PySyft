@@ -1,7 +1,7 @@
 # Deployment to Heroku
 
 Deploying PyGrid Admmin to Heroku is easy. Before continuing, make sure you have the following already set up
-* A Heroku account ( If you don't have one, create one [here](https://signup.heroku.com) ) 
+* A Heroku account ( If you don't have one, create one [here](https://signup.heroku.com) )
 * Heroku's CLI installed ( If you don't have it yet, head over [this](https://devcenter.heroku.com/articles/heroku-cli) page )
 
 ## Clone PyGrid Admin
@@ -33,7 +33,7 @@ git push heroku [your branch name]:master
 ```
 
 ## Access PyGrid Admin
-Once deployed, simply access Pygrid Admin via your favourite web browser at 
+Once deployed, simply access Pygrid Admin via your favourite web browser at
 
 ```
 https://[APP_NAME].herokuapp.com/

@@ -58,7 +58,6 @@ from ..common.node_service.request_receiver.request_receiver_messages import (
 from ..common.node_service.request_receiver.request_receiver_service import (
     RequestReceiverService,
 )
-
 from ..common.node_service.role_manager.role_manager_service import RoleManagerService
 from ..common.node_service.tensor_manager.tensor_manager_service import (
     TensorManagerService,
