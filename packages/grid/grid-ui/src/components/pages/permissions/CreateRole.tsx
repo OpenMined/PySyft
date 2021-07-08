@@ -3,20 +3,20 @@ import {useForm} from 'react-hook-form'
 import {Input, NormalButton, PermissionsListToggle} from '@/components'
 import {gridPermissions} from '@/utils'
 import {useRoles} from '@/lib/data'
-import type {Role} from '@/types/grid-types'
+import type {Role, UserPermissions} from '@/types/grid-types'
 
 const getBlankRole = () => ({
-  ...Object.keys(gridPermissions)
+  ...(Object.keys(gridPermissions)
     .map(permission => ({permission}))
     .reduce((prev, curr) => {
       prev[curr.permission] = false
       return prev
-    }, {}),
+    }, {}) as Record<UserPermissions, boolean>),
   name: ''
 })
 
 export function CreateRole({onClose}: {onClose: () => void}) {
-  const [newRole, setNewRole] = useState<Partial<Role>>(getBlankRole)
+  const [newRole, setNewRole] = useState<Omit<Role, 'id'>>(getBlankRole)
 
   const {create} = useRoles()
   const mutation = create()
@@ -46,8 +46,8 @@ export function CreateRole({onClose}: {onClose: () => void}) {
         <div className="space-y-4">
           <PermissionsListToggle
             onChange={(permission, enabled) => changePermission(permission, enabled)}
-            id="create-new-role"
             defaultPermissions={newRole}
+            id="create-new-role"
           />
           <div className="max-w-md">
             <Input

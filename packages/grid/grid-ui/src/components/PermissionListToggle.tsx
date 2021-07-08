@@ -4,7 +4,7 @@ import type {UserPermissions, Role} from '@/types/grid-types'
 
 interface PermissionListWithToggle {
   onChange: (e: UserPermissions, e2: boolean) => void
-  defaultPermissions: Role
+  defaultPermissions: Omit<Role, 'id'>
   id: string | number
 }
 
