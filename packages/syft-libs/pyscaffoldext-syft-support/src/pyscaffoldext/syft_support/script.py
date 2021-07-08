@@ -191,44 +191,6 @@ def dict_allowlist(
                     debug_list.append(string)
                 else:
                     allowlist[i + "." + t.__name__] = string
-                """
-
-                try:
-                    # try block
-                    d = typing.get_type_hints(t)
-                    if not d:
-                        debug_list.append(f"{i}.{t.__name__}: type hints absent")
-                    else:
-                        if "return" in d.keys():
-                            if isinstance(d["return"], typing._GenericAlias):  # type: ignore
-                                # print(type(d['return']))
-                                # print(get_origin(d['return']))
-                                allowlist[i + "." + t.__name__] = get_origin(
-                                    d["return"]
-                                ).__name__
-                            else:
-                                # print(d['return'])
-                                if d["return"].__module__ == "builtins":
-                                    # avoid outputs like 'builtins.str'
-                                    allowlist[i + "." + t.__name__] = d[
-                                        "return"
-                                    ].__qualname__
-                                else:
-                                    allowlist[i + "." + t.__name__] = (
-                                        d["return"].__module__
-                                        + "."
-                                        + d["return"].__name__
-                                    )
-
-                            # allowlist[module.__name__ + '.' + t.__name__] = d['return'].__name__
-                        else:
-                            debug_list.append(
-                                f"{i}.{t.__name__}: return key absent in {d}"
-                            )
-
-                except Exception as e:
-                    debug_list.append(f"{i}.{t.__name__}: exception occoured \n\t{e}")
-                """
     return allowlist, debug_list
 
 
