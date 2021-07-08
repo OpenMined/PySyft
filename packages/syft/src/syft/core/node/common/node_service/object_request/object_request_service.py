@@ -178,7 +178,7 @@ def get_all_request_msg(
             verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
         ).id
 
-    allowed = users.can_triage_requests(user_id=current_user_id)
+    allowed = users.can_triage_requests(verify_key=verify_key)
 
     if allowed:
         requests = node.data_requests
@@ -229,7 +229,7 @@ def update_request_msg(
             message='Request status should be either "accepted" or "denied"'
         )
 
-    _can_triage_request = node.users.can_triage_requests(user_id=current_user_id)
+    _can_triage_request = node.users.can_triage_requests(verify_key=verify_key)
     _current_user_key = verify_key.encode(encoder=HexEncoder).decode("utf-8")
     _req_owner = _current_user_key == _req.verify_key
 
@@ -315,7 +315,7 @@ def get_all_requests(
     current_user = node.users.first(
         verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
     )
-    _can_triage_request = node.users.can_triage_requests(user_id=current_user.id)
+    _can_triage_request = node.users.can_triage_requests(verify_key=verify_key)
 
     _requests = node.data_requests.all()
 
@@ -482,7 +482,7 @@ def accept_or_deny_request(
     )
 
     _req = node.data_requests.first(id=str(_msg.request_id.value))
-    _can_triage_request = node.users.can_triage_requests(user_id=current_user.id)
+    _can_triage_request = node.users.can_triage_requests(verify_key=verify_key)
     if _msg.accept:
         if _req and _can_triage_request:
             tmp_obj = node.store[UID.from_string(_req.object_id)]
@@ -490,11 +490,19 @@ def accept_or_deny_request(
                 VerifyKey(_req.verify_key.encode("utf-8"), encoder=HexEncoder)
             ] = _req.id
             node.store[UID.from_string(_req.object_id)] = tmp_obj
-            node.data_requests.set(request_id=_req.id, status="accepted")
+            # TODO: In the future we'll probably need to keep a request history
+            # So, instead of deleting a data access request, we would like to just change its
+            # status.
+            # node.data_requests.set(request_id=_req.id, status="accepted")
+            node.data_requests.delete(id=_req.id)
     else:
         _req_owner = current_user.verify_key == _req.verify_key
         if _req and (_can_triage_request or _req_owner):
-            node.data_requests.set(request_id=_req.id, status="denied")
+            # TODO: In the future we'll probably need to keep a request history
+            # So, instead of deleting a data access request, we would like to just change its
+            # status.
+            # node.data_requests.set(request_id=_req.id, status="denied")
+            node.data_requests.delete(id=_req.id)
 
 
 def update_req_handler(
