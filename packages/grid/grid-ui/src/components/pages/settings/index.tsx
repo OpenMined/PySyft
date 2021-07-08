@@ -24,7 +24,7 @@ function ChangeNodeName({domainName}: Partial<Settings>) {
       />
       <NormalButton
         onClick={() => mutation.mutate()}
-        className="flex-shrink-0 w-24 mt-auto hover:bg-trueGray-200"
+        className="flex-shrink-0 w-24 mt-auto"
         disabled={mutation.isLoading}
         isLoading={mutation.isLoading}>
         Submit

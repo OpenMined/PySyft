@@ -61,5 +61,5 @@ export function ActionButton(props: GridButton) {
 }
 
 export function ClosePanelButton(props: GridButton) {
-  return <NormalButton {...props} type="button" className="flex-shrink-0 mt-auto hover:bg-trueGray-200" />
+  return <NormalButton {...props} type="button" className="flex-shrink-0 mt-auto" />
 }

@@ -68,7 +68,7 @@ export function CreateRole({onClose}: {onClose: () => void}) {
           </NormalButton>
           <NormalButton
             type="button"
-            className="flex-shrink-0 mt-auto hover:bg-trueGray-200"
+            className="flex-shrink-0 mt-auto"
             onClick={() => typeof onClose === 'function' && onClose()}>
             Close Panel
           </NormalButton>
