@@ -91,7 +91,7 @@ class Duet(WebRTCDuet):
         )
 
         self.flight_enabled = True
-        location = ('localhost', 8999)
+        location = ('0.0.0.0', 8999)
 
         # If this peer will not start the signaling process
         if not offer:
