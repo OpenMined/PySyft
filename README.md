@@ -240,7 +240,7 @@ Run the following:
 ```
 $ cd packages/grid
 $ export VM_USER=azureuser
-$ export VM_IP=23.99.72.57
+$ export VM_IP=104.42.26.195
 $ export VM_KEY=./node_key.pem
 $ export NODE_TYPE=domain
 $ export NODE_NAME=mynode
