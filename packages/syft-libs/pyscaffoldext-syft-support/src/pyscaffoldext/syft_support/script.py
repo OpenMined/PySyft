@@ -228,7 +228,7 @@ def main() -> None:
     package_support["modules"] = modules_list
     package_support["methods"] = allowlist
 
-    with open("package_support_2.json", "w") as outfile:
+    with open("package_support.json", "w") as outfile:
         json.dump(package_support, outfile)
 
     if DEBUG:
