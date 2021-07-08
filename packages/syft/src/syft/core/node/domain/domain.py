@@ -44,6 +44,10 @@ from ..common.node_service.group_manager.group_manager_service import (
     GroupManagerService,
 )
 from ..common.node_service.node_setup.node_setup_service import NodeSetupService
+from ..common.node_service.object_request.object_request_service import (
+    ObjectRequestServiceWithoutReply,
+)
+from ..common.node_service.object_request.object_request_service import RequestService
 from ..common.node_service.request_answer.request_answer_messages import RequestStatus
 from ..common.node_service.request_answer.request_answer_service import (
     RequestAnswerService,
@@ -54,16 +58,10 @@ from ..common.node_service.request_receiver.request_receiver_messages import (
 from ..common.node_service.request_receiver.request_receiver_service import (
     RequestReceiverService,
 )
-
-# from ..common.service.infra_service import DomainInfrastructureService
-# from ..common.service.request_service import RequestService
-# from ..common.service.request_service import RequestServiceWithoutReply
 from ..common.node_service.role_manager.role_manager_service import RoleManagerService
 from ..common.node_service.tensor_manager.tensor_manager_service import (
     TensorManagerService,
 )
-
-# from ..common.service.transfer_service import TransferObjectService
 from ..common.node_service.user_manager.user_manager_service import UserManagerService
 from ..device import Device
 from ..device import DeviceClient
@@ -116,7 +114,7 @@ class Domain(Node):
         self.data_requests = RequestManager(db_engine)
         self.datasets = DatasetManager(db_engine)
 
-        self.immediate_services_without_reply.append(RequestReceiverService)
+        # self.immediate_services_without_reply.append(RequestReceiverService)
         # self.immediate_services_without_reply.append(AcceptOrDenyRequestService)
         # self.immediate_services_without_reply.append(UpdateRequestHandlerService)
 
@@ -134,7 +132,9 @@ class Domain(Node):
         self.immediate_services_with_reply.append(DatasetManagerService)
         self.immediate_services_with_reply.append(GroupManagerService)
         # self.immediate_services_with_reply.append(TransferObjectService)
-        # self.immediate_services_with_reply.append(RequestService)
+        self.immediate_services_with_reply.append(RequestService)
+
+        self.immediate_services_without_reply.append(ObjectRequestServiceWithoutReply)
 
         self.requests: List[RequestMessage] = list()
         # available_device_types = set()
