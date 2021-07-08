@@ -351,7 +351,7 @@ class DomainClient(Client):
             route_index: int = 0):
         self.association.create(
             target=target,
-            sender=self.routes[route_index].connection.base_url.replace("/api/v1", ""),
+            sender=self.routes[route_index].connection.base_url,
             reason=reason,
             node_name=self.name,
         )
