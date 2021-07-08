@@ -10,11 +10,11 @@ import type {ErrorMessage} from '@/utils/api-axios'
 
 function buildUsersWithRoles(users: User[], roles: Role[]): EnhancedUser[] {
   return users.map(user => {
-    const userRole = roles.find(role => role.id === user.role)
+    const userRole = roles.find(role => role.name === user.role)
     const {id, name, ...permissions} = userRole
     return {
       permissions,
-      user: {id: user.id, email: user.email},
+      user: {...user},
       role: {id, name}
     }
   })

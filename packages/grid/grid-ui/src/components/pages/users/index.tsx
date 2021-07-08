@@ -33,9 +33,12 @@ export function UserList({users, me}: UsersAsProp & {me: Me}) {
 function UserInfoTitle() {
   const {user, role} = useContext(UserListContext)
   return (
-    <div className="flex space-x-2 truncate">
-      <p className="font-medium truncate">{user.email}</p>
-      <Badge bgColor={entityColors.roles}>{role.name}</Badge>
+    <div>
+      <div className="flex space-x-2 truncate">
+        <p className="font-medium truncate">{user.name}</p>
+        <Badge bgColor={entityColors.roles}>{role.name}</Badge>
+      </div>
+      <p className="text-sm text-gray-500">{user.email}</p>
     </div>
   )
 }
@@ -112,7 +115,7 @@ function ChangeRole() {
       />
       <NormalButton
         onClick={() => mutation.mutate()}
-        className="flex-shrink-0 w-24 mt-auto hover:bg-trueGray-200"
+        className="flex-shrink-0 w-24 mt-auto"
         disabled={mutation.isLoading}
         isLoading={mutation.isLoading}>
         Submit
@@ -142,7 +145,7 @@ function ChangePassword() {
         value={password}
       />
       <NormalButton
-        className="flex-shrink-0 w-24 mt-auto hover:bg-trueGray-200"
+        className="flex-shrink-0 w-24 mt-auto"
         disabled={mutation.isLoading}
         onClick={() => mutation.mutate()}
         isLoading={mutation.isLoading}>
@@ -169,7 +172,7 @@ function ChangeEmail() {
         value={email}
       />
       <NormalButton
-        className="flex-shrink-0 w-24 mt-auto hover:bg-trueGray-200"
+        className="flex-shrink-0 w-24 mt-auto"
         disabled={mutation.isLoading}
         onClick={() => mutation.mutate()}
         isLoading={mutation.isLoading}>
@@ -293,7 +296,7 @@ export function UserCreate({onClose}: {onClose: () => void}) {
           </NormalButton>
           <NormalButton
             type="button"
-            className="flex-shrink-0 mt-auto hover:bg-trueGray-200"
+            className="flex-shrink-0 mt-auto"
             onClick={() => typeof onClose === 'function' && onClose()}>
             Close Panel
           </NormalButton>
