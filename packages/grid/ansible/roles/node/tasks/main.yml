@@ -12,6 +12,7 @@
     repo: "{{ syft_repo }}"
     dest: "{{ syft_dir }}"
     version: "{{ syft_branch }}"
+    depth: "1"
   become_user: "{{ om_user }}"
   ignore_errors: yes
   when: vagrant is not defined
@@ -19,6 +20,6 @@
 - name: PySyft Repo Update Cron Job
   ansible.builtin.cron:
     name: "Update PySyft Repo"
-    job: "cd {{ syft_dir }} && git checkout {{ syft_branch }} --force && git pull"
+    job: "cd {{ syft_dir }} && git checkout {{ syft_branch }} --force && git pull && chown -R om:om ."
   become: yes
   when: vagrant is not defined
