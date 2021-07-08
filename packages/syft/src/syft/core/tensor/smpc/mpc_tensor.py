@@ -99,12 +99,8 @@ class MPCTensor(PassthroughTensor):
         return shares
 
     def reconstruct(self):
-        shares = [share for share in self.child]
-
-        # Try to get the shares for 10 seconds
-        # We do this because we use ImemediateActionWithoutReply and a RoundRobin Scheduler
-        # for actions (in the VM setup) and we might not have the resulting share at the
-        # end of the call
+        # TODO: It might be that the resulted shares (if we run any computation) might
+        # not be available at this point
         local_shares = [share.get() for share in self.child]
         is_share_tensor = isinstance(local_shares[0], ShareTensor)
 
