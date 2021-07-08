@@ -19,7 +19,6 @@
 - name: PySyft Repo Update Cron Job
   ansible.builtin.cron:
     name: "Update PySyft Repo"
-    minute: "1"
     job: "cd {{ syft_dir }} && git checkout {{ syft_branch }} --force && git pull"
   become: yes
   when: vagrant is not defined
