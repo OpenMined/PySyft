@@ -33,9 +33,12 @@ export function UserList({users, me}: UsersAsProp & {me: Me}) {
 function UserInfoTitle() {
   const {user, role} = useContext(UserListContext)
   return (
-    <div className="flex space-x-2 truncate">
-      <p className="font-medium truncate">{user.email}</p>
-      <Badge bgColor={entityColors.roles}>{role.name}</Badge>
+    <div>
+      <div className="flex space-x-2 truncate">
+        <p className="font-medium truncate">{user.name}</p>
+        <Badge bgColor={entityColors.roles}>{role.name}</Badge>
+      </div>
+      <p className="text-sm text-gray-500">{user.email}</p>
     </div>
   )
 }

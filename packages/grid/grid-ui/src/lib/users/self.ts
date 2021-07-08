@@ -2,7 +2,7 @@ import {useRoles, useMe} from '@/lib/data'
 import type {User, Role, Me} from '@/types/grid-types'
 
 export function buildSelfWithRoles(me: User, roles: Role[]): Me {
-  const selfRole = roles.find(role => role.id === me.role)
+  const selfRole = roles.find(role => role.name === me.role)
   const {id: selfRoleId, name: selfRoleName, ...selfPermissions} = selfRole
   return {
     id: me.id,
