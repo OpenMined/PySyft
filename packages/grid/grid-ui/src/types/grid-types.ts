@@ -42,9 +42,10 @@ export interface Request {
 }
 
 export interface User {
+  name: string
   email: string
   id: number
-  role: number
+  role: string
 }
 
 export type UserPermissions =
