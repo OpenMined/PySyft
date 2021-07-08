@@ -1,6 +1,6 @@
 import {Toggle} from '@/components'
 import {gridPermissions} from '@/utils'
-import type {UserPermissions} from '@/types/grid-types'
+import type {UserPermissions, Role} from '@/types/grid-types'
 
 interface PermissionListWithToggle {
   onChange: (e: UserPermissions, e2: boolean) => void
