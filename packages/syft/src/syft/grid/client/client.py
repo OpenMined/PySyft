@@ -33,13 +33,11 @@ def connect(
     conn_type: Type[ClientConnection] = GridHTTPConnection,
     credentials: Dict = {},
     user_key: Optional[SigningKey] = None,
-    client_type: Optional[Client] = DomainClient,
 ) -> Client:
     # Use Server metadata
     # to build client route
     conn = conn_type(url=url)  # type: ignore
-    client_type = client_type
-
+    
     if credentials:
         metadata, _user_key = conn.login(credentials=credentials)  # type: ignore
         _user_key = SigningKey(_user_key.encode(), encoder=HexEncoder)
@@ -49,6 +47,12 @@ def connect(
             _user_key = SigningKey.generate()
         else:
             _user_key = user_key
+
+    # Check node client type based on metadata response
+    if metadata.node_type == "Domain":
+        client_type = DomainClient
+    else:
+        client_type = NetworkClient
 
     (
         spec_location,
@@ -120,14 +124,9 @@ def login(
 
     metadata = conn_type(url=url)._get_metadata()  # type: ignore
 
-    if metadata.node_type == "Domain":
-        client_type = DomainClient
-    else:
-        client_type = NetworkClient
-
     # connecting to domain
     node = connect(
-        url=url, credentials=credentials, conn_type=conn_type, client_type=client_type
+        url=url, credentials=credentials, conn_type=conn_type
     )
 
     if verbose:
