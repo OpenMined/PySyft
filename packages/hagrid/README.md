@@ -12,7 +12,7 @@ pip install -r requirements.txt
 ```
 
 #### Step 2a: Dev Setup
-If you want hagrid to launch nodes based on your live-updating codebase, then install it using one of the live-updating install commands. This will mean that the codebase will hot-reload based on the current project. 
+If you want hagrid to launch nodes based on your live-updating codebase, then install it using one of the live-updating install commands. This will mean that the codebase will hot-reload based on the current project.
 ```bash
 pip install -e .
 ```

@@ -15,6 +15,9 @@ import names
 import pandas as pd
 from pandas import DataFrame
 
+# syft absolute
+from syft import deserialize
+
 # relative
 from ....core import node
 from ....core.common.message import SyftMessage
@@ -47,8 +50,6 @@ from ..common.node_service.request_receiver.request_receiver_messages import (
 )
 from .enums import PyGridClientEnums
 from .enums import RequestAPIFields
-
-from syft import deserialize
 
 
 class RequestQueueClient:
@@ -435,4 +436,6 @@ class DomainClient(Client):
 
         binary_dataset = serialize(assets, to_bytes=True)
 
-        self.datasets.create_syft(dataset=binary_dataset, metadata=metadata, platform="syft")
+        self.datasets.create_syft(
+            dataset=binary_dataset, metadata=metadata, platform="syft"
+        )

@@ -1,6 +1,10 @@
+# stdlib
+import sys
+
 # syft absolute
 from syft import Domain
 from syft import Network
+from syft import logger
 from syft.core.node.common.node_table import Base
 from syft.core.node.common.node_table.utils import seed_db
 
@@ -9,8 +13,6 @@ from app.core.config import settings
 from app.db.session import SessionLocal
 from app.db.session import engine
 
-import sys
-from syft import logger
 logger.add(sink=sys.stdout, level="DEBUG")
 
 

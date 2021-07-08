@@ -1,3 +1,4 @@
+# third party
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
@@ -10,5 +11,3 @@ def ping() -> str:
     Ping? Pong!
     """
     return "pong"
-
-

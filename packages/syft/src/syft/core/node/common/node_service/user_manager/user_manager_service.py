@@ -110,7 +110,6 @@ def create_user_msg(
     else:
         create_standard_user()
 
-
     return SuccessResponseMessage(
         address=msg.reply_to,
         resp_msg="User created successfully!",

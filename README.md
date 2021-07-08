@@ -191,7 +191,7 @@ local VM as though it were a real live domain on the internet.
 $ vagrant plugin install landrush
 ```
 
-With this enabled you can access the box on:  
+With this enabled you can access the box on:
 `http://node.openmined.grid`
 
 ## Starting VM
@@ -223,6 +223,34 @@ $ ANSIBLE_ARGS='--extra-vars "deploy_only=true"' vagrant provision
 ```
 $ cd packages/grid
 $ vagrant ssh
+```
+
+## Deploy to Azure
+
+Create a VM on Azure with Ubuntu 20.04 with at least:
+
+- 2x CPU
+- 4gb RAM
+- 40gb HDD
+
+Generate or supply a private key and note down the username.
+
+Run the following:
+
+```
+$ cd packages/grid
+$ export VM_USER=azureuser
+$ export VM_IP=23.99.72.57
+$ export VM_KEY=./node_key.pem
+$ export NODE_TYPE=domain
+$ export NODE_NAME=mynode
+$ ansible-playbook -i $VM_IP, ./ansible/site.yml --private-key $VM_KEY --user $VM_USER -e "node_type=$NODE_TYPE node_name=$NODE_NAME"
+```
+
+If you want to later skip the setup process of installing packages and docker engine etc you can pass in extra args to ansible deploy_only=true which will skip those steps.
+
+```
+$ ansible-playbook -i $VM_IP, ./ansible/site.yml --private-key $VM_KEY --user $VM_USER -e "node_type=$NODE_TYPE node_name=$NODE_NAME deploy_only=true"
 ```
 
 ## Switching to the OpenMined user

@@ -11,6 +11,7 @@ from typing import Union
 from pandas import DataFrame
 
 # syft absolute
+from syft import deserialize
 from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
     CreateDatasetMessage,
 )
@@ -26,7 +27,6 @@ from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages
 from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
     UpdateDatasetMessage,
 )
-from syft import deserialize
 
 # relative
 from ....node.common.node import Node
@@ -50,7 +50,7 @@ class DatasetRequestAPI(RequestAPI):
     def create_syft(self, **kwargs):
         return super().create(**kwargs)
 
-    def create_grid_ui(self,  path: str, **kwargs) -> Dict[str, str]:  # type: ignore
+    def create_grid_ui(self, path: str, **kwargs) -> Dict[str, str]:  # type: ignore
         response = self.node.conn.send_files(path, metadata=kwargs)  # type: ignore
         logging.info(response[RequestAPIFields.MESSAGE])
 
@@ -101,14 +101,16 @@ class Dataset:
             setattr(self, key, value)
 
         for key, value in self.dataset_metadata.blob_metadata.items():
-            setattr(self, key, deserialize(b''.fromhex(value), from_bytes=True))
+            setattr(self, key, deserialize(b"".fromhex(value), from_bytes=True))
 
     def __getitem__(self, key: Union[str, int]) -> Any:
         if isinstance(key, int):
             obj_id = self.dataset_metadata.data[key]["id"].replace("-", "")
             return self.dataset_metadata.node.store[obj_id]
         elif isinstance(key, str):
-            id = self.dataset_metadata.pandas[self.dataset_metadata.pandas["name"] == key].id.values[0]
+            id = self.dataset_metadata.pandas[
+                self.dataset_metadata.pandas["name"] == key
+            ].id.values[0]
             return self.dataset_metadata.node.store[id.replace("-", "")]
 
     def _repr_html_(self) -> str:
@@ -118,4 +120,3 @@ class Dataset:
         table = self.pandas._repr_html_()
 
         return self.__repr__() + "<br /><br />" + id + tags + manifest + table
-

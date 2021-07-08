@@ -1,22 +1,16 @@
+# stdlib
+import os
+import subprocess
+
 # third party
 from setuptools import find_packages
 from setuptools import setup
 
-import subprocess
-import os
+hagrid_path = os.path.abspath(os.path.join(os.path.realpath(__file__), "../../hagrid/"))
 
-hagrid_path = os.path.abspath(
-    os.path.join(os.path.realpath(__file__), "../../hagrid/")
-)
+syft_path = os.path.abspath(os.path.join(os.path.realpath(__file__), "../../syft/"))
 
-syft_path = os.path.abspath(
-    os.path.join(os.path.realpath(__file__), "../../syft/")
-)
-
-grid_path = os.path.abspath(
-    os.path.join(os.path.realpath(__file__), "../../grid/")
-)
-
+grid_path = os.path.abspath(os.path.join(os.path.realpath(__file__), "../../grid/"))
 
 
 print("\n\n")
@@ -35,20 +29,19 @@ subprocess.call(cmd, shell=True)
 print("\n\n")
 
 
-
 def package_files(directory):
     paths = []
     for (path, directories, filenames) in os.walk(directory):
         for filename in filenames:
-            path = os.path.join('..', path, filename)
+            path = os.path.join("..", path, filename)
             _path = str(path)
             if ".pyc" not in _path and "build/" not in _path:
                 paths.append(path)
     return paths
 
-extra_files = package_files('./syft')
-extra_files = package_files('./grid')
 
+extra_files = package_files("./syft")
+extra_files = package_files("./grid")
 
 
 setup(
@@ -60,7 +53,7 @@ setup(
     install_requires=[
         "click",
     ],
-    package_data={"":extra_files},
+    package_data={"": extra_files},
     include_package_data=True,
     entry_points={"console_scripts": ["hagrid = hagrid.cli:cli"]},
 )

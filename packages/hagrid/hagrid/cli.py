@@ -111,6 +111,7 @@ def launch(name, type, port, tag, keep_db, host="localhost"):
     print(cmd)
     subprocess.call(cmd, shell=True)
 
+
 @click.command(help="Build (or re-build) PyGrid docker image.")
 def build():
 

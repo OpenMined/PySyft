@@ -1,5 +1,5 @@
 ---
-- hosts: grid_node
+- hosts: all
   gather_facts: False
   environment:
     LC_ALL: en_US.UTF-8

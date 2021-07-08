@@ -5,14 +5,15 @@ from typing import Dict
 # third party
 from sqlalchemy.orm import sessionmaker
 
+# syft absolute
+from syft import serialize
+
 # relative
 from ....common.uid import UID
 from ..node_table.bin_obj_dataset import BinObjDataset
 from ..node_table.dataset import Dataset
 from .database_manager import DatabaseManager
 
-
-from syft import serialize
 
 class DatasetManager(DatabaseManager):
 
@@ -42,12 +43,16 @@ class DatasetManager(DatabaseManager):
             blob_metadata = {}
             str_metadata = {}
             for key, value in kwargs.items():
-                if key != "tags" and key != "manifest" and key != "description" and key != "name":
+                if (
+                    key != "tags"
+                    and key != "manifest"
+                    and key != "description"
+                    and key != "name"
+                ):
                     if isinstance(key, str) and isinstance(value, str):
                         str_metadata[key] = value
                     else:
                         blob_metadata[str(key)] = serialize(value, to_bytes=True).hex()
-
 
             _obj = self._schema(
                 id=str(UID().value),
@@ -56,9 +61,11 @@ class DatasetManager(DatabaseManager):
                 manifest=manifest,
                 description=description,
                 str_metadata=str_metadata,
-                blob_metadata=blob_metadata
+                blob_metadata=blob_metadata,
             )
-            session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
+            session_local = sessionmaker(
+                autocommit=False, autoflush=False, bind=self.db
+            )()
             session_local.add(_obj)
             obj_id = _obj.id
             session_local.commit()

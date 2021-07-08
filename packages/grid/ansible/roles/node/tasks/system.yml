@@ -88,9 +88,3 @@
     enabled: yes
     state: started
     name: ntp
-
-- name: Ensuring docker service is always running
-  systemd:
-    enabled: yes
-    state: started
-    name: docker

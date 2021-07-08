@@ -7,9 +7,9 @@ from app.api.api_v1.endpoints import datasets
 from app.api.api_v1.endpoints import login
 from app.api.api_v1.endpoints import roles
 from app.api.api_v1.endpoints import setup
+from app.api.api_v1.endpoints import status
 from app.api.api_v1.endpoints import syft
 from app.api.api_v1.endpoints import users
-from app.api.api_v1.endpoints import status
 
 api_router = APIRouter()
 api_router.include_router(login.router, tags=["login"])

@@ -1,6 +1,6 @@
 ---
 - name: Kill Docker Containers
-  shell: "docker rm $(docker ps -qa) --force"
+  shell: "docker rm $(docker ps -qa) --force || true"
   become_user: "{{ om_user }}"
   ignore_errors: yes
 
@@ -11,7 +11,7 @@
   become_user: "{{ om_user }}"
 
 - name: Remove old Docker Images
-  shell: "docker rmi $(docker images -qa -f 'dangling=true')"
+  shell: "docker rmi $(docker images -qa -f 'dangling=true') || true"
   become_user: "{{ om_user }}"
   ignore_errors: yes
 
@@ -23,7 +23,7 @@
       export DOMAIN_PORT=80
       export TRAEFIK_TAG="${TAG}"
       export DOMAIN_NAME="${TAG}"
-      export NODE_TYPE=domain
+      export NODE_TYPE="{{ node_type }}"
       docker compose -p "${TAG}" up -d
   args:
     chdir: "/home/om/PySyft/packages/grid"

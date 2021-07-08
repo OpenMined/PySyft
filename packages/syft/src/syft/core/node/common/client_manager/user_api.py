@@ -39,8 +39,9 @@ class UserRequestAPI(RequestAPI):
             logging.info(response.resp_msg)
         except Exception as e:
             for user in self.all():
-                if user['email'] == kwargs['email']:
-                    print("Ignoring: user with email:"+user['email']+" already exists")
+                if user["email"] == kwargs["email"]:
+                    print(
+                        "Ignoring: user with email:" + user["email"] + " already exists"
+                    )
                     return
             raise e
-
