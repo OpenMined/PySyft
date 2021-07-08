@@ -1,0 +1,9 @@
+---
+- hosts: grid_node
+  gather_facts: False
+  environment:
+    LC_ALL: en_US.UTF-8
+  become: yes
+  roles:
+    - node
+    - containers

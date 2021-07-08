@@ -134,6 +134,103 @@ These commands can be run like so:
 $ tox -e syft.lint
 ```
 
+## Single VM Deployment
+
+We are providing a simple way to deploy all of our stack inside a single VM so that no
+matter where you want to run everything you can do so easily by thinking in terms of a
+single machine either bare metal or VM and have it provisioned and auto updated.
+
+To develop against this locally you will want the following:
+
+- vagrant
+- virtualbox
+- ansible
+- hagrid <-- in packages/hagrid
+
+# MacOS Instructions
+
+```
+$ brew install vagrant virtualbox ansible
+```
+
+Hagrid the Grid deployment tool:
+
+```
+$ cd packages/hagrid
+$ pip install -e .
+```
+
+## Vagrant
+
+Vagrant allows us to create and manage VMs locally for development. During the startup
+process of creating the VM the ansible provisioning scripts will be applied automatically
+to the VM. If you change the Vagrantfile which describes how the VM is defined you will
+need to either `vagrant reload` or destroy and re-create it.
+
+Making changes to the VM state should be done through the `ansible` scripts so that
+the state of the box is idempotent and re-running the ansible provisioning scripts
+should always result in the same working grid node state.
+
+To allow rapid development we mount the PySyft source repo into the VM at the path:
+`/home/om/PySyft` which is where it would be if it was cloned down on a real remote VM.
+
+The configuration is done via a `Vagrantfile` which is written in ruby.
+
+## Vagrant Networking
+
+### Vagrant IP
+
+The VM will be accessible on the IP `10.0.1.2` which is defined in the `Vagrantfile`.
+
+### Vagrant Landrush Plugin
+
+The Landrush plugin for vagrant gives us an automatic dns service so we can access our
+local VM as though it were a real live domain on the internet.
+
+```
+$ vagrant plugin install landrush
+```
+
+With this enabled you can access the box on:  
+`http://node.openmined.grid`
+
+## Starting VM
+
+NOTE: You may need your sudo password to enable the landrush DNS entry on startup.
+
+```
+$ cd packages/grid
+$ vagrant up --provision
+```
+
+## Provisioning the VM
+
+You want to do this any time you are testing out your `ansible` changes.
+
+```
+$ cd packages/grid
+$ vagrant provision
+```
+
+If you want to do a quick deploy where you skip the system provisioning you can run:
+
+```
+$ ANSIBLE_ARGS='--extra-vars "deploy_only=true"' vagrant provision
+```
+
+## Connecting to Vagrant VM
+
+```
+$ cd packages/grid
+$ vagrant ssh
+```
+
+## Switching to the OpenMined user
+
+```
+$ sudo su - om
+```
+
 ## Join Slack
 
 Also, join the rapidly growing community of 12,000+ on [Slack](http://slack.openmined.org).

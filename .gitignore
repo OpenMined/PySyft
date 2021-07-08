@@ -29,3 +29,6 @@ docker/data/*
 # hagrid temps
 packages/hagrid/syft
 packages/hagrid/grid
+
+# vagrant
+.vagrant
