@@ -344,10 +344,13 @@ class DomainClient(Client):
 
         return response
 
-    def apply_to_network(self, target: str, reason: str):
+    def apply_to_network(self,
+            target: str,
+            reason: str,
+            route_index: int = 0):
         self.association.create(
             target=target,
-            sender=self.conn.base_url.replace("/api/v1", ""),
+            sender=self.routes[route_index].connection.base_url.replace("/api/v1", ""),
             reason=reason,
             node_name=self.name,
         )
