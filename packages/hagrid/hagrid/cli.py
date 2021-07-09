@@ -59,7 +59,6 @@ def provision_remote(username, password, key_path) -> bool:
     "--keep-db/--delete-db",
     default=False,
     required=False,
-    type=bool,
     help="""If restarting a node that already existed, don't/do reset the database (Default: deletes the db)""",
 )
 @click.option(
@@ -160,6 +159,7 @@ def launch(
             except requests.ConnectionError as e:
                 port_available = True
 
+        keep_db = True if keep_db.lower() == "true" else False
         if not keep_db:
             print("Deleting database for node...")
             subprocess.call("docker volume rm " + tag + "_app-db-data", shell=True)
