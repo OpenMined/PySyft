@@ -60,8 +60,12 @@
 
 - name: Upgrade pip and some packages
   pip:
-    name: pip ansible ansible-core paramiko
+    name: pip
     extra_args: --upgrade
+
+- name: Install pip packages
+  shell: pip install ansible ansible-core paramiko --upgrade
+  become: yes
 
 - name: Check ctop exists
   stat:
