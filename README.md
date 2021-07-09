@@ -147,6 +147,14 @@ To develop against this locally you will want the following:
 - ansible
 - hagrid <-- in packages/hagrid
 
+## HAGrid Install
+
+You can install HAGrid with pip:
+
+```
+$ pip install "git+https://github.com/OpenMined/PySyft@demo_strike_team_branch_4#subdirectory=packages/hagrid"
+```
+
 # MacOS Instructions
 
 ```

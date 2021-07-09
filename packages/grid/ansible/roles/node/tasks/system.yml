@@ -58,9 +58,9 @@
     - ufw
     - git
 
-- name: Upgrade pip
+- name: Upgrade pip and some packages
   pip:
-    name: pip
+    name: pip ansible ansible-core paramiko
     extra_args: --upgrade
 
 - name: Check ctop exists
