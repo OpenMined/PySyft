@@ -6,10 +6,18 @@
 # $5 is the permission group like: om
 # $6 is the node type like: domain
 # #7 is the node name like: node
-cd $1
-START_HASH=$(git rev-parse HEAD)
+
+# these commands cant be used because they trigger hot reloading
+# however without them accidental changes to the working tree might cause issues
+# with the fetch process so we should consider changing how this works perhaps by
+# copying the code into a folder for execution and keeping the git repo seperate
+
 # git checkout main --force
 # git branch -D $3 || true
+# git checkout $3 --force
+
+cd $1
+START_HASH=$(git rev-parse HEAD)
 git remote rm origin || true
 git remote add origin https://github.com/$2
 git fetch origin
