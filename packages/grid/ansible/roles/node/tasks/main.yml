@@ -7,11 +7,16 @@
   import_tasks: docker.yml
   when: deploy_only is not defined
 
+- name: Delete PySyft Repo
+  shell: "rm -rf {{ syft_dir }} || true"
+  become_user: "{{ om_user }}"
+  when: vagrant is not defined
+
 - name: Clone PySyft Repo
   git:
-    repo: "{{ syft_repo }}"
+    repo: "https://github.com/{{ github_repo }}"
     dest: "{{ syft_dir }}"
-    version: "{{ syft_branch }}"
+    version: "{{ repo_branch }}"
   become_user: "{{ om_user }}"
   ignore_errors: yes
   when: vagrant is not defined
@@ -19,6 +24,6 @@
 - name: PySyft Repo Update Cron Job
   ansible.builtin.cron:
     name: "Update PySyft Repo"
-    job: "cd {{ syft_dir }} && git checkout {{ syft_branch }} --force && git pull && chown -R om:om ."
+    job: "cd {{ syft_dir }} && git checkout {{ repo_branch }} --force && git pull && chown -R om:om ."
   become: yes
   when: vagrant is not defined

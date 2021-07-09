@@ -1,6 +1,7 @@
 # stdlib
 import hashlib
 import os
+from pathlib import Path
 import subprocess
 
 # third party
@@ -20,6 +21,15 @@ install_path = os.path.abspath(
 @click.group()
 def cli():
     pass
+
+
+def provision_remote(username, password, key_path) -> bool:
+    is_remote = username is not None or password is not None or key_path is not None
+    if username and password or username and key_path:
+        return is_remote
+    if is_remote:
+        raise Exception("--username requires either --password or --key_path")
+    return is_remote
 
 
 @click.command(help="Start a new PyGrid domain/network node!")
@@ -52,7 +62,70 @@ def cli():
     type=bool,
     help="""If restarting a node that already existed, don't/do reset the database (Default: deletes the db)""",
 )
-def launch(name, type, port, tag, keep_db, host="localhost"):
+@click.option(
+    "--host",
+    default="localhost",
+    required=False,
+    type=str,
+    help="Optional: the host to provision, leave empty if localhost / docker",
+)
+@click.option(
+    "--username",
+    default=None,
+    required=False,
+    type=str,
+    help="Optional: the username for provisioning the remote host",
+)
+@click.option(
+    "--password",
+    default=None,
+    required=False,
+    type=str,
+    help="Optional: the password for provisioning the remote host",
+)
+@click.option(
+    "--key_path",
+    default=None,
+    required=False,
+    type=str,
+    help="Optional: the path to the key file for provisioning the remote host",
+)
+@click.option(
+    "--mode",
+    default=None,
+    required=False,
+    type=str,
+    help="Optional: mode either provision or deploy, where deploy is a quick code update",
+)
+@click.option(
+    "--repo",
+    default=None,
+    required=False,
+    type=str,
+    help="Optional: repo to fetch source from",
+)
+@click.option(
+    "--branch",
+    default=None,
+    required=False,
+    type=str,
+    help="Optional: branch to monitor for updates",
+)
+def launch(
+    name,
+    type,
+    port,
+    tag,
+    keep_db,
+    host,
+    username=None,
+    password=None,
+    key_path=None,
+    mode: str = "provision",
+    repo: str = "OpenMined/PySyft",
+    branch: str = "demo_strike_team_branch_4",
+):
+    is_remote = provision_remote(username, password, key_path)
 
     _name = ""
     for word in name:
@@ -62,53 +135,109 @@ def launch(name, type, port, tag, keep_db, host="localhost"):
     if name == "":
         name = "The " + names.get_full_name() + " " + type.capitalize()
 
-    if tag != "":
-        if " " in tag:
-            raise Exception("Can't have spaces in --tag. Try something without spaces.")
-    else:
-        tag = hashlib.md5(name.encode("utf8")).hexdigest()
+    if not is_remote:
+        if tag != "":
+            if " " in tag:
+                raise Exception(
+                    "Can't have spaces in --tag. Try something without spaces."
+                )
+        else:
+            tag = hashlib.md5(name.encode("utf8")).hexdigest()
 
-    tag = type + "_" + tag
+        tag = type + "_" + tag
 
-    # check port to make sure it's not in use - if it's in use then increment until it's not.
-    port_available = False
-    while not port_available:
-        try:
-            requests.get("http://" + host + ":" + str(port))
-            print(
-                str(port) + " doesn't seem to be available... trying " + str(port + 1)
-            )
-            port = port + 1
-        except requests.ConnectionError as e:
-            port_available = True
+        # check port to make sure it's not in use - if it's in use then increment until it's not.
+        port_available = False
+        while not port_available:
+            try:
+                requests.get("http://" + host + ":" + str(port))
+                print(
+                    str(port)
+                    + " doesn't seem to be available... trying "
+                    + str(port + 1)
+                )
+                port = port + 1
+            except requests.ConnectionError as e:
+                port_available = True
 
-    if not keep_db:
-        print("Deleting database for node...")
-        subprocess.call("docker volume rm " + tag + "_app-db-data", shell=True)
-        print()
+        if not keep_db:
+            print("Deleting database for node...")
+            subprocess.call("docker volume rm " + tag + "_app-db-data", shell=True)
+            print()
 
-    version = check_docker()
+        version = check_docker()
 
     motorcycle()
 
-    print("Launching a " + str(type) + " PyGrid node on port " + str(port) + "!\n")
+    if not is_remote:
+        print("Launching a " + str(type) + " PyGrid node on port " + str(port) + "!\n")
+    else:
+        print("Launching a " + str(type) + f" PyGrid node on http://{host}!\n")
     print("  - TYPE: " + str(type))
     print("  - NAME: " + str(name))
-    print("  - TAG: " + str(tag))
-    print("  - PORT: " + str(port))
-    print("  - DOCKER: " + version)
+    if not is_remote:
+        print("  - TAG: " + str(tag))
+        print("  - PORT: " + str(port))
+        print("  - DOCKER: " + version)
+    else:
+        print("  - HOST: " + host)
+        if username is not None:
+            print("  - USERNAME: " + username)
+
+        if password is not None:
+            print("  - PASSWORD: *************")
+
+        if key_path is not None:
+            print("  - KEY_PATH: " + key_path)
 
     print("\n")
 
-    cmd = "DOMAIN_PORT=" + str(port)
-    cmd += " TRAEFIK_TAG=" + tag
+    cmd = ""
+    if not is_remote:
+        cmd += "DOMAIN_PORT=" + str(port)
+        cmd += " TRAEFIK_TAG=" + tag
+
     cmd += ' DOMAIN_NAME="' + name + '"'
     cmd += " NODE_TYPE=" + type
-    cmd += " docker compose -p " + tag
-    cmd += " up"
 
-    cmd = "cd " + install_path + ";" + cmd
-    print(cmd)
+    if is_remote:
+        # use ansible on remote host
+        # if username is None:
+        #     cmd += f' USERNAME="{username}"'
+        # elif password is not None:
+        #     cmd += f' PASSWORD="{password}"'
+        # elif key_path is not None:
+        #     cmd += f' KEY_PATH="{key_path}"'
+
+        current_path = os.path.dirname(__file__)
+        grid_path = Path(os.path.abspath(f"{current_path}/../../grid"))
+        playbook_path = grid_path / "ansible/site.yml"
+        ansible_cfg_path = grid_path / "ansible.cfg"
+
+        if not os.path.exists(playbook_path):
+            print(f"Can't find playbook site.yml at: {playbook_path}")
+        cmd = f"ANSIBLE_CONFIG={ansible_cfg_path} ansible-playbook -i {host}, {playbook_path} --private-key {key_path} --user {username}"
+        ANSIBLE_ARGS = {
+            "node_type": type,
+            "node_name": name,
+            "github_repo": repo,
+            "repo_branch": branch,
+        }
+        if mode == "deploy":
+            ANSIBLE_ARGS["deploy_only"] = "true"
+
+        args = []
+        for k, v in ANSIBLE_ARGS.items():
+            args.append(f"{k}={v}")
+        args_str = " ".join(args)
+        cmd += f' -e "{args_str}"'
+    else:
+        # use docker on localhost
+        cmd += " docker compose -p " + tag
+        cmd += " up"
+
+        cmd = "cd " + install_path + ";" + cmd
+    print("Running: \n", cmd)
     subprocess.call(cmd, shell=True)
 
 

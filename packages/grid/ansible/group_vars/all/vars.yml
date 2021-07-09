@@ -3,9 +3,8 @@ om_user: om
 om_group: om
 om_homedir: "/home/{{om_user }}"
 syft_dir: "/home/om/PySyft"
-# syft_repo: git@github.com:OpenMined/PySyft.git
-syft_repo: https://github.com/OpenMined/PySyft
-syft_branch: demo_strike_team_branch_4
+github_repo: OpenMined/PySyft
+repo_branch: demo_strike_team_branch_4
 docker_compose_plugin_dir: ".docker/cli-plugins"
 node_name: node
 node_type: domain

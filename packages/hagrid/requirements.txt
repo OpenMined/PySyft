@@ -1,4 +1,7 @@
+ansible
+ansible-core
 click
 names
+paramiko
 requests
 setuptools

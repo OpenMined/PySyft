@@ -225,9 +225,9 @@ $ cd packages/grid
 $ vagrant ssh
 ```
 
-## Deploy to Azure
+## Deploy to Cloud
 
-Create a VM on Azure with Ubuntu 20.04 with at least:
+Create a VM on your cloud provider with Ubuntu 20.04 with at least:
 
 - 2x CPU
 - 4gb RAM
@@ -238,20 +238,16 @@ Generate or supply a private key and note down the username.
 Run the following:
 
 ```
-$ cd packages/grid
-$ export VM_USER=azureuser
-$ export VM_IP=104.42.26.195
-$ export VM_KEY=./node_key.pem
-$ export NODE_TYPE=domain
-$ export NODE_NAME=mynode
-$ ansible-playbook -i $VM_IP, ./ansible/site.yml --private-key $VM_KEY --user $VM_USER -e "node_type=$NODE_TYPE node_name=$NODE_NAME"
+$ hagrid launch node --type=domain --host=104.42.26.195 --username=ubuntu --key_path=~/.ssh/key.pem
 ```
 
-If you want to later skip the setup process of installing packages and docker engine etc you can pass in extra args to ansible deploy_only=true which will skip those steps.
+### Deploy vs Provision
 
-```
-$ ansible-playbook -i $VM_IP, ./ansible/site.yml --private-key $VM_KEY --user $VM_USER -e "node_type=$NODE_TYPE node_name=$NODE_NAME deploy_only=true"
-```
+If you want to later skip the setup process of installing packages and docker engine etc you can pass in --mode=deploy which will skip those steps.
+
+### Use a Custom PySyft Fork
+
+If you wish to use a different fork of PySyft you can pass in --repo=The-PET-Lab-at-the-UN-PPTTT/PySyft --branch=ungp_pet_lab
 
 ## Switching to the OpenMined user
 
