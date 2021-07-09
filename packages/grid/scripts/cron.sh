@@ -13,7 +13,7 @@ START_HASH=$(git rev-parse HEAD)
 git remote rm origin || true
 git remote add origin https://github.com/$2
 git fetch origin
-git checkout $3 --force
+git checkout $3
 git pull origin $3 --rebase
 chown -R $4:$5 .
 END_HASH=$(git rev-parse HEAD)
