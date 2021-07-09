@@ -52,6 +52,9 @@ setup(
     packages=find_packages(),
     install_requires=[
         "click",
+        "names",
+        "requests",
+        "setuptools",
     ],
     package_data={"": extra_files},
     include_package_data=True,
