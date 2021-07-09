@@ -7,11 +7,6 @@
   import_tasks: docker.yml
   when: deploy_only is not defined
 
-- name: Delete PySyft Repo
-  shell: "rm -rf {{ syft_dir }} || true"
-  become_user: "{{ om_user }}"
-  when: local is not defined
-
 - name: Clone PySyft Repo
   git:
     repo: "https://github.com/{{ github_repo }}"
@@ -24,6 +19,6 @@
 - name: PySyft Repo Update Cron Job
   ansible.builtin.cron:
     name: "Update PySyft Repo"
-    job: "{{ syft_dir }}/packages/grid/scripts/cron.sh {{ syft_dir }} https://github.com/{{ github_repo }} {{ repo_branch }} {{ om_user }} {{ om_group }}"
+    job: "{{ syft_dir }}/packages/grid/scripts/cron.sh {{ syft_dir }} {{ github_repo }} {{ repo_branch }} {{ om_user }} {{ om_group }} {{ node_type }} {{ node_name }}"
   become: yes
   when: vagrant is not defined
