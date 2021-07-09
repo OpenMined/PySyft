@@ -10,7 +10,7 @@
 - name: Delete PySyft Repo
   shell: "rm -rf {{ syft_dir }} || true"
   become_user: "{{ om_user }}"
-  when: vagrant is not defined
+  when: local is not defined
 
 - name: Clone PySyft Repo
   git:
@@ -19,11 +19,11 @@
     version: "{{ repo_branch }}"
   become_user: "{{ om_user }}"
   ignore_errors: yes
-  when: vagrant is not defined
+  when: local is not defined
 
 - name: PySyft Repo Update Cron Job
   ansible.builtin.cron:
     name: "Update PySyft Repo"
-    job: "cd {{ syft_dir }} && git checkout {{ repo_branch }} --force && git pull && chown -R om:om ."
+    job: "{{ syft_dir }}/packages/grid/scripts/cron.sh {{ syft_dir }} https://github.com/{{ github_repo }} {{ repo_branch }} {{ om_user }} {{ om_group }}"
   become: yes
   when: vagrant is not defined

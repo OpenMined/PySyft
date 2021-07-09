@@ -216,7 +216,9 @@ def launch(
 
         if not os.path.exists(playbook_path):
             print(f"Can't find playbook site.yml at: {playbook_path}")
-        cmd = f"ANSIBLE_CONFIG={ansible_cfg_path} ansible-playbook -i {host}, {playbook_path} --private-key {key_path} --user {username}"
+        cmd = f"ANSIBLE_CONFIG={ansible_cfg_path} ansible-playbook -i {host}, {playbook_path}"
+        if host != "localhost":
+            cmd += f" --private-key {key_path} --user {username}"
         ANSIBLE_ARGS = {
             "node_type": type,
             "node_name": name,
@@ -225,6 +227,9 @@ def launch(
         }
         if mode == "deploy":
             ANSIBLE_ARGS["deploy_only"] = "true"
+
+        if host == "localhost":
+            ANSIBLE_ARGS["local"] = "true"
 
         args = []
         for k, v in ANSIBLE_ARGS.items():
