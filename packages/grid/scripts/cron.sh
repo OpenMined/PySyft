@@ -20,5 +20,5 @@ END_HASH=$(git rev-parse HEAD)
 
 if [ "$START_HASH" != "$END_HASH" ]; then
     echo "Code has changed to running hagrid"
-    ANSIBLE_CONFIG=/home/om/PySyft/packages/grid/ansible.cfg ansible-playbook -i 127.0.0.1, /home/om/PySyft/packages/grid/ansible/site.yml -e "node_type=$6 node_name=$7 github_repo=$2 repo_branch=$3 deploy_only=true"
+    ANSIBLE_CONFIG=/home/om/PySyft/packages/grid/ansible.cfg ansible-playbook --connection=local -i 127.0.0.1, /home/om/PySyft/packages/grid/ansible/site.yml -e "node_type=$6 node_name=$7 github_repo=$2 repo_branch=$3 deploy_only=true"
 fi
