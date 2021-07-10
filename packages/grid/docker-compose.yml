@@ -2,7 +2,7 @@ version: "3.8"
 services:
   proxy:
     restart: always
-    image: traefik:v2.2
+    image: traefik:v2.4
     networks:
       - "${TRAEFIK_PUBLIC_NETWORK?Variable not set}"
       - default
