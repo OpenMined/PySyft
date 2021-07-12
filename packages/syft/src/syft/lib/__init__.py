@@ -2,7 +2,6 @@
 import functools
 import importlib
 import sys
-import warnings
 from types import ModuleType
 from typing import Any
 from typing import Any as TypeAny
@@ -13,16 +12,18 @@ from typing import Optional
 from typing import Set as TypeSet
 from typing import Tuple as TypeTuple
 from typing import Union as TypeUnion
-
-import wrapt
+import warnings
 
 # third party
 from cachetools import cached
 from cachetools.keys import hashkey
 from packaging import version
+import wrapt
 
 # syft relative
-from ..ast import add_classes, add_methods, add_modules
+from ..ast import add_classes
+from ..ast import add_methods
+from ..ast import add_modules
 from ..ast.globals import Globals
 from ..core.node.abstract.node import AbstractNodeClient
 from ..generate_wrapper import GenerateWrapper
@@ -31,7 +32,9 @@ from ..lib.python import create_python_ast
 from ..lib.remote_dataloader import create_remote_dataloader_ast
 from ..lib.torch import create_torch_ast
 from ..lib.torchvision import create_torchvision_ast
-from ..logger import critical, traceback_and_raise, warning
+from ..logger import critical
+from ..logger import traceback_and_raise
+from ..logger import warning
 from .misc import create_union_ast
 from .util import generic_update_ast
 
@@ -285,7 +288,8 @@ def support_packages():
     Returns a set of all syft packages currently imported.
     """
     return sys.modules["__SYFT_PACKAGE_SUPPORT"]
-    
+
+
 def create_support_ast(
     modules: TypeList[TypeTuple[str, TypeAny]],
     classes: TypeList[TypeTuple[str, str, TypeAny]],
@@ -347,7 +351,7 @@ def bind_library(lib: str):
     Binds lib to a global.
     """
     global bind_lib
-    bind_lib=f"{lib}"
+    bind_lib = f"{lib}"
     package = "syft.lib"
     module_path = f"{package}.{lib}"
     globals()[bind_lib] = sys.modules[module_path]
