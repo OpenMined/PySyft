@@ -281,6 +281,9 @@ def post_import_hook_third_party(module: TypeAny) -> None:
 
 
 def support_packages():
+    """
+    Returns a set of all syft packages currently imported.
+    """
     return sys.modules["__SYFT_PACKAGE_SUPPORT"]
     
 def create_support_ast(
@@ -339,6 +342,10 @@ def register_library(lib: str):
 
 
 def bind_library(lib: str):
+    """
+    (TODO: Use lib as str or comment out.)
+    Binds lib to a global.
+    """
     global bind_lib
     bind_lib=f"{lib}"
     package = "syft.lib"
