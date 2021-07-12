@@ -277,6 +277,7 @@ def post_import_hook_third_party(module: TypeAny) -> None:
     # warning(msg, print=True)
     # warnings.warn(msg, DeprecationWarning)
     load(module.__name__, ignore_warning=True)
+    register_library(module.__name__)
 
 
 def support_packages():
@@ -323,4 +324,23 @@ def add_lib_external(
         for serde_object in objects:
             GenerateWrapper(**serde_object)
     else:
-        critical("Serde objects is expected to be an Iterable.")
+        critical("Serde object is expected to be an Iterable.")
+
+
+def register_library(lib: str):
+    """
+    Add newly imported library to shared lib space.
+    """
+    # load(lib, ignore_warning=True)
+    if "__SYFT_PACKAGE_SUPPORT" not in sys.modules:
+        sys.modules["__SYFT_PACKAGE_SUPPORT"] = set()
+    sys.modules["__SYFT_PACKAGE_SUPPORT"].add(lib)
+    # bind_library(lib)
+
+
+def bind_library(lib: str):
+    global bind_lib
+    bind_lib=f"{lib}"
+    package = "syft.lib"
+    module_path = f"{package}.{lib}"
+    globals()[bind_lib] = sys.modules[module_path]
