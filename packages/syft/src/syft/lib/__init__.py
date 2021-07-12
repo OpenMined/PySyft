@@ -283,7 +283,7 @@ def post_import_hook_third_party(module: TypeAny) -> None:
     register_library(module.__name__)
 
 
-def support_packages():
+def support_packages() -> TypeSet:
     """
     Returns a set of all syft packages currently imported.
     """
@@ -334,7 +334,7 @@ def add_lib_external(
         critical("Serde object is expected to be an Iterable.")
 
 
-def register_library(lib: str):
+def register_library(lib: str) -> None:
     """
     Add newly imported library to shared lib space.
     """
@@ -343,6 +343,9 @@ def register_library(lib: str):
         sys.modules["__SYFT_PACKAGE_SUPPORT"] = set()
     sys.modules["__SYFT_PACKAGE_SUPPORT"].add(lib)
     # bind_library(lib)
+
+
+bind_lib = ""
 
 
 def bind_library(lib: str):
