@@ -176,7 +176,8 @@ def dict_allowlist(
 ) -> TypeAny:
 
     # allowlist = {}
-
+    methods_error_count = 0
+    missing_return = 0
     for i in classes_set:
         class_ = class_import(i)
         # print(class_)
@@ -193,9 +194,12 @@ def dict_allowlist(
                 is_error, string = get_return_type(t, i)
                 if is_error:
                     debug_list.append(string)
+                    methods_error_count += 1
                 else:
+                    if string in ["_syft_missing", "_syft_return_absent"]:
+                        missing_return += 1
                     allowlist[i + "." + t.__name__] = string
-    return allowlist, debug_list
+    return allowlist, debug_list, methods_error_count, missing_return
 
 
 def main() -> None:
@@ -217,20 +221,23 @@ def main() -> None:
 
     list_submodules(modules_list, package)
 
-    print(f"Number of modules {len(modules_list)}")
+    # print(f"Number of modules {len(modules_list)}")
 
     classes_set, debug_list, allowlist = set_classes(
         modules_list, package_name, debug_list
     )
 
-    print(f"Number of classes {len(classes_set)}")
+    # print(f"Number of classes {len(classes_set)}")
 
-    allowlist, debug_list = dict_allowlist(classes_set, debug_list, allowlist)
+    allowlist, debug_list, methods_error_count, missing_return = dict_allowlist(
+        classes_set, debug_list, allowlist
+    )
 
-    print(f"len(allowlist) = {len(allowlist)}")
+    # print(f"len(allowlist) = {len(allowlist)}")
     package_support = {}
 
     package_support["lib"] = package_name
+    package_support["Version"] = package.__version__
     package_support["class"] = list(classes_set)
     package_support["modules"] = modules_list
     package_support["methods"] = allowlist
@@ -243,6 +250,17 @@ def main() -> None:
         with open(DEBUG_FILE_NAME, "w") as f:
             for item in debug_list:
                 f.write(f"{item}\n")
+
+    print(f"-----{package_name} Summary-----")
+    print("Modules")
+    print(f"\tAdded:{len(modules_list)}")
+    print("Classes")
+    print(f"\tAdded:{len(classes_set)}")
+    print("Methods")
+    print(f"\tAdded:{len(allowlist) - missing_return}")
+    print(f"\tReturn type absent: {missing_return}")
+    print(f"\tNot added:{methods_error_count}")
+    print("-----------------")
 
 
 if __name__ == "__main__":
