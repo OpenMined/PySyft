@@ -1,7 +1,6 @@
 # stdlib
 from typing import Optional
 
-# relative
 # syft relative
 from . import functions  # noqa: 401
 from ...ast import add_classes
@@ -9,6 +8,8 @@ from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
 from ...core.node.abstract.node import AbstractNodeClient
+from .fixed_precision_tensor import FixedPrecisionTensor
+from .smpc.share_tensor import ShareTensor
 from .tensor import Tensor
 
 
@@ -23,6 +24,23 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
     ]
     classes = [
         ("syft.core.tensor.tensor.Tensor", "syft.core.tensor.tensor.Tensor", Tensor),
+        "syft.core.tensor.fixed_precision_tensor",
+        "syft.core.tensor.tensor",
+        "syft.core.tensor.smpc",
+        "syft.core.tensor.smpc.share_tensor",
+    ]
+    classes = [
+        ("syft.core.tensor.tensor.Tensor", "syft.core.tensor.tensor.Tensor", Tensor),
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+            ShareTensor,
+        ),
+        (
+            "syft.core.tensor.fixed_precision_tensor.FixedPrecisionTensor",
+            "syft.core.tensor.fixed_precision_tensor.FixedPrecisionTensor",
+            FixedPrecisionTensor,
+        ),
     ]
 
     methods = [
@@ -122,6 +140,25 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.core.tensor.tensor.Tensor.sum", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.take", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.transpose", "syft.core.tensor.tensor.Tensor"),
+        # SMPC
+        (
+            "syft.core.tensor.tensor.Tensor.fix_precision",
+            "syft.core.tensor.tensor.Tensor",
+        ),
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
+        ("syft.core.tensor.tensor.Tensor.share", "syft.core.tensor.tensor.Tensor"),
+        # Share Tensor Operations
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.__add__",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.__mul__",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
     ]
 
     add_modules(ast, modules)

@@ -1,11 +1,10 @@
 # stdlib
+import atexit
 from collections import defaultdict
 from collections import deque
 from collections import namedtuple
 import threading
 import time
-import atexit
-
 from typing import List
 from typing import Optional
 
@@ -117,5 +116,6 @@ class VMSMPCService(ImmediateNodeServiceWithoutReply):
 
 def stop():
     stop_consumer_smpc_thread.set()
+
 
 atexit.register(stop)
