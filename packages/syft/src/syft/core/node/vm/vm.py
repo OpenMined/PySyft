@@ -92,3 +92,15 @@ class VirtualMachine(Node):
         #                 "Framework already imported. Why are you importing it twice?"
         #             ))
         #         self.frameworks.attrs[name] = ast
+
+    def __hash__(self) -> int:
+        return hash(self.vm.id)
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, VirtualMachine):
+            return False
+
+        if self.vm.id != other.vm.id:
+            return False
+
+        return True

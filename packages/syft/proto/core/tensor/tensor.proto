@@ -3,6 +3,7 @@ syntax = "proto3";
 package syft.core.tensor;
 // import "proto/core/common/common_object.proto";
 import "proto/core/adp/entity.proto";
+// import "proto/core/adp/entity.proto";
 import "proto/lib/numpy/array.proto";
 
 message Tensor {
@@ -13,6 +14,9 @@ message Tensor {
 //  repeated syft.lib.numpy.NumpyProtoArrow arrays = 5;
 //  repeated Tensor tensors = 6;
 //  bool requires_grad = 7;
+  repeated syft.lib.numpy.NumpyProto arrays = 5;
+  repeated Tensor tensors = 6;
+  bool requires_grad = 7;
 }
 
 // DataTensor<GenericTensor>

@@ -15,6 +15,7 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
 # relative
+# syft relative
 from ....lib.python import String
 from ....logger import critical
 from ....logger import debug
@@ -65,6 +66,15 @@ from ..common.node_service.user_manager.user_manager_service import UserManagerS
 from ..device import Device
 from ..device import DeviceClient
 from .client import DomainClient
+from .service import RequestAnswerMessageService
+from .service import RequestMessage
+from .service import RequestService
+from .service import RequestStatus
+from .service.accept_or_deny_request_service import AcceptOrDenyRequestService
+from .service.get_all_requests_service import GetAllRequestsService
+from .service.publish_service import PublishScalarsService
+from .service.request_handler_service import GetAllRequestHandlersService
+from .service.request_handler_service import UpdateRequestHandlerService
 
 
 class Domain(Node):
@@ -85,6 +95,7 @@ class Domain(Node):
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
         root_key: Optional[VerifyKey] = None,
+        db_path: Optional[str] = None,
         db_engine: Any = None,
     ):
         super().__init__(
@@ -131,6 +142,9 @@ class Domain(Node):
         self.immediate_services_with_reply.append(RequestService)
 
         self.immediate_services_without_reply.append(ObjectRequestServiceWithoutReply)
+
+        # TODO: @Madhava change to a map of accountants that are created on first
+        # use of the DS key
 
         self.requests: List[RequestMessage] = list()
         # available_device_types = set()
