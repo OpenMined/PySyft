@@ -13,8 +13,6 @@ from ...proto.core.tensor.tensor_pb2 import Tensor as Tensor_PB
 from ..common.serde.deserialize import _deserialize as deserialize
 from ..common.serde.serializable import bind_protobuf
 from ..common.serde.serialize import _serialize as serialize
-from .ancestors import AutogradTensorAncestor
-from .ancestors import PhiTensorAncestor
 from .fixed_precision_tensor_ancestor import FixedPrecisionTensorAncestor
 from .passthrough import PassthroughTensor
 from .smpc.mpc_tensor_ancestor import MPCTensorAncestor
@@ -23,8 +21,6 @@ from .smpc.mpc_tensor_ancestor import MPCTensorAncestor
 @bind_protobuf
 class Tensor(
     PassthroughTensor,
-    AutogradTensorAncestor,
-    PhiTensorAncestor,
     MPCTensorAncestor,
     FixedPrecisionTensorAncestor,
     Serializable,

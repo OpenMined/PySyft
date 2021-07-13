@@ -4,6 +4,8 @@ from collections import deque
 from collections import namedtuple
 import threading
 import time
+import atexit
+
 from typing import List
 from typing import Optional
 
@@ -75,7 +77,7 @@ def consume_smpc_actions_round_robin():
 
     max_nr_retries = 10
     last_msg_id = None
-    while True:
+    while not stop_consumer_smpc_thread.is_set():
         # Get a list of nodes
         with actions_lock:
             nodes = list(actions_to_run_per_node.keys())
@@ -111,6 +113,7 @@ def consume_smpc_actions_round_robin():
 thread_smpc_action = threading.Thread(
     target=consume_smpc_actions_round_robin, args=(), daemon=True
 )
+stop_consumer_smpc_thread = threading.Event()
 thread_smpc_action.start()
 
 
@@ -128,3 +131,9 @@ class VMSMPCService(ImmediateNodeServiceWithoutReply):
                 actions_to_run_per_node[node].smpc_actions.append(
                     (node, msg, verify_key, 0)
                 )
+
+
+def stop():
+    stop_consumer_smpc_thread.set()
+
+atexit.register(stop)

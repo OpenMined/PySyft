@@ -13,7 +13,6 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
 # syft relative
-from ....core.adp.adversarial_accountant import AdversarialAccountant
 from ....lib.python import String
 from ....logger import critical
 from ....logger import debug
@@ -36,7 +35,6 @@ from .service import RequestService
 from .service import RequestStatus
 from .service.accept_or_deny_request_service import AcceptOrDenyRequestService
 from .service.get_all_requests_service import GetAllRequestsService
-from .service.publish_service import PublishScalarsService
 from .service.request_handler_service import GetAllRequestHandlersService
 from .service.request_handler_service import UpdateRequestHandlerService
 
@@ -85,7 +83,6 @@ class Domain(Node):
         self.immediate_services_with_reply.append(GetAllRequestsService)
         self.immediate_services_with_reply.append(GetAllRequestHandlersService)
 
-        self.acc = AdversarialAccountant(max_budget=max_budget)
         # TODO: @Madhava change to a map of accountants that are created on first
         # use of the DS key
 
