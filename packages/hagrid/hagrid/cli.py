@@ -36,6 +36,7 @@ def provision_remote(username, password, key_path) -> bool:
 @click.argument("name", type=str, nargs=-1)
 @click.option(
     "--type",
+    "node_type",
     default="domain",
     required=False,
     type=click.Choice(["domain", "network"]),
@@ -98,21 +99,21 @@ def provision_remote(username, password, key_path) -> bool:
 )
 @click.option(
     "--repo",
-    default=None,
+    default="OpenMined/PySyft",
     required=False,
     type=str,
     help="Optional: repo to fetch source from",
 )
 @click.option(
     "--branch",
-    default=None,
+    default="demo_strike_team_branch_4",
     required=False,
     type=str,
     help="Optional: branch to monitor for updates",
 )
 def launch(
     name,
-    type,
+    node_type,
     port,
     tag,
     keep_db,
@@ -133,7 +134,7 @@ def launch(
     name = _name[:-1]
 
     if name == "":
-        name = "The " + names.get_full_name() + " " + type.capitalize()
+        name = "The " + names.get_full_name() + " " + node_type.capitalize()
 
     if not is_remote:
         if tag != "":
@@ -144,7 +145,7 @@ def launch(
         else:
             tag = hashlib.md5(name.encode("utf8")).hexdigest()
 
-        tag = type + "_" + tag
+        tag = node_type + "_" + tag
 
         # check port to make sure it's not in use - if it's in use then increment until it's not.
         port_available = False
@@ -160,7 +161,8 @@ def launch(
             except requests.ConnectionError as e:
                 port_available = True
 
-        keep_db = True if keep_db.lower() == "true" else False
+        if isinstance(keep_db, str):
+            keep_db = True if keep_db.lower() == "true" else False
         if not keep_db:
             print("Deleting database for node...")
             subprocess.call("docker volume rm " + tag + "_app-db-data", shell=True)
@@ -171,10 +173,16 @@ def launch(
     motorcycle()
 
     if not is_remote:
-        print("Launching a " + str(type) + " PyGrid node on port " + str(port) + "!\n")
+        print(
+            "Launching a "
+            + str(node_type)
+            + " PyGrid node on port "
+            + str(port)
+            + "!\n"
+        )
     else:
-        print("Launching a " + str(type) + f" PyGrid node on http://{host}!\n")
-    print("  - TYPE: " + str(type))
+        print("Launching a " + str(node_type) + f" PyGrid node on http://{host}!\n")
+    print("  - TYPE: " + str(node_type))
     print("  - NAME: " + str(name))
     if not is_remote:
         print("  - TAG: " + str(tag))
@@ -199,7 +207,7 @@ def launch(
         cmd += " TRAEFIK_TAG=" + tag
 
     cmd += ' DOMAIN_NAME="' + name + '"'
-    cmd += " NODE_TYPE=" + type
+    cmd += " NODE_TYPE=" + node_type
 
     if is_remote:
         # use ansible on remote host
@@ -221,7 +229,7 @@ def launch(
         if host != "localhost":
             cmd += f" --private-key {key_path} --user {username}"
         ANSIBLE_ARGS = {
-            "node_type": type,
+            "node_type": node_type,
             "node_name": name,
             "github_repo": repo,
             "repo_branch": branch,
@@ -267,6 +275,7 @@ def build():
 @click.argument("name", type=str, nargs=-1)
 @click.option(
     "--type",
+    "node_type",
     default="domain",
     required=False,
     type=click.Choice(["domain", "network"]),
@@ -293,7 +302,7 @@ def build():
     type=bool,
     help="""If restarting a node that already existed, don't/do reset the database (Default: deletes the db)""",
 )
-def land(type, name, port, tag, keep_db):
+def land(node_type, name, port, tag, keep_db):
 
     _name = ""
     for word in name:
