@@ -155,7 +155,23 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
             method_name = self.path.split(".")[-1]
 
-            if (
+            if "ShareTensor" in self.path:
+                # syft relative
+                from .smpc_action import SMPCAction
+
+                func = SMPCAction.get_action_generator_from_op(method_name)
+                args_id = [arg.id_at_location for arg in self.args]
+                kwargs = {"seed": 42, "node": node}  # TODO
+                actions = func(self._self.id_at_location, *args_id, **kwargs)
+                actions = SMPCAction.filter_actions_after_rank(
+                    resolved_self.data, actions
+                )
+
+                client = node.get_client()
+                for action in actions:
+                    client.send_immediate_msg_without_reply(msg=action)
+                return
+            elif (
                 isinstance(resolved_self.data, Plan)
                 and method_name == "__call__"
                 or (

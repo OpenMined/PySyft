@@ -12,6 +12,8 @@ from nacl.signing import VerifyKey
 import pandas as pd
 
 # syft relative
+from ....core.adp.adversarial_accountant import AdversarialAccountant
+from ....core.adp.approximate_budget import ApproximateBudget
 from ....logger import traceback_and_raise
 from ....util import validate_field
 from ...common.uid import UID
@@ -258,11 +260,27 @@ class DomainClient(Client):
         )
 
         self.requests = RequestQueueClient(client=self)
+
+        self.accountant = AdversarialAccountant()
         self.post_init()
 
     @property
     def id(self) -> UID:
         return self.domain.id
+
+    # # TODO: @Madhava make work
+    # @property
+    # def accountant(self):
+    #     """Queries some service that returns a pointer to the ONLY real accountant for this
+    #     user that actually affects object permissions when used in a .publish() method. Other accountant
+    #     objects might exist in the object store but .publish() is just for simulation and won't change
+    #     the permissions on the object it's called on."""
+
+    # # TODO: @Madhava make work
+    # def create_simulated_accountant(self, init_with_budget_remaining=True):
+    #     """Creates an accountant in the remote store. If init_with_budget_remaining=True then the accountant
+    #     is a copy of an existing accountant. If init_with_budget_remaining=False then it is a fresh accountant
+    #     with the sam max budget."""
 
     @property
     def device(self) -> Optional[Location]:
@@ -317,3 +335,6 @@ class DomainClient(Client):
                 for tag in tags:
                     state[tag] = ptr
         return self.store.pandas
+
+    def budget(self, spend_epsilon: bool = False) -> ApproximateBudget:
+        return ApproximateBudget()
