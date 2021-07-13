@@ -31,19 +31,19 @@ args = parser.parse_args()
 
 
 def list_submodules(list_name: TypeAny, package_name: TypeAny) -> TypeAny:
-    for loader, module_name, is_pkg in pkgutil.walk_packages(
-        package_name.__path__, package_name.__name__ + "."
-    ):
-        if "test" in module_name:
-            continue
-            # inspect.ismodule(__import__('sklearn.neighbors.tests.test_neighbors_tree')) is True
-        list_name.append(module_name)
-        try:
+    try:
+        for loader, module_name, is_pkg in pkgutil.walk_packages(
+            package_name.__path__, package_name.__name__ + "."
+        ):
+            if "test" in module_name:
+                continue
+                # inspect.ismodule(__import__('sklearn.neighbors.tests.test_neighbors_tree')) is True
+            list_name.append(module_name)
             module_name = __import__(module_name, fromlist="dummylist")
-        except Exception as e:
-            print(e)
-        if is_pkg:
-            list_submodules(list_name, module_name)
+            if is_pkg:
+                list_submodules(list_name, module_name)
+    except Exception as e:
+        print(f"list_submodules error:\n package_name = \n{e} ")
 
 
 def set_classes(
@@ -102,7 +102,7 @@ def class_import(name: TypeAny) -> TypeAny:
     components = name.split(".")
     mod = importlib.import_module(components[0])
     for comp in components[1:]:
-        mod = getattr(mod, comp)
+        mod = getattr(mod, comp, None)
     return mod
 
 
@@ -181,10 +181,12 @@ def dict_allowlist(
     for i in classes_set:
         class_ = class_import(i)
         # print(class_)
+        if class_ is None:
+            continue
         for ax in dir(class_):
             # print(f'{ax} {class_}')
             # module = class_
-            t = getattr(class_, ax)  # Sometimes it return None
+            t = getattr(class_, ax, None)  # Sometimes it return None
             if t is None:
                 # print('None')
                 continue
@@ -237,7 +239,8 @@ def main() -> None:
     package_support = {}
 
     package_support["lib"] = package_name
-    package_support["Version"] = package.__version__
+    # petlib doesnot have version
+    # package_support["Version"] = package.__version__
     package_support["class"] = list(classes_set)
     package_support["modules"] = modules_list
     package_support["methods"] = allowlist
