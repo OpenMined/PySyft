@@ -23,13 +23,25 @@ def cli():
     pass
 
 
-def provision_remote(username, password, key_path) -> bool:
+def should_provision_remote(username, password, key_path) -> bool:
     is_remote = username is not None or password is not None or key_path is not None
     if username and password or username and key_path:
         return is_remote
     if is_remote:
         raise Exception("--username requires either --password or --key_path")
     return is_remote
+
+def pre_process_name(name:list, node_type:str) -> str:
+    #  concatenate name's list of words into string
+    _name = ""
+    for word in name:
+        _name += word + " "
+    name = _name[:-1]
+
+    if name == "":
+        name = "The " + names.get_full_name() + " " + node_type.capitalize()
+
+    return name
 
 
 @click.command(help="Start a new PyGrid domain/network node!")
@@ -125,16 +137,9 @@ def launch(
     repo: str = "OpenMined/PySyft",
     branch: str = "demo_strike_team_branch_4",
 ):
-    is_remote = provision_remote(username, password, key_path)
+    is_remote = should_provision_remote(username, password, key_path)
 
-    # concatenate name's list of words into string
-    _name = ""
-    for word in name:
-        _name += word + " "
-    name = _name[:-1]
-
-    if name == "":
-        name = "The " + names.get_full_name() + " " + node_type.capitalize()
+    name = pre_process_name(name)
 
     if not is_remote:
         if tag != "":
