@@ -19,7 +19,7 @@ def should_provision_remote(username, password, key_path) -> bool:
     return is_remote
 
 
-def pre_process_name(name:list, node_type:str) -> str:
+def pre_process_name(name: list, node_type: str) -> str:
     #  concatenate name's list of words into string
     _name = ""
     for word in name:

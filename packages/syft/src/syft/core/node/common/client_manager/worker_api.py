@@ -31,7 +31,7 @@ from ...common.client_manager.request_api import RequestAPI
 
 class WorkerRequestAPI(RequestAPI):
     def __init__(self, node: Type[Node]):
-        """"""
+        """ """
         # TODO: see other todo.
         # super().__init__(
         #     node=node,

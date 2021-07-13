@@ -24,8 +24,6 @@ def cli():
     pass
 
 
-
-
 @click.command(help="Start a new PyGrid domain/network node!")
 @click.argument("name", type=str, nargs=-1)
 @click.option(

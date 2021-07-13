@@ -37,7 +37,7 @@ def connect(
     # Use Server metadata
     # to build client route
     conn = conn_type(url=url)  # type: ignore
-    
+
     if credentials:
         metadata, _user_key = conn.login(credentials=credentials)  # type: ignore
         _user_key = SigningKey(_user_key.encode(), encoder=HexEncoder)
@@ -125,9 +125,7 @@ def login(
     metadata = conn_type(url=url)._get_metadata()  # type: ignore
 
     # connecting to domain
-    node = connect(
-        url=url, credentials=credentials, conn_type=conn_type
-    )
+    node = connect(url=url, credentials=credentials, conn_type=conn_type)
 
     if verbose:
         # bit of fanciness

@@ -195,6 +195,7 @@ def get_association_request_msg(
         content=association_request_json,
     )
 
+
 def get_all_association_request_msg(
     msg: GetAssociationRequestsMessage,
     node: AbstractNode,
