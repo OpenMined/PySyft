@@ -126,6 +126,7 @@ def launch(
 ):
     is_remote = provision_remote(username, password, key_path)
 
+    # concatenate name's list of words into string
     _name = ""
     for word in name:
         _name += word + " "
@@ -298,6 +299,10 @@ def land(type, name, port, tag, keep_db):
     for word in name:
         _name += word + " "
     name = _name[:-1]
+
+    if name == "all":
+        subprocess.call("docker rm `docker ps -aq` --force", shell=True)
+        return
 
     if tag == "" and name == "":
         raise Exception(
