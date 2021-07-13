@@ -99,14 +99,14 @@ def provision_remote(username, password, key_path) -> bool:
 )
 @click.option(
     "--repo",
-    default=None,
+    default="OpenMined/PySyft",
     required=False,
     type=str,
     help="Optional: repo to fetch source from",
 )
 @click.option(
     "--branch",
-    default=None,
+    default="demo_strike_team_branch_4",
     required=False,
     type=str,
     help="Optional: branch to monitor for updates",
