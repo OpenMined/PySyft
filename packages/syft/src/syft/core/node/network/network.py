@@ -5,10 +5,12 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Union
+import os
 
 # third party
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+import ascii_magic
 
 # relative
 from ....lib.python import String
@@ -111,52 +113,16 @@ class Network(Node):
 
     def loud_print(self):
         # tprint("Grid", "alpha")
+        install_path = os.path.abspath(
+            os.path.join(os.path.realpath(__file__), "../../../../img/")
+        )
+        ascii_magic.to_terminal(ascii_magic.from_image_file(img_path=install_path+'/pygrid.png', columns=83))
+
         print(
             """                          `-+yy+-`
-                        .:oydddddhyo:.
-                     `/yhdddddddddddhys:`
-                 .`   ./shdddddddddhys/.   ``
-             `./shhs/.`  .:oydddhyo:.   .:osyo:.`
-          `-oydmmmmmmdy+-`  `-//-`  `-/syhhhhhyyo/-`
-        `+hmmmmmmmmmmddddy+`      `/shhhhhhhhhyyyyys/`
-         `-ohdmmmmmmmddy+-`  `::.  `-/syhhhhhhyyys/-`
-      -o-`   ./yhddhs/.  `./shddhs/.`  .:oyyhyo:.   `./.
-      -ddhs/.`  .::`  `-+ydddddddddhs+-`  `--`   `-+oyy-
-      -dddddhs+-   `/shdddddddddddddhhhyo:`   .:+syyyyy-
-      -ddddddddh.  -hdddddddddddddddhhhhyy-  `syyyyyyyy-
-      -dddddhhhh-  -hhhhhhddddddddhhyyysss-  `ssssysyyy-
-      -hhhhhhhhh-  -hhyyyyyyhhddhyysssssss-  `sssssssss-
-       `-+yhhhhh.  -yyyyyyyyyyysssssssssss-  `ssssso/-`
-       `   ./syy.  -yyyyyyyyyyysssssssssss-  `sso:.   `
-      -y+:`   `-`  -yyyyyyyyssssssssssssss-  `-`   `-/o-
-      -hhhyo/.     `+ssyyssssssssssssssss+`     .:+ssss-
-      -yyyyyyys/`     ./osssssssssssso/.`    `/osssssss-
-      -yyyyyyyyy.  ``    `:+sssoso+:.    ``  `sssssssss-
-      -yyyyyyyys.  -so/.     -//-`    .:os-  `sssssssss-
-      `+syyyssss.  -sssso/-`      `-/ossss-  `ssssssss+`
-         .:ossss.  .ssssssss+`  `+ooooosss-  `sssso:.
-            `-+s.  .ssssssooo.  .oooooooos-  `o/-`
-                   .sssoooooo.  .ooooooooo-
-                   `-/ooooooo.  `ooooooo/-`
-                       .:+ooo.  `ooo+:.`
-                          `-/.  `/-`
 
-
-
-
-
-``````````                 ``````````            ```          ``
-``       ``               ```      ```            `           ``
-``       ``  ```     ```  ``             ``````  ```   `````````
-``     ````   ``    ```   ``    ``````   ```     ```  ```    ```
-`````````      ``  ```    ``     `````   ``      ```  ``      ``
-``              `` ``     ``        ``   ``      ```  ``      ``
-``              ````      ````    ````   ``      ```  ```    ```
-``               ```        ````````     ``      ``    `````````
-               ```
-              ```
-                                |\ |  _ |_      _   _ |
-                                | \| (- |_ \)/ (_) |  |(
+                                                    |\ |  _ |_      _   _ |
+                                                    | \| (- |_ \)/ (_) |  |(
 
 """
         )
