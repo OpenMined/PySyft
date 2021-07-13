@@ -9,8 +9,6 @@ import click
 import requests
 
 # relative
-from .art import motorcycle
-from .art import hold_on_tight
 from .art import hagrid
 from .lib import check_docker
 from .lib import should_provision_remote

@@ -95,7 +95,7 @@ def hagrid2():
 options = [motorcycle, hagrid1, hagrid2]
 
 def hagrid():
-
+    """Print a random hagrid image with the caption "hold on tight harry" """
     i = random.randint(0,2)
 
     options[i]()
