@@ -1,13 +1,12 @@
 # stdlib
 import os
 import subprocess
+import hashlib
+import requests
 
 # third party
 import names
 
-
-def some_function():
-    print("Running lib.some_function")
 
 
 def should_provision_remote(username, password, key_path) -> bool:
@@ -18,6 +17,16 @@ def should_provision_remote(username, password, key_path) -> bool:
         raise Exception("--username requires either --password or --key_path")
     return is_remote
 
+def pre_process_tag(tag: str, node_type: str, name:str) -> str:
+    if tag != "":
+        if " " in tag:
+            raise Exception(
+                "Can't have spaces in --tag. Try something without spaces."
+            )
+    else:
+        tag = hashlib.md5(name.encode("utf8")).hexdigest()
+
+    return node_type + "_" + tag
 
 def pre_process_name(name: list, node_type: str) -> str:
     #  concatenate name's list of words into string
@@ -31,6 +40,26 @@ def pre_process_name(name: list, node_type: str) -> str:
 
     return name
 
+def pre_process_keep_db(keep_db, tag) -> bool:
+    if isinstance(keep_db, str):
+        keep_db = True if keep_db.lower() == "true" else False
+    return keep_db
+
+def find_available_port(host, port) -> bool:
+    port_available = False
+    while not port_available:
+        try:
+            requests.get("http://" + host + ":" + str(port))
+            print(
+                str(port)
+                + " doesn't seem to be available... trying "
+                + str(port + 1)
+            )
+            port = port + 1
+        except requests.ConnectionError as e:
+            port_available = True
+
+    return port
 
 def check_docker():
     result = os.popen("docker compose version", "r").read()

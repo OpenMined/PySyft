@@ -11,6 +11,7 @@ from typing import Union
 # third party
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+import ascii_magic
 
 # relative
 from ....lib.python import String
@@ -156,53 +157,14 @@ class Domain(Node):
         self.set_node_uid()
 
     def loud_print(self):
+
+        ascii_magic.to_terminal(ascii_magic.from_image_file(img_path='/Users/andrewliamtrask/Laboratory/PySyft/notebooks/trade_demo/wip/pygrid.png', columns=90))
+
         print(
             """
-                          `-+yy+-`
-                        .:oydddddhyo:.
-                     `/yhdddddddddddhys:`
-                 .`   ./shdddddddddhys/.   ``
-             `./shhs/.`  .:oydddhyo:.   .:osyo:.`
-          `-oydmmmmmmdy+-`  `-//-`  `-/syhhhhhyyo/-`
-        `+hmmmmmmmmmmddddy+`      `/shhhhhhhhhyyyyys/`
-         `-ohdmmmmmmmddy+-`  `::.  `-/syhhhhhhyyys/-`
-      -o-`   ./yhddhs/.  `./shddhs/.`  .:oyyhyo:.   `./.
-      -ddhs/.`  .::`  `-+ydddddddddhs+-`  `--`   `-+oyy-
-      -dddddhs+-   `/shdddddddddddddhhhyo:`   .:+syyyyy-
-      -ddddddddh.  -hdddddddddddddddhhhhyy-  `syyyyyyyy-
-      -dddddhhhh-  -hhhhhhddddddddhhyyysss-  `ssssysyyy-
-      -hhhhhhhhh-  -hhyyyyyyhhddhyysssssss-  `sssssssss-
-       `-+yhhhhh.  -yyyyyyyyyyysssssssssss-  `ssssso/-`
-       `   ./syy.  -yyyyyyyyyyysssssssssss-  `sso:.   `
-      -y+:`   `-`  -yyyyyyyyssssssssssssss-  `-`   `-/o-
-      -hhhyo/.     `+ssyyssssssssssssssss+`     .:+ssss-
-      -yyyyyyys/`     ./osssssssssssso/.`    `/osssssss-
-      -yyyyyyyyy.  ``    `:+sssoso+:.    ``  `sssssssss-
-      -yyyyyyyys.  -so/.     -//-`    .:os-  `sssssssss-
-      `+syyyssss.  -sssso/-`      `-/ossss-  `ssssssss+`
-         .:ossss.  .ssssssss+`  `+ooooosss-  `sssso:.
-            `-+s.  .ssssssooo.  .oooooooos-  `o/-`
-                   .sssoooooo.  .ooooooooo-
-                   `-/ooooooo.  `ooooooo/-`
-                       .:+ooo.  `ooo+:.`
-                          `-/.  `/-`
-
-
-
-
-
-``````````                 ``````````            ```          ``
-``       ``               ```      ```            `           ``
-``       ``  ```     ```  ``             ``````  ```   `````````
-``     ````   ``    ```   ``    ``````   ```     ```  ```    ```
-`````````      ``  ```    ``     `````   ``      ```  ``      ``
-``              `` ``     ``        ``   ``      ```  ``      ``
-``              ````      ````    ````   ``      ```  ```    ```
-``               ```        ````````     ``      ``    `````````
-               ```
-              ```                __
-                                |  \  _   _   _  .  _
-                                |__/ (_) ||| (_| | | )
+                                                    __
+                                                    |  \  _   _   _  .  _
+                                                    |__/ (_) ||| (_| | | )
 
 """
         )

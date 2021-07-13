@@ -13,6 +13,9 @@ from .lib import check_docker
 from .lib import motorcycle
 from .lib import should_provision_remote
 from .lib import pre_process_name
+from .lib import pre_process_tag
+from .lib import find_available_port
+from .lib import pre_process_keep_db
 
 install_path = os.path.abspath(
     os.path.join(os.path.realpath(__file__), "../../../grid/")
@@ -117,43 +120,24 @@ def launch(
     repo: str = "OpenMined/PySyft",
     branch: str = "demo_strike_team_branch_4",
 ):
+    # run pre-processing of arguments
+    name = pre_process_name(name=name, node_type=node_type)
+    tag = pre_process_tag(tag=tag, name=name, node_type=node_type)
+
+    # are we deploying locally or remotely?
     is_remote = should_provision_remote(username, password, key_path)
 
-    name = pre_process_name(name)
-
     if not is_remote:
-        if tag != "":
-            if " " in tag:
-                raise Exception(
-                    "Can't have spaces in --tag. Try something without spaces."
-                )
-        else:
-            tag = hashlib.md5(name.encode("utf8")).hexdigest()
 
-        tag = node_type + "_" + tag
+        version = check_docker()
 
         # check port to make sure it's not in use - if it's in use then increment until it's not.
-        port_available = False
-        while not port_available:
-            try:
-                requests.get("http://" + host + ":" + str(port))
-                print(
-                    str(port)
-                    + " doesn't seem to be available... trying "
-                    + str(port + 1)
-                )
-                port = port + 1
-            except requests.ConnectionError as e:
-                port_available = True
+        port = find_available_port(host=host, port=port)
 
-        if isinstance(keep_db, str):
-            keep_db = True if keep_db.lower() == "true" else False
-        if not keep_db:
+        if not pre_process_keep_db(keep_db, tag):
             print("Deleting database for node...")
             subprocess.call("docker volume rm " + tag + "_app-db-data", shell=True)
             print()
-
-        version = check_docker()
 
     motorcycle()
 
