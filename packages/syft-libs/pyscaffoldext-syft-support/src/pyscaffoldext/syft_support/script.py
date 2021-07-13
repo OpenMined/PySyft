@@ -203,6 +203,9 @@ def main() -> None:
     DEBUG = args.debug
     package_name = args.lib
 
+    DEBUG_FILE_NAME = f"{package_name}.debug.log"
+    PKG_SUPPORT_NAME = f"{package_name}.pkg_support.json"
+
     try:
         package = __import__(package_name)
     except ImportError:
@@ -232,12 +235,12 @@ def main() -> None:
     package_support["modules"] = modules_list
     package_support["methods"] = allowlist
 
-    with open("package_support.json", "w") as outfile:
+    with open(PKG_SUPPORT_NAME, "w") as outfile:
         json.dump(package_support, outfile)
 
     if DEBUG:
         # print(debug_list)
-        with open("lib.debug.log", "w") as f:
+        with open(DEBUG_FILE_NAME, "w") as f:
             for item in debug_list:
                 f.write(f"{item}\n")
 
