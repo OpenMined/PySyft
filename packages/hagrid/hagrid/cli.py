@@ -9,8 +9,10 @@ import click
 import requests
 
 # relative
+from .art import motorcycle
+from .art import hold_on_tight
+from .art import hagrid
 from .lib import check_docker
-from .lib import motorcycle
 from .lib import should_provision_remote
 from .lib import pre_process_name
 from .lib import pre_process_tag
@@ -139,7 +141,7 @@ def launch(
             subprocess.call("docker volume rm " + tag + "_app-db-data", shell=True)
             print()
 
-    motorcycle()
+    hagrid()
 
     if not is_remote:
         print(
