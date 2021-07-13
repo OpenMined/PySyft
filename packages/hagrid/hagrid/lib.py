@@ -2,9 +2,34 @@
 import os
 import subprocess
 
+# third party
+import names
+
 
 def some_function():
     print("Running lib.some_function")
+
+
+def should_provision_remote(username, password, key_path) -> bool:
+    is_remote = username is not None or password is not None or key_path is not None
+    if username and password or username and key_path:
+        return is_remote
+    if is_remote:
+        raise Exception("--username requires either --password or --key_path")
+    return is_remote
+
+
+def pre_process_name(name:list, node_type:str) -> str:
+    #  concatenate name's list of words into string
+    _name = ""
+    for word in name:
+        _name += word + " "
+    name = _name[:-1]
+
+    if name == "":
+        name = "The " + names.get_full_name() + " " + node_type.capitalize()
+
+    return name
 
 
 def check_docker():

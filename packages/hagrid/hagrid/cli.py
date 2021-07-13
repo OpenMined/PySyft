@@ -6,12 +6,13 @@ import subprocess
 
 # third party
 import click
-import names
 import requests
 
 # relative
 from .lib import check_docker
 from .lib import motorcycle
+from .lib import should_provision_remote
+from .lib import pre_process_name
 
 install_path = os.path.abspath(
     os.path.join(os.path.realpath(__file__), "../../../grid/")
@@ -23,25 +24,6 @@ def cli():
     pass
 
 
-def should_provision_remote(username, password, key_path) -> bool:
-    is_remote = username is not None or password is not None or key_path is not None
-    if username and password or username and key_path:
-        return is_remote
-    if is_remote:
-        raise Exception("--username requires either --password or --key_path")
-    return is_remote
-
-def pre_process_name(name:list, node_type:str) -> str:
-    #  concatenate name's list of words into string
-    _name = ""
-    for word in name:
-        _name += word + " "
-    name = _name[:-1]
-
-    if name == "":
-        name = "The " + names.get_full_name() + " " + node_type.capitalize()
-
-    return name
 
 
 @click.command(help="Start a new PyGrid domain/network node!")
