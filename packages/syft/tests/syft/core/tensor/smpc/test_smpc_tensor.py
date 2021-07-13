@@ -17,8 +17,8 @@ clients = [vm.get_client() for vm in vms]
 
 
 def test_remote_sharing():
-    value = np.array([[1, 2, 3, 4, -5]])
-    remote_value = clients[0].syft.core.tensor.tensor.Tensor(value, dtype=np.int64)
+    value = np.array([[1, 2, 3, 4, -5]], dtype=np.int64)
+    remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
 
     mpc_tensor = MPCTensor(
         parties=clients, secret=remote_value, shape=(1, 5), seed_shares=52
