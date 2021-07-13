@@ -62,6 +62,7 @@ services:
       - "15672"
 
   backend:
+    tty: true
     ports:
       - "8888"
     volumes:
@@ -91,6 +92,7 @@ services:
       - traefik.http.services.${STACK_NAME?Variable not set}-backend.loadbalancer.server.port=80
 
   backend_stream:
+    tty: true
     depends_on:
       - db
       - backend

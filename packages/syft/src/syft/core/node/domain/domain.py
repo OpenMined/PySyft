@@ -7,6 +7,7 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
+import os
 
 # third party
 from nacl.signing import SigningKey
@@ -157,8 +158,10 @@ class Domain(Node):
         self.set_node_uid()
 
     def loud_print(self):
-
-        ascii_magic.to_terminal(ascii_magic.from_image_file(img_path='/Users/andrewliamtrask/Laboratory/PySyft/notebooks/trade_demo/wip/pygrid.png', columns=90))
+        install_path = os.path.abspath(
+            os.path.join(os.path.realpath(__file__), "../../../../img/")
+        )
+        ascii_magic.to_terminal(ascii_magic.from_image_file(img_path=install_path+'/pygrid.png', columns=83))
 
         print(
             """
