@@ -112,7 +112,6 @@ class Network(Node):
         self.set_node_uid()
 
     def loud_print(self):
-        # tprint("Grid", "alpha")
         install_path = os.path.abspath(
             os.path.join(os.path.realpath(__file__), "../../../../img/")
         )
