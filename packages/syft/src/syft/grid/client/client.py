@@ -95,7 +95,6 @@ def login(
 ) -> Client:
 
     if password is None:
-        print("Welcome " + str(email) + "!")
         password = getpass(prompt="Please enter you password:")
 
     if port is None and not url:  # if url is used, we can ignore port
@@ -113,7 +112,6 @@ def login(
         sys.stdout.write("Connecting to " + str(url) + "...")
 
     url += "/api/v1"
-
     if email is None or password is None:
         credentials = {}
         logging.info(
@@ -124,6 +122,11 @@ def login(
 
     metadata = conn_type(url=url)._get_metadata()  # type: ignore
 
+    if metadata.node_type == "Domain":
+        client_type = DomainClient
+    else:
+        client_type = NetworkClient
+
     # connecting to domain
     node = connect(url=url, credentials=credentials, conn_type=conn_type)
 
@@ -132,6 +135,5 @@ def login(
         sys.stdout.write(" done! \t Logging into")
         sys.stdout.write(" " + str(node.name) + "... ")
         time.sleep(1)  # ok maybe too fancy... but c'mon don't you want to be fancy?
-        print("done!")
 
     return node

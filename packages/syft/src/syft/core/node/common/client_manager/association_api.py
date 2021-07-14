@@ -55,8 +55,7 @@ class AssociationRequestAPI(RequestAPI):
         _association_obj = super().to_obj(result)
 
         _content = {
-            RequestAPIFields.TARGET: _association_obj.address,
-            RequestAPIFields.NODE_NAME: _association_obj.node,
+            RequestAPIFields.NETWORK: self.node,
         }
 
         def _accept() -> Dict[str, str]:

@@ -21,6 +21,7 @@ from ....logger import critical
 from ....logger import debug
 from ....logger import error
 from ....logger import traceback_and_raise
+from ....proto.core.node.common.client_pb2 import Client
 from ....proto.core.node.common.client_pb2 import Client as Client_PB
 from ....proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
 from ....util import get_fully_qualified_name
@@ -33,6 +34,8 @@ from ...common.message import SignedImmediateSyftMessageWithReply
 from ...common.message import SignedImmediateSyftMessageWithoutReply
 from ...common.message import SyftMessage
 from ...common.serde.deserialize import _deserialize
+from ...common.serde.serializable import Serializable
+from ...common.serde.serializable import bind_protobuf
 from ...common.uid import UID
 from ...io.location import Location
 from ...io.location import SpecificLocation
@@ -51,7 +54,8 @@ from .node_service.object_search.obj_search_service import ObjectSearchMessage
 from .node_service.testing_services.remote_add_service import RemoteAddMessage
 
 
-class Client(AbstractNodeClient):
+@bind_protobuf
+class Client(AbstractNodeClient, Serializable):
     """Client is an incredibly powerful abstraction in Syft. We assume that,
     no matter where a client is, it can figure out how to communicate with
     the Node it is supposed to point to. If I send you a client I have
@@ -292,33 +296,16 @@ class Client(AbstractNodeClient):
         self.default_route = route_index
 
     def _object2proto(self) -> Client_PB:
-        obj_type = get_fully_qualified_name(obj=self)
-
-        routes = [serialize(route) for route in self.routes]
-
-        network = self.network._object2proto() if self.network is not None else None
-
-        domain = self.domain._object2proto() if self.domain is not None else None
-
-        device = self.device._object2proto() if self.device is not None else None
-
-        vm = self.vm._object2proto() if self.vm is not None else None
-
         client_pb = Client_PB(
-            obj_type=obj_type,
+            obj_type=get_fully_qualified_name(obj=self),
             id=serialize(self.id),
             name=self.name,
-            routes=routes,
-            has_network=self.network is not None,
-            network=network,
-            has_domain=self.domain is not None,
-            domain=domain,
-            has_device=self.device is not None,
-            device=device,
-            has_vm=self.vm is not None,
-            vm=vm,
+            routes=[serialize(route) for route in self.routes],
+            network=self.network._object2proto() if self.network else None,
+            domain=self.domain._object2proto() if self.domain else None,
+            device=self.device._object2proto() if self.device else None,
+            vm=self.vm._object2proto() if self.vm else None,
         )
-
         return client_pb
 
     @staticmethod
@@ -327,25 +314,13 @@ class Client(AbstractNodeClient):
         klass = module_parts.pop()
         obj_type = getattr(sys.modules[".".join(module_parts)], klass)
 
-        network = (
-            SpecificLocation._proto2object(proto.network) if proto.has_network else None
-        )
-        domain = (
-            SpecificLocation._proto2object(proto.domain) if proto.has_domain else None
-        )
-        device = (
-            SpecificLocation._proto2object(proto.device) if proto.has_device else None
-        )
-        vm = SpecificLocation._proto2object(proto.vm) if proto.has_vm else None
-        routes = [SoloRoute._proto2object(route) for route in proto.routes]
-
         obj = obj_type(
             name=proto.name,
-            routes=routes,
-            network=network,
-            domain=domain,
-            device=device,
-            vm=vm,
+            routes=[_deserialize(route) for route in proto.routes],
+            network=_deserialize(proto.network) if proto.HasField("network") else None,
+            domain=_deserialize(proto.domain) if proto.HasField("domain") else None,
+            device=_deserialize(proto.device) if proto.HasField("device") else None,
+            vm=_deserialize(proto.vm) if proto.HasField("vm") else None,
         )
 
         if type(obj) != obj_type:

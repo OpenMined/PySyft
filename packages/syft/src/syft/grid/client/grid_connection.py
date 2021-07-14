@@ -8,6 +8,7 @@ from typing import Optional
 from typing import Tuple
 
 # third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
 import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
@@ -16,13 +17,18 @@ from requests.packages.urllib3.util.retry import Retry
 from ...core.common.message import ImmediateSyftMessageWithoutReply
 from ...core.common.message import SignedImmediateSyftMessageWithoutReply
 from ...core.common.message import SyftMessage
+from ...core.common.serde.serializable import bind_protobuf
 from ...core.common.serde.serialize import _serialize
 from ...core.node.domain.enums import RequestAPIFields
 from ...core.node.domain.exceptions import RequestAPIException
 from ...proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
+from ...proto.grid.connections.http_connection_pb2 import (
+    GridHTTPConnection as GridHTTPConnection_PB,
+)
 from ..connections.http_connection import HTTPConnection
 
 
+@bind_protobuf
 class GridHTTPConnection(HTTPConnection):
 
     LOGIN_ROUTE = "/login"
@@ -182,3 +188,17 @@ class GridHTTPConnection(HTTPConnection):
 
         session.close()
         return resp
+
+    @property
+    def host(self):
+        return self.base_url.strip("/api/v1")
+
+    @staticmethod
+    def _proto2object(proto: GridHTTPConnection_PB) -> "GridHTTPConnection":
+        return GridHTTPConnection(url=proto.base_url)
+
+    def _object2proto(self) -> GridHTTPConnection_PB:
+        return GridHTTPConnection_PB(base_url=self.base_url)
+
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return GridHTTPConnection_PB

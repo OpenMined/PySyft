@@ -25,14 +25,14 @@ class AssociationRequestManager(DatabaseManager):
 
         return result
 
-    def create_association_request(self, node, **kwargs):
+    def create_association_request(self, node, metadata, status):
         date = datetime.now()
-        if super().first(node=node):
-            raise Exception("Association request name already exists!")
+        # if super().first(node=node):
+        #     raise Exception("Association request name already exists!")
 
-        kwargs["node"] = node
-        kwargs["requested_date"] = datetime.now().strftime("%m/%d/%Y")
-        self.register(**kwargs)
+        metadata["node"] = node
+        metadata["requested_date"] = datetime.now().strftime("%m/%d/%Y")
+        self.register(**metadata)
 
     def associations(self):
         return list(self.db.session.query(Association).all())

@@ -17,8 +17,7 @@ class RequestAPIFields(str, Enum):
     ERROR = "error"
     RESPONSE = "response"
     DOMAIN_ADDRESS = "domain_address"
-    NODE_NAME = "node_name"
-    TARGET = "target"
+    NETWORK = "network"
 
 
 class AssociationRequestResponses(str, Enum):
