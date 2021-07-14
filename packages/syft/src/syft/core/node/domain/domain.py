@@ -161,7 +161,11 @@ class Domain(Node):
         install_path = os.path.abspath(
             os.path.join(os.path.realpath(__file__), "../../../../img/")
         )
-        ascii_magic.to_terminal(ascii_magic.from_image_file(img_path=install_path+'/pygrid.png', columns=83))
+        ascii_magic.to_terminal(
+            ascii_magic.from_image_file(
+                img_path=install_path + "/pygrid.png", columns=83
+            )
+        )
 
         print(
             """
