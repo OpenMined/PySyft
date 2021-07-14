@@ -1,7 +1,0 @@
-[build-system]
-requires = ["setuptools>=46.1.0", "wheel", "read-version[toml]"]
-build-backend = "setuptools.build_meta"
-
-[tool.read_version.version]
-path   = ["src/syft_statsmodels/VERSION"]
-variable = "__version__"

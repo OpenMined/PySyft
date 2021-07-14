@@ -1,6 +1,0 @@
-
-__version__ = "0.0.1"
-# elsewhere we can call this file: `python VERSION` and simply take the stdout
-
-if __name__ == "__main__":
-    print(__version__)
