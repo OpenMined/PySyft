@@ -3,6 +3,7 @@ from sys import platform
 
 # third party
 import pytest
+import syft_xgboost  # noqa: 401
 
 # syft absolute
 import syft as sy

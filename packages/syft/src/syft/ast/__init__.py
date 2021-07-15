@@ -178,7 +178,7 @@ def add_methods(
     """
     for path, return_type in paths:
         if deny(path):
-            warning(f"{path} denied. Cannot be added to AST.", print=True)
+            warning(f"WARN: {path} denied. Cannot be added to AST.", print=True)
             continue
         parent = get_parent(path, ast)
         path_list = path.split(".")
