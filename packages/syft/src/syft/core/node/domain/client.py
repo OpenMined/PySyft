@@ -345,8 +345,8 @@ class DomainClient(Client):
 
         return response
 
-    def apply_to_network(self, network: Client, route_index: int = 0, **metadata):
-        self.association.create(client=self, network=network, metadata=metadata)
+    def apply_to_network(self, target: Client, route_index: int = 0, **metadata):
+        self.association.create(source=self, target=target, metadata=metadata)
 
     def _perform_grid_request(
         self, grid_msg: Any, content: Optional[Dict[Any, Any]] = None

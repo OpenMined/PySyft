@@ -354,11 +354,13 @@ class Client(AbstractNodeClient, Serializable):
             ptr.gc_enabled = True
 
         # create the remote add message
-        obj_msg = RemoteAddMessage(address=self.address, reply_to=self.address, num=num)
+        obj_msg = RemoteAddMessage(
+            id_at_location=id_at_location,
+            num=num,
+            address=self.address,
+        )
 
-        # send and wait, blocking for the response
-        response = self.send_immediate_msg_with_reply(msg=obj_msg)
-        print("response is", response.num)
+        self.send_immediate_msg_without_reply(msg=obj_msg)
 
         return ptr
 

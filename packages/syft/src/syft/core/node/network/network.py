@@ -1,16 +1,16 @@
 # stdlib
 import asyncio
+import os
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Union
-import os
 
 # third party
+import ascii_magic
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
-import ascii_magic
 
 # relative
 from ....lib.python import String
@@ -115,7 +115,11 @@ class Network(Node):
         install_path = os.path.abspath(
             os.path.join(os.path.realpath(__file__), "../../../../img/")
         )
-        ascii_magic.to_terminal(ascii_magic.from_image_file(img_path=install_path+'/pygrid.png', columns=83))
+        ascii_magic.to_terminal(
+            ascii_magic.from_image_file(
+                img_path=install_path + "/pygrid.png", columns=83
+            )
+        )
 
         print(
             """                          `-+yy+-`

@@ -10,6 +10,7 @@ from nacl.signing import VerifyKey
 
 # syft absolute
 import syft as sy
+from syft import deserialize
 from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.node_service.auth import service_auth
@@ -21,6 +22,7 @@ from syft.core.node.common.node_service.success_resp_message import (
 )
 from syft.core.node.domain.enums import AssociationRequestResponses
 from syft.lib.python import Dict as SyftDict
+from syft.logger import info
 
 # relative
 from ...exceptions import AuthorizationError
@@ -42,31 +44,52 @@ def send_association_request_msg(
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
     # Check Key permissions
+    info(
+        f"Node {node} - send_association_request_msg: got SendAssociationRequestMessage. Info: {msg.source} - {msg.target}"
+    )
     allowed = node.users.can_manage_infrastructure(verify_key=verify_key)
     if allowed:
         user = node.users.get_user(verify_key=verify_key)
+        info(
+            f"Node {node} - send_association_request_msg: {node} got user performing the action. User: {user}"
+        )
 
         # Build an association request to send to the target
         user_priv_key = SigningKey(
             node.users.get_user(verify_key).private_key.encode(), encoder=HexEncoder
         )
-        network_msg = ReceiveAssociationRequestMessage(
-            address=msg.network.address,
-            reply_to=msg.network.address,
+
+        target_msg = ReceiveAssociationRequestMessage(
+            address=msg.target.address,
+            reply_to=msg.source.address,
             metadata=msg.metadata,
-            network=msg.network,
+            source=msg.source,
+            target=msg.target,
         ).sign(signing_key=user_priv_key)
+
         # Send the message to the target
-        reply = msg.network.send_immediate_msg_with_reply(msg=network_msg)
+        info(
+            f"Node {node} - send_association_request_msg: sending ReceiveAssociationRequestMessage."
+        )
+        msg.target.send_immediate_msg_with_reply(msg=target_msg)
+        info(
+            f"Node {node} - send_association_request_msg: received the answer from ReceiveAssociationRequestMessage."
+        )
 
         # Create a new association request object
+        info(
+            f"Node {node} - send_association_request_msg: adding requests to the Database."
+        )
         node.association_requests.create_association_request(
-            node=msg.network.name,
+            node=msg.target.name,
             status=AssociationRequestResponses.PENDING,
             metadata=msg.metadata,
+            source=msg.source,
+            target=msg.target,
         )
     else:  # If not authorized
         raise AuthorizationError("You're not allowed to create an Association Request!")
+    info(f"Node: {node} received the answer from ReceiveAssociationRequestMessage.")
     return SuccessResponseMessage(
         address=msg.reply_to,
         resp_msg="Association request sent!",
@@ -78,22 +101,33 @@ def recv_association_request_msg(
     node: AbstractNode,
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
-    if not msg.network.name:
+    if not msg.target.name:
         raise MissingRequestKeyError(
             message="Invalid request payload, empty fields (node_name)!"
         )
-
-    _previous_request = node.association_requests.contain(node=msg.network.name)
+    info(f"Node {node} - recv_association_request_msg: received {msg}.")
+    _previous_request = node.association_requests.contain(node=msg.target.name)
+    info(
+        f"Node {node} - recv_association_request_msg: prev request exists {not _previous_request}."
+    )
 
     # Create a new Association Request if the handshake value doesn't exist in the database
-    if not _previous_request and not msg.response:
+    if not _previous_request:
+        info(
+            f"Node {node} - recv_association_request_msg: creating a new association request."
+        )
         node.association_requests.create_association_request(
-            node=msg.network.name,
-            metadata=msg.metadata,
+            node=msg.target.name,
+            metadata=dict(msg.metadata),
             status=AssociationRequestResponses.PENDING,
+            source=msg.source,
+            target=msg.target,
         )
     else:
-        node.association_requests.set(msg.network.name, msg.response)
+        info(
+            f"Node {node} - recv_association_request_msg: answering an existing association request."
+        )
+        node.association_requests.set(msg.target.name, msg.response)
 
     return SuccessResponseMessage(
         address=msg.reply_to,
@@ -107,32 +141,41 @@ def respond_association_request_msg(
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
     # Check if handshake/address/value fields are empty
-    missing_paramaters = not msg.network or not msg.response
+    missing_paramaters = not msg.target or not msg.response
     if missing_paramaters:
         raise MissingRequestKeyError(
             message="Invalid request payload, empty fields (target/handshake/value)!"
         )
-
     # Check Key permissions
     allowed = node.users.can_manage_infrastructure(verify_key=verify_key)
-
+    info(
+        f"Node {node} - respond_association_request_msg: user can approve/deny association requests."
+    )
     if allowed:
         # Set the status of the Association Request according to the "value" field received
-        node.association_requests.set(msg.network.name, msg.response)
+        node.association_requests.set(msg.target.name, msg.response)
 
         user_priv_key = SigningKey(
             node.users.get_user(verify_key).private_key.encode(), encoder=HexEncoder
         )
 
         node_msg = ReceiveAssociationRequestMessage(
-            address=msg.network.address,
+            address=msg.source.address,
             response=msg.response,
-            reply_to=msg.network.address,
+            reply_to=msg.target.address,
             metadata={},
-            network=msg.network
+            source=msg.source,
+            target=msg.target,
         ).sign(signing_key=user_priv_key)
+        info(
+            f"Node {node} - respond_association_request_msg: sending ReceiveAssociationRequestMessage."
+        )
 
-        msg.network.send_immediate_msg_with_reply(msg=node_msg)
+        msg.source.send_immediate_msg_with_reply(msg=node_msg)
+        info(
+            f"Node {node} - respond_association_request_msg: ReceiveAssociationRequestMessage got back."
+        )
+
     else:  # If not allowed
         raise AuthorizationError("You're not allowed to create an Association Request!")
 
@@ -152,7 +195,6 @@ def get_association_request_msg(
     # If allowed
     if allowed:
         association_request = node.association_requests.first(id=msg.association_id)
-        association_request_json = SyftDict(model_to_json(association_request))
     else:  # Otherwise
         raise AuthorizationError(
             "You're not allowed to get Association Request information!"
@@ -160,7 +202,9 @@ def get_association_request_msg(
 
     return GetAssociationRequestResponse(
         address=msg.reply_to,
-        content=association_request_json,
+        metadata=association_request.get_metadata(),
+        source=association_request.get_source(),
+        target=association_request.get_target(),
     )
 
 
@@ -174,8 +218,9 @@ def get_all_association_request_msg(
     # If allowed
     if allowed:
         association_requests = node.association_requests.all()
+
         association_requests_json = [
-            SyftDict(model_to_json(association_request))
+            SyftDict(association_request.get_metadata())
             for association_request in association_requests
         ]
     else:  # Otherwise

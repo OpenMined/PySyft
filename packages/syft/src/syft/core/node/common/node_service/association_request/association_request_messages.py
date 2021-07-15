@@ -51,16 +51,16 @@ from ......core.common.serde.serializable import bind_protobuf
 class SendAssociationRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
-        client,
-        network,
+        source,
+        target,
         address: Address,
         reply_to: Address,
         metadata: Dict[str, str],
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
-        self.client = client
-        self.network = network
+        self.source = source
+        self.target = target
         self.metadata = metadata
 
     def _object2proto(self) -> SendAssociationRequestMessage_PB:
@@ -78,8 +78,8 @@ class SendAssociationRequestMessage(ImmediateSyftMessageWithReply):
         return SendAssociationRequestMessage_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            client=serialize(self.client),
-            network=serialize(self.network),
+            source=serialize(self.source),
+            target=serialize(self.target),
             reply_to=serialize(self.reply_to),
             metadata=self.metadata,
         )
@@ -101,8 +101,8 @@ class SendAssociationRequestMessage(ImmediateSyftMessageWithReply):
         return SendAssociationRequestMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            client=_deserialize(blob=proto.client),
-            network=_deserialize(blob=proto.network),
+            source=_deserialize(blob=proto.source),
+            target=_deserialize(blob=proto.target),
             reply_to=_deserialize(blob=proto.reply_to),
             metadata=dict(proto.metadata),
         )
@@ -132,7 +132,8 @@ class ReceiveAssociationRequestMessage(ImmediateSyftMessageWithReply):
         self,
         address: Address,
         reply_to: Address,
-        network: Client,
+        source: Client,
+        target: Client,
         metadata: Dict[str, str],
         msg_id: Optional[UID] = None,
         response: Optional[str] = "",
@@ -140,7 +141,8 @@ class ReceiveAssociationRequestMessage(ImmediateSyftMessageWithReply):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.metadata = metadata
         self.response = response
-        self.network = network
+        self.source = source
+        self.target = target
 
     def _object2proto(self) -> ReceiveAssociationRequestMessage_PB:
         """Returns a protobuf serialization of self.
@@ -160,7 +162,8 @@ class ReceiveAssociationRequestMessage(ImmediateSyftMessageWithReply):
             response=self.response,
             reply_to=serialize(self.reply_to),
             metadata=self.metadata,
-            network=serialize(self.network),
+            source=serialize(self.source),
+            target=serialize(self.target),
         )
 
     @staticmethod
@@ -183,7 +186,8 @@ class ReceiveAssociationRequestMessage(ImmediateSyftMessageWithReply):
             response=proto.response,
             reply_to=_deserialize(blob=proto.reply_to),
             metadata=proto.metadata,
-            network=_deserialize(proto.network),
+            source=_deserialize(proto.source),
+            target=_deserialize(proto.target),
         )
 
     @staticmethod
@@ -211,13 +215,15 @@ class RespondAssociationRequestMessage(ImmediateSyftMessageWithReply):
         self,
         address: Address,
         response: str,
-        network: Client,
+        source: Client,
+        target: Client,
         reply_to: Address,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.response = response
-        self.network = network
+        self.source = source
+        self.target = target
 
     def _object2proto(self) -> RespondAssociationRequestMessage_PB:
         """Returns a protobuf serialization of self.
@@ -234,7 +240,8 @@ class RespondAssociationRequestMessage(ImmediateSyftMessageWithReply):
         return RespondAssociationRequestMessage_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            network=serialize(self.network),
+            source=serialize(self.source),
+            target=serialize(self.target),
             response=self.response,
             reply_to=serialize(self.reply_to),
         )
@@ -256,7 +263,8 @@ class RespondAssociationRequestMessage(ImmediateSyftMessageWithReply):
         return RespondAssociationRequestMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            network=_deserialize(blob=proto.network),
+            source=_deserialize(blob=proto.source),
+            target=_deserialize(blob=proto.target),
             response=proto.response,
             reply_to=_deserialize(blob=proto.reply_to),
         )
@@ -356,11 +364,15 @@ class GetAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        content: Dict,
+        metadata: Dict,
+        source: Client,
+        target: Client,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
-        self.content = content
+        self.metadata = metadata
+        self.source = source
+        self.target = target
 
     def _object2proto(self) -> GetAssociationRequestResponse_PB:
         """Returns a protobuf serialization of self.
@@ -377,7 +389,9 @@ class GetAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
         return GetAssociationRequestResponse_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            content=serialize(self.content),
+            metadata=self.metadata,
+            source=serialize(self.source),
+            target=serialize(self.target),
         )
 
     @staticmethod
@@ -397,7 +411,9 @@ class GetAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
         return GetAssociationRequestResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            content=_deserialize(proto.content),
+            metadata=dict(proto.metadata),
+            source=_deserialize(blob=proto.source),
+            target=_deserialize(blob=proto.target),
         )
 
     @staticmethod

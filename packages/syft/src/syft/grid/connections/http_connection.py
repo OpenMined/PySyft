@@ -37,9 +37,7 @@ class HTTPConnection(ClientConnection):
         # Serializes SignedImmediateSyftMessageWithReply
         # and send it using HTTP protocol
         response = self._send_msg(msg=msg)
-        print(type(response))
-        print(dir(response))
-        print(response.content)
+
         # Deserialize node's response
         if response.status_code == requests.codes.ok:
             # Return SignedImmediateSyftMessageWithoutReply

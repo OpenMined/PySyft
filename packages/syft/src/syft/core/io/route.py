@@ -180,18 +180,15 @@ class SoloRoute(Route):
         return self.connection.send_immediate_msg_with_reply(msg=msg)
 
     def _object2proto(self) -> SoloRoute_PB:
+        route = SoloRoute_PB(
+            id=self.id._object2proto(),
+            destination=self.schema.destination._object2proto(),
+        )
         if isinstance(self.connection, VirtualClientConnection):
-            return SoloRoute_PB(
-                id=self.id._object2proto(),
-                destination=self.schema.destination._object2proto(),
-                vritual_connection=self.connection._object2proto(),
-            )
+            route.virtual_connection.CopyFrom(self.connection._object2proto())
         else:
-            return SoloRoute_PB(
-                id=self.id._object2proto(),
-                destination=self.schema.destination._object2proto(),
-                grid_connection=self.connection._object2proto(),
-            )
+            route.grid_connection.CopyFrom(self.connection._object2proto())
+        return route
 
     @staticmethod
     def _proto2object(proto: SoloRoute_PB) -> "SoloRoute":

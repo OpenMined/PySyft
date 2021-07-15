@@ -19,6 +19,7 @@ from syft.core.node.common.node_service.association_request.association_request_
 from syft.core.node.common.node_service.association_request.association_request_messages import (
     SendAssociationRequestMessage,
 )
+from syft.core.node.domain.enums import RequestAPIFields
 from syft.core.node.domain.exceptions import PyGridClientException
 
 # relative
@@ -55,7 +56,8 @@ class AssociationRequestAPI(RequestAPI):
         _association_obj = super().to_obj(result)
 
         _content = {
-            RequestAPIFields.NETWORK: self.node,
+            RequestAPIFields.SOURCE: result[RequestAPIFields.SOURCE],
+            RequestAPIFields.TARGET: result[RequestAPIFields.TARGET],
         }
 
         def _accept() -> Dict[str, str]:
