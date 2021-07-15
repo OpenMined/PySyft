@@ -1,0 +1,45 @@
+# third party
+import numpy as np
+
+# syft relative
+from ..tensor import AutogradTensor
+from .op import Op
+
+
+class SumOp(Op):
+    """Sum operation across a dimension"""
+
+    def forward(self, x: AutogradTensor, axis):
+        self.x = x
+        self.axis = axis
+        if axis is not None:
+            # obj.sum() can be called without dims
+            self.dim_at_axis = self.x.shape[self.axis]
+        else:
+            self.dim_at_axis = None
+        self.backward_shape = self.x.shape
+
+        result = x.child.sum(axis=axis)
+
+        if result.shape == ():
+            result = result.reshape(1)
+
+        return AutogradTensor(result, requires_grad=x.requires_grad)
+
+    def _backward(self, grad, backprop_id):
+
+        if self.x.requires_grad:
+
+            if self.axis is not None:
+
+                grad = np.expand_dims(grad, self.axis)
+                grad = grad.repeat(self.dim_at_axis, axis=self.axis)
+
+            else:
+                n_times = np.prod(self.backward_shape)
+                grad = grad.repeat(n_times, axis=0).reshape(self.backward_shape)
+
+            self.x.add_grad(grad)
+
+            if self.x.grad_fn:
+                self.x.backward(backprop_id=backprop_id)
