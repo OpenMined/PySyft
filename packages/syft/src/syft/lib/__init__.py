@@ -18,6 +18,7 @@ import warnings
 from cachetools import cached
 from cachetools.keys import hashkey
 from packaging import version
+import packaging
 import wrapt
 
 # syft relative
@@ -256,6 +257,18 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
 lib_ast = create_lib_ast(None)
 
 
+def register_library(lib: str) -> None:
+    """
+    Add newly imported library to shared lib space.
+    """
+    package_support_path = "__SYFT_PACKAGE_SUPPORT"
+    # load(lib, ignore_warning=True)
+    if package_support_path not in sys.modules:
+        sys.modules[package_support_path] = set()
+    sys.modules[package_support_path].add(lib)
+    # bind_library(lib)
+
+
 @wrapt.when_imported("gym")
 @wrapt.when_imported("opacus")
 @wrapt.when_imported("numpy")
@@ -268,6 +281,7 @@ lib_ast = create_lib_ast(None)
 @wrapt.when_imported("statsmodels")
 @wrapt.when_imported("sympc")
 @wrapt.when_imported("tenseal")
+# @wrapt.when_imported("xgboost")
 @wrapt.when_imported("zksk")
 @wrapt.when_imported("pytorch_lightning")
 @wrapt.when_imported("transformers")
@@ -333,27 +347,22 @@ def add_lib_external(
         critical("Serde object is expected to be an Iterable.")
 
 
-def register_library(lib: str) -> None:
-    """
-    Add newly imported library to shared lib space.
-    """
-    # load(lib, ignore_warning=True)
-    if "__SYFT_PACKAGE_SUPPORT" not in sys.modules:
-        sys.modules["__SYFT_PACKAGE_SUPPORT"] = set()
-    sys.modules["__SYFT_PACKAGE_SUPPORT"].add(lib)
-    # bind_library(lib)
+# bind_lib = ""
 
 
-bind_lib = ""
+# def bind_library(lib: str):
+#     """
+#     (TODO: Use lib as str or comment out.)
+#     Binds lib to a global.
+#     """
+#     global bind_lib
+#     bind_lib = f"{lib}"
+#     package = "syft.lib"
+#     module_path = f"{package}.{lib}"
+#     globals()[bind_lib] = sys.modules[module_path]
 
+# syft
+# __SYFT_PACKAGE_SUPPORT
+# syft_xgboost
 
-def bind_library(lib: str):
-    """
-    (TODO: Use lib as str or comment out.)
-    Binds lib to a global.
-    """
-    global bind_lib
-    bind_lib = f"{lib}"
-    package = "syft.lib"
-    module_path = f"{package}.{lib}"
-    globals()[bind_lib] = sys.modules[module_path]
+# sy.load("syft_xgboost")
