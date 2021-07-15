@@ -17,6 +17,7 @@ import sympy as sym
 from sympy.core.basic import Basic
 from sympy.solvers import solve
 
+# relative
 # syft relative
 from .entity import Entity
 

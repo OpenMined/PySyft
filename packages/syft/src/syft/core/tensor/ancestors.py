@@ -1,6 +1,7 @@
 # stdlib
 import uuid
 
+# relative
 # syft relative
 from ..adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from .manager import TensorChainManager
@@ -13,6 +14,7 @@ def _SingleEntityPhiTensor():
     global _SingleEntityPhiTensorRef
     if _SingleEntityPhiTensorRef is None:
         # syft relative
+        # relative
         from .autodp.single_entity_phi import SingleEntityPhiTensor
 
         _SingleEntityPhiTensorRef = SingleEntityPhiTensor
@@ -26,6 +28,7 @@ def _RowEntityPhiTensor():
     global _RowEntityPhiTensorRef
     if _RowEntityPhiTensorRef is None:
         # syft relative
+        # relative
         from .autodp.row_entity_phi import RowEntityPhiTensor
 
         _RowEntityPhiTensorRef = RowEntityPhiTensor
@@ -39,6 +42,7 @@ def _AutogradTensor():
     global _AutogradTensorRef
     if _AutogradTensorRef is None:
         # syft relative
+        # relative
         from .autograd.tensor import AutogradTensor
 
         _AutogradTensorRef = AutogradTensor

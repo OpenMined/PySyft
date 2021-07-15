@@ -18,6 +18,7 @@ from pymbolic.mapper.evaluator import EvaluationMapper as EM
 from scipy import optimize
 from sympy.core.basic import Basic as BasicSymbol
 
+# relative
 # syft relative
 from ... import deserialize
 from ... import serialize
@@ -45,6 +46,7 @@ from .search import ssid2obj
 class Scalar(Serializable):
     def publish(self, acc: Any, sigma: float = 1.5) -> float:
         # syft relative
+        # relative
         from .publish import publish
 
         return publish([self], acc=acc, sigma=sigma)

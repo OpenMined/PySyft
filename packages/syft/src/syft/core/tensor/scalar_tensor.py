@@ -8,6 +8,7 @@ from typing import List as TypeList
 import names
 import numpy as np
 
+# relative
 # syft relative
 from ..adp.entity import Entity
 from ..adp.publish import publish

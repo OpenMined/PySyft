@@ -5,6 +5,7 @@ from __future__ import annotations
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 
+# relative
 # syft relative
 from ....core.common.serde.serializable import Serializable
 from ....lib.util import full_name_with_name
@@ -134,9 +135,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializa
             min_vals=min_vals,
             max_vals=max_vals,
             scalar_manager=self.scalar_manager,
-
-            )
-
+        )
 
     def __add__(self, other):
 
@@ -206,7 +205,6 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Serializa
             max_vals=max_vals,
             scalar_manager=self.scalar_manager,
         )
-
 
     def __gt__(self, other):
 

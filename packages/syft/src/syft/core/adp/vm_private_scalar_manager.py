@@ -1,6 +1,7 @@
 # third party
 import sympy as sp
 
+# relative
 # syft relative
 from .scalar import GammaScalar
 

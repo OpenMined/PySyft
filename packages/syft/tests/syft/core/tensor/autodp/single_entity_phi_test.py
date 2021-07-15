@@ -1,29 +1,41 @@
-import pytest
-from syft.core.tensor.tensor import Tensor
-from syft.core.adp.entity import Entity
+# third party
 import numpy as np
+import pytest
+
+# syft absolute
+from syft.core.adp.entity import Entity
+from syft.core.tensor.tensor import Tensor
 
 gonzalo = Entity(name="Gonzalo")
 
+
 @pytest.fixture(scope="function")
 def x():
-    x = Tensor(np.array([[1,2,3],[4,5,6]]))
-    x = x.private(min_val=-1,max_val=7,entity=gonzalo)
+    x = Tensor(np.array([[1, 2, 3], [4, 5, 6]]))
+    x = x.private(min_val=-1, max_val=7, entity=gonzalo)
     return x
+
 
 @pytest.fixture(scope="function")
 def y():
-    y = Tensor(np.array([[-1,-2,-3],[-4,-5, -6]]))
-    y = y.private(min_val=-7,max_val=1,entity=gonzalo)
+    y = Tensor(np.array([[-1, -2, -3], [-4, -5, -6]]))
+    y = y.private(min_val=-7, max_val=1, entity=gonzalo)
     return y
+
+
 #
 # ######################### ADD ############################
 #
 def test_add(x):
-    z = x+x
+    z = x + x
     assert isinstance(z, Tensor), "Add: Result is not a Tensor"
-    assert (z.child.min_vals == 2 * x.child.min_vals).all(), "(Add, Minval) Result is not correct"
-    assert (z.child.max_vals == 2 * x.child.max_vals).all(), "(Add, Maxval) Result is not correct"
+    assert (
+        z.child.min_vals == 2 * x.child.min_vals
+    ).all(), "(Add, Minval) Result is not correct"
+    assert (
+        z.child.max_vals == 2 * x.child.max_vals
+    ).all(), "(Add, Maxval) Result is not correct"
+
 
 # def test_add(x,y):
 #     z = x+y

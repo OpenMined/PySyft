@@ -4,6 +4,7 @@ import uuid
 # third party
 import numpy as np
 
+# relative
 # syft relative
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from .intermediate_gamma import IntermediateGammaTensor
