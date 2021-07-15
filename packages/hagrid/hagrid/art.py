@@ -1,7 +1,9 @@
-import ascii_magic
+# stdlib
 import os
 import random
 
+# third party
+import ascii_magic
 
 
 def motorcycle():
@@ -44,6 +46,7 @@ def motorcycle():
              `:dMMMMh.`"""
     )
 
+
 def hold_on_tight():
 
     rows, columns = os.popen("stty size", "r").read().split()
@@ -83,7 +86,10 @@ def hagrid1():
         os.path.join(os.path.realpath(__file__), "../../img/")
     )
 
-    ascii_magic.to_terminal(ascii_magic.from_image_file(img_path=install_path+'/hagrid.png', columns=83))
+    ascii_magic.to_terminal(
+        ascii_magic.from_image_file(img_path=install_path + "/hagrid.png", columns=83)
+    )
+
 
 def hagrid2():
 
@@ -91,13 +97,17 @@ def hagrid2():
         os.path.join(os.path.realpath(__file__), "../../img/")
     )
 
-    ascii_magic.to_terminal(ascii_magic.from_image_file(img_path=install_path+'/hagrid2.png', columns=83))
+    ascii_magic.to_terminal(
+        ascii_magic.from_image_file(img_path=install_path + "/hagrid2.png", columns=83)
+    )
+
 
 options = [motorcycle, hagrid1, hagrid2]
 
+
 def hagrid():
     """Print a random hagrid image with the caption "hold on tight harry" """
-    i = random.randint(0,2)
+    i = random.randint(0, 2)
 
     options[i]()
 

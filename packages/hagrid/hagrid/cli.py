@@ -11,11 +11,11 @@ import requests
 # relative
 from .art import hagrid
 from .lib import check_docker
-from .lib import should_provision_remote
-from .lib import pre_process_name
-from .lib import pre_process_tag
 from .lib import find_available_port
 from .lib import pre_process_keep_db
+from .lib import pre_process_name
+from .lib import pre_process_tag
+from .lib import should_provision_remote
 
 install_path = os.path.abspath(
     os.path.join(os.path.realpath(__file__), "../../../grid/")

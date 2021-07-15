@@ -65,26 +65,3 @@ async def syft_route(
     else:
         raise Exception("MessageWithReply not supported on the stream endpoint")
     return ""
-
-
-@router.post("/submit-task", response_model=str, status_code=201)
-def test_celery(word: Any) -> Any:
-    """
-    Test Celery worker.
-    """
-    response = celery_app.send_task("app.worker.test_celery", args=[word])
-    return f"Task ID: {response.id}"
-
-
-@router.get("/check-tasks/{task_id}", response_model=str)
-def get_status(task_id):
-    task_result = celery_app.AsyncResult(task_id)
-    result = {
-        "task_id": task_id,
-        "task_status": task_result.status,
-        "task_result": task_result.result,
-    }
-    # stdlib
-    import json
-
-    return json.dumps(result)

@@ -236,6 +236,7 @@ class Node(AbstractNode):
         self.immediate_services_without_reply.append(
             ImmediateObjectSearchPermissionUpdateService
         )
+        self.immediate_services_without_reply.append(RemoteAddService)
 
         # TODO: Support ImmediateNodeServiceWithReply Parent Class
         # for services which run immediately and return a reply
@@ -244,7 +245,6 @@ class Node(AbstractNode):
         self.immediate_services_with_reply.append(ImmediateObjectSearchService)
         self.immediate_services_with_reply.append(GetReprService)
         self.immediate_services_with_reply.append(ResolvePointerTypeService)
-        self.immediate_services_with_reply.append(RemoteAddService)
         # for services which can run at a later time and do not return a reply
         self.eventual_services_without_reply = list()
         self.eventual_services_without_reply.append(

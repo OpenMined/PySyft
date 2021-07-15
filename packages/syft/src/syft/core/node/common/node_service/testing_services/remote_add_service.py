@@ -13,40 +13,38 @@ from typing_extensions import final
 
 # relative
 from ...... import serialize
+from ......lib.python import Dict
 from ......proto.core.node.common.service.remote_add_service_pb2 import (
     RemoteAddMessage as RemoteAddMessage_PB,
 )
-from ......proto.core.node.common.service.remote_add_service_pb2 import (
-    RemoteAddReplyMessage as RemoteAddReplyMessage_PB,
-)
-from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.serde.deserialize import _deserialize
 from .....common.serde.serializable import bind_protobuf
 from .....common.uid import UID
 from .....io.address import Address
 from ....abstract.node import AbstractNode
-from ..node_service import ImmediateNodeServiceWithReply
+from ..node_service import ImmediateNodeServiceWithoutReply
 
 
 @bind_protobuf
 @final
-class RemoteAddMessage(ImmediateSyftMessageWithReply):
+class RemoteAddMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         num: int,
+        id_at_location: UID,
         address: Address,
-        reply_to: Address,
         msg_id: Optional[UID] = None,
     ):
-        super().__init__(address=address, reply_to=reply_to, msg_id=msg_id)
+        super().__init__(address=address, msg_id=msg_id)
         self.num = num
+        self.id_at_location = id_at_location
 
     def _object2proto(self) -> RemoteAddMessage_PB:
         return RemoteAddMessage_PB(
             msg_id=serialize(self.id),
+            id_at_location=serialize(self.id_at_location),
             address=serialize(self.address),
-            reply_to=serialize(self.reply_to),
             num=self.num,
         )
 
@@ -54,8 +52,8 @@ class RemoteAddMessage(ImmediateSyftMessageWithReply):
     def _proto2object(proto: RemoteAddMessage_PB) -> RemoteAddMessage:
         return RemoteAddMessage(
             msg_id=_deserialize(blob=proto.msg_id),
+            id_at_location=_deserialize(blob=proto.id_at_location),
             address=_deserialize(blob=proto.address),
-            reply_to=_deserialize(blob=proto.reply_to),
             num=proto.num,
         )
 
@@ -64,48 +62,25 @@ class RemoteAddMessage(ImmediateSyftMessageWithReply):
         return RemoteAddMessage_PB
 
 
-@bind_protobuf
-@final
-class RemoteAddReplyMessage(ImmediateSyftMessageWithoutReply):
-    def __init__(
-        self,
-        num: int,
-        address: Address,
-        msg_id: Optional[UID] = None,
-    ):
-        super().__init__(address=address, msg_id=msg_id)
-        self.num = num
-
-    def _object2proto(self) -> RemoteAddReplyMessage_PB:
-        return RemoteAddReplyMessage_PB(
-            msg_id=serialize(self.id),
-            address=serialize(self.address),
-            num=self.num,
-        )
-
-    @staticmethod
-    def _proto2object(proto: RemoteAddReplyMessage_PB) -> RemoteAddReplyMessage:
-        return RemoteAddReplyMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
-            num=proto.num,
-        )
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return RemoteAddReplyMessage_PB
-
-
-class RemoteAddService(ImmediateNodeServiceWithReply):
+class RemoteAddService(ImmediateNodeServiceWithoutReply):
     @staticmethod
     def process(
         node: AbstractNode, msg: RemoteAddMessage, verify_key: VerifyKey
-    ) -> RemoteAddReplyMessage:
-        # stdlib
-        import time
+    ) -> None:
+        # grid absolute
+        from app.core.celery_app import celery_app
 
-        time.sleep(10)
-        return RemoteAddReplyMessage(num=msg.num + 1, address=msg.reply_to)
+        args = Dict(
+            {
+                "num": msg.num,
+                "id_at_location": msg.id_at_location,
+                "verify_key": verify_key,
+            }
+        )
+
+        # use latin-1 instead of utf-8 because our bytes might not be an even number
+        arg_bytes_str = serialize(args, to_bytes=True).decode("latin-1")
+        celery_app.send_task("app.worker.add_num", args=[arg_bytes_str])
 
     @staticmethod
     def message_handler_types() -> List[Type[RemoteAddMessage]]:
