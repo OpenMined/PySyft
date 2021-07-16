@@ -28,7 +28,7 @@ from ....tensor.smpc.share_tensor import ShareTensor
 from ...abstract.node import AbstractNode
 from ...common.action.common import ImmediateActionWithoutReply
 
-MAP_FUNC_TO_NR_GENERATOR_INVOKES = {"__add__": 0, "__mul__": 0}
+MAP_FUNC_TO_NR_GENERATOR_INVOKES = {"__add__": 0, "__mul__": 0, "__sub__": 0}
 
 
 def smpc_add(self_id, other_id, seed, node):
@@ -71,6 +71,46 @@ def smpc_add(self_id, other_id, seed, node):
     return actions
 
 
+def smpc_sub(self_id, other_id, seed, node):
+    generator = np.random.default_rng(seed)
+
+    for _ in range(MAP_FUNC_TO_NR_GENERATOR_INVOKES["__sub__"]):
+        generator.bytes(16)
+
+    result_id = UID(UUID(bytes=generator.bytes(16)))
+    other = node.store[other_id].data
+
+    actions = []
+    if isinstance(other, ShareTensor):
+        # All parties should add the other share if empty list
+        actions.append(
+            SMPCAction(
+                "mpc_sub",
+                self_id=self_id,
+                args_id=[other_id],
+                kwargs_id={},
+                ranks_to_run_action=[],
+                result_id=result_id,
+                address=node.address,
+            )
+        )
+    else:
+        # Only rank 0 (the first party) would add that public value
+        actions.append(
+            SMPCAction(
+                "mpc_sub",
+                self_id=self_id,
+                args_id=[other_id],
+                kwargs_id={},
+                ranks_to_run_action=[0],
+                result_id=result_id,
+                address=node.address,
+            )
+        )
+
+    return actions
+
+
 def smpc_mul(self_id, other_id, seed, node):
     generator = np.random.default_rng(seed)
 
@@ -100,11 +140,12 @@ def smpc_mul(self_id, other_id, seed, node):
     return actions
 
 
-MAP_FUNC_TO_ACTION = {"__add__": smpc_add, "__mul__": smpc_mul}
+MAP_FUNC_TO_ACTION = {"__add__": smpc_add, "__mul__": smpc_mul, "__sub__": smpc_sub}
 
 
 _MAP_ACTION_TO_FUNCTION = {
     "mpc_add": operator.add,
+    "mpc_sub": operator.sub,
     "mpc_mul": operator.mul,
 }
 

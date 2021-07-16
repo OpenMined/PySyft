@@ -120,6 +120,12 @@ class ShareTensor(PassthroughTensor, Serializable):
         else:
             raise ValueError("Expected other to be ShareTensor")
 
+    def __sub__(self, other):
+        if isinstance(other, ShareTensor):
+            return ShareTensor(value=self.child - other.child, rank=self.rank)
+        else:
+            raise ValueError("Expected other to be ShareTensor")
+
     def __mul__(self, other):
         if isinstance(other, ShareTensor):
             raise ValueError("Private Multiplication not yet implemented")

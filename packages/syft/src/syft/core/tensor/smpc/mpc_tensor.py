@@ -101,7 +101,8 @@ class MPCTensor(PassthroughTensor):
     def reconstruct(self):
         # TODO: It might be that the resulted shares (if we run any computation) might
         # not be available at this point
-        local_shares = [share.get() for share in self.child]
+
+        local_shares = [share.get_copy() for share in self.child]
         is_share_tensor = isinstance(local_shares[0], ShareTensor)
 
         if is_share_tensor:
@@ -120,15 +121,23 @@ class MPCTensor(PassthroughTensor):
         res = operator(np.empty(x_shape), np.empty(y_shape)).shape
         return res
 
-    def __add__(self, other):
+    def apply_private_op(self, other, op):
+        operation = getattr(operator, op)
         if isinstance(other, MPCTensor):
-            res_shares = [operator.add(a, b) for a, b in zip(self.child, other.child)]
+            res_shares = [operation(a, b) for a, b in zip(self.child, other.child)]
         else:
             raise ValueError("Add works only for the MPCTensor at the moment!")
 
-        new_shape = MPCTensor.__get_shape(self.mpc_shape, other.mpc_shape, operator.add)
+        new_shape = MPCTensor.__get_shape(self.mpc_shape, other.mpc_shape, operation)
         res = MPCTensor(shares=res_shares, shape=new_shape)
+        return res
 
+    def __add__(self, other):
+        res = self.apply_private_op(other, "__add__")
+        return res
+
+    def __sub__(self, other):
+        res = self.apply_private_op(other, "__sub__")
         return res
 
     def __mul__(self, other):

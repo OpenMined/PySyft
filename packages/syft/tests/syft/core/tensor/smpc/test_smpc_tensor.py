@@ -1,4 +1,5 @@
 # stdlib
+import operator
 import sys
 
 # third party
@@ -37,8 +38,8 @@ def test_mpc_private_op(op_str):
     value_1 = np.array([[1, 2, 3, 4, -5]], dtype=np.int64)
     value_2 = np.array([10], dtype=np.int64)
 
-    remote_value_1 = clients[0].syft.core.tensor.tensor.Tensor(value)
-    remote_value_2 = clients[4].syft.core.tensor.tensor.Tensor(value)
+    remote_value_1 = clients[0].syft.core.tensor.tensor.Tensor(value_1)
+    remote_value_2 = clients[2].syft.core.tensor.tensor.Tensor(value_2)
 
     mpc_tensor_1 = MPCTensor(
         parties=clients, secret=remote_value_1, shape=(1, 5), seed_shares=52
@@ -50,7 +51,7 @@ def test_mpc_private_op(op_str):
 
     op = getattr(operator, op_str)
 
-    res = op(mpc_tensor_1, mpc_tensor_1)
+    res = op(mpc_tensor_1, mpc_tensor_2).reconstruct()
     expected = op(value_1, value_2)
 
     assert (res == expected).all()
