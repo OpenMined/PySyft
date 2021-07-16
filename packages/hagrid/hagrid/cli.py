@@ -287,9 +287,9 @@ def land(node_type, name, port, tag, keep_db):
             "You must provide either the --tag or --name of the node you want to land!"
         )
 
-    elif tag == "" and name != "" and type != "":
+    elif tag == "" and name != "" and node_type != "":
         tag = hashlib.md5(name.encode("utf8")).hexdigest()
-        tag = type + "_" + tag
+        tag = node_type + "_" + tag
 
     elif tag != "":
         """continue"""
@@ -303,8 +303,8 @@ def land(node_type, name, port, tag, keep_db):
 
     # motorcycle()
 
-    print("Launching a " + str(type) + " PyGrid node on port " + str(port) + "!\n")
-    print("  - TYPE: " + str(type))
+    print("Launching a " + str(node_type) + " PyGrid node on port " + str(port) + "!\n")
+    print("  - TYPE: " + str(node_type))
     print("  - NAME: " + str(name))
     print("  - TAG: " + str(tag))
     print("  - PORT: " + str(port))
@@ -317,7 +317,7 @@ def land(node_type, name, port, tag, keep_db):
     cmd = "DOMAIN_PORT=" + str(port)
     # cmd += " TRAEFIK_TAG=" + tag
     cmd += ' DOMAIN_NAME="' + name + '"'
-    cmd += " NODE_TYPE=" + type
+    cmd += " NODE_TYPE=" + node_type
     cmd += " docker compose"
     cmd += ' --file "docker-compose.override.yml"'
     cmd += ' --project-name "' + tag + '"'
