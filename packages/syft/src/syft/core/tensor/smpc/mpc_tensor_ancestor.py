@@ -1,19 +1,21 @@
+# stdlib
+from typing import Any
+from typing import List
+
 # syft absolute
 from syft.core.tensor.manager import TensorChainManager
-from syft.core.tensor.smpc.share_tensor import ShareTensor
 
-
-def is_pointer(val):
-    if "Pointer" in type(val).__name__:
-        return True
+# syft relative
+from .mpc_tensor import MPCTensor
+from .utils import ispointer
 
 
 class MPCTensorAncestor(TensorChainManager):
-    def share(self, *parties):
+    def share(self, *parties: List[Any]) -> MPCTensor:
         # syft absolute
         from syft.core.tensor.mpc_tensor import MPCTensor
 
-        if is_pointer(self.child):
+        if ispointer(self.child):
             raise ValueError(
                 "Cannot call share on a remote tensor. Use MPCTensor(remote_secret)"
             )

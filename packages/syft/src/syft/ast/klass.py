@@ -185,7 +185,6 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
         from syft.core.node.common.action.smpc_action import (
             MAP_FUNC_TO_NR_GENERATOR_INVOKES,
         )
-        from syft.core.tensor.smpc.share_tensor import ShareTensor
 
         # TODO: Seed should always be regenerated for every operation and sent
         seed = 42

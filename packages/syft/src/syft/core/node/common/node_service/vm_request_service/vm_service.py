@@ -1,10 +1,11 @@
 # stdlib
-import atexit
 from collections import defaultdict
 from collections import deque
 from collections import namedtuple
 import threading
 import time
+from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 
@@ -50,14 +51,16 @@ class VMRequestAnswerService(ImmediateNodeServiceWithReply):
 
 actions_lock = threading.Lock()
 NodeSMPCAction = namedtuple("NodeSMPCAction", ["node_lock", "smpc_actions"])
-actions_to_run_per_node = defaultdict(lambda: NodeSMPCAction(threading.Lock(), deque()))
+actions_to_run_per_node: Dict[Any, NodeSMPCAction] = defaultdict(
+    lambda: NodeSMPCAction(threading.Lock(), deque())
+)
 
 
-def consume_smpc_actions_round_robin():
+def consume_smpc_actions_round_robin() -> None:
     # Queue keeps a list of actions
 
     max_nr_retries = 10
-    last_msg_id = None
+    last_msg_id: Optional[UID] = None
     while 1:
         # Get a list of nodes
         with actions_lock:
@@ -69,11 +72,10 @@ def consume_smpc_actions_round_robin():
                 if len(actions_to_run_per_node[node].smpc_actions) == 0:
                     continue
 
-                node, msg, verify_key, nr_retries = actions_to_run_per_node[
-                    node
-                ].smpc_actions[0]
+                action = actions_to_run_per_node[node].smpc_actions[0]
+                node, msg, verify_key, nr_retries = action
                 if nr_retries > max_nr_retries:
-                    raise ValueError(f"Retries to many times for {element}")
+                    raise ValueError(f"Retries to many times for {action}")
 
                 try:
                     # try to execute and pop if succeded
@@ -83,7 +85,7 @@ def consume_smpc_actions_round_robin():
                     logger.warning(
                         f"Skip SMPC action {msg} since there was a key error when (probably) accessing the store"
                     )
-                    if last_msg_id is not None and last_msg_id == msg.id:
+                    if (last_msg_id is not None) and last_msg_id == msg.id:
                         # If there is only one action in all the lists
                         time.sleep(0.5)
 

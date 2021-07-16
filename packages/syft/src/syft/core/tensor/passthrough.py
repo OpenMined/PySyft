@@ -1,8 +1,12 @@
 # future
+# type: ignore
+# future
 from __future__ import annotations
 
 # stdlib
 from typing import Any
+from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Tuple as TypeTuple
 from typing import Union
@@ -18,7 +22,9 @@ from .util import query_implementation
 AcceptableSimpleType = Union[int, bool, float, np.ndarray]
 
 
-def inputs2child(*args, **kwargs):
+def inputs2child(
+    *args: List[Any], **kwargs: Dict[Any, Any]
+) -> TypeTuple[List[Any], Dict[Any, Any]]:
     args = [x.child if isinstance(x, PassthroughTensor) else x for x in args]
     kwargs = {
         x[0]: x[1].child if isinstance(x[1], PassthroughTensor) else x[1]

@@ -1,16 +1,18 @@
 # stdlib
 from functools import lru_cache
-import operator
-import time
-from uuid import UUID
+from typing import Any
+from typing import Optional
+from typing import Tuple
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 
 # syft absolute
-from syft import lib
-from syft.core.tensor.fixed_precision_tensor import FixedPrecisionTensor
+from syft.core.common.serde.deserialize import _deserialize as deserialize
+from syft.core.common.serde.serializable import Serializable
+from syft.core.common.serde.serializable import bind_protobuf
+from syft.core.common.serde.serialize import _serialize as serialize
 from syft.core.tensor.passthrough import PassthroughTensor
 
 # relative
@@ -21,11 +23,18 @@ from ....proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB
 from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import bind_protobuf
 from ...common.serde.serialize import _serialize as serialize
+from syft.proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB
 
 
 @bind_protobuf
 class ShareTensor(PassthroughTensor, Serializable):
-    def __init__(self, rank, ring_size=2 ** 64, value=None, seed_ids=None):
+    def __init__(
+        self,
+        rank: int,
+        ring_size: int = 2 ** 64,
+        value: Optional[Any] = None,
+        seed_ids: Optional[int] = None,
+    ) -> None:
         if seed_ids is None:
             self.seed_ids = 42
         else:
@@ -41,7 +50,7 @@ class ShareTensor(PassthroughTensor, Serializable):
 
     @staticmethod
     @lru_cache(32)
-    def compute_min_max_from_ring(ring_size=2 ** 64):
+    def compute_min_max_from_ring(ring_size: int = 2 ** 64) -> Tuple[int, int]:
         min_value = (-ring_size) // 2
         max_value = (ring_size - 1) // 2
         return min_value, max_value
@@ -90,7 +99,13 @@ class ShareTensor(PassthroughTensor, Serializable):
     """
 
     @staticmethod
-    def generate_przs(value, shape, rank, nr_parties, seed_shares):
+    def generate_przs(
+        value: Optional[Any],
+        shape: Tuple[int],
+        rank: int,
+        nr_parties: int,
+        seed_shares: int,
+    ) -> "ShareTensor":
         # syft absolute
         from syft.core.tensor.tensor import Tensor
 
@@ -115,19 +130,19 @@ class ShareTensor(PassthroughTensor, Serializable):
         share.child += shares[rank] - shares[(rank + 1) % nr_parties]
         return share
 
-    def __add__(self, other):
+    def __add__(self, other: Any) -> "ShareTensor":
         if isinstance(other, ShareTensor):
             return ShareTensor(value=self.child + other.child, rank=self.rank)
         else:
             raise ValueError("Expected other to be ShareTensor")
 
-    def __sub__(self, other):
+    def __sub__(self, other: Any) -> "ShareTensor":
         if isinstance(other, ShareTensor):
             return ShareTensor(value=self.child - other.child, rank=self.rank)
         else:
             raise ValueError("Expected other to be ShareTensor")
 
-    def __mul__(self, other):
+    def __mul__(self, other: Any) -> "ShareTensor":
         if isinstance(other, ShareTensor):
             raise ValueError("Private Multiplication not yet implemented")
         else:
