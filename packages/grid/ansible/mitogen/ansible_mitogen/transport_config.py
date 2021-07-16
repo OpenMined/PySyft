@@ -26,10 +26,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-# future
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
 """
 Mitogen extends Ansible's target configuration mechanism in several ways that
 require some care:
@@ -60,6 +56,10 @@ That is what this file is for. It exports two spec classes, one that takes all
 information from PlayContext, and another that takes (almost) all information
 from HostVars.
 """
+
+# future
+from __future__ import absolute_import
+from __future__ import unicode_literals
 
 # stdlib
 import abc
