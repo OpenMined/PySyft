@@ -161,6 +161,88 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
 
         return result
 
+    def run_smpc_class_method(
+        __self: Any,
+        *args: Tuple[Any, ...],
+        **kwargs: Any,
+    ) -> object:
+        """Run remote class method and get pointer to returned object.
+
+        Args:
+            *args: Args list of class method.
+            **kwargs: Keyword args of class method.
+
+        Returns:
+            Pointer to object returned by class method.
+        """
+        # stdlib
+        from uuid import UUID
+
+        # third party
+        import numpy as np
+
+        # syft absolute
+        from syft.core.node.common.action.smpc_action import (
+            MAP_FUNC_TO_NR_GENERATOR_INVOKES,
+        )
+        from syft.core.tensor.smpc.share_tensor import ShareTensor
+
+        # TODO: Seed should always be regenerated for every operation and sent
+        seed = 42
+        generator = np.random.default_rng(seed)
+
+        nr_ops = MAP_FUNC_TO_NR_GENERATOR_INVOKES[attr_path_and_name.split(".")[-1]]
+        for _ in range(nr_ops):
+            generator.bytes(16)
+
+        id_at_location = UID(UUID(bytes=generator.bytes(16)))
+        print("Id at location", id_at_location)
+
+        # we want to get the return type which matches the attr_path_and_name
+        # so we ask lib_ast for the return type name that matches out
+        # attr_path_and_name and then use that to get the actual pointer klass
+        # then set the result to that pointer klass
+        return_type_name = __self.client.lib_ast.query(
+            attr_path_and_name
+        ).return_type_name
+        resolved_pointer_type = __self.client.lib_ast.query(return_type_name)
+        result = resolved_pointer_type.pointer_type(client=__self.client)
+        result.id_at_location = id_at_location
+
+        # first downcast anything primitive which is not already PyPrimitive
+        (
+            downcast_args,
+            downcast_kwargs,
+        ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+
+        # then we convert anything which isnt a pointer into a pointer
+        pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+            args=downcast_args, kwargs=downcast_kwargs, client=__self.client
+        )
+
+        cmd = RunClassMethodAction(
+            path=attr_path_and_name,
+            _self=__self,
+            args=pointer_args,
+            kwargs=pointer_kwargs,
+            id_at_location=result.id_at_location,
+            address=__self.client.address,
+        )
+        __self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=__self,
+            args=args,
+            kwargs=kwargs,
+        )
+
+        return result
+
+    if "ShareTensor" in attr_path_and_name:
+        return run_smpc_class_method
+
     return run_class_method
 
 
@@ -532,22 +614,6 @@ class Class(Callable):
         setattr(klass_pointer, "path_and_name", self.path_and_name)
         setattr(self, self.pointer_name, klass_pointer)
 
-    def store_init_args(outer_self: Any) -> None:
-        """
-        Stores args and kwargs of outer_self init by wrapping the init method.
-        """
-
-        def init_wrapper(self: Any, *args: List[Any], **kwargs: Dict[Any, Any]) -> None:
-            outer_self.object_ref._wrapped_init(self, *args, **kwargs)
-            self._init_args = args
-            self._init_kwargs = kwargs
-
-        # If _wrapped_init already exists, create_init_method is already called once
-        # and does not need to wrap __init__ again.
-        if not hasattr(outer_self.object_ref, "_wrapped_init"):
-            outer_self.object_ref._wrapped_init = outer_self.object_ref.__init__
-            outer_self.object_ref.__init__ = init_wrapper
-
     def create_send_method(outer_self: Any) -> None:
         """Add `send` method to `outer_self.object_ref`."""
 
@@ -558,6 +624,7 @@ class Class(Callable):
             description: str = "",
             tags: Optional[List[str]] = None,
             searchable: Optional[bool] = None,
+            id_at_location: Optional[UID] = None,
         ) -> Pointer:
             """Send obj to client and return pointer to the object.
 
@@ -605,7 +672,8 @@ class Class(Callable):
                 attach_tags(self, tags)
                 attach_description(self, description)
 
-            id_at_location = UID()
+            if id_at_location is None:
+                id_at_location = UID()
 
             # Step 1: create pointer which will point to result
             ptr = getattr(outer_self, outer_self.pointer_name)(
