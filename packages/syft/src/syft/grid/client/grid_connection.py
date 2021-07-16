@@ -12,6 +12,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
+from requests_toolbelt.multipart.encoder import MultipartEncoder
 
 # relative
 from ...core.common.message import ImmediateSyftMessageWithoutReply
@@ -34,7 +35,7 @@ class GridHTTPConnection(HTTPConnection):
     LOGIN_ROUTE = "/login"
     SYFT_ROUTE = "/syft"
     SYFT_ROUTE_STREAM = "/syft/stream"  # non blocking node
-    SYFT_MULTIPART_ROUTE = "/pysyft_multipart"
+    # SYFT_MULTIPART_ROUTE = "/pysyft_multipart"
     SIZE_THRESHOLD = 20971520  # 20 MB
 
     def __init__(self, url: str) -> None:
@@ -78,7 +79,8 @@ class GridHTTPConnection(HTTPConnection):
         # Perform HTTP request using base_url as a root address
         msg_bytes: bytes = _serialize(obj=msg, to_bytes=True)  # type: ignore
 
-        if sys.getsizeof(msg_bytes) < GridHTTPConnection.SIZE_THRESHOLD:
+        # if sys.getsizeof(msg_bytes) < GridHTTPConnection.SIZE_THRESHOLD:
+        if True:
             r = requests.post(
                 url=self.base_url + route,
                 data=msg_bytes,
@@ -169,7 +171,7 @@ class GridHTTPConnection(HTTPConnection):
     def send_streamed_messages(self, blob_message: bytes) -> requests.Response:
         session = requests.Session()
         with io.BytesIO(blob_message) as msg:
-            form = encoder.MultipartEncoder(
+            form = MultipartEncoder(
                 {
                     "file": ("message", msg.read(), "application/octet-stream"),
                 }
@@ -181,7 +183,7 @@ class GridHTTPConnection(HTTPConnection):
             }
 
             resp = session.post(
-                self.base_url + GridHTTPConnection.SYFT_MULTIPART_ROUTE,
+                self.base_url + GridHTTPConnection.SYFT_ROUTE_STREAM,
                 headers=headers,
                 data=form,
             )

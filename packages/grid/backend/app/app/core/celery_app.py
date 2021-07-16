@@ -13,5 +13,5 @@ celery_app = Celery(
 celery_app.conf.result_backend = "rpc://"
 celery_app.conf.result_persistent = True
 celery_app.conf.task_routes = {
-    "app.worker.add_num": "main-queue",
+    "app.worker.msg_without_reply": "main-queue",
 }

@@ -3,9 +3,7 @@ from raven import Client
 
 # syft absolute
 from syft import deserialize
-from syft.core.common import UID
-from syft.core.store.storeable_object import StorableObject
-from syft.lib.python import Int
+from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 
 # grid absolute
 from app.core.celery_app import celery_app
@@ -16,32 +14,13 @@ client_sentry = Client(settings.SENTRY_DSN)
 
 
 @celery_app.task(acks_late=True)
-def add_num(arg_bytes_str: str) -> None:
+def msg_without_reply(msg_bytes_str: str) -> None:
     # use latin-1 instead of utf-8 because our bytes might not be an even number
-    arg_bytes = bytes(arg_bytes_str, "latin-1")
-    args = deserialize(arg_bytes, from_bytes=True)
-
-    num = args["num"]
-    id_at_location = args["id_at_location"]
-    verify_key = args["verify_key"]
-
-    # stdlib
-    import random
-
-    rand = round(random.random() * 10)
-    new_num = num + rand
-    print(f"added {rand} to {num} == {new_num}")
-    result = StorableObject(
-        id=id_at_location,
-        data=new_num,
-        tags=[],
-        description="",
-        search_permissions={verify_key: None},
-        read_permissions={verify_key: None},
-    )
-
-    # stdlib
-    import time
-
-    time.sleep(10)
-    node.store[id_at_location] = result
+    msg_bytes = bytes(msg_bytes_str, "latin-1")
+    obj_msg = deserialize(blob=msg_bytes, from_bytes=True)
+    if isinstance(obj_msg, SignedImmediateSyftMessageWithoutReply):
+        node.recv_immediate_msg_without_reply(msg=obj_msg)
+    else:
+        raise Exception(
+            f"This worker can only handle SignedImmediateSyftMessageWithoutReply. {msg_bytes_str}"
+        )

@@ -14,6 +14,7 @@ from typing_extensions import final
 # relative
 from ...... import serialize
 from ......lib.python import Dict
+from ......lib.python import Int
 from ......proto.core.node.common.service.remote_add_service_pb2 import (
     RemoteAddMessage as RemoteAddMessage_PB,
 )
@@ -22,6 +23,7 @@ from .....common.serde.deserialize import _deserialize
 from .....common.serde.serializable import bind_protobuf
 from .....common.uid import UID
 from .....io.address import Address
+from .....store.storeable_object import StorableObject
 from ....abstract.node import AbstractNode
 from ..node_service import ImmediateNodeServiceWithoutReply
 
@@ -67,20 +69,23 @@ class RemoteAddService(ImmediateNodeServiceWithoutReply):
     def process(
         node: AbstractNode, msg: RemoteAddMessage, verify_key: VerifyKey
     ) -> None:
-        # grid absolute
-        from app.core.celery_app import celery_app
+        # stdlib
+        import random
 
-        args = Dict(
-            {
-                "num": msg.num,
-                "id_at_location": msg.id_at_location,
-                "verify_key": verify_key,
-            }
+        rand = round(random.random() * 10)
+        new_num = Int(msg.num + rand)
+
+        print(f"added {rand} to {msg.num} == {new_num}")
+        result = StorableObject(
+            id=msg.id_at_location,
+            data=new_num,
+            tags=[],
+            description="",
+            search_permissions={verify_key: None},
+            read_permissions={verify_key: None},
         )
 
-        # use latin-1 instead of utf-8 because our bytes might not be an even number
-        arg_bytes_str = serialize(args, to_bytes=True).decode("latin-1")
-        celery_app.send_task("app.worker.add_num", args=[arg_bytes_str])
+        node.store[msg.id_at_location] = result
 
     @staticmethod
     def message_handler_types() -> List[Type[RemoteAddMessage]]:

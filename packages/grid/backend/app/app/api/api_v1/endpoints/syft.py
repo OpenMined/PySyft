@@ -14,6 +14,7 @@ from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 
 # grid absolute
 from app.core.celery_app import celery_app
+from app.core.config import settings
 from app.core.node import node
 
 router = APIRouter()
@@ -34,9 +35,7 @@ async def syft_route(
     #    limit: int = 100,
     #    current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
-
     data = await request.body()
-    print(data)
     obj_msg = deserialize(blob=data, from_bytes=True)
     if isinstance(obj_msg, SignedImmediateSyftMessageWithReply):
         reply = node.recv_immediate_msg_with_reply(msg=obj_msg)
@@ -57,11 +56,22 @@ async def syft_route(
     request: Request,
 ) -> Any:
     data = await request.body()
-    obj_msg = deserialize(blob=data, from_bytes=True)
-    if isinstance(obj_msg, SignedImmediateSyftMessageWithReply):
-        raise Exception("MessageWithReply not supported on the stream endpoint")
-    elif isinstance(obj_msg, SignedImmediateSyftMessageWithoutReply):
-        node.recv_immediate_msg_without_reply(msg=obj_msg)
+
+    if settings.STREAM_QUEUE:
+        print("Queuing streaming message for processing on worker node")
+        # use latin-1 instead of utf-8 because our bytes might not be an even number
+        msg_bytes_str = data.decode("latin-1")
+        try:
+            celery_app.send_task("app.worker.msg_without_reply", args=[msg_bytes_str])
+        except Exception as e:
+            print(f"Failed to queue work on streaming endpoint. {msg_bytes_str}")
     else:
-        raise Exception("MessageWithReply not supported on the stream endpoint")
+        print("Processing streaming message on web node")
+        obj_msg = deserialize(blob=data, from_bytes=True)
+        if isinstance(obj_msg, SignedImmediateSyftMessageWithReply):
+            raise Exception("MessageWithReply not supported on the stream endpoint")
+        elif isinstance(obj_msg, SignedImmediateSyftMessageWithoutReply):
+            node.recv_immediate_msg_without_reply(msg=obj_msg)
+        else:
+            raise Exception("MessageWithReply not supported on the stream endpoint")
     return ""

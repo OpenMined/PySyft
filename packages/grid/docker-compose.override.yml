@@ -105,6 +105,7 @@ services:
       - SYFT_USE_UVLOOP=0
       - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
       - NODE_TYPE=${NODE_TYPE?Variable not set}
+      - STREAM_QUEUE=1
     build:
       context: ./backend
       dockerfile: backend.dockerfile
