@@ -1,6 +1,9 @@
 # future
 from __future__ import annotations
 
+# stdlib
+from typing import Any
+
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
@@ -14,7 +17,7 @@ from ..common.serde.deserialize import _deserialize as deserialize
 from ..common.serde.serializable import bind_protobuf
 from ..common.serde.serialize import _serialize as serialize
 from .fixed_precision_tensor_ancestor import FixedPrecisionTensorAncestor
-from .passthrough import PassthroughTensor
+from .passthrough import PassthroughTensor  # type: ignore
 from .smpc.mpc_tensor_ancestor import MPCTensorAncestor
 
 
@@ -25,7 +28,7 @@ class Tensor(
     FixedPrecisionTensorAncestor,
     Serializable,
 ):
-    def __init__(self, child):
+    def __init__(self, child: Any) -> None:
         """data must be a list of numpy array"""
 
         if isinstance(child, list):

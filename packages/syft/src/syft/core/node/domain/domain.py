@@ -77,7 +77,6 @@ class Domain(Node):
         self.immediate_services_without_reply.append(RequestService)
         self.immediate_services_without_reply.append(AcceptOrDenyRequestService)
         self.immediate_services_without_reply.append(UpdateRequestHandlerService)
-        self.immediate_services_without_reply.append(PublishScalarsService)
 
         self.immediate_services_with_reply.append(RequestAnswerMessageService)
         self.immediate_services_with_reply.append(GetAllRequestsService)

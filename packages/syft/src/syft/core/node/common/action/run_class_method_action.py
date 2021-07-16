@@ -166,12 +166,12 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     "seed": 42,
                     "node": node,
                 }  # TODO: the seed should be sent by the orchestrator
-                actions = func(self._self.id_at_location, *args_id, **kwargs)
+                actions = func(self._self.id_at_location, *args_id, **kwargs)  # type: ignore
                 actions = SMPCAction.filter_actions_after_rank(
                     resolved_self.data, actions
                 )
 
-                client = node.get_client()
+                client = node.get_client()  # type: ignore
                 for action in actions:
                     client.send_immediate_msg_without_reply(msg=action)
                 return

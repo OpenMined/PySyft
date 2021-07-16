@@ -1,24 +1,20 @@
 # stdlib
 import operator
-import sys
 
 # third party
 import numpy as np
 import pytest
-import torch
 
 # syft absolute
 import syft as sy
-from syft import logger
 from syft.core.tensor.smpc.mpc_tensor import MPCTensor
 from syft.core.tensor.smpc.share_tensor import ShareTensor
-from syft.core.tensor.tensor import Tensor
 
 vms = [sy.VirtualMachine(name=name) for name in ["alice", "bob", "theo", "andrew"]]
 clients = [vm.get_client() for vm in vms]
 
 
-def test_remote_sharing():
+def test_remote_sharing() -> None:
     value = np.array([[1, 2, 3, 4, -5]], dtype=np.int64)
     remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
 
@@ -34,7 +30,7 @@ def test_remote_sharing():
 
 
 @pytest.mark.parametrize("op_str", ["add", "sub"])
-def test_mpc_private_op(op_str):
+def test_mpc_private_op(op_str: str) -> None:
     value_1 = np.array([[1, 2, 3, 4, -5]], dtype=np.int64)
     value_2 = np.array([10], dtype=np.int64)
 

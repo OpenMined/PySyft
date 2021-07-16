@@ -1,17 +1,21 @@
-HANDLED_FUNCTIONS = {}
+# stdlib
+from typing import Any
+from typing import Dict
+
+HANDLED_FUNCTIONS: Dict[Any, Any] = {}
 
 
-def query_implementation(tensor_type, func):
+def query_implementation(tensor_type: Any, func: Any) -> Any:
     name = func.__name__
     cache = HANDLED_FUNCTIONS[tensor_type]
     if name in cache:
         return HANDLED_FUNCTIONS[tensor_type][func.__name__]
-    here = HANDLED_FUNCTIONS
+
     return None
 
 
-def implements(tensor_type, np_function):
-    def decorator(func):
+def implements(tensor_type: Any, np_function: Any) -> Any:
+    def decorator(func: Any) -> Any:
         if tensor_type not in HANDLED_FUNCTIONS:
             HANDLED_FUNCTIONS[tensor_type] = {}
 

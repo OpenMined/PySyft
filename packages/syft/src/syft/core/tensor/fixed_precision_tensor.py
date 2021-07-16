@@ -1,3 +1,7 @@
+# stdlib
+from typing import Any
+from typing import Optional
+
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
@@ -17,7 +21,9 @@ from ..common.serde.serialize import _serialize as serialize
 
 @bind_protobuf
 class FixedPrecisionTensor(PassthroughTensor, Serializable):
-    def __init__(self, value=None, base=10, precision=3):
+    def __init__(
+        self, value: Optional[Any] = None, base: int = 10, precision: int = 3
+    ) -> None:
         self._base = base
         self._precision = precision
         self._scale = base ** precision
@@ -26,7 +32,7 @@ class FixedPrecisionTensor(PassthroughTensor, Serializable):
             encoded_value = fpt_value.astype(np.int64)
             super().__init__(encoded_value)
 
-    def decode(self):
+    def decode(self) -> Any:
         correction = (self.child < 0).astype(np.int64)
         dividend = self.child // self._scale - correction
         remainder = self.child % self._scale
@@ -34,12 +40,12 @@ class FixedPrecisionTensor(PassthroughTensor, Serializable):
         value = dividend.astype(np.float32) + remainder.astype(np.float32) / self._scale
         return value
 
-    def __add__(self, other):
+    def __add__(self, other: Any) -> "FixedPrecisionTensor":
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)
         res.child = self.child + other.child
         return res
 
-    def __sub__(self, other):
+    def __sub__(self, other: Any) -> "FixedPrecisionTensor":
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)
         res.child = self.child - other.child
         return res

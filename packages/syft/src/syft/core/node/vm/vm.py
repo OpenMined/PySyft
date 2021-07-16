@@ -1,4 +1,5 @@
 # stdlib
+from typing import Any
 from typing import Optional
 from typing import Union
 
@@ -97,7 +98,7 @@ class VirtualMachine(Node):
     def __hash__(self) -> int:
         return hash(self.vm.id)
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, VirtualMachine):
             return False
 

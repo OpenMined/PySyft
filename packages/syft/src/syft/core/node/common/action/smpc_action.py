@@ -1,5 +1,8 @@
 # stdlib
 import operator
+from typing import Any
+from typing import Callable
+from typing import Dict
 from typing import List
 from typing import Optional
 from uuid import UUID
@@ -19,7 +22,6 @@ from .....proto.core.node.common.action.smpc_action_pb2 import (
     SMPCAction as SMPCAction_PB,
 )
 from ....common.serde.deserialize import _deserialize
-from ....common.serde.serializable import Serializable
 from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
@@ -31,138 +33,19 @@ from ...common.action.common import ImmediateActionWithoutReply
 MAP_FUNC_TO_NR_GENERATOR_INVOKES = {"__add__": 0, "__mul__": 0, "__sub__": 0}
 
 
-def smpc_add(self_id, other_id, seed, node):
-    generator = np.random.default_rng(seed)
-
-    for _ in range(MAP_FUNC_TO_NR_GENERATOR_INVOKES["__add__"]):
-        generator.bytes(16)
-
-    result_id = UID(UUID(bytes=generator.bytes(16)))
-    other = node.store[other_id].data
-
-    actions = []
-    if isinstance(other, ShareTensor):
-        # All parties should add the other share if empty list
-        actions.append(
-            SMPCAction(
-                "mpc_add",
-                self_id=self_id,
-                args_id=[other_id],
-                kwargs_id={},
-                ranks_to_run_action=[],
-                result_id=result_id,
-                address=node.address,
-            )
-        )
-    else:
-        # Only rank 0 (the first party) would add that public value
-        actions.append(
-            SMPCAction(
-                "mpc_add",
-                self_id=self_id,
-                args_id=[other_id],
-                kwargs_id={},
-                ranks_to_run_action=[0],
-                result_id=result_id,
-                address=node.address,
-            )
-        )
-
-    return actions
-
-
-def smpc_sub(self_id, other_id, seed, node):
-    generator = np.random.default_rng(seed)
-
-    for _ in range(MAP_FUNC_TO_NR_GENERATOR_INVOKES["__sub__"]):
-        generator.bytes(16)
-
-    result_id = UID(UUID(bytes=generator.bytes(16)))
-    other = node.store[other_id].data
-
-    actions = []
-    if isinstance(other, ShareTensor):
-        # All parties should add the other share if empty list
-        actions.append(
-            SMPCAction(
-                "mpc_sub",
-                self_id=self_id,
-                args_id=[other_id],
-                kwargs_id={},
-                ranks_to_run_action=[],
-                result_id=result_id,
-                address=node.address,
-            )
-        )
-    else:
-        # Only rank 0 (the first party) would add that public value
-        actions.append(
-            SMPCAction(
-                "mpc_sub",
-                self_id=self_id,
-                args_id=[other_id],
-                kwargs_id={},
-                ranks_to_run_action=[0],
-                result_id=result_id,
-                address=node.address,
-            )
-        )
-
-    return actions
-
-
-def smpc_mul(self_id, other_id, seed, node):
-    generator = np.random.default_rng(seed)
-
-    for _ in range(MAP_FUNC_TO_NR_GENERATOR_INVOKES["__mul__"]):
-        generator.bytes(16)
-
-    result_id = UID(UUID(bytes=generator.bytes(16)))
-    other = node.store[other_id].data
-
-    actions = []
-    if isinstance(other, ShareTensor):
-        raise ValueError("Not yet implemented Private Multiplication")
-    else:
-        # All ranks should multiply by that public value
-        actions.append(
-            SMPCAction(
-                "mpc_mul",
-                self_id=self_id,
-                args_id=[other_id],
-                kwargs_id={},
-                ranks_to_run_action=[],
-                result_id=result_id,
-                address=node.address,
-            )
-        )
-
-    return actions
-
-
-MAP_FUNC_TO_ACTION = {"__add__": smpc_add, "__mul__": smpc_mul, "__sub__": smpc_sub}
-
-
-_MAP_ACTION_TO_FUNCTION = {
-    "mpc_add": operator.add,
-    "mpc_sub": operator.sub,
-    "mpc_mul": operator.mul,
-}
-
-
 @bind_protobuf
 class SMPCAction(ImmediateActionWithoutReply):
     def __init__(
         self,
-        name_action,
-        self_id,
-        args_id,
-        kwargs_id,
-        result_id,
+        name_action: str,
+        self_id: UID,
+        args_id: List[UID],
+        kwargs_id: Dict[str, UID],
+        result_id: UID,
         address: Address,
         ranks_to_run_action: Optional[List[int]] = None,
         msg_id: Optional[UID] = None,
-    ):
+    ) -> None:
         self.name_action = name_action
         self.self_id = self_id
         self.args_id = args_id
@@ -174,22 +57,37 @@ class SMPCAction(ImmediateActionWithoutReply):
         super().__init__(address=address, msg_id=msg_id)
 
     @staticmethod
-    def filter_actions_after_rank(rank, actions):
-        return [
-            action
-            for action in actions
-            if action.ranks_to_run_action == [] or rank in action.ranks_to_run_action
-        ]
+    def filter_actions_after_rank(
+        rank: int, actions: List["SMPCAction"]
+    ) -> List["SMPCAction"]:
+        res_actions = []
+        for action in actions:
+            if action.ranks_to_run_action is None:
+                raise ValueError(
+                    "Attribute ranks_to_run_action should not be None when filtering"
+                )
+
+            if action.ranks_to_run_action == [] or rank in action.ranks_to_run_action:
+                res_actions.append(action)
+        return res_actions
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         func = _MAP_ACTION_TO_FUNCTION[self.name_action]
-
-        args = None
-        kwargs = None
         store_object_self = node.store.get_object(key=self.self_id)
+        print("Helllloooo")
+        if store_object_self is None:
+            raise KeyError("Object not already in store")
+
+        print(self.name_action)
         _self = store_object_self.data
         args = [node.store[arg_id].data for arg_id in self.args_id]
-        kwargs = {key: node.store[kwarg_id].data for key, kwarg_id in self.kwargs_id}
+        kwargs = {}
+        for key, kwarg_id in self.kwargs_id.items():
+            data = node.store[kwarg_id].data
+            if data is None:
+                raise KeyError(f"Key {key} is not available")
+
+            kwargs[key] = data
         (
             upcasted_args,
             upcasted_kwargs,
@@ -227,7 +125,9 @@ class SMPCAction(ImmediateActionWithoutReply):
         node.store[self.id_at_location] = result
 
     @staticmethod
-    def get_action_generator_from_op(operation_str):
+    def get_action_generator_from_op(
+        operation_str: str,
+    ) -> Callable[[UID, UID, int, Any], Any]:
         return MAP_FUNC_TO_ACTION[operation_str]
 
     def _object2proto(self) -> SMPCAction_PB:
@@ -297,3 +197,126 @@ class SMPCAction(ImmediateActionWithoutReply):
         """
 
         return SMPCAction_PB
+
+
+def smpc_add(self_id: UID, other_id: UID, seed: int, node: Any) -> List[SMPCAction]:
+    generator = np.random.default_rng(seed)
+
+    for _ in range(MAP_FUNC_TO_NR_GENERATOR_INVOKES["__add__"]):
+        generator.bytes(16)
+
+    result_id = UID(UUID(bytes=generator.bytes(16)))
+    other = node.store[other_id].data
+
+    actions = []
+    if isinstance(other, ShareTensor):
+        # All parties should add the other share if empty list
+        actions.append(
+            SMPCAction(
+                "mpc_add",
+                self_id=self_id,
+                args_id=[other_id],
+                kwargs_id={},
+                ranks_to_run_action=[],
+                result_id=result_id,
+                address=node.address,
+            )
+        )
+    else:
+        # Only rank 0 (the first party) would add that public value
+        actions.append(
+            SMPCAction(
+                "mpc_add",
+                self_id=self_id,
+                args_id=[other_id],
+                kwargs_id={},
+                ranks_to_run_action=[0],
+                result_id=result_id,
+                address=node.address,
+            )
+        )
+
+    return actions
+
+
+def smpc_sub(self_id: UID, other_id: UID, seed: int, node: Any) -> List[SMPCAction]:
+    generator = np.random.default_rng(seed)
+
+    for _ in range(MAP_FUNC_TO_NR_GENERATOR_INVOKES["__sub__"]):
+        generator.bytes(16)
+
+    result_id = UID(UUID(bytes=generator.bytes(16)))
+    other = node.store[other_id].data
+
+    actions = []
+    if isinstance(other, ShareTensor):
+        # All parties should add the other share if empty list
+        actions.append(
+            SMPCAction(
+                "mpc_sub",
+                self_id=self_id,
+                args_id=[other_id],
+                kwargs_id={},
+                ranks_to_run_action=[],
+                result_id=result_id,
+                address=node.address,
+            )
+        )
+    else:
+        # Only rank 0 (the first party) would add that public value
+        actions.append(
+            SMPCAction(
+                "mpc_sub",
+                self_id=self_id,
+                args_id=[other_id],
+                kwargs_id={},
+                ranks_to_run_action=[0],
+                result_id=result_id,
+                address=node.address,
+            )
+        )
+
+    return actions
+
+
+def smpc_mul(self_id: UID, other_id: UID, seed: int, node: Any) -> List[SMPCAction]:
+    generator = np.random.default_rng(seed)
+
+    for _ in range(MAP_FUNC_TO_NR_GENERATOR_INVOKES["__mul__"]):
+        generator.bytes(16)
+
+    result_id = UID(UUID(bytes=generator.bytes(16)))
+    other = node.store[other_id].data
+
+    actions = []
+    if isinstance(other, ShareTensor):
+        raise ValueError("Not yet implemented Private Multiplication")
+    else:
+        # All ranks should multiply by that public value
+        actions.append(
+            SMPCAction(
+                "mpc_mul",
+                self_id=self_id,
+                args_id=[other_id],
+                kwargs_id={},
+                ranks_to_run_action=[],
+                result_id=result_id,
+                address=node.address,
+            )
+        )
+
+    return actions
+
+
+MAP_FUNC_TO_ACTION: Dict[str, Callable[[UID, UID, int, Any], List[SMPCAction]]] = {
+    "__add__": smpc_add,
+    "__mul__": smpc_mul,
+    "__sub__": smpc_sub,
+}
+
+
+_MAP_ACTION_TO_FUNCTION: Dict[str, Callable[..., Any]] = {
+    "mpc_add": operator.add,
+    "mpc_sub": operator.sub,
+    "mpc_mul": operator.mul,
+}
