@@ -13,7 +13,11 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
+from uuid import UUID
 import warnings
+
+# third party
+import numpy as np
 
 # syft relative
 from .. import ast
@@ -175,14 +179,9 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
         Returns:
             Pointer to object returned by class method.
         """
-        # stdlib
-        from uuid import UUID
 
-        # third party
-        import numpy as np
-
-        # syft absolute
-        from syft.core.node.common.action.smpc_action import (
+        # syft relative
+        from ..core.node.common.action.smpc_action import (
             MAP_FUNC_TO_NR_GENERATOR_INVOKES,
         )
 
