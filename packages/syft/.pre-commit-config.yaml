@@ -27,7 +27,7 @@ repos:
         # - darglint
         exclude: ^(packages/syft/src/syft/proto|packages/syft/examples/duet|packages/syft-libs/\S*/proto)
   - repo: https://github.com/psf/black
-    rev: 21.6b0
+    rev: 21.7b0
     hooks:
       - id: black
         exclude: ^(packages/syft/src/syft/proto|examples/duet|packages/syft/examples/duet|packages/syft-libs\S*/proto)
@@ -35,7 +35,7 @@ repos:
     rev: v0.910
     hooks:
       - id: mypy
-        exclude: ^(packages/syft/src/syft/proto|packages/syft/tests/syft/lib/python|packages/syft/examples/duet|packages/syft/examples/duet|packages/syft-libs/\S*/proto|packages/syft-libs/\S*/tests/conftest.py)
+        exclude: ^(packages/syft/src/syft/proto|packages/syft/tests/syft/lib/python|packages/syft/examples/duet|packages/syft/examples/duet|packages/syft-libs/\S*/proto|packages/syft-libs/\S*/tests/conftest.py|packages/syft-libs/setup.py)
         args: [
             "--ignore-missing-imports",
             "--scripts-are-modules",

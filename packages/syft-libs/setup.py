@@ -16,6 +16,8 @@ for p in Path().glob("*/src/syft/*"):
     libs.append(p.stem)
     package_dir[f"syft.{p.stem}"] = str(p)
 
+print(package_dir, packages, libs)
+
 setuptools.setup(
     name="syft.libs",
     version="0.0.1",

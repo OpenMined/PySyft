@@ -2,15 +2,15 @@
 from typing import Dict
 from typing import Type
 
+# third party
+import statsmodels.genmod
+
 # syft absolute
 from syft.lib.python.primitive_factory import PrimitiveFactory
 from syft.lib.python.string import String
 
 # syft relative
 from ..proto.family_pb2 import FamilyProto  # type: ignore
-
-import statsmodels.genmod
-
 
 FAMILY_2_STR: Dict[Type[statsmodels.genmod.families.family.Family], str] = {
     statsmodels.genmod.families.family.Binomial: "Binomial",

@@ -1,17 +1,17 @@
 # stdlib
-import importlib
 from argparse import ArgumentParser
+import importlib
 from pathlib import Path
 from typing import List
 
 # third party
-import pyscaffold.dependencies as deps
 from configupdater.configupdater import ConfigUpdater
 from pyscaffold import structure
 from pyscaffold.actions import Action
 from pyscaffold.actions import ActionParams
 from pyscaffold.actions import ScaffoldOpts
 from pyscaffold.actions import Structure
+import pyscaffold.dependencies as deps
 from pyscaffold.extensions import Extension
 from pyscaffold.extensions import include
 from pyscaffold.extensions.no_skeleton import NoSkeleton
