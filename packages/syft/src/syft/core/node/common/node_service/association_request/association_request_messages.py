@@ -15,6 +15,7 @@ from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.serde.deserialize import _deserialize
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
+from syft.core.node.common.client import AbstractNodeClient
 from syft.core.node.common.client import Client
 from syft.lib.python import Dict as SyftDict
 from syft.proto.grid.messages.association_messages_pb2 import (
@@ -51,8 +52,8 @@ from ......core.common.serde.serializable import bind_protobuf
 class SendAssociationRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
-        source,
-        target,
+        source: AbstractNodeClient,
+        target: AbstractNodeClient,
         address: Address,
         reply_to: Address,
         metadata: Dict[str, str],
@@ -215,9 +216,9 @@ class RespondAssociationRequestMessage(ImmediateSyftMessageWithReply):
         self,
         address: Address,
         response: str,
+        reply_to: Address,
         source: Client,
         target: Client,
-        reply_to: Address,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -507,11 +508,11 @@ class GetAssociationRequestsResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        content: List[Dict],
+        metadatas: List[Dict],
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
-        self.content = content
+        self.metadatas = metadatas
 
     def _object2proto(self) -> GetAssociationRequestsResponse_PB:
         """Returns a protobuf serialization of self.
@@ -529,7 +530,12 @@ class GetAssociationRequestsResponse(ImmediateSyftMessageWithoutReply):
             msg_id=serialize(self.id),
             address=serialize(self.address),
         )
-        _ = [msg.content.append(serialize(content)) for content in self.content]
+
+        metadata_constructor = GetAssociationRequestsResponse_PB.metadata_container
+        _ = [
+            msg.metadatas.append(metadata_constructor(metadata=metadata))
+            for metadata in self.metadatas
+        ]
         return msg
 
     @staticmethod
@@ -548,7 +554,10 @@ class GetAssociationRequestsResponse(ImmediateSyftMessageWithoutReply):
         return GetAssociationRequestsResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            content=[_deserialize(content) for content in proto.content],
+            metadatas=[
+                dict(metadata_container.metadata)
+                for metadata_container in proto.metadatas
+            ],
         )
 
     @staticmethod

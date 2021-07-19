@@ -55,10 +55,10 @@ class RequestAPI:
 
     def all(self, pandas: bool = False) -> Union[DataFrame, Dict[Any, Any]]:
         result = [
-            content.upcast()
+            content
             for content in self.perform_api_request(
                 syft_msg=self.__get_all_message
-            ).content
+            ).metadatas
         ]
         if pandas:
             result = DataFrame(result)

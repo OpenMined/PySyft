@@ -60,8 +60,12 @@ message GetAssociationRequestsMessage {
 }
 
 message GetAssociationRequestsResponse {
+  message metadata_container{
+    map<string, string> metadata = 1;
+  }
+
   syft.core.common.UID msg_id = 1;
-  repeated syft.lib.python.Dict content = 2;
+  repeated metadata_container metadatas = 2;
   syft.core.io.Address address = 4;
 }
 

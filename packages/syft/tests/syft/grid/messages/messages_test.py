@@ -19,66 +19,6 @@ from syft.core.node.common.node_service.role_manager import role_manager_message
 from syft.core.node.common.node_service.tensor_manager import tensor_manager_messages
 
 messages = {
-    # association_request_messages
-    "DeleteAssociationRequest": {
-        "module": association_request_messages,
-        "request_content": {"association_request_id": "21656565"},
-        "response_content": {"msg": "Association Request Deleted status_codefully!"},
-    },
-    "GetAssociationRequest": {
-        "module": association_request_messages,
-        "request_content": {"association_request_id": "87564178"},
-        "response_content": {
-            "entity": "OpenMined",
-            "entity-type": "Network",
-            "status": "pending",
-            "date": "05/12/2022",
-        },
-    },
-    "GetAssociationRequests": {
-        "module": association_request_messages,
-        "request_content": {},
-        "response_content": {
-            "association-requests": [
-                {
-                    "entity": "OpenMined",
-                    "entity-type": "Network",
-                    "status": "pending",
-                    "date": "05/12/2022",
-                },
-                {
-                    "entity": "Hospital-A",
-                    "entity-type": "Domain",
-                    "status": "pending",
-                    "date": "09/10/2022",
-                },
-                {
-                    "entity": "OpenMined",
-                    "entity-type": "Network",
-                    "status": "pending",
-                    "date": "07/11/2022",
-                },
-            ]
-        },
-    },
-    "ReceiveAssociationRequest": {
-        "module": association_request_messages,
-        "request_content": {},
-        "response_content": {},
-    },
-    "RespondAssociationRequest": {
-        "module": association_request_messages,
-        "request_content": {"association_request_id": "87564178", "status": "accept"},
-        "response_content": {"msg": "Response registered status_codefully!"},
-    },
-    "SendAssociationRequest": {
-        "module": association_request_messages,
-        "request_content": {
-            "domain-name": "My-Domain",
-            "domain-address": "http://url:5000",
-        },
-        "response_content": {"msg": "Association Request Accepted status_codefully!"},
-    },
     # dataset_manager_messages
     "CreateDataset": {
         "module": dataset_manager_messages,

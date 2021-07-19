@@ -220,7 +220,7 @@ def get_all_association_request_msg(
         association_requests = node.association_requests.all()
 
         association_requests_json = [
-            SyftDict(association_request.get_metadata())
+            association_request.get_metadata()
             for association_request in association_requests
         ]
     else:  # Otherwise
@@ -230,7 +230,7 @@ def get_all_association_request_msg(
 
     return GetAssociationRequestsResponse(
         address=msg.reply_to,
-        content=association_requests_json,
+        metadatas=association_requests_json,
     )
 
 
