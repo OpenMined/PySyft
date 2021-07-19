@@ -24,6 +24,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
 
+# syft absolute
+from syft.core.node.common.node_table import Base
+
 # relative
 from ....lib import lib_ast
 from ....logger import debug
@@ -124,7 +127,6 @@ class Node(AbstractNode):
         vm: Optional[Location] = None,
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
-        db_path: Optional[str] = None,
         TableBase: Any = None,
         db_engine: Any = None,
         db: Any = None,
@@ -149,7 +151,8 @@ class Node(AbstractNode):
 
             # If a DB engine isn't provided then
             if db_engine is None:
-                engine = create_engine("sqlite://", echo=False)
+                db_engine = create_engine("sqlite://", echo=False)
+                Base.metadata.create_all(db_engine)
 
             db = sessionmaker(bind=db_engine)()
 

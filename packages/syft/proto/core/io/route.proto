@@ -1,6 +1,7 @@
 syntax = "proto3";
 package syft.core.io;
 
+import "proto/core/common/common_object.proto";
 import "proto/core/io/location.proto";
 import "proto/core/io/connection.proto";
 import "proto/grid/connections/http_connection.proto";

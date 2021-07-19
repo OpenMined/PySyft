@@ -31,11 +31,11 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x19proto/core/io/route.proto\x12\x0csyft.core.io\x1a\x1cproto/core/io/location.proto\x1a\x1eproto/core/io/connection.proto\x1a%proto/core/common/common_object.proto\x1a,proto/grid/connections/http_connection.proto"\xfc\x01\n\tSoloRoute\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x33\n\x0b\x64\x65stination\x18\x02 \x01(\x0b\x32\x1e.syft.core.io.SpecificLocation\x12\x43\n\x12virtual_connection\x18\x03 \x01(\x0b\x32%.syft.core.io.VirtualClientConnectionH\x00\x12\x44\n\x0fgrid_connection\x18\x04 \x01(\x0b\x32).syft.grid.connections.GridHTTPConnectionH\x00\x42\x0c\n\nconnectionb\x06proto3',
+    serialized_pb=b'\n\x19proto/core/io/route.proto\x12\x0csyft.core.io\x1a%proto/core/common/common_object.proto\x1a\x1cproto/core/io/location.proto\x1a\x1eproto/core/io/connection.proto\x1a,proto/grid/connections/http_connection.proto"\xfc\x01\n\tSoloRoute\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x33\n\x0b\x64\x65stination\x18\x02 \x01(\x0b\x32\x1e.syft.core.io.SpecificLocation\x12\x43\n\x12virtual_connection\x18\x03 \x01(\x0b\x32%.syft.core.io.VirtualClientConnectionH\x00\x12\x44\n\x0fgrid_connection\x18\x04 \x01(\x0b\x32).syft.grid.connections.GridHTTPConnectionH\x00\x42\x0c\n\nconnectionb\x06proto3',
     dependencies=[
+        proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_location__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_connection__pb2.DESCRIPTOR,
-        proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_grid_dot_connections_dot_http__connection__pb2.DESCRIPTOR,
     ],
 )
