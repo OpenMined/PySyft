@@ -1,6 +1,9 @@
+# stdlib
 from pathlib import Path
 
-from setuptools import find_namespace_packages, setup
+# third party
+from setuptools import find_namespace_packages
+from setuptools import setup
 
 package_dir = {}
 libs = ["syft"]

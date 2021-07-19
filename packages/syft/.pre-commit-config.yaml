@@ -35,7 +35,7 @@ repos:
     rev: v0.812
     hooks:
       - id: mypy
-        exclude: ^(packages/syft/src/syft/proto|packages/syft/tests/syft/lib/python|packages/syft/examples/duet|packages/syft/examples/duet|packages/syft-libs/\S*/proto|packages/syft-libs/syft-xgboost/tests/conftest.py)
+        exclude: ^(packages/syft/src/syft/proto|packages/syft/tests/syft/lib/python|packages/syft/examples/duet|packages/syft/examples/duet|packages/syft-libs/\S*/proto|packages/syft-libs/syft-xgboost/tests/conftest.py|packages/syft-libs/setup.py)
         args: [
             "--ignore-missing-imports",
             "--scripts-are-modules",

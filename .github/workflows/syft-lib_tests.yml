@@ -113,7 +113,7 @@ jobs:
         shell: bash
         run: |
           pwd
-          find . -type d -name "syft-*" -exec pip install {} \;
+          pip install .
 
       - name: Scan for security issues
         shell: bash
