@@ -1,4 +1,4 @@
-# syft-xgboost
+# syft-statsmodels
 
 Add a short description here!
 
