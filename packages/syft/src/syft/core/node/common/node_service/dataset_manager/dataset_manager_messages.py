@@ -355,7 +355,10 @@ class GetDatasetsResponse(ImmediateSyftMessageWithoutReply):
 
         metadata_container = GetDatasetsResponse_PB.metadata_container
 
-        _ = [msg.metadatas.append(metadata_container(metadata=metadata)) for metadata in self.metadatas]
+        _ = [
+            msg.metadatas.append(metadata_container(metadata=metadata))
+            for metadata in self.metadatas
+        ]
         return msg
 
     @staticmethod
@@ -375,7 +378,10 @@ class GetDatasetsResponse(ImmediateSyftMessageWithoutReply):
         return GetDatasetsResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            metadatas=[dict(metadata_container.metadata) for metadata_container in proto.metadatas],
+            metadatas=[
+                dict(metadata_container.metadata)
+                for metadata_container in proto.metadatas
+            ],
         )
 
     @staticmethod

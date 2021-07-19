@@ -8,7 +8,6 @@ from typing import List
 import pytest
 
 # syft absolute
-import syft
 from syft import deserialize
 from syft import serialize
 from syft.core.io.address import Address
@@ -34,10 +33,7 @@ from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages
     UpdateDatasetMessage,
 )
 
-metadata = {
-    "name": "Dataset",
-    "fields": "age, height, weight"
-}
+metadata = {"name": "Dataset", "fields": "age, height, weight"}
 
 test_suite = [
     (
