@@ -1,21 +1,18 @@
-# stdlib
-from glob import glob
-
 # third party
 from setuptools import find_packages
 from setuptools import setup
 
-DATA_FILES = [
-    ("img", glob("hagrid/img/*.png")),
-]
+DATA_FILES = {
+    "img": ["hagrid/img/*.png"],
+}
 
 setup(
     name="hagrid",
     description="Happy Automation for Grid",
-    version="0.1.0",
+    version="0.1.1",
     author="Andrew Trask <andrew@openmined.org>",
     packages=find_packages(),
-    data_files=DATA_FILES,
+    package_data=DATA_FILES,
     install_requires=[
         "click",
         "names",
