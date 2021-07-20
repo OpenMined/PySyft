@@ -32,18 +32,22 @@ args = parser.parse_args()
 
 def list_submodules(list_name: TypeAny, package_name: TypeAny) -> TypeAny:
     try:
-        for loader, module_name, is_pkg in pkgutil.walk_packages(
-            package_name.__path__, package_name.__name__ + "."
-        ):
+        prefix = package_name.__name__
+        for loader, module_name, is_pkg in pkgutil.walk_packages(package_name.__path__):
+
             if "test" in module_name:
                 continue
                 # inspect.ismodule(__import__('sklearn.neighbors.tests.test_neighbors_tree')) is True
+            module_name = f"{prefix}.{module_name}"
             list_name.append(module_name)
             module_name = __import__(module_name, fromlist="dummylist")
             if is_pkg:
                 list_submodules(list_name, module_name)
     except Exception as e:
-        print(f"list_submodules error:\n package_name = \n{e} ")
+        # print("error with prefix", prefix)
+        # e = e
+
+        print(f"list_submodules error:\n package_name = {package_name.__name__}\n{e} ")
 
 
 def set_classes(
@@ -81,7 +85,11 @@ def set_classes(
 
                 # ToDo: add methods/fuctions in modules to allowlist
                 # Example: `statsmodels.api.add_constant`
-                if inspect.ismethod(t) or inspect.isfunction(t):
+                if (
+                    inspect.ismethod(t)
+                    or inspect.isfunction(t)
+                    or inspect.isgetsetdescriptor(t)
+                ):
                     # print(f't for debug: {t} {module}')
                     is_error, string = get_return_type(t, i)
                     if is_error:
@@ -191,7 +199,11 @@ def dict_allowlist(
                 # print('None')
                 continue
 
-            if inspect.ismethod(t) or inspect.isfunction(t):
+            if (
+                inspect.ismethod(t)
+                or inspect.isfunction(t)
+                or inspect.isgetsetdescriptor(t)
+            ):
                 # print(f't for debug: {t} {module}')
                 is_error, string = get_return_type(t, i)
                 if is_error:
