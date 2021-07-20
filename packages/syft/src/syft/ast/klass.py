@@ -4,6 +4,7 @@
 from enum import Enum
 from enum import EnumMeta
 import inspect
+import secrets
 from types import ModuleType
 from typing import Any
 from typing import Callable as CallableT
@@ -13,7 +14,11 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
+from uuid import UUID
 import warnings
+
+# third party
+import numpy as np
 
 # relative
 from .. import ast
@@ -178,20 +183,20 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
         Returns:
             Pointer to object returned by class method.
         """
-        # stdlib
-        from uuid import UUID
-
-        # third party
-        import numpy as np
-
-        # syft absolute
-        from syft.core.node.common.action.smpc_action_message import (
+        # relative
+        from ..core.node.common.action.smpc_action_message import (
             MAP_FUNC_TO_NR_GENERATOR_INVOKES,
         )
 
-        # TODO: Seed should always be regenerated for every operation and sent
-        seed = 42
-        generator = np.random.default_rng(seed)
+        seed_id_locations = kwargs.get("seed_id_locations", None)
+        if seed_id_locations:
+            raise ValueError(
+                "There should not be any kwargs named seed_id_locations in the kwargs for MPCTensor"
+            )
+
+        seed_id_locations = secrets.randbits(64)
+        kwargs["seed_id_locations"] = seed_id_locations
+        generator = np.random.default_rng(seed_id_locations)
 
         nr_ops = MAP_FUNC_TO_NR_GENERATOR_INVOKES[attr_path_and_name.split(".")[-1]]
         for _ in range(nr_ops):

@@ -1,6 +1,7 @@
 # stdlib
 import itertools
 import operator
+import secrets
 from typing import Any
 from typing import Callable
 from typing import List
@@ -11,6 +12,7 @@ from typing import Tuple
 import numpy as np
 
 # syft absolute
+from syft import logger
 from syft.core.tensor.passthrough import PassthroughTensor
 from syft.core.tensor.smpc.share_tensor import ShareTensor
 
@@ -32,7 +34,13 @@ class MPCTensor(PassthroughTensor):
             raise ValueError("Secret or shares should be populated!")
 
         if seed_shares is None:
-            seed_shares = 42
+            # Allow the user to specify if they want to use a specific seed when generating the shares
+            # ^This is unsecure and should be used with cautioness
+            seed_shares = secrets.randbits(64)
+
+        # TODO: We can get this from the the secret if the secret is local
+        if shape is None:
+            raise ValueError("Shape of the secret should be known")
 
         if secret is not None:
             if parties is None:
@@ -50,9 +58,6 @@ class MPCTensor(PassthroughTensor):
             raise ValueError("Shares should not be None at this step")
 
         res = MPCTensor._mpc_from_shares(shares, parties)
-
-        if shape is None:
-            raise ValueError("Shape of the secret should be known")
 
         self.mpc_shape = shape
 
@@ -126,7 +131,7 @@ class MPCTensor(PassthroughTensor):
 
     @staticmethod
     def _get_shares_from_local_secret(
-        secret: Any, shape: Tuple[int], seed_shares: int, nr_parties: int
+        secret: Any, shape: Tuple[int], nr_parties: int, seed_shares: int
     ) -> List[ShareTensor]:
         shares = []
         for i in range(nr_parties):
@@ -135,7 +140,7 @@ class MPCTensor(PassthroughTensor):
             else:
                 value = None
 
-            remote_share = ShareTensor.generate_przs(
+            local_share = ShareTensor.generate_przs(
                 rank=i,
                 nr_parties=nr_parties,
                 value=value,
@@ -143,7 +148,7 @@ class MPCTensor(PassthroughTensor):
                 seed_shares=seed_shares,
             )
 
-            shares.append(remote_share)
+            shares.append(local_share)
 
         return shares
 

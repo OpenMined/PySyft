@@ -56,7 +56,6 @@ class Tensor(
             tensors = [serialize(self.child)]
 
         return Tensor_PB(
-            obj_type=full_name_with_name(klass=type(self)),
             use_tensors=use_tensors,
             arrays=arrays,
             tensors=tensors,

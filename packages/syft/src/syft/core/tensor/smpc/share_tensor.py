@@ -14,6 +14,7 @@ from syft.core.common.serde.serializable import Serializable
 from syft.core.common.serde.serializable import bind_protobuf
 from syft.core.common.serde.serialize import _serialize as serialize
 from syft.core.tensor.passthrough import PassthroughTensor
+from syft.proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB
 
 # relative
 # syft relative
@@ -23,7 +24,6 @@ from ....proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB
 from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import bind_protobuf
 from ...common.serde.serialize import _serialize as serialize
-from syft.proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB
 
 
 @bind_protobuf
@@ -31,16 +31,13 @@ class ShareTensor(PassthroughTensor, Serializable):
     def __init__(
         self,
         rank: int,
+        seed_shares: int,
         ring_size: int = 2 ** 64,
         value: Optional[Any] = None,
-        seed_ids: Optional[int] = None,
     ) -> None:
-        if seed_ids is None:
-            self.seed_ids = 42
-        else:
-            self.seed_ids = seed_ids
 
-        self.generator_ids = np.random.default_rng(self.seed_ids)
+        self.seed_shares = seed_shares
+        self.generator_ids = np.random.default_rng(self.seed_shares)
         self.rank = rank
         self.ring_size = ring_size
         self.min_value, self.max_value = ShareTensor.compute_min_max_from_ring(
@@ -114,14 +111,14 @@ class ShareTensor(PassthroughTensor, Serializable):
 
         # TODO: Sending the seed and having each party generate the shares is not safe
         # Since the parties would know some of the other parties shares (this might not impose a risk
-        # when shares are not sent between parties -- like private addition/substraction, but it might
+        # when shares are not sent between parties -- like private addition/subtraction, but it might
         # impose for multiplication
         # The secret holder should generate the shares and send them to the other parties
         generator_shares = np.random.default_rng(seed_shares)
 
         share = value.child
         if not isinstance(share, ShareTensor):
-            share = ShareTensor(value=share, rank=rank)
+            share = ShareTensor(value=share, rank=rank, seed_shares=seed_shares)
 
         shares = [
             generator_shares.integers(low=share.min_value, high=share.max_value)

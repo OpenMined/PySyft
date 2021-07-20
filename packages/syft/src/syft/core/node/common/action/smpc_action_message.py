@@ -148,9 +148,9 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
 
 
 def smpc_add(
-    self_id: UID, other_id: UID, seed: int, node: Any
+    self_id: UID, other_id: UID, seed_id_locations: int, node: Any
 ) -> List[SMPCActionMessage]:
-    generator = np.random.default_rng(seed)
+    generator = np.random.default_rng(seed_id_locations)
 
     for _ in range(MAP_FUNC_TO_NR_GENERATOR_INVOKES["__add__"]):
         generator.bytes(16)
@@ -190,9 +190,9 @@ def smpc_add(
 
 
 def smpc_sub(
-    self_id: UID, other_id: UID, seed: int, node: Any
+    self_id: UID, other_id: UID, seed_id_locations: int, node: Any
 ) -> List[SMPCActionMessage]:
-    generator = np.random.default_rng(seed)
+    generator = np.random.default_rng(seed_id_locations)
 
     for _ in range(MAP_FUNC_TO_NR_GENERATOR_INVOKES["__sub__"]):
         generator.bytes(16)
@@ -232,9 +232,9 @@ def smpc_sub(
 
 
 def smpc_mul(
-    self_id: UID, other_id: UID, seed: int, node: Any
+    self_id: UID, other_id: UID, seed_id_locations: int, node: Any
 ) -> List[SMPCActionMessage]:
-    generator = np.random.default_rng(seed)
+    generator = np.random.default_rng(seed_id_locations)
 
     for _ in range(MAP_FUNC_TO_NR_GENERATOR_INVOKES["__mul__"]):
         generator.bytes(16)

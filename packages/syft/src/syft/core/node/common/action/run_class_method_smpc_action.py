@@ -132,10 +132,18 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
 
         method_name = self.path.split(".")[-1]
 
+        seed_id_locations = resolved_kwargs.get("seed_id_locations", None)
+        if seed_id_locations is None:
+            raise ValueError(
+                "Expected 'seed_id_locations' to be in the kwargs to generate id_at_location in a deterministic matter"
+            )
+
+        resolved_kwargs.pop("seed_id_locations")
         actions_generator = SMPCActionMessage.get_action_generator_from_op(method_name)
         args_id = [arg.id_at_location for arg in self.args]
+
         kwargs = {
-            "seed": 42,
+            "seed_id_locations": seed_id_locations,
             "node": node,
         }  # TODO: the seed should be sent by the orchestrator
 
