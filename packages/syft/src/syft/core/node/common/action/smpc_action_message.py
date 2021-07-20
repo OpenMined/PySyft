@@ -19,9 +19,10 @@ from syft import lib
 # syft relative
 from ..... import serialize
 from .....logger import traceback_and_raise
-from .....proto.core.node.common.action.smpc_action_pb2 import (
-    SMPCAction as SMPCAction_PB,
+from .....proto.core.node.common.action.smpc_action_message_pb2 import (
+    SMPCActionMessage as SMPCActionMessage_PB,
 )
+from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
@@ -29,13 +30,12 @@ from ....io.address import Address
 from ....store.storeable_object import StorableObject
 from ....tensor.smpc.share_tensor import ShareTensor
 from ...abstract.node import AbstractNode
-from ...common.action.common import ImmediateActionWithoutReply
 
 MAP_FUNC_TO_NR_GENERATOR_INVOKES = {"__add__": 0, "__mul__": 0, "__sub__": 0}
 
 
 @bind_protobuf
-class SMPCAction(ImmediateActionWithoutReply):
+class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         name_action: str,
@@ -59,8 +59,8 @@ class SMPCAction(ImmediateActionWithoutReply):
 
     @staticmethod
     def filter_actions_after_rank(
-        rank: int, actions: List["SMPCAction"]
-    ) -> List["SMPCAction"]:
+        rank: int, actions: List["SMPCActionMessage"]
+    ) -> List["SMPCActionMessage"]:
         res_actions = []
         for action in actions:
             if action.ranks_to_run_action is None:
@@ -72,66 +72,13 @@ class SMPCAction(ImmediateActionWithoutReply):
                 res_actions.append(action)
         return res_actions
 
-    def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
-        func = _MAP_ACTION_TO_FUNCTION[self.name_action]
-        store_object_self = node.store.get_object(key=self.self_id)
-        print("Helllloooo")
-        if store_object_self is None:
-            raise KeyError("Object not already in store")
-
-        print(self.name_action)
-        _self = store_object_self.data
-        args = [node.store[arg_id].data for arg_id in self.args_id]
-        kwargs = {}
-        for key, kwarg_id in self.kwargs_id.items():
-            data = node.store[kwarg_id].data
-            if data is None:
-                raise KeyError(f"Key {key} is not available")
-
-            kwargs[key] = data
-        (
-            upcasted_args,
-            upcasted_kwargs,
-        ) = lib.python.util.upcast_args_and_kwargs(args, kwargs)
-        result = func(_self, *upcasted_args, **upcasted_kwargs)
-
-        if lib.python.primitive_factory.isprimitive(value=result):
-            # Wrap in a SyPrimitive
-            result = lib.python.primitive_factory.PrimitiveFactory.generate_primitive(
-                value=result, id=self.id_at_location
-            )
-        else:
-            # TODO: overload all methods to incorporate this automatically
-            if hasattr(result, "id"):
-                try:
-                    if hasattr(result, "_id"):
-                        # set the underlying id
-                        result._id = self.id_at_location
-                    else:
-                        result.id = self.id_at_location
-
-                    if result.id != self.id_at_location:
-                        raise AttributeError("IDs don't match")
-                except AttributeError as e:
-                    err = f"Unable to set id on result {type(result)}. {e}"
-                    traceback_and_raise(Exception(err))
-
-        if not isinstance(result, StorableObject):
-            result = StorableObject(
-                id=self.id_at_location,
-                data=result,
-                read_permissions=store_object_self.read_permissions,
-            )
-
-        node.store[self.id_at_location] = result
-
     @staticmethod
     def get_action_generator_from_op(
         operation_str: str,
     ) -> Callable[[UID, UID, int, Any], Any]:
         return MAP_FUNC_TO_ACTION[operation_str]
 
-    def _object2proto(self) -> SMPCAction_PB:
+    def _object2proto(self) -> SMPCActionMessage_PB:
         """Returns a protobuf serialization of self.
 
         As a requirement of all objects which inherit from Serializable,
@@ -147,7 +94,7 @@ class SMPCAction(ImmediateActionWithoutReply):
             object.
         """
 
-        return SMPCAction_PB(
+        return SMPCActionMessage_PB(
             name_action=self.name_action,
             self_id=serialize(self.self_id),
             args_id=list(map(lambda x: serialize(x), self.args_id)),
@@ -156,7 +103,7 @@ class SMPCAction(ImmediateActionWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(proto: SMPCAction_PB) -> "SMPCAction":
+    def _proto2object(proto: SMPCActionMessage_PB) -> "SMPCActionMessage":
         """Creates a ObjectWithID from a protobuf
 
         As a requirement of all objects which inherit from Serializable,
@@ -170,7 +117,7 @@ class SMPCAction(ImmediateActionWithoutReply):
             if you wish to deserialize an object.
         """
 
-        return SMPCAction(
+        return SMPCActionMessage(
             name_action=proto.name_action,
             self_id=_deserialize(blob=proto.self_id),
             args_id=list(map(lambda x: _deserialize(blob=x), proto.args_id)),
@@ -197,10 +144,12 @@ class SMPCAction(ImmediateActionWithoutReply):
 
         """
 
-        return SMPCAction_PB
+        return SMPCActionMessage_PB
 
 
-def smpc_add(self_id: UID, other_id: UID, seed: int, node: Any) -> List[SMPCAction]:
+def smpc_add(
+    self_id: UID, other_id: UID, seed: int, node: Any
+) -> List[SMPCActionMessage]:
     generator = np.random.default_rng(seed)
 
     for _ in range(MAP_FUNC_TO_NR_GENERATOR_INVOKES["__add__"]):
@@ -213,7 +162,7 @@ def smpc_add(self_id: UID, other_id: UID, seed: int, node: Any) -> List[SMPCActi
     if isinstance(other, ShareTensor):
         # All parties should add the other share if empty list
         actions.append(
-            SMPCAction(
+            SMPCActionMessage(
                 "mpc_add",
                 self_id=self_id,
                 args_id=[other_id],
@@ -226,7 +175,7 @@ def smpc_add(self_id: UID, other_id: UID, seed: int, node: Any) -> List[SMPCActi
     else:
         # Only rank 0 (the first party) would add that public value
         actions.append(
-            SMPCAction(
+            SMPCActionMessage(
                 "mpc_add",
                 self_id=self_id,
                 args_id=[other_id],
@@ -240,7 +189,9 @@ def smpc_add(self_id: UID, other_id: UID, seed: int, node: Any) -> List[SMPCActi
     return actions
 
 
-def smpc_sub(self_id: UID, other_id: UID, seed: int, node: Any) -> List[SMPCAction]:
+def smpc_sub(
+    self_id: UID, other_id: UID, seed: int, node: Any
+) -> List[SMPCActionMessage]:
     generator = np.random.default_rng(seed)
 
     for _ in range(MAP_FUNC_TO_NR_GENERATOR_INVOKES["__sub__"]):
@@ -253,7 +204,7 @@ def smpc_sub(self_id: UID, other_id: UID, seed: int, node: Any) -> List[SMPCActi
     if isinstance(other, ShareTensor):
         # All parties should add the other share if empty list
         actions.append(
-            SMPCAction(
+            SMPCActionMessage(
                 "mpc_sub",
                 self_id=self_id,
                 args_id=[other_id],
@@ -266,7 +217,7 @@ def smpc_sub(self_id: UID, other_id: UID, seed: int, node: Any) -> List[SMPCActi
     else:
         # Only rank 0 (the first party) would add that public value
         actions.append(
-            SMPCAction(
+            SMPCActionMessage(
                 "mpc_sub",
                 self_id=self_id,
                 args_id=[other_id],
@@ -280,7 +231,9 @@ def smpc_sub(self_id: UID, other_id: UID, seed: int, node: Any) -> List[SMPCActi
     return actions
 
 
-def smpc_mul(self_id: UID, other_id: UID, seed: int, node: Any) -> List[SMPCAction]:
+def smpc_mul(
+    self_id: UID, other_id: UID, seed: int, node: Any
+) -> List[SMPCActionMessage]:
     generator = np.random.default_rng(seed)
 
     for _ in range(MAP_FUNC_TO_NR_GENERATOR_INVOKES["__mul__"]):
@@ -295,7 +248,7 @@ def smpc_mul(self_id: UID, other_id: UID, seed: int, node: Any) -> List[SMPCActi
     else:
         # All ranks should multiply by that public value
         actions.append(
-            SMPCAction(
+            SMPCActionMessage(
                 "mpc_mul",
                 self_id=self_id,
                 args_id=[other_id],
@@ -309,7 +262,9 @@ def smpc_mul(self_id: UID, other_id: UID, seed: int, node: Any) -> List[SMPCActi
     return actions
 
 
-MAP_FUNC_TO_ACTION: Dict[str, Callable[[UID, UID, int, Any], List[SMPCAction]]] = {
+MAP_FUNC_TO_ACTION: Dict[
+    str, Callable[[UID, UID, int, Any], List[SMPCActionMessage]]
+] = {
     "__add__": smpc_add,
     "__mul__": smpc_mul,
     "__sub__": smpc_sub,

@@ -24,6 +24,9 @@ from ..core.common.uid import UID
 from ..core.node.common.action.get_or_set_property_action import GetOrSetPropertyAction
 from ..core.node.common.action.get_or_set_property_action import PropertyActions
 from ..core.node.common.action.run_class_method_action import RunClassMethodAction
+from ..core.node.common.action.run_class_method_smpc_action import (
+    RunClassMethodSMPCAction,
+)
 from ..core.node.common.action.save_object_action import SaveObjectAction
 from ..core.node.common.node_service.resolve_pointer_type.resolve_pointer_type_messages import (
     ResolvePointerTypeMessage,
@@ -161,12 +164,12 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
 
         return result
 
-    def run_smpc_class_method(
+    def run_class_smpc_method(
         __self: Any,
         *args: Tuple[Any, ...],
         **kwargs: Any,
     ) -> object:
-        """Run remote class method and get pointer to returned object.
+        """Run remote class method on a SharePointer and get pointer to returned object.
 
         Args:
             *args: Args list of class method.
@@ -182,7 +185,7 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
         import numpy as np
 
         # syft absolute
-        from syft.core.node.common.action.smpc_action import (
+        from syft.core.node.common.action.smpc_action_message import (
             MAP_FUNC_TO_NR_GENERATOR_INVOKES,
         )
 
@@ -195,7 +198,6 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
             generator.bytes(16)
 
         id_at_location = UID(UUID(bytes=generator.bytes(16)))
-        print("Id at location", id_at_location)
 
         # we want to get the return type which matches the attr_path_and_name
         # so we ask lib_ast for the return type name that matches out
@@ -219,7 +221,7 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
             args=downcast_args, kwargs=downcast_kwargs, client=__self.client
         )
 
-        cmd = RunClassMethodAction(
+        cmd = RunClassMethodSMPCAction(
             path=attr_path_and_name,
             _self=__self,
             args=pointer_args,
@@ -240,7 +242,7 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
         return result
 
     if "ShareTensor" in attr_path_and_name:
-        return run_smpc_class_method
+        return run_class_smpc_method
 
     return run_class_method
 

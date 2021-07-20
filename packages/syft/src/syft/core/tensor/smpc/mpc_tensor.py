@@ -92,10 +92,12 @@ class MPCTensor(PassthroughTensor):
             if shape is None:
                 raise ValueError("Shape must be specified when the secret is remote")
             return MPCTensor._get_shares_from_remote_secret(
-                secret, shape, parties, seed_shares
+                secret=secret, shape=shape, parties=parties, seed_shares=seed_shares
             )
 
-        return MPCTensor._get_shares_from_local_secret(secret, nr_parties=len(parties))
+        return MPCTensor._get_shares_from_local_secret(
+            secret=secret, seed_shares=seed_shares, shape=shape, nr_parties=len(parties)
+        )
 
     @staticmethod
     def _get_shares_from_remote_secret(
@@ -124,10 +126,25 @@ class MPCTensor(PassthroughTensor):
 
     @staticmethod
     def _get_shares_from_local_secret(
-        secret: Any, nr_parties: int
+        secret: Any, shape: Tuple[int], seed_shares: int, nr_parties: int
     ) -> List[ShareTensor]:
-        # TODO: ShareTensor needs to have serde serializer/deserializer
-        shares = ShareTensor.generate_shares(secret=secret, nr_shares=nr_parties)
+        shares = []
+        for i in range(nr_parties):
+            if i == nr_parties - 1:
+                value = secret
+            else:
+                value = None
+
+            remote_share = ShareTensor.generate_przs(
+                rank=i,
+                nr_parties=nr_parties,
+                value=value,
+                shape=shape,
+                seed_shares=seed_shares,
+            )
+
+            shares.append(remote_share)
+
         return shares
 
     def reconstruct(self) -> Any:
@@ -186,5 +203,12 @@ class MPCTensor(PassthroughTensor):
 
         new_shape = MPCTensor.__get_shape(self.mpc_shape, other.shape, operator.mul)
         res = MPCTensor(shares=res_shares, shape=new_shape)
+
+        return res
+
+    def __str__(self):
+        res = "MPCTensor"
+        for share in self.child:
+            res = f"{res}\n\t{share}"
 
         return res

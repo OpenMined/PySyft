@@ -298,7 +298,6 @@ class DomainClient(Client):
 
         self.requests = RequestQueueClient(client=self)
 
-        self.accountant = AdversarialAccountant()
         self.post_init()
 
         self.groups = GroupRequestAPI(node=self)
