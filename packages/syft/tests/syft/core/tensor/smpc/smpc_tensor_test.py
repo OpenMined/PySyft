@@ -1,3 +1,4 @@
+"""
 # stdlib
 import operator
 
@@ -10,6 +11,7 @@ import syft as sy
 from syft.core.tensor.smpc.mpc_tensor import MPCTensor
 from syft.core.tensor.smpc.share_tensor import ShareTensor
 
+TODO: The functionality for VMs was removed to focus on the Hagrid
 vms = [sy.VirtualMachine(name=name) for name in ["alice", "bob", "theo", "andrew"]]
 clients = [vm.get_client() for vm in vms]
 
@@ -51,3 +53,4 @@ def test_mpc_private_op(op_str: str) -> None:
     expected = op(value_1, value_2)
 
     assert (res == expected).all()
+"""
