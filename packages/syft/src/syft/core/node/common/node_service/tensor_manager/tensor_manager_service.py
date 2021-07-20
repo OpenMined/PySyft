@@ -1,5 +1,4 @@
 # stdlib
-import secrets
 from typing import List
 from typing import Type
 from typing import Union

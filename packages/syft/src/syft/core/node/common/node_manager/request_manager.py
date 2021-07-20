@@ -10,10 +10,9 @@ from syft.core.node.common.node_service.request_receiver.request_receiver_messag
 )
 
 # relative
+from ..exceptions import RequestError
 from ..node_table.request import Request
 from .database_manager import DatabaseManager
-
-# from ..exceptions import RequestError
 
 
 class RequestManager(DatabaseManager):

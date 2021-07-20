@@ -1,5 +1,4 @@
 # third party
-from sqlalchemy import Column
 from sqlalchemy import JSON
 from sqlalchemy import String
 

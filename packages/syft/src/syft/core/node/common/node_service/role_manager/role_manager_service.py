@@ -1,11 +1,9 @@
 # stdlib
-import secrets
 from typing import List
 from typing import Type
 from typing import Union
 
 # third party
-from nacl.encoding import HexEncoder
 from nacl.signing import VerifyKey
 
 # syft absolute
@@ -183,7 +181,7 @@ class RoleManagerService(ImmediateNodeServiceWithReply):
             DeleteRoleMessage,
         ],
         verify_key: VerifyKey,
-    ) -> Union[SuccessResponseMessage, GetRoleResponse, GetRolesResponse,]:
+    ) -> Union[SuccessResponseMessage, GetRoleResponse, GetRolesResponse]:
         return RoleManagerService.msg_handler_map[type(msg)](
             msg=msg, node=node, verify_key=verify_key
         )

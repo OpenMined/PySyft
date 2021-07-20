@@ -5,7 +5,6 @@ from typing import Union
 import warnings
 
 # relative
-from ..... import deserialize
 from ..... import serialize
 from ...domain.enums import RequestAPIFields
 from ..exceptions import AssociationRequestError
@@ -30,8 +29,6 @@ class AssociationRequestManager(DatabaseManager):
         return result
 
     def create_association_request(self, node, source, target, metadata, status):
-        date = datetime.now()
-
         if super().first(node=node):
             super().delete(node=node)
             warnings.warn("Association request name already exists! Overwriting.")

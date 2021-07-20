@@ -6,7 +6,6 @@ import os
 import time
 from typing import Any
 from typing import Dict as TypeDict
-from typing import Generator
 from typing import List as TypeList
 from typing import Optional
 from typing import Tuple as TypeTuple
@@ -22,7 +21,6 @@ import torch as th
 from torchvision import datasets
 from torchvision import transforms
 from websocket import create_connection
-from xprocess import ProcessStarter
 
 # syft absolute
 import syft as sy

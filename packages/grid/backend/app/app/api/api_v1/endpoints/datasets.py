@@ -55,7 +55,6 @@ def upload_dataset_route(
         resp: JSON structure containing a log message.
     """
     # Map User Key
-    print("Saluuuuut")
     user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
     metadata = json.loads(metadata)
 
@@ -204,14 +203,13 @@ def delete_dataset_route(
 
     # Build Syft Message
     msg = DeleteDatasetMessage(
-        address=domain.address, dataset_id=dataset_id, reply_to=domain.address
+        address=node.address, dataset_id=dataset_id, reply_to=domain.address
     ).sign(signing_key=user_key)
 
     # Process syft message
-    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+    reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
-    resp = {}
     if isinstance(reply, ExceptionMessage):
         resp = {"error": reply.exception_msg}
     else:

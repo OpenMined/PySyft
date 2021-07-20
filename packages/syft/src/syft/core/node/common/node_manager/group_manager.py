@@ -5,11 +5,10 @@ from typing import List
 from sqlalchemy.orm import sessionmaker
 
 # relative
+from ..exceptions import GroupNotFoundError
 from ..node_table.groups import Group
 from ..node_table.usergroup import UserGroup
 from .database_manager import DatabaseManager
-
-# from ..exceptions import GroupNotFoundError
 
 
 class GroupManager(DatabaseManager):

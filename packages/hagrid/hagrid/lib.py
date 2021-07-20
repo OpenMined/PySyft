@@ -10,6 +10,30 @@ import git
 import names
 import requests
 
+DOCKER_ERROR = """
+Instructions for v2 beta can be found here:
+You are running an old verion of docker, possibly on Linux. You need to install v2 beta.
+
+https://www.rockyourcode.com/how-to-install-docker-compose-v2-on-linux-2021/
+
+At the time of writing this, if you are on linux you need to run the following:
+
+mkdir -p ~/.docker/cli-plugins
+curl -sSL https://github.com/docker/compose-cli/releases/download/v2.0.0-beta.5/docker-compose-linux-amd64 -o ~/.docker/cli-plugins/docker-compose
+chmod +x ~/.docker/cli-plugins/docker-compose
+
+ALERT: you may need to run the following command to make sure you can run without sudo.
+
+echo $USER              //(should return your username)
+sudo usermod -aG docker $USER
+
+... now LOG ALL THE WAY OUT!!!
+
+...and then you should be good to go. You can check your installation by running:
+
+docker compose version
+"""
+
 
 def hagrid_root() -> str:
     return os.path.abspath(str(Path(__file__).parent.parent))
@@ -51,10 +75,10 @@ def grid_src_path() -> str:
 def check_is_git(path: os.PathLike) -> bool:
     is_repo = False
     try:
-        syft_repo = git.Repo(path)
+        git.Repo(path)
         is_repo = True
-    except Exception as e:
-        pass
+    except Exception:
+        print(f"{path} is not a git repo!")
     return is_repo
 
 
@@ -69,7 +93,7 @@ def get_git_repo() -> git.Repo:
             git.Repo.clone_from(
                 git_url, repo_src_path(), single_branch=True, b=repo_branch
             )
-        except Exception as e:
+        except Exception:
             print(f"Failed to clone {git_url} to {repo_src_path()}")
     return git.Repo(repo_src_path())
 
@@ -142,7 +166,7 @@ def find_available_port(host, port) -> bool:
                 str(port) + " doesn't seem to be available... trying " + str(port + 1)
             )
             port = port + 1
-        except requests.ConnectionError as e:
+        except requests.ConnectionError:
             port_available = True
 
     return port
@@ -158,29 +182,6 @@ def check_docker():
         print("Result:" + result)
         out = subprocess.run(["docker", "compose"], capture_output=True, text=True)
         if "'compose' is not a docker command" in out.stderr:
-            raise Exception(
-                """You are running an old verion of docker, possibly on Linux. You need to install v2 beta.
-                Instructions for v2 beta can be found here:
-
-                https://www.rockyourcode.com/how-to-install-docker-compose-v2-on-linux-2021/
-
-                At the time of writing this, if you are on linux you need to run the following:
-
-                mkdir -p ~/.docker/cli-plugins
-                curl -sSL https://github.com/docker/compose-cli/releases/download/v2.0.0-beta.5/docker-compose-linux-amd64 -o ~/.docker/cli-plugins/docker-compose
-                chmod +x ~/.docker/cli-plugins/docker-compose
-
-                ALERT: you may need to run the following command to make sure you can run without sudo.
-
-                echo $USER              //(should return your username)
-                sudo usermod -aG docker $USER
-
-                ... now LOG ALL THE WAY OUT!!!
-
-                ...and then you should be good to go. You can check your installation by running:
-
-                docker compose version
-                """
-            )
+            raise Exception()
 
     return version

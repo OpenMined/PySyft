@@ -19,7 +19,6 @@ from syft.core.node.common.node_service.association_request.association_request_
 from syft.core.node.common.node_service.association_request.association_request_messages import (
     SendAssociationRequestMessage,
 )
-from syft.core.node.domain.enums import RequestAPIFields
 from syft.core.node.domain.exceptions import PyGridClientException
 
 # relative

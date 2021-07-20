@@ -31,7 +31,7 @@ class RichGroup(click.Group):
         if is_editable_mode():
             mode = "[bold red]EDITABLE DEV MODE[/bold red] :police_car_light:"
         console.print(
-            f"[bold red]HA[/bold red][bold magenta]Grid[/bold magenta]!", ":mage:", mode
+            "[bold red]HA[/bold red][bold magenta]Grid[/bold magenta]!", ":mage:", mode
         )
         table = rich.table.Table()
 
@@ -262,9 +262,6 @@ def launch(
 
 @click.command(help="Build (or re-build) PyGrid docker image.")
 def build():
-
-    version = check_docker()
-
     print("\n")
 
     cmd = ""
@@ -347,8 +344,6 @@ def land(node_type, name, port, tag, keep_db):
     print("  - DOCKER: " + version)
 
     print("\n")
-
-    """DOMAIN_PORT=$port DOMAIN_NAME=$name NODE_TYPE=$type docker compose --file "docker-compose.override.yml" --project-name "$name" down"""
 
     cmd = "DOMAIN_PORT=" + str(port)
     # cmd += " TRAEFIK_TAG=" + tag

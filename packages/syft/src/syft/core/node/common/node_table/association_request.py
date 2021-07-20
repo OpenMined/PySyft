@@ -39,8 +39,10 @@ class AssociationRequest(Base):
     target = Column(LargeBinary(4096), default=b"")
 
     def __str__(self):
-        return f"< Association Request id : {self.id}, Name: {self.name}," \
-               f" Address: {self.address} , pending: {self.pending}, accepted: {self.accepted}, Date: {self.date}>"
+        return (
+            f"< Association Request id : {self.id}, Name: {self.name},"
+            f" Address: {self.address} , pending: {self.pending}, accepted: {self.accepted}, Date: {self.date}>"
+        )
 
     def get_metadata(self):
         return {

@@ -60,7 +60,7 @@ from syft.core.node.vm.vm import VirtualMachineClient  # noqa: F401
 from syft.core.plan.plan import Plan  # noqa: F401
 from syft.core.plan.plan_builder import make_plan  # noqa: F401
 from syft.experimental_flags import flags  # noqa: F401
-from syft.grid.client.client import connect
+from syft.grid.client.client import connect  # noqa: F401
 from syft.grid.client.client import login  # noqa: F401
 
 # Convenience Functions
