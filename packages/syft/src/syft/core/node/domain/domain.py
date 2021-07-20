@@ -14,6 +14,7 @@ import ascii_magic
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
+
 # relative
 from ....lib.python import String
 from ....logger import critical
