@@ -14,7 +14,6 @@ from syft.lib.python.string import String
 from syft.proto.lib.python.dict_pb2 import Dict as Dict_PB
 
 
-
 def test_dict_creation() -> None:
     d1 = {String("t1"): 1, String("t2"): 2}
     dict1 = Dict(d1)

@@ -6,8 +6,7 @@ from typing import Union
 from ..node_table.environment import Environment
 from ..node_table.user_environment import UserEnvironment
 from .database_manager import DatabaseManager
-
-# from ..exceptions import EnvironmentNotFoundError
+from ..exceptions import EnvironmentNotFoundError
 
 
 class EnvironmentManager(DatabaseManager):
