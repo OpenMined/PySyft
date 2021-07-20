@@ -4,14 +4,13 @@ package syft.grid.messages;
 
 import "proto/core/common/common_object.proto";
 import "proto/core/io/address.proto";
-import "proto/lib/python/dict.proto";
 
 // CREATE Dataset
 message CreateDatasetMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
   bytes dataset = 3;
-  syft.lib.python.Dict metadata = 4;
+  map<string, string> metadata = 4;
   syft.core.io.Address reply_to = 5;
   string platform = 6;
 }
@@ -21,14 +20,14 @@ message CreateDatasetMessage {
 message GetDatasetMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-  string dataset_id = 3;
+  int64 dataset_id = 3;
   syft.core.io.Address reply_to = 4;
 }
 
 
 message GetDatasetResponse {
   syft.core.common.UID msg_id = 1;
-  syft.lib.python.Dict content = 2;
+  map<string, string> metadata = 2;
   syft.core.io.Address address = 3;
 }
 
@@ -40,8 +39,11 @@ message GetDatasetsMessage {
 }
 
 message GetDatasetsResponse {
+  message metadata_container {
+    map<string, string> metadata = 1;
+  }
   syft.core.common.UID msg_id = 1;
-  repeated syft.lib.python.Dict content = 2;
+  repeated metadata_container metadatas = 2;
   syft.core.io.Address address = 3;
 }
 
@@ -49,8 +51,8 @@ message GetDatasetsResponse {
 message UpdateDatasetMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-  string dataset_id = 3;
-  syft.lib.python.Dict metadata = 4;
+  int64 dataset_id = 3;
+  map<string, string> metadata = 4;
   syft.core.io.Address reply_to = 5;
 }
 
@@ -58,6 +60,6 @@ message UpdateDatasetMessage {
 message DeleteDatasetMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-  string dataset_id = 3;
+  int64 dataset_id = 3;
   syft.core.io.Address reply_to = 4;
 }

@@ -20,8 +20,12 @@ RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install --no-root ; els
 # jupyter lab --ip=0.0.0.0 --allow-root --NotebookApp.custom_display_url=http://127.0.0.1:8888
 ARG INSTALL_JUPYTER=false
 RUN bash -c "if [ $INSTALL_JUPYTER == 'true' ] ; then pip install jupyterlab ; fi"
-
+RUN pip install watchdog pyyaml argh
 ENV C_FORCE_ROOT=1
+
+ENV WAITFORIT_VERSION="v2.4.1"
+RUN curl -o /usr/local/bin/waitforit -sSL https://github.com/maxcnunes/waitforit/releases/download/$WAITFORIT_VERSION/waitforit-linux_amd64 && \
+    chmod +x /usr/local/bin/waitforit
 
 COPY ./app /app
 WORKDIR /app

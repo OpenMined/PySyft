@@ -25,7 +25,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n7proto/core/node/common/service/remote_add_service.proto\x12\x1dsyft.core.node.common.service\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\x97\x01\n\x10RemoteAddMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0b\n\x03num\x18\x04 \x01(\x03"s\n\x15RemoteAddReplyMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0b\n\x03num\x18\x03 \x01(\x03\x62\x06proto3',
+    serialized_pb=b'\n7proto/core/node/common/service/remote_add_service.proto\x12\x1dsyft.core.node.common.service\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\x9d\x01\n\x10RemoteAddMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12-\n\x0eid_at_location\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0b\n\x03num\x18\x04 \x01(\x03\x62\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
@@ -61,8 +61,8 @@ _REMOTEADDMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.core.node.common.service.RemoteAddMessage.address",
+            name="id_at_location",
+            full_name="syft.core.node.common.service.RemoteAddMessage.id_at_location",
             index=1,
             number=2,
             type=11,
@@ -80,8 +80,8 @@ _REMOTEADDMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="reply_to",
-            full_name="syft.core.node.common.service.RemoteAddMessage.reply_to",
+            name="address",
+            full_name="syft.core.node.common.service.RemoteAddMessage.address",
             index=2,
             number=3,
             type=11,
@@ -127,105 +127,19 @@ _REMOTEADDMESSAGE = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=159,
-    serialized_end=310,
-)
-
-
-_REMOTEADDREPLYMESSAGE = _descriptor.Descriptor(
-    name="RemoteAddReplyMessage",
-    full_name="syft.core.node.common.service.RemoteAddReplyMessage",
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    create_key=_descriptor._internal_create_key,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name="msg_id",
-            full_name="syft.core.node.common.service.RemoteAddReplyMessage.msg_id",
-            index=0,
-            number=1,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.core.node.common.service.RemoteAddReplyMessage.address",
-            index=1,
-            number=2,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="num",
-            full_name="syft.core.node.common.service.RemoteAddReplyMessage.num",
-            index=2,
-            number=3,
-            type=3,
-            cpp_type=2,
-            label=1,
-            has_default_value=False,
-            default_value=0,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax="proto3",
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=312,
-    serialized_end=427,
+    serialized_end=316,
 )
 
 _REMOTEADDMESSAGE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
 _REMOTEADDMESSAGE.fields_by_name[
-    "address"
-].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_REMOTEADDMESSAGE.fields_by_name[
-    "reply_to"
-].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_REMOTEADDREPLYMESSAGE.fields_by_name[
-    "msg_id"
+    "id_at_location"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_REMOTEADDREPLYMESSAGE.fields_by_name[
+_REMOTEADDMESSAGE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 DESCRIPTOR.message_types_by_name["RemoteAddMessage"] = _REMOTEADDMESSAGE
-DESCRIPTOR.message_types_by_name["RemoteAddReplyMessage"] = _REMOTEADDREPLYMESSAGE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 RemoteAddMessage = _reflection.GeneratedProtocolMessageType(
@@ -238,17 +152,6 @@ RemoteAddMessage = _reflection.GeneratedProtocolMessageType(
     },
 )
 _sym_db.RegisterMessage(RemoteAddMessage)
-
-RemoteAddReplyMessage = _reflection.GeneratedProtocolMessageType(
-    "RemoteAddReplyMessage",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _REMOTEADDREPLYMESSAGE,
-        "__module__": "proto.core.node.common.service.remote_add_service_pb2"
-        # @@protoc_insertion_point(class_scope:syft.core.node.common.service.RemoteAddReplyMessage)
-    },
-)
-_sym_db.RegisterMessage(RemoteAddReplyMessage)
 
 
 # @@protoc_insertion_point(module_scope)

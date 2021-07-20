@@ -8,27 +8,34 @@ from typing import Optional
 from typing import Tuple
 
 # third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
 import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
+from requests_toolbelt.multipart.encoder import MultipartEncoder
 
 # relative
 from ...core.common.message import ImmediateSyftMessageWithoutReply
 from ...core.common.message import SignedImmediateSyftMessageWithoutReply
 from ...core.common.message import SyftMessage
+from ...core.common.serde.serializable import bind_protobuf
 from ...core.common.serde.serialize import _serialize
 from ...core.node.domain.enums import RequestAPIFields
 from ...core.node.domain.exceptions import RequestAPIException
 from ...proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
+from ...proto.grid.connections.http_connection_pb2 import (
+    GridHTTPConnection as GridHTTPConnection_PB,
+)
 from ..connections.http_connection import HTTPConnection
 
 
+@bind_protobuf
 class GridHTTPConnection(HTTPConnection):
 
     LOGIN_ROUTE = "/login"
     SYFT_ROUTE = "/syft"
     SYFT_ROUTE_STREAM = "/syft/stream"  # non blocking node
-    SYFT_MULTIPART_ROUTE = "/pysyft_multipart"
+    # SYFT_MULTIPART_ROUTE = "/pysyft_multipart"
     SIZE_THRESHOLD = 20971520  # 20 MB
 
     def __init__(self, url: str) -> None:
@@ -72,7 +79,8 @@ class GridHTTPConnection(HTTPConnection):
         # Perform HTTP request using base_url as a root address
         msg_bytes: bytes = _serialize(obj=msg, to_bytes=True)  # type: ignore
 
-        if sys.getsizeof(msg_bytes) < GridHTTPConnection.SIZE_THRESHOLD:
+        # if sys.getsizeof(msg_bytes) < GridHTTPConnection.SIZE_THRESHOLD:
+        if True:
             r = requests.post(
                 url=self.base_url + route,
                 data=msg_bytes,
@@ -163,7 +171,7 @@ class GridHTTPConnection(HTTPConnection):
     def send_streamed_messages(self, blob_message: bytes) -> requests.Response:
         session = requests.Session()
         with io.BytesIO(blob_message) as msg:
-            form = encoder.MultipartEncoder(
+            form = MultipartEncoder(
                 {
                     "file": ("message", msg.read(), "application/octet-stream"),
                 }
@@ -175,10 +183,24 @@ class GridHTTPConnection(HTTPConnection):
             }
 
             resp = session.post(
-                self.base_url + GridHTTPConnection.SYFT_MULTIPART_ROUTE,
+                self.base_url + GridHTTPConnection.SYFT_ROUTE_STREAM,
                 headers=headers,
                 data=form,
             )
 
         session.close()
         return resp
+
+    @property
+    def host(self):
+        return self.base_url.strip("/api/v1")
+
+    @staticmethod
+    def _proto2object(proto: GridHTTPConnection_PB) -> "GridHTTPConnection":
+        return GridHTTPConnection(url=proto.base_url)
+
+    def _object2proto(self) -> GridHTTPConnection_PB:
+        return GridHTTPConnection_PB(base_url=self.base_url)
+
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return GridHTTPConnection_PB

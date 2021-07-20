@@ -14,10 +14,16 @@ _sym_db = _symbol_database.Default()
 
 
 # syft absolute
+from syft.proto.core.common import (
+    common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
+)
 from syft.proto.core.io import (
     connection_pb2 as proto_dot_core_dot_io_dot_connection__pb2,
 )
 from syft.proto.core.io import location_pb2 as proto_dot_core_dot_io_dot_location__pb2
+from syft.proto.grid.connections import (
+    http_connection_pb2 as proto_dot_grid_dot_connections_dot_http__connection__pb2,
+)
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/core/io/route.proto",
@@ -25,10 +31,12 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x19proto/core/io/route.proto\x12\x0csyft.core.io\x1a\x1cproto/core/io/location.proto\x1a\x1eproto/core/io/connection.proto"{\n\tSoloRoute\x12\x33\n\x0b\x64\x65stination\x18\x01 \x01(\x0b\x32\x1e.syft.core.io.SpecificLocation\x12\x39\n\nconnection\x18\x02 \x01(\x0b\x32%.syft.core.io.VirtualClientConnectionb\x06proto3',
+    serialized_pb=b'\n\x19proto/core/io/route.proto\x12\x0csyft.core.io\x1a%proto/core/common/common_object.proto\x1a\x1cproto/core/io/location.proto\x1a\x1eproto/core/io/connection.proto\x1a,proto/grid/connections/http_connection.proto"\xfc\x01\n\tSoloRoute\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x33\n\x0b\x64\x65stination\x18\x02 \x01(\x0b\x32\x1e.syft.core.io.SpecificLocation\x12\x43\n\x12virtual_connection\x18\x03 \x01(\x0b\x32%.syft.core.io.VirtualClientConnectionH\x00\x12\x44\n\x0fgrid_connection\x18\x04 \x01(\x0b\x32).syft.grid.connections.GridHTTPConnectionH\x00\x42\x0c\n\nconnectionb\x06proto3',
     dependencies=[
+        proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_location__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_connection__pb2.DESCRIPTOR,
+        proto_dot_grid_dot_connections_dot_http__connection__pb2.DESCRIPTOR,
     ],
 )
 
@@ -42,8 +50,8 @@ _SOLOROUTE = _descriptor.Descriptor(
     create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
-            name="destination",
-            full_name="syft.core.io.SoloRoute.destination",
+            name="id",
+            full_name="syft.core.io.SoloRoute.id",
             index=0,
             number=1,
             type=11,
@@ -61,10 +69,48 @@ _SOLOROUTE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="connection",
-            full_name="syft.core.io.SoloRoute.connection",
+            name="destination",
+            full_name="syft.core.io.SoloRoute.destination",
             index=1,
             number=2,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="virtual_connection",
+            full_name="syft.core.io.SoloRoute.virtual_connection",
+            index=2,
+            number=3,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="grid_connection",
+            full_name="syft.core.io.SoloRoute.grid_connection",
+            index=3,
+            number=4,
             type=11,
             cpp_type=10,
             label=1,
@@ -87,17 +133,46 @@ _SOLOROUTE = _descriptor.Descriptor(
     is_extendable=False,
     syntax="proto3",
     extension_ranges=[],
-    oneofs=[],
-    serialized_start=105,
-    serialized_end=228,
+    oneofs=[
+        _descriptor.OneofDescriptor(
+            name="connection",
+            full_name="syft.core.io.SoloRoute.connection",
+            index=0,
+            containing_type=None,
+            create_key=_descriptor._internal_create_key,
+            fields=[],
+        ),
+    ],
+    serialized_start=191,
+    serialized_end=443,
 )
 
+_SOLOROUTE.fields_by_name[
+    "id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
 _SOLOROUTE.fields_by_name[
     "destination"
 ].message_type = proto_dot_core_dot_io_dot_location__pb2._SPECIFICLOCATION
 _SOLOROUTE.fields_by_name[
-    "connection"
+    "virtual_connection"
 ].message_type = proto_dot_core_dot_io_dot_connection__pb2._VIRTUALCLIENTCONNECTION
+_SOLOROUTE.fields_by_name[
+    "grid_connection"
+].message_type = (
+    proto_dot_grid_dot_connections_dot_http__connection__pb2._GRIDHTTPCONNECTION
+)
+_SOLOROUTE.oneofs_by_name["connection"].fields.append(
+    _SOLOROUTE.fields_by_name["virtual_connection"]
+)
+_SOLOROUTE.fields_by_name[
+    "virtual_connection"
+].containing_oneof = _SOLOROUTE.oneofs_by_name["connection"]
+_SOLOROUTE.oneofs_by_name["connection"].fields.append(
+    _SOLOROUTE.fields_by_name["grid_connection"]
+)
+_SOLOROUTE.fields_by_name[
+    "grid_connection"
+].containing_oneof = _SOLOROUTE.oneofs_by_name["connection"]
 DESCRIPTOR.message_types_by_name["SoloRoute"] = _SOLOROUTE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 

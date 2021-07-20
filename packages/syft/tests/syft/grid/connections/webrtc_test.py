@@ -16,7 +16,7 @@ from pytest import MonkeyPatch
 
 # syft absolute
 from syft import serialize
-from syft.core.node.common.node_service.repr_service import ReprMessage
+from syft.core.node.common.node_service.testing_services.repr_service import ReprMessage
 from syft.core.node.domain.domain import Domain
 from syft.grid.connections.webrtc import DC_CHUNK_START_SIGN
 from syft.grid.connections.webrtc import DC_MAX_CHUNK_SIZE

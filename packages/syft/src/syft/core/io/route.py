@@ -98,6 +98,8 @@ from ..common.message import SignedEventualSyftMessageWithoutReply
 from ..common.message import SignedImmediateSyftMessageWithReply
 from ..common.message import SignedImmediateSyftMessageWithoutReply
 from ..common.object import ObjectWithID
+from ..common.serde.deserialize import _deserialize
+from ..common.serde.serializable import bind_protobuf
 from .connection import BidirectionalConnection
 from .connection import ClientConnection
 from .location import Location
@@ -151,6 +153,7 @@ class Route(ObjectWithID):
         traceback_and_raise(NotImplementedError)
 
 
+@bind_protobuf
 class SoloRoute(Route):
     def __init__(
         self,
@@ -177,19 +180,31 @@ class SoloRoute(Route):
         return self.connection.send_immediate_msg_with_reply(msg=msg)
 
     def _object2proto(self) -> SoloRoute_PB:
-        return SoloRoute_PB(
+        route = SoloRoute_PB(
+            id=self.id._object2proto(),
             destination=self.schema.destination._object2proto(),
-            connection=self.connection._object2proto(),
         )
+        if isinstance(self.connection, VirtualClientConnection):
+            route.virtual_connection.CopyFrom(self.connection._object2proto())
+        else:
+            route.grid_connection.CopyFrom(self.connection._object2proto())
+        return route
 
     @staticmethod
     def _proto2object(proto: SoloRoute_PB) -> "SoloRoute":
-        connection = VirtualClientConnection._proto2object(proto.connection)
-        # connection = _deserialize(blob=proto.connection, from_proto=True)
-        return SoloRoute(
+        if proto.HasField("virtual_connection"):
+            connection = VirtualClientConnection._proto2object(proto.virtual_connection)
+        elif proto.HasField("grid_connection"):
+            connection = _deserialize(proto.grid_connection)
+        else:
+            raise TypeError("Unsupported type of connection")
+
+        route = SoloRoute(
             destination=SpecificLocation._proto2object(proto.destination),
             connection=connection,
         )
+        route._id = _deserialize(proto.id)
+        return route
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:

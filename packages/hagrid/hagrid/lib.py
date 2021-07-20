@@ -1,12 +1,11 @@
 # stdlib
+import hashlib
 import os
 import subprocess
-import hashlib
-import requests
 
 # third party
 import names
-
+import requests
 
 def should_provision_remote(username, password, key_path) -> bool:
     is_remote = username is not None or password is not None or key_path is not None

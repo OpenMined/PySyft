@@ -7,13 +7,7 @@ import "proto/core/io/address.proto";
 
 message RemoteAddMessage {
   syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  syft.core.io.Address reply_to = 3;
+  syft.core.common.UID id_at_location = 2;
+  syft.core.io.Address address = 3;
   int64 num = 4;
-}
-
-message RemoteAddReplyMessage {
-  syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  int64 num = 3;
 }

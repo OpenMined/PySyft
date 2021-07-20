@@ -1,6 +1,9 @@
-import ascii_magic
+# stdlib
 import os
 import random
+
+# third party
+import ascii_magic
 
 
 

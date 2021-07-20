@@ -1,5 +1,6 @@
 # stdlib
 import asyncio
+import os
 import time
 from typing import Any
 from typing import Dict
@@ -7,12 +8,11 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
-import os
 
 # third party
+import ascii_magic
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
-import ascii_magic
 
 # relative
 from ....lib.python import String
@@ -88,7 +88,6 @@ class Domain(Node):
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
         root_key: Optional[VerifyKey] = None,
-        db_path: Optional[str] = None,
         db_engine: Any = None,
     ):
         super().__init__(
@@ -99,7 +98,6 @@ class Domain(Node):
             vm=vm,
             signing_key=signing_key,
             verify_key=verify_key,
-            db_path=db_path,
             db_engine=db_engine,
         )
         # specific location with name
@@ -168,7 +166,7 @@ class Domain(Node):
         )
 
         print(
-            """
+            r"""
                                                      __
                                                     |  \  _   _   _  .  _
                                                     |__/ (_) ||| (_| | | )

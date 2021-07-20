@@ -8,7 +8,6 @@ from typing import List
 import pytest
 
 # syft absolute
-import syft
 from syft import deserialize
 from syft import serialize
 from syft.core.io.address import Address
@@ -34,15 +33,19 @@ from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages
     UpdateDatasetMessage,
 )
 
-metadata = syft.lib.python.Dict(
-    {"name": "Dataset", "fields": ["age", "height", "weight"]}
-)
+metadata = {"name": "Dataset", "fields": "age, height, weight"}
 
 test_suite = [
     (
         CreateDatasetMessage,
-        {"address": Address(), "dataset": b"MyBinaryDataset", "reply_to": Address()},
-        ["address", "dataset", "reply_to"],
+        {
+            "address": Address(),
+            "dataset": b"MyBinaryDataset",
+            "reply_to": Address(),
+            "platform": "syft",
+            "metadata": metadata,
+        },
+        ["address", "dataset", "reply_to", "metadata"],
     ),
     (
         GetDatasetMessage,
@@ -51,8 +54,8 @@ test_suite = [
     ),
     (
         GetDatasetResponse,
-        {"address": Address(), "metadata": metadata, "status_code": 200},
-        ["address", "metadata", "status_code"],
+        {"address": Address(), "metadata": metadata},
+        ["address", "metadata"],
     ),
     (
         GetDatasetsMessage,
@@ -63,10 +66,9 @@ test_suite = [
         GetDatasetsResponse,
         {
             "address": Address(),
-            "datasets_metadata": syft.lib.python.List([metadata, metadata, metadata]),
-            "status_code": 200,
+            "metadatas": [metadata, metadata, metadata],
         },
-        ["address", "datasets_metadata", "status_code"],
+        ["address", "metadatas"],
     ),
     (
         UpdateDatasetMessage,

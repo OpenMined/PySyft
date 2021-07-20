@@ -105,6 +105,7 @@ services:
       - SYFT_USE_UVLOOP=0
       - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
       - NODE_TYPE=${NODE_TYPE?Variable not set}
+      - STREAM_QUEUE=1
     build:
       context: ./backend
       dockerfile: backend.dockerfile
@@ -136,6 +137,7 @@ services:
       args:
         INSTALL_DEV: "${INSTALL_DEV-true}"
         INSTALL_JUPYTER: "${INSTALL_JUPYTER-true}"
+    command: "waitforit -address=http://backend:80/api/v1/syft/metadata -status=200 -timeout=600 -debug -- /worker-start.sh"
 
   frontend:
     depends_on:
