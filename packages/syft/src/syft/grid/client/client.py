@@ -124,6 +124,11 @@ def login(
 
     metadata = conn_type(url=url)._get_metadata()  # type: ignore
 
+    if metadata.node_type == "Domain":
+        client_type = DomainClient
+    else:
+        client_type = NetworkClient
+
     # connecting to domain
     node = connect(url=url, credentials=credentials, conn_type=conn_type)
 

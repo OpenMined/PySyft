@@ -24,6 +24,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
 
+# syft absolute
+from syft.core.node.common.node_table import Base
+
 # relative
 from ....lib import lib_ast
 from ....logger import debug
@@ -124,7 +127,6 @@ class Node(AbstractNode):
         vm: Optional[Location] = None,
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
-        db_path: Optional[str] = None,
         TableBase: Any = None,
         db_engine: Any = None,
         db: Any = None,
@@ -149,7 +151,8 @@ class Node(AbstractNode):
 
             # If a DB engine isn't provided then
             if db_engine is None:
-                engine = create_engine("sqlite://", echo=False)
+                db_engine = create_engine("sqlite://", echo=False)
+                Base.metadata.create_all(db_engine)
 
             db = sessionmaker(bind=db_engine)()
 
@@ -236,6 +239,7 @@ class Node(AbstractNode):
         self.immediate_services_without_reply.append(
             ImmediateObjectSearchPermissionUpdateService
         )
+        self.immediate_services_without_reply.append(RemoteAddService)
 
         # TODO: Support ImmediateNodeServiceWithReply Parent Class
         # for services which run immediately and return a reply
@@ -244,7 +248,6 @@ class Node(AbstractNode):
         self.immediate_services_with_reply.append(ImmediateObjectSearchService)
         self.immediate_services_with_reply.append(GetReprService)
         self.immediate_services_with_reply.append(ResolvePointerTypeService)
-        self.immediate_services_with_reply.append(RemoteAddService)
         # for services which can run at a later time and do not return a reply
         self.eventual_services_without_reply = list()
         self.eventual_services_without_reply.append(

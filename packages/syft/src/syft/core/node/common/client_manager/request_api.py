@@ -44,18 +44,21 @@ class RequestAPI:
         logging.info(response.resp_msg)
 
     def get(self, **kwargs: Any) -> Any:
-        return self.to_obj(
-            self.perform_api_request(
-                syft_msg=self.__get_message, content=kwargs
-            ).content.upcast()
+        association_table = self.perform_api_request(
+            syft_msg=self.__get_message, content=kwargs
         )
+        obj_data = dict(association_table.metadata)
+        obj_data[RequestAPIFields.SOURCE] = association_table.source
+        obj_data[RequestAPIFields.TARGET] = association_table.target
+
+        return self.to_obj(obj_data)
 
     def all(self, pandas: bool = False) -> Union[DataFrame, Dict[Any, Any]]:
         result = [
-            content.upcast()
+            content
             for content in self.perform_api_request(
                 syft_msg=self.__get_all_message
-            ).content
+            ).metadatas
         ]
         if pandas:
             result = DataFrame(result)

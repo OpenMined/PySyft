@@ -5,6 +5,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from ...core.common.message import SignedEventualSyftMessageWithoutReply
 from ...core.common.message import SignedImmediateSyftMessageWithReply
 from ...core.common.message import SignedImmediateSyftMessageWithoutReply
+from ...core.common.serde.serializable import Serializable
 from ...logger import traceback_and_raise
 
 
@@ -82,7 +83,7 @@ class ServerConnection(object):
         traceback_and_raise(NotImplementedError)
 
 
-class ClientConnection(object):
+class ClientConnection(Serializable):
     def __init__(self) -> None:
         self.opt_bidirectional_conn = BidirectionalConnection()
 

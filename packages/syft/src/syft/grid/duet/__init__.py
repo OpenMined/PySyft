@@ -157,16 +157,13 @@ def duet(
     logging: bool = True,
     network_url: str = "",
     loopback: bool = False,
-    db_path: Optional[str] = None,
 ) -> Client:
     if target_id is not None:
         return join_duet(
             target_id=target_id, loopback=loopback, network_url=network_url
         )
     else:
-        return launch_duet(
-            logging=logging, network_url=network_url, loopback=loopback, db_path=db_path
-        )
+        return launch_duet(logging=logging, network_url=network_url, loopback=loopback)
 
 
 def launch_duet(
@@ -174,7 +171,6 @@ def launch_duet(
     network_url: str = "",
     loopback: bool = False,
     credential_exchanger: DuetCredentialExchanger = OpenGridTokenManualInputExchanger(),
-    db_path: Optional[str] = None,
 ) -> Client:
     if os.path.isfile(LOGO_URL) and is_jupyter:
         display(
@@ -210,7 +206,7 @@ def launch_duet(
 
     info("♫♫♫ > " + bcolors.OKGREEN + "DONE!" + bcolors.ENDC, print=True)
 
-    my_domain = Domain(name="Launcher", db_path=db_path)
+    my_domain = Domain(name="Launcher")
 
     if loopback:
         credential_exchanger = OpenGridTokenFileExchanger()

@@ -1,11 +1,98 @@
 # stdlib
 import hashlib
 import os
+from pathlib import Path
+import site
 import subprocess
 
 # third party
+import git
 import names
 import requests
+
+
+def hagrid_root() -> str:
+    return os.path.abspath(str(Path(__file__).parent.parent))
+
+
+def asset_path() -> os.PathLike:
+    return Path(hagrid_root()) / "hagrid"
+
+
+def is_editable_mode() -> bool:
+    current_package_root = hagrid_root()
+
+    installed_as_editable = False
+    sitepackages_dirs = site.getsitepackages()
+    # check all site-packages returned if they have a hagrid.egg-link
+    for sitepackages_dir in sitepackages_dirs:
+        egg_link_file = Path(sitepackages_dir) / "hagrid.egg-link"
+        try:
+            linked_folder = egg_link_file.read_text()
+            # if the current code is in the same path as the egg-link its -e mode
+            installed_as_editable = current_package_root in linked_folder
+            break
+        except Exception:
+            pass
+    return installed_as_editable
+
+
+def repo_src_path() -> os.PathLike:
+    if EDITABLE_MODE:
+        return Path(os.path.abspath(Path(hagrid_root()) / "../../"))
+    else:
+        return Path(hagrid_root()) / "hagrid" / "PySyft"
+
+
+def grid_src_path() -> str:
+    return str(repo_src_path() / "packages" / "grid")
+
+
+def check_is_git(path: os.PathLike) -> bool:
+    is_repo = False
+    try:
+        syft_repo = git.Repo(path)
+        is_repo = True
+    except Exception as e:
+        pass
+    return is_repo
+
+
+def get_git_repo() -> git.Repo:
+    is_git = check_is_git(path=repo_src_path())
+    if not EDITABLE_MODE and not is_git:
+        github_repo = "OpenMined/PySyft"
+        git_url = f"https://github.com/{github_repo}"
+        print(f"Fetching Syft + Grid Source from {git_url} to {repo_src_path()}")
+        try:
+            repo_branch = "demo_strike_team_branch_4"
+            git.Repo.clone_from(
+                git_url, repo_src_path(), single_branch=True, b=repo_branch
+            )
+        except Exception as e:
+            print(f"Failed to clone {git_url} to {repo_src_path()}")
+    return git.Repo(repo_src_path())
+
+
+def update_repo(repo: git.Repo, branch: str) -> None:
+    if not EDITABLE_MODE:
+        print(f"Updating HAGrid from branch: {branch}")
+        try:
+            if repo.is_dirty():
+                repo.git.reset("--hard")
+            repo.git.checkout(branch)
+            repo.remotes.origin.pull()
+        except Exception as e:
+            print(f"Error checking out branch {branch}.", e)
+
+
+EDITABLE_MODE = is_editable_mode()
+GRID_SRC_PATH = grid_src_path()
+GIT_REPO = get_git_repo()
+
+
+repo_branch = "demo_strike_team_branch_4"
+update_repo(repo=GIT_REPO, branch=repo_branch)
 
 
 def should_provision_remote(username, password, key_path) -> bool:

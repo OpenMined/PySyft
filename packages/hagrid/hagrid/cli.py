@@ -1,28 +1,65 @@
 # stdlib
 import hashlib
+import io
 import os
 from pathlib import Path
 import subprocess
 
 # third party
 import click
-import requests
+import rich
 
 # relative
 from .art import hagrid
+from .deps import check_deps
+from .lib import GRID_SRC_PATH
 from .lib import check_docker
 from .lib import find_available_port
+from .lib import is_editable_mode
 from .lib import pre_process_keep_db
 from .lib import pre_process_name
 from .lib import pre_process_tag
 from .lib import should_provision_remote
 
-install_path = os.path.abspath(
-    os.path.join(os.path.realpath(__file__), "../../../grid/")
-)
+
+class RichGroup(click.Group):
+    def format_usage(self, ctx, formatter):
+        DEPENDENCIES = check_deps()
+        sio = io.StringIO()
+        console = rich.get_console()
+        mode = ""
+        if is_editable_mode():
+            mode = "[bold red]EDITABLE DEV MODE[/bold red] :police_car_light:"
+        console.print(
+            f"[bold red]HA[/bold red][bold magenta]Grid[/bold magenta]!", ":mage:", mode
+        )
+        table = rich.table.Table()
+
+        table.add_column("Dependency", style="magenta")
+        table.add_column("Found", justify="right")
+
+        for dep in sorted(DEPENDENCIES.keys()):
+            path = DEPENDENCIES[dep]
+            installed_str = ":white_check_mark:" if path is not None else ":cross_mark:"
+            dep_emoji = ":gear:"
+            if dep == "docker":
+                dep_emoji = ":whale:"
+            if dep == "git":
+                dep_emoji = ":file_folder:"
+            if dep == "virtualbox":
+                dep_emoji = ":ballot_box_with_ballot: "
+            if dep == "vagrant":
+                dep_emoji = ":person_mountain_biking:"
+            if dep == "ansible-playbook":
+                dep_emoji = ":blue_book:"
+            table.add_row(f"{dep_emoji} {dep}", installed_str)
+            # console.print(dep_emoji, dep, installed_str)
+        console.print(table)
+        console.print("Usage: hagrid [OPTIONS] COMMAND [ARGS]...")
+        formatter.write(sio.getvalue())
 
 
-@click.group()
+@click.group(cls=RichGroup)
 def cli():
     pass
 
@@ -218,8 +255,7 @@ def launch(
         # use docker on localhost
         cmd += " docker compose -p " + tag
         cmd += " up"
-
-        cmd = "cd " + install_path + ";" + cmd
+        cmd = "cd " + GRID_SRC_PATH + ";" + cmd
     print("Running: \n", cmd)
     subprocess.call(cmd, shell=True)
 
@@ -235,7 +271,7 @@ def build():
     cmd += " docker compose"
     cmd += " build"
 
-    cmd = "cd " + install_path + ";" + cmd
+    cmd = "cd " + GRID_SRC_PATH + ";" + cmd
     print(cmd)
     subprocess.call(cmd, shell=True)
 
@@ -287,9 +323,9 @@ def land(node_type, name, port, tag, keep_db):
             "You must provide either the --tag or --name of the node you want to land!"
         )
 
-    elif tag == "" and name != "" and type != "":
+    elif tag == "" and name != "" and node_type != "":
         tag = hashlib.md5(name.encode("utf8")).hexdigest()
-        tag = type + "_" + tag
+        tag = node_type + "_" + tag
 
     elif tag != "":
         """continue"""
@@ -303,8 +339,8 @@ def land(node_type, name, port, tag, keep_db):
 
     # motorcycle()
 
-    print("Launching a " + str(type) + " PyGrid node on port " + str(port) + "!\n")
-    print("  - TYPE: " + str(type))
+    print("Launching a " + str(node_type) + " PyGrid node on port " + str(port) + "!\n")
+    print("  - TYPE: " + str(node_type))
     print("  - NAME: " + str(name))
     print("  - TAG: " + str(tag))
     print("  - PORT: " + str(port))
@@ -317,17 +353,13 @@ def land(node_type, name, port, tag, keep_db):
     cmd = "DOMAIN_PORT=" + str(port)
     # cmd += " TRAEFIK_TAG=" + tag
     cmd += ' DOMAIN_NAME="' + name + '"'
-    cmd += " NODE_TYPE=" + type
+    cmd += " NODE_TYPE=" + node_type
     cmd += " docker compose"
     cmd += ' --file "docker-compose.override.yml"'
     cmd += ' --project-name "' + tag + '"'
     cmd += " down"
 
-    install_path = os.path.abspath(
-        os.path.join(os.path.realpath(__file__), "../../../grid/")
-    )
-
-    cmd = "cd " + install_path + ";export $(cat .env | sed 's/#.*//g' | xargs);" + cmd
+    cmd = "cd " + GRID_SRC_PATH + ";export $(cat .env | sed 's/#.*//g' | xargs);" + cmd
     print(cmd)
     subprocess.call(cmd, shell=True)
 

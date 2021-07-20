@@ -88,7 +88,6 @@ class Domain(Node):
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
         root_key: Optional[VerifyKey] = None,
-        db_path: Optional[str] = None,
         db_engine: Any = None,
     ):
         super().__init__(
@@ -99,7 +98,6 @@ class Domain(Node):
             vm=vm,
             signing_key=signing_key,
             verify_key=verify_key,
-            db_path=db_path,
             db_engine=db_engine,
         )
         # specific location with name
@@ -168,7 +166,7 @@ class Domain(Node):
         )
 
         print(
-            """
+            r"""
                                                      __
                                                     |  \  _   _   _  .  _
                                                     |__/ (_) ||| (_| | | )

@@ -61,7 +61,6 @@ class Network(Node):
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
         root_key: Optional[VerifyKey] = None,
-        db_path: Optional[str] = None,
         db_engine: Any = None,
     ):
         super().__init__(
@@ -72,7 +71,6 @@ class Network(Node):
             vm=vm,
             signing_key=signing_key,
             verify_key=verify_key,
-            db_path=db_path,
             db_engine=db_engine,
         )
 
@@ -122,7 +120,7 @@ class Network(Node):
         )
 
         print(
-            """                          `-+yy+-`
+            r"""
 
                                                     |\ |  _ |_      _   _ |
                                                     | \| (- |_ \)/ (_) |  |(

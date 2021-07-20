@@ -55,6 +55,7 @@ class BinObjectManager(ObjectStore):
         local_session = sessionmaker(bind=self.db)()
         result = local_session.query(ObjectMetadata).count()
         local_session.close()
+        return result
 
     def keys(self) -> KeysView[UID]:
         local_session = sessionmaker(bind=self.db)()
