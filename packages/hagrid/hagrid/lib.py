@@ -175,7 +175,7 @@ def check_docker():
                 echo $USER              //(should return your username)
                 sudo usermod -aG docker $USER
 
-                ... now LOG ALL THE WAY OUT!!!
+                ... now LOG ALL THE WAY OUT!!! (or reboot your machine)
 
                 ...and then you should be good to go. You can check your installation by running:
 
