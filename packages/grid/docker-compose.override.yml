@@ -112,7 +112,7 @@ services:
       args:
         INSTALL_DEV: "${INSTALL_DEV-true}"
     # command: bash -c "while true; do sleep 1; done" # Infinite loop to keep container live doing nothing
-    command: "waitforit -address=http://backend:80/api/v1/syft/metadata -status=200 -timeout=600 -debug -- /start-reload.sh"
+    command: "waitforit -address=http://backend:80/api/v1/syft/metadata -status=200 -timeout=600 -- /start-reload.sh"
     labels:
       - traefik.enable=true
       - traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}
@@ -137,7 +137,7 @@ services:
       args:
         INSTALL_DEV: "${INSTALL_DEV-true}"
         INSTALL_JUPYTER: "${INSTALL_JUPYTER-true}"
-    command: "waitforit -address=http://backend:80/api/v1/syft/metadata -status=200 -timeout=600 -debug -- /worker-start.sh"
+    command: "waitforit -address=http://backend:80/api/v1/syft/metadata -status=200 -timeout=600 -- /worker-start.sh"
 
   frontend:
     depends_on:

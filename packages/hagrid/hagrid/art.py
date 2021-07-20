@@ -5,6 +5,9 @@ import random
 # third party
 import ascii_magic
 
+# relative
+from .lib import asset_path
+
 
 def motorcycle():
     print(
@@ -81,24 +84,18 @@ def hold_on_tight():
 
 
 def hagrid1():
-
-    install_path = os.path.abspath(
-        os.path.join(os.path.realpath(__file__), "../../img/")
-    )
-
     ascii_magic.to_terminal(
-        ascii_magic.from_image_file(img_path=install_path + "/hagrid.png", columns=83)
+        ascii_magic.from_image_file(
+            img_path=str(asset_path()) + "/img/hagrid.png", columns=83
+        )
     )
 
 
 def hagrid2():
-
-    install_path = os.path.abspath(
-        os.path.join(os.path.realpath(__file__), "../../img/")
-    )
-
     ascii_magic.to_terminal(
-        ascii_magic.from_image_file(img_path=install_path + "/hagrid2.png", columns=83)
+        ascii_magic.from_image_file(
+            img_path=str(asset_path()) + "/img/hagrid2.png", columns=83
+        )
     )
 
 
