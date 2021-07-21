@@ -2,19 +2,20 @@
 from typing import Any
 
 # third party
-from fastapi import APIRouter, Request, Response
-from syft.core.common.message import (
-    SignedImmediateSyftMessageWithoutReply,
-    SignedImmediateSyftMessageWithReply,
-)
+from fastapi import APIRouter
+from fastapi import Request
+from fastapi import Response
+
+# syft absolute
+from syft import deserialize
+from syft import serialize
+from syft.core.common.message import SignedImmediateSyftMessageWithReply
+from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 
 # grid absolute
 from app.core.celery_app import celery_app
 from app.core.config import settings
 from app.core.node import node
-
-# syft absolute
-from syft import deserialize, serialize
 
 router = APIRouter()
 
@@ -57,11 +58,8 @@ async def syft_stream(
     data = await request.body()
 
     if settings.STREAM_QUEUE:
-        print("Queuing streaming message for processing on worker node")
         # use latin-1 instead of utf-8 because our bytes might not be an even number
-        print("Stream msg", data)
         msg_bytes_str = data.decode("latin-1")
-        print("Stream msg string", msg_bytes_str)
         try:
             celery_app.send_task("app.worker.msg_without_reply", args=[msg_bytes_str])
         except Exception:

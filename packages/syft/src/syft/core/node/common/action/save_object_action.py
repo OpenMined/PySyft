@@ -11,7 +11,8 @@ from .....proto.core.node.common.action.save_object_pb2 import (
     SaveObjectAction as SaveObjectAction_PB,
 )
 from ....common.serde.deserialize import _deserialize
-from ....common.serde.serializable import Serializable, bind_protobuf
+from ....common.serde.serializable import Serializable
+from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
@@ -55,14 +56,9 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
 
     @staticmethod
     def _proto2object(proto: SaveObjectAction_PB) -> "SaveObjectAction":
-        print("Deserialize save object", proto)
         obj = _deserialize(blob=proto.obj)
-        print("After deserialize object", obj)
         addr = _deserialize(blob=proto.address)
-        print("After deserialize addr", addr)
-        res = SaveObjectAction(obj=obj, address=addr)
-        print("Resulting", res)
-        return res
+        return SaveObjectAction(obj=obj, address=addr)
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:

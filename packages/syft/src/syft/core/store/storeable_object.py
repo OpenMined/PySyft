@@ -1,5 +1,7 @@
 # stdlib
-from typing import Any, List, Optional
+from typing import Any
+from typing import List
+from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -10,9 +12,12 @@ import syft as sy
 # relative
 from ...logger import traceback_and_raise
 from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
-from ...util import get_fully_qualified_name, index_syft_by_module_name, key_emoji
+from ...util import get_fully_qualified_name
+from ...util import index_syft_by_module_name
+from ...util import key_emoji
 from ..common.serde.deserialize import _deserialize
-from ..common.serde.serializable import Serializable, bind_protobuf
+from ..common.serde.serializable import Serializable
+from ..common.serde.serializable import bind_protobuf
 from ..common.storeable_object import AbstractStorableObject
 from ..common.uid import UID
 
@@ -166,11 +171,9 @@ class StorableObject(AbstractStorableObject):
 
         # Step 2: get the type of wrapper to use to deserialize
         data_type = index_syft_by_module_name(fully_qualified_name=proto.data_type)
-        print("Data type in StorableObject", data_type)
 
         # Step 3: get the protobuf type we deserialize for .data
         schematic_type = data_type.get_protobuf_schema()  # type: ignore
-        print("Schematic_type", schematic_type)
 
         # Step 4: Deserialize data from protobuf
         data = None
@@ -178,7 +181,6 @@ class StorableObject(AbstractStorableObject):
             data = schematic_type()
             descriptor = getattr(schematic_type, "DESCRIPTOR", None)
             if descriptor is not None and proto.data.Is(descriptor):
-                print("Data ", data)
                 proto.data.Unpack(data)
             data = data_type._proto2object(proto=data)  # type: ignore
 

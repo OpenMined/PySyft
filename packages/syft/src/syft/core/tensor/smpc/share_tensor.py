@@ -31,13 +31,10 @@ class ShareTensor(PassthroughTensor, Serializable):
     def __init__(
         self,
         rank: int,
-        seed_shares: int,
         ring_size: int = 2 ** 64,
         value: Optional[Any] = None,
     ) -> None:
 
-        self.seed_shares = seed_shares
-        self.generator_ids = np.random.default_rng(self.seed_shares)
         self.rank = rank
         self.ring_size = ring_size
         self.min_value, self.max_value = ShareTensor.compute_min_max_from_ring(
@@ -118,7 +115,7 @@ class ShareTensor(PassthroughTensor, Serializable):
 
         share = value.child
         if not isinstance(share, ShareTensor):
-            share = ShareTensor(value=share, rank=rank, seed_shares=seed_shares)
+            share = ShareTensor(value=share, rank=rank)
 
         shares = [
             generator_shares.integers(low=share.min_value, high=share.max_value)

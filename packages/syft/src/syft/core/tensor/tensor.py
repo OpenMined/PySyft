@@ -4,11 +4,10 @@ from __future__ import annotations
 # stdlib
 from typing import Any
 
-import numpy as np
-import torch as th
-
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+import numpy as np
+import torch as th
 
 # relative
 # syft relative
@@ -64,7 +63,6 @@ class Tensor(
 
     @staticmethod
     def _proto2object(proto: Tensor_PB) -> Tensor:
-        print("Proto message", proto)
         use_tensors = proto.use_tensors
         child = []
         if use_tensors:
@@ -74,7 +72,6 @@ class Tensor(
 
         child = child[0]
         res = Tensor(child)
-        print("Result Tensor", res)
         return res
 
     @staticmethod

@@ -146,7 +146,10 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
 
             # then we convert anything which isnt a pointer into a pointer
             pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
-                args=downcast_args, kwargs=downcast_kwargs, client=__self.client
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=__self.client,
+                gc_enabled=False,
             )
 
             cmd = RunClassMethodAction(
@@ -195,7 +198,7 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
             )
 
         seed_id_locations = secrets.randbits(64)
-        kwargs["seed_id_locations"] = seed_id_locations
+        kwargs["seed_id_locations"] = str(seed_id_locations)
         generator = np.random.default_rng(seed_id_locations)
 
         nr_ops = MAP_FUNC_TO_NR_GENERATOR_INVOKES[attr_path_and_name.split(".")[-1]]
@@ -223,7 +226,10 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
 
         # then we convert anything which isnt a pointer into a pointer
         pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
-            args=downcast_args, kwargs=downcast_kwargs, client=__self.client
+            args=downcast_args,
+            kwargs=downcast_kwargs,
+            client=__self.client,
+            gc_enabled=False,
         )
 
         cmd = RunClassMethodSMPCAction(
@@ -891,7 +897,10 @@ class Class(Callable):
 
 
 def pointerize_args_and_kwargs(
-    args: Union[List[Any], Tuple[Any, ...]], kwargs: Dict[Any, Any], client: Any
+    args: Union[List[Any], Tuple[Any, ...]],
+    kwargs: Dict[Any, Any],
+    client: Any,
+    gc_enabled: bool = True,
 ) -> Tuple[List[Any], Dict[Any, Any]]:
     """Get pointers to args and kwargs.
 
@@ -913,15 +922,16 @@ def pointerize_args_and_kwargs(
     for arg in args:
         # check if its already a pointer
         if not isinstance(arg, Pointer):
-            arg_ptr = arg.send(client, pointable=False)
+            arg_ptr = arg.send(client, pointable=not gc_enabled)
             pointer_args.append(arg_ptr)
         else:
             pointer_args.append(arg)
+            arg.gc_enabled = gc_enabled
 
     for k, arg in kwargs.items():
         # check if its already a pointer
         if not isinstance(arg, Pointer):
-            arg_ptr = arg.send(client, pointable=False)
+            arg_ptr = arg.send(client, pointable=True)
             pointer_kwargs[k] = arg_ptr
         else:
             pointer_kwargs[k] = arg

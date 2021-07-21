@@ -36,7 +36,7 @@ class MPCTensor(PassthroughTensor):
         if seed_shares is None:
             # Allow the user to specify if they want to use a specific seed when generating the shares
             # ^This is unsecure and should be used with cautioness
-            seed_shares = secrets.randbits(64)
+            seed_shares = secrets.randbits(32)
 
         # TODO: We can get this from the the secret if the secret is local
         if shape is None:

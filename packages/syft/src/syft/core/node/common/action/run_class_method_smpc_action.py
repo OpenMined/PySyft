@@ -109,6 +109,8 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         tag_args = []
         for arg in self.args:
             r_arg = node.store[arg.id_at_location]
+            # TODO: Think of a way to free the memory
+            # del node.store[arg.id_at_location]
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
@@ -119,6 +121,8 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         tag_kwargs = {}
         for arg_name, arg in self.kwargs.items():
             r_arg = node.store[arg.id_at_location]
+            # TODO: Think of a way to free the memory
+            # del node.store[arg.id_at_location]
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
@@ -142,10 +146,11 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         actions_generator = SMPCActionMessage.get_action_generator_from_op(method_name)
         args_id = [arg.id_at_location for arg in self.args]
 
+        # TODO: For the moment we don't run any SMPC operation that provides any kwarg
         kwargs = {
-            "seed_id_locations": seed_id_locations,
+            "seed_id_locations": int(seed_id_locations),
             "node": node,
-        }  # TODO: the seed should be sent by the orchestrator
+        }
 
         # Get the list of actions to be run
         actions = actions_generator(self._self.id_at_location, *args_id, **kwargs)  # type: ignore
