@@ -1,6 +1,5 @@
 # stdlib
-from typing import Any
-from typing import Union
+from typing import Any, Union
 
 # third party
 from google.protobuf.message import Message
@@ -72,19 +71,25 @@ def _deserialize(
     obj_type = getattr(type(blob), "schema2type", None)
     # when a protobuf type is related to multiple classes, it's schema2type will be None.
     # In that case, we use it's obj_type field.
+    print("Object type", obj_type)
     if obj_type is None:
         obj_type = getattr(blob, "obj_type", None)
+        print("Object type 2", obj_type)
         if obj_type is None:
             traceback_and_raise(deserialization_error)
         obj_type = index_syft_by_module_name(fully_qualified_name=obj_type)  # type: ignore
         obj_type = getattr(obj_type, "_sy_serializable_wrapper_type", obj_type)
+        print("Object type 3", obj_type)
 
     if not isinstance(obj_type, type):
         traceback_and_raise(deserialization_error)
 
     _proto2object = getattr(obj_type, "_proto2object", None)
+    print("Proto2Obj", _proto2object)
     if not callable(_proto2object):
         traceback_and_raise(deserialization_error)
 
+    print("Blob data", blob, obj_type)
     res = _proto2object(proto=blob)
+    print("Checking the result from deserialize", res)
     return res
