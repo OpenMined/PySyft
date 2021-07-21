@@ -39,7 +39,7 @@ def test_add(x):
     ).all(), "(Add, Maxval) Result is not correct"
 
 def test_single_entity_phi_tensor_serde(x):
-    
+
     blob = serialize(x.child)
     x2 = deserialize(blob)
 
