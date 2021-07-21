@@ -4,9 +4,9 @@ import sympy as sp
 # relative
 # syft relative
 from .scalar import GammaScalar
+from ..common.serde.recursive import RecursiveSerde
 
-
-class PrimeFactory:
+class PrimeFactory(RecursiveSerde):
 
     """IMPORTANT: it's very important that two tensors be able to tell that
     they are indeed referencing the EXACT same PrimeFactory. At present this is done
@@ -16,6 +16,8 @@ class PrimeFactory:
     in fact weren't the EXACT same object. This could lead to security leaks wherein two tensors
     think two different symbols in fact are the same symbol."""
 
+    __attr_allowlist__ = ['prev_prime']
+
     def __init__(self):
         self.prev_prime = 1
 
@@ -24,7 +26,10 @@ class PrimeFactory:
         return self.prev_prime
 
 
-class VirtualMachinePrivateScalarManager:
+class VirtualMachinePrivateScalarManager(RecursiveSerde):
+
+    __attr_allowlist__ = ['prime_factory', 'prime2symbol']
+
     def __init__(self):
         self.prime_factory = PrimeFactory()
         self.prime2symbol = {}
