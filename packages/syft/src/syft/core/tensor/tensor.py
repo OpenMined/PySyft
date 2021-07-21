@@ -2,18 +2,13 @@
 from __future__ import annotations
 
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 import torch as th
 
 # relative
 # syft relative
 from ...core.common.serde.recursive import RecursiveSerde
-from ...lib.util import full_name_with_name
-from ...proto.core.tensor.tensor_pb2 import Tensor as Tensor_PB
-from ..common.serde.deserialize import _deserialize as deserialize
 from ..common.serde.serializable import bind_protobuf
-from ..common.serde.serialize import _serialize as serialize
 from .ancestors import AutogradTensorAncestor
 from .ancestors import PhiTensorAncestor
 from .passthrough import PassthroughTensor

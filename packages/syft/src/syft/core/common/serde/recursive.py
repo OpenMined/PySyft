@@ -28,15 +28,22 @@ class RecursiveSerde(Serializable):
 
     # put attr names here - set this to None to include all attrs (not recommended)
     __attr_allowlist__: List[str] = []
+    __serde_overrides__: dict = {}
 
     def _object2proto(self) -> RecursiveSerde_PB:
 
         # if __attr_allowlist__ then only include attrs from that list
-        if self.__attr_allowlist__ is not None:
+        if self.__attr_allowlist__ is not None or self.__serde_overrides__ is not None:
             attrs = {}
             for attr_name in self.__attr_allowlist__:
                 if hasattr(self, attr_name):
-                    attrs[attr_name] = getattr(self, attr_name)
+
+                    attr = getattr(self, attr_name)
+
+                    if attr_name in self.__serde_overrides__.keys():
+                        attr = self.__serde_overrides__[attr_name][0](attr)
+
+                    attrs[attr_name] = attr
 
         # else include all attrs
         else:
@@ -57,6 +64,10 @@ class RecursiveSerde(Serializable):
         obj = object.__new__(class_type)  # type: ignore
 
         for attr_name, attr_value in attrs.items():
+
+            if attr_name in class_type.__serde_overrides__.keys():
+                attr_value = class_type.__serde_overrides__[attr_name][1](attr_value)
+
             setattr(obj, attr_name, attr_value)
 
         return obj
