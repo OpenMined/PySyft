@@ -8,7 +8,7 @@ import torch as th
 
 # relative
 # syft relative
-from ...core.common.serde.serializable import Serializable
+from ...core.common.serde.recursive import RecursiveSerde
 from ...lib.util import full_name_with_name
 from ...proto.core.tensor.tensor_pb2 import Tensor as Tensor_PB
 from ..common.serde.deserialize import _deserialize as deserialize
@@ -21,8 +21,11 @@ from .passthrough import PassthroughTensor
 
 @bind_protobuf
 class Tensor(
-    PassthroughTensor, AutogradTensorAncestor, PhiTensorAncestor, Serializable
+    PassthroughTensor, AutogradTensorAncestor, PhiTensorAncestor, RecursiveSerde
 ):
+
+    __attr_allowlist__ = ['child']
+
     def __init__(self, child):
         """data must be a list of numpy array"""
 
@@ -38,36 +41,3 @@ class Tensor(
             raise Exception("Data must be list or nd.array")
 
         super().__init__(child=child)
-
-    def _object2proto(self) -> Tensor_PB:
-        arrays = []
-        tensors = []
-        if isinstance(self.child, np.ndarray):
-            use_tensors = False
-            arrays = [serialize(self.child)]
-        else:
-            use_tensors = True
-            tensors = [serialize(self.child)]
-
-        return Tensor_PB(
-            obj_type=full_name_with_name(klass=type(self)),
-            use_tensors=use_tensors,
-            arrays=arrays,
-            tensors=tensors,
-        )
-
-    @staticmethod
-    def _proto2object(proto: Tensor_PB) -> Tensor:
-        use_tensors = proto.use_tensors
-        child = []
-        if use_tensors:
-            child = [deserialize(tensor) for tensor in proto.tensors]
-        else:
-            child = [deserialize(array) for array in proto.arrays]
-
-        child = child[0]
-        return Tensor(child)
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return Tensor_PB

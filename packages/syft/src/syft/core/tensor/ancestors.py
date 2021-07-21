@@ -156,7 +156,7 @@ class PhiTensorAncestor(TensorChainManager):
             for i, entity in enumerate(entities):
 
                 if isinstance(min_val, (float, int)):
-                    min_vals = (self.child[i] * 0) + min_val
+                    min_vals = (self.child[i:i+1] * 0) + min_val
                 else:
                     raise Exception(
                         "min_val should be a float, got "
@@ -165,7 +165,7 @@ class PhiTensorAncestor(TensorChainManager):
                     )
 
                 if isinstance(max_val, (float, int)):
-                    max_vals = (self.child[i] * 0) + max_val
+                    max_vals = (self.child[i:i+1] * 0) + max_val
                 else:
                     raise Exception(
                         "min_val should be a float, got "
@@ -173,9 +173,11 @@ class PhiTensorAncestor(TensorChainManager):
                         + " instead."
                     )
 
+                value = self.child[i:i+1]
+
                 new_list.append(
                     class_type(
-                        child=self.child[i],
+                        child=value,
                         entity=entity,
                         min_vals=min_vals,
                         max_vals=max_vals,
