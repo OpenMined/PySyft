@@ -17,7 +17,7 @@ from .initial_gamma import InitialGammaTensor
 @bind_protobuf
 class RowEntityPhiTensor(PassthroughTensor, RecursiveSerde):
 
-    __attr_allowlist__ = ['child']
+    __attr_allowlist__ = ["child"]
 
     def __init__(self, rows, check_shape=True):
         super().__init__(rows)

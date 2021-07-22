@@ -7,12 +7,13 @@ import numpy as np
 # relative
 # syft relative
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
-from .intermediate_gamma import IntermediateGammaTensor
 from ...common.serde.recursive import RecursiveSerde
 from ...common.uid import UID
+from .intermediate_gamma import IntermediateGammaTensor
+
 
 def numpy2list(np_obj):
-    return [list(np_obj.flatten()),np_obj.shape]
+    return [list(np_obj.flatten()), np_obj.shape]
 
 
 def list2numpy(l_shape):
@@ -23,10 +24,20 @@ def list2numpy(l_shape):
 
 class InitialGammaTensor(IntermediateGammaTensor, RecursiveSerde):
 
-    __attr_allowlist__ = ['uid', 'values', 'min_vals', 'max_vals', 'entities', 'scalar_manager',
-                          'term_tensor', 'coeff_tensor', 'bias_tensor', 'child']
+    __attr_allowlist__ = [
+        "uid",
+        "values",
+        "min_vals",
+        "max_vals",
+        "entities",
+        "scalar_manager",
+        "term_tensor",
+        "coeff_tensor",
+        "bias_tensor",
+        "child",
+    ]
 
-    __serde_overrides__ = {'entities': [numpy2list, list2numpy]}
+    __serde_overrides__ = {"entities": [numpy2list, list2numpy]}
 
     def __init__(
         self,

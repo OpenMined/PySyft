@@ -50,8 +50,8 @@ class RecursiveSerde(Serializable):
             attrs = self.__dict__  # type: ignore
 
         return RecursiveSerde_PB(
+            obj_type=get_fully_qualified_name(self),
             data=serialize(Dict(attrs), to_bytes=True),
-            fully_qualified_name=get_fully_qualified_name(self),
         )
 
     @staticmethod
@@ -59,7 +59,7 @@ class RecursiveSerde(Serializable):
 
         attrs = dict(deserialize(proto.data, from_bytes=True))
 
-        class_type = index_syft_by_module_name(proto.fully_qualified_name)
+        class_type = index_syft_by_module_name(proto.obj_type)
 
         obj = object.__new__(class_type)  # type: ignore
 

@@ -3,10 +3,10 @@ import numpy as np
 import pytest
 
 # syft absolute
+from syft import deserialize
+from syft import serialize
 from syft.core.adp.entity import Entity
 from syft.core.tensor.tensor import Tensor
-from syft import serialize
-from syft import deserialize
 
 gonzalo = Entity(name="Gonzalo")
 
@@ -38,6 +38,7 @@ def test_add(x):
         z.child.max_vals == 2 * x.child.max_vals
     ).all(), "(Add, Maxval) Result is not correct"
 
+
 def test_single_entity_phi_tensor_serde(x):
 
     blob = serialize(x.child)
@@ -45,6 +46,7 @@ def test_single_entity_phi_tensor_serde(x):
 
     assert (x.child.min_vals == x2.min_vals).all()
     assert (x.child.max_vals == x2.max_vals).all()
+
 
 # def test_add(x,y):
 #     z = x+y

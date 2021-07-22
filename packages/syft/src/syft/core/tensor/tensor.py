@@ -19,7 +19,7 @@ class Tensor(
     PassthroughTensor, AutogradTensorAncestor, PhiTensorAncestor, RecursiveSerde
 ):
 
-    __attr_allowlist__ = ['child']
+    __attr_allowlist__ = ["child"]
 
     def __init__(self, child):
         """data must be a list of numpy array"""
@@ -36,4 +36,3 @@ class Tensor(
             raise Exception("Data must be list or nd.array")
 
         super().__init__(child=child)
-
