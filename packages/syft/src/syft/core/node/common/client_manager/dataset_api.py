@@ -2,7 +2,6 @@
 import ast
 import logging
 from typing import Any
-from typing import Callable
 from typing import Dict
 from typing import Type
 from typing import Union

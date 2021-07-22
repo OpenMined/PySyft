@@ -160,7 +160,7 @@ WHITESPACE_STR = " \t\n\r"
 
 
 def JSONObject(
-    (s, end),
+    string_info: tuple,
     encoding,
     strict,
     scan_once,
@@ -168,6 +168,7 @@ def JSONObject(
     _w=WHITESPACE.match,
     _ws=WHITESPACE_STR,
 ):
+    s, end = string_info
     pairs = {}
     # Use a slice to prevent IndexError from being raised, the following
     # check will raise a more specific ValueError if the string is empty
@@ -243,7 +244,8 @@ def JSONObject(
     return pairs, end
 
 
-def JSONArray((s, end), scan_once, _w=WHITESPACE.match, _ws=WHITESPACE_STR):
+def JSONArray(string_info: tuple, scan_once, _w=WHITESPACE.match, _ws=WHITESPACE_STR):
+    s, end = string_info
     values = []
     nextchar = s[end : end + 1]
     if nextchar in _ws:

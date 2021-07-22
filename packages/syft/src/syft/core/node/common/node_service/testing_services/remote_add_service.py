@@ -13,7 +13,6 @@ from typing_extensions import final
 
 # relative
 from ...... import serialize
-from ......lib.python import Dict
 from ......lib.python import Int
 from ......proto.core.node.common.service.remote_add_service_pb2 import (
     RemoteAddMessage as RemoteAddMessage_PB,

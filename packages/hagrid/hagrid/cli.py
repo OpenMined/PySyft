@@ -345,8 +345,7 @@ def launch(
 
 @click.command(help="Build (or re-build) PyGrid docker image.")
 def build():
-
-    version = check_docker()
+    check_docker()
 
     print("\n")
 
@@ -430,8 +429,6 @@ def land(node_type, name, port, tag, keep_db):
     print("  - DOCKER: " + version)
 
     print("\n")
-
-    """DOMAIN_PORT=$port DOMAIN_NAME=$name NODE_TYPE=$type docker compose --file "docker-compose.override.yml" --project-name "$name" down"""
 
     cmd = "DOMAIN_PORT=" + str(port)
     # cmd += " TRAEFIK_TAG=" + tag

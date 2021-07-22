@@ -21,7 +21,6 @@ from ....logger import critical
 from ....logger import debug
 from ....logger import error
 from ....logger import traceback_and_raise
-from ....proto.core.node.common.client_pb2 import Client
 from ....proto.core.node.common.client_pb2 import Client as Client_PB
 from ....proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
 from ....util import get_fully_qualified_name

@@ -19,7 +19,7 @@ class RichGroup(click.Group):
         if is_editable_mode():
             mode = "[bold red]EDITABLE DEV MODE[/bold red] :police_car_light:"
         console.print(
-            f"[bold red]HA[/bold red][bold magenta]Grid[/bold magenta]!", ":mage:", mode
+            "[bold red]HA[/bold red][bold magenta]Grid[/bold magenta]!", ":mage:", mode
         )
         table = rich.table.Table()
 

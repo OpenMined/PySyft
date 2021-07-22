@@ -10,6 +10,9 @@ from alembic import context
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
+# syft absolute
+from syft.core.node.common.node_table import Base
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
@@ -23,10 +26,6 @@ fileConfig(config.config_file_name)
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 # target_metadata = None
-
-# syft absolute
-from syft.core.node.common.node_table import Base
-from syft.core.node.common.node_table.bin_obj import BinObject
 
 target_metadata = Base.metadata
 

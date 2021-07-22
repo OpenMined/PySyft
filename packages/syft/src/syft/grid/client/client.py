@@ -106,7 +106,7 @@ def login(
         try:
             url = "http://docker-host:" + str(port)
             requests.get(url)
-        except Exception as e:
+        except Exception:
             url = "http://localhost:" + str(port)
 
     if verbose:
@@ -121,13 +121,6 @@ def login(
         )
     else:
         credentials = {"email": email, "password": password}
-
-    metadata = conn_type(url=url)._get_metadata()  # type: ignore
-
-    if metadata.node_type == "Domain":
-        client_type = DomainClient
-    else:
-        client_type = NetworkClient
 
     # connecting to domain
     node = connect(url=url, credentials=credentials, conn_type=conn_type)

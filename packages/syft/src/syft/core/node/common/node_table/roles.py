@@ -1,7 +1,6 @@
 # third party
 from sqlalchemy import Boolean
 from sqlalchemy import Column
-from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import String
 

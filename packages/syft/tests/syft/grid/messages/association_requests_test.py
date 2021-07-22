@@ -8,7 +8,6 @@ from typing import List
 import pytest
 
 # syft absolute
-import syft
 from syft import deserialize
 from syft import serialize
 from syft.core.io.address import Address
