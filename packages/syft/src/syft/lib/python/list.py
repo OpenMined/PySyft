@@ -160,6 +160,8 @@ class List(UserList, PyPrimitive):
         # list comprehension doesn't work since it results in a
         # [generator()] which is not equal to an empty list
         for element in proto.data:
+            print(type(element))
+            print(element)
             value.append(upcast(deserialize(blob=element, from_bytes=True)))
         new_list = List(value=value)
         new_list._id = id_
