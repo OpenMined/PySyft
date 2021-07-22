@@ -4,6 +4,7 @@ import io
 import os
 from pathlib import Path
 import subprocess
+from typing import Optional
 
 # third party
 import click
@@ -23,7 +24,9 @@ from .lib import should_provision_remote
 
 
 class RichGroup(click.Group):
-    def format_usage(self, ctx, formatter):
+    def format_usage(
+        self, ctx: click.core.Context, formatter: click.formatting.HelpFormatter
+    ) -> None:
         DEPENDENCIES = check_deps()
         sio = io.StringIO()
         console = rich.get_console()
@@ -60,7 +63,7 @@ class RichGroup(click.Group):
 
 
 @click.group(cls=RichGroup)
-def cli():
+def cli() -> None:
     pass
 
 
@@ -144,19 +147,19 @@ def cli():
     help="Optional: branch to monitor for updates",
 )
 def launch(
-    name,
-    node_type,
-    port,
-    tag,
-    keep_db,
-    host,
-    username=None,
-    password=None,
-    key_path=None,
+    name: str,
+    node_type: str,
+    port: int,
+    tag: str,
+    keep_db: bool,
+    host: str,
+    username: Optional[str] = None,
+    password: Optional[str] = None,
+    key_path: Optional[str] = None,
     mode: str = "provision",
     repo: str = "OpenMined/PySyft",
     branch: str = "demo_strike_team_branch_4",
-):
+) -> None:
     # run pre-processing of arguments
     name = pre_process_name(name=name, node_type=node_type)
     tag = pre_process_tag(tag=tag, name=name, node_type=node_type)
@@ -171,7 +174,7 @@ def launch(
         # check port to make sure it's not in use - if it's in use then increment until it's not.
         port = find_available_port(host=host, port=port)
 
-        if not pre_process_keep_db(keep_db, tag):
+        if not pre_process_keep_db(keep_db):
             print("Deleting database for node...")
             subprocess.call("docker volume rm " + tag + "_app-db-data", shell=True)
             print()
@@ -261,7 +264,7 @@ def launch(
 
 
 @click.command(help="Build (or re-build) PyGrid docker image.")
-def build():
+def build() -> None:
     check_docker()
 
     print("\n")
@@ -306,13 +309,7 @@ def build():
     type=bool,
     help="""If restarting a node that already existed, don't/do reset the database (Default: deletes the db)""",
 )
-def land(node_type, name, port, tag, keep_db):
-
-    _name = ""
-    for word in name:
-        _name += word + " "
-    name = _name[:-1]
-
+def land(node_type: str, name: str, port: int, tag: str, keep_db: bool) -> None:
     if name == "all":
         subprocess.call("docker rm `docker ps -aq` --force", shell=True)
         return

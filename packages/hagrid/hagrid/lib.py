@@ -4,6 +4,8 @@ import os
 from pathlib import Path
 import site
 import subprocess
+from typing import Optional
+from typing import Union
 
 # third party
 import git
@@ -40,7 +42,7 @@ def hagrid_root() -> str:
     return os.path.abspath(str(Path(__file__).parent.parent))
 
 
-def asset_path() -> os.PathLike:
+def asset_path() -> Path:
     return Path(hagrid_root()) / "hagrid"
 
 
@@ -62,7 +64,7 @@ def is_editable_mode() -> bool:
     return installed_as_editable
 
 
-def repo_src_path() -> os.PathLike:
+def repo_src_path() -> Path:
     if EDITABLE_MODE:
         return Path(os.path.abspath(Path(hagrid_root()) / "../../"))
     else:
@@ -73,7 +75,7 @@ def grid_src_path() -> str:
     return str(repo_src_path() / "packages" / "grid")
 
 
-def check_is_git(path: os.PathLike) -> bool:
+def check_is_git(path: Path) -> bool:
     is_repo = False
     try:
         git.Repo(path)
@@ -120,9 +122,11 @@ repo_branch = "demo_strike_team_branch_4"
 update_repo(repo=GIT_REPO, branch=repo_branch)
 
 
-def should_provision_remote(username, password, key_path) -> bool:
+def should_provision_remote(
+    username: Optional[str], password: Optional[str], key_path: Optional[str]
+) -> bool:
     is_remote = username is not None or password is not None or key_path is not None
-    if username and password or username and key_path:
+    if (username and password) or (username and key_path):
         return is_remote
     if is_remote:
         raise Exception("--username requires either --password or --key_path")
@@ -139,27 +143,23 @@ def pre_process_tag(tag: str, node_type: str, name: str) -> str:
     return node_type + "_" + tag
 
 
-def pre_process_name(name: list, node_type: str) -> str:
-    #  concatenate name's list of words into string
-    _name = ""
-    for word in name:
-        _name += word + " "
-    name = _name[:-1]
-
-    if name == "":
-        name = "The " + names.get_full_name() + " " + node_type.capitalize()
-
+def pre_process_name(name: str, node_type: str) -> str:
+    if not name:
+        return "The " + names.get_full_name() + " " + node_type.capitalize()
     return name
 
 
-def pre_process_keep_db(keep_db, tag) -> bool:
+def pre_process_keep_db(keep_db: Union[str, bool]) -> bool:
     if isinstance(keep_db, str):
         keep_db = True if keep_db.lower() == "true" else False
     return keep_db
 
 
-def find_available_port(host, port) -> bool:
+def find_available_port(host: str, port: int) -> int:
     port_available = False
+    # Tudor: I am not sure if this is the correct way to see if a port is open.
+    # The best way would be to let the OS pick an open port (binding to port 0 does that) and then
+    # we can reuse that
     while not port_available:
         try:
             requests.get("http://" + host + ":" + str(port))
@@ -173,16 +173,17 @@ def find_available_port(host, port) -> bool:
     return port
 
 
-def check_docker():
+def check_docker() -> str:
     result = os.popen("docker compose version", "r").read()
 
     if "version" in result:
         version = result.split()[-1]
+        return version
     else:
         print("This may be a linux machine, either that or docker compose isn't s")
         print("Result:" + result)
         out = subprocess.run(["docker", "compose"], capture_output=True, text=True)
         if "'compose' is not a docker command" in out.stderr:
             raise Exception(DOCKER_ERROR)
-
-    return version
+        # Tudor: here we need to parse the out response
+        raise NotImplementedError
