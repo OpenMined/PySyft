@@ -10,6 +10,7 @@ on:
   pull_request:
     branches:
       - dev
+      - demo_strike_team_branch_4
     paths:
       - ".github/workflows/syft-*.yml"
       - "packages/syft/**.py"
