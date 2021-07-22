@@ -9,6 +9,10 @@ import click
 # relative
 from .art import hagrid
 from .grammar import BadGrammar
+from .grammar import GrammarTerm
+from .grammar import GrammarVerb
+from .grammar import HostGrammarTerm
+from .grammar import SourceGrammarTerm
 from .grammar import parse_grammar
 from .lib import GRID_SRC_PATH
 from .lib import check_docker
@@ -122,33 +126,110 @@ def launch(
 
     # Verb	Adjective	Object	prep	proper noun / Technology:(optional) Port	from	Github URL / Location / Branch
     # launch	slytherine	domain	to	docker:port	from	github.com/OpenMined/PySyft/tree/dev
-    launch_grammar = [
+
+    full_sentence = [
         {
-            "type": "verb",
-            "command": "launch",
-            "mappings": {
-                6: [
-                    "adjective",
-                    "object",
-                    "preposition",
-                    "propernoun",
-                    "preposition",
-                    "propernoun",
-                ]
-            },
+            "name": "node_name",
+            "type": "adjective",
+            "klass": GrammarTerm,
+            "default": random_name,
+            "example": "'My Domain'",
         },
-        {"type": "adjective", "default": random_name, "example": "'My Domain'"},
-        {"type": "object", "default": "domain", "options": ["domain", "network"]},
-        {"type": "preposition", "default": "to", "options": ["to"]},
-        {"type": "propernoun", "default": "docker", "example": "docker:8081+"},
-        {"type": "preposition", "default": "from", "options": ["from"]},
         {
+            "name": "node_type",
+            "type": "object",
+            "klass": GrammarTerm,
+            "default": "domain",
+            "options": ["domain", "network"],
+        },
+        {
+            "name": "preposition",
+            "type": "preposition",
+            "klass": GrammarTerm,
+            "default": "to",
+            "options": ["to"],
+        },
+        {
+            "name": "host",
             "type": "propernoun",
+            "klass": HostGrammarTerm,
+            "default": "docker",
+            "example": "docker:8081+",
+        },
+        {
+            "name": "preposition",
+            "type": "preposition",
+            "klass": GrammarTerm,
+            "default": "from",
+            "options": ["from"],
+        },
+        {
+            "name": "source",
+            "type": "propernoun",
+            "klass": SourceGrammarTerm,
             "default": "github.com/OpenMined/PySyft/tree/demo_strike_team_branch_4",
         },
     ]
+
+    abbreviations = {
+        6: [
+            "adjective",  # name
+            "object",  # node_type
+            "preposition",  # to
+            "propernoun",  # host
+            "preposition",  # from
+            "propernoun",  # source
+        ],
+        5: [
+            None,  # name
+            "object",  # node_type
+            "preposition",  # to
+            "propernoun",  # host
+            "preposition",  # from
+            "propernoun",  # source
+        ],
+        4: [
+            "adjective",  # name
+            "object",  # node_type
+            "preposition",  # to
+            "propernoun",  # host
+            None,  # ignore
+            None,  # ignore
+        ],
+        3: [
+            None,  # ignore
+            "object",  # node_type
+            "preposition",  # to
+            "propernoun",  # host
+            None,  # ignore
+            None,  # ignore
+        ],
+        2: [
+            "adjective",  # name
+            "object",  # node_type
+            None,  # ignore
+            None,  # ignore
+            None,  # ignore
+            None,  # ignore
+        ],
+        1: [
+            None,  # ignore
+            "object",  # node_type
+            None,  # ignore
+            None,  # ignore
+            None,  # ignore
+            None,  # ignore
+        ],
+    }
+
+    verb = GrammarVerb(
+        command="launch",
+        full_sentence=full_sentence,
+        abbreviations=abbreviations,
+    )
+
     try:
-        grammar = parse_grammar(args, launch_grammar)
+        grammar = parse_grammar(args=args, verb=verb)
     except BadGrammar as e:
         print(e)
         return
