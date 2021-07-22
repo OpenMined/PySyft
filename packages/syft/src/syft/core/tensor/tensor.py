@@ -36,3 +36,4 @@ class Tensor(
             raise Exception("Data must be list or nd.array")
 
         super().__init__(child=child)
+
