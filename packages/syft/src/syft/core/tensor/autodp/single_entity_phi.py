@@ -22,7 +22,7 @@ from .initial_gamma import InitialGammaTensor
 @bind_protobuf
 class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, RecursiveSerde):
 
-    __attr_allowlist__ = ['child', '_min_vals', '_max_vals', 'entity', 'scalar_manager']
+    __attr_allowlist__ = ["child", "_min_vals", "_max_vals", "entity", "scalar_manager"]
 
     def __init__(
         self,
@@ -179,10 +179,9 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             return NotImplemented
 
     def __neg__(self):
-
-        data = -self.child
-        min_vals = -self.max_vals
-        max_vals = -self.min_vals
+        self.data = -self.child
+        self.min_vals = -self.max_vals
+        self.max_vals = -self.min_vals
 
     def __getitem__(self, key) -> SingleEntityPhiTensor:
         data = self.child.__getitem__(key)
@@ -436,6 +435,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             max_vals=max_vals,
             scalar_manager=self.scalar_manager,
         )
+
     #
     # def _object2proto(self) -> Tensor_PB:
     #     arrays = []

@@ -90,4 +90,3 @@ def test_iterator_methods(
     for itemptr, local_item in zip(itemsptr, getattr(d, method_name)()):
         get_item = itemptr.get()
         assert get_item == local_item
-
