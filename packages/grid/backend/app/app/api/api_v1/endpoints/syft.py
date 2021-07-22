@@ -52,7 +52,7 @@ async def syft_route(
 
 
 @router.post("/stream", response_model=str)
-async def syft_route(
+async def syft_stream(
     request: Request,
 ) -> Any:
     data = await request.body()
@@ -63,7 +63,7 @@ async def syft_route(
         msg_bytes_str = data.decode("latin-1")
         try:
             celery_app.send_task("app.worker.msg_without_reply", args=[msg_bytes_str])
-        except Exception as e:
+        except Exception:
             print(f"Failed to queue work on streaming endpoint. {msg_bytes_str}")
     else:
         print("Processing streaming message on web node")

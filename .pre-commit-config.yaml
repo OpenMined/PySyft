@@ -33,7 +33,7 @@ repos:
 #       additional_dependencies:
 #         - flake8-kwarger
 #         - darglint
-       exclude: ^(packages/syft/src/syft/proto|packages/syft/examples/duet|packages/grid/ansible/mitogen)
+       exclude: ^(packages/syft/src/syft/proto|packages/syft/examples/duet|packages/grid/ansible/)
   # - repo: https://github.com/pre-commit/mirrors-mypy
   #   rev: v0.812
   #   hooks:

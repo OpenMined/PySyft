@@ -203,7 +203,7 @@ def delete_dataset_route(
 
     # Build Syft Message
     msg = DeleteDatasetMessage(
-        address=node.address, dataset_id=dataset_id, reply_to=domain.address
+        address=node.address, dataset_id=dataset_id, reply_to=node.address
     ).sign(signing_key=user_key)
 
     # Process syft message
