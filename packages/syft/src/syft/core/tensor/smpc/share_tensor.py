@@ -34,13 +34,15 @@ class ShareTensor(PassthroughTensor, Serializable):
         ring_size: int = 2 ** 64,
         value: Optional[Any] = None,
     ) -> None:
-
         self.rank = rank
         self.ring_size = ring_size
         self.min_value, self.max_value = ShareTensor.compute_min_max_from_ring(
             self.ring_size
         )
         super().__init__(value)
+
+    def copy_tensor(self):
+        return ShareTensor(rank=self.rank, ring_size=self.ring_size)
 
     @staticmethod
     @lru_cache(32)
@@ -118,7 +120,9 @@ class ShareTensor(PassthroughTensor, Serializable):
             share = ShareTensor(value=share, rank=rank)
 
         shares = [
-            generator_shares.integers(low=share.min_value, high=share.max_value)
+            generator_shares.integers(
+                low=share.min_value, high=share.max_value, size=shape
+            )
             for _ in range(nr_parties)
         ]
         share.child += shares[rank] - shares[(rank + 1) % nr_parties]

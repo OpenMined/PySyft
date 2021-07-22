@@ -1,10 +1,12 @@
 # stdlib
 import itertools
+import functools
 import operator
 import secrets
 from typing import Any
 from typing import Callable
 from typing import List
+from typing import Dict
 from typing import Optional
 from typing import Tuple
 
@@ -19,6 +21,21 @@ from syft.core.tensor.smpc.share_tensor import ShareTensor
 # relative
 # syft relative
 from .utils import ispointer
+
+METHODS_FORWARD_ALL_SHARES = {
+    "t",
+    "squeeze",
+    "unsqueeze",
+    "view",
+    "sum",
+    "clone",
+    "flatten",
+    "reshape",
+    "repeat",
+    "narrow",
+    "dim",
+    "transpose",
+}
 
 
 class MPCTensor(PassthroughTensor):
@@ -166,8 +183,8 @@ class MPCTensor(PassthroughTensor):
         for share in local_shares[1:]:
             result = result + share
 
-        if not is_share_tensor:
-            result = result.decode()
+        # if not is_share_tensor:
+        #    result = result.decode()
         return result
 
     @staticmethod
@@ -178,6 +195,29 @@ class MPCTensor(PassthroughTensor):
     ) -> Tuple[int]:
         res = operator(np.empty(x_shape), np.empty(y_shape)).shape
         return res
+
+    def __getattribute__(self, attr_name: str) -> Any:
+        if attr_name in METHODS_FORWARD_ALL_SHARES:
+
+            def method_all_shares(
+                _self: "MPCTensor", *args: List[Any], **kwargs: Dict[Any, Any]
+            ) -> Any:
+                shares = []
+
+                for share in _self.child:
+                    method = getattr(share, attr_name)
+                    new_share = method(*args, **kwargs)
+                    shares.append(new_share)
+
+                    dummy_res = getattr(np.empty(_self.mpc_shape), attr_name)(
+                        *args, **kwargs
+                    )
+                    new_shape = dummy_res.shape
+                res = MPCTensor(shares=shares, shape=new_shape)
+                return res
+
+            return functools.partial(method_all_shares, self)
+        return object.__getattribute__(self, attr_name)
 
     def apply_private_op(self, other: "MPCTensor", op: str) -> "MPCTensor":
         operation = getattr(operator, op)

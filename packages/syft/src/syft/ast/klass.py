@@ -252,7 +252,10 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
 
         return result
 
-    if "ShareTensor" in attr_path_and_name:
+    from ..core.node.common.action.smpc_action_message import MAP_FUNC_TO_ACTION
+
+    method_name = attr_path_and_name.rsplit(".", 1)[-1]
+    if "ShareTensor" in attr_path_and_name and method_name in MAP_FUNC_TO_ACTION:
         return run_class_smpc_method
 
     return run_class_method

@@ -286,9 +286,6 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     def resize(self, new_shape: Union[int, TypeTuple[int, ...]]) -> PassthroughTensor:
         return self.__class__(self.child.resize(new_shape))
 
-    # def sum(self, dim):
-    #     return self.__class__(self.child.sum(dim))
-
     @property
     def T(self) -> PassthroughTensor:
         return self.transpose()
@@ -393,6 +390,10 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         self, axis: Optional[Union[int, TypeTuple[int, ...]]] = None
     ) -> PassthroughTensor:
         result = self.child.sum(axis=axis)
+        if hasattr(self, "copy_tensor"):
+            tensor = self.copy_tensor()
+            tensor.child = result
+            return tensor
         return self.__class__(result)
 
     # numpy.take(a, indices, axis=None, out=None, mode='raise')
