@@ -7,7 +7,6 @@ from typing import Tuple as TypeTuple
 import click
 
 # relative
-from .art import hagrid
 from .grammar import BadGrammar
 from .grammar import GrammarTerm
 from .grammar import GrammarVerb
@@ -16,11 +15,6 @@ from .grammar import SourceGrammarTerm
 from .grammar import parse_grammar
 from .lib import GRID_SRC_PATH
 from .lib import check_docker
-from .lib import find_available_port
-from .lib import pre_process_keep_db
-from .lib import pre_process_name
-from .lib import pre_process_tag
-from .lib import should_provision_remote
 from .names import random_name
 from .style import RichGroup
 
