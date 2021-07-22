@@ -1,62 +1,24 @@
 # stdlib
 import hashlib
-import io
-import os
-from pathlib import Path
 import subprocess
+from typing import Tuple as TypeTuple
 
 # third party
 import click
-import rich
 
 # relative
 from .art import hagrid
-from .deps import check_deps
+from .grammar import BadGrammar
+from .grammar import parse_grammar
 from .lib import GRID_SRC_PATH
 from .lib import check_docker
 from .lib import find_available_port
-from .lib import is_editable_mode
 from .lib import pre_process_keep_db
 from .lib import pre_process_name
 from .lib import pre_process_tag
 from .lib import should_provision_remote
-
-
-class RichGroup(click.Group):
-    def format_usage(self, ctx, formatter):
-        DEPENDENCIES = check_deps()
-        sio = io.StringIO()
-        console = rich.get_console()
-        mode = ""
-        if is_editable_mode():
-            mode = "[bold red]EDITABLE DEV MODE[/bold red] :police_car_light:"
-        console.print(
-            f"[bold red]HA[/bold red][bold magenta]Grid[/bold magenta]!", ":mage:", mode
-        )
-        table = rich.table.Table()
-
-        table.add_column("Dependency", style="magenta")
-        table.add_column("Found", justify="right")
-
-        for dep in sorted(DEPENDENCIES.keys()):
-            path = DEPENDENCIES[dep]
-            installed_str = ":white_check_mark:" if path is not None else ":cross_mark:"
-            dep_emoji = ":gear:"
-            if dep == "docker":
-                dep_emoji = ":whale:"
-            if dep == "git":
-                dep_emoji = ":file_folder:"
-            if dep == "virtualbox":
-                dep_emoji = ":ballot_box_with_ballot: "
-            if dep == "vagrant":
-                dep_emoji = ":person_mountain_biking:"
-            if dep == "ansible-playbook":
-                dep_emoji = ":blue_book:"
-            table.add_row(f"{dep_emoji} {dep}", installed_str)
-            # console.print(dep_emoji, dep, installed_str)
-        console.print(table)
-        console.print("Usage: hagrid [OPTIONS] COMMAND [ARGS]...")
-        formatter.write(sio.getvalue())
+from .names import random_name
+from .style import RichGroup
 
 
 @click.group(cls=RichGroup)
@@ -65,7 +27,7 @@ def cli():
 
 
 @click.command(help="Start a new PyGrid domain/network node!")
-@click.argument("name", type=str, nargs=-1)
+@click.argument("args", type=str, nargs=-1)
 @click.option(
     "--type",
     "node_type",
@@ -144,7 +106,7 @@ def cli():
     help="Optional: branch to monitor for updates",
 )
 def launch(
-    name,
+    args: TypeTuple[str],
     node_type,
     port,
     tag,
@@ -157,107 +119,147 @@ def launch(
     repo: str = "OpenMined/PySyft",
     branch: str = "demo_strike_team_branch_4",
 ):
-    # run pre-processing of arguments
-    name = pre_process_name(name=name, node_type=node_type)
-    tag = pre_process_tag(tag=tag, name=name, node_type=node_type)
 
-    # are we deploying locally or remotely?
-    is_remote = should_provision_remote(username, password, key_path)
+    # Verb	Adjective	Object	prep	proper noun / Technology:(optional) Port	from	Github URL / Location / Branch
+    # launch	slytherine	domain	to	docker:port	from	github.com/OpenMined/PySyft/tree/dev
+    launch_grammar = [
+        {
+            "type": "verb",
+            "command": "launch",
+            "mappings": {
+                6: [
+                    "adjective",
+                    "object",
+                    "preposition",
+                    "propernoun",
+                    "preposition",
+                    "propernoun",
+                ]
+            },
+        },
+        {"type": "adjective", "default": random_name, "example": "'My Domain'"},
+        {"type": "object", "default": "domain", "options": ["domain", "network"]},
+        {"type": "preposition", "default": "to", "options": ["to"]},
+        {"type": "propernoun", "default": "docker", "example": "docker:8081+"},
+        {"type": "preposition", "default": "from", "options": ["from"]},
+        {
+            "type": "propernoun",
+            "default": "github.com/OpenMined/PySyft/tree/demo_strike_team_branch_4",
+        },
+    ]
+    try:
+        grammar = parse_grammar(args, launch_grammar)
+    except BadGrammar as e:
+        print(e)
+        return
 
-    if not is_remote:
+    print(grammar)
+    # name = pre_process_name(name=name, node_type=node_type)
+    print("launch")
+    print(args, type(args))
+    print(node_type, type(node_type))
+    # print(node_type, type(node_type))
+    # # run pre-processing of arguments
 
-        version = check_docker()
+    # tag = pre_process_tag(tag=tag, name=name, node_type=node_type)
 
-        # check port to make sure it's not in use - if it's in use then increment until it's not.
-        port = find_available_port(host=host, port=port)
+    # # are we deploying locally or remotely?
+    # is_remote = should_provision_remote(username, password, key_path)
 
-        if not pre_process_keep_db(keep_db, tag):
-            print("Deleting database for node...")
-            subprocess.call("docker volume rm " + tag + "_app-db-data", shell=True)
-            print()
+    # if not is_remote:
 
-    hagrid()
+    #     version = check_docker()
 
-    if not is_remote:
-        print(
-            "Launching a "
-            + str(node_type)
-            + " PyGrid node on port "
-            + str(port)
-            + "!\n"
-        )
-    else:
-        print("Launching a " + str(node_type) + f" PyGrid node on http://{host}!\n")
-    print("  - TYPE: " + str(node_type))
-    print("  - NAME: " + str(name))
-    if not is_remote:
-        print("  - TAG: " + str(tag))
-        print("  - PORT: " + str(port))
-        print("  - DOCKER: " + version)
-    else:
-        print("  - HOST: " + host)
-        if username is not None:
-            print("  - USERNAME: " + username)
+    #     # check port to make sure it's not in use - if it's in use then increment until it's not.
+    #     port = find_available_port(host=host, port=port)
 
-        if password is not None:
-            print("  - PASSWORD: *************")
+    #     if not pre_process_keep_db(keep_db, tag):
+    #         print("Deleting database for node...")
+    #         subprocess.call("docker volume rm " + tag + "_app-db-data", shell=True)
+    #         print()
 
-        if key_path is not None:
-            print("  - KEY_PATH: " + key_path)
+    # hagrid()
 
-    print("\n")
+    # if not is_remote:
+    #     print(
+    #         "Launching a "
+    #         + str(node_type)
+    #         + " PyGrid node on port "
+    #         + str(port)
+    #         + "!\n"
+    #     )
+    # else:
+    #     print("Launching a " + str(node_type) + f" PyGrid node on http://{host}!\n")
+    # print("  - TYPE: " + str(node_type))
+    # print("  - NAME: " + str(name))
+    # if not is_remote:
+    #     print("  - TAG: " + str(tag))
+    #     print("  - PORT: " + str(port))
+    #     print("  - DOCKER: " + version)
+    # else:
+    #     print("  - HOST: " + host)
+    #     if username is not None:
+    #         print("  - USERNAME: " + username)
 
-    cmd = ""
-    if not is_remote:
-        cmd += "DOMAIN_PORT=" + str(port)
-        cmd += " TRAEFIK_TAG=" + tag
+    #     if password is not None:
+    #         print("  - PASSWORD: *************")
 
-    cmd += ' DOMAIN_NAME="' + name + '"'
-    cmd += " NODE_TYPE=" + node_type
+    #     if key_path is not None:
+    #         print("  - KEY_PATH: " + key_path)
 
-    if is_remote:
-        # use ansible on remote host
-        # if username is None:
-        #     cmd += f' USERNAME="{username}"'
-        # elif password is not None:
-        #     cmd += f' PASSWORD="{password}"'
-        # elif key_path is not None:
-        #     cmd += f' KEY_PATH="{key_path}"'
+    # print("\n")
 
-        current_path = os.path.dirname(__file__)
-        grid_path = Path(os.path.abspath(f"{current_path}/../../grid"))
-        playbook_path = grid_path / "ansible/site.yml"
-        ansible_cfg_path = grid_path / "ansible.cfg"
+    # cmd = ""
+    # if not is_remote:
+    #     cmd += "DOMAIN_PORT=" + str(port)
+    #     cmd += " TRAEFIK_TAG=" + tag
 
-        if not os.path.exists(playbook_path):
-            print(f"Can't find playbook site.yml at: {playbook_path}")
-        cmd = f"ANSIBLE_CONFIG={ansible_cfg_path} ansible-playbook -i {host}, {playbook_path}"
-        if host != "localhost":
-            cmd += f" --private-key {key_path} --user {username}"
-        ANSIBLE_ARGS = {
-            "node_type": node_type,
-            "node_name": name,
-            "github_repo": repo,
-            "repo_branch": branch,
-        }
-        if mode == "deploy":
-            ANSIBLE_ARGS["deploy_only"] = "true"
+    # cmd += ' DOMAIN_NAME="' + name + '"'
+    # cmd += " NODE_TYPE=" + node_type
 
-        if host == "localhost":
-            ANSIBLE_ARGS["local"] = "true"
+    # if is_remote:
+    #     # use ansible on remote host
+    #     # if username is None:
+    #     #     cmd += f' USERNAME="{username}"'
+    #     # elif password is not None:
+    #     #     cmd += f' PASSWORD="{password}"'
+    #     # elif key_path is not None:
+    #     #     cmd += f' KEY_PATH="{key_path}"'
 
-        args = []
-        for k, v in ANSIBLE_ARGS.items():
-            args.append(f"{k}={v}")
-        args_str = " ".join(args)
-        cmd += f' -e "{args_str}"'
-    else:
-        # use docker on localhost
-        cmd += " docker compose -p " + tag
-        cmd += " up"
-        cmd = "cd " + GRID_SRC_PATH + ";" + cmd
-    print("Running: \n", cmd)
-    subprocess.call(cmd, shell=True)
+    #     current_path = os.path.dirname(__file__)
+    #     grid_path = Path(os.path.abspath(f"{current_path}/../../grid"))
+    #     playbook_path = grid_path / "ansible/site.yml"
+    #     ansible_cfg_path = grid_path / "ansible.cfg"
+
+    #     if not os.path.exists(playbook_path):
+    #         print(f"Can't find playbook site.yml at: {playbook_path}")
+    #     cmd = f"ANSIBLE_CONFIG={ansible_cfg_path} ansible-playbook -i {host}, {playbook_path}"
+    #     if host != "localhost":
+    #         cmd += f" --private-key {key_path} --user {username}"
+    #     ANSIBLE_ARGS = {
+    #         "node_type": node_type,
+    #         "node_name": name,
+    #         "github_repo": repo,
+    #         "repo_branch": branch,
+    #     }
+    #     if mode == "deploy":
+    #         ANSIBLE_ARGS["deploy_only"] = "true"
+
+    #     if host == "localhost":
+    #         ANSIBLE_ARGS["local"] = "true"
+
+    #     args = []
+    #     for k, v in ANSIBLE_ARGS.items():
+    #         args.append(f"{k}={v}")
+    #     args_str = " ".join(args)
+    #     cmd += f' -e "{args_str}"'
+    # else:
+    #     # use docker on localhost
+    #     cmd += " docker compose -p " + tag
+    #     cmd += " up"
+    #     cmd = "cd " + GRID_SRC_PATH + ";" + cmd
+    # print("Running: \n", cmd)
+    # subprocess.call(cmd, shell=True)
 
 
 @click.command(help="Build (or re-build) PyGrid docker image.")

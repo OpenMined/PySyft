@@ -121,7 +121,7 @@ def pre_process_name(name: list, node_type: str) -> str:
         _name += word + " "
     name = _name[:-1]
 
-    if name == "":
+    if name == "" or name == ():
         name = "The " + names.get_full_name() + " " + node_type.capitalize()
 
     return name
