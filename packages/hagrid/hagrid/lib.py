@@ -183,6 +183,6 @@ def check_docker():
         print("Result:" + result)
         out = subprocess.run(["docker", "compose"], capture_output=True, text=True)
         if "'compose' is not a docker command" in out.stderr:
-            raise Exception()
+            raise Exception(DOCKER_ERROR)
 
     return version

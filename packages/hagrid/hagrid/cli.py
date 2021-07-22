@@ -262,6 +262,8 @@ def launch(
 
 @click.command(help="Build (or re-build) PyGrid docker image.")
 def build():
+    check_docker()
+
     print("\n")
 
     cmd = ""
