@@ -104,7 +104,7 @@ jobs:
        #     git diff --name-only $(git merge-base ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }}) | xargs docstr-coverage --accept-empty
 
   python-tests-latest-versions:
-     needs: [python-linting]
+    needs: [python-linting]
     strategy:
       max-parallel: 3
       matrix:

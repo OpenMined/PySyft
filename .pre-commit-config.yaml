@@ -3,15 +3,19 @@ repos:
     rev: v4.0.1
     hooks:
       - id: check-ast
+        exclude: ^(packages/grid/ansible/)
       - id: trailing-whitespace
       - id: check-docstring-first
+        exclude: ^(packages/grid/ansible/)
       - id: check-json
       - id: check-added-large-files
       - id: check-yaml
       - id: check-merge-conflict
         args: ["--assume-in-merge"]
       - id: check-executables-have-shebangs
+        exclude: ^(packages/grid/ansible/)
       - id: debug-statements
+        exclude: ^(packages/grid/ansible/)
       - id: name-tests-test
         exclude: ^(packages/grid/backend/app/app/tests/utils/)
       - id: requirements-txt-fixer
