@@ -9,8 +9,6 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
 # syft absolute
-import syft as sy
-from syft import deserialize
 from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.node.abstract.node import AbstractNode
 from syft.core.node.common.node_service.auth import service_auth
@@ -21,13 +19,11 @@ from syft.core.node.common.node_service.success_resp_message import (
     SuccessResponseMessage,
 )
 from syft.core.node.domain.enums import AssociationRequestResponses
-from syft.lib.python import Dict as SyftDict
 from syft.logger import info
 
 # relative
 from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
-from ...node_table.utils import model_to_json
 from .association_request_messages import DeleteAssociationRequestMessage
 from .association_request_messages import GetAssociationRequestMessage
 from .association_request_messages import GetAssociationRequestResponse
@@ -45,7 +41,8 @@ def send_association_request_msg(
 ) -> SuccessResponseMessage:
     # Check Key permissions
     info(
-        f"Node {node} - send_association_request_msg: got SendAssociationRequestMessage. Info: {msg.source} - {msg.target}"
+        f"Node {node} - send_association_request_msg: got SendAssociationRequestMessage. "
+        f"Info: {msg.source} - {msg.target}"
     )
     allowed = node.users.can_manage_infrastructure(verify_key=verify_key)
     if allowed:

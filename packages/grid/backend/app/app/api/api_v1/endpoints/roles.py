@@ -1,6 +1,5 @@
 # stdlib
 from typing import Any
-from typing import Optional
 
 # third party
 from fastapi import APIRouter
@@ -29,7 +28,6 @@ from syft.core.node.common.node_service.role_manager.role_manager_messages impor
 from syft.core.node.common.node_service.role_manager.role_manager_messages import (
     UpdateRoleMessage,
 )
-from syft.core.node.common.node_table.utils import model_to_json
 
 # grid absolute
 from app.api import deps

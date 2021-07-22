@@ -6,7 +6,6 @@ def query_implementation(tensor_type, func):
     cache = HANDLED_FUNCTIONS[tensor_type]
     if name in cache:
         return HANDLED_FUNCTIONS[tensor_type][func.__name__]
-    here = HANDLED_FUNCTIONS
     return None
 
 

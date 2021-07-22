@@ -1,8 +1,5 @@
 # stdlib
-from base64 import b64decode
-from base64 import b64encode
 import csv
-from datetime import datetime
 import io
 import tarfile
 from typing import List
@@ -52,7 +49,6 @@ def _handle_dataset_creation_grid_ui(
     tar_obj = tarfile.open(fileobj=file_obj)
     tar_obj.extractall()
     dataset_id = node.datasets.register(**msg.metadata)
-    data = []
     for item in tar_obj.members:
         if not item.isdir():
             reader = csv.reader(
@@ -184,15 +180,14 @@ def update_dataset_msg(
 ) -> SuccessResponseMessage:
     # Get Payload Content
     _allowed = node.users.can_upload_data(verify_key=verify_key)
-    _msg = {}
     if _allowed:
         metadata = {
             key: msg.metadata[key].upcast()
             for (key, value) in msg.metadata.items()
-            if msg.metadata[key] != None
+            if msg.metadata[key] is not None
         }
 
-        _msg = node.datasets.set(dataset_id=msg.dataset_id, metadata=metadata)
+        node.datasets.set(dataset_id=msg.dataset_id, metadata=metadata)
     else:
         raise AuthorizationError("You're not allowed to upload data!")
 
@@ -242,7 +237,7 @@ class DatasetManagerService(ImmediateNodeServiceWithReply):
             DeleteDatasetMessage,
         ],
         verify_key: VerifyKey,
-    ) -> Union[SuccessResponseMessage, GetDatasetResponse, GetDatasetsResponse,]:
+    ) -> Union[SuccessResponseMessage, GetDatasetResponse, GetDatasetsResponse]:
         return DatasetManagerService.msg_handler_map[type(msg)](
             msg=msg, node=node, verify_key=verify_key
         )

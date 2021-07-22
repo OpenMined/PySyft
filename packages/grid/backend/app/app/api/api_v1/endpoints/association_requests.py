@@ -180,11 +180,11 @@ def get_all_association_requests(
 
     # Build Syft Message
     msg = GetAssociationRequestsMessage(
-        address=domain.address, reply_to=domain.address
+        address=node.address, reply_to=node.address
     ).sign(signing_key=user_key)
 
     # Process syft message
-    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+    reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
     resp = {}
@@ -213,13 +213,13 @@ def get_specific_association_route(
 
     # Build Syft Message
     msg = GetAssociationRequestMessage(
-        address=domain.address,
+        address=node.address,
         association_request_id=association_request_id,
-        reply_to=domain.address,
+        reply_to=node.address,
     ).sign(signing_key=user_key)
 
     # Process syft message
-    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+    reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
     resp = {}
@@ -250,13 +250,13 @@ def delete_association_route(
 
     # Build Syft Message
     msg = DeleteAssociationRequestMessage(
-        address=domain.address,
+        address=node.address,
         association_request_id=association_request_id,
-        reply_to=domain.address,
+        reply_to=node.address,
     ).sign(signing_key=user_key)
 
     # Process syft message
-    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+    reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
     resp = {}

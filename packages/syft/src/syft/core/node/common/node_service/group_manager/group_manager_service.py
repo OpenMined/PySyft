@@ -1,5 +1,4 @@
 # stdlib
-import secrets
 from typing import List
 from typing import Type
 from typing import Union
@@ -17,6 +16,9 @@ from syft.core.node.common.node_service.node_service import (
 )
 
 # relative
+from ...exceptions import AuthorizationError
+from ...exceptions import GroupNotFoundError
+from ...exceptions import MissingRequestKeyError
 from ...node_table.utils import model_to_json
 from .group_manager_messages import CreateGroupMessage
 from .group_manager_messages import CreateGroupResponse
@@ -28,10 +30,6 @@ from .group_manager_messages import GetGroupsMessage
 from .group_manager_messages import GetGroupsResponse
 from .group_manager_messages import UpdateGroupMessage
 from .group_manager_messages import UpdateGroupResponse
-
-# from ..exceptions import AuthorizationError
-# from ..exceptions import GroupNotFoundError
-# from ..exceptions import MissingRequestKeyError
 
 
 def create_group_msg(
