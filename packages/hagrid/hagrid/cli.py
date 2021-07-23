@@ -135,6 +135,22 @@ class Question:
         return value
 
 
+def ask(question: Question, kwargs: TypeDict[str, str]) -> TypeDict[str, Any]:
+    if question.var_name in kwargs and kwargs[question.var_name] is not None:
+        value = kwargs[question.var_name]
+    else:
+        if question.default is not None:
+            value = click.prompt(question.question, type=str, default=question.default)
+        else:
+            value = click.prompt(question.question, type=str)
+
+    value = question.validate(value=value)
+    if question.cache:
+        setattr(arg_cache, question.var_name, value)
+
+    return value
+
+
 def requires_kwargs(
     required: TypeList[Question], kwargs: TypeDict[str, str]
 ) -> TypeDict[str, Any]:
@@ -185,7 +201,60 @@ def create_launch_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
                 f"Launching a VM locally requires: {' '.join(errors)}"
             )
     elif host in ["aws", "azure", "gcp"]:
-        print("launch @ cloud")
+        if DEPENDENCIES["ansible-playbook"]:
+            print("launch @ cloud")
+
+            username_question = Question(
+                var_name="username_azure",
+                question=f"What do you want the username for the VM to be?",
+                default=arg_cache.username_azure,
+                kind="string",
+                cache=True,
+            )
+            key_path_question = Question(
+                var_name="key_path_azure",
+                question=f"Private key for [username]@{host}?",
+                default=arg_cache.key_path,
+                kind="path",
+                cache=True,
+            )
+            repo_question = Question(
+                var_name="repo",
+                question="Repo to fetch source from?",
+                default=arg_cache.repo,
+                kind="string",
+                cache=True,
+            )
+            branch_question = Question(
+                var_name="branch",
+                question="Branch to monitor for updates?",
+                default=arg_cache.branch,
+                kind="string",
+                cache=True,
+            )
+            parsed_kwargs = requires_kwargs(
+                required=[
+                    username_question,
+                    key_path_question,
+                    repo_question,
+                    branch_question,
+                ],
+                kwargs=kwargs,
+            )
+
+            auth = AuthCredentials(
+                username=parsed_kwargs["username"], key_path=parsed_kwargs["key_path"]
+            )
+
+            if host in "azure":
+                return create_launch_azure_cmd(verb=verb)
+        else:
+            errors = []
+            if not DEPENDENCIES["ansible-playbook"]:
+                errors.append("ansible-playbook")
+            raise MissingDependency(
+                f"Launching a Cloud VM requires: {' '.join(errors)}"
+            )
         return
     else:
         if DEPENDENCIES["ansible-playbook"]:
@@ -249,6 +318,8 @@ def create_launch_docker_cmd(
     host_term = verb.get_named_term_type(name="host")
     node_name = verb.get_named_term_type(name="node_name")
     node_type = verb.get_named_term_type(name="node_type")
+
+    snake_name = node_name.input.lower().replace(" ", "_")
     tag = name_tag(name=node_name.input)
 
     hagrid()
@@ -262,7 +333,7 @@ def create_launch_docker_cmd(
     )
 
     print("  - TYPE: " + str(node_type.input))
-    print("  - NAME: " + str(node_name.input))
+    print("  - NAME: " + str(snake_name))
     print("  - TAG: " + str(tag))
     print("  - PORT: " + str(host_term.free_port))
     print("  - DOCKER: " + docker_version)
@@ -271,9 +342,9 @@ def create_launch_docker_cmd(
     cmd = ""
     cmd += "DOMAIN_PORT=" + str(host_term.free_port)
     cmd += " TRAEFIK_TAG=" + str(tag)
-    cmd += ' DOMAIN_NAME="' + node_name.input + '"'
+    cmd += ' DOMAIN_NAME="' + snake_name + '"'
     cmd += " NODE_TYPE=" + node_type.input
-    cmd += " docker compose -p " + node_name.input.lower().replace(" ", "_")
+    cmd += " docker compose -p " + snake_name
     cmd += " up"
     if not tail:
         cmd += " -d"
@@ -286,6 +357,8 @@ def create_launch_vagrant_cmd(verb: GrammarVerb) -> str:
     node_name = verb.get_named_term_type(name="node_name")
     node_type = verb.get_named_term_type(name="node_type")
 
+    snake_name = node_name.input.lower().replace(" ", "_")
+
     hagrid()
 
     print(
@@ -297,7 +370,7 @@ def create_launch_vagrant_cmd(verb: GrammarVerb) -> str:
     )
 
     print("  - TYPE: " + str(node_type.input))
-    print("  - NAME: " + str(node_name.input))
+    print("  - NAME: " + str(snake_name))
     print("  - PORT: " + str(host_term.port))
     # print("  - VAGRANT: " + "1")
     # print("  - VIRTUALBOX: " + "1")
@@ -305,12 +378,18 @@ def create_launch_vagrant_cmd(verb: GrammarVerb) -> str:
 
     cmd = ""
     cmd += 'ANSIBLE_ARGS="'
-    cmd += f"-e 'node_name={node_name.input}'"
+    cmd += f"-e 'node_name={snake_name}'"
     cmd += f"-e 'node_type={node_type.input}'"
     cmd += '" '
     cmd += "vagrant up --provision"
     cmd = "cd " + GRID_SRC_PATH + ";" + cmd
     return cmd
+
+
+def create_launch_azure_cmd(verb: GrammarVerb, resource_group: str) -> str:
+    cmd = f"az group create -l westus -n {resource_group}"
+    output = subprocess.call(cmd, shell=True)
+    print("output", output)
 
 
 def create_launch_custom_cmd(
@@ -322,6 +401,8 @@ def create_launch_custom_cmd(
     node_type = verb.get_named_term_type(name="node_type")
     # source_term = verb.get_named_term_type(name="source")
 
+    snake_name = node_name.input.lower().replace(" ", "_")
+
     hagrid()
 
     print(
@@ -333,7 +414,7 @@ def create_launch_custom_cmd(
     )
 
     print("  - TYPE: " + str(node_type.input))
-    print("  - NAME: " + str(node_name.input))
+    print("  - NAME: " + str(snake_name))
     print("  - PORT: " + str(host_term.port))
     print("\n")
 
@@ -347,7 +428,7 @@ def create_launch_custom_cmd(
         cmd += f" --private-key {auth.key_path} --user {auth.username}"
     ANSIBLE_ARGS = {
         "node_type": node_type.input,
-        "node_name": node_name.input,
+        "node_name": snake_name,
         "github_repo": kwargs["repo"],
         "repo_branch": kwargs["branch"],
     }
@@ -359,7 +440,7 @@ def create_launch_custom_cmd(
     #     ANSIBLE_ARGS["deploy"] = "true"
 
     for k, v in ANSIBLE_ARGS.items():
-        cmd += f" -e '{k}={v}'"
+        cmd += f" -e \"{k}='{v}'\""
 
     cmd = "cd " + GRID_SRC_PATH + ";" + cmd
     return cmd
