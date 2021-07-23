@@ -1,3 +1,6 @@
+# stdlib
+from typing import Callable
+
 HANDLED_FUNCTIONS = {}
 
 
@@ -9,7 +12,7 @@ def query_implementation(tensor_type, func):
     return None
 
 
-def implements(tensor_type, np_function):
+def implements(tensor_type, np_function) -> Callable:
     def decorator(func):
         if tensor_type not in HANDLED_FUNCTIONS:
             HANDLED_FUNCTIONS[tensor_type] = {}

@@ -1,4 +1,8 @@
 # syft relative
+# stdlib
+from typing import Any
+from typing import abstractmethod
+
 # relative
 from ..tensor import AutogradTensor
 
@@ -7,7 +11,8 @@ class Op:
     def __init__(self):
         self.backprop_id = None
 
-    def forward(self, *args, **kwargs):
+    @abstractmethod
+    def forward(self, *args: Any, **kwargs: Any) -> None:
         raise NotImplementedError
 
     def _backward(self, grad, backprop_id):
