@@ -2,9 +2,10 @@
 import numpy as np
 
 # relative
-# syft relative
-from ..passthrough import implements
 from ..passthrough import inputs2child
+
+# syft relative
+from ..util import implements
 from .tensor import AutogradTensor
 
 
@@ -29,5 +30,5 @@ def expand_dims(*args, **kwargs):
 
 
 @implements(AutogradTensor, np.multiply)
-def multiply(a: AutogradTensor, b: AutogradTensor):
+def multiply(a: AutogradTensor, b: AutogradTensor) -> AutogradTensor:
     return a * b

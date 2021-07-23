@@ -14,12 +14,12 @@ import numpy as np
 
 # relative
 from .passthrough import PassthroughTensor
+from .types import AcceptableSimpleType
+from .types import SupportedChainType
 
 # syft relative
 from .util import implements
 from .util import query_implementation
-from .types import SupportedChainType
-from .types import AcceptableSimpleType
 
 
 def inputs2child(
