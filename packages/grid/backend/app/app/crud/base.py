@@ -13,8 +13,7 @@ from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-# grid absolute
-from app.db.base_class import Base
+from syft.core.node.common.node_table import Base  # noqa
 
 ModelType = TypeVar("ModelType", bound=Base)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
