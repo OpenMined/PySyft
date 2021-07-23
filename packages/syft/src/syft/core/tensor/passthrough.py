@@ -13,18 +13,17 @@ from typing import Union
 import numpy as np
 
 # relative
-from .passthrough import PassthroughTensor
+from .types import AcceptableSimpleType
+from .types import SupportedChainType
 
 # syft relative
 from .util import implements
 from .util import query_implementation
-from .types import SupportedChainType
-from .types import AcceptableSimpleType
 
 
 def inputs2child(
     *args: SupportedChainType, **kwargs: SupportedChainType
-) -> (List[SupportedChainType], Dict[str, SupportedChainType]):
+) -> TypeTuple[List[SupportedChainType], Dict[str, SupportedChainType]]:
     args = [x.child if isinstance(x, PassthroughTensor) else x for x in args]
     kwargs = {
         x[0]: x[1].child if isinstance(x[1], PassthroughTensor) else x[1]
