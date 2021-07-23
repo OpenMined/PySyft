@@ -8,6 +8,13 @@ arg_defaults = {
     "branch": "demo_strike_team_branch_4",
     "username": "root",
     "key_path": "~/.ssh/id_rsa",
+    "azure_repo": "OpenMined/PySyft",
+    "azure_branch": "demo_strike_team_branch_4",
+    "azure_username": "azureuser",
+    "azure_key_path": "~/.ssh/id_rsa",
+    "azure_resource_group": "openmined",
+    "azure_location": "westus",
+    "azure_size": "Standard_D2s_v3",
 }
 
 

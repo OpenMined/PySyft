@@ -43,6 +43,23 @@ class GrammarVerb:
                     found = term
         return found
 
+    def set_named_term_type(
+        self, name: str, new_term: GrammarTerm, term_type: Optional[str] = None
+    ) -> None:
+        new_grammar = []
+        for term in self.grammar:
+            found = False
+            if term.name == name:
+                if term_type is not None and term.type == term_type:
+                    found = True
+                elif term_type is None:
+                    found = True
+            if not found:
+                new_grammar.append(term)
+            else:
+                new_grammar.append(new_term)
+        self.grammar = new_grammar
+
     def load_grammar(self, grammar: TypeList[GrammarTerm]) -> None:
         self.grammar = grammar
 

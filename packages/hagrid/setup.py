@@ -9,7 +9,7 @@ DATA_FILES = {
 setup(
     name="hagrid",
     description="Happy Automation for Grid",
-    version="0.1.1",
+    version="0.1.3",
     author="Andrew Trask <andrew@openmined.org>",
     packages=find_packages(),
     package_data=DATA_FILES,
