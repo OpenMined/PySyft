@@ -3,7 +3,6 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
-from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple as TypeTuple
@@ -23,7 +22,7 @@ from .util import query_implementation
 
 def inputs2child(
     *args: SupportedChainType, **kwargs: SupportedChainType
-) -> TypeTuple[List[SupportedChainType], Dict[str, SupportedChainType]]:
+) -> List[Union[PassthroughTensor, Any, float]]:
     args = [x.child if isinstance(x, PassthroughTensor) else x for x in args]
     kwargs = {
         x[0]: x[1].child if isinstance(x[1], PassthroughTensor) else x[1]
@@ -39,7 +38,7 @@ def is_acceptable_simple_type(obj: Any) -> bool:
 class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     """A simple tensor class which passes method/function calls to self.child"""
 
-    def __init__(self, child) -> None:
+    def __init__(self, child: Any) -> None:
         self.child = child
 
     # TODO: Remove
@@ -54,26 +53,34 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         return len(self.child)
 
     @property
-    def shape(self):
+    def shape(self) -> TypeTuple[Any, ...]:
         return tuple(self.child.shape)
 
-    def __abs__(self) -> PassthroughTensor:
+    def __abs__(self) -> Union[PassthroughTensor, AcceptableSimpleType]:
         return self.__class__(self.child.__abs__())
 
-    def __add__(self, other) -> PassthroughTensor:
+    def __add__(
+        self, other: Union[PassthroughTensor, AcceptableSimpleType]
+    ) -> PassthroughTensor:
         if is_acceptable_simple_type(other):
             return self.__class__(self.child + other)
         return self.__class__(self.child + other.child)
 
-    def __radd__(self, other) -> PassthroughTensor:
+    def __radd__(
+        self, other: Union[PassthroughTensor, AcceptableSimpleType]
+    ) -> PassthroughTensor:
         return other.__class__(other.child + self.child)
 
-    def __sub__(self, other) -> PassthroughTensor:
+    def __sub__(
+        self, other: Union[PassthroughTensor, AcceptableSimpleType]
+    ) -> PassthroughTensor:
         if is_acceptable_simple_type(other):
             return self.__class__(self.child - other)
         return self.__class__(self.child - other.child)
 
-    def __rsub__(self, other) -> PassthroughTensor:
+    def __rsub__(
+        self, other: Union[PassthroughTensor, AcceptableSimpleType]
+    ) -> PassthroughTensor:
         return self.__class__(-((self - other).child))
 
     def __gt__(

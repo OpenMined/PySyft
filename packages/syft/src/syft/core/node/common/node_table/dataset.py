@@ -8,7 +8,7 @@ from . import Base
 
 
 class Dataset(Base):
-    __tablename__ = "dataset"
+    __tablename__ = "dataset"  # type: ignore
 
     id = Column(String(256), primary_key=True)
     name = Column(String(256))

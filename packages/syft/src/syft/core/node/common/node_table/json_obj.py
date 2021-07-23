@@ -8,10 +8,10 @@ from . import Base
 
 
 class JsonObject(Base):
-    __tablename__ = "json_object"
+    __tablename__ = "json_object"  # type: ignore
 
     id = Column(String(), primary_key=True)
     binary = Column(JSON())
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"<JsonObject id: {self.id}>"

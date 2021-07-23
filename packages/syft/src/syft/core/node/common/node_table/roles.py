@@ -9,7 +9,7 @@ from . import Base
 
 
 class Role(Base):
-    __tablename__ = "role"
+    __tablename__ = "role"  # type: ignore
 
     id = Column(Integer(), primary_key=True, autoincrement=True)
     name = Column(String(255))
@@ -21,7 +21,7 @@ class Role(Base):
     can_manage_infrastructure = Column(Boolean(), default=False)
     can_upload_data = Column(Boolean(), default=False)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f"<Role id: {self.id}, name: {self.name}, "
             f"can_triage_requests: {self.can_triage_requests}, "
@@ -43,7 +43,7 @@ def create_role(
     can_edit_roles,
     can_manage_infrastructure,
     can_upload_data,
-):
+) -> Role:
     new_role = Role(
         name=name,
         can_triage_requests=can_triage_requests,
