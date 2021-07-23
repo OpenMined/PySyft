@@ -3,6 +3,8 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
+from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Tuple as TypeTuple
 from typing import Union
@@ -11,14 +13,19 @@ from typing import Union
 import numpy as np
 
 # relative
+from .passthrough import PassthroughTensor
+
 # syft relative
 from .util import implements
 from .util import query_implementation
 
 AcceptableSimpleType = Union[int, bool, float, np.ndarray]
+SupportedChainType = Union[PassthroughTensor, AcceptableSimpleType]
 
 
-def inputs2child(*args, **kwargs):
+def inputs2child(
+    *args: SupportedChainType, **kwargs: SupportedChainType
+) -> (List[SupportedChainType], Dict[str, SupportedChainType]):
     args = [x.child if isinstance(x, PassthroughTensor) else x for x in args]
     kwargs = {
         x[0]: x[1].child if isinstance(x[1], PassthroughTensor) else x[1]
@@ -27,7 +34,7 @@ def inputs2child(*args, **kwargs):
     return args, kwargs
 
 
-def is_acceptable_simple_type(obj):
+def is_acceptable_simple_type(obj: Any) -> bool:
     return isinstance(obj, (int, bool, float, np.ndarray))
 
 
