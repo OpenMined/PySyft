@@ -29,5 +29,5 @@ def expand_dims(*args, **kwargs):
 
 
 @implements(AutogradTensor, np.multiply)
-def multiply(a, b):
+def multiply(a: AutogradTensor, b: AutogradTensor):
     return a * b

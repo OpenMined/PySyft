@@ -7,7 +7,7 @@ class Op:
     def __init__(self):
         self.backprop_id = None
 
-    def forward(self):
+    def forward(self, *args, **kwargs):
         raise NotImplementedError
 
     def _backward(self, grad, backprop_id):
