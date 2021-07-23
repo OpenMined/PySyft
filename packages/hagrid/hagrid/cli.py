@@ -1,21 +1,24 @@
 # stdlib
 import hashlib
 import subprocess
+from typing import List as TypeList
+from typing import Optional
 from typing import Tuple as TypeTuple
 
 # third party
 import click
 
 # relative
+from .art import hagrid
+from .deps import DEPENDENCIES
+from .deps import MissingDependency
 from .grammar import BadGrammar
-from .grammar import GrammarTerm
 from .grammar import GrammarVerb
-from .grammar import HostGrammarTerm
-from .grammar import SourceGrammarTerm
 from .grammar import parse_grammar
+from .launch import get_launch_verb
 from .lib import GRID_SRC_PATH
-from .lib import check_docker
-from .names import random_name
+from .lib import check_docker_version
+from .lib import name_tag
 from .style import RichGroup
 
 
@@ -26,315 +29,176 @@ def cli():
 
 @click.command(help="Start a new PyGrid domain/network node!")
 @click.argument("args", type=str, nargs=-1)
-@click.option(
-    "--type",
-    "node_type",
-    default="domain",
-    required=False,
-    type=click.Choice(["domain", "network"]),
-    help="The type of node you would like to deploy.",
-)
-@click.option(
-    "--port",
-    default=8081,
-    required=False,
-    type=int,
-    help="The public port your node should expose. (Default: 8081)",
-)
-@click.option(
-    "--tag",
-    default="",
-    required=False,
-    type=str,
-    help="Optional: the underlying docker tag used (Default: 'domain_'+md5(name)",
-)
-@click.option(
-    "--keep-db/--delete-db",
-    default=False,
-    required=False,
-    help="""If restarting a node that already existed, don't/do reset the database (Default: deletes the db)""",
-)
-@click.option(
-    "--host",
-    default="localhost",
-    required=False,
-    type=str,
-    help="Optional: the host to provision, leave empty if localhost / docker",
-)
-@click.option(
-    "--username",
-    default=None,
-    required=False,
-    type=str,
-    help="Optional: the username for provisioning the remote host",
-)
-@click.option(
-    "--password",
-    default=None,
-    required=False,
-    type=str,
-    help="Optional: the password for provisioning the remote host",
-)
-@click.option(
-    "--key_path",
-    default=None,
-    required=False,
-    type=str,
-    help="Optional: the path to the key file for provisioning the remote host",
-)
-@click.option(
-    "--mode",
-    default=None,
-    required=False,
-    type=str,
-    help="Optional: mode either provision or deploy, where deploy is a quick code update",
-)
-@click.option(
-    "--repo",
-    default="OpenMined/PySyft",
-    required=False,
-    type=str,
-    help="Optional: repo to fetch source from",
-)
-@click.option(
-    "--branch",
-    default="demo_strike_team_branch_4",
-    required=False,
-    type=str,
-    help="Optional: branch to monitor for updates",
-)
+# @click.option(
+#     "--username",
+#     default=None,
+#     required=False,
+#     type=str,
+#     help="Optional: the username for provisioning the remote host",
+# )
+# @click.option(
+#     "--password",
+#     default=None,
+#     required=False,
+#     type=str,
+#     help="Optional: the password for provisioning the remote host",
+# )
+# @click.option(
+#     "--key_path",
+#     default=None,
+#     required=False,
+#     type=str,
+#     help="Optional: the path to the key file for provisioning the remote host",
+# )
+# @click.option(
+#     "--mode",
+#     default=None,
+#     required=False,
+#     type=str,
+#     help="Optional: mode either provision or deploy, where deploy is a quick code update",
+# )
+# @click.option(
+#     "--repo",
+#     default="OpenMined/PySyft",
+#     required=False,
+#     type=str,
+#     help="Optional: repo to fetch source from",
+# )
+# @click.option(
+#     "--branch",
+#     default="demo_strike_team_branch_4",
+#     required=False,
+#     type=str,
+#     help="Optional: branch to monitor for updates",
+# )
 def launch(
     args: TypeTuple[str],
-    node_type,
-    port,
-    tag,
-    keep_db,
-    host,
-    username=None,
-    password=None,
-    key_path=None,
-    mode: str = "provision",
-    repo: str = "OpenMined/PySyft",
-    branch: str = "demo_strike_team_branch_4",
+    # node_type,
+    # port,
+    # tag,
+    # keep_db,
+    # host,
+    # username=None,
+    # password=None,
+    # key_path=None,
+    # mode: str = "provision",
+    # repo: str = "OpenMined/PySyft",
+    # branch: str = "demo_strike_team_branch_4",
 ):
-
-    # Verb	Adjective	Object	prep	proper noun / Technology:(optional) Port	from	Github URL / Location / Branch
-    # launch	slytherine	domain	to	docker:port	from	github.com/OpenMined/PySyft/tree/dev
-
-    full_sentence = [
-        {
-            "name": "node_name",
-            "type": "adjective",
-            "klass": GrammarTerm,
-            "default": random_name,
-            "example": "'My Domain'",
-        },
-        {
-            "name": "node_type",
-            "type": "object",
-            "klass": GrammarTerm,
-            "default": "domain",
-            "options": ["domain", "network"],
-        },
-        {
-            "name": "preposition",
-            "type": "preposition",
-            "klass": GrammarTerm,
-            "default": "to",
-            "options": ["to"],
-        },
-        {
-            "name": "host",
-            "type": "propernoun",
-            "klass": HostGrammarTerm,
-            "default": "docker",
-            "example": "docker:8081+",
-        },
-        {
-            "name": "preposition",
-            "type": "preposition",
-            "klass": GrammarTerm,
-            "default": "from",
-            "options": ["from"],
-        },
-        {
-            "name": "source",
-            "type": "propernoun",
-            "klass": SourceGrammarTerm,
-            "default": "github.com/OpenMined/PySyft/tree/demo_strike_team_branch_4",
-        },
-    ]
-
-    abbreviations = {
-        6: [
-            "adjective",  # name
-            "object",  # node_type
-            "preposition",  # to
-            "propernoun",  # host
-            "preposition",  # from
-            "propernoun",  # source
-        ],
-        5: [
-            None,  # name
-            "object",  # node_type
-            "preposition",  # to
-            "propernoun",  # host
-            "preposition",  # from
-            "propernoun",  # source
-        ],
-        4: [
-            "adjective",  # name
-            "object",  # node_type
-            "preposition",  # to
-            "propernoun",  # host
-            None,  # ignore
-            None,  # ignore
-        ],
-        3: [
-            None,  # ignore
-            "object",  # node_type
-            "preposition",  # to
-            "propernoun",  # host
-            None,  # ignore
-            None,  # ignore
-        ],
-        2: [
-            "adjective",  # name
-            "object",  # node_type
-            None,  # ignore
-            None,  # ignore
-            None,  # ignore
-            None,  # ignore
-        ],
-        1: [
-            None,  # ignore
-            "object",  # node_type
-            None,  # ignore
-            None,  # ignore
-            None,  # ignore
-            None,  # ignore
-        ],
-    }
-
-    verb = GrammarVerb(
-        command="launch",
-        full_sentence=full_sentence,
-        abbreviations=abbreviations,
-    )
-
+    verb = get_launch_verb()
     try:
         grammar = parse_grammar(args=args, verb=verb)
+        verb.load_grammar(grammar=grammar)
     except BadGrammar as e:
         print(e)
         return
 
-    print(grammar)
-    # name = pre_process_name(name=name, node_type=node_type)
-    print("launch")
+    print("launch", grammar)
     print(args, type(args))
-    print(node_type, type(node_type))
-    # print(node_type, type(node_type))
-    # # run pre-processing of arguments
 
-    # tag = pre_process_tag(tag=tag, name=name, node_type=node_type)
+    try:
+        cmd = create_launch_cmd(verb=verb)
+    except Exception as e:
+        print(f"{e}")
+        return
+    print("Running: \n", cmd)
+    subprocess.call(cmd, shell=True)
 
-    # # are we deploying locally or remotely?
-    # is_remote = should_provision_remote(username, password, key_path)
 
-    # if not is_remote:
+def create_launch_cmd(verb: GrammarVerb) -> str:
+    host_term = verb.get_named_term_type(name="host")
+    host = host_term.host
+    if host in ["docker"]:
+        version = check_docker_version()
+        if version:
+            return create_launch_docker_cmd(verb=verb, docker_version=version)
+    elif host in ["vm"]:
+        if DEPENDENCIES["vagrant"] and DEPENDENCIES["virtualbox"]:
+            return create_launch_vagrant_cmd(verb=verb)
+        else:
+            errors = []
+            if not DEPENDENCIES["vagrant"]:
+                errors.append("vagrant")
+            if not DEPENDENCIES["virtualbox"]:
+                errors.append("virtualbox")
+            raise MissingDependency(
+                f"Launching a VM locally requires: {' '.join(errors)}"
+            )
+    elif host in ["aws", "azure", "gcp"]:
 
-    #     version = check_docker()
+        print("launch @ cloud")
+    else:
+        print("launch @ custom host")
 
-    #     # check port to make sure it's not in use - if it's in use then increment until it's not.
-    #     port = find_available_port(host=host, port=port)
 
-    #     if not pre_process_keep_db(keep_db, tag):
-    #         print("Deleting database for node...")
-    #         subprocess.call("docker volume rm " + tag + "_app-db-data", shell=True)
-    #         print()
+def create_launch_docker_cmd(
+    verb: GrammarVerb, docker_version: str, tail: bool = False
+) -> str:
+    host_term = verb.get_named_term_type(name="host")
+    node_name = verb.get_named_term_type(name="node_name")
+    node_type = verb.get_named_term_type(name="node_type")
+    tag = name_tag(name=node_name.input)
 
-    # hagrid()
+    hagrid()
 
-    # if not is_remote:
-    #     print(
-    #         "Launching a "
-    #         + str(node_type)
-    #         + " PyGrid node on port "
-    #         + str(port)
-    #         + "!\n"
-    #     )
-    # else:
-    #     print("Launching a " + str(node_type) + f" PyGrid node on http://{host}!\n")
-    # print("  - TYPE: " + str(node_type))
-    # print("  - NAME: " + str(name))
-    # if not is_remote:
-    #     print("  - TAG: " + str(tag))
-    #     print("  - PORT: " + str(port))
-    #     print("  - DOCKER: " + version)
-    # else:
-    #     print("  - HOST: " + host)
-    #     if username is not None:
-    #         print("  - USERNAME: " + username)
+    print(
+        "Launching a "
+        + str(node_type)
+        + " PyGrid node on port "
+        + str(host_term.free_port)
+        + "!\n"
+    )
 
-    #     if password is not None:
-    #         print("  - PASSWORD: *************")
+    print("  - TYPE: " + str(node_type.input))
+    print("  - NAME: " + str(node_name.input))
+    print("  - TAG: " + str(tag))
+    print("  - PORT: " + str(host_term.free_port))
+    print("  - DOCKER: " + docker_version)
+    print("\n")
 
-    #     if key_path is not None:
-    #         print("  - KEY_PATH: " + key_path)
+    cmd = ""
+    cmd += "DOMAIN_PORT=" + str(host_term.free_port)
+    cmd += " TRAEFIK_TAG=" + str(tag)
+    cmd += ' DOMAIN_NAME="' + node_name.input + '"'
+    cmd += " NODE_TYPE=" + node_type.input
+    cmd += " docker compose -p " + node_name.input.lower().replace(" ", "_")
+    cmd += " up"
+    if not tail:
+        cmd += " -d"
+    cmd = "cd " + GRID_SRC_PATH + ";" + cmd
+    return cmd
 
-    # print("\n")
 
-    # cmd = ""
-    # if not is_remote:
-    #     cmd += "DOMAIN_PORT=" + str(port)
-    #     cmd += " TRAEFIK_TAG=" + tag
+def create_launch_vagrant_cmd(verb: GrammarVerb) -> str:
+    host_term = verb.get_named_term_type(name="host")
+    node_name = verb.get_named_term_type(name="node_name")
+    node_type = verb.get_named_term_type(name="node_type")
 
-    # cmd += ' DOMAIN_NAME="' + name + '"'
-    # cmd += " NODE_TYPE=" + node_type
+    hagrid()
 
-    # if is_remote:
-    #     # use ansible on remote host
-    #     # if username is None:
-    #     #     cmd += f' USERNAME="{username}"'
-    #     # elif password is not None:
-    #     #     cmd += f' PASSWORD="{password}"'
-    #     # elif key_path is not None:
-    #     #     cmd += f' KEY_PATH="{key_path}"'
+    print(
+        "Launching a "
+        + str(node_type)
+        + " PyGrid node on port "
+        + str(host_term.port)
+        + "!\n"
+    )
 
-    #     current_path = os.path.dirname(__file__)
-    #     grid_path = Path(os.path.abspath(f"{current_path}/../../grid"))
-    #     playbook_path = grid_path / "ansible/site.yml"
-    #     ansible_cfg_path = grid_path / "ansible.cfg"
+    print("  - TYPE: " + str(node_type.input))
+    print("  - NAME: " + str(node_name.input))
+    print("  - PORT: " + str(host_term.port))
+    # print("  - VAGRANT: " + "1")
+    # print("  - VIRTUALBOX: " + "1")
+    print("\n")
 
-    #     if not os.path.exists(playbook_path):
-    #         print(f"Can't find playbook site.yml at: {playbook_path}")
-    #     cmd = f"ANSIBLE_CONFIG={ansible_cfg_path} ansible-playbook -i {host}, {playbook_path}"
-    #     if host != "localhost":
-    #         cmd += f" --private-key {key_path} --user {username}"
-    #     ANSIBLE_ARGS = {
-    #         "node_type": node_type,
-    #         "node_name": name,
-    #         "github_repo": repo,
-    #         "repo_branch": branch,
-    #     }
-    #     if mode == "deploy":
-    #         ANSIBLE_ARGS["deploy_only"] = "true"
-
-    #     if host == "localhost":
-    #         ANSIBLE_ARGS["local"] = "true"
-
-    #     args = []
-    #     for k, v in ANSIBLE_ARGS.items():
-    #         args.append(f"{k}={v}")
-    #     args_str = " ".join(args)
-    #     cmd += f' -e "{args_str}"'
-    # else:
-    #     # use docker on localhost
-    #     cmd += " docker compose -p " + tag
-    #     cmd += " up"
-    #     cmd = "cd " + GRID_SRC_PATH + ";" + cmd
-    # print("Running: \n", cmd)
-    # subprocess.call(cmd, shell=True)
+    cmd = ""
+    cmd += 'ANSIBLE_ARGS="'
+    cmd += f"-e 'node_name={node_name.input}'"
+    cmd += f"-e 'node_type={node_type.input}'"
+    cmd += '" '
+    cmd += "vagrant up --provision"
+    cmd = "cd " + GRID_SRC_PATH + ";" + cmd
+    return cmd
 
 
 @click.command(help="Build (or re-build) PyGrid docker image.")

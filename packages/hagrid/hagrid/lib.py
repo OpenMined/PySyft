@@ -10,6 +10,9 @@ import git
 import names
 import requests
 
+# relative
+from .deps import MissingDependency
+
 DOCKER_ERROR = """
 Instructions for v2 beta can be found here:
 You are running an old verion of docker, possibly on Linux. You need to install v2 beta.
@@ -129,14 +132,8 @@ def should_provision_remote(username, password, key_path) -> bool:
     return is_remote
 
 
-def pre_process_tag(tag: str, node_type: str, name: str) -> str:
-    if tag != "":
-        if " " in tag:
-            raise Exception("Can't have spaces in --tag. Try something without spaces.")
-    else:
-        tag = hashlib.md5(name.encode("utf8")).hexdigest()
-
-    return node_type + "_" + tag
+def name_tag(name: str) -> str:
+    return hashlib.md5(name.encode("utf8")).hexdigest()
 
 
 def pre_process_name(name: list, node_type: str) -> str:
@@ -158,22 +155,32 @@ def pre_process_keep_db(keep_db, tag) -> bool:
     return keep_db
 
 
-def find_available_port(host, port) -> bool:
+def find_available_port(host: str, port: int, search: bool = False) -> bool:
     port_available = False
     while not port_available:
         try:
             requests.get("http://" + host + ":" + str(port))
-            print(
-                str(port) + " doesn't seem to be available... trying " + str(port + 1)
-            )
-            port = port + 1
-        except requests.ConnectionError:
+            if search:
+                print(
+                    str(port)
+                    + " doesn't seem to be available... trying "
+                    + str(port + 1)
+                )
+                port = port + 1
+            else:
+                break
+        except requests.ConnectionError as e:
             port_available = True
-
+    if search is False and port_available is False:
+        error = (
+            f"{port} is in use, either free the port or "
+            + f"try: {port}+ to auto search for a port"
+        )
+        raise Exception(error)
     return port
 
 
-def check_docker():
+def check_docker_version() -> str:
     result = os.popen("docker compose version", "r").read()
 
     if "version" in result:
@@ -183,6 +190,6 @@ def check_docker():
         print("Result:" + result)
         out = subprocess.run(["docker", "compose"], capture_output=True, text=True)
         if "'compose' is not a docker command" in out.stderr:
-            raise Exception(DOCKER_ERROR)
+            raise MissingDependency(DOCKER_ERROR)
 
     return version

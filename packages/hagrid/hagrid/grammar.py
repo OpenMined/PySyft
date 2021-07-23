@@ -1,3 +1,6 @@
+# future
+from __future__ import annotations
+
 # stdlib
 import socket
 from typing import Any
@@ -7,6 +10,9 @@ from typing import List as TypeList
 from typing import Optional
 from typing import Tuple as TypeTuple
 from typing import Union
+
+# relative
+from .lib import find_available_port
 
 
 class BadGrammar(Exception):
@@ -20,9 +26,25 @@ class GrammarVerb:
         full_sentence: TypeList[TypeDict[str, Any]],
         abbreviations: TypeDict[int, TypeList[str]],
     ) -> None:
+        self.grammar = None
         self.command = command
         self.full_sentence = full_sentence
         self.abbreviations = abbreviations
+
+    def get_named_term_type(
+        self, name: str, term_type: Optional[str] = None
+    ) -> Optional[GrammarTerm]:
+        found = None
+        for term in self.grammar:
+            if term.name == name:
+                if term_type is not None and term.type == term_type:
+                    found = term
+                elif term_type is None:
+                    found = term
+        return found
+
+    def load_grammar(self, grammar: TypeList[GrammarTerm]) -> None:
+        self.grammar = grammar
 
 
 class GrammarTerm:
@@ -35,11 +57,16 @@ class GrammarTerm:
         example: Optional[str] = None,
         **kwargs: TypeDict[str, Any],
     ) -> None:
+        self.raw_input = None
+        self.input = None
         self.type = type
         self.name = name
         self.default = default
         self.options = options
         self.example = example
+
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__}: {self.name}<{self.type}>: {self.input} [raw: {self.raw_input}]>"
 
     def get_example(self) -> str:
         return self.example if self.example else self.default
@@ -48,26 +75,57 @@ class GrammarTerm:
     def custom_parsing(self, input: str) -> str:
         return input
 
-    def parse_input(self, input: Optional[str]) -> str:
+    def parse_input(self, input: Optional[str]) -> None:
+        self.raw_input = input
         if input is None and self.default is None:
             raise BadGrammar(
                 f"{self.name} has no default, please use one of the following options: {self.options}"
             )
         if input is None:
             if isinstance(self.default, str):
-                return self.default
+                input = self.default
             elif isinstance(self.default, Callable):
-                return self.default()
+                input = self.default()
 
         if self.options is not None and input not in self.options:
             raise BadGrammar(
                 f"{input} is not valid for {self.name} please use one of the following options: {self.options}"
             )
 
-        return self.custom_parsing(input=input)
+        self.input = self.custom_parsing(input=input)
 
 
 class HostGrammarTerm(GrammarTerm):
+    @property
+    def host(self) -> Optional[str]:
+        return self.parts()[0]
+
+    @property
+    def port(self) -> Optional[str]:
+        return self.parts()[1]
+
+    @property
+    def search(self) -> bool:
+        return self.parts()[2]
+
+    @property
+    def free_port(self) -> int:
+        return find_available_port(host="localhost", port=self.port, search=self.search)
+
+    def parts(self) -> TypeTuple[Optional[str], Optional[int], Optional[bool]]:
+        host = None
+        port = None
+        search = False
+        if self.input:
+            parts = self.input.split(":")
+            host = parts[0]
+            port = parts[1]
+            if port.endswith("+"):
+                search = True
+                port = port[0:-1]
+            port = int(port)
+        return (host, port, search)
+
     def validate_host(self, host_or_ip: str) -> bool:
         try:
             if socket.gethostbyname(host_or_ip) == host_or_ip:
@@ -121,7 +179,6 @@ class HostGrammarTerm(GrammarTerm):
 
 class SourceGrammarTerm(GrammarTerm):
     def custom_parsing(self, input: Optional[str]) -> str:
-        print("custom s0urce", input)
         # github.com/OpenMined/PySyft/tree/demo_strike_team_branch_4
         parts = input
         if parts.startswith("http://"):
@@ -132,7 +189,6 @@ class SourceGrammarTerm(GrammarTerm):
             parts = parts.replace("github.com/", "")
 
         parts = parts.split("/")
-        print("parts", parts, len(parts), "tree" not in input)
         if "tree" not in input or len(parts) < 4:
             raise BadGrammar(
                 f"{self.name} should be a valid github.com repo branch url. Try: {self.get_example()}"
@@ -141,7 +197,6 @@ class SourceGrammarTerm(GrammarTerm):
         repo = f"{parts[0]}/{parts[1]}"
         branch = "/".join(parts[3:])
 
-        print("repo", repo, "branch", branch)
         return f"{repo}:{branch}"
 
 
@@ -165,7 +220,7 @@ def validate_arg_count(arg_count: int, verb: GrammarVerb) -> bool:
     return valid
 
 
-def parse_grammar(args: TypeTuple, verb: GrammarVerb) -> str:
+def parse_grammar(args: TypeTuple, verb: GrammarVerb) -> TypeList[GrammarTerm]:
     arg_list = list(args)
     arg_count = len(arg_list)
     errors = []
@@ -180,7 +235,8 @@ def parse_grammar(args: TypeTuple, verb: GrammarVerb) -> str:
             term_settings = verb.full_sentence[i]
 
             try:
-                term = term_settings["klass"](**term_settings).parse_input(arg)
+                term = term_settings["klass"](**term_settings)
+                term.parse_input(arg)
                 terms.append(term)
             except BadGrammar as e:
                 errors.append(str(e))
@@ -189,6 +245,6 @@ def parse_grammar(args: TypeTuple, verb: GrammarVerb) -> str:
             raise BadGrammar("\n".join(errors))
 
         # make command
-        return " ".join(terms)
+        return terms
     else:
         raise BadGrammar("Grammar is not valid")
