@@ -21,7 +21,7 @@ router = APIRouter()
 
 
 @router.get("/metadata", response_model=str)
-async def syft_metadata():
+async def syft_metadata() -> Response:
     return Response(
         node.get_metadata_for_client()._object2proto().SerializeToString(),
         media_type="application/octet-stream",

@@ -1,6 +1,3 @@
-# stdlib
-from typing import TYPE_CHECKING
-
 # third party
 from sqlalchemy import Boolean
 from sqlalchemy import Column
@@ -10,11 +7,6 @@ from sqlalchemy.orm import relationship
 
 # grid absolute
 from app.db.base_class import Base
-
-if TYPE_CHECKING:
-
-    # relative
-    from .item import Item  # noqa: F401
 
 
 class User(Base):
