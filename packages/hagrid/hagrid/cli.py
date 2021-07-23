@@ -1,8 +1,6 @@
 # stdlib
 import hashlib
 import subprocess
-from typing import List as TypeList
-from typing import Optional
 from typing import Tuple as TypeTuple
 
 # third party
@@ -10,6 +8,7 @@ import click
 
 # relative
 from .art import hagrid
+from .art import motorcycle
 from .deps import DEPENDENCIES
 from .deps import MissingDependency
 from .grammar import BadGrammar
@@ -203,7 +202,7 @@ def create_launch_vagrant_cmd(verb: GrammarVerb) -> str:
 
 @click.command(help="Build (or re-build) PyGrid docker image.")
 def build():
-    check_docker()
+    check_docker_version()
 
     print("\n")
 
@@ -275,9 +274,9 @@ def land(node_type, name, port, tag, keep_db):
             "You must provide either a type and name, or you must provide a tag."
         )
 
-    version = check_docker()
+    version = check_docker_version()
 
-    # motorcycle()
+    motorcycle()
 
     print("Launching a " + str(node_type) + " PyGrid node on port " + str(port) + "!\n")
     print("  - TYPE: " + str(node_type))

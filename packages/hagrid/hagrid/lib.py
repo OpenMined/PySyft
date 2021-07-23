@@ -169,7 +169,7 @@ def find_available_port(host: str, port: int, search: bool = False) -> bool:
                 port = port + 1
             else:
                 break
-        except requests.ConnectionError as e:
+        except requests.ConnectionError:
             port_available = True
     if search is False and port_available is False:
         error = (
