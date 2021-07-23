@@ -10,19 +10,19 @@ from .tensor import AutogradTensor
 
 
 @implements(AutogradTensor, np.max)
-def npmax(*args, **kwargs):
+def npmax(*args: AutogradTensor, **kwargs: AutogradTensor) -> AutogradTensor:
     args, kwargs = inputs2child(*args, **kwargs)
     return np.max(*args, **kwargs)
 
 
 @implements(AutogradTensor, np.min)
-def npmin(*args, **kwargs):
+def npmin(*args: AutogradTensor, **kwargs: AutogradTensor) -> AutogradTensor:
     args, kwargs = inputs2child(*args, **kwargs)
     return np.min(*args, **kwargs)
 
 
 @implements(AutogradTensor, np.expand_dims)
-def expand_dims(*args, **kwargs):
+def expand_dims(*args: AutogradTensor, **kwargs: AutogradTensor) -> AutogradTensor:
     requires_grad = args[0].requires_grad
     output_type = args[0].__class__
     args, kwargs = inputs2child(*args, **kwargs)
