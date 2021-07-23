@@ -205,14 +205,14 @@ def create_launch_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
             )
             repo_question = Question(
                 var_name="repo",
-                question=f"Repo to fetch source from?",
+                question="Repo to fetch source from?",
                 default=arg_cache.repo,
                 kind="string",
                 cache=True,
             )
             branch_question = Question(
                 var_name="branch",
-                question=f"Branch to monitor for updates?",
+                question="Branch to monitor for updates?",
                 default=arg_cache.branch,
                 kind="string",
                 cache=True,
@@ -320,7 +320,7 @@ def create_launch_custom_cmd(
     node_name = verb.get_named_term_type(name="node_name")
     node_type = verb.get_named_term_type(name="node_type")
     node_type = verb.get_named_term_type(name="node_type")
-    source_term = verb.get_named_term_type(name="source")
+    # source_term = verb.get_named_term_type(name="source")
 
     hagrid()
 
