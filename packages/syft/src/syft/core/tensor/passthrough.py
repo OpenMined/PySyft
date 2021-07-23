@@ -18,9 +18,8 @@ from .passthrough import PassthroughTensor
 # syft relative
 from .util import implements
 from .util import query_implementation
-
-AcceptableSimpleType = Union[int, bool, float, np.ndarray]
-SupportedChainType = Union[PassthroughTensor, AcceptableSimpleType]
+from .types import SupportedChainType
+from .types import AcceptableSimpleType
 
 
 def inputs2child(
