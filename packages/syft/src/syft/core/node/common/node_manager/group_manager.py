@@ -17,9 +17,8 @@ class GroupManager(DatabaseManager):
     user_group_association_schema = UserGroup
 
     def __init__(self, database):
-        self._schema = GroupManager.schema
+        super().__init__(schema=GroupManager.schema, db=database)
         self._association_schema = GroupManager.user_group_association_schema
-        self.db = database
 
     def first(self, **kwargs) -> Group:
         result = super().first(**kwargs)

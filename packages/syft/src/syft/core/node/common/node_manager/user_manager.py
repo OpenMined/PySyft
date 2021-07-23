@@ -23,8 +23,7 @@ class UserManager(DatabaseManager):
     schema = SyftUser
 
     def __init__(self, database):
-        self._schema = UserManager.schema
-        self.db = database
+        super().__init__(schema=UserManager.schema, db=database)
         self.roles = RoleManager(database)
 
     @property

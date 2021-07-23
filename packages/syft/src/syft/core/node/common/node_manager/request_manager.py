@@ -20,8 +20,7 @@ class RequestManager(DatabaseManager):
     schema = Request
 
     def __init__(self, database):
-        self._schema = RequestManager.schema
-        self.db = database
+        super().__init__(schema=RequestManager.schema, db=database)
 
     def first(self, **kwargs) -> Union[None, List]:
         result = super().first(**kwargs)

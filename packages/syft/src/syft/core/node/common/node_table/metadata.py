@@ -12,7 +12,7 @@ class StorageMetadata(Base):
     id = Column(Integer(), primary_key=True, autoincrement=True)
     length = Column(Integer())
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"<StorageMetadata length: {self.length}>"
 
 

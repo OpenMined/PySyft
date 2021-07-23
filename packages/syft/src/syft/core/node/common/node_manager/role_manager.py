@@ -13,8 +13,7 @@ class RoleManager(DatabaseManager):
     schema = Role
 
     def __init__(self, database):
-        self._schema = RoleManager.schema
-        self.db = database
+        super().__init__(schema=RoleManager.schema, db=database)
 
     @property
     def user_role(self):

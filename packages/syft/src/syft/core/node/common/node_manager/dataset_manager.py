@@ -20,8 +20,7 @@ class DatasetManager(DatabaseManager):
     schema = Dataset
 
     def __init__(self, database):
-        self._schema = DatasetManager.schema
-        self.db = database
+        super().__init__(schema=DatasetManager.schema, db=database)
 
     def register(self, **kwargs) -> Any:
         """Register e  new object into the database.

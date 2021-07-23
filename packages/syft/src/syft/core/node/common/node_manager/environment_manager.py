@@ -15,9 +15,8 @@ class EnvironmentManager(DatabaseManager):
     user_env_association_schema = UserEnvironment
 
     def __init__(self, database):
-        self._schema = EnvironmentManager.schema
+        super().__init__(schema=EnvironmentManager.schema, db=database)
         self._association_schema = EnvironmentManager.user_env_association_schema
-        self.db = database
 
     def association(self, user_id: str, env_id: str):
         new_association_obj = self._association_schema(user=user_id, environment=env_id)

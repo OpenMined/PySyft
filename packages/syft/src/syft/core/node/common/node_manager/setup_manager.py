@@ -14,8 +14,7 @@ class SetupManager(DatabaseManager):
     schema = SetupConfig
 
     def __init__(self, database):
-        self._schema = SetupManager.schema
-        self.db = database
+        super().__init__(db=database, schema=SetupManager.schema)
 
     @property
     def node_name(self):
