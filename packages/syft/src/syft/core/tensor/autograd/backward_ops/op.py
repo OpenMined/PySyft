@@ -1,24 +1,28 @@
 # syft relative
 # stdlib
+from abc import abstractmethod
 from typing import Any
-from typing import abstractmethod
+from uuid import UUID
+
+# third party
+from numpy import ndarray
 
 # relative
 from ..tensor import AutogradTensor
 
 
 class Op:
-    def __init__(self):
+    def __init__(self) -> None:
         self.backprop_id = None
 
     @abstractmethod
-    def forward(self, *args: Any, **kwargs: Any) -> None:
+    def forward(self, *args: Any, **kwargs: Any):
         raise NotImplementedError
 
-    def _backward(self, grad, backprop_id):
+    def _backward(self, grad: ndarray, backprop_id: UUID):
         raise NotImplementedError
 
-    def backward(self, grad, backprop_id):
+    def backward(self, grad: ndarray, backprop_id: UUID):
 
         self.backprop_id = backprop_id
 
@@ -39,7 +43,7 @@ class Op:
         for key, arg in kwargs.items():
             if isinstance(arg, AutogradTensor):
                 arg.ops.append(self)
-                self.parent_tensor.append(arg)
+                self.parent_tensors.append(arg)
 
         self.out = self.forward(*args, **kwargs)
         self.out._grad_fn = self

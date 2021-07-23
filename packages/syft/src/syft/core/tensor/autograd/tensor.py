@@ -4,7 +4,10 @@ from __future__ import annotations
 # stdlib
 from collections import Counter
 from collections import defaultdict
+from typing import DefaultDict
+from typing import List
 from typing import Optional
+from typing import Union
 import uuid
 
 # third party
@@ -28,33 +31,50 @@ from ..passthrough import is_acceptable_simple_type
 
 @bind_protobuf
 class AutogradTensor(PassthroughTensor, PhiTensorAncestor, Serializable):
-    def __init__(self, child, requires_grad=False):
+    def __init__(self, child: AutogradTensor, requires_grad: bool = False) -> None:
         super().__init__(child)
 
         # whether to run backpropagation or not
         self.requires_grad = requires_grad
 
         # tensor gradient
-        self._grad = defaultdict(lambda: None)
+        self._grad: DefaultDict = defaultdict(lambda: None)
 
         # operation used to create this tensor (if any)
-        self._grad_fn = None
+        # TODO: Keep updating the list inside the union as they're built out
+        self._grad_fn: Optional[
+            Union[
+                autograd.backward_ops.AddOp,
+                autograd.backward_ops.SubOp,
+                autograd.backward_ops.MulOp,
+                autograd.backward_ops.DotOp,
+            ]
+        ] = None
 
         # list of ops which use this tensor
-        self.ops = list()
+        self.ops: List = list()
 
-        self.backprop_id: Optional[uuid.uuid4] = None
+        self.backprop_id: Optional[uuid.UUID] = None
 
-        self.n_backwards = Counter()
+        self.n_backwards: Counter[uuid.UUID] = Counter()
 
     @property
-    def grad(self):
+    def grad(self) -> Optional[np.ndarray]:
         if self.backprop_id not in self._grad:
             return None
         return self._grad[self.backprop_id]
 
+    # TODO: Keep updating the list inside the Union with new Ops as they're built out.
     @property
-    def grad_fn(self):
+    def grad_fn(
+        self,
+    ) -> Union[
+        None,
+        autograd.backward_ops.AddOp,
+        autograd.backward_ops.SubOp,
+        autograd.backward_ops.MulOp,
+        autograd.backward_ops.DotOp,
+    ]:
         if not self.requires_grad:
             raise Exception("This tensor is not backpropagated")
         return self._grad_fn
@@ -64,40 +84,40 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor, Serializable):
         op = autograd.backward_ops.AbsOp()
         return op(self)
 
-    def __add__(self, other) -> AutogradTensorAncestor:
+    def __add__(self, other: AutogradTensor) -> AutogradTensorAncestor:
         op = autograd.backward_ops.AddOp()
         return op(self, other)
 
-    def __sub__(self, other) -> AutogradTensorAncestor:
+    def __sub__(self, other: AutogradTensor) -> AutogradTensorAncestor:
         op = autograd.backward_ops.SubOp()
         return op(self, other)
 
-    def __mul__(self, other) -> AutogradTensorAncestor:
+    def __mul__(self, other: AutogradTensor) -> AutogradTensorAncestor:
         op = autograd.backward_ops.MulOp()
         return op(self, other)
 
-    def __rmul__(self, other) -> AutogradTensorAncestor:
+    def __rmul__(self, other: AutogradTensor) -> AutogradTensorAncestor:
         op = autograd.backward_ops.MulOp()
         return op(self, other)
 
-    def __truediv__(self, other) -> AutogradTensorAncestor:
+    def __truediv__(self, other: AutogradTensor) -> AutogradTensorAncestor:
         if is_acceptable_simple_type(other):
             return self * (1 / other)
         return NotImplemented
 
-    def __pow__(self, other) -> AutogradTensorAncestor:
+    def __pow__(self, other: AutogradTensor) -> AutogradTensorAncestor:
         op = autograd.backward_ops.PowOp()
         return op(self, other)
 
-    def __rpow__(self, other) -> AutogradTensorAncestor:
+    def __rpow__(self, other: AutogradTensor) -> AutogradTensorAncestor:
         op = autograd.backward_ops.RPowOp()
         return op(self, other)
 
-    def reshape(self, *shape) -> AutogradTensorAncestor:
+    def reshape(self, *shape: tuple) -> AutogradTensorAncestor:
         op = autograd.backward_ops.ReshapeOp()
         return op(self, *shape)
 
-    def repeat(self, *args, **kwargs) -> AutogradTensorAncestor:
+    def repeat(self, *args: int, **kwargs: int) -> AutogradTensorAncestor:
         op = autograd.backward_ops.RepeatOp()
         return op(self, *args, **kwargs)
 
@@ -105,17 +125,17 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor, Serializable):
         op = autograd.backward_ops.CopyOp()
         return op(self)
 
-    def sum(self, *args, **kwargs) -> AutogradTensorAncestor:
+    def sum(self, *args: int, **kwargs: int) -> AutogradTensorAncestor:
         op = autograd.backward_ops.SumOp()
         return op(self, *args, **kwargs)
 
-    def transpose(self, *dims) -> AutogradTensorAncestor:
+    def transpose(self, *dims: tuple) -> AutogradTensorAncestor:
         op = autograd.backward_ops.TransposeOp()
         return op(self, *dims)
 
     # End Autograd Tensor Operations
 
-    def add_grad(self, grad):
+    def add_grad(self, grad: np.ndarray) -> None:
 
         # print("Adding grad:" + str(type(grad)) + " w/ backprop_id:" + str(self.backprop_id))
 
@@ -125,7 +145,11 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor, Serializable):
 
             self._grad[self.backprop_id] = self._grad[self.backprop_id] + grad
 
-    def backward(self, grad=None, backprop_id: Optional[uuid.uuid4] = None):
+    def backward(
+        self,
+        grad: Optional[np.ndarray] = None,
+        backprop_id: Optional[uuid.UUID] = None,
+    ) -> bool:
 
         if backprop_id is None:
             backprop_id = uuid.uuid4()
@@ -190,7 +214,7 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor, Serializable):
 
         return True
 
-    def find_backprop_id(self, backprop_id):
+    def find_backprop_id(self, backprop_id: Optional[uuid.UUID]) -> bool:
         found_id = False
 
         for op in self.ops:

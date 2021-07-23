@@ -1,3 +1,6 @@
+# stdlib
+from uuid import UUID
+
 # third party
 import numpy as np
 
@@ -10,7 +13,7 @@ from .op import Op
 class SumOp(Op):
     """Sum operation across a dimension"""
 
-    def forward(self, x: AutogradTensor, axis):
+    def forward(self, x: AutogradTensor, axis: int) -> AutogradTensor:
         self.x = x
         self.axis = axis
         if axis is not None:
@@ -27,7 +30,7 @@ class SumOp(Op):
 
         return AutogradTensor(result, requires_grad=x.requires_grad)
 
-    def _backward(self, grad, backprop_id):
+    def _backward(self, grad: np.ndarray, backprop_id: UUID) -> None:
 
         if self.x.requires_grad:
 
