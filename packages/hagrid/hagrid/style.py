@@ -6,13 +6,12 @@ import click
 import rich
 
 # relative
-from .deps import check_deps
+from .deps import DEPENDENCIES
 from .lib import is_editable_mode
 
 
 class RichGroup(click.Group):
     def format_usage(self, ctx, formatter):
-        DEPENDENCIES = check_deps()
         sio = io.StringIO()
         console = rich.get_console()
         mode = ""
