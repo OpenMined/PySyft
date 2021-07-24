@@ -10,7 +10,7 @@ from . import Base
 
 
 class ObjectMetadata(Base):  # type: ignore
-    __tablename__ = "obj_metadata"
+    __tablename__ = "obj_metadata"  # type: ignore
 
     id = Column(Integer(), primary_key=True, autoincrement=True)
     obj = Column(String(256), ForeignKey("bin_object.id", ondelete="CASCADE"))

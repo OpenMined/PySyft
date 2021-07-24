@@ -1,10 +1,14 @@
+# stdlib
+from typing import Any
+from typing import Dict
+
 # relative
 from .groups import Group
 from .roles import Role
 from .usergroup import UserGroup
 
 
-def model_to_json(model):
+def model_to_json(model) -> Dict[str, Any]:
     """Returns a JSON representation of an SQLAlchemy-backed object."""
     json = {}
     for col in model.__mapper__.attrs.keys():
@@ -18,8 +22,8 @@ def model_to_json(model):
     return json
 
 
-def expand_user_object(user, db):
-    def get_group(user_group):
+def expand_user_object(user, db) -> Dict[str, Any]:
+    def get_group(user_group) -> Group:
         query = db.session().query
         group = user_group.group
         group = query(Group).get(group)

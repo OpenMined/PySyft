@@ -9,7 +9,7 @@ from . import Base
 
 
 class BinObjDataset(Base):
-    __tablename__ = "bin_obj_dataset"
+    __tablename__ = "bin_obj_dataset"  # type: ignore
 
     id = Column(Integer(), primary_key=True, autoincrement=True)
     name = Column(String(256))

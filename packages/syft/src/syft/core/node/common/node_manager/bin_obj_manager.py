@@ -116,16 +116,16 @@ class BinObjectManager(ObjectStore):
 
     def __setitem__(self, key: UID, value: StorableObject) -> None:
 
-        bin_obj = BinObject(id=str(key.value), obj=value.data)
+        bin_obj = BinObject(id=str(key.value), obj=value.data)  # type: ignore
         # metadata_dict = storable_to_dict(value)
         metadata_obj = ObjectMetadata(
-            obj=bin_obj.id,
-            tags=value.tags,
-            description=value.description,
-            read_permissions=syft.serialize(
+            obj=bin_obj.id,  # type: ignore
+            tags=value.tags,  # type: ignore
+            description=value.description,  # type: ignore
+            read_permissions=syft.serialize(  # type: ignore
                 syft.lib.python.Dict(value.read_permissions), to_bytes=True
             ).hex(),
-            search_permissions=syft.serialize(
+            search_permissions=syft.serialize(  # type: ignore
                 syft.lib.python.Dict(value.search_permissions), to_bytes=True
             ).hex(),
             # name=metadata_dict["name"],
