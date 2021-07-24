@@ -2,6 +2,7 @@
 # stdlib
 from abc import abstractmethod
 from typing import Any
+from typing import Optional
 from uuid import UUID
 
 # third party
@@ -13,16 +14,16 @@ from ..tensor import AutogradTensor
 
 class Op:
     def __init__(self) -> None:
-        self.backprop_id = None
+        self.backprop_id: Optional[UUID] = None
 
     @abstractmethod
-    def forward(self, *args: Any, **kwargs: Any):
+    def forward(self, *args: Any, **kwargs: Any) -> Any:
         raise NotImplementedError
 
-    def _backward(self, grad: ndarray, backprop_id: UUID):
+    def _backward(self, grad: ndarray, backprop_id: UUID) -> Any:
         raise NotImplementedError
 
-    def backward(self, grad: ndarray, backprop_id: UUID):
+    def backward(self, grad: ndarray, backprop_id: UUID) -> Any:
 
         self.backprop_id = backprop_id
 
@@ -31,7 +32,7 @@ class Op:
 
         return self._backward(grad=grad, backprop_id=backprop_id)
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
 
         self.parent_tensors = list()
 

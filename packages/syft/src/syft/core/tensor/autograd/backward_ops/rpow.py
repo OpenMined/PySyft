@@ -38,6 +38,7 @@ class RPowOp(Op):
                 self.x.backward(backprop_id=backprop_id)
 
         if not y_is_simple and self.y.requires_grad:
-            self.y.add_grad(grad * self.x * self.y ** (self.x - 1))
+            # ignore type error b/c method hasn't been implemented yet
+            self.y.add_grad(grad * self.x * self.y ** (self.x - 1))  # type: ignore
             if self.y.grad_fn:
                 self.y.backward(backprop_id=backprop_id)

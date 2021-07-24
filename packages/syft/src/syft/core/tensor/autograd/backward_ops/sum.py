@@ -20,7 +20,7 @@ class SumOp(Op):
             # obj.sum() can be called without dims
             self.dim_at_axis = self.x.shape[self.axis]
         else:
-            self.dim_at_axis = None
+            self.dim_at_axis = None  # type: ignore
         self.backward_shape = self.x.shape
 
         result = x.child.sum(axis=axis)
@@ -40,7 +40,7 @@ class SumOp(Op):
                 grad = grad.repeat(self.dim_at_axis, axis=self.axis)
 
             else:
-                n_times = np.prod(self.backward_shape)
+                n_times = np.prod(self.backward_shape)  # type: ignore
                 grad = grad.repeat(n_times, axis=0).reshape(self.backward_shape)
 
             self.x.add_grad(grad)

@@ -4,6 +4,7 @@ from __future__ import annotations
 # stdlib
 from collections import Counter
 from collections import defaultdict
+from typing import Any
 from typing import DefaultDict
 from typing import List
 from typing import Optional
@@ -105,11 +106,15 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor, Serializable):
             return self * (1 / other)
         return NotImplemented
 
-    def __pow__(self, other: AutogradTensor) -> AutogradTensorAncestor:
+    def __pow__(
+        self, other: Union[AutogradTensor, Union[int, bool, float, Any]]
+    ) -> AutogradTensorAncestor:
         op = autograd.backward_ops.PowOp()
         return op(self, other)
 
-    def __rpow__(self, other: AutogradTensor) -> AutogradTensorAncestor:
+    def __rpow__(
+        self, other: Union[AutogradTensor, Union[int, bool, float, Any]]
+    ) -> AutogradTensorAncestor:
         op = autograd.backward_ops.RPowOp()
         return op(self, other)
 
@@ -248,14 +253,13 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor, Serializable):
     @staticmethod
     def _proto2object(proto: Tensor_PB) -> AutogradTensor:
         use_tensors = proto.use_tensors
-        child = []
+        child: List[AutogradTensor] = []
         if use_tensors:
             child = [deserialize(tensor) for tensor in proto.tensors]
         else:
             child = [deserialize(array) for array in proto.arrays]
 
-        child = child[0]
-        return AutogradTensor(child, requires_grad=proto.requires_grad)
+        return AutogradTensor(child[0], requires_grad=proto.requires_grad)
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
