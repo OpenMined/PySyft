@@ -42,5 +42,5 @@ class Request(Base):
     def __str__(self) -> str:
         return (
             f"< Request id : {self.id}, user: {self.user_id}, Date: {self.date}, Object: {self.object_id},"
-            f" reason: {self.reason}, status: {self.status}, type: {self.type} >"
+            f" reason: {self.reason}, status: {self.status}, type: {self.object_type} >"
         )

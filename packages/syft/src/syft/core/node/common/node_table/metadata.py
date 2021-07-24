@@ -22,7 +22,7 @@ def get_metadata(db_session: Session) -> StorageMetadata:
     metadata = db_session.query(StorageMetadata).first()
 
     if metadata is None:
-        metadata = StorageMetadata()
+        metadata = StorageMetadata(length=0)  # type: ignore
         db_session.add(metadata)
         db_session.commit()
 
