@@ -52,7 +52,6 @@ jobs:
           key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
-<<<<<<< HEAD
       - name: Install Protoc
         uses: arduino/setup-protoc@v1
         with:
@@ -206,7 +205,6 @@ jobs:
 #          python ./scripts/mnist.py
 #          python ./scripts/nb_duet_test.py
 #          pytest -m duet -n 1 --suppress-no-test-exit-code --durations=50
-=======
 
       - name: Install Dependencies
         run: |
