@@ -31,6 +31,7 @@ from ....store.storeable_object import StorableObject
 from ....tensor.smpc.share_tensor import ShareTensor
 from ...abstract.node import AbstractNode
 
+# How many intermediary ids we generate in each smpc function
 MAP_FUNC_TO_NR_GENERATOR_INVOKES = {"__add__": 0, "__mul__": 0, "__sub__": 0}
 
 
@@ -61,6 +62,14 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
     def filter_actions_after_rank(
         rank: int, actions: List["SMPCActionMessage"]
     ) -> List["SMPCActionMessage"]:
+        """
+        Filter the actions depending on the rank of each party
+
+        Arguments:
+            rank (int): the rank of the party
+            actions (List[SMPCActionMessage]):
+
+        """
         res_actions = []
         for action in actions:
             if action.ranks_to_run_action is None:
@@ -76,6 +85,12 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
     def get_action_generator_from_op(
         operation_str: str,
     ) -> Callable[[UID, UID, int, Any], Any]:
+        """ "
+        Get the generator for the operation provided by the argument
+        Arguments:
+            operation_str (str): the name of the operation
+
+        """
         return MAP_FUNC_TO_ACTION[operation_str]
 
     def _object2proto(self) -> SMPCActionMessage_PB:
@@ -150,6 +165,7 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
 def smpc_add(
     self_id: UID, other_id: UID, seed_id_locations: int, node: Any
 ) -> List[SMPCActionMessage]:
+    """Generator for the smpc_ad"""
     generator = np.random.default_rng(seed_id_locations)
 
     for _ in range(MAP_FUNC_TO_NR_GENERATOR_INVOKES["__add__"]):
@@ -192,6 +208,7 @@ def smpc_add(
 def smpc_sub(
     self_id: UID, other_id: UID, seed_id_locations: int, node: Any
 ) -> List[SMPCActionMessage]:
+    """Generator for the smpc_sub"""
     generator = np.random.default_rng(seed_id_locations)
 
     for _ in range(MAP_FUNC_TO_NR_GENERATOR_INVOKES["__sub__"]):
@@ -234,6 +251,7 @@ def smpc_sub(
 def smpc_mul(
     self_id: UID, other_id: UID, seed_id_locations: int, node: Any
 ) -> List[SMPCActionMessage]:
+    """Generator for the smpc_mul with a public value"""
     generator = np.random.default_rng(seed_id_locations)
 
     for _ in range(MAP_FUNC_TO_NR_GENERATOR_INVOKES["__mul__"]):
@@ -262,6 +280,7 @@ def smpc_mul(
     return actions
 
 
+# Given an SMPC Action map it to an action constructor
 MAP_FUNC_TO_ACTION: Dict[
     str, Callable[[UID, UID, int, Any], List[SMPCActionMessage]]
 ] = {
@@ -271,6 +290,7 @@ MAP_FUNC_TO_ACTION: Dict[
 }
 
 
+# Map given an action map it to a function that should be run on the shares"
 _MAP_ACTION_TO_FUNCTION: Dict[str, Callable[..., Any]] = {
     "mpc_add": operator.add,
     "mpc_sub": operator.sub,

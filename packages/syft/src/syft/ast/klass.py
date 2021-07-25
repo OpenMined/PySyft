@@ -252,6 +252,7 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
 
         return result
 
+    # relative
     from ..core.node.common.action.smpc_action_message import MAP_FUNC_TO_ACTION
 
     method_name = attr_path_and_name.rsplit(".", 1)[-1]

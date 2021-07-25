@@ -23,6 +23,14 @@ class SMPCExecutorService(ImmediateNodeServiceWithoutReply):
     def process(
         node: AbstractNode, msg: SMPCActionMessage, verify_key: VerifyKey
     ) -> None:
+        """Given an SMPCAction, execute it (this action is sent to the node
+        by the RabitMQ task)
+
+        Attributes:
+            node (AbstractNode): the node that received the message
+            msg (SMPCActionMessage): the message that should be executed
+            verify_key (VerifyKey): the verify_key
+        """
         func = _MAP_ACTION_TO_FUNCTION[msg.name_action]
         store_object_self = node.store.get_object(key=msg.self_id)
         if store_object_self is None:

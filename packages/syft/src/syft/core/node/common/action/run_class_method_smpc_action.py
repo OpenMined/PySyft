@@ -35,9 +35,8 @@ from .common import ImmediateActionWithoutReply
 @bind_protobuf
 class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
     """
-    When executing a RunClassMethodAction, a :class:`Node` will run a method defined
-    by the action's path attribute on the object pointed at by _self and keep the returned
-    value in its store.
+    When executing a RunClassMethodSMPCAction, a list of SMPCActionMessages is sent to the
+    to the same node (using a rabbitMQ)
 
     Attributes:
          path: the dotted path to the method to call
