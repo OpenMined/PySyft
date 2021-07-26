@@ -20,6 +20,7 @@ from ..passthrough import PassthroughTensor
 from ..passthrough import implements
 from ..passthrough import inputs2child
 from ..passthrough import is_acceptable_simple_type
+from ..types import FlexibleSingleEntityPhiTensorType
 from ..types import SupportedChainType
 from .initial_gamma import InitialGammaTensor
 
@@ -88,13 +89,13 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
     def max_vals(self) -> np.ndarray:
         return self._max_vals
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Pretty print some information, optimized for Jupyter notebook viewing."""
         return (
             f"{self.__class__.__name__}(entity={self.entity.name}, child={self.child})"
         )
 
-    def __abs__(self):
+    def __abs__(self) -> SingleEntityPhiTensor:
 
         data = self.child.abs()
 
@@ -147,7 +148,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             scalar_manager=self.scalar_manager,
         )
 
-    def __add__(self, other):
+    def __add__(self, other: SupportedChainType) -> FlexibleSingleEntityPhiTensorType:
 
         # if the tensor being added is also private
         if isinstance(other, SingleEntityPhiTensor):
@@ -188,12 +189,13 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
         else:
             return NotImplemented
 
-    def __neg__(self):
+    def __neg__(self) -> SingleEntityPhiTensor:
         self.data = -self.child
         self.min_vals = -self.max_vals
         self.max_vals = -self.min_vals
 
     def __getitem__(self, key) -> SingleEntityPhiTensor:
+
         data = self.child.__getitem__(key)
         min_vals = self.min_vals.__getitem__(key)
         max_vals = self.max_vals.__getitem__(key)
@@ -215,7 +217,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             scalar_manager=self.scalar_manager,
         )
 
-    def __gt__(self, other):
+    def __gt__(self, other: SupportedChainType) -> FlexibleSingleEntityPhiTensorType:
 
         # if the tensor being added is also private
         if isinstance(other, SingleEntityPhiTensor):
@@ -258,7 +260,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
         else:
             return NotImplemented
 
-    def __mul__(self, other):
+    def __mul__(self, other: SupportedChainType) -> FlexibleSingleEntityPhiTensorType:
 
         if other.__class__ == SingleEntityPhiTensor:
 
@@ -308,7 +310,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
         else:
             return NotImplemented
 
-    def __sub__(self, other):
+    def __sub__(self, other: SupportedChainType) -> FlexibleSingleEntityPhiTensorType:
 
         if isinstance(other, SingleEntityPhiTensor):
             if self.entity != other.entity:
@@ -330,7 +332,9 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
         else:
             return NotImplemented
 
-    def __truediv__(self, other):
+    def __truediv__(
+        self, other: SupportedChainType
+    ) -> FlexibleSingleEntityPhiTensorType:
 
         if isinstance(other, SingleEntityPhiTensor):
 
@@ -368,7 +372,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
         else:
             return self * (1 / other)
 
-    def dot(self, other):
+    def dot(self, other: SupportedChainType):
         return self.manual_dot(other)
 
     # ndarray.flatten(order='C')
