@@ -41,7 +41,7 @@ PyGrid will be added soon, in the mean time this is the directory structure.
 OpenMined/PySyft
 ├── README.md   <-- You are here 📌
 └── packages
-    ├── grid    <-- Coming to this Mono repo 🔜
+    ├── grid    <-- The Grid droids from OpenMined/PyGrid
     └── syft    <-- The Syft droids you are looking for 👋🏽
 ```
 

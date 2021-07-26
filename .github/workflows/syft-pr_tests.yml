@@ -65,6 +65,7 @@ jobs:
           pip install black isort --default-timeout=60
           ./scripts/build_proto.sh
 
+      # fails for no reason and breaks CI
       # - id: file_changes # get changed files.
       #   uses: trilom/file-changes-action@v1.2.3
       #   with:
@@ -74,7 +75,7 @@ jobs:
           pwd
           ls
           cp .pre-commit-config.yaml ../../
-      - uses: pre-commit/action@v2.0.0
+      - uses: pre-commit/action@v2.0.3
       # with:
       #   extra_args: --files ${{ steps.file_changes.outputs.files}} # apply only to changed files.
 
@@ -114,7 +115,7 @@ jobs:
       max-parallel: 3
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        python-version: [3.8]
+        python-version: [3.9]
         torch-version: [1.8.1]
 
     runs-on: ${{ matrix.os }}
@@ -151,6 +152,7 @@ jobs:
           pip install -r requirements.unstable.txt
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
+          pip install "pillow<=8.2.0"
 
       - name: Scan for security issues
         run: |
@@ -178,7 +180,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        python-version: [3.8]
+        python-version: [3.9]
         torch-version: [1.8.1]
         os: [ubuntu-latest]
     steps:
@@ -214,6 +216,7 @@ jobs:
           pip install -r requirements.unstable.txt
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
+          pip install "pillow<=8.2.0"
 
       - name: Run notebook API examples
         if: ${{ matrix.os == 'ubuntu-latest' }}
@@ -237,7 +240,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        python-version: [3.8]
+        python-version: [3.9]
         torch-version: [1.8.1]
 
     steps:
@@ -265,12 +268,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
-      - uses: actions/checkout@v2
-        with:
-          repository: "OpenMined/PyGrid"
-          ref: "dev"
-          path: "packages/grid"
-
       - name: Install Dependencies
         run: |
           pip install packaging --default-timeout=60
@@ -279,9 +276,9 @@ jobs:
           pip install -r requirements.unstable.txt
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
+          pip install "pillow<=8.2.0"
 
       - name: Test PyGrid
-        continue-on-error: true
         run: |
           pytest ../grid/apps/domain/tests --durations=50
           pytest ../grid/apps/network/tests --durations=50
@@ -293,7 +290,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        python-version: [3.8]
+        python-version: [3.9]
         torch-version: [1.8.1]
 
     steps:
@@ -321,23 +318,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
-      - uses: actions/checkout@v2
-        with:
-          repository: "OpenMined/PyGrid"
-          ref: "dev"
-          path: "packages/grid"
-
       - name: Install Dependencies
         run: |
-          pip install packaging --default-timeout=60
+          pip install packaging
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
           pip install -r requirements.unstable.txt
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
+          pip install "pillow<=8.2.0"
 
       - name: Test PyGrid
-        continue-on-error: true
         run: |
           python ./scripts/mnist.py
-          pytest -m grid --durations=50
+          pytest -m grid -p no:randomly -p no:xdist

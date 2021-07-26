@@ -23,7 +23,8 @@ VERSIONS_LUT: Dict[str, Dict[str, Any]] = {
 system = platform.system()
 
 
-def main(path_req: str, torch_version: str) -> None:
+def main(path_req: str, torch_version: str, gpu: str = "cpu") -> None:
+    print("got args", path_req, torch_version, gpu)
     with open(path_req, "r") as fp:
         req = fp.read()
 
@@ -35,7 +36,8 @@ def main(path_req: str, torch_version: str) -> None:
             dep_version = dep_versions[lib]
             lib_version = version.parse(dep_version)
             if system != "Darwin":
-                dep_version += "+cpu"  # linux and windows require +cpu
+                if gpu == "cpu":
+                    dep_version += "+cpu"  # linux and windows require +cpu
             replace = f"{lib}=={dep_version}\n"
 
         if (

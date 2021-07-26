@@ -334,6 +334,7 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.lib.python.Dict.__sizeof__", "syft.lib.python.Int"),
         ("syft.lib.python.Dict.__str__", "syft.lib.python.String"),
         ("syft.lib.python.Dict.copy", "syft.lib.python.Dict"),
+        ("syft.lib.python.Dict.clear", "syft.lib.python._SyNone"),
         ("syft.lib.python.Dict.fromkeys", "syft.lib.python.Dict"),
         # Rename get to dict_get because of conflict
         ("syft.lib.python.Dict.dict_get", "syft.lib.python.Any"),

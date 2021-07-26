@@ -5,12 +5,13 @@ import pytest
 import syft as sy
 
 pytest.importorskip("pydp")
-sy.load("pydp")
 
 
 @pytest.mark.vendor(lib="pydp")
 def test_pydp(root_client: sy.VirtualMachineClient) -> None:
-    x_ptr = root_client.pydp.algorithms.laplacian.BoundedMean(1, 1, 50)
+    x_ptr = root_client.pydp.algorithms.laplacian.BoundedMean(
+        epsilon=1, lower_bound=1, upper_bound=50, dtype="float"
+    )
 
     input_data = [1, 88, 100, 5, 40, 30, 29, 56, 88, 23, 5, 1] * 100
     list_ptr = root_client.python.List(input_data)
@@ -23,7 +24,9 @@ def test_pydp(root_client: sy.VirtualMachineClient) -> None:
 
 @pytest.mark.vendor(lib="pydp")
 def test_pydp_functions(root_client: sy.VirtualMachineClient) -> None:
-    x_ptr = root_client.pydp.algorithms.laplacian.BoundedMean(1, 1, 50)
+    x_ptr = root_client.pydp.algorithms.laplacian.BoundedMean(
+        epsilon=1, lower_bound=1, upper_bound=50, dtype="float"
+    )
 
     input_data = [1, 88, 100, 5, 40, 30, 29, 56, 88, 23, 5, 1] * 100
     list_ptr = root_client.python.List(input_data)

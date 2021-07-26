@@ -77,6 +77,7 @@ jobs:
           pip install -r requirements.unstable.txt
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
+          pip install "pillow<=8.2.0"
 
       - name: Scan for security issues
         run: |
@@ -121,7 +122,7 @@ jobs:
 
       - name: Upgrade pip
         run: |
-          pip install --upgrade --user pip
+          pip install --upgrade --user pip --default-timeout=60
 
       - name: Get pip cache dir
         id: pip-cache
@@ -136,12 +137,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
-      - uses: actions/checkout@v2
-        with:
-          repository: "OpenMined/PyGrid"
-          ref: "dev"
-          path: "packages/grid"
-
       - name: Install Dependencies
         run: |
           pip install packaging --default-timeout=60
@@ -150,15 +145,15 @@ jobs:
           pip install -r requirements.unstable.txt
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
+          pip install "pillow<=8.2.0"
 
       - name: Test PyGrid
-        continue-on-error: true
         run: |
           pytest ../grid/apps/domain/tests
           pytest ../grid/apps/network/tests
           pytest ../grid/apps/worker/tests
           python ./scripts/mnist.py
-          pytest -m grid
+          pytest -m grid -p no:randomly -p no:xdist -p no:benchmark
 
   pytorch-tests-all-versions:
     strategy:
@@ -211,6 +206,7 @@ jobs:
           grep -A 3 "torch_ecosystem" setup.cfg
           pip install -r requirements.unstable.txt
           pip install -e .[dev] -f https://download.pytorch.org/whl/torch_stable.html
+          pip install "pillow<=8.2.0"
 
       - name: Check import works without dev packages
         run: |

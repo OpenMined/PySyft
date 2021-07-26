@@ -57,6 +57,7 @@ from syft.core.node.vm.vm import VirtualMachine  # noqa: F401
 from syft.core.node.vm.vm import VirtualMachineClient  # noqa: F401
 from syft.core.plan.plan import Plan  # noqa: F401
 from syft.core.plan.plan_builder import make_plan  # noqa: F401
+from syft.experimental_flags import flags  # noqa: F401
 from syft.grid.client.client import login  # noqa: F401
 
 # Convenience Functions
@@ -64,6 +65,7 @@ from syft.grid.duet import bcolors  # noqa: F401
 from syft.grid.duet import duet  # noqa: F401
 from syft.grid.duet import join_duet  # noqa: F401
 from syft.grid.duet import launch_duet  # noqa: F401
+from syft.grid.duet import test_duet_network  # noqa: F401
 
 # Convenience Objects
 from syft.lib import lib_ast  # noqa: F401
