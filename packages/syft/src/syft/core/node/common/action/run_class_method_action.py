@@ -155,28 +155,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
             method_name = self.path.split(".")[-1]
 
-            # TODO: This should be done better
-            if "ShareTensor" in self.path:
-                # syft relative
-                # relative
-                from .smpc_action import SMPCAction
-
-                func = SMPCAction.get_action_generator_from_op(method_name)
-                args_id = [arg.id_at_location for arg in self.args]
-                kwargs = {
-                    "seed": 42,
-                    "node": node,
-                }  # TODO: the seed should be sent by the orchestrator
-                actions = func(self._self.id_at_location, *args_id, **kwargs)  # type: ignore
-                actions = SMPCAction.filter_actions_after_rank(
-                    resolved_self.data, actions
-                )
-
-                client = node.get_client()  # type: ignore
-                for action in actions:
-                    client.send_immediate_msg_without_reply(msg=action)
-                return
-            elif (
+            if (
                 isinstance(resolved_self.data, Plan)
                 and method_name == "__call__"
                 or (

@@ -22,12 +22,8 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         "syft.core",
         "syft.core.tensor",
         "syft.core.tensor.tensor",
-    ]
-    classes = [
-        ("syft.core.tensor.tensor.Tensor", "syft.core.tensor.tensor.Tensor", Tensor),
-        "syft.core.tensor.fixed_precision_tensor",
-        "syft.core.tensor.tensor",
         "syft.core.tensor.smpc",
+        "syft.core.tensor.fixed_precision_tensor",
         "syft.core.tensor.smpc.share_tensor",
     ]
     classes = [
@@ -113,7 +109,7 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.core.tensor.tensor.Tensor.argmax", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.argmin", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.argsort", "syft.core.tensor.tensor.Tensor"),
-        ("syft.core.tensor.tensor.Tensor.backward", "syft.lib.python.Bool"),
+        # ("syft.core.tensor.tensor.Tensor.backward", "syft.lib.python.Bool"),
         # ("syft.core.tensor.tensor.Tensor.child", "syft.core.tensor.tensor.Tensor"),  # obj level
         ("syft.core.tensor.tensor.Tensor.clip", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.copy", "syft.core.tensor.tensor.Tensor"),
@@ -122,16 +118,16 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.core.tensor.tensor.Tensor.diagonal", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.dot", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.flatten", "syft.core.tensor.tensor.Tensor"),
-        ("syft.core.tensor.tensor.Tensor.gamma", "syft.core.tensor.tensor.Tensor"),
-        ("syft.core.tensor.tensor.Tensor.grad", "syft.core.tensor.tensor.Tensor"),
+        # ("syft.core.tensor.tensor.Tensor.gamma", "syft.core.tensor.tensor.Tensor"),
+        # ("syft.core.tensor.tensor.Tensor.grad", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.max", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.mean", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.min", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.ndim", "syft.core.tensor.tensor.Tensor"),
-        ("syft.core.tensor.tensor.Tensor.private", "syft.core.tensor.tensor.Tensor"),
+        # ("syft.core.tensor.tensor.Tensor.private", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.prod", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.repeat", "syft.core.tensor.tensor.Tensor"),
-        ("syft.core.tensor.tensor.Tensor.requires_grad", "syft.lib.python.Bool"),
+        # ("syft.core.tensor.tensor.Tensor.requires_grad", "syft.lib.python.Bool"),
         ("syft.core.tensor.tensor.Tensor.reshape", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.resize", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.shape", "syft.core.tensor.tensor.Tensor"),

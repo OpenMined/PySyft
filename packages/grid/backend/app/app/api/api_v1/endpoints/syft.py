@@ -58,6 +58,7 @@ async def syft_stream(
     data = await request.body()
 
     if settings.STREAM_QUEUE:
+        print("Queuing streaming message for processing on worker node")
         # use latin-1 instead of utf-8 because our bytes might not be an even number
         msg_bytes_str = data.decode("latin-1")
         try:

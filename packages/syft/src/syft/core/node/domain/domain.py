@@ -10,12 +10,11 @@ from typing import Tuple
 from typing import Union
 
 # third party
-# import ascii_magic
+import ascii_magic
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
 # relative
-# syft relative
 from ....lib.python import String
 from ....logger import critical
 from ....logger import debug
@@ -66,15 +65,6 @@ from ..common.node_service.user_manager.user_manager_service import UserManagerS
 from ..device import Device
 from ..device import DeviceClient
 from .client import DomainClient
-from .service import RequestAnswerMessageService
-from .service import RequestMessage
-from .service import RequestService
-from .service import RequestStatus
-from .service.accept_or_deny_request_service import AcceptOrDenyRequestService
-from .service.get_all_requests_service import GetAllRequestsService
-from .service.publish_service import PublishScalarsService
-from .service.request_handler_service import GetAllRequestHandlersService
-from .service.request_handler_service import UpdateRequestHandlerService
 
 
 class Domain(Node):
@@ -169,6 +159,19 @@ class Domain(Node):
     def loud_print(self):
         install_path = os.path.abspath(
             os.path.join(os.path.realpath(__file__), "../../../../img/")
+        )
+        ascii_magic.to_terminal(
+            ascii_magic.from_image_file(
+                img_path=install_path + "/pygrid.png", columns=83
+            )
+        )
+
+        print(
+            r"""
+                                                     __
+                                                    |  \  _   _   _  .  _
+                                                    |__/ (_) ||| (_| | | )
+"""
         )
 
     @property
