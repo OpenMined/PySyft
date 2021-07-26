@@ -6,11 +6,13 @@ from typing import Optional
 from typing import Union
 
 # third party
+from sqlalchemy.engine.base import Engine
+from sqlalchemy.orm import DeclarativeMeta
 from sqlalchemy.orm import sessionmaker
 
 
 class DatabaseManager:
-    def __init__(self, schema, db) -> None:
+    def __init__(self, schema: DeclarativeMeta, db: Engine) -> None:
         self._schema = schema
         self.db = db
 
@@ -78,7 +80,7 @@ class DatabaseManager:
         session_local.commit()
         session_local.close()
 
-    def modify(self, query: Dict[Any, Any], values: Dict[Any, Any]):
+    def modify(self, query: Dict[Any, Any], values: Dict[Any, Any]) -> None:
         """Modifies one or many records."""
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
         session_local.query(self._schema).filter_by(**query).update(values)

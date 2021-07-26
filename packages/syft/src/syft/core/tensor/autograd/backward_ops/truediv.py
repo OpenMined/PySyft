@@ -12,7 +12,10 @@ class TrueDivOp(Op):
         self.x = x
         self.y = y
 
-    def _backward(self, grad: AutogradTensor, backprop_id: uuid.UUID):
+        # This is just a placeholder to remove return type linting errors until this method is built out fully
+        return AutogradTensor(x.child / y)
+
+    def _backward(self, grad: AutogradTensor, backprop_id: uuid.UUID) -> None:
         if self.x.requires_grad:
             pass
 

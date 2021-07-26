@@ -14,7 +14,7 @@ states = {"creating": 0, "failed": 1, "success": 2, "destroyed": 3}
 
 
 class Environment(Base):
-    __tablename__ = "environment"
+    __tablename__ = "environment"  # type: ignore
 
     id = Column(Integer(), primary_key=True, autoincrement=True)
     state = Column(Integer)
@@ -26,7 +26,7 @@ class Environment(Base):
     created_at = Column(DateTime, default=datetime.now())
     destroyed_at = Column(DateTime, default=datetime.now())
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f"<Group id: {self.id}, state: {self.state}, address: {self.address}, syft_address: "
             f"{self.syft_address}, provider: {self.provider}, region: {self.region}, instance_type: "

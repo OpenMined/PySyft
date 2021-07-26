@@ -18,12 +18,12 @@ class Association(Base):
         network_address (String) : Network Address.
     """
 
-    __tablename__ = "association"
+    __tablename__ = "association"  # type: ignore
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     date = Column(DateTime())
     name = Column(String(255))
     address = Column(String(255))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"< Association id : {self.id}, Name: {self.name}, Address: {self.address}, Date: {self.date}>"

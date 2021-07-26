@@ -11,6 +11,9 @@ class InvertOp(Op):
     def forward(self, x: AutogradTensor) -> AutogradTensor:
         self.x = x
 
-    def _backward(self, grad: AutogradTensor, backprop_id: uuid.UUID):
+        # This is just a placeholder to suppress linting errors until the method is built out
+        return x
+
+    def _backward(self, grad: AutogradTensor, backprop_id: uuid.UUID) -> None:
         if self.x.requires_grad:
             pass

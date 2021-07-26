@@ -1,4 +1,5 @@
 # stdlib
+from typing import ByteString
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -44,7 +45,7 @@ class CreateDatasetMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
         address: Address,
-        dataset: bin,
+        dataset: ByteString,
         metadata: Dict[str, str],
         reply_to: Address,
         platform: str,

@@ -8,10 +8,11 @@ from . import Base
 
 
 class Group(Base):
-    __tablename__ = "group"
+
+    __tablename__ = "group"  # type: ignore
 
     id = Column(Integer(), primary_key=True, autoincrement=True)
     name = Column(String(255))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"<Group id: {self.id}, name: {self.name}>"

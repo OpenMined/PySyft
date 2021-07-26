@@ -19,7 +19,7 @@ class TensorChainManager:
         self, tensor_type: type, *args: List[Any], **kwargs: Dict[str, Any]
     ) -> None:
         """ """
-        self.child = tensor_type(self.child, *args, **kwargs)
+        self.child = tensor_type(self.child, *args, **kwargs)  # type: ignore
 
     def replace_abstraction_top(
         self, tensor_type: type, *args: List[Any], **kwargs: Dict[str, Any]

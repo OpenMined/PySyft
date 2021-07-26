@@ -57,6 +57,7 @@ repos:
             # "--disallow-untyped-decorators",
             "--disallow-untyped-defs",
             "--disallow-untyped-calls",
+	    "--no-warn-unused-ignores",
           ]
 
   # - repo: local

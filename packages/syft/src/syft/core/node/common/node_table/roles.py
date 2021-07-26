@@ -9,7 +9,7 @@ from . import Base
 
 
 class Role(Base):
-    __tablename__ = "role"
+    __tablename__ = "role"  # type: ignore
 
     id = Column(Integer(), primary_key=True, autoincrement=True)
     name = Column(String(255))
@@ -21,7 +21,7 @@ class Role(Base):
     can_manage_infrastructure = Column(Boolean(), default=False)
     can_upload_data = Column(Boolean(), default=False)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f"<Role id: {self.id}, name: {self.name}, "
             f"can_triage_requests: {self.can_triage_requests}, "
@@ -35,23 +35,23 @@ class Role(Base):
 
 
 def create_role(
-    name,
-    can_triage_requests,
-    can_edit_settings,
-    can_create_users,
-    can_create_groups,
-    can_edit_roles,
-    can_manage_infrastructure,
-    can_upload_data,
-):
+    name: str,
+    can_triage_requests: bool,
+    can_edit_settings: bool,
+    can_create_users: bool,
+    can_create_groups: bool,
+    can_edit_roles: bool,
+    can_manage_infrastructure: bool,
+    can_upload_data: bool,
+) -> Role:
     new_role = Role(
-        name=name,
-        can_triage_requests=can_triage_requests,
-        can_edit_settings=can_edit_settings,
-        can_create_users=can_create_users,
-        can_create_groups=can_create_groups,
-        can_edit_roles=can_edit_roles,
-        can_manage_infrastructure=can_manage_infrastructure,
-        can_upload_data=can_upload_data,
+        name=name,  # type:ignore
+        can_triage_requests=can_triage_requests,  # type:ignore
+        can_edit_settings=can_edit_settings,  # type:ignore
+        can_create_users=can_create_users,  # type:ignore
+        can_create_groups=can_create_groups,  # type:ignore
+        can_edit_roles=can_edit_roles,  # type:ignore
+        can_manage_infrastructure=can_manage_infrastructure,  # type:ignore
+        can_upload_data=can_upload_data,  # type:ignore
     )
     return new_role

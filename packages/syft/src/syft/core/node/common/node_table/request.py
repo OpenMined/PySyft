@@ -25,7 +25,7 @@ class Request(Base):
         verify_key (String): User Verify Key.
     """
 
-    __tablename__ = "request"
+    __tablename__ = "request"  # type: ignore
 
     id = Column(String(255), primary_key=True)
     date = Column(DateTime())
@@ -39,8 +39,8 @@ class Request(Base):
     object_type = Column(String(255))
     tags = Column(JSON())
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f"< Request id : {self.id}, user: {self.user_id}, Date: {self.date}, Object: {self.object_id},"
-            f" reason: {self.reason}, status: {self.status}, type: {self.type} >"
+            f" reason: {self.reason}, status: {self.status}, type: {self.object_type} >"
         )
