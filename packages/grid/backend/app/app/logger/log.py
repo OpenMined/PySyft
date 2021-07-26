@@ -22,7 +22,7 @@ class LogHandler:
                 "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan>: "
                 "<level>{message}</level>"
             ),
-            "level": 0,
+            "level": "DEBUG",
             "sink": sys.stdout,
             "filter": None,
             "compression": None,
@@ -92,7 +92,7 @@ class LogHandler:
             logging.getLogger(log).handlers = [intercept_handler]
 
         logger.configure(
-            handlers=[{"sink": sys.stdout, "level": 0, "format": self.format_record}],
+            handlers=[{"sink": sys.stdout, "level": self.config['level'], "format": self.format_record}],
         )
 
         try:
