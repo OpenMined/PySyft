@@ -16,7 +16,7 @@ class DatabaseManager:
         self._schema = schema
         self.db = db
 
-    def register(self, **kwargs: Dict[str, Any]) -> Any:
+    def register(self, **kwargs: Any) -> Any:
         """Register e  new object into the database.
 
         Args:

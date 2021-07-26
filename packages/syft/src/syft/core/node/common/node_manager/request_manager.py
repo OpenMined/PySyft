@@ -41,10 +41,10 @@ class RequestManager(DatabaseManager):
         object_id: str,
         reason: str,
         request_type: str,
-        verify_key: str = None,
-        tags: Dict[str, str] = [],
-        object_type="",
-    ):
+        verify_key: Union[str, None] = None,
+        tags: Dict[str, str] = {},
+        object_type: str = "",
+    ) -> Request:
         date = datetime.now()
 
         return self.register(
