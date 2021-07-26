@@ -12,7 +12,10 @@ class DotOp(Op):
         self.x = x
         self.y = y
 
-    def _backward(self, grad: AutogradTensor, backprop_id: uuid.UUID):
+        # This is just a placeholder to remove return type linting errors until the method is built
+        return AutogradTensor(x.child)
+
+    def _backward(self, grad: AutogradTensor, backprop_id: uuid.UUID) -> None:
         if self.x.requires_grad:
             pass
 
