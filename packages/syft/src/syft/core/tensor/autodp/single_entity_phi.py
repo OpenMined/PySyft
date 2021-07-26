@@ -20,7 +20,6 @@ from ..passthrough import PassthroughTensor
 from ..passthrough import implements
 from ..passthrough import inputs2child
 from ..passthrough import is_acceptable_simple_type
-from ..types import FlexibleSingleEntityPhiTensorType
 from ..types import SupportedChainType
 from .initial_gamma import InitialGammaTensor
 
@@ -38,6 +37,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
         max_vals: np.ndarray,
         scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None,
     ) -> None:
+
         # child = the actual private data
         super().__init__(child)
 
@@ -57,12 +57,14 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
 
     @property
     def gamma(self) -> InitialGammaTensor:
+
         """Property to cast this tensor into a GammaTensor"""
         return self.create_gamma()
 
     def create_gamma(
         self, scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None
     ) -> InitialGammaTensor:
+
         """Return a new Gamma tensor based on this phi tensor"""
 
         if scalar_manager is None:
@@ -83,13 +85,16 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
 
     @property
     def min_vals(self) -> np.ndarray:
+
         return self._min_vals
 
     @property
     def max_vals(self) -> np.ndarray:
+
         return self._max_vals
 
     def __repr__(self) -> str:
+
         """Pretty print some information, optimized for Jupyter notebook viewing."""
         return (
             f"{self.__class__.__name__}(entity={self.entity.name}, child={self.child})"
@@ -148,7 +153,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             scalar_manager=self.scalar_manager,
         )
 
-    def __add__(self, other: SupportedChainType) -> FlexibleSingleEntityPhiTensorType:
+    def __add__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
 
         # if the tensor being added is also private
         if isinstance(other, SingleEntityPhiTensor):
@@ -190,9 +195,19 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             return NotImplemented
 
     def __neg__(self) -> SingleEntityPhiTensor:
-        self.data = -self.child
-        self.min_vals = -self.max_vals
-        self.max_vals = -self.min_vals
+
+        data = self.child * -1
+        min_vals = self.min_vals * -1
+        max_vals = self.max_vals * -1
+        entity = self.entity
+
+        return SingleEntityPhiTensor(
+            child=data,
+            entity=entity,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            scalar_manager=self.scalar_manager,
+        )
 
     def __getitem__(self, key) -> SingleEntityPhiTensor:
 
@@ -217,7 +232,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             scalar_manager=self.scalar_manager,
         )
 
-    def __gt__(self, other: SupportedChainType) -> FlexibleSingleEntityPhiTensorType:
+    def __gt__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
 
         # if the tensor being added is also private
         if isinstance(other, SingleEntityPhiTensor):
@@ -260,7 +275,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
         else:
             return NotImplemented
 
-    def __mul__(self, other: SupportedChainType) -> FlexibleSingleEntityPhiTensorType:
+    def __mul__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
 
         if other.__class__ == SingleEntityPhiTensor:
 
@@ -310,7 +325,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
         else:
             return NotImplemented
 
-    def __sub__(self, other: SupportedChainType) -> FlexibleSingleEntityPhiTensorType:
+    def __sub__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
 
         if isinstance(other, SingleEntityPhiTensor):
             if self.entity != other.entity:
@@ -332,9 +347,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
         else:
             return NotImplemented
 
-    def __truediv__(
-        self, other: SupportedChainType
-    ) -> FlexibleSingleEntityPhiTensorType:
+    def __truediv__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
 
         if isinstance(other, SingleEntityPhiTensor):
 
