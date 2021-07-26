@@ -27,7 +27,7 @@ def model_to_json(model: Base) -> Dict[str, Any]:
 
 
 def expand_user_object(user:SyftUser, db:Engine) -> Dict[str, Any]:
-    def get_group(user_group) -> Group:
+    def get_group(user_group: UserGroup) -> Group:
         query = db.session().query
         group = user_group.group
         group = query(Group).get(group)
