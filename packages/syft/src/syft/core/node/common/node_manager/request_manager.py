@@ -1,7 +1,12 @@
 # stdlib
 from datetime import datetime
+from typing import Any
+from typing import Dict
 from typing import List
 from typing import Union
+
+# third party
+from sqlalchemy.engine import Engine
 
 # syft absolute
 from syft.core.common.uid import UID
@@ -19,10 +24,10 @@ class RequestManager(DatabaseManager):
 
     schema = Request
 
-    def __init__(self, database):
+    def __init__(self, database: Engine):
         super().__init__(schema=RequestManager.schema, db=database)
 
-    def first(self, **kwargs) -> Union[None, List]:
+    def first(self, **kwargs: Any) -> Union[None, List]:
         result = super().first(**kwargs)
         if not result:
             raise RequestError
@@ -31,13 +36,13 @@ class RequestManager(DatabaseManager):
 
     def create_request(
         self,
-        user_id,
-        user_name,
-        object_id,
-        reason,
-        request_type,
-        verify_key=None,
-        tags=[],
+        user_id: int,
+        user_name: str,
+        object_id: str,
+        reason: str,
+        request_type: str,
+        verify_key: str = None,
+        tags: Dict[str, str] = [],
         object_type="",
     ):
         date = datetime.now()
