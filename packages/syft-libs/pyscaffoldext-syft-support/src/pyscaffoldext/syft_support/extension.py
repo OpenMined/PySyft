@@ -122,7 +122,7 @@ def add_files(struct: Structure, opts: ScaffoldOpts) -> ActionParams:
     VERSION = get_template("VERSION", relative_to=templates.__name__)
     pyproject_toml = get_template("pyproject_toml", relative_to=templates.__name__)
 
-    module = importlib.import_module(opts["name"][5:])
+    module = opts["name"][5:]
     package_support = generate_package_support(module)
 
     files: Structure = {
