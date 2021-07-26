@@ -2,7 +2,6 @@
 from datetime import datetime
 from typing import Any
 from typing import Dict
-from typing import List
 from typing import Union
 
 # third party
@@ -27,7 +26,7 @@ class RequestManager(DatabaseManager):
     def __init__(self, database: Engine):
         super().__init__(schema=RequestManager.schema, db=database)
 
-    def first(self, **kwargs: Any) -> Union[None, List]:
+    def first(self, **kwargs: Any) -> Request:
         result = super().first(**kwargs)
         if not result:
             raise RequestError
@@ -60,7 +59,7 @@ class RequestManager(DatabaseManager):
             object_type=object_type,
         )
 
-    def status(self, request_id):
+    def status(self, request_id: UID) -> Union[RequestStatus]:
         _req = self.first(id=request_id)
         if _req.status == "pending":
             return RequestStatus.pending
@@ -69,5 +68,5 @@ class RequestManager(DatabaseManager):
         else:
             return RequestStatus.Rejected
 
-    def set(self, request_id, status):
+    def set(self, request_id: UID, status: RequestStatus) -> None:
         self.modify({"id": request_id}, {"status": status})
