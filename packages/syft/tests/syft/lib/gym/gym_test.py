@@ -4,8 +4,6 @@ import pytest
 # syft absolute
 import syft as sy
 from syft.experimental_flags import flags
-from syft.lib.gym.env import object2proto
-from syft.lib.gym.env import proto2object
 
 np = pytest.importorskip("numpy")
 gym = pytest.importorskip("gym")
@@ -40,6 +38,10 @@ def test_remote_gym(arrow_backend: bool, root_client: sy.VirtualMachineClient) -
 
 @pytest.mark.vendor(lib="gym")
 def test_protobuf(root_client: sy.VirtualMachineClient) -> None:
+    # syft absolute
+    from syft.lib.gym.env import object2proto
+    from syft.lib.gym.env import proto2object
+
     env = gym.make("CartPole-v0")
     env.seed(42)
     pb = object2proto(env)
