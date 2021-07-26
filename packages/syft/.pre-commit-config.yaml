@@ -1,4 +1,4 @@
-files: ^packages/syft
+files: ^packages/syft/
 exclude: ^(packages/syft-libs/pyscaffoldext-syft-support/docs|packages/syft-libs/pyscaffoldext-syft-support/tests)
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
