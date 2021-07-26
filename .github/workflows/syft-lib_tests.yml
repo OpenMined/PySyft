@@ -3,11 +3,12 @@ name: Syft Lib Tests
 on:
   pull_request:
     branches:
-     - feature/redback
+      - feature/redback
+      - dev
     paths:
-    - ".github/workflows/syft-*.yml"
-    - "packages/syft-libs/**"
-  
+      - ".github/workflows/syft-*.yml"
+      - "packages/syft-libs/**"
+
 defaults:
   run:
     working-directory: ./packages/syft-libs

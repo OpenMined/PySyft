@@ -1,24 +1,30 @@
 # stdlib
-from pathlib import Path
+import os
 
 # third party
-from setuptools import find_namespace_packages
+from setuptools import find_packages
 from setuptools import setup
 
-package_dir = {}
-libs = ["syft"]
-packages = []
+packages = ["syft"]
 
-for p in Path().glob("syft-*/src/*"):
-    packages += [pkg for pkg in find_namespace_packages(str(p.parent)) if pkg != "syft"]
-    libs.append(p.stem[5:])
-    package_dir[f"{p.stem}"] = str(p)
+here = os.path.abspath(os.path.dirname(__file__))
+local = os.path.exists(f"{here}/pyscaffoldext-syft-support")
+
+if local:
+    for package in os.listdir(here):
+        if package.startswith("syft-"):
+            local_package = (
+                f"{package} @ file://localhost{here}/{package}#egg={package}"
+            )
+            packages.append(local_package)
+else:
+    packages += ["syft-xgboost", "syft-statsmodels"]
+
+packages = sorted(list(packages))
 
 setup(
     name="syft-libs",
     version="0.0.1",
-    package_dir=package_dir,
-    packages=packages,
-    package_data={"": ["package-support.json"]},
-    install_requires=libs,
+    packages=find_packages(),
+    install_requires=packages,
 )
