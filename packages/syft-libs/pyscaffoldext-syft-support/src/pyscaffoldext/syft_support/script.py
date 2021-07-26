@@ -1,8 +1,9 @@
+# stdlib
 import inspect
 import json
-import typing
 from queue import Queue
 from types import ModuleType
+import typing
 from typing import Tuple
 
 
@@ -62,7 +63,7 @@ def generate_package_support(lib: ModuleType) -> str:
     package_support = {}
 
     package_support["lib"] = lib.__name__
-    package_support["class"] = classes_list
+    package_support["classes"] = classes_list
     package_support["modules"] = modules_list
     package_support["methods"] = allowlist
 
