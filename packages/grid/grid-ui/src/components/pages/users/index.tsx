@@ -37,6 +37,9 @@ function UserInfoTitle() {
       <div className="flex space-x-2 truncate">
         <p className="font-medium truncate">{user.name}</p>
         <Badge bgColor={entityColors.roles}>{role.name}</Badge>
+        <Badge className="lowercase">
+          {user.epsilon ?? 0} {'\u03B5'}
+        </Badge>
       </div>
       <p className="text-sm text-gray-500">{user.email}</p>
     </div>
