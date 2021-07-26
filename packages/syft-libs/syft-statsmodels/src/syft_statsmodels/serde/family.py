@@ -1,12 +1,13 @@
 # stdlib
-from typing import Dict, Type
+from typing import Dict
+from typing import Type
+
+# third party
+import statsmodels
 
 # syft absolute
 from syft.lib.python.primitive_factory import PrimitiveFactory
 from syft.lib.python.string import String
-
-# third party
-import statsmodels
 
 # syft relative
 from ..proto.family_pb2 import FamilyProto  # type: ignore
