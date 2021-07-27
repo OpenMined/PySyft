@@ -12,7 +12,7 @@ from . import Base
 
 
 class SetupConfig(Base):
-    __tablename__ = "setup"  # type: ignore
+    __tablename__ = "setup"
 
     id = Column(Integer(), primary_key=True, autoincrement=True)
     domain_name = Column(String(255), default="")

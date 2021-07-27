@@ -25,7 +25,7 @@ class Request(Base):
         verify_key (String): User Verify Key.
     """
 
-    __tablename__ = "request"  # type: ignore
+    __tablename__ = "request"
 
     id = Column(String(255), primary_key=True)
     date = Column(DateTime())

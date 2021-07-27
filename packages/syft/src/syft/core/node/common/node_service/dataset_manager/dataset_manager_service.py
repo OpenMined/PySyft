@@ -239,7 +239,9 @@ class DatasetManagerService(ImmediateNodeServiceWithReply):
         DeleteDatasetMessage,
     ]
 
-    OUTPUT_MESSAGES = Union[SuccessResponseMessage, GetDatasetResponse, GetDatasetsResponse]
+    OUTPUT_MESSAGES = Union[
+        SuccessResponseMessage, GetDatasetResponse, GetDatasetsResponse
+    ]
 
     msg_handler_map: Dict[INPUT_TYPE, Callable[..., OUTPUT_MESSAGES]] = {
         CreateDatasetMessage: create_dataset_msg,

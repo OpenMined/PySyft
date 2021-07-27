@@ -8,9 +8,6 @@ from typing import Optional
 from nacl.signing import VerifyKey
 from sqlalchemy.engine import Engine
 
-# third party
-from sqlalchemy.engine import Engine
-
 # syft absolute
 from syft.core.common.uid import UID
 from syft.core.node.common.node_service.request_receiver.request_receiver_messages import (
@@ -62,7 +59,6 @@ class RequestManager(DatabaseManager):
             tags=tags,
             object_type=object_type,
         )
-
 
     def status(self, request_id: int) -> RequestStatus:
         _req = self.first(id=request_id)

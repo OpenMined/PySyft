@@ -28,7 +28,7 @@ class AssociationRequest(Base):
         handshake_value (String) : Association request unique identifier
     """
 
-    __tablename__ = "association_request"  # type: ignore
+    __tablename__ = "association_request"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     requested_date = Column(String(255))

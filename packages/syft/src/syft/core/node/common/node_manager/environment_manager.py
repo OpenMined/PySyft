@@ -5,10 +5,9 @@ from typing import Optional
 
 # third party
 from sqlalchemy.engine import Engine
-
-# relative
 from sqlalchemy.orm import Query
 
+# relative
 from ..exceptions import EnvironmentNotFoundError
 from ..node_table.environment import Environment
 from ..node_table.user_environment import UserEnvironment

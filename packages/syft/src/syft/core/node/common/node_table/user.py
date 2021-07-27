@@ -9,7 +9,7 @@ from . import Base
 
 
 class SyftUser(Base):
-    __tablename__ = "syft_user"  # type: ignore
+    __tablename__ = "syft_user"
 
     id = Column(Integer(), primary_key=True, autoincrement=True)
     email = Column(String(255))
