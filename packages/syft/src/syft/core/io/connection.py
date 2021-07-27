@@ -1,9 +1,3 @@
-# stdlib
-from typing import Any
-
-# third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
-
 # relative
 from ...core.common.message import SignedEventualSyftMessageWithoutReply
 from ...core.common.message import SignedImmediateSyftMessageWithReply

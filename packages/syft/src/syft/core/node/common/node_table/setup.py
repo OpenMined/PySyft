@@ -1,7 +1,3 @@
-# stdlib
-from typing import Dict
-from typing import Union
-
 # third party
 from sqlalchemy import Column
 from sqlalchemy import Integer

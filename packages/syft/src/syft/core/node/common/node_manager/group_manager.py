@@ -5,7 +5,6 @@ from typing import Optional
 
 # third party
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import Session
 from sqlalchemy.orm import sessionmaker
 
 # relative

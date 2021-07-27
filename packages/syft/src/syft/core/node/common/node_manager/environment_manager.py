@@ -1,7 +1,6 @@
 # stdlib
 from typing import Any
 from typing import List
-from typing import Optional
 
 # third party
 from sqlalchemy.engine import Engine
