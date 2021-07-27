@@ -5,8 +5,8 @@ from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy.orm import relationship
 
-# grid absolute
-from app.db.base_class import Base
+# syft absolute
+from syft.core.node.common.node_table import Base
 
 
 class User(Base):
