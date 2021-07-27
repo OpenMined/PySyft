@@ -9,7 +9,7 @@ import ascii_magic
 from .lib import asset_path
 
 
-def motorcycle():
+def motorcycle() -> None:
     print(
         """
                                              `
@@ -50,8 +50,7 @@ def motorcycle():
     )
 
 
-def hold_on_tight():
-
+def hold_on_tight() -> None:
     rows, columns = os.popen("stty size", "r").read().split()
 
     if int(columns) >= 91:
@@ -83,7 +82,7 @@ def hold_on_tight():
         )
 
 
-def hagrid1():
+def hagrid1() -> None:
     ascii_magic.to_terminal(
         ascii_magic.from_image_file(
             img_path=str(asset_path()) + "/img/hagrid.png", columns=83
@@ -91,7 +90,7 @@ def hagrid1():
     )
 
 
-def hagrid2():
+def hagrid2() -> None:
     ascii_magic.to_terminal(
         ascii_magic.from_image_file(
             img_path=str(asset_path()) + "/img/hagrid2.png", columns=83
@@ -99,13 +98,9 @@ def hagrid2():
     )
 
 
-options = [motorcycle, hagrid1, hagrid2]
-
-
-def hagrid():
+def hagrid() -> None:
     """Print a random hagrid image with the caption "hold on tight harry" """
+    options = [motorcycle, hagrid1, hagrid2]
     i = random.randint(0, 2)
-
     options[i]()
-
     hold_on_tight()

@@ -11,7 +11,9 @@ from .lib import is_editable_mode
 
 
 class RichGroup(click.Group):
-    def format_usage(self, ctx, formatter):
+    def format_usage(
+        self, ctx: click.core.Context, formatter: click.formatting.HelpFormatter
+    ) -> None:
         sio = io.StringIO()
         console = rich.get_console()
         mode = ""

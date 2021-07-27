@@ -25,7 +25,7 @@ class ArgCache:
         os.makedirs(dir_path, exist_ok=True)
         return f"{dir_path}/cache.json"
 
-    def __init__(self):
+    def __init__(self) -> None:
         cache = {}
         try:
             with open(ArgCache.cache_file_path(), "r") as f:
@@ -44,7 +44,7 @@ class ArgCache:
         if key not in self.__dict__ and key in arg_defaults:
             return arg_defaults[key]
         else:
-            super(ArgCache, self).__getattr__(key)
+            super().__getattr__(key)  # type: ignore
 
 
 arg_cache = ArgCache()

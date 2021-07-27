@@ -15,14 +15,12 @@ class AuthCredentials:
 
     @property
     def uses_key(self) -> bool:
-        if self.username and self.key_path:
-            return True
+        return bool(self.username and self.key_path)
 
     @property
     def uses_password(self) -> bool:
-        if self.username and self.password:
-            return True
+        return bool(self.username and self.password)
 
     @property
     def valid(self) -> bool:
-        return self.uses_key or self.uses_password
+        return bool(self.uses_key or self.uses_password)

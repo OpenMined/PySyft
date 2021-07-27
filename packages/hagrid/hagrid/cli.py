@@ -15,7 +15,6 @@ import click
 
 # relative
 from .art import hagrid
-from .art import motorcycle
 from .auth import AuthCredentials
 from .cache import arg_cache
 from .deps import DEPENDENCIES
@@ -31,7 +30,7 @@ from .style import RichGroup
 
 
 @click.group(cls=RichGroup)
-def cli():
+def cli() -> None:
     pass
 
 
@@ -79,7 +78,7 @@ def cli():
     type=str,
     help="Optional: branch to monitor for updates",
 )
-def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]):
+def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_launch_verb()
     try:
         grammar = parse_grammar(args=args, verb=verb)
@@ -137,7 +136,7 @@ class Question:
         return value
 
 
-def ask(question: Question, kwargs: TypeDict[str, str]) -> TypeDict[str, Any]:
+def ask(question: Question, kwargs: TypeDict[str, str]) -> str:
     if question.var_name in kwargs and kwargs[question.var_name] is not None:
         value = kwargs[question.var_name]
     else:
@@ -209,8 +208,11 @@ def login_azure() -> bool:
 
 
 def create_launch_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
-    host_term = verb.get_named_term_type(name="host")
+    host_term = verb.get_named_term_hostgrammar(name="host")
     host = host_term.host
+
+    allowed_hosts = ["docker", "vm", "azure", "aws", "gcp"]
+
     if host in ["docker"]:
         version = check_docker_version()
         if version:
@@ -339,7 +341,7 @@ def create_launch_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
             )
     elif host in ["aws", "gcp"]:
         print("Coming soon.")
-        return
+        return ""
     else:
         if DEPENDENCIES["ansible-playbook"]:
             username_question = Question(
@@ -395,16 +397,21 @@ def create_launch_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
                 f"Launching a Custom VM requires: {' '.join(errors)}"
             )
 
+    host_options = ", ".join(allowed_hosts)
+    raise MissingDependency(
+        f"Launch requires a correct host option, try: {host_options}"
+    )
+
 
 def create_launch_docker_cmd(
     verb: GrammarVerb, docker_version: str, tail: bool = False
 ) -> str:
-    host_term = verb.get_named_term_type(name="host")
+    host_term = verb.get_named_term_hostgrammar(name="host")
     node_name = verb.get_named_term_type(name="node_name")
     node_type = verb.get_named_term_type(name="node_type")
 
-    snake_name = node_name.input.lower().replace(" ", "_")
-    tag = name_tag(name=node_name.input)
+    snake_name = str(node_name.snake_input)
+    tag = name_tag(name=str(node_name.input))
 
     hagrid()
 
@@ -427,7 +434,7 @@ def create_launch_docker_cmd(
     cmd += "DOMAIN_PORT=" + str(host_term.free_port)
     cmd += " TRAEFIK_TAG=" + str(tag)
     cmd += ' DOMAIN_NAME="' + snake_name + '"'
-    cmd += " NODE_TYPE=" + node_type.input
+    cmd += " NODE_TYPE=" + str(node_type.input)
     cmd += " docker compose -p " + snake_name
     cmd += " up"
     if not tail:
@@ -437,11 +444,11 @@ def create_launch_docker_cmd(
 
 
 def create_launch_vagrant_cmd(verb: GrammarVerb) -> str:
-    host_term = verb.get_named_term_type(name="host")
+    host_term = verb.get_named_term_hostgrammar(name="host")
     node_name = verb.get_named_term_type(name="node_name")
     node_type = verb.get_named_term_type(name="node_type")
 
-    snake_name = node_name.input.lower().replace(" ", "_")
+    snake_name = str(node_name.snake_input)
 
     hagrid()
 
@@ -508,7 +515,7 @@ def extract_host_ip(stdout: bytes) -> Optional[str]:
 
 def make_vm_azure(
     node_name: str, resource_group: str, username: str, key_path: str, size: str
-) -> None:
+) -> Optional[str]:
     public_key_path = private_to_public_key(
         private_key_path=key_path, username=username
     )
@@ -517,6 +524,7 @@ def make_vm_azure(
     cmd += "--image Canonical:0001-com-ubuntu-server-focal:20_04-lts:latest "
     cmd += "--public-ip-sku Standard --authentication-type ssh "
     cmd += f"--ssh-key-values {public_key_path} --admin-username {username}"
+    host_ip: Optional[str] = None
     try:
         print(f"Creating vm.\nRunning: {cmd}")
         output = subprocess.check_output(cmd, shell=True)
@@ -557,21 +565,21 @@ def create_launch_azure_cmd(
     key_path: str,
     repo: str,
     branch: str,
-    auth=AuthCredentials,
+    auth: AuthCredentials,
 ) -> str:
     # resource group
     get_or_make_resource_group(resource_group=resource_group, location=location)
 
     # vm
     node_name = verb.get_named_term_type(name="node_name")
-    snake_name = node_name.input.lower().replace(" ", "_")
+    snake_name = str(node_name.snake_input)
     host_ip = make_vm_azure(snake_name, resource_group, username, key_path, size)
 
     # open port 80
     open_port_vm_azure(resource_group=resource_group, node_name=snake_name, port=80)
 
     # get old host
-    host_term = verb.get_named_term_type(name="host")
+    host_term = verb.get_named_term_hostgrammar(name="host")
 
     # replace
     host_term.parse_input(host_ip)
@@ -586,12 +594,12 @@ def create_launch_azure_cmd(
 def create_launch_custom_cmd(
     verb: GrammarVerb, auth: AuthCredentials, kwargs: TypeDict[str, Any]
 ) -> str:
-    host_term = verb.get_named_term_type(name="host")
+    host_term = verb.get_named_term_hostgrammar(name="host")
     node_name = verb.get_named_term_type(name="node_name")
     node_type = verb.get_named_term_type(name="node_type")
     # source_term = verb.get_named_term_type(name="source")
 
-    snake_name = node_name.input.lower().replace(" ", "_")
+    snake_name = str(node_name.snake_input)
 
     hagrid()
 
@@ -637,7 +645,7 @@ def create_launch_custom_cmd(
 
 
 @click.command(help="Build (or re-build) PyGrid docker image.")
-def build():
+def build() -> None:
     check_docker_version()
 
     print("\n")
@@ -675,13 +683,14 @@ def build():
     type=str,
     help="Optional: the underlying docker tag used (Default: 'domain_'+md5(name)",
 )
-def land(node_type, name, port, tag):
-
-    _name = ""
-    for word in name:
-        _name += word + " "
-    name = _name[:-1]
-
+# @click.option(
+#     "--keep-db/--delete-db",
+#     default=True,
+#     required=False,
+#     type=bool,
+#     help="""If restarting a node that already existed, don't/do reset the database (Default: deletes the db)""",
+# )
+def land(node_type: str, name: str, port: int, tag: str) -> None:
     if name == "all":
         subprocess.call("docker rm `docker ps -aq` --force", shell=True)
         return
@@ -705,14 +714,12 @@ def land(node_type, name, port, tag):
 
     version = check_docker_version()
 
-    motorcycle()
-
     print("Launching a " + str(node_type) + " PyGrid node on port " + str(port) + "!\n")
     print("  - TYPE: " + str(node_type))
     print("  - NAME: " + str(name))
     print("  - TAG: " + str(tag))
     print("  - PORT: " + str(port))
-    print("  - DOCKER: " + version)
+    print("  - DOCKER: " + str(version))
 
     print("\n")
 
