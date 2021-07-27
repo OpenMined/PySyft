@@ -1,11 +1,4 @@
 # stdlib
-from collections import defaultdict
-from collections import deque
-from collections import namedtuple
-import threading
-import time
-from typing import Any
-from typing import Dict
 from typing import List
 from typing import Optional
 
@@ -16,10 +9,8 @@ from nacl.signing import VerifyKey
 from ......util import traceback_and_raise
 from ....abstract.node import AbstractNode
 from ....common.node_service.node_service import ImmediateNodeServiceWithReply
-from ....common.node_service.node_service import ImmediateNodeServiceWithoutReply
 from ..request_answer.request_answer_messages import RequestAnswerMessage
 from ..request_answer.request_answer_messages import RequestAnswerResponse
-from ..request_receiver.request_receiver_messages import RequestMessage
 from ..request_receiver.request_receiver_messages import RequestStatus
 
 

@@ -7,12 +7,12 @@ from nacl.signing import VerifyKey
 
 # relative
 from ...... import lib
+from ......logger import traceback_and_raise
 from .....store.storeable_object import StorableObject
 from ....abstract.node import AbstractNode
 from ....common.action.smpc_action_message import SMPCActionMessage
 from ....common.action.smpc_action_message import _MAP_ACTION_TO_FUNCTION
 from ....common.node_service.node_service import ImmediateNodeServiceWithoutReply
-from ...logger import traceback_and_raise
 
 
 class SMPCExecutorService(ImmediateNodeServiceWithoutReply):
