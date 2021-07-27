@@ -1,6 +1,3 @@
-# stdlib
-from typing import TYPE_CHECKING
-
 # third party
 from sqlalchemy import Boolean
 from sqlalchemy import Column
@@ -8,13 +5,8 @@ from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy.orm import relationship
 
-# grid absolute
-from app.db.base_class import Base
-
-if TYPE_CHECKING:
-
-    # relative
-    from .item import Item  # noqa: F401
+# syft absolute
+from syft.core.node.common.node_table import Base
 
 
 class User(Base):

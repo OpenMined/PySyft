@@ -312,9 +312,6 @@ def get_all_requests(
             "Can't process Request service without a given " "verification key"
         )
 
-    current_user = node.users.first(
-        verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
-    )
     _can_triage_request = node.users.can_triage_requests(verify_key=verify_key)
 
     _requests = node.data_requests.all()

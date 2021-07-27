@@ -1,8 +1,5 @@
 # stdlib
-import json
-from typing import Dict
 from typing import List
-from typing import Optional
 from typing import Type
 from typing import Union
 
@@ -90,7 +87,7 @@ def create_initial_setup(
         node_id = node.target_id.id
         node.setup.register(domain_name=msg.domain_name, node_id=node_id.no_dash)
     except Exception as e:
-        print(f"Failed to save setup to database", e)
+        print("Failed to save setup to database", e)
 
     return SuccessResponseMessage(
         address=msg.reply_to,
@@ -142,7 +139,7 @@ class NodeSetupService(ImmediateNodeServiceWithReply):
             GetSetUpMessage,
         ],
         verify_key: VerifyKey,
-    ) -> Union[SuccessResponseMessage, GetSetUpResponse,]:
+    ) -> Union[SuccessResponseMessage, GetSetUpResponse]:
         return NodeSetupService.msg_handler_map[type(msg)](
             msg=msg, node=node, verify_key=verify_key
         )

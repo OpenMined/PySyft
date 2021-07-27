@@ -3,11 +3,10 @@ from typing import List
 from typing import Union
 
 # relative
+from ..exceptions import EnvironmentNotFoundError
 from ..node_table.environment import Environment
 from ..node_table.user_environment import UserEnvironment
 from .database_manager import DatabaseManager
-
-# from ..exceptions import EnvironmentNotFoundError
 
 
 class EnvironmentManager(DatabaseManager):

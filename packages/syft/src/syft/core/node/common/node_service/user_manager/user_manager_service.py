@@ -1,5 +1,4 @@
 # stdlib
-import secrets
 from typing import List
 from typing import Type
 from typing import Union
@@ -55,7 +54,7 @@ def create_user_msg(
         raise AuthorizationError(
             message="You can't create a new User using this email!"
         )
-    except UserNotFoundError as e:
+    except UserNotFoundError:
         # If email not registered, a new user can be created.
         pass
 
@@ -67,7 +66,7 @@ def create_user_msg(
         if msg.role != _owner_role.name:
             # Generate a new signing key
             _private_key = SigningKey.generate()
-            _user = node.users.signup(
+            node.users.signup(
                 name=msg.name,
                 email=msg.email,
                 password=msg.password,
@@ -93,7 +92,7 @@ def create_user_msg(
         encoded_pk = _private_key.encode(encoder=HexEncoder).decode("utf-8")
         encoded_vk = _private_key.verify_key.encode(encoder=HexEncoder).decode("utf-8")
 
-        _user = node.users.signup(
+        node.users.signup(
             name=msg.name,
             email=msg.email,
             password=msg.password,
@@ -292,8 +291,9 @@ def search_users_msg(
         "role": node.roles.first(name=msg.role).id,
     }
 
-    filter_parameters = lambda key: user_parameters[key]
-    filtered_parameters = filter(filter_parameters, user_parameters.keys())
+    filtered_parameters = filter(
+        lambda key: user_parameters[key], user_parameters.keys()
+    )
     user_parameters = {key: user_parameters[key] for key in filtered_parameters}
 
     _allowed = node.users.can_triage_requests(verify_key=verify_key)

@@ -319,7 +319,7 @@ class Node(AbstractNode):
                 elif type(self).__name__ == "Network":
                     self.network = location
                 print(f"Finished setting Node UID. {location}")
-        except Exception as e:
+        except Exception:
             print("Setup hasnt run yet so ignoring set_node_uid")
             pass
 
