@@ -402,7 +402,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     ) -> PassthroughTensor:
         return self.__class__(self.child.take(indices=indices))
 
-    def astype(np_type) -> PassthroughTensor:
+    def astype(self, np_type) -> PassthroughTensor:
         return self.__class__(self.child.astype(np_type))
 
     def __array_function__(self, func, types, args, kwargs):

@@ -1,5 +1,6 @@
 # TODO: Unused Code
 # Might use it later for VM case
+"""
 actions_lock = threading.Lock()
 NodeSMPCAction = namedtuple("NodeSMPCAction", ["node_lock", "smpc_actions"])
 actions_to_run_per_node: Dict[Any, NodeSMPCAction] = defaultdict(
@@ -47,3 +48,4 @@ thread_smpc_action = threading.Thread(
     target=consume_smpc_actions_round_robin, args=(), daemon=True
 )
 thread_smpc_action.start()
+"""

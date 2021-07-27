@@ -12,7 +12,6 @@ import torch as th
 # relative
 # syft relative
 from ...core.common.serde.serializable import Serializable
-from ...lib.util import full_name_with_name
 from ...proto.core.tensor.tensor_pb2 import Tensor as Tensor_PB
 from ..common.serde.deserialize import _deserialize as deserialize
 from ..common.serde.serializable import bind_protobuf

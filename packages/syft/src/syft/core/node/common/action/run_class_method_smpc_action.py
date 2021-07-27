@@ -1,5 +1,4 @@
 # stdlib
-import functools
 from typing import Any
 from typing import Dict
 from typing import List
@@ -11,23 +10,17 @@ from nacl.signing import VerifyKey
 
 # syft absolute
 from syft import serialize
-from syft.core.plan.plan import Plan
 
 # relative
 from ..... import deserialize
 from ..... import lib
-from ..... import serialize
 from .....logger import critical
-from .....logger import traceback_and_raise
-from .....logger import warning
 from .....proto.core.node.common.action.run_class_method_smpc_pb2 import (
     RunClassMethodSMPCAction as RunClassMethodSMPCAction_PB,
 )
-from .....util import inherit_tags
 from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
-from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
 
@@ -93,7 +86,6 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         # relative
         from .smpc_action_message import SMPCActionMessage
 
-        method = node.lib_ast(self.path)
         resolved_self = node.store.get_object(key=self._self.id_at_location)
 
         if resolved_self is None:

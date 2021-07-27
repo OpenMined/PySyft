@@ -14,7 +14,6 @@ from typing import Tuple
 import numpy as np
 
 # syft absolute
-from syft import logger
 from syft.core.tensor.passthrough import PassthroughTensor
 from syft.core.tensor.smpc.share_tensor import ShareTensor
 

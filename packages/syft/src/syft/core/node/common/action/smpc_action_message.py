@@ -9,16 +9,11 @@ from uuid import UUID
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from nacl.signing import VerifyKey
 import numpy as np
-
-# syft absolute
-from syft import lib
 
 # relative
 # syft relative
 from ..... import serialize
-from .....logger import traceback_and_raise
 from .....proto.core.node.common.action.smpc_action_message_pb2 import (
     SMPCActionMessage as SMPCActionMessage_PB,
 )
@@ -27,9 +22,7 @@ from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import bind_protobuf
 from ....common.uid import UID
 from ....io.address import Address
-from ....store.storeable_object import StorableObject
 from ....tensor.smpc.share_tensor import ShareTensor
-from ...abstract.node import AbstractNode
 
 # How many intermediary ids we generate in each smpc function
 MAP_FUNC_TO_NR_GENERATOR_INVOKES = {"__add__": 0, "__mul__": 0, "__sub__": 0}
