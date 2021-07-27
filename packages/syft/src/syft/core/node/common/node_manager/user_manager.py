@@ -170,8 +170,9 @@ class UserManager(DatabaseManager):
     def __salt_and_hash_password(self, password, rounds):
         password = password.encode("UTF-8")
         salt = gensalt(rounds=rounds)
+        salt_len = len(salt)
         hashed = hashpw(password, salt)
-        hashed = hashed[len(salt) :]
+        hashed = hashed[salt_len:]
         hashed = hashed.decode("UTF-8")
         salt = salt.decode("UTF-8")
         return salt, hashed

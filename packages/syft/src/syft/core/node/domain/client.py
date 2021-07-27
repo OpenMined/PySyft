@@ -19,8 +19,6 @@ from pandas import DataFrame
 from syft import deserialize
 
 # relative
-from ....core import node
-from ....core.common.message import SyftMessage
 from ....core.common.serde.serialize import _serialize as serialize  # noqa: F401
 from ....core.io.location.specific import SpecificLocation
 from ....core.node.common.action.exception_action import ExceptionMessage

@@ -50,12 +50,6 @@ class ProcessNotFoundError(PyGridError):
         super().__init__(message)
 
 
-class ProtocolNotFoundError(PyGridError):
-    def __init__(self):
-        message = "Protocol ID not found!"
-        super().__init__(message)
-
-
 class PlanInvalidError(PyGridError):
     def __init__(self):
         message = "Plan is not valid"
@@ -144,6 +138,7 @@ class AssociationRequestError(PyGridError):
 class AssociationError(PyGridError):
     def __init__(self):
         message = "Association ID not found!"
+        super().__init__(message)
 
 
 class RequestError(PyGridError):

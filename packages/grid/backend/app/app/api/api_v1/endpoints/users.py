@@ -1,6 +1,9 @@
 # stdlib
 from typing import Any
+from typing import Dict
+from typing import List
 from typing import Optional
+from typing import Union
 
 # third party
 from fastapi import APIRouter
@@ -56,7 +59,7 @@ def create_user(
     email: str = Body(..., example="info@openmined.org"),
     password: str = Body(..., example="changethis"),
     role: Optional[str] = Body(..., example="User"),
-):
+) -> Dict[str, str]:
     """Creates new user user
 
     Args:
@@ -84,19 +87,16 @@ def create_user(
     reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
-    resp = {}
     if isinstance(reply, ExceptionMessage):
-        resp = {"error": reply.exception_msg}
+        return {"error": reply.exception_msg}
     else:
-        resp = {"message": reply.resp_msg}
-
-    return resp
+        return {"message": reply.resp_msg}
 
 
 @router.get("", status_code=200, response_class=JSONResponse)
 def get_all_users_route(
     current_user: Any = Depends(deps.get_current_user),
-):
+) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
     """Retrieves all registered users
 
     Args:
@@ -116,20 +116,17 @@ def get_all_users_route(
     reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
-    resp = {}
     if isinstance(reply, ExceptionMessage):
-        resp = {"error": reply.exception_msg}
+        return {"error": reply.exception_msg}
     else:
-        resp = [user.upcast() for user in reply.content]
-
-    return resp
+        return [user.upcast() for user in reply.content]
 
 
 @router.get("/{user_id}", status_code=200, response_class=JSONResponse)
 def get_specific_user_route(
     user_id: int,
     current_user: Any = Depends(deps.get_current_user),
-):
+) -> Dict[str, Any]:
     """Creates new user user
 
     Args:
@@ -151,13 +148,10 @@ def get_specific_user_route(
     reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
-    resp = {}
     if isinstance(reply, ExceptionMessage):
-        resp = {"error": reply.exception_msg}
+        return {"error": reply.exception_msg}
     else:
-        resp = reply.content.upcast()
-
-    return resp
+        return reply.content.upcast()
 
 
 @router.patch("/{user_id}", status_code=200, response_class=JSONResponse)
@@ -167,7 +161,7 @@ def update_use_route(
     email: Optional[str] = Body(default=None, example="info@openmined.org"),
     password: Optional[str] = Body(default=None, example="changethis"),
     role: Optional[str] = Body(default=None, example="User"),
-):
+) -> Dict[str, str]:
     """Changes user attributes
 
     Args:
@@ -197,20 +191,17 @@ def update_use_route(
     reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
-    resp = {}
     if isinstance(reply, ExceptionMessage):
-        resp = {"error": reply.exception_msg}
+        return {"error": reply.exception_msg}
     else:
-        resp = {"message": reply.resp_msg}
-
-    return resp
+        return {"message": reply.resp_msg}
 
 
 @router.delete("/{user_id}", status_code=200, response_class=JSONResponse)
 def delete_user_role(
     user_id: int,
     current_user: Any = Depends(deps.get_current_user),
-):
+) -> Dict[str, str]:
     """Deletes a user
 
     Args:
@@ -232,13 +223,10 @@ def delete_user_role(
     reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
-    resp = {}
     if isinstance(reply, ExceptionMessage):
-        resp = {"error": reply.exception_msg}
+        return {"error": reply.exception_msg}
     else:
-        resp = {"message": reply.resp_msg}
-
-    return resp
+        return {"message": reply.resp_msg}
 
 
 @router.post("/search", status_code=200, response_class=JSONResponse)
@@ -247,7 +235,7 @@ def search_users_route(
     email: Optional[str] = Body(default=None, example="info@openmined.org"),
     groups: Optional[str] = Body(default=None, example="OM Group"),
     role: Optional[str] = Body(default=None, example="User"),
-):
+) -> Dict[str, Any]:
     """Filter users by using it's properties
 
     Args:
@@ -275,10 +263,7 @@ def search_users_route(
     reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
-    resp = {}
     if isinstance(reply, ExceptionMessage):
-        resp = {"error": reply.exception_msg}
+        return {"error": reply.exception_msg}
     else:
-        resp = reply.content
-
-    return resp
+        return reply.content

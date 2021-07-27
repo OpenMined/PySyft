@@ -24,7 +24,6 @@ from ..ancestors import AutogradTensorAncestor
 from ..ancestors import PhiTensorAncestor
 from ..passthrough import PassthroughTensor
 from ..passthrough import is_acceptable_simple_type
-from ..util import implements
 
 
 @bind_protobuf

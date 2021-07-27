@@ -3,6 +3,7 @@ from typing import Any
 from typing import Type
 
 # relative
+from .....logger import logger
 from ....node.common.node import Node
 from ....node.domain.enums import ResponseObjectEnum
 from ..node_service.user_manager.user_messages import CreateUserMessage
@@ -36,7 +37,7 @@ class UserRequestAPI(RequestAPI):
             response = self.perform_api_request(
                 syft_msg=self._create_message, content=kwargs
             )
-            logging.info(response.resp_msg)
+            logger.info(response.resp_msg)
         except Exception as e:
             for user in self.all():
                 if user["email"] == kwargs["email"]:

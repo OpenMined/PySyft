@@ -1,6 +1,8 @@
 # stdlib
 from typing import Any
-from typing import Optional
+from typing import Dict
+from typing import List
+from typing import Union
 
 # third party
 from fastapi import APIRouter
@@ -29,7 +31,6 @@ from syft.core.node.common.node_service.role_manager.role_manager_messages impor
 from syft.core.node.common.node_service.role_manager.role_manager_messages import (
     UpdateRoleMessage,
 )
-from syft.core.node.common.node_table.utils import model_to_json
 
 # grid absolute
 from app.api import deps
@@ -49,7 +50,7 @@ def create_role_route(
     can_edit_roles: bool = Body(False, example="false"),
     can_manage_infrastructure: bool = Body(False, example="false"),
     can_upload_data: bool = Body(False, example="false"),
-):
+) -> Dict[str, str]:
     """Creates a new PyGrid role.
 
     Args:
@@ -86,19 +87,16 @@ def create_role_route(
     reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
-    resp = {}
     if isinstance(reply, ExceptionMessage):
-        resp = {"error": reply.exception_msg}
+        return {"error": reply.exception_msg}
     else:
-        resp = {"message": reply.resp_msg}
-
-    return resp
+        return {"message": reply.resp_msg}
 
 
 @router.get("", status_code=200, response_class=JSONResponse)
 def get_all_roles_route(
     current_user: Any = Depends(deps.get_current_user),
-):
+) -> Union[Dict[str, str], List[Dict[str, Any]]]:
     """Retrieves all registered roles
 
     Args:
@@ -118,20 +116,17 @@ def get_all_roles_route(
     reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
-    resp = {}
     if isinstance(reply, ExceptionMessage):
-        resp = {"error": reply.exception_msg}
+        return {"error": reply.exception_msg}
     else:
-        resp = [role.upcast() for role in reply.content]
-
-    return resp
+        return [role.upcast() for role in reply.content]
 
 
 @router.get("/{role_id}", status_code=200, response_class=JSONResponse)
 def get_specific_role_route(
     role_id: int,
     current_user: Any = Depends(deps.get_current_user),
-):
+) -> Dict[str, Any]:
     """Retrieves role by its ID.
 
     Args:
@@ -153,13 +148,10 @@ def get_specific_role_route(
     reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
-    resp = {}
     if isinstance(reply, ExceptionMessage):
-        resp = {"error": reply.exception_msg}
+        return {"error": reply.exception_msg}
     else:
-        resp = reply.content.upcast()
-
-    return resp
+        return reply.content.upcast()
 
 
 @router.put("/{role_id}", status_code=200, response_class=JSONResponse)
@@ -174,7 +166,7 @@ def update_use_route(
     can_edit_roles: bool = Body(..., example="false"),
     can_manage_infrastructure: bool = Body(..., example="false"),
     can_upload_data: bool = Body(..., example="false"),
-):
+) -> Dict[str, str]:
     """Changes role attributes
 
     Args:
@@ -213,20 +205,17 @@ def update_use_route(
     reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
-    resp = {}
     if isinstance(reply, ExceptionMessage):
-        resp = {"error": reply.exception_msg}
+        return {"error": reply.exception_msg}
     else:
-        resp = {"message": reply.resp_msg}
-
-    return resp
+        return {"message": reply.resp_msg}
 
 
 @router.delete("/{role_id}", status_code=200, response_class=JSONResponse)
 def delete_user_role(
     role_id: int,
     current_user: Any = Depends(deps.get_current_user),
-):
+) -> Dict[str, str]:
     """Deletes a user
 
     Args:
@@ -247,10 +236,7 @@ def delete_user_role(
     reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
-    resp = {}
     if isinstance(reply, ExceptionMessage):
-        resp = {"error": reply.exception_msg}
+        return {"error": reply.exception_msg}
     else:
-        resp = {"message": reply.resp_msg}
-
-    return resp
+        return {"message": reply.resp_msg}

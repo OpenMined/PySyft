@@ -1,5 +1,4 @@
 # stdlib
-import json
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -17,7 +16,6 @@ from syft.core.common.uid import UID
 from syft.core.io.address import Address
 from syft.core.node.common.client import AbstractNodeClient
 from syft.core.node.common.client import Client
-from syft.lib.python import Dict as SyftDict
 from syft.proto.grid.messages.association_messages_pb2 import (
     DeleteAssociationRequestMessage as DeleteAssociationRequestMessage_PB,
 )
