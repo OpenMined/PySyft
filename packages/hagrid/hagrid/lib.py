@@ -5,12 +5,13 @@ from pathlib import Path
 import site
 import subprocess
 from typing import Optional
-from typing import Union
 
 # third party
 import git
-import names
-import requests
+import requests  # type: ignore
+
+# relative
+from .deps import MissingDependency
 
 DOCKER_ERROR = """
 Instructions for v2 beta can be found here:
@@ -42,7 +43,7 @@ def hagrid_root() -> str:
     return os.path.abspath(str(Path(__file__).parent.parent))
 
 
-def asset_path() -> Path:
+def asset_path() -> os.PathLike:
     return Path(hagrid_root()) / "hagrid"
 
 
@@ -126,64 +127,52 @@ def should_provision_remote(
     username: Optional[str], password: Optional[str], key_path: Optional[str]
 ) -> bool:
     is_remote = username is not None or password is not None or key_path is not None
-    if (username and password) or (username and key_path):
+    if username and password or username and key_path:
         return is_remote
     if is_remote:
         raise Exception("--username requires either --password or --key_path")
     return is_remote
 
 
-def pre_process_tag(tag: str, node_type: str, name: str) -> str:
-    if tag != "":
-        if " " in tag:
-            raise Exception("Can't have spaces in --tag. Try something without spaces.")
-    else:
-        tag = hashlib.md5(name.encode("utf8")).hexdigest()
-
-    return node_type + "_" + tag
+def name_tag(name: str) -> str:
+    return hashlib.md5(name.encode("utf8")).hexdigest()
 
 
-def pre_process_name(name: str, node_type: str) -> str:
-    if not name:
-        return "The " + names.get_full_name() + " " + node_type.capitalize()
-    return name
-
-
-def pre_process_keep_db(keep_db: Union[str, bool]) -> bool:
-    if isinstance(keep_db, str):
-        keep_db = True if keep_db.lower() == "true" else False
-    return keep_db
-
-
-def find_available_port(host: str, port: int) -> int:
+def find_available_port(host: str, port: int, search: bool = False) -> int:
     port_available = False
-    # Tudor: I am not sure if this is the correct way to see if a port is open.
-    # The best way would be to let the OS pick an open port (binding to port 0 does that) and then
-    # we can reuse that
     while not port_available:
         try:
             requests.get("http://" + host + ":" + str(port))
-            print(
-                str(port) + " doesn't seem to be available... trying " + str(port + 1)
-            )
-            port = port + 1
+            if search:
+                print(
+                    str(port)
+                    + " doesn't seem to be available... trying "
+                    + str(port + 1)
+                )
+                port = port + 1
+            else:
+                break
         except requests.ConnectionError:
             port_available = True
-
+    if search is False and port_available is False:
+        error = (
+            f"{port} is in use, either free the port or "
+            + f"try: {port}+ to auto search for a port"
+        )
+        raise Exception(error)
     return port
 
 
-def check_docker() -> str:
+def check_docker_version() -> Optional[str]:
     result = os.popen("docker compose version", "r").read()
-
+    version = None
     if "version" in result:
         version = result.split()[-1]
-        return version
     else:
         print("This may be a linux machine, either that or docker compose isn't s")
         print("Result:" + result)
         out = subprocess.run(["docker", "compose"], capture_output=True, text=True)
         if "'compose' is not a docker command" in out.stderr:
-            raise Exception(DOCKER_ERROR)
-        # Tudor: here we need to parse the out response
-        raise NotImplementedError
+            raise MissingDependency(DOCKER_ERROR)
+
+    return version
