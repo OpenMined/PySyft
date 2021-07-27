@@ -105,8 +105,7 @@ class SetupNotFoundError(PyGridError):
 
 
 class GroupNotFoundError(PyGridError):
-    def __init__(self) -> None:
-        message = "Group ID not found!"
+    def __init__(self, message: str) -> None:
         super().__init__(message)
 
 
@@ -142,8 +141,7 @@ class AssociationError(PyGridError):
 
 
 class RequestError(PyGridError):
-    def __init__(self) -> None:
-        message = "Request ID not found!"
+    def __init__(self, message: str) -> None:
         super().__init__(message)
 
 

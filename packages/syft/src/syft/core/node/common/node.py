@@ -25,6 +25,7 @@ from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 # syft absolute
+from syft.core.node.common.node_manager.setup_manager import SetupManager
 from syft.core.node.common.node_table import Base
 
 # relative
@@ -173,6 +174,7 @@ class Node(AbstractNode):
         # self.store is the elastic memory.
 
         self.store = BinObjectManager(db=self.db_engine)
+        self.setup = SetupManager(database=self.db_engine)
 
         # We need to register all the services once a node is created
         # On the off chance someone forgot to do this (super unlikely)

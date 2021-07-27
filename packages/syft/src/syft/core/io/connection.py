@@ -1,3 +1,6 @@
+# stdlib
+from typing import Any
+
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
@@ -9,7 +12,7 @@ from ...core.common.serde.serializable import Serializable
 from ...logger import traceback_and_raise
 
 
-class BidirectionalConnection(object):
+class BidirectionalConnection(Serializable):
     def recv_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
@@ -40,19 +43,8 @@ class BidirectionalConnection(object):
     ) -> None:
         traceback_and_raise(NotImplementedError)
 
-    def _object2proto(self) -> None:
-        traceback_and_raise(NotImplementedError)
 
-    @staticmethod
-    def _proto2object(proto: GeneratedProtocolMessageType) -> "BidirectionalConnection":
-        traceback_and_raise(NotImplementedError)
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        traceback_and_raise(NotImplementedError)
-
-
-class ServerConnection(object):
+class ServerConnection(Serializable):
     def __init__(self) -> None:
         self.opt_bidirectional_conn = BidirectionalConnection()
 
@@ -69,17 +61,6 @@ class ServerConnection(object):
     def recv_eventual_msg_without_reply(
         self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
-        traceback_and_raise(NotImplementedError)
-
-    def _object2proto(self) -> None:
-        traceback_and_raise(NotImplementedError)
-
-    @staticmethod
-    def _proto2object(proto: GeneratedProtocolMessageType) -> "ServerConnection":
-        traceback_and_raise(NotImplementedError)
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
         traceback_and_raise(NotImplementedError)
 
 
@@ -100,15 +81,4 @@ class ClientConnection(Serializable):
     def send_eventual_msg_without_reply(
         self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
-        traceback_and_raise(NotImplementedError)
-
-    def _object2proto(self) -> None:
-        traceback_and_raise(NotImplementedError)
-
-    @staticmethod
-    def _proto2object(proto: GeneratedProtocolMessageType) -> object:
-        traceback_and_raise(NotImplementedError)
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
         traceback_and_raise(NotImplementedError)

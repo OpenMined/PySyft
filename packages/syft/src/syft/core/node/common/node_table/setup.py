@@ -1,3 +1,7 @@
+# stdlib
+from typing import Dict
+from typing import Union
+
 # third party
 from sqlalchemy import Column
 from sqlalchemy import Integer
@@ -19,4 +23,4 @@ class SetupConfig(Base):
 
 
 def create_setup(id: int, domain_name: str, node_id: str) -> SetupConfig:
-    return SetupConfig(id=id, domain_name=domain_name, node_id=node_id)  # type: ignore
+    return SetupConfig(id=id, domain_name=domain_name, node_id=node_id)

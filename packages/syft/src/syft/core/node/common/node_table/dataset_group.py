@@ -9,7 +9,7 @@ from . import Base
 
 
 class DatasetGroup(Base):
-    __tablename__ = "datasetgroup"  # type: ignore
+    __tablename__ = "datasetgroup"
 
     id = Column(Integer(), primary_key=True, autoincrement=True)
     bin_object = Column(String(), ForeignKey("bin_object.id"))

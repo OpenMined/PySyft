@@ -45,12 +45,12 @@ class CreateDatasetMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
         address: Address,
-        dataset: ByteString,
+        dataset: bytes,
         metadata: Dict[str, str],
         reply_to: Address,
         platform: str,
         msg_id: Optional[UID] = None,
-    ):
+    ) -> None:
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.dataset = dataset
         self.metadata = metadata

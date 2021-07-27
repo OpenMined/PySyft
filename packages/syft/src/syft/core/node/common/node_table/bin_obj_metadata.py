@@ -9,8 +9,8 @@ from sqlalchemy import String
 from . import Base
 
 
-class ObjectMetadata(Base):  # type: ignore
-    __tablename__ = "obj_metadata"  # type: ignore
+class ObjectMetadata(Base):
+    __tablename__ = "obj_metadata"
 
     id = Column(Integer(), primary_key=True, autoincrement=True)
     obj = Column(String(256), ForeignKey("bin_object.id", ondelete="CASCADE"))

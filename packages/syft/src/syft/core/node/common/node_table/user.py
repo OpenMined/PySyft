@@ -28,14 +28,19 @@ class SyftUser(Base):
 
 
 def create_user(
-    email: str, hashed_password: str, salt: str, private_key: str, role: int, name: str
+    email: str,
+    hashed_password: str,
+    salt: str,
+    private_key: str,
+    role: int,
+    name: str = "",
 ) -> SyftUser:
     new_user = SyftUser(
-        email=email,  # type: ignore
-        hashed_password=hashed_password,  # type: ignore
-        salt=salt,  # type: ignore
-        private_key=private_key,  # type: ignore
-        role=role,  # type: ignore
-        name=name,  # type: ignore
+        email=email,
+        hashed_password=hashed_password,
+        salt=salt,
+        private_key=private_key,
+        role=role,
+        name=name,
     )
     return new_user

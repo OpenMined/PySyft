@@ -3,7 +3,6 @@ import ast
 import logging
 from typing import Any
 from typing import Dict
-from typing import Type
 from typing import Union
 
 # third party
@@ -11,6 +10,7 @@ from pandas import DataFrame
 
 # syft absolute
 from syft import deserialize
+from syft.core.node.abstract.node import AbstractNodeClient
 from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
     CreateDatasetMessage,
 )
@@ -28,16 +28,15 @@ from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages
 )
 
 # relative
-from ....node.common.node import Node
 from ....node.domain.enums import RequestAPIFields
 from ....node.domain.enums import ResponseObjectEnum
 from ...common.client_manager.request_api import RequestAPI
 
 
 class DatasetRequestAPI(RequestAPI):
-    def __init__(self, node: Type[Node]):
+    def __init__(self, client: AbstractNodeClient):
         super().__init__(
-            node=node,
+            client=client,
             create_msg=CreateDatasetMessage,
             get_msg=GetDatasetMessage,
             get_all_msg=GetDatasetsMessage,
@@ -46,8 +45,8 @@ class DatasetRequestAPI(RequestAPI):
             response_key=ResponseObjectEnum.DATASET,
         )
 
-    def create_syft(self, **kwargs):
-        return super().create(**kwargs)
+    def create_syft(self, **kwargs: Any) -> None:
+        super().create(**kwargs)
 
     def create_grid_ui(self, path: str, **kwargs) -> Dict[str, str]:  # type: ignore
         response = self.node.conn.send_files(path, metadata=kwargs)  # type: ignore
@@ -69,7 +68,7 @@ class DatasetRequestAPI(RequestAPI):
         dataset_obj.pandas = DataFrame(dataset_obj.data)
         datasets = []
 
-        pointers = self.node.store
+        pointers = self.client.store
         for data in dataset_obj.data:
             _class_name = ResponseObjectEnum.DATA.capitalize()
             data_obj = type(_class_name, (object,), data)()
@@ -79,7 +78,7 @@ class DatasetRequestAPI(RequestAPI):
 
         dataset_obj.files = datasets
         type(dataset_obj).__getitem__ = lambda x, i: x.data[i]
-        dataset_obj.node = self.node
+        dataset_obj.node = self.client
         return Dataset(dataset_obj)
 
     def _repr_html_(self) -> str:

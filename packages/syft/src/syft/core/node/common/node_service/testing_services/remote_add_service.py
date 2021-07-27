@@ -66,7 +66,9 @@ class RemoteAddMessage(ImmediateSyftMessageWithoutReply):
 class RemoteAddService(ImmediateNodeServiceWithoutReply):
     @staticmethod
     def process(
-        node: AbstractNode, msg: RemoteAddMessage, verify_key: VerifyKey
+        node: AbstractNode,
+        msg: RemoteAddMessage,
+        verify_key: Optional[VerifyKey] = None,
     ) -> None:
         # stdlib
         import random

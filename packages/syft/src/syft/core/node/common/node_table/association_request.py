@@ -9,7 +9,7 @@ from sqlalchemy.types import LargeBinary
 
 # syft absolute
 from syft import deserialize
-from syft.core.io.address import Address
+from syft.core.node.abstract.node import AbstractNodeClient
 
 # relative
 from . import Base
@@ -57,8 +57,8 @@ class AssociationRequest(Base):
             "status": self.status,
         }
 
-    def get_source(self) -> Address:
+    def get_source(self) -> AbstractNodeClient:
         return deserialize(self.source, from_bytes=True)
 
-    def get_target(self) -> Address:
+    def get_target(self) -> AbstractNodeClient:
         return deserialize(self.target, from_bytes=True)

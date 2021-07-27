@@ -6,13 +6,14 @@ from typing import Dict
 from sqlalchemy.engine import Engine
 
 # relative
+from ..node_table import Base
 from .groups import Group
 from .roles import Role
 from .user import SyftUser
 from .usergroup import UserGroup
 
 
-def model_to_json(model: Any) -> Dict[str, Any]:
+def model_to_json(model: Base) -> Dict[str, Any]:
     """Returns a JSON representation of an SQLAlchemy-backed object."""
     json = {}
     for col in model.__mapper__.attrs.keys():
@@ -38,14 +39,14 @@ def expand_user_object(_user: SyftUser, db: Engine) -> Dict[str, Any]:
     user = model_to_json(_user)
     user["role"] = query(Role).get(user["role"])
     user["role"] = model_to_json(user["role"])
-    user["groups"] = query(UserGroup).filter_by(user=user["id"]).all()
-    user["groups"] = [get_group(user_group) for user_group in user["groups"]]
-
+    user["groups"] = [
+        get_group(user_group)
+        for user_group in query(UserGroup).filter_by(user=user["id"]).all()
+    ]
     return user
 
 
 def seed_db(db: Engine) -> None:
-
     new_role = Role(
         name="Data Scientist",  # type: ignore
         can_triage_requests=False,  # type: ignore
