@@ -179,9 +179,9 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             return NotImplemented
 
     def __neg__(self):
-        self.data = -self.child
-        self.min_vals = -self.max_vals
-        self.max_vals = -self.min_vals
+        data = -self.child
+        min_vals = -self.max_vals
+        max_vals = -self.min_vals
 
     def __getitem__(self, key) -> SingleEntityPhiTensor:
         data = self.child.__getitem__(key)
