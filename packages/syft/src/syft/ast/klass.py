@@ -640,7 +640,6 @@ class Class(Callable):
             description: str = "",
             tags: Optional[List[str]] = None,
             searchable: Optional[bool] = None,
-            id_at_location: Optional[UID] = None,
         ) -> Pointer:
             """Send obj to client and return pointer to the object.
 
@@ -688,8 +687,7 @@ class Class(Callable):
                 attach_tags(self, tags)
                 attach_description(self, description)
 
-            if id_at_location is None:
-                id_at_location = UID()
+            id_at_location = UID()
 
             # Step 1: create pointer which will point to result
             ptr = getattr(outer_self, outer_self.pointer_name)(
