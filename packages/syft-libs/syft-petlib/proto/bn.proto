@@ -1,0 +1,5 @@
+syntax = "proto3";
+
+package petlib;
+
+message Bn { string hex = 2; }

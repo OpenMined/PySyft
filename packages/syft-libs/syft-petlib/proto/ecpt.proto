@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package petlib;
+import "proto/ecpt_group.proto";
+
+message EcPt {
+  EcPtGroup group = 1;
+  bytes data = 2;
+}
