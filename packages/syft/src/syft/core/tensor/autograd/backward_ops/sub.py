@@ -1,3 +1,6 @@
+# stdlib
+from uuid import UUID
+
 # third party
 import numpy as np
 
@@ -11,7 +14,7 @@ from .op import Op
 class SubOp(Op):
     """Substraction operation with 2 tensors"""
 
-    def forward(self, x: AutogradTensor, y: AutogradTensor):
+    def forward(self, x: AutogradTensor, y: AutogradTensor) -> AutogradTensor:
         self.x = x
         self.y = y
 
@@ -27,7 +30,7 @@ class SubOp(Op):
 
         return AutogradTensor(x.child - y.child, requires_grad=requires_grad)
 
-    def _backward(self, grad, backprop_id):
+    def _backward(self, grad: np.ndarray, backprop_id: UUID) -> None:
 
         if self.x.requires_grad:
             # as we have matrix operation one of the parameters can

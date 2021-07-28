@@ -12,14 +12,14 @@ gonzalo = Entity(name="Gonzalo")
 
 
 @pytest.fixture(scope="function")
-def x():
+def x() -> Tensor:
     x = Tensor(np.array([[1, 2, 3], [4, 5, 6]]))
     x = x.private(min_val=-1, max_val=7, entity=gonzalo)
     return x
 
 
 @pytest.fixture(scope="function")
-def y():
+def y() -> Tensor:
     y = Tensor(np.array([[-1, -2, -3], [-4, -5, -6]]))
     y = y.private(min_val=-7, max_val=1, entity=gonzalo)
     return y
@@ -28,7 +28,7 @@ def y():
 #
 # ######################### ADD ############################
 #
-def test_add(x):
+def test_add(x: Tensor) -> None:
     z = x + x
     assert isinstance(z, Tensor), "Add: Result is not a Tensor"
     assert (
@@ -39,7 +39,7 @@ def test_add(x):
     ).all(), "(Add, Maxval) Result is not correct"
 
 
-def test_single_entity_phi_tensor_serde(x):
+def test_single_entity_phi_tensor_serde(x: Tensor) -> None:
 
     blob = serialize(x.child)
     x2 = deserialize(blob)

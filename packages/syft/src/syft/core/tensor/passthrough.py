@@ -429,3 +429,6 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 @implements(PassthroughTensor, np.square)
 def square(x):
     return x * x
+
+
+SupportedChainType = Union[PassthroughTensor, AcceptableSimpleType]

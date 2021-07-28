@@ -25,6 +25,7 @@ from ....core.node.common.action.exception_action import ExceptionMessage
 from ....core.pointer.pointer import Pointer
 from ....logger import traceback_and_raise
 from ....util import validate_field
+from ...common.message import SyftMessage
 from ...common.uid import UID
 from ...io.address import Address
 from ...io.location import Location
@@ -35,7 +36,6 @@ from ..common.client_manager.dataset_api import DatasetRequestAPI
 from ..common.client_manager.group_api import GroupRequestAPI
 from ..common.client_manager.role_api import RoleRequestAPI
 from ..common.client_manager.user_api import UserRequestAPI
-from ..common.client_manager.worker_api import WorkerRequestAPI
 from ..common.node_service.network_search.network_search_messages import (
     NetworkSearchMessage,
 )
@@ -55,12 +55,11 @@ class RequestQueueClient:
         self.client = client
         self.handlers = RequestHandlerQueueClient(client=client)
 
-        self.groups = GroupRequestAPI(node=self)
-        self.users = UserRequestAPI(node=self)
-        self.roles = RoleRequestAPI(node=self)
-        self.workers = WorkerRequestAPI(node=self)
-        self.association = AssociationRequestAPI(node=self)
-        self.datasets = DatasetRequestAPI(node=self)
+        self.groups = GroupRequestAPI(client=self)
+        self.users = UserRequestAPI(client=self)
+        self.roles = RoleRequestAPI(client=self)
+        self.association = AssociationRequestAPI(client=self)
+        self.datasets = DatasetRequestAPI(client=self)
 
     @property
     def requests(self) -> List[RequestMessage]:
@@ -300,12 +299,11 @@ class DomainClient(Client):
 
         self.post_init()
 
-        self.groups = GroupRequestAPI(node=self)
-        self.users = UserRequestAPI(node=self)
-        self.roles = RoleRequestAPI(node=self)
-        self.workers = WorkerRequestAPI(node=self)
-        self.association = AssociationRequestAPI(node=self)
-        self.datasets = DatasetRequestAPI(node=self)
+        self.groups = GroupRequestAPI(client=self)
+        self.users = UserRequestAPI(client=self)
+        self.roles = RoleRequestAPI(client=self)
+        self.association = AssociationRequestAPI(client=self)
+        self.datasets = DatasetRequestAPI(client=self)
 
     def load(
         self, obj_ptr: Type[Pointer], address: Address, pointable: bool = False
@@ -317,7 +315,7 @@ class DomainClient(Client):
             RequestAPIFields.UID: str(obj_ptr.id_at_location.value),
             RequestAPIFields.POINTABLE: pointable,
         }
-        self.__perform_grid_request(grid_msg=LoadObjectMessage, content=content)
+        self._perform_grid_request(grid_msg=LoadObjectMessage, content=content)
 
     def setup(self, *, domain_name: Optional[str], **kwargs: Any) -> Any:
 
@@ -333,10 +331,10 @@ class DomainClient(Client):
         logging.info(response[RequestAPIFields.MESSAGE])
 
     def get_setup(self, **kwargs: Any) -> Any:
-        return self.__perform_grid_request(grid_msg=GetSetUpMessage, content=kwargs)
+        return self._perform_grid_request(grid_msg=GetSetUpMessage, content=kwargs)
 
     def search(self, query: List, pandas: bool = False) -> Any:
-        response = self.__perform_grid_request(
+        response = self._perform_grid_request(
             grid_msg=NetworkSearchMessage, content={RequestAPIFields.QUERY: query}
         )
         if pandas:
@@ -344,12 +342,14 @@ class DomainClient(Client):
 
         return response
 
-    def apply_to_network(self, target: Client, route_index: int = 0, **metadata):
+    def apply_to_network(
+        self, target: Client, route_index: int = 0, **metadata: str
+    ) -> None:
         self.association.create(source=self, target=target, metadata=metadata)
 
     def _perform_grid_request(
         self, grid_msg: Any, content: Optional[Dict[Any, Any]] = None
-    ) -> Dict[Any, Any]:
+    ) -> SyftMessage:
         if content is None:
             content = {}
         # Build Syft Message
@@ -435,7 +435,7 @@ class DomainClient(Client):
                     state[tag] = ptr
         return self.store.pandas
 
-    def load_dataset(self, assets: Any, **metadata):
+    def load_dataset(self, assets: Any, **metadata: str) -> None:
         # relative
         from ....lib.python.util import downcast
 

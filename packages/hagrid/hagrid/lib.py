@@ -4,11 +4,14 @@ import os
 from pathlib import Path
 import site
 import subprocess
+from typing import Optional
 
 # third party
 import git
-import names
 import requests
+
+# relative
+from .deps import MissingDependency
 
 DOCKER_ERROR = """
 Instructions for v2 beta can be found here:
@@ -62,7 +65,7 @@ def is_editable_mode() -> bool:
     return installed_as_editable
 
 
-def repo_src_path() -> os.PathLike:
+def repo_src_path() -> Path:
     if EDITABLE_MODE:
         return Path(os.path.abspath(Path(hagrid_root()) / "../../"))
     else:
@@ -73,7 +76,7 @@ def grid_src_path() -> str:
     return str(repo_src_path() / "packages" / "grid")
 
 
-def check_is_git(path: os.PathLike) -> bool:
+def check_is_git(path: Path) -> bool:
     is_repo = False
     try:
         git.Repo(path)
@@ -120,7 +123,9 @@ repo_branch = "demo_strike_team_branch_4"
 update_repo(repo=GIT_REPO, branch=repo_branch)
 
 
-def should_provision_remote(username, password, key_path) -> bool:
+def should_provision_remote(
+    username: Optional[str], password: Optional[str], key_path: Optional[str]
+) -> bool:
     is_remote = username is not None or password is not None or key_path is not None
     if username and password or username and key_path:
         return is_remote
@@ -129,53 +134,38 @@ def should_provision_remote(username, password, key_path) -> bool:
     return is_remote
 
 
-def pre_process_tag(tag: str, node_type: str, name: str) -> str:
-    if tag != "":
-        if " " in tag:
-            raise Exception("Can't have spaces in --tag. Try something without spaces.")
-    else:
-        tag = hashlib.md5(name.encode("utf8")).hexdigest()
-
-    return node_type + "_" + tag
+def name_tag(name: str) -> str:
+    return hashlib.md5(name.encode("utf8")).hexdigest()
 
 
-def pre_process_name(name: list, node_type: str) -> str:
-    #  concatenate name's list of words into string
-    _name = ""
-    for word in name:
-        _name += word + " "
-    name = _name[:-1]
-
-    if name == "":
-        name = "The " + names.get_full_name() + " " + node_type.capitalize()
-
-    return name
-
-
-def pre_process_keep_db(keep_db, tag) -> bool:
-    if isinstance(keep_db, str):
-        keep_db = True if keep_db.lower() == "true" else False
-    return keep_db
-
-
-def find_available_port(host, port) -> bool:
+def find_available_port(host: str, port: int, search: bool = False) -> int:
     port_available = False
     while not port_available:
         try:
             requests.get("http://" + host + ":" + str(port))
-            print(
-                str(port) + " doesn't seem to be available... trying " + str(port + 1)
-            )
-            port = port + 1
+            if search:
+                print(
+                    str(port)
+                    + " doesn't seem to be available... trying "
+                    + str(port + 1)
+                )
+                port = port + 1
+            else:
+                break
         except requests.ConnectionError:
             port_available = True
-
+    if search is False and port_available is False:
+        error = (
+            f"{port} is in use, either free the port or "
+            + f"try: {port}+ to auto search for a port"
+        )
+        raise Exception(error)
     return port
 
 
-def check_docker():
+def check_docker_version() -> Optional[str]:
     result = os.popen("docker compose version", "r").read()
-
+    version = None
     if "version" in result:
         version = result.split()[-1]
     else:
@@ -183,6 +173,6 @@ def check_docker():
         print("Result:" + result)
         out = subprocess.run(["docker", "compose"], capture_output=True, text=True)
         if "'compose' is not a docker command" in out.stderr:
-            raise Exception(DOCKER_ERROR)
+            raise MissingDependency(DOCKER_ERROR)
 
     return version

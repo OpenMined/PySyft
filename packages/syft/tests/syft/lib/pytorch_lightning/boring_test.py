@@ -16,6 +16,7 @@ DataLoaderPointerType = Any  # sy.lib_ast.torch.utils.data.DataLoader.pointer_ty
 SyDataloaderProxyType = Any  # Union[torch.utils.data.DataLoader, DataLoaderPointerType]
 
 
+# MADHAVA: this needs fixing
 @pytest.mark.skip(
     reason="This was broken when we switched from using a Dictionary obj store to a SQL one which means"
     + "that there's missing serialization functionality. Please address when you can."
