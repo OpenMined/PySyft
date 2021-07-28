@@ -644,21 +644,6 @@ def create_launch_custom_cmd(
     return cmd
 
 
-@click.command(help="Build (or re-build) PyGrid docker image.")
-def build() -> None:
-    check_docker_version()
-
-    print("\n")
-
-    cmd = ""
-    cmd += " docker compose"
-    cmd += " build"
-
-    cmd = "cd " + GRID_SRC_PATH + ";" + cmd
-    print(cmd)
-    subprocess.call(cmd, shell=True)
-
-
 def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
     host_term = verb.get_named_term_hostgrammar(name="host")
     host = host_term.host
@@ -712,5 +697,4 @@ def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
 
 
 cli.add_command(launch)
-cli.add_command(build)
 cli.add_command(land)
