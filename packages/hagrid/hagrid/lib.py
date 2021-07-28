@@ -8,7 +8,7 @@ from typing import Optional
 
 # third party
 import git
-import requests  # type: ignore
+import requests
 
 # relative
 from .deps import MissingDependency

@@ -296,7 +296,7 @@ def request_answer_msg(
             "Can't process Request service without a given " "verification key"
         )
 
-    status = node.data_requests.status(id=str(msg.request_id.value))  # type: ignore
+    status = node.data_requests.status(id=str(msg.request_id.value))
     address = msg.reply_to
     return RequestAnswerResponse(
         request_id=msg.request_id, address=address, status=status
