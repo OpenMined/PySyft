@@ -1,10 +1,19 @@
+# stdlib
+from typing import Any
+from typing import Dict
+
+# third party
+from sqlalchemy.engine import Engine
+
 # relative
+from ..node_table import Base
 from .groups import Group
 from .roles import Role
+from .user import SyftUser
 from .usergroup import UserGroup
 
 
-def model_to_json(model):
+def model_to_json(model: Base) -> Dict[str, Any]:
     """Returns a JSON representation of an SQLAlchemy-backed object."""
     json = {}
     for col in model.__mapper__.attrs.keys():
@@ -18,8 +27,8 @@ def model_to_json(model):
     return json
 
 
-def expand_user_object(user, db):
-    def get_group(user_group):
+def expand_user_object(_user: SyftUser, db: Engine) -> Dict[str, Any]:
+    def get_group(user_group: UserGroup) -> Dict:
         query = db.session().query
         group = user_group.group
         group = query(Group).get(group)
@@ -27,17 +36,17 @@ def expand_user_object(user, db):
         return group
 
     query = db.session().query
-    user = model_to_json(user)
+    user = model_to_json(_user)
     user["role"] = query(Role).get(user["role"])
     user["role"] = model_to_json(user["role"])
-    user["groups"] = query(UserGroup).filter_by(user=user["id"]).all()
-    user["groups"] = [get_group(user_group) for user_group in user["groups"]]
-
+    user["groups"] = [
+        get_group(user_group)
+        for user_group in query(UserGroup).filter_by(user=user["id"]).all()
+    ]
     return user
 
 
-def seed_db(db):
-
+def seed_db(db: Engine) -> None:
     new_role = Role(
         name="Data Scientist",
         can_triage_requests=False,

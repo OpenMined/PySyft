@@ -14,7 +14,7 @@ from syft import serialize
 from . import Base
 
 
-class BinObject(Base):  # type: ignore
+class BinObject(Base):
     __tablename__ = "bin_object"
 
     id = Column(String(256), primary_key=True)

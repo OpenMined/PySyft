@@ -1,16 +1,21 @@
+# third party
+from sqlalchemy import Column
+from sqlalchemy import ForeignKey
+from sqlalchemy import Integer
+from sqlalchemy import String
+
 # relative
-from .. import BaseModel
-from .. import db
+from . import Base
 
 
-class DatasetGroup(BaseModel):
+class DatasetGroup(Base):
     __tablename__ = "datasetgroup"
 
-    id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
-    bin_object = db.Column(db.String(), db.ForeignKey("bin_object.id"))
-    dataset = db.Column(db.String(), db.ForeignKey("json_object.id"))
+    id = Column(Integer(), primary_key=True, autoincrement=True)
+    bin_object = Column(String(), ForeignKey("bin_object.id"))
+    dataset = Column(String(), ForeignKey("json_object.id"))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f"<DatasetGroup id: {self.id}, bin_object: {self.bin_object}, "
             f"dataset: {self.dataset}>"

@@ -14,8 +14,10 @@ class ClipOp(Op):
         self.x = x
         self.y = y
         self.z = z
+        # This is just a placeholder to suppress linting errors until the method is built out
+        return x
 
-    def _backward(self, grad: AutogradTensor, backprop_id: uuid.UUID):
+    def _backward(self, grad: AutogradTensor, backprop_id: uuid.UUID) -> None:
         if self.x.requires_grad:
             pass
 

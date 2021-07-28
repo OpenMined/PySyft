@@ -1,9 +1,10 @@
 # stdlib
 from typing import Any
-from typing import Type
+
+# syft absolute
+from syft.core.node.abstract.node import AbstractNodeClient
 
 # relative
-from ....node.common.node import Node
 from ....node.domain.enums import ResponseObjectEnum
 from ...common.client_manager.request_api import RequestAPI
 from ..node_service.group_manager.group_manager_messages import CreateGroupMessage
@@ -14,9 +15,9 @@ from ..node_service.group_manager.group_manager_messages import UpdateGroupMessa
 
 
 class GroupRequestAPI(RequestAPI):
-    def __init__(self, node: Type[Node]):
+    def __init__(self, client: AbstractNodeClient):
         super().__init__(
-            node=node,
+            client=client,
             create_msg=CreateGroupMessage,
             get_msg=GetGroupMessage,
             get_all_msg=GetGroupsMessage,

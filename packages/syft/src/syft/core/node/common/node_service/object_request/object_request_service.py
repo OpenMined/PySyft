@@ -1,5 +1,7 @@
 # stdlib
 import time
+from typing import Callable
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Type
@@ -290,7 +292,7 @@ def del_request_msg(
 
 def request_answer_msg(
     msg: RequestAnswerMessage, node: AbstractNode, verify_key: VerifyKey
-):
+) -> RequestAnswerResponse:
     if verify_key is None:
         raise ValueError(
             "Can't process Request service without a given " "verification key"
@@ -306,7 +308,7 @@ def request_answer_msg(
 # TODO: Check if this method/message should really be a service_without_reply message
 def get_all_requests(
     msg: GetAllRequestsMessage, node: AbstractNode, verify_key: VerifyKey
-):
+) -> GetAllRequestsResponseMessage:
     if verify_key is None:
         raise ValueError(
             "Can't process Request service without a given " "verification key"
@@ -345,7 +347,7 @@ def get_all_requests(
 
 def get_all_request_handlers(
     msg: GetAllRequestHandlersMessage, node: AbstractNode, verify_key: VerifyKey
-):
+) -> GetAllRequestHandlersResponseMessage:
 
     if verify_key is None:
         raise ValueError(
@@ -362,8 +364,40 @@ def get_all_request_handlers(
 
 
 class RequestService(ImmediateNodeServiceWithReply):
+    INPUT_TYPE = Union[
+        Type[CreateRequestMessage],
+        Type[GetRequestMessage],
+        Type[GetRequestsMessage],
+        Type[UpdateRequestMessage],
+        Type[DeleteRequestMessage],
+        Type[RequestAnswerMessage],
+        Type[GetAllRequestsMessage],
+        Type[GetAllRequestHandlersMessage],
+    ]
 
-    msg_handler_map = {
+    INPUT_MESSAGES = Union[
+        CreateRequestMessage,
+        GetRequestMessage,
+        GetRequestsMessage,
+        UpdateRequestMessage,
+        DeleteRequestMessage,
+        RequestAnswerMessage,
+        GetAllRequestsMessage,
+        GetAllRequestHandlersMessage,
+    ]
+
+    OUTPUT_MESSAGES = Union[
+        CreateRequestResponse,
+        GetRequestResponse,
+        GetRequestsResponse,
+        UpdateRequestResponse,
+        DeleteRequestResponse,
+        RequestAnswerResponse,
+        GetAllRequestsResponseMessage,
+        GetAllRequestHandlersResponseMessage,
+    ]
+
+    msg_handler_map: Dict[INPUT_TYPE, Callable[..., OUTPUT_MESSAGES]] = {
         CreateRequestMessage: create_request_msg,
         GetRequestMessage: get_request_msg,
         GetRequestsMessage: get_all_request_msg,
@@ -378,27 +412,9 @@ class RequestService(ImmediateNodeServiceWithReply):
     @service_auth(guests_welcome=True)
     def process(
         node: AbstractNode,
-        msg: Union[
-            CreateRequestMessage,
-            GetRequestMessage,
-            GetRequestsMessage,
-            UpdateRequestMessage,
-            DeleteRequestMessage,
-            RequestAnswerMessage,
-            GetAllRequestsMessage,
-            GetAllRequestHandlersMessage,
-        ],
+        msg: INPUT_MESSAGES,
         verify_key: VerifyKey,
-    ) -> Union[
-        CreateRequestResponse,
-        GetRequestResponse,
-        GetRequestsResponse,
-        UpdateRequestResponse,
-        DeleteRequestResponse,
-        RequestAnswerResponse,
-        GetAllRequestsResponseMessage,
-        GetAllRequestHandlersResponseMessage,
-    ]:
+    ) -> OUTPUT_MESSAGES:
         return RequestService.msg_handler_map[type(msg)](
             msg=msg, node=node, verify_key=verify_key
         )
@@ -420,7 +436,7 @@ class RequestService(ImmediateNodeServiceWithReply):
 
 def build_request_message(
     msg: RequestMessage, node: AbstractNode, verify_key: VerifyKey
-):
+) -> None:
     if verify_key is None:
         raise ValueError(
             "Can't process Request service without a given " "verification key"
@@ -466,7 +482,7 @@ def build_request_message(
 
 def accept_or_deny_request(
     msg: AcceptOrDenyRequestMessage, node: AbstractNode, verify_key: VerifyKey
-):
+) -> None:
     if verify_key is None:
         raise ValueError(
             "Can't process AcceptOrDenyRequestService without a specified verification key"
@@ -560,8 +576,19 @@ def update_req_handler(
 
 
 class ObjectRequestServiceWithoutReply(ImmediateNodeServiceWithoutReply):
+    INPUT_TYPE = Union[
+        Type[RequestMessage],
+        Type[AcceptOrDenyRequestMessage],
+        Type[UpdateRequestHandlerMessage],
+    ]
 
-    msg_handler_map = {
+    INPUT_MESSAGES = Union[
+        RequestMessage,
+        AcceptOrDenyRequestMessage,
+        UpdateRequestHandlerMessage,
+    ]
+
+    msg_handler_map: Dict[INPUT_TYPE, Callable[..., None]] = {
         RequestMessage: build_request_message,
         AcceptOrDenyRequestMessage: accept_or_deny_request,
         UpdateRequestHandlerMessage: update_req_handler,

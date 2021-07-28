@@ -653,7 +653,7 @@ class SearchUsersResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        content: Dict,
+        content: List[Dict],
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)

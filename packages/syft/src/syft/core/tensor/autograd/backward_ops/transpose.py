@@ -1,4 +1,10 @@
 # syft relative
+# stdlib
+from uuid import UUID
+
+# third party
+from numpy import ndarray
+
 # relative
 from ..tensor import AutogradTensor
 from .op import Op
@@ -7,7 +13,7 @@ from .op import Op
 class TransposeOp(Op):
     """Repeat operation across a dimension"""
 
-    def forward(self, x: AutogradTensor, *dims):
+    def forward(self, x: AutogradTensor, *dims: tuple) -> AutogradTensor:
         self.x = x
         self.dims = dims
 
@@ -22,7 +28,7 @@ class TransposeOp(Op):
 
         return AutogradTensor(x.child.transpose(*dims), requires_grad=x.requires_grad)
 
-    def _backward(self, grad, backprop_id):
+    def _backward(self, grad: ndarray, backprop_id: UUID) -> None:
 
         if self.x.requires_grad:
 
