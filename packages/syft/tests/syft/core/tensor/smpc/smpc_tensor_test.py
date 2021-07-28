@@ -1,4 +1,3 @@
-"""
 # stdlib
 import operator
 
@@ -11,7 +10,7 @@ import syft as sy
 from syft.core.tensor.smpc.mpc_tensor import MPCTensor
 from syft.core.tensor.smpc.share_tensor import ShareTensor
 
-TODO: The functionality for VMs was removed to focus on the Hagrid
+# TODO: The functionality for VMs was removed to focus on the Hagrid
 vms = [sy.VirtualMachine(name=name) for name in ["alice", "bob", "theo", "andrew"]]
 clients = [vm.get_client() for vm in vms]
 
@@ -32,7 +31,7 @@ def test_remote_sharing() -> None:
 
 
 @pytest.mark.parametrize("op_str", ["add", "sub"])
-def test_mpc_private_op(op_str: str) -> None:
+def test_mpc_private_private_op(op_str: str) -> None:
     value_1 = np.array([[1, 2, 3, 4, -5]], dtype=np.int64)
     value_2 = np.array([10], dtype=np.int64)
 
@@ -53,4 +52,22 @@ def test_mpc_private_op(op_str: str) -> None:
     expected = op(value_1, value_2)
 
     assert (res == expected).all()
-"""
+
+
+@pytest.mark.parametrize("op_str", ["mul"])
+def test_mpc_private_public_op(op_str: str) -> None:
+    value_1 = np.array([[1, 2, 3, 4, -5]], dtype=np.int64)
+    value_2 = np.array([10], dtype=np.int64)
+
+    remote_value_1 = clients[0].syft.core.tensor.tensor.Tensor(value_1)
+
+    mpc_tensor_1 = MPCTensor(
+        parties=clients, secret=remote_value_1, shape=(1, 5), seed_shares=52
+    )
+
+    op = getattr(operator, op_str)
+
+    res = op(mpc_tensor_1, value_2).reconstruct()
+    expected = op(value_1, value_2)
+
+    assert (res == expected).all()
