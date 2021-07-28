@@ -3,6 +3,7 @@ import csv
 import io
 import tarfile
 from typing import Callable
+from typing import Dict as TypeDict
 from typing import List
 from typing import Type
 from typing import Union
@@ -23,7 +24,6 @@ from syft.core.node.common.node_service.node_service import (
     ImmediateNodeServiceWithReply,
 )
 from syft.core.store.storeable_object import StorableObject
-from syft.lib.python import Dict
 
 # relative
 from ...exceptions import AuthorizationError
@@ -243,7 +243,7 @@ class DatasetManagerService(ImmediateNodeServiceWithReply):
         SuccessResponseMessage, GetDatasetResponse, GetDatasetsResponse
     ]
 
-    msg_handler_map: Dict[INPUT_TYPE, Callable[..., OUTPUT_MESSAGES]] = {
+    msg_handler_map: TypeDict[INPUT_TYPE, Callable[..., OUTPUT_MESSAGES]] = {
         CreateDatasetMessage: create_dataset_msg,
         GetDatasetMessage: get_dataset_metadata_msg,
         GetDatasetsMessage: get_all_datasets_metadata_msg,
