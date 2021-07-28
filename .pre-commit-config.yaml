@@ -73,7 +73,7 @@ repos:
             "--scripts-are-modules",
             "--disallow-incomplete-defs",
             "--no-implicit-optional",
-            "--warn-unused-ignores",
+            # "--warn-unused-ignores",
             "--warn-redundant-casts",
             "--strict-equality",
             "--warn-unreachable",
