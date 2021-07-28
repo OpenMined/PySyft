@@ -15,11 +15,11 @@ from typing import Union
 import numpy as np
 
 # relative
-from .types import AcceptableSimpleType
-
 # syft relative
 from .util import implements
 from .util import query_implementation
+
+AcceptableSimpleType = Union[int, bool, float, np.ndarray]
 
 
 def inputs2child(*args: Any, **kwargs: Any) -> TypeTuple[List[Any], Dict[str, Any]]:
@@ -445,3 +445,6 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 @implements(PassthroughTensor, np.square)
 def square(x: PassthroughTensor) -> PassthroughTensor:
     return x * x
+
+
+SupportedChainType = Union[PassthroughTensor, AcceptableSimpleType]

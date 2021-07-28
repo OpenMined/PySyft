@@ -81,7 +81,7 @@ class UserManager(DatabaseManager):
     def login(self, email: str, password: str) -> SyftUser:
         return self.__login_validation(email, password)
 
-    def set(
+    def set(  # nosec
         self,
         user_id: str,
         email: str = "",

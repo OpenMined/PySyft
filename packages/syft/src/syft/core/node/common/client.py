@@ -16,7 +16,6 @@ import pandas as pd
 # relative
 from .... import serialize
 from ....lib import create_lib_ast
-from ....lib.python import Int
 from ....logger import critical
 from ....logger import debug
 from ....logger import error
@@ -24,7 +23,6 @@ from ....logger import traceback_and_raise
 from ....proto.core.node.common.client_pb2 import Client as Client_PB
 from ....proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
 from ....util import get_fully_qualified_name
-from ....util import obj2pointer_type
 from ...common.message import EventualSyftMessageWithoutReply
 from ...common.message import ImmediateSyftMessageWithReply
 from ...common.message import ImmediateSyftMessageWithoutReply
@@ -50,7 +48,6 @@ from .node_service.child_node_lifecycle.child_node_lifecycle_service import (
     RegisterChildNodeMessage,
 )
 from .node_service.object_search.obj_search_service import ObjectSearchMessage
-from .node_service.testing_services.remote_add_service import RemoteAddMessage
 
 
 @bind_protobuf
@@ -330,38 +327,6 @@ class Client(AbstractNodeClient, Serializable):
             )
 
         return obj
-
-    def add_remote(self, num: int) -> Pointer:
-
-        # create an Int pointer
-        sy_num = Int(num)
-        id_at_location = UID()
-        ptr_type = obj2pointer_type(obj=sy_num)
-        ptr = ptr_type(
-            client=self,
-            id_at_location=id_at_location,
-            tags=[],
-            description="",
-        )
-
-        pointable = True
-        ptr._pointable = pointable
-
-        if pointable:
-            ptr.gc_enabled = False
-        else:
-            ptr.gc_enabled = True
-
-        # create the remote add message
-        obj_msg = RemoteAddMessage(
-            id_at_location=id_at_location,
-            num=num,
-            address=self.address,
-        )
-
-        self.send_immediate_msg_without_reply(msg=obj_msg)
-
-        return ptr
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
