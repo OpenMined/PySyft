@@ -262,7 +262,7 @@ lib_ast = create_lib_ast(None)
 @wrapt.when_imported("sklearn")
 @wrapt.when_imported("pandas")
 @wrapt.when_imported("PIL")
-@wrapt.when_imported("petlib")
+#@wrapt.when_imported("petlib")
 @wrapt.when_imported("openmined_psi")
 @wrapt.when_imported("pydp")
 @wrapt.when_imported("statsmodels")
@@ -298,16 +298,25 @@ def create_support_ast(
         klass.create_storable_object_attr_convenience_methods()
     return ast
 
-
 def add_lib_external(
     config: TypeDict[str, TypeAny], objects: Iterable[TypeDict[str, TypeAny]]
 ) -> None:
     lib = config["lib"]
+    print("generate wrapper before ast")
+    # Generate proto wrappers
+    if isinstance(objects, Iterable):
+        for serde_object in objects:
+            GenerateWrapper(**serde_object)
+    else:
+        critical("Serde objects is expected to be an Iterable.")
+
+    # create_ast and update_ast function
     create_ast = functools.partial(
         create_support_ast, config["modules"], config["classes"], config["methods"]
     )
     update_ast = functools.partial(generic_update_ast, lib, create_ast)
 
+    # update and add lib to lib_ast and clients
     global lib_ast
     update_ast(ast_or_client=lib_ast)
     # cache the constructor for future created clients
@@ -318,8 +327,3 @@ def add_lib_external(
         update_ast(ast_or_client=client)
         _regenerate_unions(lib_ast=lib_ast, client=client)
 
-    if isinstance(objects, Iterable):
-        for serde_object in objects:
-            GenerateWrapper(**serde_object)
-    else:
-        critical("Serde objects is expected to be an Iterable.")
