@@ -12,7 +12,6 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 
 # relative
-# syft relative
 from ..... import serialize
 from .....proto.core.node.common.action.smpc_action_message_pb2 import (
     SMPCActionMessage as SMPCActionMessage_PB,

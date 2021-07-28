@@ -10,7 +10,6 @@ import numpy as np
 import torch as th
 
 # relative
-# syft relative
 from ...core.common.serde.serializable import Serializable
 from ...proto.core.tensor.tensor_pb2 import Tensor as Tensor_PB
 from ..common.serde.deserialize import _deserialize as deserialize

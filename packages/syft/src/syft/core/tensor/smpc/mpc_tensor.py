@@ -18,7 +18,6 @@ from syft.core.tensor.passthrough import PassthroughTensor
 from syft.core.tensor.smpc.share_tensor import ShareTensor
 
 # relative
-# syft relative
 from .utils import ispointer
 
 METHODS_FORWARD_ALL_SHARES = {

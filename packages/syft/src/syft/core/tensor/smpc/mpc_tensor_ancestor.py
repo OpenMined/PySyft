@@ -6,7 +6,6 @@ from typing import List
 from syft.core.tensor.manager import TensorChainManager
 
 # relative
-# syft relative
 from .mpc_tensor import MPCTensor
 from .utils import ispointer
 

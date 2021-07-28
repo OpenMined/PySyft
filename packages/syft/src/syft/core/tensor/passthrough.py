@@ -15,7 +15,6 @@ from typing import Union
 import numpy as np
 
 # relative
-# syft relative
 from .util import implements
 from .util import query_implementation
 

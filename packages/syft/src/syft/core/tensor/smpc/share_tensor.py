@@ -46,7 +46,6 @@ class ShareTensor(PassthroughTensor, Serializable):
     the secret is remotly
     @staticmethod
     def generate_shares(secret, nr_shares, ring_size=2 ** 64):
-        # syft relative
         from .fixed_precision_tensor import FixedPrecisionTensor
 
         if not isinstance(secret, (int, FixedPrecisionTensor)):

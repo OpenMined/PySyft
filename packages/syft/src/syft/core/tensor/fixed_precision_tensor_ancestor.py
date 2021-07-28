@@ -5,7 +5,6 @@ from typing import Any
 from syft.core.tensor.manager import TensorChainManager
 
 # relative
-# syft relative
 from .fixed_precision_tensor import FixedPrecisionTensor
 
 
