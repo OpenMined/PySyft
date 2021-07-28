@@ -6,7 +6,7 @@ from logging.config import fileConfig
 import os
 
 # third party
-from alembic import context
+from alembic import context  # type: ignore
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
