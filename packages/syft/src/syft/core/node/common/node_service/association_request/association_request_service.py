@@ -1,4 +1,6 @@
 # stdlib
+from typing import Callable
+from typing import Dict
 from typing import List
 from typing import Type
 from typing import Union
@@ -257,7 +259,7 @@ def del_association_request_msg(
 
 class AssociationRequestService(ImmediateNodeServiceWithReply):
 
-    msg_handler_map = {
+    msg_handler_map: Dict[type, Callable] = {
         SendAssociationRequestMessage: send_association_request_msg,
         ReceiveAssociationRequestMessage: recv_association_request_msg,
         GetAssociationRequestMessage: get_association_request_msg,

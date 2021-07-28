@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 
 # syft absolute
-from syft import serialize
+from syft import serialize  # type: ignore
 from syft.core.node.common.exceptions import InvalidCredentialsError
 from syft.core.node.common.node import Node
 

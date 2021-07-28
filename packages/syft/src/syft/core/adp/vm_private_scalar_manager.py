@@ -3,9 +3,11 @@ import sympy as sp
 
 # relative
 from ..common.serde.recursive import RecursiveSerde
+from .entity import Entity
+from .scalar import GammaScalar
 
 # syft relative
-from .scalar import GammaScalar
+from .types import AcceptableSimpleType
 
 
 class PrimeFactory(RecursiveSerde):
@@ -20,10 +22,10 @@ class PrimeFactory(RecursiveSerde):
 
     __attr_allowlist__ = ["prev_prime"]
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.prev_prime = 1
 
-    def next(self):
+    def next(self) -> int:
         self.prev_prime = sp.nextprime(self.prev_prime)
         return self.prev_prime
 
@@ -32,11 +34,17 @@ class VirtualMachinePrivateScalarManager(RecursiveSerde):
 
     __attr_allowlist__ = ["prime_factory", "prime2symbol"]
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.prime_factory = PrimeFactory()
         self.prime2symbol = {}
 
-    def get_symbol(self, min_val, value, max_val, entity):
+    def get_symbol(
+        self,
+        min_val: AcceptableSimpleType,
+        value: AcceptableSimpleType,
+        max_val: AcceptableSimpleType,
+        entity: Entity,
+    ) -> int:
         gs = GammaScalar(min_val=min_val, value=value, max_val=max_val, entity=entity)
         gs.prime = self.prime_factory.next()
         self.prime2symbol[gs.prime] = gs

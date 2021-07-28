@@ -26,7 +26,7 @@ class Environment(Base):
     created_at = Column(DateTime, default=datetime.now())
     destroyed_at = Column(DateTime, default=datetime.now())
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f"<Group id: {self.id}, state: {self.state}, address: {self.address}, syft_address: "
             f"{self.syft_address}, provider: {self.provider}, region: {self.region}, instance_type: "

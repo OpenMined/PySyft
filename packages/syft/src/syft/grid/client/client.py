@@ -7,6 +7,7 @@ from typing import Any
 from typing import Dict
 from typing import Optional
 from typing import Type
+from typing import Union
 
 # third party
 from nacl.encoding import HexEncoder
@@ -49,6 +50,7 @@ def connect(
             _user_key = user_key
 
     # Check node client type based on metadata response
+    client_type: Union[Type[DomainClient], Type[NetworkClient]]
     if metadata.node_type == "Domain":
         client_type = DomainClient
     else:
@@ -71,6 +73,9 @@ def connect(
     }
     location_args[client_type] = spec_location
 
+    if not location_args[client_type]:
+        raise ValueError("Please provide a valid address for the node.")
+
     # Create a new client using the selected client type
     node = client_type(
         network=location_args[NetworkClient],
@@ -86,12 +91,12 @@ def connect(
 
 
 def login(
-    url: str = None,
-    port: int = None,
+    url: Optional[str] = None,
+    port: Optional[int] = None,
     email: Optional[str] = None,
     password: Optional[str] = None,
     conn_type: Type[ClientConnection] = GridHTTPConnection,
-    verbose=True,
+    verbose: bool = True,
 ) -> Client:
 
     if password is None:

@@ -1,16 +1,22 @@
 # syft relative
+# stdlib
+from uuid import UUID
+
+# third party
+from numpy import ndarray
+
 # relative
 from ..tensor import AutogradTensor
 from .op import Op
 
 
 class AbsOp(Op):
-    def forward(self, x: AutogradTensor):
+    def forward(self, x: AutogradTensor) -> AutogradTensor:
         self.x = x
 
         return AutogradTensor(x.child.__abs__(), requires_grad=x.requires_grad)
 
-    def _backward(self, grad, backprop_id):
+    def _backward(self, grad: ndarray, backprop_id: UUID) -> None:
 
         if self.x.requires_grad:
             _grad = self.x > 0  # returns 0s and 1s

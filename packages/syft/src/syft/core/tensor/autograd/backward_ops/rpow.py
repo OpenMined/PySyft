@@ -24,7 +24,7 @@ class RPowOp(Op):
         requires_grad = requires_grad or y.requires_grad
         return AutogradTensor(y.child ** x.child, requires_grad=requires_grad)
 
-    def _backward(self, grad: AutogradTensor, backprop_id: uuid.UUID):
+    def _backward(self, grad: AutogradTensor, backprop_id: uuid.UUID) -> None:
 
         y_is_simple = is_acceptable_simple_type(self.y)
 
@@ -38,6 +38,7 @@ class RPowOp(Op):
                 self.x.backward(backprop_id=backprop_id)
 
         if not y_is_simple and self.y.requires_grad:
-            self.y.add_grad(grad * self.x * self.y ** (self.x - 1))
+            # ignore type error b/c method hasn't been implemented yet
+            self.y.add_grad(grad * self.x * self.y ** (self.x - 1))  # type: ignore
             if self.y.grad_fn:
                 self.y.backward(backprop_id=backprop_id)

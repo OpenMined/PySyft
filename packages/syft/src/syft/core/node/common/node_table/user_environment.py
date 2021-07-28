@@ -14,7 +14,7 @@ class UserEnvironment(Base):
     user = Column(Integer, ForeignKey("syft_user.id"))
     environment = Column(Integer, ForeignKey("environment.id"))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f"<UserGroup id: {self.id}, user: {self.user}, "
             f"group: {self.environment}>"
