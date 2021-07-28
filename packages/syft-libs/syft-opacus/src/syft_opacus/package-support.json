@@ -1,0 +1,2558 @@
+{
+  "lib": "opacus",
+  "classes": [
+    "opacus.PerSampleGradientClipper",
+    "opacus.PrivacyEngine",
+    "opacus.dp_model_inspector.DPModelInspector",
+    "opacus.dp_model_inspector.GradSampleModule",
+    "opacus.dp_model_inspector.IncompatibleModuleException",
+    "opacus.dp_model_inspector.ModelInspector",
+    "opacus.grad_sample.GradSampleModule",
+    "opacus.grad_sample.dp_lstm.LSTMLinear",
+    "opacus.grad_sample.dp_multihead_attention.SequenceBias",
+    "opacus.grad_sample.grad_sample_module.DPLSTM",
+    "opacus.grad_sample.grad_sample_module.GradSampleModule",
+    "opacus.grad_sample.grad_sample_module.LSTMLinear",
+    "opacus.grad_sample.grad_sample_module.UnsupportedModuleError",
+    "opacus.grad_sample.utils.GradSampleModule",
+    "opacus.layers.DPLSTM",
+    "opacus.layers.DPMultiheadAttention",
+    "opacus.layers.DifferentiallyPrivateDistributedDataParallel",
+    "opacus.layers.ParamRenamedModule",
+    "opacus.layers.SequenceBias",
+    "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel",
+    "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer",
+    "opacus.layers.dp_lstm.DPLSTM",
+    "opacus.layers.dp_lstm.DPLSTMCell",
+    "opacus.layers.dp_lstm.DPLSTMLayer",
+    "opacus.layers.dp_lstm.LSTMLinear",
+    "opacus.layers.dp_lstm.ParamRenamedModule",
+    "opacus.layers.dp_multihead_attention.DPMultiheadAttention",
+    "opacus.layers.dp_multihead_attention.SequenceBias",
+    "opacus.layers.param_rename.ParamRenamedModule",
+    "opacus.per_sample_gradient_clip.GradSampleModule",
+    "opacus.per_sample_gradient_clip.NormClipper",
+    "opacus.per_sample_gradient_clip.PerSampleGradientClipper",
+    "opacus.privacy_engine.DPModelInspector",
+    "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel",
+    "opacus.privacy_engine.GradSampleModule",
+    "opacus.privacy_engine.PerSampleGradientClipper",
+    "opacus.privacy_engine.PrivacyEngine",
+    "opacus.utils.clipping.ClippingMethod",
+    "opacus.utils.clipping.ConstantFlatClipper",
+    "opacus.utils.clipping.ConstantPerLayerClipper",
+    "opacus.utils.clipping.NormClipper",
+    "opacus.utils.clipping._Dynamic_Clipper_",
+    "opacus.utils.module_inspection.ModelInspector",
+    "opacus.utils.stats.Stat",
+    "opacus.utils.stats.StatType",
+    "opacus.utils.uniform_sampler.UniformWithReplacementSampler"
+  ],
+  "modules": [
+    "opacus",
+    "opacus.dp_model_inspector",
+    "opacus.grad_sample",
+    "opacus.grad_sample.conv",
+    "opacus.grad_sample.dp_lstm",
+    "opacus.grad_sample.dp_multihead_attention",
+    "opacus.grad_sample.embedding",
+    "opacus.grad_sample.grad_sample_module",
+    "opacus.grad_sample.group_norm",
+    "opacus.grad_sample.instance_norm",
+    "opacus.grad_sample.layer_norm",
+    "opacus.grad_sample.linear",
+    "opacus.grad_sample.utils",
+    "opacus.layers",
+    "opacus.layers.dp_ddp",
+    "opacus.layers.dp_lstm",
+    "opacus.layers.dp_multihead_attention",
+    "opacus.layers.param_rename",
+    "opacus.per_sample_gradient_clip",
+    "opacus.privacy_analysis",
+    "opacus.privacy_engine",
+    "opacus.utils",
+    "opacus.utils.clipping",
+    "opacus.utils.module_inspection",
+    "opacus.utils.module_modification",
+    "opacus.utils.packed_sequences",
+    "opacus.utils.stats",
+    "opacus.utils.tensor_utils",
+    "opacus.utils.uniform_sampler",
+    "opacus.version"
+  ],
+  "methods": [
+    ["opacus.PerSampleGradientClipper._get_aggregated_state", "tuple"],
+    ["opacus.PerSampleGradientClipper._named_grad_samples", "Iterator"],
+    ["opacus.PerSampleGradientClipper._named_params", "Iterator"],
+    ["opacus.PerSampleGradientClipper._reset_aggregated_state", "NoneType"],
+    ["opacus.PerSampleGradientClipper._scale_summed_grad", "torch.Tensor"],
+    ["opacus.PerSampleGradientClipper._weighted_sum", "torch.Tensor"],
+    ["opacus.PerSampleGradientClipper.clip_and_accumulate", "NoneType"],
+    ["opacus.PerSampleGradientClipper.pre_step", "tuple"],
+    ["opacus.PerSampleGradientClipper.set_on_batch_clip_func", "NoneType"],
+    ["opacus.PrivacyEngine._generate_noise", "torch.Tensor"],
+    ["opacus.PrivacyEngine.get_privacy_spent", "tuple"],
+    ["opacus.dp_model_inspector.DPModelInspector.validate", "bool"],
+    ["opacus.dp_model_inspector.GradSampleModule.__setattr__", "NoneType"],
+    ["opacus.dp_model_inspector.GradSampleModule.add_hooks", "NoneType"],
+    ["opacus.dp_model_inspector.GradSampleModule.add_module", "NoneType"],
+    [
+      "opacus.dp_model_inspector.GradSampleModule.apply",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.dp_model_inspector.GradSampleModule.bfloat16",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.dp_model_inspector.GradSampleModule.buffers", "Iterator"],
+    ["opacus.dp_model_inspector.GradSampleModule.children", "Iterator"],
+    [
+      "opacus.dp_model_inspector.GradSampleModule.cpu",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.dp_model_inspector.GradSampleModule.cuda",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.dp_model_inspector.GradSampleModule.disable_hooks", "NoneType"],
+    [
+      "opacus.dp_model_inspector.GradSampleModule.double",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.dp_model_inspector.GradSampleModule.enable_hooks", "NoneType"],
+    [
+      "opacus.dp_model_inspector.GradSampleModule.eval",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.dp_model_inspector.GradSampleModule.extra_repr", "str"],
+    [
+      "opacus.dp_model_inspector.GradSampleModule.float",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.dp_model_inspector.GradSampleModule.half",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.dp_model_inspector.GradSampleModule.is_supported", "bool"],
+    ["opacus.dp_model_inspector.GradSampleModule.modules", "Iterator"],
+    ["opacus.dp_model_inspector.GradSampleModule.named_buffers", "Iterator"],
+    ["opacus.dp_model_inspector.GradSampleModule.named_children", "Iterator"],
+    ["opacus.dp_model_inspector.GradSampleModule.named_parameters", "Iterator"],
+    ["opacus.dp_model_inspector.GradSampleModule.parameters", "Iterator"],
+    [
+      "opacus.dp_model_inspector.GradSampleModule.parametrized_modules",
+      "Iterable"
+    ],
+    [
+      "opacus.dp_model_inspector.GradSampleModule.rearrange_grad_samples",
+      "tuple"
+    ],
+    [
+      "opacus.dp_model_inspector.GradSampleModule.register_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    ["opacus.dp_model_inspector.GradSampleModule.register_buffer", "NoneType"],
+    [
+      "opacus.dp_model_inspector.GradSampleModule.register_forward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.dp_model_inspector.GradSampleModule.register_forward_pre_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.dp_model_inspector.GradSampleModule.register_full_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.dp_model_inspector.GradSampleModule.register_parameter",
+      "NoneType"
+    ],
+    ["opacus.dp_model_inspector.GradSampleModule.remove_hooks", "NoneType"],
+    [
+      "opacus.dp_model_inspector.GradSampleModule.requires_grad_",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.dp_model_inspector.GradSampleModule.share_memory",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.dp_model_inspector.GradSampleModule.to_standard_module",
+      "torch.nn.modules.module.Module"
+    ],
+    [
+      "opacus.dp_model_inspector.GradSampleModule.train",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.dp_model_inspector.GradSampleModule.trainable_modules",
+      "Iterable"
+    ],
+    [
+      "opacus.dp_model_inspector.GradSampleModule.type",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.dp_model_inspector.GradSampleModule.xpu",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.dp_model_inspector.ModelInspector.validate", "bool"],
+    ["opacus.dp_model_inspector._conv_group_number_check", "bool"],
+    ["opacus.dp_model_inspector._is_in_training_mode", "bool"],
+    ["opacus.dp_model_inspector._is_valid_check", "bool"],
+    ["opacus.dp_model_inspector._no_batchnorm_check", "bool"],
+    ["opacus.dp_model_inspector._no_lstm", "bool"],
+    ["opacus.dp_model_inspector._no_running_stats_instancenorm_check", "bool"],
+    ["opacus.dp_model_inspector.get_layer_type", "str"],
+    ["opacus.grad_sample.GradSampleModule.__setattr__", "NoneType"],
+    ["opacus.grad_sample.GradSampleModule.add_hooks", "NoneType"],
+    ["opacus.grad_sample.GradSampleModule.add_module", "NoneType"],
+    ["opacus.grad_sample.GradSampleModule.apply", "torch.nn.modules.module.T"],
+    [
+      "opacus.grad_sample.GradSampleModule.bfloat16",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.grad_sample.GradSampleModule.buffers", "Iterator"],
+    ["opacus.grad_sample.GradSampleModule.children", "Iterator"],
+    ["opacus.grad_sample.GradSampleModule.cpu", "torch.nn.modules.module.T"],
+    ["opacus.grad_sample.GradSampleModule.cuda", "torch.nn.modules.module.T"],
+    ["opacus.grad_sample.GradSampleModule.disable_hooks", "NoneType"],
+    ["opacus.grad_sample.GradSampleModule.double", "torch.nn.modules.module.T"],
+    ["opacus.grad_sample.GradSampleModule.enable_hooks", "NoneType"],
+    ["opacus.grad_sample.GradSampleModule.eval", "torch.nn.modules.module.T"],
+    ["opacus.grad_sample.GradSampleModule.extra_repr", "str"],
+    ["opacus.grad_sample.GradSampleModule.float", "torch.nn.modules.module.T"],
+    ["opacus.grad_sample.GradSampleModule.half", "torch.nn.modules.module.T"],
+    ["opacus.grad_sample.GradSampleModule.is_supported", "bool"],
+    ["opacus.grad_sample.GradSampleModule.modules", "Iterator"],
+    ["opacus.grad_sample.GradSampleModule.named_buffers", "Iterator"],
+    ["opacus.grad_sample.GradSampleModule.named_children", "Iterator"],
+    ["opacus.grad_sample.GradSampleModule.named_parameters", "Iterator"],
+    ["opacus.grad_sample.GradSampleModule.parameters", "Iterator"],
+    ["opacus.grad_sample.GradSampleModule.parametrized_modules", "Iterable"],
+    ["opacus.grad_sample.GradSampleModule.rearrange_grad_samples", "tuple"],
+    [
+      "opacus.grad_sample.GradSampleModule.register_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    ["opacus.grad_sample.GradSampleModule.register_buffer", "NoneType"],
+    [
+      "opacus.grad_sample.GradSampleModule.register_forward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.grad_sample.GradSampleModule.register_forward_pre_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.grad_sample.GradSampleModule.register_full_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    ["opacus.grad_sample.GradSampleModule.register_parameter", "NoneType"],
+    ["opacus.grad_sample.GradSampleModule.remove_hooks", "NoneType"],
+    [
+      "opacus.grad_sample.GradSampleModule.requires_grad_",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.GradSampleModule.share_memory",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.GradSampleModule.to_standard_module",
+      "torch.nn.modules.module.Module"
+    ],
+    ["opacus.grad_sample.GradSampleModule.train", "torch.nn.modules.module.T"],
+    ["opacus.grad_sample.GradSampleModule.trainable_modules", "Iterable"],
+    ["opacus.grad_sample.GradSampleModule.type", "torch.nn.modules.module.T"],
+    ["opacus.grad_sample.GradSampleModule.xpu", "torch.nn.modules.module.T"],
+    ["opacus.grad_sample.compute_conv_grad_sample", "NoneType"],
+    ["opacus.grad_sample.compute_embedding_grad_sample", "NoneType"],
+    ["opacus.grad_sample.compute_group_norm_grad_sample", "NoneType"],
+    ["opacus.grad_sample.compute_instance_norm_grad_sample", "NoneType"],
+    ["opacus.grad_sample.compute_layer_norm_grad_sample", "NoneType"],
+    ["opacus.grad_sample.compute_linear_grad_sample", "NoneType"],
+    ["opacus.grad_sample.compute_lstm_linear_grad_sample", "NoneType"],
+    ["opacus.grad_sample.compute_sequence_bias_grad_sample", "NoneType"],
+    ["opacus.grad_sample.conv.compute_conv_grad_sample", "NoneType"],
+    ["opacus.grad_sample.conv.create_or_extend_grad_sample", "NoneType"],
+    ["opacus.grad_sample.create_or_accumulate_grad_sample", "NoneType"],
+    ["opacus.grad_sample.create_or_extend_grad_sample", "NoneType"],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear.__setattr__", "NoneType"],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear.add_module", "NoneType"],
+    [
+      "opacus.grad_sample.dp_lstm.LSTMLinear.apply",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.dp_lstm.LSTMLinear.bfloat16",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear.buffers", "Iterator"],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear.children", "Iterator"],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear.cpu", "torch.nn.modules.module.T"],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear.cuda", "torch.nn.modules.module.T"],
+    [
+      "opacus.grad_sample.dp_lstm.LSTMLinear.double",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear.eval", "torch.nn.modules.module.T"],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear.extra_repr", "str"],
+    [
+      "opacus.grad_sample.dp_lstm.LSTMLinear.float",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear.forward", "torch.Tensor"],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear.half", "torch.nn.modules.module.T"],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear.modules", "Iterator"],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear.named_buffers", "Iterator"],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear.named_children", "Iterator"],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear.named_parameters", "Iterator"],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear.parameters", "Iterator"],
+    [
+      "opacus.grad_sample.dp_lstm.LSTMLinear.register_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear.register_buffer", "NoneType"],
+    [
+      "opacus.grad_sample.dp_lstm.LSTMLinear.register_forward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.grad_sample.dp_lstm.LSTMLinear.register_forward_pre_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.grad_sample.dp_lstm.LSTMLinear.register_full_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear.register_parameter", "NoneType"],
+    [
+      "opacus.grad_sample.dp_lstm.LSTMLinear.requires_grad_",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear.reset_parameters", "NoneType"],
+    [
+      "opacus.grad_sample.dp_lstm.LSTMLinear.share_memory",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.dp_lstm.LSTMLinear.train",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear.type", "torch.nn.modules.module.T"],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear.xpu", "torch.nn.modules.module.T"],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear.zero_grad", "NoneType"],
+    ["opacus.grad_sample.dp_lstm.compute_lstm_linear_grad_sample", "NoneType"],
+    ["opacus.grad_sample.dp_lstm.create_or_accumulate_grad_sample", "NoneType"],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.__setattr__",
+      "NoneType"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.add_module",
+      "NoneType"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.apply",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.bfloat16",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.buffers",
+      "Iterator"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.children",
+      "Iterator"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.cpu",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.cuda",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.double",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.eval",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.extra_repr",
+      "str"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.float",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.half",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.modules",
+      "Iterator"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.named_buffers",
+      "Iterator"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.named_children",
+      "Iterator"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.named_parameters",
+      "Iterator"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.parameters",
+      "Iterator"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.register_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.register_buffer",
+      "NoneType"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.register_forward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.register_forward_pre_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.register_full_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.register_parameter",
+      "NoneType"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.requires_grad_",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.share_memory",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.train",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.type",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.xpu",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.zero_grad",
+      "NoneType"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.compute_sequence_bias_grad_sample",
+      "NoneType"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.create_or_extend_grad_sample",
+      "NoneType"
+    ],
+    ["opacus.grad_sample.embedding.compute_embedding_grad_sample", "NoneType"],
+    ["opacus.grad_sample.embedding.create_or_extend_grad_sample", "NoneType"],
+    ["opacus.grad_sample.grad_sample_module.DPLSTM.__setattr__", "NoneType"],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM._permute_hidden",
+      "torch.Tensor"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM._rearrange_batch_dim",
+      "torch.Tensor"
+    ],
+    ["opacus.grad_sample.grad_sample_module.DPLSTM.add_module", "NoneType"],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM.apply",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM.bfloat16",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.grad_sample.grad_sample_module.DPLSTM.buffers", "Iterator"],
+    ["opacus.grad_sample.grad_sample_module.DPLSTM.children", "Iterator"],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM.cpu",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM.cuda",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM.double",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM.eval",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.grad_sample.grad_sample_module.DPLSTM.extra_repr", "str"],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM.float",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.grad_sample.grad_sample_module.DPLSTM.forward", "tuple"],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM.half",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.grad_sample.grad_sample_module.DPLSTM.modules", "Iterator"],
+    ["opacus.grad_sample.grad_sample_module.DPLSTM.named_buffers", "Iterator"],
+    ["opacus.grad_sample.grad_sample_module.DPLSTM.named_children", "Iterator"],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM.named_parameters",
+      "Iterator"
+    ],
+    ["opacus.grad_sample.grad_sample_module.DPLSTM.parameters", "Iterator"],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM.register_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM.register_buffer",
+      "NoneType"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM.register_forward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM.register_forward_pre_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM.register_full_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM.register_parameter",
+      "NoneType"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM.requires_grad_",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM.share_memory",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM.train",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM.type",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM.xpu",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.grad_sample.grad_sample_module.DPLSTM.zero_grad", "NoneType"],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.__setattr__",
+      "NoneType"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.add_hooks",
+      "NoneType"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.add_module",
+      "NoneType"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.apply",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.bfloat16",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.buffers",
+      "Iterator"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.children",
+      "Iterator"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.cpu",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.cuda",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.disable_hooks",
+      "NoneType"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.double",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.enable_hooks",
+      "NoneType"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.eval",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.extra_repr",
+      "str"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.float",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.half",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.is_supported",
+      "bool"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.modules",
+      "Iterator"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.named_buffers",
+      "Iterator"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.named_children",
+      "Iterator"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.named_parameters",
+      "Iterator"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.parameters",
+      "Iterator"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.parametrized_modules",
+      "Iterable"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.rearrange_grad_samples",
+      "tuple"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.register_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.register_buffer",
+      "NoneType"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.register_forward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.register_forward_pre_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.register_full_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.register_parameter",
+      "NoneType"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.remove_hooks",
+      "NoneType"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.requires_grad_",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.share_memory",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.to_standard_module",
+      "torch.nn.modules.module.Module"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.train",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.trainable_modules",
+      "Iterable"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.type",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.xpu",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear.__setattr__",
+      "NoneType"
+    ],
+    ["opacus.grad_sample.grad_sample_module.LSTMLinear.add_module", "NoneType"],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear.apply",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear.bfloat16",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.grad_sample.grad_sample_module.LSTMLinear.buffers", "Iterator"],
+    ["opacus.grad_sample.grad_sample_module.LSTMLinear.children", "Iterator"],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear.cpu",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear.cuda",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear.double",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear.eval",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.grad_sample.grad_sample_module.LSTMLinear.extra_repr", "str"],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear.float",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear.forward",
+      "torch.Tensor"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear.half",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.grad_sample.grad_sample_module.LSTMLinear.modules", "Iterator"],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear.named_buffers",
+      "Iterator"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear.named_children",
+      "Iterator"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear.named_parameters",
+      "Iterator"
+    ],
+    ["opacus.grad_sample.grad_sample_module.LSTMLinear.parameters", "Iterator"],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear.register_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear.register_buffer",
+      "NoneType"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear.register_forward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear.register_forward_pre_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear.register_full_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear.register_parameter",
+      "NoneType"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear.requires_grad_",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear.reset_parameters",
+      "NoneType"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear.share_memory",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear.train",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear.type",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear.xpu",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.grad_sample.grad_sample_module.LSTMLinear.zero_grad", "NoneType"],
+    ["opacus.grad_sample.grad_sample_module._get_batch_size", "int"],
+    ["opacus.grad_sample.grad_sample_module.requires_grad", "bool"],
+    [
+      "opacus.grad_sample.group_norm.compute_group_norm_grad_sample",
+      "NoneType"
+    ],
+    ["opacus.grad_sample.group_norm.create_or_extend_grad_sample", "NoneType"],
+    [
+      "opacus.grad_sample.instance_norm.compute_instance_norm_grad_sample",
+      "NoneType"
+    ],
+    [
+      "opacus.grad_sample.instance_norm.create_or_extend_grad_sample",
+      "NoneType"
+    ],
+    [
+      "opacus.grad_sample.layer_norm.compute_layer_norm_grad_sample",
+      "NoneType"
+    ],
+    ["opacus.grad_sample.layer_norm.create_or_extend_grad_sample", "NoneType"],
+    [
+      "opacus.grad_sample.layer_norm.sum_over_all_but_batch_and_last_n",
+      "torch.Tensor"
+    ],
+    ["opacus.grad_sample.linear.compute_linear_grad_sample", "NoneType"],
+    ["opacus.grad_sample.linear.create_or_extend_grad_sample", "NoneType"],
+    ["opacus.grad_sample.utils.GradSampleModule.__setattr__", "NoneType"],
+    ["opacus.grad_sample.utils.GradSampleModule.add_hooks", "NoneType"],
+    ["opacus.grad_sample.utils.GradSampleModule.add_module", "NoneType"],
+    [
+      "opacus.grad_sample.utils.GradSampleModule.apply",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.utils.GradSampleModule.bfloat16",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.grad_sample.utils.GradSampleModule.buffers", "Iterator"],
+    ["opacus.grad_sample.utils.GradSampleModule.children", "Iterator"],
+    [
+      "opacus.grad_sample.utils.GradSampleModule.cpu",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.utils.GradSampleModule.cuda",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.grad_sample.utils.GradSampleModule.disable_hooks", "NoneType"],
+    [
+      "opacus.grad_sample.utils.GradSampleModule.double",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.grad_sample.utils.GradSampleModule.enable_hooks", "NoneType"],
+    [
+      "opacus.grad_sample.utils.GradSampleModule.eval",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.grad_sample.utils.GradSampleModule.extra_repr", "str"],
+    [
+      "opacus.grad_sample.utils.GradSampleModule.float",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.utils.GradSampleModule.half",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.grad_sample.utils.GradSampleModule.is_supported", "bool"],
+    ["opacus.grad_sample.utils.GradSampleModule.modules", "Iterator"],
+    ["opacus.grad_sample.utils.GradSampleModule.named_buffers", "Iterator"],
+    ["opacus.grad_sample.utils.GradSampleModule.named_children", "Iterator"],
+    ["opacus.grad_sample.utils.GradSampleModule.named_parameters", "Iterator"],
+    ["opacus.grad_sample.utils.GradSampleModule.parameters", "Iterator"],
+    [
+      "opacus.grad_sample.utils.GradSampleModule.parametrized_modules",
+      "Iterable"
+    ],
+    [
+      "opacus.grad_sample.utils.GradSampleModule.rearrange_grad_samples",
+      "tuple"
+    ],
+    [
+      "opacus.grad_sample.utils.GradSampleModule.register_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    ["opacus.grad_sample.utils.GradSampleModule.register_buffer", "NoneType"],
+    [
+      "opacus.grad_sample.utils.GradSampleModule.register_forward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.grad_sample.utils.GradSampleModule.register_forward_pre_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.grad_sample.utils.GradSampleModule.register_full_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.grad_sample.utils.GradSampleModule.register_parameter",
+      "NoneType"
+    ],
+    ["opacus.grad_sample.utils.GradSampleModule.remove_hooks", "NoneType"],
+    [
+      "opacus.grad_sample.utils.GradSampleModule.requires_grad_",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.utils.GradSampleModule.share_memory",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.utils.GradSampleModule.to_standard_module",
+      "torch.nn.modules.module.Module"
+    ],
+    [
+      "opacus.grad_sample.utils.GradSampleModule.train",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.grad_sample.utils.GradSampleModule.trainable_modules", "Iterable"],
+    [
+      "opacus.grad_sample.utils.GradSampleModule.type",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.utils.GradSampleModule.xpu",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.grad_sample.utils.create_or_accumulate_grad_sample", "NoneType"],
+    ["opacus.grad_sample.utils.create_or_extend_grad_sample", "NoneType"],
+    ["opacus.layers.DPLSTM.__setattr__", "NoneType"],
+    ["opacus.layers.DPLSTM._permute_hidden", "torch.Tensor"],
+    ["opacus.layers.DPLSTM._rearrange_batch_dim", "torch.Tensor"],
+    ["opacus.layers.DPLSTM.add_module", "NoneType"],
+    ["opacus.layers.DPLSTM.apply", "torch.nn.modules.module.T"],
+    ["opacus.layers.DPLSTM.bfloat16", "torch.nn.modules.module.T"],
+    ["opacus.layers.DPLSTM.buffers", "Iterator"],
+    ["opacus.layers.DPLSTM.children", "Iterator"],
+    ["opacus.layers.DPLSTM.cpu", "torch.nn.modules.module.T"],
+    ["opacus.layers.DPLSTM.cuda", "torch.nn.modules.module.T"],
+    ["opacus.layers.DPLSTM.double", "torch.nn.modules.module.T"],
+    ["opacus.layers.DPLSTM.eval", "torch.nn.modules.module.T"],
+    ["opacus.layers.DPLSTM.extra_repr", "str"],
+    ["opacus.layers.DPLSTM.float", "torch.nn.modules.module.T"],
+    ["opacus.layers.DPLSTM.forward", "tuple"],
+    ["opacus.layers.DPLSTM.half", "torch.nn.modules.module.T"],
+    ["opacus.layers.DPLSTM.modules", "Iterator"],
+    ["opacus.layers.DPLSTM.named_buffers", "Iterator"],
+    ["opacus.layers.DPLSTM.named_children", "Iterator"],
+    ["opacus.layers.DPLSTM.named_parameters", "Iterator"],
+    ["opacus.layers.DPLSTM.parameters", "Iterator"],
+    [
+      "opacus.layers.DPLSTM.register_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    ["opacus.layers.DPLSTM.register_buffer", "NoneType"],
+    [
+      "opacus.layers.DPLSTM.register_forward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.DPLSTM.register_forward_pre_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.DPLSTM.register_full_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    ["opacus.layers.DPLSTM.register_parameter", "NoneType"],
+    ["opacus.layers.DPLSTM.requires_grad_", "torch.nn.modules.module.T"],
+    ["opacus.layers.DPLSTM.share_memory", "torch.nn.modules.module.T"],
+    ["opacus.layers.DPLSTM.train", "torch.nn.modules.module.T"],
+    ["opacus.layers.DPLSTM.type", "torch.nn.modules.module.T"],
+    ["opacus.layers.DPLSTM.xpu", "torch.nn.modules.module.T"],
+    ["opacus.layers.DPLSTM.zero_grad", "NoneType"],
+    ["opacus.layers.DPMultiheadAttention.__setattr__", "NoneType"],
+    ["opacus.layers.DPMultiheadAttention.add_module", "NoneType"],
+    ["opacus.layers.DPMultiheadAttention.apply", "torch.nn.modules.module.T"],
+    [
+      "opacus.layers.DPMultiheadAttention.bfloat16",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.layers.DPMultiheadAttention.buffers", "Iterator"],
+    ["opacus.layers.DPMultiheadAttention.children", "Iterator"],
+    ["opacus.layers.DPMultiheadAttention.cpu", "torch.nn.modules.module.T"],
+    ["opacus.layers.DPMultiheadAttention.cuda", "torch.nn.modules.module.T"],
+    ["opacus.layers.DPMultiheadAttention.double", "torch.nn.modules.module.T"],
+    ["opacus.layers.DPMultiheadAttention.eval", "torch.nn.modules.module.T"],
+    ["opacus.layers.DPMultiheadAttention.extra_repr", "str"],
+    ["opacus.layers.DPMultiheadAttention.float", "torch.nn.modules.module.T"],
+    ["opacus.layers.DPMultiheadAttention.half", "torch.nn.modules.module.T"],
+    ["opacus.layers.DPMultiheadAttention.modules", "Iterator"],
+    ["opacus.layers.DPMultiheadAttention.named_buffers", "Iterator"],
+    ["opacus.layers.DPMultiheadAttention.named_children", "Iterator"],
+    ["opacus.layers.DPMultiheadAttention.named_parameters", "Iterator"],
+    ["opacus.layers.DPMultiheadAttention.parameters", "Iterator"],
+    [
+      "opacus.layers.DPMultiheadAttention.register_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    ["opacus.layers.DPMultiheadAttention.register_buffer", "NoneType"],
+    [
+      "opacus.layers.DPMultiheadAttention.register_forward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.DPMultiheadAttention.register_forward_pre_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.DPMultiheadAttention.register_full_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    ["opacus.layers.DPMultiheadAttention.register_parameter", "NoneType"],
+    [
+      "opacus.layers.DPMultiheadAttention.requires_grad_",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.DPMultiheadAttention.share_memory",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.layers.DPMultiheadAttention.train", "torch.nn.modules.module.T"],
+    ["opacus.layers.DPMultiheadAttention.type", "torch.nn.modules.module.T"],
+    ["opacus.layers.DPMultiheadAttention.xpu", "torch.nn.modules.module.T"],
+    ["opacus.layers.DPMultiheadAttention.zero_grad", "NoneType"],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.__setattr__",
+      "NoneType"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.add_module",
+      "NoneType"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.apply",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.bfloat16",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.buffers",
+      "Iterator"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.children",
+      "Iterator"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.cpu",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.cuda",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.double",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.eval",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.extra_repr",
+      "str"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.float",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.half",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.modules",
+      "Iterator"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.named_buffers",
+      "Iterator"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.named_children",
+      "Iterator"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.named_parameters",
+      "Iterator"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.parameters",
+      "Iterator"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.register_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.register_buffer",
+      "NoneType"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.register_forward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.register_forward_pre_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.register_full_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.register_parameter",
+      "NoneType"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.requires_grad_",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.share_memory",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.train",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.type",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.xpu",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.zero_grad",
+      "NoneType"
+    ],
+    ["opacus.layers.ParamRenamedModule.__setattr__", "NoneType"],
+    ["opacus.layers.ParamRenamedModule.add_module", "NoneType"],
+    ["opacus.layers.ParamRenamedModule.apply", "torch.nn.modules.module.T"],
+    ["opacus.layers.ParamRenamedModule.bfloat16", "torch.nn.modules.module.T"],
+    ["opacus.layers.ParamRenamedModule.buffers", "Iterator"],
+    ["opacus.layers.ParamRenamedModule.children", "Iterator"],
+    ["opacus.layers.ParamRenamedModule.cpu", "torch.nn.modules.module.T"],
+    ["opacus.layers.ParamRenamedModule.cuda", "torch.nn.modules.module.T"],
+    ["opacus.layers.ParamRenamedModule.double", "torch.nn.modules.module.T"],
+    ["opacus.layers.ParamRenamedModule.eval", "torch.nn.modules.module.T"],
+    ["opacus.layers.ParamRenamedModule.extra_repr", "str"],
+    ["opacus.layers.ParamRenamedModule.float", "torch.nn.modules.module.T"],
+    ["opacus.layers.ParamRenamedModule.half", "torch.nn.modules.module.T"],
+    ["opacus.layers.ParamRenamedModule.modules", "Iterator"],
+    ["opacus.layers.ParamRenamedModule.named_buffers", "Iterator"],
+    ["opacus.layers.ParamRenamedModule.named_children", "Iterator"],
+    ["opacus.layers.ParamRenamedModule.named_parameters", "Iterator"],
+    ["opacus.layers.ParamRenamedModule.parameters", "Iterator"],
+    [
+      "opacus.layers.ParamRenamedModule.register_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    ["opacus.layers.ParamRenamedModule.register_buffer", "NoneType"],
+    [
+      "opacus.layers.ParamRenamedModule.register_forward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.ParamRenamedModule.register_forward_pre_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.ParamRenamedModule.register_full_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    ["opacus.layers.ParamRenamedModule.register_parameter", "NoneType"],
+    [
+      "opacus.layers.ParamRenamedModule.requires_grad_",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.ParamRenamedModule.share_memory",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.layers.ParamRenamedModule.train", "torch.nn.modules.module.T"],
+    ["opacus.layers.ParamRenamedModule.type", "torch.nn.modules.module.T"],
+    ["opacus.layers.ParamRenamedModule.xpu", "torch.nn.modules.module.T"],
+    ["opacus.layers.ParamRenamedModule.zero_grad", "NoneType"],
+    ["opacus.layers.SequenceBias.__setattr__", "NoneType"],
+    ["opacus.layers.SequenceBias.add_module", "NoneType"],
+    ["opacus.layers.SequenceBias.apply", "torch.nn.modules.module.T"],
+    ["opacus.layers.SequenceBias.bfloat16", "torch.nn.modules.module.T"],
+    ["opacus.layers.SequenceBias.buffers", "Iterator"],
+    ["opacus.layers.SequenceBias.children", "Iterator"],
+    ["opacus.layers.SequenceBias.cpu", "torch.nn.modules.module.T"],
+    ["opacus.layers.SequenceBias.cuda", "torch.nn.modules.module.T"],
+    ["opacus.layers.SequenceBias.double", "torch.nn.modules.module.T"],
+    ["opacus.layers.SequenceBias.eval", "torch.nn.modules.module.T"],
+    ["opacus.layers.SequenceBias.extra_repr", "str"],
+    ["opacus.layers.SequenceBias.float", "torch.nn.modules.module.T"],
+    ["opacus.layers.SequenceBias.half", "torch.nn.modules.module.T"],
+    ["opacus.layers.SequenceBias.modules", "Iterator"],
+    ["opacus.layers.SequenceBias.named_buffers", "Iterator"],
+    ["opacus.layers.SequenceBias.named_children", "Iterator"],
+    ["opacus.layers.SequenceBias.named_parameters", "Iterator"],
+    ["opacus.layers.SequenceBias.parameters", "Iterator"],
+    [
+      "opacus.layers.SequenceBias.register_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    ["opacus.layers.SequenceBias.register_buffer", "NoneType"],
+    [
+      "opacus.layers.SequenceBias.register_forward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.SequenceBias.register_forward_pre_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.SequenceBias.register_full_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    ["opacus.layers.SequenceBias.register_parameter", "NoneType"],
+    ["opacus.layers.SequenceBias.requires_grad_", "torch.nn.modules.module.T"],
+    ["opacus.layers.SequenceBias.share_memory", "torch.nn.modules.module.T"],
+    ["opacus.layers.SequenceBias.train", "torch.nn.modules.module.T"],
+    ["opacus.layers.SequenceBias.type", "torch.nn.modules.module.T"],
+    ["opacus.layers.SequenceBias.xpu", "torch.nn.modules.module.T"],
+    ["opacus.layers.SequenceBias.zero_grad", "NoneType"],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.__setattr__",
+      "NoneType"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.add_module",
+      "NoneType"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.apply",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.bfloat16",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.buffers",
+      "Iterator"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.children",
+      "Iterator"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.cpu",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.cuda",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.double",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.eval",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.extra_repr",
+      "str"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.float",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.half",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.modules",
+      "Iterator"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.named_buffers",
+      "Iterator"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.named_children",
+      "Iterator"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.named_parameters",
+      "Iterator"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.parameters",
+      "Iterator"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.register_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.register_buffer",
+      "NoneType"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.register_forward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.register_forward_pre_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.register_full_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.register_parameter",
+      "NoneType"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.requires_grad_",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.share_memory",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.train",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.type",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.xpu",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.zero_grad",
+      "NoneType"
+    ],
+    ["opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.__setattr__", "NoneType"],
+    ["opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.add_module", "NoneType"],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.apply",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.bfloat16",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.buffers", "Iterator"],
+    ["opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.children", "Iterator"],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.cpu",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.cuda",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.double",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.eval",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.extra_repr", "str"],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.float",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.forward", "tuple"],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.half",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.modules", "Iterator"],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.named_buffers",
+      "Iterator"
+    ],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.named_children",
+      "Iterator"
+    ],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.named_parameters",
+      "Iterator"
+    ],
+    ["opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.parameters", "Iterator"],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.register_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.register_buffer",
+      "NoneType"
+    ],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.register_forward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.register_forward_pre_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.register_full_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.register_parameter",
+      "NoneType"
+    ],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.requires_grad_",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.set_max_batch_length",
+      "NoneType"
+    ],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.share_memory",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.train",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.type",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.xpu",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.zero_grad", "NoneType"],
+    ["opacus.layers.dp_lstm.DPLSTM.__setattr__", "NoneType"],
+    ["opacus.layers.dp_lstm.DPLSTM._permute_hidden", "torch.Tensor"],
+    ["opacus.layers.dp_lstm.DPLSTM._rearrange_batch_dim", "torch.Tensor"],
+    ["opacus.layers.dp_lstm.DPLSTM.add_module", "NoneType"],
+    ["opacus.layers.dp_lstm.DPLSTM.apply", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTM.bfloat16", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTM.buffers", "Iterator"],
+    ["opacus.layers.dp_lstm.DPLSTM.children", "Iterator"],
+    ["opacus.layers.dp_lstm.DPLSTM.cpu", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTM.cuda", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTM.double", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTM.eval", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTM.extra_repr", "str"],
+    ["opacus.layers.dp_lstm.DPLSTM.float", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTM.forward", "tuple"],
+    ["opacus.layers.dp_lstm.DPLSTM.half", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTM.modules", "Iterator"],
+    ["opacus.layers.dp_lstm.DPLSTM.named_buffers", "Iterator"],
+    ["opacus.layers.dp_lstm.DPLSTM.named_children", "Iterator"],
+    ["opacus.layers.dp_lstm.DPLSTM.named_parameters", "Iterator"],
+    ["opacus.layers.dp_lstm.DPLSTM.parameters", "Iterator"],
+    [
+      "opacus.layers.dp_lstm.DPLSTM.register_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    ["opacus.layers.dp_lstm.DPLSTM.register_buffer", "NoneType"],
+    [
+      "opacus.layers.dp_lstm.DPLSTM.register_forward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.dp_lstm.DPLSTM.register_forward_pre_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.dp_lstm.DPLSTM.register_full_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    ["opacus.layers.dp_lstm.DPLSTM.register_parameter", "NoneType"],
+    [
+      "opacus.layers.dp_lstm.DPLSTM.requires_grad_",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.layers.dp_lstm.DPLSTM.share_memory", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTM.train", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTM.type", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTM.xpu", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTM.zero_grad", "NoneType"],
+    ["opacus.layers.dp_lstm.DPLSTMCell.__setattr__", "NoneType"],
+    ["opacus.layers.dp_lstm.DPLSTMCell.add_module", "NoneType"],
+    ["opacus.layers.dp_lstm.DPLSTMCell.apply", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTMCell.bfloat16", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTMCell.buffers", "Iterator"],
+    ["opacus.layers.dp_lstm.DPLSTMCell.children", "Iterator"],
+    ["opacus.layers.dp_lstm.DPLSTMCell.cpu", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTMCell.cuda", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTMCell.double", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTMCell.eval", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTMCell.extra_repr", "str"],
+    ["opacus.layers.dp_lstm.DPLSTMCell.float", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTMCell.forward", "tuple"],
+    ["opacus.layers.dp_lstm.DPLSTMCell.half", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTMCell.modules", "Iterator"],
+    ["opacus.layers.dp_lstm.DPLSTMCell.named_buffers", "Iterator"],
+    ["opacus.layers.dp_lstm.DPLSTMCell.named_children", "Iterator"],
+    ["opacus.layers.dp_lstm.DPLSTMCell.named_parameters", "Iterator"],
+    ["opacus.layers.dp_lstm.DPLSTMCell.parameters", "Iterator"],
+    [
+      "opacus.layers.dp_lstm.DPLSTMCell.register_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    ["opacus.layers.dp_lstm.DPLSTMCell.register_buffer", "NoneType"],
+    [
+      "opacus.layers.dp_lstm.DPLSTMCell.register_forward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.dp_lstm.DPLSTMCell.register_forward_pre_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.dp_lstm.DPLSTMCell.register_full_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    ["opacus.layers.dp_lstm.DPLSTMCell.register_parameter", "NoneType"],
+    [
+      "opacus.layers.dp_lstm.DPLSTMCell.requires_grad_",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.layers.dp_lstm.DPLSTMCell.set_max_batch_length", "NoneType"],
+    [
+      "opacus.layers.dp_lstm.DPLSTMCell.share_memory",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.layers.dp_lstm.DPLSTMCell.train", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTMCell.type", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTMCell.xpu", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTMCell.zero_grad", "NoneType"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.__setattr__", "NoneType"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.add_module", "NoneType"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.apply", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.bfloat16", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.buffers", "Iterator"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.children", "Iterator"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.cpu", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.cuda", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.double", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.eval", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.extra_repr", "str"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.float", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.forward", "tuple"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.half", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.modules", "Iterator"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.named_buffers", "Iterator"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.named_children", "Iterator"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.named_parameters", "Iterator"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.parameters", "Iterator"],
+    [
+      "opacus.layers.dp_lstm.DPLSTMLayer.register_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.register_buffer", "NoneType"],
+    [
+      "opacus.layers.dp_lstm.DPLSTMLayer.register_forward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.dp_lstm.DPLSTMLayer.register_forward_pre_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.dp_lstm.DPLSTMLayer.register_full_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.register_parameter", "NoneType"],
+    [
+      "opacus.layers.dp_lstm.DPLSTMLayer.requires_grad_",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.set_max_batch_length", "NoneType"],
+    [
+      "opacus.layers.dp_lstm.DPLSTMLayer.share_memory",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.train", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.type", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.xpu", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.zero_grad", "NoneType"],
+    ["opacus.layers.dp_lstm.LSTMLinear.__setattr__", "NoneType"],
+    ["opacus.layers.dp_lstm.LSTMLinear.add_module", "NoneType"],
+    ["opacus.layers.dp_lstm.LSTMLinear.apply", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.LSTMLinear.bfloat16", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.LSTMLinear.buffers", "Iterator"],
+    ["opacus.layers.dp_lstm.LSTMLinear.children", "Iterator"],
+    ["opacus.layers.dp_lstm.LSTMLinear.cpu", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.LSTMLinear.cuda", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.LSTMLinear.double", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.LSTMLinear.eval", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.LSTMLinear.extra_repr", "str"],
+    ["opacus.layers.dp_lstm.LSTMLinear.float", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.LSTMLinear.forward", "torch.Tensor"],
+    ["opacus.layers.dp_lstm.LSTMLinear.half", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.LSTMLinear.modules", "Iterator"],
+    ["opacus.layers.dp_lstm.LSTMLinear.named_buffers", "Iterator"],
+    ["opacus.layers.dp_lstm.LSTMLinear.named_children", "Iterator"],
+    ["opacus.layers.dp_lstm.LSTMLinear.named_parameters", "Iterator"],
+    ["opacus.layers.dp_lstm.LSTMLinear.parameters", "Iterator"],
+    [
+      "opacus.layers.dp_lstm.LSTMLinear.register_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    ["opacus.layers.dp_lstm.LSTMLinear.register_buffer", "NoneType"],
+    [
+      "opacus.layers.dp_lstm.LSTMLinear.register_forward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.dp_lstm.LSTMLinear.register_forward_pre_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.dp_lstm.LSTMLinear.register_full_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    ["opacus.layers.dp_lstm.LSTMLinear.register_parameter", "NoneType"],
+    [
+      "opacus.layers.dp_lstm.LSTMLinear.requires_grad_",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.layers.dp_lstm.LSTMLinear.reset_parameters", "NoneType"],
+    [
+      "opacus.layers.dp_lstm.LSTMLinear.share_memory",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.layers.dp_lstm.LSTMLinear.train", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.LSTMLinear.type", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.LSTMLinear.xpu", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.LSTMLinear.zero_grad", "NoneType"],
+    ["opacus.layers.dp_lstm.ParamRenamedModule.__setattr__", "NoneType"],
+    ["opacus.layers.dp_lstm.ParamRenamedModule.add_module", "NoneType"],
+    [
+      "opacus.layers.dp_lstm.ParamRenamedModule.apply",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_lstm.ParamRenamedModule.bfloat16",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.layers.dp_lstm.ParamRenamedModule.buffers", "Iterator"],
+    ["opacus.layers.dp_lstm.ParamRenamedModule.children", "Iterator"],
+    [
+      "opacus.layers.dp_lstm.ParamRenamedModule.cpu",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_lstm.ParamRenamedModule.cuda",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_lstm.ParamRenamedModule.double",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_lstm.ParamRenamedModule.eval",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.layers.dp_lstm.ParamRenamedModule.extra_repr", "str"],
+    [
+      "opacus.layers.dp_lstm.ParamRenamedModule.float",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_lstm.ParamRenamedModule.half",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.layers.dp_lstm.ParamRenamedModule.modules", "Iterator"],
+    ["opacus.layers.dp_lstm.ParamRenamedModule.named_buffers", "Iterator"],
+    ["opacus.layers.dp_lstm.ParamRenamedModule.named_children", "Iterator"],
+    ["opacus.layers.dp_lstm.ParamRenamedModule.named_parameters", "Iterator"],
+    ["opacus.layers.dp_lstm.ParamRenamedModule.parameters", "Iterator"],
+    [
+      "opacus.layers.dp_lstm.ParamRenamedModule.register_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    ["opacus.layers.dp_lstm.ParamRenamedModule.register_buffer", "NoneType"],
+    [
+      "opacus.layers.dp_lstm.ParamRenamedModule.register_forward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.dp_lstm.ParamRenamedModule.register_forward_pre_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.dp_lstm.ParamRenamedModule.register_full_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    ["opacus.layers.dp_lstm.ParamRenamedModule.register_parameter", "NoneType"],
+    [
+      "opacus.layers.dp_lstm.ParamRenamedModule.requires_grad_",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_lstm.ParamRenamedModule.share_memory",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_lstm.ParamRenamedModule.train",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_lstm.ParamRenamedModule.type",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_lstm.ParamRenamedModule.xpu",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.layers.dp_lstm.ParamRenamedModule.zero_grad", "NoneType"],
+    ["opacus.layers.dp_lstm._compute_last_states", "tuple"],
+    ["opacus.layers.dp_lstm._compute_seq_lengths", "list"],
+    ["opacus.layers.dp_lstm._concat_sequence_directions", "tuple"],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.__setattr__",
+      "NoneType"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.add_module",
+      "NoneType"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.apply",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.bfloat16",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.buffers",
+      "Iterator"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.children",
+      "Iterator"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.cpu",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.cuda",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.double",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.eval",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.extra_repr",
+      "str"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.float",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.half",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.modules",
+      "Iterator"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.named_buffers",
+      "Iterator"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.named_children",
+      "Iterator"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.named_parameters",
+      "Iterator"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.parameters",
+      "Iterator"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.register_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.register_buffer",
+      "NoneType"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.register_forward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.register_forward_pre_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.register_full_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.register_parameter",
+      "NoneType"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.requires_grad_",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.share_memory",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.train",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.type",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.xpu",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.zero_grad",
+      "NoneType"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias.__setattr__",
+      "NoneType"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias.add_module",
+      "NoneType"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias.apply",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias.bfloat16",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.layers.dp_multihead_attention.SequenceBias.buffers", "Iterator"],
+    ["opacus.layers.dp_multihead_attention.SequenceBias.children", "Iterator"],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias.cpu",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias.cuda",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias.double",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias.eval",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.layers.dp_multihead_attention.SequenceBias.extra_repr", "str"],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias.float",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias.half",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.layers.dp_multihead_attention.SequenceBias.modules", "Iterator"],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias.named_buffers",
+      "Iterator"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias.named_children",
+      "Iterator"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias.named_parameters",
+      "Iterator"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias.parameters",
+      "Iterator"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias.register_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias.register_buffer",
+      "NoneType"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias.register_forward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias.register_forward_pre_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias.register_full_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias.register_parameter",
+      "NoneType"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias.requires_grad_",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias.share_memory",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias.train",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias.type",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias.xpu",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.layers.dp_multihead_attention.SequenceBias.zero_grad", "NoneType"],
+    ["opacus.layers.param_rename.ParamRenamedModule.__setattr__", "NoneType"],
+    ["opacus.layers.param_rename.ParamRenamedModule.add_module", "NoneType"],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule.apply",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule.bfloat16",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.layers.param_rename.ParamRenamedModule.buffers", "Iterator"],
+    ["opacus.layers.param_rename.ParamRenamedModule.children", "Iterator"],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule.cpu",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule.cuda",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule.double",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule.eval",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.layers.param_rename.ParamRenamedModule.extra_repr", "str"],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule.float",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule.half",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.layers.param_rename.ParamRenamedModule.modules", "Iterator"],
+    ["opacus.layers.param_rename.ParamRenamedModule.named_buffers", "Iterator"],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule.named_children",
+      "Iterator"
+    ],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule.named_parameters",
+      "Iterator"
+    ],
+    ["opacus.layers.param_rename.ParamRenamedModule.parameters", "Iterator"],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule.register_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule.register_buffer",
+      "NoneType"
+    ],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule.register_forward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule.register_forward_pre_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule.register_full_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule.register_parameter",
+      "NoneType"
+    ],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule.requires_grad_",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule.share_memory",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule.train",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule.type",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule.xpu",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.layers.param_rename.ParamRenamedModule.zero_grad", "NoneType"],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.__setattr__",
+      "NoneType"
+    ],
+    ["opacus.per_sample_gradient_clip.GradSampleModule.add_hooks", "NoneType"],
+    ["opacus.per_sample_gradient_clip.GradSampleModule.add_module", "NoneType"],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.apply",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.bfloat16",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.per_sample_gradient_clip.GradSampleModule.buffers", "Iterator"],
+    ["opacus.per_sample_gradient_clip.GradSampleModule.children", "Iterator"],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.cpu",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.cuda",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.disable_hooks",
+      "NoneType"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.double",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.enable_hooks",
+      "NoneType"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.eval",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.per_sample_gradient_clip.GradSampleModule.extra_repr", "str"],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.float",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.half",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.per_sample_gradient_clip.GradSampleModule.is_supported", "bool"],
+    ["opacus.per_sample_gradient_clip.GradSampleModule.modules", "Iterator"],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.named_buffers",
+      "Iterator"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.named_children",
+      "Iterator"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.named_parameters",
+      "Iterator"
+    ],
+    ["opacus.per_sample_gradient_clip.GradSampleModule.parameters", "Iterator"],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.parametrized_modules",
+      "Iterable"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.rearrange_grad_samples",
+      "tuple"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.register_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.register_buffer",
+      "NoneType"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.register_forward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.register_forward_pre_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.register_full_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.register_parameter",
+      "NoneType"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.remove_hooks",
+      "NoneType"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.requires_grad_",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.share_memory",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.to_standard_module",
+      "torch.nn.modules.module.Module"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.train",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.trainable_modules",
+      "Iterable"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.type",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.xpu",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.PerSampleGradientClipper._get_aggregated_state",
+      "tuple"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.PerSampleGradientClipper._named_grad_samples",
+      "Iterator"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.PerSampleGradientClipper._named_params",
+      "Iterator"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.PerSampleGradientClipper._reset_aggregated_state",
+      "NoneType"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.PerSampleGradientClipper._scale_summed_grad",
+      "torch.Tensor"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.PerSampleGradientClipper._weighted_sum",
+      "torch.Tensor"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.PerSampleGradientClipper.clip_and_accumulate",
+      "NoneType"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.PerSampleGradientClipper.pre_step",
+      "tuple"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.PerSampleGradientClipper.set_on_batch_clip_func",
+      "NoneType"
+    ],
+    ["opacus.per_sample_gradient_clip.calc_sample_norms", "list"],
+    ["opacus.privacy_analysis._compute_log_a", "float"],
+    ["opacus.privacy_analysis._compute_log_a_for_frac_alpha", "float"],
+    ["opacus.privacy_analysis._compute_log_a_for_int_alpha", "float"],
+    ["opacus.privacy_analysis._compute_rdp", "float"],
+    ["opacus.privacy_analysis._log_add", "float"],
+    ["opacus.privacy_analysis._log_erfc", "float"],
+    ["opacus.privacy_analysis._log_sub", "float"],
+    ["opacus.privacy_analysis.get_privacy_spent", "tuple"],
+    ["opacus.privacy_engine.DPModelInspector.validate", "bool"],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.__setattr__",
+      "NoneType"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.add_module",
+      "NoneType"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.apply",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.bfloat16",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.buffers",
+      "Iterator"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.children",
+      "Iterator"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.cpu",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.cuda",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.double",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.eval",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.extra_repr",
+      "str"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.float",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.half",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.modules",
+      "Iterator"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.named_buffers",
+      "Iterator"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.named_children",
+      "Iterator"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.named_parameters",
+      "Iterator"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.parameters",
+      "Iterator"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.register_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.register_buffer",
+      "NoneType"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.register_forward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.register_forward_pre_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.register_full_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.register_parameter",
+      "NoneType"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.requires_grad_",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.share_memory",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.train",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.type",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.xpu",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.zero_grad",
+      "NoneType"
+    ],
+    ["opacus.privacy_engine.GradSampleModule.__setattr__", "NoneType"],
+    ["opacus.privacy_engine.GradSampleModule.add_hooks", "NoneType"],
+    ["opacus.privacy_engine.GradSampleModule.add_module", "NoneType"],
+    [
+      "opacus.privacy_engine.GradSampleModule.apply",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.privacy_engine.GradSampleModule.bfloat16",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.privacy_engine.GradSampleModule.buffers", "Iterator"],
+    ["opacus.privacy_engine.GradSampleModule.children", "Iterator"],
+    ["opacus.privacy_engine.GradSampleModule.cpu", "torch.nn.modules.module.T"],
+    [
+      "opacus.privacy_engine.GradSampleModule.cuda",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.privacy_engine.GradSampleModule.disable_hooks", "NoneType"],
+    [
+      "opacus.privacy_engine.GradSampleModule.double",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.privacy_engine.GradSampleModule.enable_hooks", "NoneType"],
+    [
+      "opacus.privacy_engine.GradSampleModule.eval",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.privacy_engine.GradSampleModule.extra_repr", "str"],
+    [
+      "opacus.privacy_engine.GradSampleModule.float",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.privacy_engine.GradSampleModule.half",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.privacy_engine.GradSampleModule.is_supported", "bool"],
+    ["opacus.privacy_engine.GradSampleModule.modules", "Iterator"],
+    ["opacus.privacy_engine.GradSampleModule.named_buffers", "Iterator"],
+    ["opacus.privacy_engine.GradSampleModule.named_children", "Iterator"],
+    ["opacus.privacy_engine.GradSampleModule.named_parameters", "Iterator"],
+    ["opacus.privacy_engine.GradSampleModule.parameters", "Iterator"],
+    ["opacus.privacy_engine.GradSampleModule.parametrized_modules", "Iterable"],
+    ["opacus.privacy_engine.GradSampleModule.rearrange_grad_samples", "tuple"],
+    [
+      "opacus.privacy_engine.GradSampleModule.register_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    ["opacus.privacy_engine.GradSampleModule.register_buffer", "NoneType"],
+    [
+      "opacus.privacy_engine.GradSampleModule.register_forward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.privacy_engine.GradSampleModule.register_forward_pre_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    [
+      "opacus.privacy_engine.GradSampleModule.register_full_backward_hook",
+      "torch.utils.hooks.RemovableHandle"
+    ],
+    ["opacus.privacy_engine.GradSampleModule.register_parameter", "NoneType"],
+    ["opacus.privacy_engine.GradSampleModule.remove_hooks", "NoneType"],
+    [
+      "opacus.privacy_engine.GradSampleModule.requires_grad_",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.privacy_engine.GradSampleModule.share_memory",
+      "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.privacy_engine.GradSampleModule.to_standard_module",
+      "torch.nn.modules.module.Module"
+    ],
+    [
+      "opacus.privacy_engine.GradSampleModule.train",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.privacy_engine.GradSampleModule.trainable_modules", "Iterable"],
+    [
+      "opacus.privacy_engine.GradSampleModule.type",
+      "torch.nn.modules.module.T"
+    ],
+    ["opacus.privacy_engine.GradSampleModule.xpu", "torch.nn.modules.module.T"],
+    [
+      "opacus.privacy_engine.PerSampleGradientClipper._get_aggregated_state",
+      "tuple"
+    ],
+    [
+      "opacus.privacy_engine.PerSampleGradientClipper._named_grad_samples",
+      "Iterator"
+    ],
+    [
+      "opacus.privacy_engine.PerSampleGradientClipper._named_params",
+      "Iterator"
+    ],
+    [
+      "opacus.privacy_engine.PerSampleGradientClipper._reset_aggregated_state",
+      "NoneType"
+    ],
+    [
+      "opacus.privacy_engine.PerSampleGradientClipper._scale_summed_grad",
+      "torch.Tensor"
+    ],
+    [
+      "opacus.privacy_engine.PerSampleGradientClipper._weighted_sum",
+      "torch.Tensor"
+    ],
+    [
+      "opacus.privacy_engine.PerSampleGradientClipper.clip_and_accumulate",
+      "NoneType"
+    ],
+    ["opacus.privacy_engine.PerSampleGradientClipper.pre_step", "tuple"],
+    [
+      "opacus.privacy_engine.PerSampleGradientClipper.set_on_batch_clip_func",
+      "NoneType"
+    ],
+    ["opacus.privacy_engine.PrivacyEngine._generate_noise", "torch.Tensor"],
+    ["opacus.privacy_engine.PrivacyEngine.get_privacy_spent", "tuple"],
+    ["opacus.privacy_engine.get_noise_multiplier", "float"],
+    [
+      "opacus.utils.clipping.ConstantFlatClipper.calc_clipping_factors",
+      "Iterator"
+    ],
+    [
+      "opacus.utils.clipping.ConstantPerLayerClipper.calc_clipping_factors",
+      "list"
+    ],
+    ["opacus.utils.clipping._calculate_thresh_value", "float"],
+    ["opacus.utils.clipping._mean_plus_r_var", "float"],
+    ["opacus.utils.clipping._otsu", "float"],
+    ["opacus.utils.clipping._pvalue", "torch.Tensor"],
+    ["opacus.utils.clipping._static", "float"],
+    ["opacus.utils.clipping.otsu", "float"],
+    ["opacus.utils.module_inspection.ModelInspector.validate", "bool"],
+    ["opacus.utils.module_inspection.get_layer_type", "str"],
+    ["opacus.utils.module_inspection.has_no_param", "bool"],
+    ["opacus.utils.module_inspection.requires_grad", "bool"],
+    [
+      "opacus.utils.module_modification._batchnorm_to_groupnorm",
+      "torch.nn.modules.module.Module"
+    ],
+    [
+      "opacus.utils.module_modification._batchnorm_to_instancenorm",
+      "torch.nn.modules.module.Module"
+    ],
+    ["opacus.utils.module_modification._replace_child", "NoneType"],
+    [
+      "opacus.utils.module_modification.convert_batchnorm_modules",
+      "torch.nn.modules.module.Module"
+    ],
+    [
+      "opacus.utils.module_modification.nullify_batchnorm_modules",
+      "torch.nn.modules.module.Module"
+    ],
+    [
+      "opacus.utils.module_modification.replace_all_modules",
+      "torch.nn.modules.module.Module"
+    ],
+    [
+      "opacus.utils.packed_sequences._gen_packed_data",
+      "torch.nn.utils.rnn.PackedSequence"
+    ],
+    ["opacus.utils.tensor_utils.calc_sample_norms", "list"],
+    [
+      "opacus.utils.tensor_utils.sum_over_all_but_batch_and_last_n",
+      "torch.Tensor"
+    ]
+  ]
+}

@@ -258,7 +258,7 @@ lib_ast = create_lib_ast(None)
 
 
 @wrapt.when_imported("gym")
-@wrapt.when_imported("opacus")
+# @wrapt.when_imported("opacus")
 @wrapt.when_imported("numpy")
 @wrapt.when_imported("sklearn")
 @wrapt.when_imported("pandas")
@@ -279,36 +279,38 @@ def post_import_hook_third_party(module: TypeAny) -> None:
     # msg = f"inside post_import_hook_third_party module_name {module.__name__}"
     # warning(msg, print=True)
     # warnings.warn(msg, DeprecationWarning)
+    print("added internally", module.__name__)
     load(module.__name__, ignore_warning=True)
 
-def _map2syft_types(methods:TypeTuple[str,str]):
+
+def _map2syft_types(methods: TypeTuple[str, str]):
     primitive_map = {
-        "bool":"syft.lib.python.Bool",
-        "complex":"syft.lib.python.Complex",
-        "dict":"syft.lib.python.Dict",
-        "float":"syft.lib.python.Float",
-        "int":"syft.lib.python.Int",
-        #"iterator":"syft.lib.python.Iterator",
-        "list":"syft.lib.python.List",
-        "none":"syft.lib.python._SyNone",
-        "range":"syft.lib.python.Range",
-        "set":"syft.lib.python.Set",
-        "slice":"syft.lib.python.Slice",
-        "str":"syft.lib.python.String",
-        "tuple":"syft.lib.python.Tuple",
+        "bool": "syft.lib.python.Bool",
+        "complex": "syft.lib.python.Complex",
+        "dict": "syft.lib.python.Dict",
+        "float": "syft.lib.python.Float",
+        "int": "syft.lib.python.Int",
+        # "Iterator":"syft.lib.python.Iterator",
+        "list": "syft.lib.python.List",
+        "NoneType": "syft.lib.python._SyNone",
+        "range": "syft.lib.python.Range",
+        "set": "syft.lib.python.Set",
+        "slice": "syft.lib.python.Slice",
+        "str": "syft.lib.python.String",
+        "tuple": "syft.lib.python.Tuple",
     }
-    for i,(func,return_type) in enumerate(methods):
+    for i, (func, return_type) in enumerate(methods):
         if return_type.startswith("Union"):
             types = return_type[5:].strip("[]").split(",")
             for i in range(len(types)):
                 if types[i] in primitive_map:
                     types[i] = primitive_map[types[i]]
-            methods[i] = (func,UnionGenerator[types])
+            methods[i] = (func, UnionGenerator[types])
 
         elif return_type in primitive_map:
-            methods[i] = (func,primitive_map[return_type])
+            methods[i] = (func, primitive_map[return_type])
     return methods
-            
+
 
 def _create_support_ast(
     modules: TypeList[TypeTuple[str, TypeAny]],
@@ -332,7 +334,7 @@ def add_lib_external(
     config: TypeDict[str, TypeAny], objects: Iterable[TypeDict[str, TypeAny]]
 ) -> None:
     lib = config["lib"]
-
+    print("adding using external lib", lib)
     # Generate proto wrappers
     if isinstance(objects, Iterable):
         for serde_object in objects:
