@@ -36,6 +36,7 @@ from ..logger import critical
 from ..logger import traceback_and_raise
 from ..logger import warning
 from .misc import create_union_ast
+from .misc.union import UnionGenerator
 from .util import generic_update_ast
 
 
@@ -262,7 +263,7 @@ lib_ast = create_lib_ast(None)
 @wrapt.when_imported("sklearn")
 @wrapt.when_imported("pandas")
 @wrapt.when_imported("PIL")
-#@wrapt.when_imported("petlib")
+# @wrapt.when_imported("petlib")
 @wrapt.when_imported("openmined_psi")
 @wrapt.when_imported("pydp")
 @wrapt.when_imported("statsmodels")
@@ -280,8 +281,36 @@ def post_import_hook_third_party(module: TypeAny) -> None:
     # warnings.warn(msg, DeprecationWarning)
     load(module.__name__, ignore_warning=True)
 
+def _map2syft_types(methods:TypeTuple[str,str]):
+    primitive_map = {
+        "bool":"syft.lib.python.Bool",
+        "complex":"syft.lib.python.Complex",
+        "dict":"syft.lib.python.Dict",
+        "float":"syft.lib.python.Float",
+        "int":"syft.lib.python.Int",
+        #"iterator":"syft.lib.python.Iterator",
+        "list":"syft.lib.python.List",
+        "none":"syft.lib.python._SyNone",
+        "range":"syft.lib.python.Range",
+        "set":"syft.lib.python.Set",
+        "slice":"syft.lib.python.Slice",
+        "str":"syft.lib.python.String",
+        "tuple":"syft.lib.python.Tuple",
+    }
+    for i,(func,return_type) in enumerate(methods):
+        if return_type.startswith("Union"):
+            types = return_type[5:].strip("[]").split(",")
+            for i in range(len(types)):
+                if types[i] in primitive_map:
+                    types[i] = primitive_map[types[i]]
+            methods[i] = (func,UnionGenerator[types])
 
-def create_support_ast(
+        elif return_type in primitive_map:
+            methods[i] = (func,primitive_map[return_type])
+    return methods
+            
+
+def _create_support_ast(
     modules: TypeList[TypeTuple[str, TypeAny]],
     classes: TypeList[TypeTuple[str, str, TypeAny]],
     methods: TypeList[TypeTuple[str, str]],
@@ -298,11 +327,12 @@ def create_support_ast(
         klass.create_storable_object_attr_convenience_methods()
     return ast
 
+
 def add_lib_external(
     config: TypeDict[str, TypeAny], objects: Iterable[TypeDict[str, TypeAny]]
 ) -> None:
     lib = config["lib"]
-    print("generate wrapper before ast")
+
     # Generate proto wrappers
     if isinstance(objects, Iterable):
         for serde_object in objects:
@@ -310,9 +340,10 @@ def add_lib_external(
     else:
         critical("Serde objects is expected to be an Iterable.")
 
+    methods = _map2syft_types(config["methods"])
     # create_ast and update_ast function
     create_ast = functools.partial(
-        create_support_ast, config["modules"], config["classes"], config["methods"]
+        _create_support_ast, config["modules"], config["classes"], methods
     )
     update_ast = functools.partial(generic_update_ast, lib, create_ast)
 
@@ -326,4 +357,3 @@ def add_lib_external(
     for _, client in lib_ast.registered_clients.items():
         update_ast(ast_or_client=client)
         _regenerate_unions(lib_ast=lib_ast, client=client)
-
