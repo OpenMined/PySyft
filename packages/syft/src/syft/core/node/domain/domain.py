@@ -34,7 +34,6 @@ from ..common.node_manager.environment_manager import EnvironmentManager
 from ..common.node_manager.group_manager import GroupManager
 from ..common.node_manager.request_manager import RequestManager
 from ..common.node_manager.role_manager import RoleManager
-from ..common.node_manager.setup_manager import SetupManager
 from ..common.node_manager.user_manager import UserManager
 from ..common.node_service.association_request.association_request_service import (
     AssociationRequestService,
@@ -106,7 +105,6 @@ class Domain(Node):
         self.roles = RoleManager(db_engine)
         self.groups = GroupManager(db_engine)
         self.environments = EnvironmentManager(db_engine)
-        self.setup = SetupManager(db_engine)
         self.association_requests = AssociationRequestManager(db_engine)
         self.data_requests = RequestManager(db_engine)
         self.datasets = DatasetManager(db_engine)
@@ -153,7 +151,7 @@ class Domain(Node):
         super().post_init()
         self.set_node_uid()
 
-    def loud_print(self):
+    def loud_print(self) -> None:
         install_path = os.path.abspath(
             os.path.join(os.path.realpath(__file__), "../../../../img/")
         )

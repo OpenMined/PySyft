@@ -36,12 +36,6 @@ from syft.proto.core.io.address_pb2 import Address as Address_PB
 # from ...utils.executor import executor
 
 
-def send_obj(obj, node):
-    obj.data.send(
-        node.domain_client, searchable=True, tags=obj.tags, description=obj.description
-    )
-
-
 class TransferObjectService(ImmediateNodeServiceWithReply):
     @staticmethod
     @service_auth(guests_welcome=True)

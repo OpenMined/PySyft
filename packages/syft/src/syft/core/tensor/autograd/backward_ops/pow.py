@@ -24,14 +24,15 @@ class PowOp(Op):
         requires_grad = requires_grad or y.requires_grad
         return AutogradTensor(x.child ** y.child, requires_grad=requires_grad)
 
-    def _backward(self, grad: AutogradTensor, backprop_id: uuid.UUID):
+    def _backward(self, grad: AutogradTensor, backprop_id: uuid.UUID) -> None:
 
         y_is_simple = is_acceptable_simple_type(self.y)
 
         if self.x.requires_grad:
             y_form = self.y
 
-            self.x.add_grad(grad * y_form * (self.x ** (y_form - 1)))
+            # ignoring type b/c method hasn't been implemented yet
+            self.x.add_grad(grad * y_form * (self.x ** (y_form - 1)))  # type: ignore
 
             if self.x.grad_fn:
                 self.x.backward(backprop_id=backprop_id)

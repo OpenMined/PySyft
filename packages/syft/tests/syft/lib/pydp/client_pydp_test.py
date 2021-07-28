@@ -7,6 +7,7 @@ import syft as sy
 pytest.importorskip("pydp")
 
 
+# MADHAVA: this needs fixing
 @pytest.mark.skip(
     reason="This was broken when we switched from using a Dictionary obj store to a SQL one which means"
     + "that there's missing serialization functionality. Please address when you can."
@@ -26,6 +27,7 @@ def test_pydp(root_client: sy.VirtualMachineClient) -> None:
     assert 22 < res < 35
 
 
+# MADHAVA: this needs fixing
 @pytest.mark.skip(
     reason="This was broken when we switched from using a Dictionary obj store to a SQL one which means"
     + "that there's missing serialization functionality. Please address when you can."

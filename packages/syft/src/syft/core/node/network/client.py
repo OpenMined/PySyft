@@ -19,7 +19,6 @@ from ..common.client_manager.dataset_api import DatasetRequestAPI
 from ..common.client_manager.group_api import GroupRequestAPI
 from ..common.client_manager.role_api import RoleRequestAPI
 from ..common.client_manager.user_api import UserRequestAPI
-from ..common.client_manager.worker_api import WorkerRequestAPI
 
 
 @final
@@ -49,12 +48,11 @@ class NetworkClient(Client):
             verify_key=verify_key,
         )
 
-        self.groups = GroupRequestAPI(node=self)
-        self.users = UserRequestAPI(node=self)
-        self.roles = RoleRequestAPI(node=self)
-        self.workers = WorkerRequestAPI(node=self)
-        self.association = AssociationRequestAPI(node=self)
-        self.datasets = DatasetRequestAPI(node=self)
+        self.groups = GroupRequestAPI(client=self)
+        self.users = UserRequestAPI(client=self)
+        self.roles = RoleRequestAPI(client=self)
+        self.association = AssociationRequestAPI(client=self)
+        self.datasets = DatasetRequestAPI(client=self)
 
         self.post_init()
 

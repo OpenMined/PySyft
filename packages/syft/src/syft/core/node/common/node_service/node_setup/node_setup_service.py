@@ -1,4 +1,6 @@
 # stdlib
+from typing import Callable
+from typing import Dict
 from typing import List
 from typing import Type
 from typing import Union
@@ -29,7 +31,7 @@ from .node_setup_messages import GetSetUpMessage
 from .node_setup_messages import GetSetUpResponse
 
 
-def set_node_uid(node: AbstractNode):
+def set_node_uid(node: AbstractNode) -> None:
     try:
         setup = node.setup.first()
     except Exception as e:
@@ -125,7 +127,7 @@ def get_setup(
 
 class NodeSetupService(ImmediateNodeServiceWithReply):
 
-    msg_handler_map = {
+    msg_handler_map: Dict[type, Callable] = {
         CreateInitialSetUpMessage: create_initial_setup,
         GetSetUpMessage: get_setup,
     }

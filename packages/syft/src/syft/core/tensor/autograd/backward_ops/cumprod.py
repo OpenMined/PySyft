@@ -8,11 +8,11 @@ from .op import Op
 
 
 class _OtherOp(Op):
-    def forward(self, x: AutogradTensor, y: AutogradTensor) -> AutogradTensor:
+    def forward(self, x: AutogradTensor, y: AutogradTensor) -> None:
         self.x = x
         self.y = y
 
-    def _backward(self, grad: AutogradTensor, backprop_id: uuid.UUID):
+    def _backward(self, grad: AutogradTensor, backprop_id: uuid.UUID) -> None:
         if self.x.requires_grad:
             pass
 
