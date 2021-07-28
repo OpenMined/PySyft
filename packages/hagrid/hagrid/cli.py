@@ -1,5 +1,4 @@
 # stdlib
-import hashlib
 import json
 import os
 import re
@@ -19,9 +18,11 @@ from .auth import AuthCredentials
 from .cache import arg_cache
 from .deps import DEPENDENCIES
 from .deps import MissingDependency
+from .deps import allowed_hosts
 from .grammar import BadGrammar
 from .grammar import GrammarVerb
 from .grammar import parse_grammar
+from .land import get_land_verb
 from .launch import get_launch_verb
 from .lib import GRID_SRC_PATH
 from .lib import check_docker_version
@@ -210,8 +211,6 @@ def login_azure() -> bool:
 def create_launch_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
     host_term = verb.get_named_term_hostgrammar(name="host")
     host = host_term.host
-
-    allowed_hosts = ["docker", "vm", "azure", "aws", "gcp"]
 
     if host in ["docker"]:
         version = check_docker_version()
@@ -660,87 +659,56 @@ def build() -> None:
     subprocess.call(cmd, shell=True)
 
 
-@click.command(help="Stop a running PyGrid domain/network node.")
-@click.argument("name", type=str, nargs=-1)
-@click.option(
-    "--type",
-    "node_type",
-    default="domain",
-    required=False,
-    type=click.Choice(["domain", "network"]),
-    help="The type of node you would like to terminate.",
-)
-@click.option(
-    "--port",
-    default=8081,
-    required=False,
-    type=int,
-    help="The public port your node exposes. (Default: 8081)",
-)
-@click.option(
-    "--tag",
-    default="",
-    required=False,
-    type=str,
-    help="Optional: the underlying docker tag used (Default: 'domain_'+md5(name)",
-)
-# @click.option(
-#     "--keep-db/--delete-db",
-#     default=True,
-#     required=False,
-#     type=bool,
-#     help="""If restarting a node that already existed, don't/do reset the database (Default: deletes the db)""",
-# )
-def land(node_type: str, name: str, port: int, tag: str) -> None:
-    if name == "all":
-        subprocess.call("docker rm `docker ps -aq` --force", shell=True)
-        return
+def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
+    host_term = verb.get_named_term_hostgrammar(name="host")
+    host = host_term.host
 
-    if tag == "" and name == "":
-        raise Exception(
-            "You must provide either the --tag or --name of the node you want to land!"
-        )
+    if host in ["docker"]:
+        version = check_docker_version()
+        if version:
+            return create_land_docker_cmd(verb=verb)
 
-    elif tag == "" and name != "" and node_type != "":
-        tag = hashlib.md5(name.encode("utf8")).hexdigest()
-        tag = node_type + "_" + tag
+    host_options = ", ".join(allowed_hosts)
+    raise MissingDependency(
+        f"Launch requires a correct host option, try: {host_options}"
+    )
 
-    elif tag != "":
-        """continue"""
 
-    else:
-        raise Exception(
-            "You must provide either a type and name, or you must provide a tag."
-        )
+def create_land_docker_cmd(verb: GrammarVerb) -> str:
+    node_name = verb.get_named_term_type(name="node_name")
+    snake_name = str(node_name.snake_input)
 
-    version = check_docker_version()
-
-    print("Launching a " + str(node_type) + " PyGrid node on port " + str(port) + "!\n")
-    print("  - TYPE: " + str(node_type))
-    print("  - NAME: " + str(name))
-    print("  - TAG: " + str(tag))
-    print("  - PORT: " + str(port))
-    print("  - DOCKER: " + str(version))
-
-    print("\n")
-
-    cmd = "DOMAIN_PORT=" + str(port)
-    # cmd += " TRAEFIK_TAG=" + tag
-    cmd += ' DOMAIN_NAME="' + name + '"'
-    cmd += " NODE_TYPE=" + node_type
-    cmd += " docker compose"
+    cmd = ""
+    cmd += "docker compose"
     cmd += ' --file "docker-compose.override.yml"'
-    cmd += ' --project-name "' + tag + '"'
+    cmd += ' --project-name "' + snake_name + '"'
     cmd += " down"
 
     cmd = "cd " + GRID_SRC_PATH + ";export $(cat .env | sed 's/#.*//g' | xargs);" + cmd
-    print(cmd)
-    subprocess.call(cmd, shell=True)
+    return cmd
 
-    # if not keep_db:
-    #     print("Deleting database for node...")
-    #     subprocess.call("docker volume rm " + tag + "_app-db-data", shell=True)
-    #     print()
+
+@click.command(help="Stop a running PyGrid domain/network node.")
+@click.argument("args", type=str, nargs=-1)
+def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
+    verb = get_land_verb()
+    try:
+        grammar = parse_grammar(args=args, verb=verb)
+        verb.load_grammar(grammar=grammar)
+    except BadGrammar as e:
+        print(e)
+        return
+
+    # if len(args) == 0:
+    #     print("use interactive menu to select node?")
+
+    try:
+        cmd = create_land_cmd(verb=verb, kwargs=kwargs)
+    except Exception as e:
+        print(f"{e}")
+        return
+    print("Running: \n", cmd)
+    subprocess.call(cmd, shell=True)
 
 
 cli.add_command(launch)
