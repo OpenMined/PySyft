@@ -15,13 +15,13 @@ $ pip install hagrid
 Docker
 
 ```
-$ docker run -it -v ~/.ssh:/root/.ssh openmined/hagrid:latest hagrid launch
+$ docker run -it -v ~/:/root openmined/hagrid:latest hagrid
 ```
 
 Then simply run hagrid as you would normally:
 
 ```
-$ docker run -it -v ~/.ssh:/root/.ssh openmined/hagrid:latest hagrid launch slytherin to azure
+$ docker run -it -v ~/:/root openmined/hagrid:latest hagrid launch slytherin to azure
 ```
 
 ## Installation Windows
