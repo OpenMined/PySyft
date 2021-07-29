@@ -219,7 +219,6 @@ class HostGrammarTerm(GrammarTerm):
 
 class SourceGrammarTerm(GrammarTerm):
     def custom_parsing(self, input: str) -> str:
-        # github.com/OpenMined/PySyft/tree/demo_strike_team_branch_4
         trimmed = input
         if trimmed.startswith("http://"):
             trimmed = trimmed.replace("http://", "")

@@ -4,6 +4,7 @@ from typing import List as TypeList
 from typing import Optional
 
 # relative
+from .cache import DEFAULT_BRANCH
 from .grammar import GrammarTerm
 from .grammar import GrammarVerb
 from .grammar import HostGrammarTerm
@@ -52,7 +53,7 @@ def get_launch_verb() -> GrammarVerb:
             "name": "source",
             "type": "propernoun",
             "klass": SourceGrammarTerm,
-            "default": "github.com/OpenMined/PySyft/tree/demo_strike_team_branch_4",
+            "default": f"github.com/OpenMined/PySyft/tree/{DEFAULT_BRANCH}",
         },
     ]
 
