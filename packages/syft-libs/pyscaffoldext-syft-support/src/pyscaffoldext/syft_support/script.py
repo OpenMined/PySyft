@@ -15,9 +15,6 @@ import sys
 import typing
 from typing import Any as TypeAny
 
-# third party
-from typing_inspect import get_origin
-
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "-l", dest="lib", required=True, help="name of the model to be added to ast"
@@ -142,7 +139,7 @@ def get_return_type(t: TypeAny, i: str) -> TypeAny:
                         d["return"]
                     ).__name__
                     """
-                    return 0, get_origin(d["return"]).__name__
+                    return 0, str(d["return"])
                 else:
                     # print(d['return'])
                     if d["return"].__module__ == "builtins":
