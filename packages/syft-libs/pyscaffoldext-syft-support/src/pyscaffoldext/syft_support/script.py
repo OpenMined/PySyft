@@ -200,6 +200,7 @@ def dict_allowlist(
                 inspect.ismethod(t)
                 or inspect.isfunction(t)
                 or inspect.isgetsetdescriptor(t)
+                or isinstance(t, property)
             ):
                 # print(f't for debug: {t} {module}')
                 is_error, string = get_return_type(t, i)
