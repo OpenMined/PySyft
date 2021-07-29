@@ -1,4 +1,10 @@
 # syft relative
+# stdlib
+from uuid import UUID
+
+# third party
+from numpy import ndarray
+
 # relative
 from ...passthrough import is_acceptable_simple_type
 from ..tensor import AutogradTensor
@@ -8,7 +14,7 @@ from .op import Op
 class MulOp(Op):
     """Multiplication operation with 2 tensors"""
 
-    def forward(self, x: AutogradTensor, y: AutogradTensor):
+    def forward(self, x: AutogradTensor, y: AutogradTensor) -> AutogradTensor:
         self.x = x
         self.y = y
 
@@ -31,7 +37,7 @@ class MulOp(Op):
 
         return AutogradTensor(y.child * x.child, requires_grad=requires_grad)
 
-    def _backward(self, grad, backprop_id):
+    def _backward(self, grad: ndarray, backprop_id: UUID) -> None:
 
         y_is_simple = is_acceptable_simple_type(self.y)
 

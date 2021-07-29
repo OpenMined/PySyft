@@ -23,7 +23,7 @@ class Metadata(Serializable):
         name: str = "",
         id: Optional[UID] = None,
         node_type: str = "",
-    ):
+    ) -> None:
         super().__init__()
         self.name = name
         self.node = node

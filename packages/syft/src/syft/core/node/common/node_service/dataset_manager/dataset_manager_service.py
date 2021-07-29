@@ -2,6 +2,8 @@
 import csv
 import io
 import tarfile
+from typing import Callable
+from typing import Dict as TypeDict
 from typing import List
 from typing import Type
 from typing import Union
@@ -22,8 +24,6 @@ from syft.core.node.common.node_service.node_service import (
     ImmediateNodeServiceWithReply,
 )
 from syft.core.store.storeable_object import StorableObject
-from syft.lib.python import Dict
-from syft.lib.python import List as SyftList
 
 # relative
 from ...exceptions import AuthorizationError
@@ -43,16 +43,21 @@ ENCODING = "UTF-8"
 
 def _handle_dataset_creation_grid_ui(
     msg: CreateDatasetMessage, node: AbstractNode, verify_key: VerifyKey
-) -> SuccessResponseMessage:
+) -> None:
 
     file_obj = io.BytesIO(msg.dataset)
     tar_obj = tarfile.open(fileobj=file_obj)
     tar_obj.extractall()
     dataset_id = node.datasets.register(**msg.metadata)
-    for item in tar_obj.members:
+    for item in tar_obj.getmembers():
         if not item.isdir():
+            extracted_file = tar_obj.extractfile(item.name)
+            if not extracted_file:
+                # TODO: raise CustomError
+                raise ValueError("Dataset Tar corrupted")
+
             reader = csv.reader(
-                tar_obj.extractfile(item.name).read().decode().split("\n"),
+                extracted_file.read().decode().split("\n"),
                 delimiter=",",
             )
             dataset = []
@@ -83,7 +88,9 @@ def _handle_dataset_creation_grid_ui(
             )
 
 
-def _handle_dataset_creation_syft(msg, node, verify_key):
+def _handle_dataset_creation_syft(
+    msg: CreateDatasetMessage, node: AbstractNode, verify_key: VerifyKey
+) -> None:
     result = deserialize(msg.dataset, from_bytes=True)
     dataset_id = node.datasets.register(**msg.metadata)
 
@@ -144,7 +151,7 @@ def get_dataset_metadata_msg(
     ]
     return GetDatasetResponse(
         address=msg.reply_to,
-        content=Dict(dataset_json),
+        metadata=dataset_json,
     )
 
 
@@ -169,7 +176,7 @@ def get_all_datasets_metadata_msg(
         datasets.append(ds)
     return GetDatasetsResponse(
         address=msg.reply_to,
-        content=SyftList(datasets),
+        metadatas=datasets,
     )
 
 
@@ -216,8 +223,27 @@ def delete_dataset_msg(
 
 
 class DatasetManagerService(ImmediateNodeServiceWithReply):
+    INPUT_TYPE = Union[
+        Type[CreateDatasetMessage],
+        Type[GetDatasetMessage],
+        Type[GetDatasetsMessage],
+        Type[UpdateDatasetMessage],
+        Type[DeleteDatasetMessage],
+    ]
 
-    msg_handler_map = {
+    INPUT_MESSAGES = Union[
+        CreateDatasetMessage,
+        GetDatasetMessage,
+        GetDatasetsMessage,
+        UpdateDatasetMessage,
+        DeleteDatasetMessage,
+    ]
+
+    OUTPUT_MESSAGES = Union[
+        SuccessResponseMessage, GetDatasetResponse, GetDatasetsResponse
+    ]
+
+    msg_handler_map: TypeDict[INPUT_TYPE, Callable[..., OUTPUT_MESSAGES]] = {
         CreateDatasetMessage: create_dataset_msg,
         GetDatasetMessage: get_dataset_metadata_msg,
         GetDatasetsMessage: get_all_datasets_metadata_msg,
@@ -229,15 +255,9 @@ class DatasetManagerService(ImmediateNodeServiceWithReply):
     @service_auth(guests_welcome=True)
     def process(
         node: AbstractNode,
-        msg: Union[
-            CreateDatasetMessage,
-            GetDatasetMessage,
-            GetDatasetsMessage,
-            UpdateDatasetMessage,
-            DeleteDatasetMessage,
-        ],
+        msg: INPUT_MESSAGES,
         verify_key: VerifyKey,
-    ) -> Union[SuccessResponseMessage, GetDatasetResponse, GetDatasetsResponse]:
+    ) -> OUTPUT_MESSAGES:
         return DatasetManagerService.msg_handler_map[type(msg)](
             msg=msg, node=node, verify_key=verify_key
         )

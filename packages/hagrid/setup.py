@@ -1,4 +1,5 @@
 # third party
+from hagrid import __version__
 from setuptools import find_packages
 from setuptools import setup
 
@@ -9,7 +10,7 @@ DATA_FILES = {
 setup(
     name="hagrid",
     description="Happy Automation for Grid",
-    version="0.1.3",
+    version=__version__,
     author="Andrew Trask <andrew@openmined.org>",
     packages=find_packages(),
     package_data=DATA_FILES,

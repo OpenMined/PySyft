@@ -23,7 +23,6 @@ from ..common.node import Node
 from ..common.node_manager.association_request_manager import AssociationRequestManager
 from ..common.node_manager.group_manager import GroupManager
 from ..common.node_manager.role_manager import RoleManager
-from ..common.node_manager.setup_manager import SetupManager
 from ..common.node_manager.user_manager import UserManager
 from ..common.node_service.association_request.association_request_service import (
     AssociationRequestService,
@@ -81,7 +80,6 @@ class Network(Node):
         self.users = UserManager(db_engine)
         self.roles = RoleManager(db_engine)
         self.groups = GroupManager(db_engine)
-        self.setup = SetupManager(db_engine)
         self.association_requests = AssociationRequestManager(db_engine)
 
         # Grid Network Services
@@ -108,7 +106,7 @@ class Network(Node):
         super().post_init()
         self.set_node_uid()
 
-    def loud_print(self):
+    def loud_print(self) -> None:
         install_path = os.path.abspath(
             os.path.join(os.path.realpath(__file__), "../../../../img/")
         )
