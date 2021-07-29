@@ -282,7 +282,9 @@ def post_import_hook_third_party(module: TypeAny) -> None:
     load(module.__name__, ignore_warning=True)
 
 
-def _map2syft_types(methods: TypeTuple[str, str]):
+def _map2syft_types(
+    methods: TypeList[TypeTuple[str, str]]
+) -> TypeList[TypeTuple[str, str]]:
     primitive_map = {
         "bool": "syft.lib.python.Bool",
         "complex": "syft.lib.python.Complex",
@@ -304,7 +306,7 @@ def _map2syft_types(methods: TypeTuple[str, str]):
             for i in range(len(types)):
                 if types[i] in primitive_map:
                     types[i] = primitive_map[types[i]]
-            methods[i] = (func, UnionGenerator[types])
+            methods[i] = (func, UnionGenerator[tuple(types)])
 
         elif return_type in primitive_map:
             methods[i] = (func, primitive_map[return_type])
