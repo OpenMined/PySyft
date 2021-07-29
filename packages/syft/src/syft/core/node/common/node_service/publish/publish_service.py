@@ -5,29 +5,19 @@ from typing import Optional
 from typing import Type
 
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
-from typing_extensions import final
 
 # relative
 # syft relative
-from .....core.adp.publish import publish
-from .....lib.python import List
-from .....logger import traceback_and_raise
-from .....proto.core.node.domain.service.publish_scalars_service_pb2 import (
-    PublishScalarsAction as PublishScalarsAction_PB,
-)
-from ....common.message import ImmediateSyftMessageWithoutReply
-from ....common.serde.deserialize import _deserialize as deserialize
-from ....common.serde.serializable import bind_protobuf
-from ....common.serde.serialize import _serialize as serialize
-from ....common.uid import UID
-from ....io.address import Address
-from ....store.storeable_object import StorableObject
-from ....tensor.autodp.intermediate_gamma import IntermediateGammaTensor
-from ....tensor.tensor import PassthroughTensor
-from ...abstract.node import AbstractNode
-from ...common.service.node_service import ImmediateNodeServiceWithoutReply
+from ......core.adp.publish import publish
+from ......lib.python import List
+from ......logger import traceback_and_raise
+from ..publish.publish_messages import PublishScalarsAction
+from .....common.uid import UID
+from .....store.storeable_object import StorableObject
+from .....tensor.tensor import PassthroughTensor
+from ....abstract.node import AbstractNode
+from ....common.node_service.node_service import ImmediateNodeServiceWithoutReply
 
 
 class PublishScalarsService(ImmediateNodeServiceWithoutReply):
