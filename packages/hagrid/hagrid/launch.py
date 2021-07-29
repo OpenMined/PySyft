@@ -19,7 +19,7 @@ def get_launch_verb() -> GrammarVerb:
             "type": "adjective",
             "klass": GrammarTerm,
             "default": random_name,
-            "example": "'My Domain'",
+            "example": "'my_domain'",
         },
         {
             "name": "node_type",
