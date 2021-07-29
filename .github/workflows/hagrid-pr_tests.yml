@@ -16,11 +16,11 @@ defaults:
     working-directory: ./packages/hagrid
 
 jobs:
-  hagrid-tests:
+  hagrid-pip:
     strategy:
-      max-parallel: 3
+      max-parallel: 2
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest]
         python-version: [3.9]
 
     runs-on: ${{ matrix.os }}
