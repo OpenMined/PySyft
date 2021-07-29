@@ -2,6 +2,7 @@
 import json
 import os
 import re
+import stat
 import subprocess
 from typing import Any
 from typing import Dict as TypeDict
@@ -177,7 +178,24 @@ def requires_kwargs(
     return parsed_kwargs
 
 
+def fix_key_permission(private_key_path: str) -> None:
+    key_permission = oct(stat.S_IMODE(os.stat(private_key_path).st_mode))
+    chmod_permission = "400"
+    octal_permission = f"0o{chmod_permission}"
+    if key_permission != octal_permission:
+        print(
+            f"Fixing key permission: {private_key_path}, setting to {chmod_permission}"
+        )
+        try:
+            os.chmod(private_key_path, int(octal_permission, 8))
+        except Exception as e:
+            print("Failed to fix key permission", e)
+            raise e
+
+
 def private_to_public_key(private_key_path: str, username: str) -> str:
+    # check key permission
+    fix_key_permission(private_key_path=private_key_path)
     output_path = f"/tmp/hagrid_{username}_key.pub"
     cmd = f"ssh-keygen -f {private_key_path} -y > {output_path}"
     try:
