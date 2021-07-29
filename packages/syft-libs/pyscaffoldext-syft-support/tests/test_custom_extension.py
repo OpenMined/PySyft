@@ -29,12 +29,12 @@ EXPECTED_FILES = [
     "src/syft_xgboost/package-support.json",
     "src/syft_xgboost/VERSION",
     "src/syft_xgboost/serde/sample.py",
-    "tests/conftest.py"
-    
+    "tests/conftest.py",
 ]
 
+
 def test_add_custom_extension(tmpfolder):
-    args = ["-vv",EXT_FLAG,"xgboost"]
+    args = ["--no-config", "-vv", EXT_FLAG, "xgboost"]
     cli.main(args)
 
     with chdir("syft-xgboost"):
@@ -43,4 +43,3 @@ def test_add_custom_extension(tmpfolder):
             assert Path(path).is_dir()
         for path in EXPECTED_FILES:
             assert Path(path).is_file()
-
