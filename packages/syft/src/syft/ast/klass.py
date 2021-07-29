@@ -630,6 +630,22 @@ class Class(Callable):
         setattr(klass_pointer, "path_and_name", self.path_and_name)
         setattr(self, self.pointer_name, klass_pointer)
 
+    def store_init_args(outer_self: Any) -> None:
+        """
+        Stores args and kwargs of outer_self init by wrapping the init method.
+        """
+
+        def init_wrapper(self: Any, *args: List[Any], **kwargs: Dict[Any, Any]) -> None:
+            outer_self.object_ref._wrapped_init(self, *args, **kwargs)
+            self._init_args = args
+            self._init_kwargs = kwargs
+
+        # If _wrapped_init already exists, create_init_method is already called once
+        # and does not need to wrap __init__ again.
+        if not hasattr(outer_self.object_ref, "_wrapped_init"):
+            outer_self.object_ref._wrapped_init = outer_self.object_ref.__init__
+            outer_self.object_ref.__init__ = init_wrapper
+
     def create_send_method(outer_self: Any) -> None:
         """Add `send` method to `outer_self.object_ref`."""
 

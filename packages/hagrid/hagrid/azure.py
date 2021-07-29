@@ -41,7 +41,7 @@ def login_azure() -> bool:
 
 def azure_service_principal() -> Optional[TypeDict[str, str]]:
     sp_json = {}
-    if not os.file.exists(AZURE_SERVICE_PRINCIPAL_PATH):
+    if not os.path.exists(AZURE_SERVICE_PRINCIPAL_PATH):
         raise AzureException("No service principal so we need to create one first")
     with open(AZURE_SERVICE_PRINCIPAL_PATH, "r") as f:
         sp_json = json.loads(f.read())

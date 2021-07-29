@@ -93,7 +93,7 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
         Protobuf object so that it can be further serialized.
 
         :return: returns a protobuf object
-        :rtype: RunClassMethodAction_PB
+        :rtype: SMPCActionMessage_PB
 
         .. note::
             This method is purely an internal method. Please use serialize(object) or one of
@@ -116,8 +116,8 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
 
-        :return: returns an instance of RunClassMethodAction
-        :rtype: RunClassMethodAction
+        :return: returns an instance of SMPCActionMessage
+        :rtype: SMPCActionMessage
 
         .. note::
             This method is purely an internal method. Please use syft.deserialize()
