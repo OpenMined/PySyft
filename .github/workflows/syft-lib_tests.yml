@@ -114,12 +114,14 @@ jobs:
         shell: bash
         run: |
           pwd
-          pip install .
+          pip install pyscaffoldext-syft-support/
+          pip install . 
 
       - name: Scan for security issues
         shell: bash
         run: |
           find . -type d -name "syft-*" -exec bandit -vr {}/src \;
+          bandit pyscaffoldext-syft-support/src/
           safety check
 
       - name: Install libomp for XGBoost
