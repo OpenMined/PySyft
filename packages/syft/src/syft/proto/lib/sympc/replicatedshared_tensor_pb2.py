@@ -14,6 +14,7 @@ _sym_db = _symbol_database.Default()
 
 
 # syft absolute
+from syft.proto.lib.numpy import array_pb2 as proto_dot_lib_dot_numpy_dot_array__pb2
 from syft.proto.lib.python import dict_pb2 as proto_dot_lib_dot_python_dot_dict__pb2
 from syft.proto.lib.torch import tensor_pb2 as proto_dot_lib_dot_torch_dot_tensor__pb2
 
@@ -23,10 +24,11 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n-proto/lib/sympc/replicatedshared_tensor.proto\x12\x0esyft.lib.sympc\x1a\x1cproto/lib/torch/tensor.proto\x1a\x1bproto/lib/python/dict.proto"\x95\x01\n\x16ReplicatedSharedTensor\x12+\n\x06tensor\x18\x01 \x03(\x0b\x32\x1b.syft.lib.torch.TensorProto\x12%\n\x06\x63onfig\x18\x02 \x01(\x0b\x32\x15.syft.lib.python.Dict\x12\x14\n\x0csession_uuid\x18\x03 \x01(\t\x12\x11\n\tring_size\x18\x04 \x01(\x0c\x62\x06proto3',
+    serialized_pb=b'\n-proto/lib/sympc/replicatedshared_tensor.proto\x12\x0esyft.lib.sympc\x1a\x1cproto/lib/torch/tensor.proto\x1a\x1bproto/lib/python/dict.proto\x1a\x1bproto/lib/numpy/array.proto"\xc0\x01\n\x16ReplicatedSharedTensor\x12+\n\x06tensor\x18\x01 \x03(\x0b\x32\x1b.syft.lib.torch.TensorProto\x12)\n\x05\x61rray\x18\x02 \x03(\x0b\x32\x1a.syft.lib.numpy.NumpyProto\x12%\n\x06\x63onfig\x18\x03 \x01(\x0b\x32\x15.syft.lib.python.Dict\x12\x14\n\x0csession_uuid\x18\x04 \x01(\t\x12\x11\n\tring_size\x18\x05 \x01(\x0c\x62\x06proto3',
     dependencies=[
         proto_dot_lib_dot_torch_dot_tensor__pb2.DESCRIPTOR,
         proto_dot_lib_dot_python_dot_dict__pb2.DESCRIPTOR,
+        proto_dot_lib_dot_numpy_dot_array__pb2.DESCRIPTOR,
     ],
 )
 
@@ -59,10 +61,29 @@ _REPLICATEDSHAREDTENSOR = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="config",
-            full_name="syft.lib.sympc.ReplicatedSharedTensor.config",
+            name="array",
+            full_name="syft.lib.sympc.ReplicatedSharedTensor.array",
             index=1,
             number=2,
+            type=11,
+            cpp_type=10,
+            label=3,
+            has_default_value=False,
+            default_value=[],
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="config",
+            full_name="syft.lib.sympc.ReplicatedSharedTensor.config",
+            index=2,
+            number=3,
             type=11,
             cpp_type=10,
             label=1,
@@ -80,8 +101,8 @@ _REPLICATEDSHAREDTENSOR = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name="session_uuid",
             full_name="syft.lib.sympc.ReplicatedSharedTensor.session_uuid",
-            index=2,
-            number=3,
+            index=3,
+            number=4,
             type=9,
             cpp_type=9,
             label=1,
@@ -99,8 +120,8 @@ _REPLICATEDSHAREDTENSOR = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name="ring_size",
             full_name="syft.lib.sympc.ReplicatedSharedTensor.ring_size",
-            index=3,
-            number=4,
+            index=4,
+            number=5,
             type=12,
             cpp_type=9,
             label=1,
@@ -124,13 +145,16 @@ _REPLICATEDSHAREDTENSOR = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=125,
-    serialized_end=274,
+    serialized_start=154,
+    serialized_end=346,
 )
 
 _REPLICATEDSHAREDTENSOR.fields_by_name[
     "tensor"
 ].message_type = proto_dot_lib_dot_torch_dot_tensor__pb2._TENSORPROTO
+_REPLICATEDSHAREDTENSOR.fields_by_name[
+    "array"
+].message_type = proto_dot_lib_dot_numpy_dot_array__pb2._NUMPYPROTO
 _REPLICATEDSHAREDTENSOR.fields_by_name[
     "config"
 ].message_type = proto_dot_lib_dot_python_dot_dict__pb2._DICT
