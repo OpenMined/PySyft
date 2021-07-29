@@ -285,8 +285,10 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     def reshape(self, *dims: List[int]) -> PassthroughTensor:
         return self.__class__(self.child.reshape(*dims))
 
-    def repeat(self, *args: Any, **kwargs: Any) -> PassthroughTensor:
-        return self.__class__(self.child.repeat(*args, **kwargs))
+    def repeat(
+        self, repeats: Union[int, TypeTuple[int, ...]], axis: Optional[int] = None
+    ) -> PassthroughTensor:
+        return self.__class__(self.child.repeat(repeats, axis))
 
     # TODO: why does this version of repeat fail but the *args **kwargs one works?
     # def repeat(
