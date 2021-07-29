@@ -67,3 +67,20 @@ jobs:
       - name: Twine Check
         run: |
           twine check `find -L ./ -name "*.whl"`
+
+  hagrid-docker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      # In this step, this action saves a list of existing images,
+      # the cache is created without them in the post run.
+      # It also restores the cache if it exists.
+      - uses: satackey/action-docker-layer-caching@v0.0.11
+        # Ignore the failure of a step and avoid terminating the job.
+        continue-on-error: true
+
+      - name: Build the Docker image
+        run: |
+          ./build_docker.sh
