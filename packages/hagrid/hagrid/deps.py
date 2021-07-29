@@ -14,6 +14,7 @@ class MissingDependency(Exception):
     pass
 
 
+allowed_hosts = ["docker", "vm", "azure", "aws", "gcp"]
 commands = ["docker", "git", "vagrant", "virtualbox", "ansible-playbook"]
 
 

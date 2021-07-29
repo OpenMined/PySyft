@@ -153,56 +153,56 @@ jobs:
           pytest -m libs -n auto -k "not tenseal" --suppress-no-test-exit-code --durations=50
           pytest -m libs -n 1 -k "tenseal" --suppress-no-test-exit-code --durations=50
 
-#
-#  python-nb-examples:
-#    # needs: [python-linting]
-#    runs-on: ${{ matrix.os }}
-#    strategy:
-#      max-parallel: 1
-#      matrix:
-#        python-version: [3.9]
-#        torch-version: [1.8.1]
-#        os: [ubuntu-latest]
-#    steps:
-#      - uses: actions/checkout@v2
-#
-#      - name: Set up Python ${{ matrix.python-version }}
-#        uses: actions/setup-python@v2
-#        with:
-#          python-version: ${{ matrix.python-version }}
-#
-#      - name: Upgrade pip
-#        run: |
-#          pip install --upgrade --user pip
-#
-#      - name: Get pip cache dir
-#        id: pip-cache
-#        run: |
-#          echo "::set-output name=dir::$(pip cache dir)"
-#
-#      - name: pip cache
-#        uses: actions/cache@v2
-#        with:
-#          path: ${{ steps.pip-cache.outputs.dir }}
-#          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('./setup.cfg') }}
-#          restore-keys: |
-#            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
-#
-#      - name: Install Dependencies
-#        run: |
-#          pip install packaging --default-timeout=60
-#          python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
-#          grep -A 3 "torch_ecosystem" setup.cfg
-#          pip install -r requirements.unstable.txt
-#          pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
-#          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
-#
-#      - name: Test syft-network
-#        run: |
-#          python ./scripts/start_signaling_server.py --dry_run=True
-#
-#      - name: Run notebook Duet examples
-#        run: |
-#          python ./scripts/mnist.py
-#          python ./scripts/nb_duet_test.py
-#          pytest -m duet -n 1 --suppress-no-test-exit-code --durations=50
+  #
+  #  python-nb-examples:
+  #    # needs: [python-linting]
+  #    runs-on: ${{ matrix.os }}
+  #    strategy:
+  #      max-parallel: 1
+  #      matrix:
+  #        python-version: [3.9]
+  #        torch-version: [1.8.1]
+  #        os: [ubuntu-latest]
+  #    steps:
+  #      - uses: actions/checkout@v2
+  #
+  #      - name: Set up Python ${{ matrix.python-version }}
+  #        uses: actions/setup-python@v2
+  #        with:
+  #          python-version: ${{ matrix.python-version }}
+  #
+  #      - name: Upgrade pip
+  #        run: |
+  #          pip install --upgrade --user pip
+  #
+  #      - name: Get pip cache dir
+  #        id: pip-cache
+  #        run: |
+  #          echo "::set-output name=dir::$(pip cache dir)"
+  #
+  #      - name: pip cache
+  #        uses: actions/cache@v2
+  #        with:
+  #          path: ${{ steps.pip-cache.outputs.dir }}
+  #          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('./setup.cfg') }}
+  #          restore-keys: |
+  #            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+  #
+  #      - name: Install Dependencies
+  #        run: |
+  #          pip install packaging --default-timeout=60
+  #          python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
+  #          grep -A 3 "torch_ecosystem" setup.cfg
+  #          pip install -r requirements.unstable.txt
+  #          pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
+  #          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
+  #
+  #      - name: Test syft-network
+  #        run: |
+  #          python ./scripts/start_signaling_server.py --dry_run=True
+  #
+  #      - name: Run notebook Duet examples
+  #        run: |
+  #          python ./scripts/mnist.py
+  #          python ./scripts/nb_duet_test.py
+  #          pytest -m duet -n 1 --suppress-no-test-exit-code --durations=50
