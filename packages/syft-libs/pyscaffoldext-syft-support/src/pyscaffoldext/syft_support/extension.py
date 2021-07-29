@@ -15,11 +15,11 @@ import pyscaffold.dependencies as deps
 from pyscaffold.extensions import Extension
 from pyscaffold.extensions import include
 from pyscaffold.extensions.no_skeleton import NoSkeleton
-from pyscaffold.extensions.pre_commit import PreCommit
 from pyscaffold.operations import no_overwrite
 from pyscaffold.structure import merge
 from pyscaffold.templates import add_pyscaffold
 from pyscaffold.templates import get_template
+from pyscaffoldext.markdown.extension import Markdown
 
 # syft relative
 from . import templates
@@ -44,7 +44,7 @@ class SyftSupport(Extension):
             self.flag,
             help=self.help_text,
             nargs=0,
-            action=include(NoSkeleton(), PreCommit(), self),
+            action=include(NoSkeleton(), Markdown(), self),
         )
         return self
 
@@ -121,17 +121,13 @@ def add_files(struct: Structure, opts: ScaffoldOpts) -> ActionParams:
     conftest_py = get_template("conftest_py", relative_to=templates.__name__)
     VERSION = get_template("VERSION", relative_to=templates.__name__)
     pyproject_toml = get_template("pyproject_toml", relative_to=templates.__name__)
-    precommit_config = get_template(
-        "pre-commit-config_yaml", relative_to=templates.__name__
-    )
 
-    module = importlib.import_module(opts["name"][5:])
+    module = opts["name"][5:]
     package_support = generate_package_support(module)
 
     files: Structure = {
         "setup.cfg": (setup_cfg, no_overwrite()),
         "pyproject.toml": (pyproject_toml, no_overwrite()),
-        ".pre-commit-config.yaml": precommit_config,
         "proto": {"sample.proto": (proto, no_overwrite())},
         "src": {
             opts["package"]: {
