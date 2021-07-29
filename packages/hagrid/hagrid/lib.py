@@ -11,6 +11,7 @@ import git
 import requests
 
 # relative
+from .cache import DEFAULT_BRANCH
 from .deps import MissingDependency
 
 DOCKER_ERROR = """
@@ -93,7 +94,7 @@ def get_git_repo() -> git.Repo:
         git_url = f"https://github.com/{github_repo}"
         print(f"Fetching Syft + Grid Source from {git_url} to {repo_src_path()}")
         try:
-            repo_branch = "demo_strike_team_branch_4"
+            repo_branch = DEFAULT_BRANCH
             git.Repo.clone_from(
                 git_url, repo_src_path(), single_branch=True, b=repo_branch
             )
@@ -119,7 +120,7 @@ GRID_SRC_PATH = grid_src_path()
 GIT_REPO = get_git_repo()
 
 
-repo_branch = "demo_strike_team_branch_4"
+repo_branch = DEFAULT_BRANCH
 update_repo(repo=GIT_REPO, branch=repo_branch)
 
 
