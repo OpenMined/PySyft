@@ -1,4 +1,11 @@
 # syft relative
+# stdlib
+from typing import Optional
+from uuid import UUID
+
+# third party
+from numpy import ndarray
+
 # relative
 from ..tensor import AutogradTensor
 from .op import Op
@@ -7,7 +14,9 @@ from .op import Op
 class RepeatOp(Op):
     """Repeat operation across a dimension"""
 
-    def forward(self, x: AutogradTensor, repeats, axis=None):
+    def forward(
+        self, x: AutogradTensor, repeats: int, axis: Optional[int] = None
+    ) -> AutogradTensor:
         self.x = x
         self.repeats = repeats
         self.axis = axis
@@ -20,7 +29,7 @@ class RepeatOp(Op):
 
         return AutogradTensor(output, requires_grad=x.requires_grad)
 
-    def _backward(self, grad, backprop_id):
+    def _backward(self, grad: ndarray, backprop_id: UUID) -> None:
 
         if self.x.requires_grad:
 

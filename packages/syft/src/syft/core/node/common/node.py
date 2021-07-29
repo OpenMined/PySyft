@@ -25,6 +25,7 @@ from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 # syft absolute
+from syft.core.node.common.node_manager.setup_manager import SetupManager
 from syft.core.node.common.node_table import Base
 
 # relative
@@ -83,7 +84,6 @@ from ..common.node_service.object_search_permission_update.obj_search_permission
 from ..common.node_service.resolve_pointer_type.resolve_pointer_type_service import (
     ResolvePointerTypeService,
 )
-from ..common.node_service.testing_services.remote_add_service import RemoteAddService
 from ..common.node_service.testing_services.repr_service import ReprService
 from .action.exception_action import ExceptionMessage
 from .action.exception_action import UnknownPrivateException
@@ -173,6 +173,7 @@ class Node(AbstractNode):
         # self.store is the elastic memory.
 
         self.store = BinObjectManager(db=self.db_engine)
+        self.setup = SetupManager(database=self.db_engine)
 
         # We need to register all the services once a node is created
         # On the off chance someone forgot to do this (super unlikely)
@@ -239,7 +240,6 @@ class Node(AbstractNode):
         self.immediate_services_without_reply.append(
             ImmediateObjectSearchPermissionUpdateService
         )
-        self.immediate_services_without_reply.append(RemoteAddService)
 
         # TODO: Support ImmediateNodeServiceWithReply Parent Class
         # for services which run immediately and return a reply

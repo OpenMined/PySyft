@@ -122,7 +122,7 @@ class GrammarTerm:
             elif callable(self.default):
                 input = self.default()
 
-        if input not in self.options:
+        if len(self.options) > 0 and input not in self.options:
             raise BadGrammar(
                 f"{input} is not valid for {self.name} please use one of the following options: {self.options}"
             )
@@ -219,7 +219,6 @@ class HostGrammarTerm(GrammarTerm):
 
 class SourceGrammarTerm(GrammarTerm):
     def custom_parsing(self, input: str) -> str:
-        # github.com/OpenMined/PySyft/tree/demo_strike_team_branch_4
         trimmed = input
         if trimmed.startswith("http://"):
             trimmed = trimmed.replace("http://", "")

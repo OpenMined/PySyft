@@ -9,7 +9,7 @@ from .tensor import Tensor
 
 
 @implements(Tensor, np.mean)
-def mean(array, axis=None, **kwargs):
+def mean(array, axis=None, **kwargs) -> Tensor:
     if axis is None:
         den = float(np.prod(array.shape))
     else:
@@ -19,30 +19,30 @@ def mean(array, axis=None, **kwargs):
 
 
 @implements(Tensor, np.max)
-def npmax(*args, **kwargs):
+def npmax(*args, **kwargs) -> Tensor:
     args, kwargs = inputs2child(*args, **kwargs)
     return np.max(*args, **kwargs)
 
 
 @implements(Tensor, np.min)
-def npmin(*args, **kwargs):
+def npmin(*args, **kwargs) -> Tensor:
     args, kwargs = inputs2child(*args, **kwargs)
     return np.min(*args, **kwargs)
 
 
 @implements(Tensor, np.square)
-def square(x):
+def square(x) -> Tensor:
     return x * x
 
 
 @implements(Tensor, np.expand_dims)
-def expand_dims(*args, **kwargs):
+def expand_dims(*args, **kwargs) -> Tensor:
     args, kwargs = inputs2child(*args, **kwargs)
     return Tensor(np.expand_dims(*args, **kwargs))
 
 
 @implements(Tensor, np.multiply)
-def multiply(a, b):
+def multiply(a, b) -> Tensor:
     if isinstance(a, Tensor):
         result = a.__mul__(b)
         if result is not NotImplementedError:

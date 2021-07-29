@@ -1,6 +1,9 @@
 # future
 from __future__ import annotations
 
+# stdlib
+from typing import Optional
+
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
@@ -9,6 +12,7 @@ import numpy as np
 # syft relative
 from ....core.common.serde.recursive import RecursiveSerde
 from ....proto.core.tensor.tensor_pb2 import Tensor as Tensor_PB
+from ...adp.entity import Entity
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...common.serde.serializable import bind_protobuf
 from ..ancestors import AutogradTensorAncestor
@@ -16,6 +20,7 @@ from ..passthrough import PassthroughTensor
 from ..passthrough import implements
 from ..passthrough import inputs2child
 from ..passthrough import is_acceptable_simple_type
+from ..types import SupportedChainType
 from .initial_gamma import InitialGammaTensor
 
 
@@ -26,12 +31,13 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
 
     def __init__(
         self,
-        child,
-        entity,
-        min_vals,
-        max_vals,
-        scalar_manager=VirtualMachinePrivateScalarManager(),
-    ):
+        child: SupportedChainType,
+        entity: Entity,
+        min_vals: np.ndarray,
+        max_vals: np.ndarray,
+        scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None,
+    ) -> None:
+
         # child = the actual private data
         super().__init__(child)
 
@@ -44,14 +50,21 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
         # the identity of the data subject
         self.entity = entity
 
-        self.scalar_manager = scalar_manager
+        if scalar_manager is None:
+            self.scalar_manager = VirtualMachinePrivateScalarManager()
+        else:
+            self.scalar_manager = scalar_manager
 
     @property
-    def gamma(self):
+    def gamma(self) -> InitialGammaTensor:
+
         """Property to cast this tensor into a GammaTensor"""
         return self.create_gamma()
 
-    def create_gamma(self, scalar_manager=None):
+    def create_gamma(
+        self, scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None
+    ) -> InitialGammaTensor:
+
         """Return a new Gamma tensor based on this phi tensor"""
 
         if scalar_manager is None:
@@ -71,20 +84,23 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
         )
 
     @property
-    def min_vals(self):
+    def min_vals(self) -> np.ndarray:
+
         return self._min_vals
 
     @property
-    def max_vals(self):
+    def max_vals(self) -> np.ndarray:
+
         return self._max_vals
 
-    def __repr__(self):
+    def __repr__(self) -> str:
+
         """Pretty print some information, optimized for Jupyter notebook viewing."""
         return (
             f"{self.__class__.__name__}(entity={self.entity.name}, child={self.child})"
         )
 
-    def __abs__(self):
+    def __abs__(self) -> SingleEntityPhiTensor:
 
         data = self.child.abs()
 
@@ -137,7 +153,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             scalar_manager=self.scalar_manager,
         )
 
-    def __add__(self, other):
+    def __add__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
 
         # if the tensor being added is also private
         if isinstance(other, SingleEntityPhiTensor):
@@ -178,12 +194,23 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
         else:
             return NotImplemented
 
-    def __neg__(self):
-        data = -self.child
-        min_vals = -self.max_vals
-        max_vals = -self.min_vals
+    def __neg__(self) -> SingleEntityPhiTensor:
+
+        data = self.child * -1
+        min_vals = self.min_vals * -1
+        max_vals = self.max_vals * -1
+        entity = self.entity
+
+        return SingleEntityPhiTensor(
+            child=data,
+            entity=entity,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            scalar_manager=self.scalar_manager,
+        )
 
     def __getitem__(self, key) -> SingleEntityPhiTensor:
+
         data = self.child.__getitem__(key)
         min_vals = self.min_vals.__getitem__(key)
         max_vals = self.max_vals.__getitem__(key)
@@ -205,7 +232,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             scalar_manager=self.scalar_manager,
         )
 
-    def __gt__(self, other):
+    def __gt__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
 
         # if the tensor being added is also private
         if isinstance(other, SingleEntityPhiTensor):
@@ -248,7 +275,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
         else:
             return NotImplemented
 
-    def __mul__(self, other):
+    def __mul__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
 
         if other.__class__ == SingleEntityPhiTensor:
 
@@ -298,7 +325,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
         else:
             return NotImplemented
 
-    def __sub__(self, other):
+    def __sub__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
 
         if isinstance(other, SingleEntityPhiTensor):
             if self.entity != other.entity:
@@ -320,7 +347,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
         else:
             return NotImplemented
 
-    def __truediv__(self, other):
+    def __truediv__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
 
         if isinstance(other, SingleEntityPhiTensor):
 
@@ -358,7 +385,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
         else:
             return self * (1 / other)
 
-    def dot(self, other):
+    def dot(self, other: SupportedChainType):
         return self.manual_dot(other)
 
     # ndarray.flatten(order='C')

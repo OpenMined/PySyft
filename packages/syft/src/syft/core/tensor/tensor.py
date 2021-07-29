@@ -23,7 +23,7 @@ from .passthrough import PassthroughTensor
 class Tensor(
     PassthroughTensor, AutogradTensorAncestor, PhiTensorAncestor, Serializable
 ):
-    def __init__(self, child):
+    def __init__(self, child) -> None:
         """data must be a list of numpy array"""
 
         if isinstance(child, list):

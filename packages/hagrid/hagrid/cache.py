@@ -3,13 +3,15 @@ import json
 import os
 from typing import Any
 
+DEFAULT_BRANCH = "0.6.0"
+
 arg_defaults = {
     "repo": "OpenMined/PySyft",
-    "branch": "demo_strike_team_branch_4",
+    "branch": DEFAULT_BRANCH,
     "username": "root",
     "key_path": "~/.ssh/id_rsa",
     "azure_repo": "OpenMined/PySyft",
-    "azure_branch": "demo_strike_team_branch_4",
+    "azure_branch": DEFAULT_BRANCH,
     "azure_username": "azureuser",
     "azure_key_path": "~/.ssh/id_rsa",
     "azure_resource_group": "openmined",
