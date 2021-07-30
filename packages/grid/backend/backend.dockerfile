@@ -13,13 +13,13 @@ COPY ./app/pyproject.toml ./app/poetry.lock* /app/
 
 # Allow installing dev dependencies to run tests
 ARG INSTALL_DEV=false
-RUN --mount=type=cache,target=/root/.cache bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install --no-root ; else poetry install --no-root --no-dev ; fi"
+RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install --no-root ; else poetry install --no-root --no-dev ; fi"
 
 # For development, Jupyter remote kernel, Hydrogen
 # Using inside the container:
 # jupyter lab --ip=0.0.0.0 --allow-root --NotebookApp.custom_display_url=http://127.0.0.1:8888
 ARG INSTALL_JUPYTER=false
-RUN --mount=type=cache,target=/root/.cache bash -c "if [ $INSTALL_JUPYTER == 'true' ] ; then pip install jupyterlab ; fi"
+RUN bash -c "if [ $INSTALL_JUPYTER == 'true' ] ; then pip install jupyterlab ; fi"
 
 # allow container to wait for other services
 ENV WAITFORIT_VERSION="v2.4.1"
