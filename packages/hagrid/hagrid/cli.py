@@ -87,6 +87,13 @@ def cli() -> None:
     type=str,
     help="Optional: tail logs on launch",
 )
+@click.option(
+    "--cmd",
+    default=None,
+    required=False,
+    type=str,
+    help="Optional: print the cmd without running it",
+)
 def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_launch_verb()
     try:
@@ -102,7 +109,8 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
         print(f"{e}")
         return
     print("Running: \n", cmd)
-    subprocess.call(cmd, shell=True)
+    if "cmd" not in kwargs or str_to_bool(kwargs["cmd"]) is False:
+        subprocess.call(cmd, shell=True)
 
 
 class QuestionInputError(Exception):
