@@ -80,6 +80,13 @@ def cli() -> None:
     type=str,
     help="Optional: branch to monitor for updates",
 )
+@click.option(
+    "--tail",
+    default=None,
+    required=False,
+    type=str,
+    help="Optional: tail logs on launch",
+)
 def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_launch_verb()
     try:
@@ -226,14 +233,28 @@ def login_azure() -> bool:
     return False
 
 
+def str_to_bool(bool_str: Optional[str]) -> bool:
+    result = False
+    bool_str = str(bool_str).lower()
+    if bool_str == "true" or bool_str == "1":
+        result = True
+    return result
+
+
 def create_launch_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
     host_term = verb.get_named_term_hostgrammar(name="host")
     host = host_term.host
 
+    tail = False
+    if "tail" in kwargs and str_to_bool(kwargs["tail"]):
+        tail = True
+
     if host in ["docker"]:
         version = check_docker_version()
         if version:
-            return create_launch_docker_cmd(verb=verb, docker_version=version)
+            return create_launch_docker_cmd(
+                verb=verb, docker_version=version, tail=tail
+            )
     elif host in ["vm"]:
         if (
             DEPENDENCIES["vagrant"]
