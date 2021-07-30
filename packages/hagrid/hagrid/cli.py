@@ -701,7 +701,10 @@ def create_launch_custom_cmd(
 
     if not os.path.exists(playbook_path):
         print(f"Can't find playbook site.yml at: {playbook_path}")
-    cmd = f"ANSIBLE_CONFIG={ansible_cfg_path} ansible-playbook -i {host_term.host}, {playbook_path}"
+    cmd = f"ANSIBLE_CONFIG={ansible_cfg_path} ansible-playbook "
+    if host_term.host == "localhost":
+        cmd += "--connection=local "
+    cmd += f"-i {host_term.host}, {playbook_path}"
     if host_term.host != "localhost":
         cmd += f" --private-key {auth.key_path} --user {auth.username}"
     ANSIBLE_ARGS = {
