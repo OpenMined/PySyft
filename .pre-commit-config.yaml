@@ -50,7 +50,7 @@ repos:
             "--scripts-are-modules",
             "--disallow-incomplete-defs",
             "--no-implicit-optional",
-            "--warn-unused-ignores",
+#            "--warn-unused-ignores",
             "--warn-redundant-casts",
             "--strict-equality",
             "--warn-unreachable",
@@ -58,7 +58,8 @@ repos:
             "--disallow-untyped-defs",
             "--disallow-untyped-calls",
 	        "--no-warn-unused-ignores",
-          ]
+            "--install-types"
+        ]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v0.910
@@ -82,7 +83,9 @@ repos:
             "--namespace-packages",
             "--install-types",
             "--non-interactive",
-          ]
+            "--install-types"
+
+        ]
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v0.910
     hooks:
@@ -105,6 +108,7 @@ repos:
             "--namespace-packages",
             "--install-types",
             "--non-interactive",
+            "--install-types"
         ]
   # - repo: local
   #   hooks:
