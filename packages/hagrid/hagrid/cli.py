@@ -28,6 +28,7 @@ from .launch import get_launch_verb
 from .lib import GRID_SRC_PATH
 from .lib import check_docker_version
 from .lib import name_tag
+from .lib import update_repo
 from .style import RichGroup
 
 
@@ -409,6 +410,8 @@ def create_launch_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
                 kwargs=kwargs,
             )
 
+            update_repo(repo=repo, branch=branch)
+
             auth = AuthCredentials(username=username, key_path=key_path)
 
             return create_launch_azure_cmd(
@@ -473,6 +476,9 @@ def create_launch_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
                 required=required_questions,
                 kwargs=kwargs,
             )
+
+            if "repo" in kwargs and "branch" in kwargs:
+                update_repo(repo=kwargs["repo"], branch=kwargs["branch"])
 
             auth = None
             if host != "localhost":
