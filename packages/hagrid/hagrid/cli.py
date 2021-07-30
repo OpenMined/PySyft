@@ -253,6 +253,9 @@ def str_to_bool(bool_str: Optional[str]) -> bool:
     return result
 
 
+ART = str_to_bool(os.environ.get("HAGRID_ART", "True"))
+
+
 def generate_key_at_path(key_path: str) -> str:
     key_path = os.path.expanduser(key_path)
     if os.path.exists(key_path):
@@ -504,7 +507,8 @@ def create_launch_docker_cmd(
     snake_name = str(node_name.snake_input)
     tag = name_tag(name=str(node_name.input))
 
-    hagrid()
+    if ART:
+        hagrid()
 
     print(
         "Launching a "
@@ -542,7 +546,8 @@ def create_launch_vagrant_cmd(verb: GrammarVerb) -> str:
 
     snake_name = str(node_name.snake_input)
 
-    hagrid()
+    if ART:
+        hagrid()
 
     print(
         "Launching a "
@@ -693,7 +698,8 @@ def create_launch_custom_cmd(
 
     snake_name = str(node_name.snake_input)
 
-    hagrid()
+    if ART:
+        hagrid()
 
     print(
         "Launching a "

@@ -157,4 +157,12 @@ hagrid launch gryffendor network to docker
 
 ## Credits
 
+## Testing HAGrid Remotely
+
+Sometimes you need to install HAGrid directly from source while developing and testing on a remote machine. You can use the pip git syntax like so:
+
+```
+$ pip install "git+https://github.com/OpenMined/PySyft@demo_strike_team_branch_4#subdirectory=packages/hagrid"
+```
+
 **Super Cool Code Images** by [Carbon](https://carbon.now.sh/)
