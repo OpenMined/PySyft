@@ -6,7 +6,7 @@ VAGRANTFILE_API_VERSION = "2"
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.ssh.insert_key = true
   config.vm.provision :ansible do |ansible|
-    ansible.extra_vars = { vagrant: true, local: true}
+    ansible.extra_vars = { vagrant: true}
     ansible.raw_arguments = Shellwords.shellsplit(ENV['ANSIBLE_ARGS']) if ENV['ANSIBLE_ARGS']
     ansible.compatibility_mode = "auto"
     ansible.playbook = "./ansible/site.yml"

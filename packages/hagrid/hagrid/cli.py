@@ -451,23 +451,27 @@ def create_launch_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
                 kind="string",
                 cache=True,
             )
+            required_questions = []
+            if host != "localhost":
+                required_questions.append(username_question)
+                required_questions.append(key_path_question)
+            required_questions.append(repo_question)
+            required_questions.append(branch_question)
+
             parsed_kwargs = requires_kwargs(
-                required=[
-                    username_question,
-                    key_path_question,
-                    repo_question,
-                    branch_question,
-                ],
+                required=required_questions,
                 kwargs=kwargs,
             )
 
-            auth = AuthCredentials(
-                username=parsed_kwargs["username"], key_path=parsed_kwargs["key_path"]
-            )
-            if auth.valid:
-                return create_launch_custom_cmd(
-                    verb=verb, auth=auth, kwargs=parsed_kwargs
+            auth = None
+            if host != "localhost":
+                auth = AuthCredentials(
+                    username=parsed_kwargs["username"],
+                    key_path=parsed_kwargs["key_path"],
                 )
+                if not auth.valid:
+                    raise Exception(f"Login Credentials are not valid. {auth}")
+            return create_launch_custom_cmd(verb=verb, auth=auth, kwargs=parsed_kwargs)
         else:
             errors = []
             if not DEPENDENCIES["ansible-playbook"]:
@@ -672,7 +676,7 @@ def create_launch_azure_cmd(
 
 
 def create_launch_custom_cmd(
-    verb: GrammarVerb, auth: AuthCredentials, kwargs: TypeDict[str, Any]
+    verb: GrammarVerb, auth: Optional[AuthCredentials], kwargs: TypeDict[str, Any]
 ) -> str:
     host_term = verb.get_named_term_hostgrammar(name="host")
     node_name = verb.get_named_term_type(name="node_name")
