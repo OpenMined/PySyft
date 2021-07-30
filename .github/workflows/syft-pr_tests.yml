@@ -58,7 +58,7 @@ jobs:
           version: "3.x"
 
       - name: Install type stubs
-        - run: |
+        run: |
             python3 -m pip install types-protobuf
             python3 -m pip install types-setuptools
             python3 -m pip install types-cachetools
