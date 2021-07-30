@@ -66,6 +66,7 @@ jobs:
           pip install tox --upgrade
 
       - name: Run integration tests
+        shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
           DOCKER_COMPOSE_VERSION=v2.0.0-beta.6
