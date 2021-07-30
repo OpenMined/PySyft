@@ -91,7 +91,6 @@ repos:
       - id: mypy
         name: mypy-hagrid
         files: ^packages/hagrid
-        exclude: ^(packages/syft|packages/grid)
         args: [
             "--ignore-missing-imports",
             "--scripts-are-modules",

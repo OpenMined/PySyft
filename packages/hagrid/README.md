@@ -59,9 +59,9 @@ choco install docker-desktop -y
 ```
 
 You will likely need to restart after installing Docker Desktop for the first time. Also occasionally Powershell looks like its taking for ever but if you hit <enter> then it'll show that the command is actually done.
-  
+
 ### Restart the computer and start Docker Desktop
-  
+
 After you've rebooted your Windows machine, launch the application "Docker Desktop" and continue.
 
 ### Docker Backend
@@ -79,7 +79,7 @@ choco install wsl2 -y
 ```
 
 If you needed to install wsl2, restart docker by clicking the little whale in the bottom right corner, clicking "Stop" and then starting Docker Desktop application again.
-  
+
 ### Enable Docker Compose v2
 
 Inside Docker Desktop click on the settings wheel in the top right.
@@ -170,16 +170,16 @@ $ pip install "git+https://github.com/OpenMined/PySyft@demo_strike_team_branch_4
 ```
 
 ## Using Hagrid to Deploy to An Existing Cloud Node (by logging into that cloud node)
-  
+
 ```
 pip install hagrid
 ```
 
 Often on a remote linux box hagrid will not by default show up in the path. Re-login via SSH terminal and hagrid should appear.
- 
+
 ```
 hagrid launch <node name> domain to localhost
 ```
 Then folllow the instructions in the prompt.
-  
+
 **Super Cool Code Images** by [Carbon](https://carbon.now.sh/)
