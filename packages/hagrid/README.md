@@ -59,6 +59,10 @@ choco install docker-desktop -y
 ```
 
 You will likely need to restart after installing Docker Desktop for the first time. Also occasionally Powershell looks like its taking for ever but if you hit <enter> then it'll show that the command is actually done.
+  
+### Restart the computer and start Docker Desktop
+  
+After you've rebooted your Windows machine, launch the application "Docker Desktop" and continue.
 
 ### Docker Backend
 
@@ -76,10 +80,6 @@ choco install wsl2 -y
 
 If you needed to install wsl2, restart your machine again.
   
-### Restart the computer and start Docker Desktop
-  
-After you've rebooted your Windows machine, launch the application "Docker Desktop" and continue.
-
 ### Enable Docker Compose v2
 
 Inside Docker Desktop click on the settings wheel in the top right.
