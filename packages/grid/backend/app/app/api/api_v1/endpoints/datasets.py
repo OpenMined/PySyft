@@ -1,17 +1,9 @@
 # stdlib
 import json
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Union
+from typing import Any, Dict, List, Union
 
 # third party
-from fastapi import APIRouter
-from fastapi import Body
-from fastapi import Depends
-from fastapi import File
-from fastapi import Form
-from fastapi import UploadFile
+from fastapi import APIRouter, Body, Depends, File, Form, UploadFile
 from fastapi.responses import JSONResponse
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
@@ -20,17 +12,9 @@ from nacl.signing import SigningKey
 from syft.core.node.common.action.exception_action import ExceptionMessage
 from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
     CreateDatasetMessage,
-)
-from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
     DeleteDatasetMessage,
-)
-from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
     GetDatasetMessage,
-)
-from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
     GetDatasetsMessage,
-)
-from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
     UpdateDatasetMessage,
 )
 from syft.lib.python import Dict as SyftDict
@@ -106,7 +90,7 @@ def get_all_dataset_metadata_route(
     if isinstance(reply, ExceptionMessage):
         return {"error": reply.exception_msg}
     else:
-        return [dataset.upcast() for dataset in reply.content]
+        return [dataset.upcast() for dataset in reply.metadatas]
 
 
 @router.get("/{dataset_id}", status_code=200, response_class=JSONResponse)
@@ -138,7 +122,7 @@ def get_specific_dataset_metadata_route(
     if isinstance(reply, ExceptionMessage):
         return {"error": reply.exception_msg}
     else:
-        return reply.content.upcast()
+        return reply.metadatas.upcast()
 
 
 @router.put("/{dataset_id}", status_code=200, response_class=JSONResponse)
