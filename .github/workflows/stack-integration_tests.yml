@@ -65,13 +65,10 @@ jobs:
         run: |
           pip install tox --upgrade
 
-      - name: Install docker compose v2
+      - name: Run integration tests
         run: |
           mkdir -p ~/.docker/cli-plugins
           DOCKER_COMPOSE_VERSION=v2.0.0-beta.6
           curl -sSL https://github.com/docker/compose-cli/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-amd64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
-
-      - name: Run integration tests
-        run: |
           tox -e stack.test.integration
