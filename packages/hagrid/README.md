@@ -21,7 +21,7 @@ $ docker run -it -v ~/:/root openmined/hagrid:latest hagrid
 Then simply run hagrid as you would normally:
 
 ```
-$ docker run -it -v ~/:/root openmined/hagrid:latest hagrid launch slytherin to azure
+$ docker run -it -v ~/:/root openmined/hagrid:latest hagrid launch slytherin domain to azure
 ```
 
 ## Installation Windows
