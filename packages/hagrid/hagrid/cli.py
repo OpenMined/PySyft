@@ -109,6 +109,10 @@ class QuestionInputError(Exception):
     pass
 
 
+class QuestionInputPathError(Exception):
+    pass
+
+
 class Question:
     def __init__(
         self,
@@ -134,7 +138,7 @@ class Question:
                 error = f"{value} is not a valid path."
                 if self.default is not None:
                     error += f" Try {self.default}"
-                raise QuestionInputError(error)
+                raise QuestionInputPathError(f"{error}")
 
         if self.kind == "yesno":
             if value.lower().startswith("y"):
@@ -241,6 +245,22 @@ def str_to_bool(bool_str: Optional[str]) -> bool:
     return result
 
 
+def generate_key_at_path(key_path: str) -> str:
+    key_path = os.path.expanduser(key_path)
+    if os.path.exists(key_path):
+        raise Exception(f"Can't generate key since path already exists. {key_path}")
+    else:
+        cmd = f"ssh-keygen -N '' -f {key_path}"
+        try:
+            subprocess.check_call(cmd, shell=True)
+            if not os.path.exists(key_path):
+                raise Exception(f"Failed to generate ssh-key at: {key_path}")
+        except Exception as e:
+            raise e
+
+    return key_path
+
+
 def create_launch_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
     host_term = verb.get_named_term_hostgrammar(name="host")
     host = host_term.host
@@ -325,16 +345,37 @@ def create_launch_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
                 kwargs=kwargs,
             )
 
-            key_path = ask(
-                Question(
-                    var_name="azure_key_path",
-                    question=f"Private key to access {username}@{host}?",
-                    default=arg_cache.azure_key_path,
-                    kind="path",
-                    cache=True,
-                ),
-                kwargs=kwargs,
+            key_path_question = Question(
+                var_name="azure_key_path",
+                question=f"Private key to access {username}@{host}?",
+                default=arg_cache.azure_key_path,
+                kind="path",
+                cache=True,
             )
+            try:
+                key_path = ask(
+                    key_path_question,
+                    kwargs=kwargs,
+                )
+            except QuestionInputPathError as e:
+                key_path = str(e).split("is not a valid path")[0].strip()
+
+                create_key_question = Question(
+                    var_name="azure_key_path",
+                    question=f"Key {key_path} does not exist. Do you want to create it? (y/n)",
+                    default="y",
+                    kind="yesno",
+                )
+                create_key = ask(
+                    create_key_question,
+                    kwargs=kwargs,
+                )
+                if create_key == "y":
+                    key_path = generate_key_at_path(key_path=key_path)
+                else:
+                    raise QuestionInputError(
+                        "Unable to create VM without a private key"
+                    )
 
             repo = ask(
                 Question(
