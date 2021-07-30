@@ -39,7 +39,7 @@ or alternatively use the windows package manager `chocolatey`.
 ### Chocolatey
 
 To install `chocolatey` you need to open "Windows PowerShell" in Administrator mode.
-You can type `powershell` into the search bar and right-click and select "Run as administrator".
+You can type `powershell` into the search bar and right-click and select "Run as administrator". If when you start Powershell in Administrator mode it asks you whether you want to allow powershell to make changes to your computer, select "Yes".
 Then copy and paste this command and run it.
 
 Run this inside PowerShell (Admin Mode):
