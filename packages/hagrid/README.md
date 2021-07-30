@@ -58,7 +58,7 @@ To install Docker Desktop with chocolatey run this inside PowerShell (Admin Mode
 choco install docker-desktop -y
 ```
 
-You will likely need to restart after installing Docker Desktop for the first time.
+You will likely need to restart after installing Docker Desktop for the first time. Also occasionally Powershell looks like its taking for ever but if you hit <enter> then it'll show that the command is actually done.
 
 ### Docker Backend
 
