@@ -57,10 +57,9 @@ repos:
             # "--disallow-untyped-decorators",
             "--disallow-untyped-defs",
             "--disallow-untyped-calls",
-            "--namespace-packages",
+	        "--no-warn-unused-ignores",
             "--install-types",
             "--non-interactive",
-            "--ignore-missing-imports"
         ]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
@@ -98,9 +97,11 @@ repos:
             "--scripts-are-modules",
             "--disallow-incomplete-defs",
             "--no-implicit-optional",
+          # "--warn-unused-ignores",
             "--warn-redundant-casts",
             "--strict-equality",
             "--warn-unreachable",
+          # "--disallow-untyped-decorators",
             "--disallow-untyped-defs",
             "--disallow-untyped-calls",
             "--namespace-packages",
