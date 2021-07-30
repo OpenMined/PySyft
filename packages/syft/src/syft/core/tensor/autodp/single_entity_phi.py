@@ -554,7 +554,7 @@ def mean(*args: Any, **kwargs: Any) -> SingleEntityPhiTensor:
     min_vals = np.mean([x.min_vals for x in args], **kwargs)
     max_vals = np.mean([x.max_vals for x in args], **kwargs)
 
-    args, kwargs = inputs2child(*args, **kwargs)
+    args, kwargs = inputs2child(*args, **kwargs)  # type: ignore
 
     data = np.mean(args, **kwargs)
 
