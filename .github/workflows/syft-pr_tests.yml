@@ -57,14 +57,6 @@ jobs:
         with:
           version: "3.x"
 
-      - name: Install type stubs
-        run: |
-            mypy
-            pip install types-protobuf
-            pip install types-setuptools
-            pip install types-cachetools
-            pip install types-requests
-
       - uses: pre-commit/action@v2.0.3
         with:
           extra_args: mypy --install-types
