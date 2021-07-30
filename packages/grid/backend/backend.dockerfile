@@ -28,4 +28,3 @@ RUN curl -o /usr/local/bin/waitforit -sSL https://github.com/maxcnunes/waitforit
 
 COPY ./app /app
 ENV PYTHONPATH=/app
-

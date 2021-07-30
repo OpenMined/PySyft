@@ -142,7 +142,7 @@ services:
         - traefik.http.services.${STACK_NAME?Variable not set}-flower.loadbalancer.server.port=5555
   backend:
     restart: always
-    image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}"
+    image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
     depends_on:
       - db
     env_file:
@@ -166,7 +166,7 @@ services:
 
   backend_stream:
     restart: always
-    image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}"
+    image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
     depends_on:
       - db
       - backend
@@ -193,7 +193,7 @@ services:
 
   celeryworker:
     restart: always
-    image: "${DOCKER_IMAGE_CELERYWORKER?Variable not set}:${TAG-latest}"
+    image: "${DOCKER_IMAGE_CELERYWORKER?Variable not set}:${VERSION-latest}"
     depends_on:
       - db
       - queue
@@ -212,13 +212,13 @@ services:
 
   frontend:
     restart: always
-    image: "${DOCKER_IMAGE_FRONTEND?Variable not set}:${TAG-latest}"
+    image: "${DOCKER_IMAGE_FRONTEND?Variable not set}:${VERSION-latest}"
     build:
       context: ./grid-ui
+      dockerfile: ui.dockerfile
       args:
         FRONTEND_ENV: ${FRONTEND_ENV-development}
       target: "grid-ui-${FRONTEND_ENV-development}"
-      dockerfile: ui.dockerfile
     volumes:
       - ./grid-ui/:/app
       - /app/node_modules
