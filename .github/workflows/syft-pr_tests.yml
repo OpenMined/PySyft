@@ -58,8 +58,6 @@ jobs:
           version: "3.x"
 
       - uses: pre-commit/action@v2.0.3
-        with:
-          extra_args: mypy --install-types
         # - name: Run darglint via flake8 - Ignore Errors
         #   continue-on-error: true
         #   run: |
