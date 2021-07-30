@@ -115,6 +115,19 @@ def update_repo(repo: git.Repo, branch: str) -> None:
             print(f"Error checking out branch {branch}.", e)
 
 
+def use_branch(branch: str) -> None:
+    if not EDITABLE_MODE:
+        print(f"Using HAGrid from branch: {branch}")
+        repo = get_git_repo()
+        try:
+            if repo.is_dirty():
+                repo.git.reset("--hard")
+            repo.git.checkout(branch)
+            repo.remotes.origin.pull()
+        except Exception as e:
+            print(f"Error checking out branch {branch}.", e)
+
+
 EDITABLE_MODE = is_editable_mode()
 GRID_SRC_PATH = grid_src_path()
 GIT_REPO = get_git_repo()
