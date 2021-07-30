@@ -387,7 +387,8 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
                 scalar_manager=self.scalar_manager,
             )
         else:
-            return self * (1 / other)
+            # Ignoring unsupported operand error b/c other logic is taken care of
+            return self * (1 / other)  # type: ignore
 
     def dot(self, other: SupportedChainType) -> SingleEntityPhiTensor:
         return self.manual_dot(other)

@@ -1,6 +1,6 @@
 # stdlib
-from typing import Union
 from typing import Type
+from typing import Union
 
 # third party
 import numpy as np

@@ -8,7 +8,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple as TypeTuple
-from typing import Type as Type
+from typing import Type
 from typing import Union
 
 # third party
@@ -279,7 +279,9 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         result = prod.sum(axis=1)
         return result
 
-    def dot(self, other: Union[Type[PassthroughTensor], np.ndarray]) -> PassthroughTensor:
+    def dot(
+        self, other: Union[Type[PassthroughTensor], np.ndarray]
+    ) -> PassthroughTensor:
         return self.manual_dot(other)
 
     def reshape(self, *dims: List[int]) -> PassthroughTensor:

@@ -75,7 +75,9 @@ class IntermediateGammaTensor(PassthroughTensor):
 
         return scalars
 
-    def sum(self, axis: Optional[Union[int, Tuple[int, ...]]]) -> IntermediateGammaTensor:  # type: ignore
+    def sum(
+        self, axis: Optional[Union[int, Tuple[int, ...]]] = None
+    ) -> IntermediateGammaTensor:
         new_term_tensor = np.swapaxes(self.term_tensor, axis, -1).squeeze(axis)
         new_coeff_tensor = np.swapaxes(self.coeff_tensor, axis, -1).squeeze(axis)
         new_bias_tensor = self.bias_tensor.sum(axis)
@@ -87,7 +89,9 @@ class IntermediateGammaTensor(PassthroughTensor):
             scalar_manager=self.scalar_manager,
         )
 
-    def prod(self, axis: Optional[Union[int, Tuple[int, ...]]]) -> IntermediateGammaTensor:  # type: ignore
+    def prod(
+        self, axis: Optional[Union[int, Tuple[int, ...]]] = None
+    ) -> IntermediateGammaTensor:
         new_term_tensor = self.term_tensor.prod(axis)
         new_coeff_tensor = self.coeff_tensor.prod(axis)
         new_bias_tensor = self.bias_tensor.prod(axis)
