@@ -78,7 +78,7 @@ To install WSL2 with chocolately run this inside PowerShell (Admin Mode):
 choco install wsl2 -y
 ```
 
-If you needed to install wsl2, restart your machine again.
+If you needed to install wsl2, restart docker by clicking the little whale in the bottom right corner, clicking "Stop" and then starting Docker Desktop application again.
   
 ### Enable Docker Compose v2
 
