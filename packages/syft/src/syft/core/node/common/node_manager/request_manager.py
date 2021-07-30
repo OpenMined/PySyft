@@ -63,7 +63,7 @@ class RequestManager(DatabaseManager):
     def status(self, request_id: int) -> RequestStatus:
         _req = self.first(id=request_id)
         if _req.status == "pending":
-            return RequestStatus.pending
+            return RequestStatus.Pending
         elif _req.status == "accepted":
             return RequestStatus.Accepted
         else:
