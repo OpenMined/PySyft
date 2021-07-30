@@ -13,7 +13,7 @@ from .op import Op
 class SumOp(Op):
     """Sum operation across a dimension"""
 
-    def forward(self, x: AutogradTensor, axis: int) -> AutogradTensor:
+    def forward(self, x: AutogradTensor, axis: int) -> AutogradTensor:  # type: ignore
         self.x = x
         self.axis = axis
         if axis is not None:

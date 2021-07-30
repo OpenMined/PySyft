@@ -8,7 +8,7 @@ from .op import Op
 
 
 class DotOp(Op):
-    def forward(self, x: AutogradTensor, y: AutogradTensor) -> AutogradTensor:
+    def forward(self, x: AutogradTensor, y: AutogradTensor) -> AutogradTensor:  # type: ignore
         self.x = x
         self.y = y
 

@@ -8,7 +8,7 @@ from .op import Op
 
 
 class _OtherOp(Op):
-    def forward(self, x: AutogradTensor, y: AutogradTensor) -> None:
+    def forward(self, x: AutogradTensor, y: AutogradTensor) -> None:  # type: ignore
         self.x = x
         self.y = y
 

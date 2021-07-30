@@ -14,7 +14,7 @@ from .op import Op
 class AddOp(Op):
     """Sumation operation with 2 tensors"""
 
-    def forward(self, x: AutogradTensor, y: AutogradTensor) -> AutogradTensor:
+    def forward(self, x: AutogradTensor, y: AutogradTensor) -> AutogradTensor:  # type: ignore
         self.x = x
         self.y = y
 
