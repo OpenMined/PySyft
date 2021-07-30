@@ -95,7 +95,7 @@ def cli() -> None:
     type=str,
     help="Optional: print the cmd without running it",
 )
-def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
+def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
     try:
         grammar = parse_grammar(args=args, verb=verb)
@@ -276,6 +276,7 @@ def generate_key_at_path(key_path: str) -> str:
 def create_launch_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
     host_term = verb.get_named_term_hostgrammar(name="host")
     host = host_term.host
+    auth: Optional[AuthCredentials] = None
 
     tail = False
     if "tail" in kwargs and str_to_bool(kwargs["tail"]):
@@ -480,7 +481,6 @@ def create_launch_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
             if "repo" in parsed_kwargs and "branch" in parsed_kwargs:
                 update_repo(repo=parsed_kwargs["repo"], branch=parsed_kwargs["branch"])
 
-            auth = None
             if host != "localhost":
                 auth = AuthCredentials(
                     username=parsed_kwargs["username"],
@@ -729,7 +729,7 @@ def create_launch_custom_cmd(
     if host_term.host == "localhost":
         cmd += "--connection=local "
     cmd += f"-i {host_term.host}, {playbook_path}"
-    if host_term.host != "localhost":
+    if host_term.host != "localhost" and auth:
         cmd += f" --private-key {auth.key_path} --user {auth.username}"
     ANSIBLE_ARGS = {
         "node_type": node_type.input,
