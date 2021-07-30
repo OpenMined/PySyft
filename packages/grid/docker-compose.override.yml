@@ -145,6 +145,7 @@ services:
       - backend
     build:
       context: ./grid-ui
+      dockerfile: ui.dockerfile
       args:
         FRONTEND_ENV: development
         NODE_TYPE: ${NODE_TYPE?Variable not set}
