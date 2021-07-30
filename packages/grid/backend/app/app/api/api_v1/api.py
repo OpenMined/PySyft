@@ -9,11 +9,11 @@ from app.api.api_v1.endpoints import roles
 from app.api.api_v1.endpoints import setup
 from app.api.api_v1.endpoints import status
 from app.api.api_v1.endpoints import syft
-from app.api.api_v1.endpoints import users
+from app.users.routes import router as user_router
 
 api_router = APIRouter()
 api_router.include_router(login.router, tags=["login"])
-api_router.include_router(users.router, prefix="/users", tags=["user"])
+api_router.include_router(user_router, prefix="/users", tags=["users"])
 api_router.include_router(roles.router, prefix="/roles", tags=["roles"])
 api_router.include_router(syft.router, prefix="/syft", tags=["syft"])
 api_router.include_router(datasets.router, prefix="/datasets", tags=["datasets"])
