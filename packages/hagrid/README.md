@@ -169,4 +169,17 @@ Sometimes you need to install HAGrid directly from source while developing and t
 $ pip install "git+https://github.com/OpenMined/PySyft@demo_strike_team_branch_4#subdirectory=packages/hagrid"
 ```
 
+## Using Hagrid to Deploy to An Existing Cloud Node (by logging into that cloud node)
+  
+```
+pip install hagrid
+```
+
+Often on a remote linux box hagrid will not by default show up in the path. Re-login via SSH terminal and hagrid should appear.
+ 
+```
+hagrid launch <node name> domain to localhost
+```
+Then folllow the instructions in the prompt.
+  
 **Super Cool Code Images** by [Carbon](https://carbon.now.sh/)
