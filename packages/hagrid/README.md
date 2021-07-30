@@ -74,7 +74,11 @@ To install WSL2 with chocolately run this inside PowerShell (Admin Mode):
 choco install wsl2 -y
 ```
 
-After this you should be able to start Docker Desktop.
+If you needed to install wsl2, restart your machine again.
+  
+### Restart the computer and start Docker Desktop
+  
+After you've rebooted your Windows machine, launch the application "Docker Desktop" and continue.
 
 ### Enable Docker Compose v2
 
