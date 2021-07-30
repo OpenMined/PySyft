@@ -21,7 +21,7 @@ $ docker run -it -v ~/:/root openmined/hagrid:latest hagrid
 Then simply run hagrid as you would normally:
 
 ```
-$ docker run -it -v ~/:/root openmined/hagrid:latest hagrid launch slytherin to azure
+$ docker run -it -v ~/:/root openmined/hagrid:latest hagrid launch slytherin domain to azure
 ```
 
 ## Installation Windows
@@ -39,7 +39,7 @@ or alternatively use the windows package manager `chocolatey`.
 ### Chocolatey
 
 To install `chocolatey` you need to open "Windows PowerShell" in Administrator mode.
-You can type `powershell` into the search bar and right-click and select "Run as administrator".
+You can type `powershell` into the search bar and right-click and select "Run as administrator". If when you start Powershell in Administrator mode it asks you whether you want to allow powershell to make changes to your computer, select "Yes".
 Then copy and paste this command and run it.
 
 Run this inside PowerShell (Admin Mode):
@@ -58,14 +58,18 @@ To install Docker Desktop with chocolatey run this inside PowerShell (Admin Mode
 choco install docker-desktop -y
 ```
 
-You will likely need to restart after installing Docker Desktop for the first time.
+You will likely need to restart after installing Docker Desktop for the first time. Also occasionally Powershell looks like its taking for ever but if you hit <enter> then it'll show that the command is actually done.
+  
+### Restart the computer and start Docker Desktop
+  
+After you've rebooted your Windows machine, launch the application "Docker Desktop" and continue.
 
 ### Docker Backend
 
 Docker on Windows has two possible backends, one which uses a virtual machine and the other which uses Windows Subsystem for Linux 2.
 
 Try running Docker Desktop and seeing that it starts.
-If you get an error saying "Docker failed to initialize" you may not have Virtualization enabled.
+If you get an error saying "Docker Engine failed to start..." you may not have Virtualization enabled.
 Either have it enabled in your BIOS if your CPU supports it, or you may need to use the Windows Subsystem for Linux 2 backend.
 
 To install WSL2 with chocolately run this inside PowerShell (Admin Mode):
@@ -74,8 +78,8 @@ To install WSL2 with chocolately run this inside PowerShell (Admin Mode):
 choco install wsl2 -y
 ```
 
-After this you should be able to start Docker Desktop.
-
+If you needed to install wsl2, restart docker by clicking the little whale in the bottom right corner, clicking "Stop" and then starting Docker Desktop application again.
+  
 ### Enable Docker Compose v2
 
 Inside Docker Desktop click on the settings wheel in the top right.
@@ -165,4 +169,17 @@ Sometimes you need to install HAGrid directly from source while developing and t
 $ pip install "git+https://github.com/OpenMined/PySyft@demo_strike_team_branch_4#subdirectory=packages/hagrid"
 ```
 
+## Using Hagrid to Deploy to An Existing Cloud Node (by logging into that cloud node)
+  
+```
+pip install hagrid
+```
+
+Often on a remote linux box hagrid will not by default show up in the path. Re-login via SSH terminal and hagrid should appear.
+ 
+```
+hagrid launch <node name> domain to localhost
+```
+Then folllow the instructions in the prompt.
+  
 **Super Cool Code Images** by [Carbon](https://carbon.now.sh/)

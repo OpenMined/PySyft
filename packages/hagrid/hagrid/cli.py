@@ -28,7 +28,7 @@ from .launch import get_launch_verb
 from .lib import GRID_SRC_PATH
 from .lib import check_docker_version
 from .lib import name_tag
-from .lib import update_repo
+from .lib import use_branch
 from .style import RichGroup
 
 
@@ -411,7 +411,7 @@ def create_launch_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
                 kwargs=kwargs,
             )
 
-            update_repo(repo=repo, branch=branch)
+            use_branch(branch=branch)
 
             auth = AuthCredentials(username=username, key_path=key_path)
 
@@ -478,8 +478,8 @@ def create_launch_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
                 kwargs=kwargs,
             )
 
-            if "repo" in parsed_kwargs and "branch" in parsed_kwargs:
-                update_repo(repo=parsed_kwargs["repo"], branch=parsed_kwargs["branch"])
+            if "branch" in parsed_kwargs:
+                use_branch(branch=parsed_kwargs["branch"])
 
             if host != "localhost":
                 auth = AuthCredentials(
