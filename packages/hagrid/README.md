@@ -29,8 +29,6 @@ $ docker run -it -v ~/:/root openmined/hagrid:latest hagrid launch slytherin to 
 Requirements:
 
 - docker
-- git
-- ssh-keygen
 
 ### Docker
 
@@ -88,7 +86,7 @@ Check the box that says: "Use Docker Desktop V2".
 
 HAGrid allows you to select an SSH key, to setup a remote node. When using Docker on Windows we recommend you mount your Users %USERPROFILE% directory into the container so that any keys you already have can be accessed. If you have a key inside C:\Users\John Smith\.ssh\mykey.pem then when asked for the path to your key you would enter: `~/mykey.pem`.
 
-If HAGrid complains that you have no key, you can always generate one using the ssh-keygen.exe tool.
+If HAGrid complains that you have no key, it can generate one for you, or you can always generate one yourself manually using the ssh-keygen.exe tool.
 
 To generate a key using ssh-keygen run in a Powershell:
 
@@ -96,8 +94,7 @@ To generate a key using ssh-keygen run in a Powershell:
 ssh-keygen
 ```
 
-Unless you know what the options are simply pressing enter and going with the defaults is perfectly fine.
-This will create a file called `~/.ssh/id_rsa` which is also the default that HAGrid asks you if you want to use.
+Unless you know what the options are simply pressing enter and going with the defaults is perfectly fine. This will create a file called `~/.ssh/id_rsa` which is also the default that HAGrid asks you if you want to use.
 
 ## Run HAGrid Docker Container
 
