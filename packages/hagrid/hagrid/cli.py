@@ -477,8 +477,8 @@ def create_launch_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
                 kwargs=kwargs,
             )
 
-            if "repo" in kwargs and "branch" in kwargs:
-                update_repo(repo=kwargs["repo"], branch=kwargs["branch"])
+            if "repo" in parsed_kwargs and "branch" in parsed_kwargs:
+                update_repo(repo=parsed_kwargs["repo"], branch=parsed_kwargs["branch"])
 
             auth = None
             if host != "localhost":
