@@ -69,7 +69,7 @@ After you've rebooted your Windows machine, launch the application "Docker Deskt
 Docker on Windows has two possible backends, one which uses a virtual machine and the other which uses Windows Subsystem for Linux 2.
 
 Try running Docker Desktop and seeing that it starts.
-If you get an error saying "Docker failed to initialize" you may not have Virtualization enabled.
+If you get an error saying "Docker Engine failed to start..." you may not have Virtualization enabled.
 Either have it enabled in your BIOS if your CPU supports it, or you may need to use the Windows Subsystem for Linux 2 backend.
 
 To install WSL2 with chocolately run this inside PowerShell (Admin Mode):
