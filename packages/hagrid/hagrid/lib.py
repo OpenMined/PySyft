@@ -96,7 +96,7 @@ def get_git_repo() -> git.Repo:
         try:
             repo_branch = DEFAULT_BRANCH
             git.Repo.clone_from(
-                git_url, repo_src_path(), single_branch=True, b=repo_branch
+                git_url, repo_src_path(), single_branch=False, b=repo_branch
             )
         except Exception:
             print(f"Failed to clone {git_url} to {repo_src_path()}")
