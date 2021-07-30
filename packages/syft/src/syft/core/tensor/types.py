@@ -1,5 +1,6 @@
 # stdlib
 from typing import Union
+from typing import Type
 
 # third party
 import numpy as np
@@ -8,4 +9,4 @@ import numpy as np
 from .passthrough import PassthroughTensor
 
 AcceptableSimpleType = Union[int, bool, float, np.ndarray]
-SupportedChainType = Union[PassthroughTensor, AcceptableSimpleType]
+SupportedChainType = Union[Type[PassthroughTensor], AcceptableSimpleType]

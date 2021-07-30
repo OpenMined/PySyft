@@ -8,7 +8,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple as TypeTuple
-from typing import Type as TypeType
+from typing import Type as Type
 from typing import Union
 
 # third party
@@ -53,37 +53,37 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         return len(self.child)
 
     @property
-    def shape(self) -> TypeTuple[Any, ...]:
+    def shape(self) -> Union[TypeTuple[Any, ...], List[Any]]:
         return tuple(self.child.shape)
 
-    def __abs__(self) -> Union[PassthroughTensor, AcceptableSimpleType]:
+    def __abs__(self) -> Union[Type[PassthroughTensor], AcceptableSimpleType]:
         return self.__class__(self.child.__abs__())
 
     def __add__(
-        self, other: Union[PassthroughTensor, AcceptableSimpleType]
+        self, other: Union[Type[PassthroughTensor], AcceptableSimpleType]
     ) -> PassthroughTensor:
         if is_acceptable_simple_type(other):
             return self.__class__(self.child + other)
         return self.__class__(self.child + other.child)  # type: ignore
 
-    def __radd__(self, other: PassthroughTensor) -> PassthroughTensor:
+    def __radd__(self, other: Type[PassthroughTensor]) -> PassthroughTensor:
         return other.__class__(other.child + self.child)
 
     def __sub__(
-        self, other: Union[PassthroughTensor, AcceptableSimpleType]
+        self, other: Union[Type[PassthroughTensor], AcceptableSimpleType]
     ) -> PassthroughTensor:
         if is_acceptable_simple_type(other):
             return self.__class__(self.child - other)
         return self.__class__(self.child - other.child)  # type: ignore
 
     def __rsub__(
-        self, other: Union[PassthroughTensor, AcceptableSimpleType]
+        self, other: Union[Type[PassthroughTensor], AcceptableSimpleType]
     ) -> PassthroughTensor:
         return self.__class__(-((self - other).child))
 
     def __gt__(
         self,
-        other: Union[PassthroughTensor, AcceptableSimpleType],
+        other: Union[Type[PassthroughTensor], AcceptableSimpleType],
     ) -> PassthroughTensor:
         if is_acceptable_simple_type(other):
             return self.__class__(self.child > other)
@@ -92,7 +92,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
     def __ge__(
         self,
-        other: Union[PassthroughTensor, AcceptableSimpleType],
+        other: Union[Type[PassthroughTensor], AcceptableSimpleType],
     ) -> PassthroughTensor:
         if is_acceptable_simple_type(other):
             return self.__class__(self.child >= other)
@@ -101,7 +101,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
     def __lt__(
         self,
-        other: Union[PassthroughTensor, AcceptableSimpleType],
+        other: Union[Type[PassthroughTensor], AcceptableSimpleType],
     ) -> PassthroughTensor:
         if is_acceptable_simple_type(other):
             return self.__class__(self.child < other)
@@ -110,7 +110,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
     def __le__(
         self,
-        other: Union[PassthroughTensor, AcceptableSimpleType],
+        other: Union[Type[PassthroughTensor], AcceptableSimpleType],
     ) -> PassthroughTensor:
         if is_acceptable_simple_type(other):
             return self.__class__(self.child <= other)
@@ -119,7 +119,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
     def __ne__(
         self,
-        other: Union[PassthroughTensor, AcceptableSimpleType],
+        other: Union[Type[PassthroughTensor], AcceptableSimpleType],
     ) -> PassthroughTensor:
         if is_acceptable_simple_type(other):
             return self.__class__(self.child != other)
@@ -128,7 +128,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
     def __eq__(
         self,
-        other: Union[PassthroughTensor, AcceptableSimpleType],
+        other: Union[Type[PassthroughTensor], AcceptableSimpleType],
     ) -> PassthroughTensor:
         if is_acceptable_simple_type(other):
             return self.__class__(self.child == other)
@@ -137,7 +137,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
     def __floordiv__(
         self,
-        other: Union[PassthroughTensor, AcceptableSimpleType],
+        other: Union[Type[PassthroughTensor], AcceptableSimpleType],
     ) -> PassthroughTensor:
         if is_acceptable_simple_type(other):
             return self.__class__(self.child.__floordiv__(other))
@@ -146,7 +146,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
     def __rfloordiv__(
         self,
-        other: Union[PassthroughTensor, AcceptableSimpleType],
+        other: Union[Type[PassthroughTensor], AcceptableSimpleType],
     ) -> PassthroughTensor:
         if is_acceptable_simple_type(other):
             return self.__class__(other.__floordiv__(self.child))
@@ -155,7 +155,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
     def __lshift__(
         self,
-        other: Union[PassthroughTensor, AcceptableSimpleType],
+        other: Union[Type[PassthroughTensor], AcceptableSimpleType],
     ) -> PassthroughTensor:
         if is_acceptable_simple_type(other):
             return self.__class__(self.child.__lshift__(other))
@@ -164,7 +164,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
     def __rlshift__(
         self,
-        other: Union[PassthroughTensor, AcceptableSimpleType],
+        other: Union[Type[PassthroughTensor], AcceptableSimpleType],
     ) -> PassthroughTensor:
 
         if is_acceptable_simple_type(other):
@@ -174,7 +174,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
     def __rshift__(
         self,
-        other: Union[PassthroughTensor, AcceptableSimpleType],
+        other: Union[Type[PassthroughTensor], AcceptableSimpleType],
     ) -> PassthroughTensor:
         if is_acceptable_simple_type(other):
             return self.__class__(self.child.__rshift__(other))
@@ -183,7 +183,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
     def __rrshift__(
         self,
-        other: Union[PassthroughTensor, AcceptableSimpleType],
+        other: Union[Type[PassthroughTensor], AcceptableSimpleType],
     ) -> PassthroughTensor:
         if is_acceptable_simple_type(other):
             return self.__class__(other.__rshift__(self.child))  # type: ignore
@@ -192,7 +192,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
     def __pow__(
         self,
-        other: Union[PassthroughTensor, AcceptableSimpleType],
+        other: Union[Type[PassthroughTensor], AcceptableSimpleType],
     ) -> PassthroughTensor:
         if is_acceptable_simple_type(other):
             return self.__class__(self.child.__pow__(other))
@@ -200,7 +200,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         return self.__class__(self.child.__pow__(other.child))  # type: ignore
 
     def __rpow__(
-        self, other: Union[PassthroughTensor, AcceptableSimpleType]
+        self, other: Union[Type[PassthroughTensor], AcceptableSimpleType]
     ) -> PassthroughTensor:
         if is_acceptable_simple_type(other):
             return self.__class__(self.child.__rpow__(other))
@@ -208,7 +208,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
     def __divmod__(
         self,
-        other: Union[PassthroughTensor, AcceptableSimpleType],
+        other: Union[Type[PassthroughTensor], AcceptableSimpleType],
     ) -> PassthroughTensor:
         if is_acceptable_simple_type(other):
             return self.__class__(self.child.__divmod__(other))
@@ -228,7 +228,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         return self.__class__(self.child.copy())
 
     def __mul__(
-        self, other: Union[PassthroughTensor, AcceptableSimpleType]
+        self, other: Union[Type[PassthroughTensor], AcceptableSimpleType]
     ) -> PassthroughTensor:
         if is_acceptable_simple_type(other):
             return self.__class__(self.child * other)
@@ -236,35 +236,35 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         return self.__class__(self.child * other.child)  # type: ignore
 
     def __rmul__(
-        self, other: Union[PassthroughTensor, AcceptableSimpleType]
+        self, other: Union[Type[PassthroughTensor], AcceptableSimpleType]
     ) -> PassthroughTensor:
         if is_acceptable_simple_type(other):
             return self.__class__(self.child.__rmul__(other))
         return self.__class__(self.child.__rmul__(other.child))  # type: ignore
 
     def __matmul__(
-        self, other: Union[PassthroughTensor, np.ndarray]
+        self, other: Union[Type[PassthroughTensor], np.ndarray]
     ) -> PassthroughTensor:
         return self.manual_dot(other)
 
     def __rmatmul__(
-        self, other: Union[PassthroughTensor, np.ndarray]
+        self, other: Union[Type[PassthroughTensor], np.ndarray]
     ) -> PassthroughTensor:
         return other.manual_dot(self)
 
     def __truediv__(
-        self, other: Union[PassthroughTensor, AcceptableSimpleType]
+        self, other: Union[Type[PassthroughTensor], AcceptableSimpleType]
     ) -> PassthroughTensor:
         if is_acceptable_simple_type(other):
             return self.__class__(self.child * (1 / other))
 
         return self.__class__(self.child / other.child)  # type: ignore
 
-    def __rtruediv__(self, other: PassthroughTensor) -> PassthroughTensor:
+    def __rtruediv__(self, other: Type[PassthroughTensor]) -> PassthroughTensor:
         return other.__truediv__(self)
 
     def manual_dot(
-        self, other: Union[PassthroughTensor, np.ndarray]
+        self, other: Union[Type[PassthroughTensor], np.ndarray]
     ) -> PassthroughTensor:
 
         expanded_self = self.repeat(other.shape[1], axis=1)
@@ -279,7 +279,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         result = prod.sum(axis=1)
         return result
 
-    def dot(self, other: Union[PassthroughTensor, np.ndarray]) -> PassthroughTensor:
+    def dot(self, other: Union[Type[PassthroughTensor], np.ndarray]) -> PassthroughTensor:
         return self.manual_dot(other)
 
     def reshape(self, *dims: List[int]) -> PassthroughTensor:
@@ -418,7 +418,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     def __array_function__(
         self,
         func: Callable,
-        types: List[TypeType],
+        types: List[Type],  # what this means =  List of Type(Type())
         args: List[Any],
         kwargs: Dict[str, Any],
     ) -> PassthroughTensor:
@@ -445,5 +445,5 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
 
 @implements(PassthroughTensor, np.square)
-def square(x: PassthroughTensor) -> PassthroughTensor:
+def square(x: Type[PassthroughTensor]) -> PassthroughTensor:
     return x * x
