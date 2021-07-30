@@ -59,10 +59,10 @@ jobs:
 
       - name: Install type stubs
         run: |
-            python3 -m pip install types-protobuf
-            python3 -m pip install types-setuptools
-            python3 -m pip install types-cachetools
-            python3 -m pip install types-requests
+            pip install types-protobuf
+            pip install types-setuptools
+            pip install types-cachetools
+            pip install types-requests
 
       - uses: pre-commit/action@v2.0.3
 
