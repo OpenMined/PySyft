@@ -58,7 +58,8 @@ repos:
             "--disallow-untyped-defs",
             "--disallow-untyped-calls",
 	        "--no-warn-unused-ignores",
-            "--install-types"
+            "--install-types",
+            "--ignore_missing_imports"
         ]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
@@ -83,8 +84,8 @@ repos:
             "--namespace-packages",
             "--install-types",
             "--non-interactive",
-            "--install-types"
-
+            "--install-types",
+            "--ignore_missing_imports"
         ]
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v0.910
@@ -108,7 +109,8 @@ repos:
             "--namespace-packages",
             "--install-types",
             "--non-interactive",
-            "--install-types"
+            "--install-types",
+            "--ignore_missing_imports"
         ]
   # - repo: local
   #   hooks:
