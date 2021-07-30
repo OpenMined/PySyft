@@ -72,4 +72,14 @@ jobs:
           DOCKER_COMPOSE_VERSION=v2.0.0-beta.6
           curl -sSL https://github.com/docker/compose-cli/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-amd64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
-          tox -e stack.test.integration
+          # contents of the tox task
+          pip install -e packages/hagrid
+          docker --version
+          docker compose version
+          hagrid launch test_node domain to docker:9081
+          sleep 10
+          docker ps
+          bash -c '(docker logs test_node_frontend_1 -f &) | grep -q "event - compiled successfully" || true'
+          pytest tests/integration -vvvv
+          hagrid land test_node
+          # tox -e stack.test.integration
