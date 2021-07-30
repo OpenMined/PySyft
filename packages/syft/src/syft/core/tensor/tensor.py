@@ -1,9 +1,14 @@
 # future
 from __future__ import annotations
 
+# stdlib
+from typing import Type
+from typing import Union
+
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
+from numpy.typing import ArrayLike
 import torch as th
 
 # relative
@@ -23,8 +28,13 @@ from .passthrough import PassthroughTensor
 class Tensor(
     PassthroughTensor, AutogradTensorAncestor, PhiTensorAncestor, Serializable
 ):
-    def __init__(self, child) -> None:
-        """data must be a list of numpy array"""
+    def __init__(
+        self,
+        child: Union[Type[PassthroughTensor], Type[AutogradTensorAncestor], ArrayLike],
+    ) -> None:
+        """data must be a list of numpy array
+        Unsure if np.typing.ArrayLike alone works
+        """
 
         if isinstance(child, list):
             child = np.array(child)

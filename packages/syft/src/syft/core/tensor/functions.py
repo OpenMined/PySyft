@@ -1,3 +1,8 @@
+# stdlib
+from typing import Any
+from typing import Optional
+from typing import Union
+
 # third party
 import numpy as np
 
@@ -9,7 +14,9 @@ from .tensor import Tensor
 
 
 @implements(Tensor, np.mean)
-def mean(array, axis=None, **kwargs) -> Tensor:
+def mean(
+    array: np.typing.ArrayLike, axis: Optional[int] = None, **kwargs: Any
+) -> Tensor:
     if axis is None:
         den = float(np.prod(array.shape))
     else:
@@ -19,30 +26,32 @@ def mean(array, axis=None, **kwargs) -> Tensor:
 
 
 @implements(Tensor, np.max)
-def npmax(*args, **kwargs) -> Tensor:
-    args, kwargs = inputs2child(*args, **kwargs)
+def npmax(*args: Any, **kwargs: Any) -> Tensor:
+    args, kwargs = inputs2child(*args, **kwargs)  # type: ignore
     return np.max(*args, **kwargs)
 
 
 @implements(Tensor, np.min)
-def npmin(*args, **kwargs) -> Tensor:
-    args, kwargs = inputs2child(*args, **kwargs)
+def npmin(*args: Any, **kwargs: Any) -> Tensor:
+    args, kwargs = inputs2child(*args, **kwargs)  # type: ignore
     return np.min(*args, **kwargs)
 
 
 @implements(Tensor, np.square)
-def square(x) -> Tensor:
+def square(x: np.typing.ArrayLike) -> Tensor:
     return x * x
 
 
 @implements(Tensor, np.expand_dims)
-def expand_dims(*args, **kwargs) -> Tensor:
-    args, kwargs = inputs2child(*args, **kwargs)
+def expand_dims(*args: Any, **kwargs: Any) -> Tensor:
+    args, kwargs = inputs2child(*args, **kwargs)  # type: ignore
     return Tensor(np.expand_dims(*args, **kwargs))
 
 
 @implements(Tensor, np.multiply)
-def multiply(a, b) -> Tensor:
+def multiply(
+    a: Union[Tensor, np.typing.ArrayLike], b: Union[Tensor, np.typing.ArrayLike]
+) -> Tensor:
     if isinstance(a, Tensor):
         result = a.__mul__(b)
         if result is not NotImplementedError:
@@ -53,4 +62,4 @@ def multiply(a, b) -> Tensor:
         if result is not NotImplementedError:
             return result
 
-    return TypeError(f"Can't multiply {type(a)} with {type(b)}")
+    return TypeError(f"Can't multiply {type(a)} with {type(b)}")  # type: ignore
