@@ -19,7 +19,7 @@ from syft.core.node.common.node_service.user_manager.user_manager_service import
 )
 
 # grid absolute
-from app.models.messages import GridMessage
+from app.models.messages import GridToSyftMessage
 from app.users.models import User
 from app.users.models import UserCreate
 from app.users.models import UserPrivate
@@ -27,7 +27,7 @@ from app.users.models import UserUpdate
 
 
 def create_user(new_user: UserCreate, current_user: UserPrivate) -> str:
-    message = GridMessage(
+    message = GridToSyftMessage(
         signing_key=current_user.get_signing_key(),
         syft_message_type=CreateUserMessage,
     )
@@ -36,7 +36,7 @@ def create_user(new_user: UserCreate, current_user: UserPrivate) -> str:
 
 
 def get_all_users(current_user: UserPrivate) -> List[User]:
-    message = GridMessage(
+    message = GridToSyftMessage(
         signing_key=current_user.get_signing_key(),
         syft_message_type=GetUsersMessage,
     )
@@ -45,7 +45,7 @@ def get_all_users(current_user: UserPrivate) -> List[User]:
 
 
 def get_user(user_id: int, current_user: UserPrivate) -> User:
-    message = GridMessage(
+    message = GridToSyftMessage(
         signing_key=current_user.get_signing_key(), syft_message_type=GetUserMessage
     )
     response = message.send_with_reply(user_id=user_id)
@@ -55,7 +55,7 @@ def get_user(user_id: int, current_user: UserPrivate) -> User:
 def update_user(
     user_id: int, current_user: UserPrivate, updated_user: UserUpdate
 ) -> str:
-    message = GridMessage(
+    message = GridToSyftMessage(
         signing_key=current_user.get_signing_key(),
         syft_message_type=UpdateUserMessage,
     )
@@ -64,7 +64,7 @@ def update_user(
 
 
 def delete_user(user_id: int, current_user: UserPrivate) -> None:
-    message = GridMessage(
+    message = GridToSyftMessage(
         signing_key=current_user.get_signing_key(),
         syft_message_type=DeleteUserMessage,
     )
