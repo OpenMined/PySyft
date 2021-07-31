@@ -36,7 +36,8 @@ def get_current_user(token: str = Depends(reusable_oauth2)) -> UserPrivate:
         # TODO: Fix jwt.
         # TODO: Send a secure message with the token instead of fetching the user
         #       directly through node
-        current_user = UserPrivate.from_orm(node.users.first(id=token_data.sub))
+        user = node.users.first(id=token_data.sub)
+        current_user = UserPrivate.from_orm(user)
         return current_user
     except Exception:
         # TODO: Improve error handling
