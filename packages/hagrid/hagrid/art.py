@@ -83,19 +83,25 @@ def hold_on_tight() -> None:
 
 
 def hagrid1() -> None:
-    ascii_magic.to_terminal(
-        ascii_magic.from_image_file(
-            img_path=str(asset_path()) + "/img/hagrid.png", columns=83
+    try:
+        ascii_magic.to_terminal(
+            ascii_magic.from_image_file(
+                img_path=str(asset_path()) + "/img/hagrid.png", columns=83
+            )
         )
-    )
+    except Exception:
+        pass
 
 
 def hagrid2() -> None:
-    ascii_magic.to_terminal(
-        ascii_magic.from_image_file(
-            img_path=str(asset_path()) + "/img/hagrid2.png", columns=83
+    try:
+        ascii_magic.to_terminal(
+            ascii_magic.from_image_file(
+                img_path=str(asset_path()) + "/img/hagrid2.png", columns=83
+            )
         )
-    )
+    except Exception:
+        pass
 
 
 def hagrid() -> None:

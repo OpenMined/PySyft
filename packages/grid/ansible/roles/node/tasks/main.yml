@@ -14,7 +14,7 @@
     version: "{{ repo_branch }}"
   become_user: "{{ om_user }}"
   ignore_errors: yes
-  when: local is not defined
+  when: vagrant is not defined
 
 - name: PySyft Repo Update Cron Job
   ansible.builtin.cron:
