@@ -1,0 +1,86 @@
+# Stack Integration Tests
+name: Syft + Grid Stack Integration Tests
+
+on:
+  # schedule:
+  #   - cron: "0 22 * * *" # 7pm Brazil, 10pm UTC, 8am AEST
+  pull_request:
+    branches:
+      - "0.6.0"
+  push:
+    branches:
+      - "0.6.0"
+      - "demo_strike_team_branch_4"
+    paths:
+      - ".github/workflows/stack-*.yml"
+  workflow_dispatch:
+    inputs:
+      none:
+        description: "Run Version Tests Manually"
+        required: false
+
+jobs:
+  stack-integration-tests:
+    strategy:
+      max-parallel: 3
+      matrix:
+        os: [ubuntu-latest]
+        python-version: [3.9]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # In this step, this action saves a list of existing images,
+      # the cache is created without them in the post run.
+      # It also restores the cache if it exists.
+      - uses: satackey/action-docker-layer-caching@v0.0.11
+        # Ignore the failure of a step and avoid terminating the job.
+        continue-on-error: true
+
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
+
+      - name: Install tox
+        run: |
+          pip install tox pytest requests --upgrade
+
+      - name: Run integration tests
+        shell: bash
+        run: |
+          mkdir -p ~/.docker/cli-plugins
+          DOCKER_COMPOSE_VERSION=v2.0.0-beta.6
+          curl -sSL https://github.com/docker/compose-cli/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-amd64 -o ~/.docker/cli-plugins/docker-compose
+          chmod +x ~/.docker/cli-plugins/docker-compose
+          # contents of the tox task
+          pip install -e packages/hagrid
+          docker --version
+          docker compose version
+          export HAGRID_ART=false
+          HAGRID_ART=false hagrid launch test_node domain to docker:9081 1>/dev/null
+          sleep 10
+          docker ps
+          bash -c '(docker logs test_node_frontend_1 -f &) | grep -q "event - compiled successfully" || true'
+          pytest tests/integration -vvvv
+          HAGRID_ART=false hagrid land test_node 1>/dev/null
+          # tox -e stack.test.integration
