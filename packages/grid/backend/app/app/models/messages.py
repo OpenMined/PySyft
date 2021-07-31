@@ -20,7 +20,7 @@ from app.core.node import node
 
 # TODO: Add without reply?
 # TODO: Check if its necessary to break into multiple messages (Signed, Unsigned, etc)
-class GridMessage(BaseModel):
+class GridToSyftMessage(BaseModel):
     signing_key: SigningKey
     with_reply: bool = True
     is_signed: bool = True
