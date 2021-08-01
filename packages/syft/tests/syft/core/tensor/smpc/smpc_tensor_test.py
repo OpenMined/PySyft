@@ -71,3 +71,24 @@ def test_mpc_private_public_op(op_str: str) -> None:
     expected = op(value_1, value_2)
 
     assert (res == expected).all()
+
+
+@pytest.mark.parametrize(
+    "method_str, kwargs", [("sum", {"axis": 0}), ("sum", {"axis": 1})]
+)
+def test_mpc_forward_methods(method_str: str, kwargs) -> None:
+    value = np.array([[1, 2, 3, 4, -5], [5, 6, 7, 8, 9]], dtype=np.int64)
+
+    remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
+
+    mpc_tensor = MPCTensor(
+        parties=clients, secret=remote_value, shape=(2, 5), seed_shares=52
+    )
+
+    op_mpc = getattr(mpc_tensor, method_str)
+    op = getattr(value, method_str)
+
+    res = op_mpc(**kwargs).reconstruct()
+    expected = op(**kwargs)
+
+    assert (res == expected).all()
