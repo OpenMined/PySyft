@@ -21,13 +21,14 @@ async def app():
 async def client(app) -> AsyncClient:
     async with AsyncClient(
         app=app,
-        base_url="http://localhost",
+        base_url="http://localhost", # TODO: Use base_url from config 
         headers={"Content-Type": "application/json"},
     ) as client:
         yield client
 
 @pytest.fixture
 async def test_user_creation() -> UserCreate:
+    # TODO: Add randomness
     return UserCreate(email="test@openmined.org", name="Container Tester", password="changethis", role="Administrator")
 
 @pytest.fixture()
