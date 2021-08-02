@@ -1,7 +1,6 @@
 {
   "lib": "petlib",
   "classes": [
-    "petlib._compat.OpenSSLVersion",
     "petlib.bindings.Const",
     "petlib.bindings.InitCiphers",
     "petlib.bindings.OpenSSLVersion",
@@ -27,7 +26,6 @@
   ],
   "modules": [
     "petlib",
-    "petlib._compat",
     "petlib._petlib",
     "petlib.bindings",
     "petlib.bn",
@@ -39,8 +37,6 @@
     "petlib.pack"
   ],
   "methods": [
-    ["petlib._compat.get_abi_lib", "_syft_missing"],
-    ["petlib._compat.get_openssl_version", "_syft_missing"],
     ["petlib.bindings.InitCiphers.__del__", "_syft_missing"],
     ["petlib.bindings.InitCiphers.__init__", "_syft_missing"],
     ["petlib.bindings.get_errors", "_syft_missing"],
