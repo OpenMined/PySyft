@@ -77,7 +77,7 @@ jobs:
           pip install -r requirements.unstable.txt
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
-          pip install "pillow<=8.2.0"
+          pip install "pillow>=8.3.1"
 
       - name: Scan for security issues
         run: |
@@ -145,7 +145,7 @@ jobs:
           pip install -r requirements.unstable.txt
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
-          pip install "pillow<=8.2.0"
+          pip install "pillow>=8.3.1"
 
       - name: Test PyGrid
         run: |
@@ -206,7 +206,7 @@ jobs:
           grep -A 3 "torch_ecosystem" setup.cfg
           pip install -r requirements.unstable.txt
           pip install -e .[dev] -f https://download.pytorch.org/whl/torch_stable.html
-          pip install "pillow<=8.2.0"
+          pip install "pillow>=8.3.1"
 
       - name: Check import works without dev packages
         run: |
