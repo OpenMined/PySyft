@@ -81,19 +81,92 @@
     "opacus.version"
   ],
   "methods": [
+    ["opacus.PerSampleGradientClipper.__init__", "_syft_return_absent"],
+    ["opacus.PerSampleGradientClipper.__repr__", "_syft_missing"],
     ["opacus.PerSampleGradientClipper._get_aggregated_state", "tuple"],
     ["opacus.PerSampleGradientClipper._named_grad_samples", "Iterator"],
     ["opacus.PerSampleGradientClipper._named_params", "Iterator"],
+    ["opacus.PerSampleGradientClipper._on_batch_clip", "_syft_return_absent"],
     ["opacus.PerSampleGradientClipper._reset_aggregated_state", "NoneType"],
     ["opacus.PerSampleGradientClipper._scale_summed_grad", "torch.Tensor"],
     ["opacus.PerSampleGradientClipper._weighted_sum", "torch.Tensor"],
     ["opacus.PerSampleGradientClipper.clip_and_accumulate", "NoneType"],
     ["opacus.PerSampleGradientClipper.pre_step", "tuple"],
     ["opacus.PerSampleGradientClipper.set_on_batch_clip_func", "NoneType"],
+    ["opacus.PerSampleGradientClipper.zero_grad", "_syft_missing"],
+    ["opacus.PrivacyEngine.__init__", "_syft_return_absent"],
     ["opacus.PrivacyEngine._generate_noise", "torch.Tensor"],
+    ["opacus.PrivacyEngine._sample_poisson_empty_batches", "_syft_missing"],
+    ["opacus.PrivacyEngine._set_sample_rate", "_syft_missing"],
+    ["opacus.PrivacyEngine._set_seed", "_syft_return_absent"],
+    ["opacus.PrivacyEngine.attach", "_syft_return_absent"],
+    ["opacus.PrivacyEngine.detach", "_syft_missing"],
     ["opacus.PrivacyEngine.get_privacy_spent", "tuple"],
+    ["opacus.PrivacyEngine.get_renyi_divergence", "_syft_missing"],
+    ["opacus.PrivacyEngine.load_state_dict", "_syft_missing"],
+    ["opacus.PrivacyEngine.state_dict", "_syft_missing"],
+    ["opacus.PrivacyEngine.step", "_syft_return_absent"],
+    ["opacus.PrivacyEngine.to", "_syft_return_absent"],
+    ["opacus.PrivacyEngine.virtual_step", "_syft_missing"],
+    ["opacus.PrivacyEngine.zero_grad", "_syft_missing"],
+    [
+      "opacus.dp_model_inspector.DPModelInspector.__init__",
+      "_syft_return_absent"
+    ],
     ["opacus.dp_model_inspector.DPModelInspector.validate", "bool"],
+    ["opacus.dp_model_inspector.GradSampleModule.__delattr__", "_syft_missing"],
+    ["opacus.dp_model_inspector.GradSampleModule.__dir__", "_syft_missing"],
+    [
+      "opacus.dp_model_inspector.GradSampleModule.__init__",
+      "_syft_return_absent"
+    ],
+    ["opacus.dp_model_inspector.GradSampleModule.__repr__", "_syft_missing"],
     ["opacus.dp_model_inspector.GradSampleModule.__setattr__", "NoneType"],
+    [
+      "opacus.dp_model_inspector.GradSampleModule.__setstate__",
+      "_syft_missing"
+    ],
+    ["opacus.dp_model_inspector.GradSampleModule._apply", "_syft_missing"],
+    ["opacus.dp_model_inspector.GradSampleModule._call_impl", "_syft_missing"],
+    ["opacus.dp_model_inspector.GradSampleModule._call_impl", "_syft_missing"],
+    ["opacus.dp_model_inspector.GradSampleModule._close", "_syft_missing"],
+    [
+      "opacus.dp_model_inspector.GradSampleModule._get_backward_hooks",
+      "_syft_missing"
+    ],
+    ["opacus.dp_model_inspector.GradSampleModule._get_name", "_syft_missing"],
+    [
+      "opacus.dp_model_inspector.GradSampleModule._load_from_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.dp_model_inspector.GradSampleModule._maybe_warn_non_full_backward_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.dp_model_inspector.GradSampleModule._named_members",
+      "_syft_missing"
+    ],
+    [
+      "opacus.dp_model_inspector.GradSampleModule._register_load_state_dict_pre_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.dp_model_inspector.GradSampleModule._register_state_dict_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.dp_model_inspector.GradSampleModule._replicate_for_data_parallel",
+      "_syft_missing"
+    ],
+    [
+      "opacus.dp_model_inspector.GradSampleModule._save_to_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.dp_model_inspector.GradSampleModule._slow_forward",
+      "_syft_missing"
+    ],
     ["opacus.dp_model_inspector.GradSampleModule.add_hooks", "NoneType"],
     ["opacus.dp_model_inspector.GradSampleModule.add_module", "NoneType"],
     [
@@ -105,6 +178,14 @@
       "torch.nn.modules.module.T"
     ],
     ["opacus.dp_model_inspector.GradSampleModule.buffers", "Iterator"],
+    [
+      "opacus.dp_model_inspector.GradSampleModule.capture_activations_hook",
+      "_syft_return_absent"
+    ],
+    [
+      "opacus.dp_model_inspector.GradSampleModule.capture_backprops_hook",
+      "_syft_return_absent"
+    ],
     ["opacus.dp_model_inspector.GradSampleModule.children", "Iterator"],
     [
       "opacus.dp_model_inspector.GradSampleModule.cpu",
@@ -113,6 +194,10 @@
     [
       "opacus.dp_model_inspector.GradSampleModule.cuda",
       "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.dp_model_inspector.GradSampleModule.del_grad_sample",
+      "_syft_missing"
     ],
     ["opacus.dp_model_inspector.GradSampleModule.disable_hooks", "NoneType"],
     [
@@ -129,14 +214,23 @@
       "opacus.dp_model_inspector.GradSampleModule.float",
       "torch.nn.modules.module.T"
     ],
+    ["opacus.dp_model_inspector.GradSampleModule.forward", "_syft_missing"],
     [
       "opacus.dp_model_inspector.GradSampleModule.half",
       "torch.nn.modules.module.T"
     ],
     ["opacus.dp_model_inspector.GradSampleModule.is_supported", "bool"],
+    [
+      "opacus.dp_model_inspector.GradSampleModule.load_state_dict",
+      "_syft_return_absent"
+    ],
     ["opacus.dp_model_inspector.GradSampleModule.modules", "Iterator"],
     ["opacus.dp_model_inspector.GradSampleModule.named_buffers", "Iterator"],
     ["opacus.dp_model_inspector.GradSampleModule.named_children", "Iterator"],
+    [
+      "opacus.dp_model_inspector.GradSampleModule.named_modules",
+      "_syft_return_absent"
+    ],
     ["opacus.dp_model_inspector.GradSampleModule.named_parameters", "Iterator"],
     ["opacus.dp_model_inspector.GradSampleModule.parameters", "Iterator"],
     [
@@ -177,6 +271,8 @@
       "opacus.dp_model_inspector.GradSampleModule.share_memory",
       "torch.nn.modules.module.T"
     ],
+    ["opacus.dp_model_inspector.GradSampleModule.state_dict", "_syft_missing"],
+    ["opacus.dp_model_inspector.GradSampleModule.to", "_syft_missing"],
     [
       "opacus.dp_model_inspector.GradSampleModule.to_standard_module",
       "torch.nn.modules.module.Module"
@@ -197,6 +293,11 @@
       "opacus.dp_model_inspector.GradSampleModule.xpu",
       "torch.nn.modules.module.T"
     ],
+    ["opacus.dp_model_inspector.GradSampleModule.zero_grad", "_syft_missing"],
+    [
+      "opacus.dp_model_inspector.ModelInspector.__init__",
+      "_syft_return_absent"
+    ],
     ["opacus.dp_model_inspector.ModelInspector.validate", "bool"],
     ["opacus.dp_model_inspector._conv_group_number_check", "bool"],
     ["opacus.dp_model_inspector._is_in_training_mode", "bool"],
@@ -205,7 +306,47 @@
     ["opacus.dp_model_inspector._no_lstm", "bool"],
     ["opacus.dp_model_inspector._no_running_stats_instancenorm_check", "bool"],
     ["opacus.dp_model_inspector.get_layer_type", "str"],
+    ["opacus.grad_sample.GradSampleModule.__delattr__", "_syft_missing"],
+    ["opacus.grad_sample.GradSampleModule.__dir__", "_syft_missing"],
+    ["opacus.grad_sample.GradSampleModule.__init__", "_syft_return_absent"],
+    ["opacus.grad_sample.GradSampleModule.__repr__", "_syft_missing"],
     ["opacus.grad_sample.GradSampleModule.__setattr__", "NoneType"],
+    ["opacus.grad_sample.GradSampleModule.__setstate__", "_syft_missing"],
+    ["opacus.grad_sample.GradSampleModule._apply", "_syft_missing"],
+    ["opacus.grad_sample.GradSampleModule._call_impl", "_syft_missing"],
+    ["opacus.grad_sample.GradSampleModule._call_impl", "_syft_missing"],
+    ["opacus.grad_sample.GradSampleModule._close", "_syft_missing"],
+    [
+      "opacus.grad_sample.GradSampleModule._get_backward_hooks",
+      "_syft_missing"
+    ],
+    ["opacus.grad_sample.GradSampleModule._get_name", "_syft_missing"],
+    [
+      "opacus.grad_sample.GradSampleModule._load_from_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.GradSampleModule._maybe_warn_non_full_backward_hook",
+      "_syft_missing"
+    ],
+    ["opacus.grad_sample.GradSampleModule._named_members", "_syft_missing"],
+    [
+      "opacus.grad_sample.GradSampleModule._register_load_state_dict_pre_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.GradSampleModule._register_state_dict_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.GradSampleModule._replicate_for_data_parallel",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.GradSampleModule._save_to_state_dict",
+      "_syft_missing"
+    ],
+    ["opacus.grad_sample.GradSampleModule._slow_forward", "_syft_missing"],
     ["opacus.grad_sample.GradSampleModule.add_hooks", "NoneType"],
     ["opacus.grad_sample.GradSampleModule.add_module", "NoneType"],
     ["opacus.grad_sample.GradSampleModule.apply", "torch.nn.modules.module.T"],
@@ -214,20 +355,38 @@
       "torch.nn.modules.module.T"
     ],
     ["opacus.grad_sample.GradSampleModule.buffers", "Iterator"],
+    [
+      "opacus.grad_sample.GradSampleModule.capture_activations_hook",
+      "_syft_return_absent"
+    ],
+    [
+      "opacus.grad_sample.GradSampleModule.capture_backprops_hook",
+      "_syft_return_absent"
+    ],
     ["opacus.grad_sample.GradSampleModule.children", "Iterator"],
     ["opacus.grad_sample.GradSampleModule.cpu", "torch.nn.modules.module.T"],
     ["opacus.grad_sample.GradSampleModule.cuda", "torch.nn.modules.module.T"],
+    ["opacus.grad_sample.GradSampleModule.del_grad_sample", "_syft_missing"],
     ["opacus.grad_sample.GradSampleModule.disable_hooks", "NoneType"],
     ["opacus.grad_sample.GradSampleModule.double", "torch.nn.modules.module.T"],
     ["opacus.grad_sample.GradSampleModule.enable_hooks", "NoneType"],
     ["opacus.grad_sample.GradSampleModule.eval", "torch.nn.modules.module.T"],
     ["opacus.grad_sample.GradSampleModule.extra_repr", "str"],
     ["opacus.grad_sample.GradSampleModule.float", "torch.nn.modules.module.T"],
+    ["opacus.grad_sample.GradSampleModule.forward", "_syft_missing"],
     ["opacus.grad_sample.GradSampleModule.half", "torch.nn.modules.module.T"],
     ["opacus.grad_sample.GradSampleModule.is_supported", "bool"],
+    [
+      "opacus.grad_sample.GradSampleModule.load_state_dict",
+      "_syft_return_absent"
+    ],
     ["opacus.grad_sample.GradSampleModule.modules", "Iterator"],
     ["opacus.grad_sample.GradSampleModule.named_buffers", "Iterator"],
     ["opacus.grad_sample.GradSampleModule.named_children", "Iterator"],
+    [
+      "opacus.grad_sample.GradSampleModule.named_modules",
+      "_syft_return_absent"
+    ],
     ["opacus.grad_sample.GradSampleModule.named_parameters", "Iterator"],
     ["opacus.grad_sample.GradSampleModule.parameters", "Iterator"],
     ["opacus.grad_sample.GradSampleModule.parametrized_modules", "Iterable"],
@@ -259,6 +418,8 @@
       "opacus.grad_sample.GradSampleModule.share_memory",
       "torch.nn.modules.module.T"
     ],
+    ["opacus.grad_sample.GradSampleModule.state_dict", "_syft_missing"],
+    ["opacus.grad_sample.GradSampleModule.to", "_syft_missing"],
     [
       "opacus.grad_sample.GradSampleModule.to_standard_module",
       "torch.nn.modules.module.Module"
@@ -267,6 +428,7 @@
     ["opacus.grad_sample.GradSampleModule.trainable_modules", "Iterable"],
     ["opacus.grad_sample.GradSampleModule.type", "torch.nn.modules.module.T"],
     ["opacus.grad_sample.GradSampleModule.xpu", "torch.nn.modules.module.T"],
+    ["opacus.grad_sample.GradSampleModule.zero_grad", "_syft_missing"],
     ["opacus.grad_sample.compute_conv_grad_sample", "NoneType"],
     ["opacus.grad_sample.compute_embedding_grad_sample", "NoneType"],
     ["opacus.grad_sample.compute_group_norm_grad_sample", "NoneType"],
@@ -277,9 +439,50 @@
     ["opacus.grad_sample.compute_sequence_bias_grad_sample", "NoneType"],
     ["opacus.grad_sample.conv.compute_conv_grad_sample", "NoneType"],
     ["opacus.grad_sample.conv.create_or_extend_grad_sample", "NoneType"],
+    ["opacus.grad_sample.conv.register_grad_sampler", "_syft_return_absent"],
+    ["opacus.grad_sample.conv.unfold3d", "_syft_return_absent"],
     ["opacus.grad_sample.create_or_accumulate_grad_sample", "NoneType"],
     ["opacus.grad_sample.create_or_extend_grad_sample", "NoneType"],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear.__delattr__", "_syft_missing"],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear.__dir__", "_syft_missing"],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear.__init__", "_syft_return_absent"],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear.__repr__", "_syft_missing"],
     ["opacus.grad_sample.dp_lstm.LSTMLinear.__setattr__", "NoneType"],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear.__setstate__", "_syft_missing"],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear._apply", "_syft_missing"],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear._call_impl", "_syft_missing"],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear._call_impl", "_syft_missing"],
+    [
+      "opacus.grad_sample.dp_lstm.LSTMLinear._get_backward_hooks",
+      "_syft_missing"
+    ],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear._get_name", "_syft_missing"],
+    [
+      "opacus.grad_sample.dp_lstm.LSTMLinear._load_from_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.dp_lstm.LSTMLinear._maybe_warn_non_full_backward_hook",
+      "_syft_missing"
+    ],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear._named_members", "_syft_missing"],
+    [
+      "opacus.grad_sample.dp_lstm.LSTMLinear._register_load_state_dict_pre_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.dp_lstm.LSTMLinear._register_state_dict_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.dp_lstm.LSTMLinear._replicate_for_data_parallel",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.dp_lstm.LSTMLinear._save_to_state_dict",
+      "_syft_missing"
+    ],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear._slow_forward", "_syft_missing"],
     ["opacus.grad_sample.dp_lstm.LSTMLinear.add_module", "NoneType"],
     [
       "opacus.grad_sample.dp_lstm.LSTMLinear.apply",
@@ -305,9 +508,17 @@
     ],
     ["opacus.grad_sample.dp_lstm.LSTMLinear.forward", "torch.Tensor"],
     ["opacus.grad_sample.dp_lstm.LSTMLinear.half", "torch.nn.modules.module.T"],
+    [
+      "opacus.grad_sample.dp_lstm.LSTMLinear.load_state_dict",
+      "_syft_return_absent"
+    ],
     ["opacus.grad_sample.dp_lstm.LSTMLinear.modules", "Iterator"],
     ["opacus.grad_sample.dp_lstm.LSTMLinear.named_buffers", "Iterator"],
     ["opacus.grad_sample.dp_lstm.LSTMLinear.named_children", "Iterator"],
+    [
+      "opacus.grad_sample.dp_lstm.LSTMLinear.named_modules",
+      "_syft_return_absent"
+    ],
     ["opacus.grad_sample.dp_lstm.LSTMLinear.named_parameters", "Iterator"],
     ["opacus.grad_sample.dp_lstm.LSTMLinear.parameters", "Iterator"],
     [
@@ -337,6 +548,8 @@
       "opacus.grad_sample.dp_lstm.LSTMLinear.share_memory",
       "torch.nn.modules.module.T"
     ],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear.state_dict", "_syft_missing"],
+    ["opacus.grad_sample.dp_lstm.LSTMLinear.to", "_syft_missing"],
     [
       "opacus.grad_sample.dp_lstm.LSTMLinear.train",
       "torch.nn.modules.module.T"
@@ -346,9 +559,86 @@
     ["opacus.grad_sample.dp_lstm.LSTMLinear.zero_grad", "NoneType"],
     ["opacus.grad_sample.dp_lstm.compute_lstm_linear_grad_sample", "NoneType"],
     ["opacus.grad_sample.dp_lstm.create_or_accumulate_grad_sample", "NoneType"],
+    ["opacus.grad_sample.dp_lstm.register_grad_sampler", "_syft_return_absent"],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.__delattr__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.__dir__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.__init__",
+      "_syft_return_absent"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.__repr__",
+      "_syft_missing"
+    ],
     [
       "opacus.grad_sample.dp_multihead_attention.SequenceBias.__setattr__",
       "NoneType"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.__setstate__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias._apply",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias._call_impl",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias._call_impl",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias._get_backward_hooks",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias._get_name",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias._load_from_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias._maybe_warn_non_full_backward_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias._named_members",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias._register_load_state_dict_pre_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias._register_state_dict_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias._replicate_for_data_parallel",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias._reset_parameters",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias._save_to_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias._slow_forward",
+      "_syft_missing"
     ],
     [
       "opacus.grad_sample.dp_multihead_attention.SequenceBias.add_module",
@@ -395,8 +685,16 @@
       "torch.nn.modules.module.T"
     ],
     [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.forward",
+      "_syft_missing"
+    ],
+    [
       "opacus.grad_sample.dp_multihead_attention.SequenceBias.half",
       "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.load_state_dict",
+      "_syft_return_absent"
     ],
     [
       "opacus.grad_sample.dp_multihead_attention.SequenceBias.modules",
@@ -409,6 +707,10 @@
     [
       "opacus.grad_sample.dp_multihead_attention.SequenceBias.named_children",
       "Iterator"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.named_modules",
+      "_syft_return_absent"
     ],
     [
       "opacus.grad_sample.dp_multihead_attention.SequenceBias.named_parameters",
@@ -451,6 +753,14 @@
       "torch.nn.modules.module.T"
     ],
     [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.SequenceBias.to",
+      "_syft_missing"
+    ],
+    [
       "opacus.grad_sample.dp_multihead_attention.SequenceBias.train",
       "torch.nn.modules.module.T"
     ],
@@ -474,9 +784,61 @@
       "opacus.grad_sample.dp_multihead_attention.create_or_extend_grad_sample",
       "NoneType"
     ],
+    [
+      "opacus.grad_sample.dp_multihead_attention.register_grad_sampler",
+      "_syft_return_absent"
+    ],
     ["opacus.grad_sample.embedding.compute_embedding_grad_sample", "NoneType"],
     ["opacus.grad_sample.embedding.create_or_extend_grad_sample", "NoneType"],
+    [
+      "opacus.grad_sample.embedding.register_grad_sampler",
+      "_syft_return_absent"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM.__delattr__",
+      "_syft_missing"
+    ],
+    ["opacus.grad_sample.grad_sample_module.DPLSTM.__dir__", "_syft_missing"],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM.__init__",
+      "_syft_return_absent"
+    ],
+    ["opacus.grad_sample.grad_sample_module.DPLSTM.__repr__", "_syft_missing"],
     ["opacus.grad_sample.grad_sample_module.DPLSTM.__setattr__", "NoneType"],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM.__setstate__",
+      "_syft_missing"
+    ],
+    ["opacus.grad_sample.grad_sample_module.DPLSTM._apply", "_syft_missing"],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM._call_impl",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM._call_impl",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM._get_backward_hooks",
+      "_syft_missing"
+    ],
+    ["opacus.grad_sample.grad_sample_module.DPLSTM._get_name", "_syft_missing"],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM._load_from_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM._make_rename_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM._maybe_warn_non_full_backward_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM._named_members",
+      "_syft_missing"
+    ],
     [
       "opacus.grad_sample.grad_sample_module.DPLSTM._permute_hidden",
       "torch.Tensor"
@@ -484,6 +846,30 @@
     [
       "opacus.grad_sample.grad_sample_module.DPLSTM._rearrange_batch_dim",
       "torch.Tensor"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM._register_load_state_dict_pre_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM._register_renamed_parameters",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM._register_state_dict_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM._replicate_for_data_parallel",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM._save_to_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM._slow_forward",
+      "_syft_missing"
     ],
     ["opacus.grad_sample.grad_sample_module.DPLSTM.add_module", "NoneType"],
     [
@@ -522,9 +908,17 @@
       "opacus.grad_sample.grad_sample_module.DPLSTM.half",
       "torch.nn.modules.module.T"
     ],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM.load_state_dict",
+      "_syft_return_absent"
+    ],
     ["opacus.grad_sample.grad_sample_module.DPLSTM.modules", "Iterator"],
     ["opacus.grad_sample.grad_sample_module.DPLSTM.named_buffers", "Iterator"],
     ["opacus.grad_sample.grad_sample_module.DPLSTM.named_children", "Iterator"],
+    [
+      "opacus.grad_sample.grad_sample_module.DPLSTM.named_modules",
+      "_syft_return_absent"
+    ],
     [
       "opacus.grad_sample.grad_sample_module.DPLSTM.named_parameters",
       "Iterator"
@@ -563,6 +957,11 @@
       "torch.nn.modules.module.T"
     ],
     [
+      "opacus.grad_sample.grad_sample_module.DPLSTM.state_dict",
+      "_syft_missing"
+    ],
+    ["opacus.grad_sample.grad_sample_module.DPLSTM.to", "_syft_missing"],
+    [
       "opacus.grad_sample.grad_sample_module.DPLSTM.train",
       "torch.nn.modules.module.T"
     ],
@@ -576,8 +975,84 @@
     ],
     ["opacus.grad_sample.grad_sample_module.DPLSTM.zero_grad", "NoneType"],
     [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.__delattr__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.__dir__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.__init__",
+      "_syft_return_absent"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.__repr__",
+      "_syft_missing"
+    ],
+    [
       "opacus.grad_sample.grad_sample_module.GradSampleModule.__setattr__",
       "NoneType"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.__setstate__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule._apply",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule._call_impl",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule._call_impl",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule._close",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule._get_backward_hooks",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule._get_name",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule._load_from_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule._maybe_warn_non_full_backward_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule._named_members",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule._register_load_state_dict_pre_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule._register_state_dict_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule._replicate_for_data_parallel",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule._save_to_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule._slow_forward",
+      "_syft_missing"
     ],
     [
       "opacus.grad_sample.grad_sample_module.GradSampleModule.add_hooks",
@@ -600,6 +1075,14 @@
       "Iterator"
     ],
     [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.capture_activations_hook",
+      "_syft_return_absent"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.capture_backprops_hook",
+      "_syft_return_absent"
+    ],
+    [
       "opacus.grad_sample.grad_sample_module.GradSampleModule.children",
       "Iterator"
     ],
@@ -610,6 +1093,10 @@
     [
       "opacus.grad_sample.grad_sample_module.GradSampleModule.cuda",
       "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.del_grad_sample",
+      "_syft_missing"
     ],
     [
       "opacus.grad_sample.grad_sample_module.GradSampleModule.disable_hooks",
@@ -636,12 +1123,20 @@
       "torch.nn.modules.module.T"
     ],
     [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.forward",
+      "_syft_missing"
+    ],
+    [
       "opacus.grad_sample.grad_sample_module.GradSampleModule.half",
       "torch.nn.modules.module.T"
     ],
     [
       "opacus.grad_sample.grad_sample_module.GradSampleModule.is_supported",
       "bool"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.load_state_dict",
+      "_syft_return_absent"
     ],
     [
       "opacus.grad_sample.grad_sample_module.GradSampleModule.modules",
@@ -654,6 +1149,10 @@
     [
       "opacus.grad_sample.grad_sample_module.GradSampleModule.named_children",
       "Iterator"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.named_modules",
+      "_syft_return_absent"
     ],
     [
       "opacus.grad_sample.grad_sample_module.GradSampleModule.named_parameters",
@@ -708,6 +1207,14 @@
       "torch.nn.modules.module.T"
     ],
     [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.to",
+      "_syft_missing"
+    ],
+    [
       "opacus.grad_sample.grad_sample_module.GradSampleModule.to_standard_module",
       "torch.nn.modules.module.Module"
     ],
@@ -728,8 +1235,84 @@
       "torch.nn.modules.module.T"
     ],
     [
+      "opacus.grad_sample.grad_sample_module.GradSampleModule.zero_grad",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear.__delattr__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear.__dir__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear.__init__",
+      "_syft_return_absent"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear.__repr__",
+      "_syft_missing"
+    ],
+    [
       "opacus.grad_sample.grad_sample_module.LSTMLinear.__setattr__",
       "NoneType"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear.__setstate__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear._apply",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear._call_impl",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear._call_impl",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear._get_backward_hooks",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear._get_name",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear._load_from_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear._maybe_warn_non_full_backward_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear._named_members",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear._register_load_state_dict_pre_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear._register_state_dict_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear._replicate_for_data_parallel",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear._save_to_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear._slow_forward",
+      "_syft_missing"
     ],
     ["opacus.grad_sample.grad_sample_module.LSTMLinear.add_module", "NoneType"],
     [
@@ -771,6 +1354,10 @@
       "opacus.grad_sample.grad_sample_module.LSTMLinear.half",
       "torch.nn.modules.module.T"
     ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear.load_state_dict",
+      "_syft_return_absent"
+    ],
     ["opacus.grad_sample.grad_sample_module.LSTMLinear.modules", "Iterator"],
     [
       "opacus.grad_sample.grad_sample_module.LSTMLinear.named_buffers",
@@ -779,6 +1366,10 @@
     [
       "opacus.grad_sample.grad_sample_module.LSTMLinear.named_children",
       "Iterator"
+    ],
+    [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear.named_modules",
+      "_syft_return_absent"
     ],
     [
       "opacus.grad_sample.grad_sample_module.LSTMLinear.named_parameters",
@@ -822,6 +1413,11 @@
       "torch.nn.modules.module.T"
     ],
     [
+      "opacus.grad_sample.grad_sample_module.LSTMLinear.state_dict",
+      "_syft_missing"
+    ],
+    ["opacus.grad_sample.grad_sample_module.LSTMLinear.to", "_syft_missing"],
+    [
       "opacus.grad_sample.grad_sample_module.LSTMLinear.train",
       "torch.nn.modules.module.T"
     ],
@@ -842,6 +1438,10 @@
     ],
     ["opacus.grad_sample.group_norm.create_or_extend_grad_sample", "NoneType"],
     [
+      "opacus.grad_sample.group_norm.register_grad_sampler",
+      "_syft_return_absent"
+    ],
+    [
       "opacus.grad_sample.instance_norm.compute_instance_norm_grad_sample",
       "NoneType"
     ],
@@ -850,17 +1450,76 @@
       "NoneType"
     ],
     [
+      "opacus.grad_sample.instance_norm.register_grad_sampler",
+      "_syft_return_absent"
+    ],
+    [
       "opacus.grad_sample.layer_norm.compute_layer_norm_grad_sample",
       "NoneType"
     ],
     ["opacus.grad_sample.layer_norm.create_or_extend_grad_sample", "NoneType"],
+    [
+      "opacus.grad_sample.layer_norm.register_grad_sampler",
+      "_syft_return_absent"
+    ],
     [
       "opacus.grad_sample.layer_norm.sum_over_all_but_batch_and_last_n",
       "torch.Tensor"
     ],
     ["opacus.grad_sample.linear.compute_linear_grad_sample", "NoneType"],
     ["opacus.grad_sample.linear.create_or_extend_grad_sample", "NoneType"],
+    ["opacus.grad_sample.linear.register_grad_sampler", "_syft_return_absent"],
+    ["opacus.grad_sample.register_grad_sampler", "_syft_return_absent"],
+    ["opacus.grad_sample.utils.GradSampleModule.__delattr__", "_syft_missing"],
+    ["opacus.grad_sample.utils.GradSampleModule.__dir__", "_syft_missing"],
+    [
+      "opacus.grad_sample.utils.GradSampleModule.__init__",
+      "_syft_return_absent"
+    ],
+    ["opacus.grad_sample.utils.GradSampleModule.__repr__", "_syft_missing"],
     ["opacus.grad_sample.utils.GradSampleModule.__setattr__", "NoneType"],
+    ["opacus.grad_sample.utils.GradSampleModule.__setstate__", "_syft_missing"],
+    ["opacus.grad_sample.utils.GradSampleModule._apply", "_syft_missing"],
+    ["opacus.grad_sample.utils.GradSampleModule._call_impl", "_syft_missing"],
+    ["opacus.grad_sample.utils.GradSampleModule._call_impl", "_syft_missing"],
+    ["opacus.grad_sample.utils.GradSampleModule._close", "_syft_missing"],
+    [
+      "opacus.grad_sample.utils.GradSampleModule._get_backward_hooks",
+      "_syft_missing"
+    ],
+    ["opacus.grad_sample.utils.GradSampleModule._get_name", "_syft_missing"],
+    [
+      "opacus.grad_sample.utils.GradSampleModule._load_from_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.utils.GradSampleModule._maybe_warn_non_full_backward_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.utils.GradSampleModule._named_members",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.utils.GradSampleModule._register_load_state_dict_pre_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.utils.GradSampleModule._register_state_dict_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.utils.GradSampleModule._replicate_for_data_parallel",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.utils.GradSampleModule._save_to_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.grad_sample.utils.GradSampleModule._slow_forward",
+      "_syft_missing"
+    ],
     ["opacus.grad_sample.utils.GradSampleModule.add_hooks", "NoneType"],
     ["opacus.grad_sample.utils.GradSampleModule.add_module", "NoneType"],
     [
@@ -872,6 +1531,14 @@
       "torch.nn.modules.module.T"
     ],
     ["opacus.grad_sample.utils.GradSampleModule.buffers", "Iterator"],
+    [
+      "opacus.grad_sample.utils.GradSampleModule.capture_activations_hook",
+      "_syft_return_absent"
+    ],
+    [
+      "opacus.grad_sample.utils.GradSampleModule.capture_backprops_hook",
+      "_syft_return_absent"
+    ],
     ["opacus.grad_sample.utils.GradSampleModule.children", "Iterator"],
     [
       "opacus.grad_sample.utils.GradSampleModule.cpu",
@@ -880,6 +1547,10 @@
     [
       "opacus.grad_sample.utils.GradSampleModule.cuda",
       "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.grad_sample.utils.GradSampleModule.del_grad_sample",
+      "_syft_missing"
     ],
     ["opacus.grad_sample.utils.GradSampleModule.disable_hooks", "NoneType"],
     [
@@ -896,14 +1567,23 @@
       "opacus.grad_sample.utils.GradSampleModule.float",
       "torch.nn.modules.module.T"
     ],
+    ["opacus.grad_sample.utils.GradSampleModule.forward", "_syft_missing"],
     [
       "opacus.grad_sample.utils.GradSampleModule.half",
       "torch.nn.modules.module.T"
     ],
     ["opacus.grad_sample.utils.GradSampleModule.is_supported", "bool"],
+    [
+      "opacus.grad_sample.utils.GradSampleModule.load_state_dict",
+      "_syft_return_absent"
+    ],
     ["opacus.grad_sample.utils.GradSampleModule.modules", "Iterator"],
     ["opacus.grad_sample.utils.GradSampleModule.named_buffers", "Iterator"],
     ["opacus.grad_sample.utils.GradSampleModule.named_children", "Iterator"],
+    [
+      "opacus.grad_sample.utils.GradSampleModule.named_modules",
+      "_syft_return_absent"
+    ],
     ["opacus.grad_sample.utils.GradSampleModule.named_parameters", "Iterator"],
     ["opacus.grad_sample.utils.GradSampleModule.parameters", "Iterator"],
     [
@@ -944,6 +1624,8 @@
       "opacus.grad_sample.utils.GradSampleModule.share_memory",
       "torch.nn.modules.module.T"
     ],
+    ["opacus.grad_sample.utils.GradSampleModule.state_dict", "_syft_missing"],
+    ["opacus.grad_sample.utils.GradSampleModule.to", "_syft_missing"],
     [
       "opacus.grad_sample.utils.GradSampleModule.to_standard_module",
       "torch.nn.modules.module.Module"
@@ -961,11 +1643,39 @@
       "opacus.grad_sample.utils.GradSampleModule.xpu",
       "torch.nn.modules.module.T"
     ],
+    ["opacus.grad_sample.utils.GradSampleModule.zero_grad", "_syft_missing"],
     ["opacus.grad_sample.utils.create_or_accumulate_grad_sample", "NoneType"],
     ["opacus.grad_sample.utils.create_or_extend_grad_sample", "NoneType"],
+    ["opacus.grad_sample.utils.register_grad_sampler", "_syft_return_absent"],
+    ["opacus.layers.DPLSTM.__delattr__", "_syft_missing"],
+    ["opacus.layers.DPLSTM.__dir__", "_syft_missing"],
+    ["opacus.layers.DPLSTM.__init__", "_syft_return_absent"],
+    ["opacus.layers.DPLSTM.__repr__", "_syft_missing"],
     ["opacus.layers.DPLSTM.__setattr__", "NoneType"],
+    ["opacus.layers.DPLSTM.__setstate__", "_syft_missing"],
+    ["opacus.layers.DPLSTM._apply", "_syft_missing"],
+    ["opacus.layers.DPLSTM._call_impl", "_syft_missing"],
+    ["opacus.layers.DPLSTM._call_impl", "_syft_missing"],
+    ["opacus.layers.DPLSTM._get_backward_hooks", "_syft_missing"],
+    ["opacus.layers.DPLSTM._get_name", "_syft_missing"],
+    ["opacus.layers.DPLSTM._load_from_state_dict", "_syft_missing"],
+    ["opacus.layers.DPLSTM._make_rename_dict", "_syft_missing"],
+    [
+      "opacus.layers.DPLSTM._maybe_warn_non_full_backward_hook",
+      "_syft_missing"
+    ],
+    ["opacus.layers.DPLSTM._named_members", "_syft_missing"],
     ["opacus.layers.DPLSTM._permute_hidden", "torch.Tensor"],
     ["opacus.layers.DPLSTM._rearrange_batch_dim", "torch.Tensor"],
+    [
+      "opacus.layers.DPLSTM._register_load_state_dict_pre_hook",
+      "_syft_missing"
+    ],
+    ["opacus.layers.DPLSTM._register_renamed_parameters", "_syft_missing"],
+    ["opacus.layers.DPLSTM._register_state_dict_hook", "_syft_missing"],
+    ["opacus.layers.DPLSTM._replicate_for_data_parallel", "_syft_missing"],
+    ["opacus.layers.DPLSTM._save_to_state_dict", "_syft_missing"],
+    ["opacus.layers.DPLSTM._slow_forward", "_syft_missing"],
     ["opacus.layers.DPLSTM.add_module", "NoneType"],
     ["opacus.layers.DPLSTM.apply", "torch.nn.modules.module.T"],
     ["opacus.layers.DPLSTM.bfloat16", "torch.nn.modules.module.T"],
@@ -979,9 +1689,11 @@
     ["opacus.layers.DPLSTM.float", "torch.nn.modules.module.T"],
     ["opacus.layers.DPLSTM.forward", "tuple"],
     ["opacus.layers.DPLSTM.half", "torch.nn.modules.module.T"],
+    ["opacus.layers.DPLSTM.load_state_dict", "_syft_return_absent"],
     ["opacus.layers.DPLSTM.modules", "Iterator"],
     ["opacus.layers.DPLSTM.named_buffers", "Iterator"],
     ["opacus.layers.DPLSTM.named_children", "Iterator"],
+    ["opacus.layers.DPLSTM.named_modules", "_syft_return_absent"],
     ["opacus.layers.DPLSTM.named_parameters", "Iterator"],
     ["opacus.layers.DPLSTM.parameters", "Iterator"],
     [
@@ -1004,11 +1716,46 @@
     ["opacus.layers.DPLSTM.register_parameter", "NoneType"],
     ["opacus.layers.DPLSTM.requires_grad_", "torch.nn.modules.module.T"],
     ["opacus.layers.DPLSTM.share_memory", "torch.nn.modules.module.T"],
+    ["opacus.layers.DPLSTM.state_dict", "_syft_missing"],
+    ["opacus.layers.DPLSTM.to", "_syft_missing"],
     ["opacus.layers.DPLSTM.train", "torch.nn.modules.module.T"],
     ["opacus.layers.DPLSTM.type", "torch.nn.modules.module.T"],
     ["opacus.layers.DPLSTM.xpu", "torch.nn.modules.module.T"],
     ["opacus.layers.DPLSTM.zero_grad", "NoneType"],
+    ["opacus.layers.DPMultiheadAttention.__delattr__", "_syft_missing"],
+    ["opacus.layers.DPMultiheadAttention.__dir__", "_syft_missing"],
+    ["opacus.layers.DPMultiheadAttention.__init__", "_syft_missing"],
+    ["opacus.layers.DPMultiheadAttention.__repr__", "_syft_missing"],
     ["opacus.layers.DPMultiheadAttention.__setattr__", "NoneType"],
+    ["opacus.layers.DPMultiheadAttention.__setstate__", "_syft_missing"],
+    ["opacus.layers.DPMultiheadAttention._apply", "_syft_missing"],
+    ["opacus.layers.DPMultiheadAttention._call_impl", "_syft_missing"],
+    ["opacus.layers.DPMultiheadAttention._call_impl", "_syft_missing"],
+    ["opacus.layers.DPMultiheadAttention._get_backward_hooks", "_syft_missing"],
+    ["opacus.layers.DPMultiheadAttention._get_name", "_syft_missing"],
+    [
+      "opacus.layers.DPMultiheadAttention._load_from_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.DPMultiheadAttention._maybe_warn_non_full_backward_hook",
+      "_syft_missing"
+    ],
+    ["opacus.layers.DPMultiheadAttention._named_members", "_syft_missing"],
+    [
+      "opacus.layers.DPMultiheadAttention._register_load_state_dict_pre_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.DPMultiheadAttention._register_state_dict_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.DPMultiheadAttention._replicate_for_data_parallel",
+      "_syft_missing"
+    ],
+    ["opacus.layers.DPMultiheadAttention._save_to_state_dict", "_syft_missing"],
+    ["opacus.layers.DPMultiheadAttention._slow_forward", "_syft_missing"],
     ["opacus.layers.DPMultiheadAttention.add_module", "NoneType"],
     ["opacus.layers.DPMultiheadAttention.apply", "torch.nn.modules.module.T"],
     [
@@ -1023,10 +1770,13 @@
     ["opacus.layers.DPMultiheadAttention.eval", "torch.nn.modules.module.T"],
     ["opacus.layers.DPMultiheadAttention.extra_repr", "str"],
     ["opacus.layers.DPMultiheadAttention.float", "torch.nn.modules.module.T"],
+    ["opacus.layers.DPMultiheadAttention.forward", "_syft_missing"],
     ["opacus.layers.DPMultiheadAttention.half", "torch.nn.modules.module.T"],
+    ["opacus.layers.DPMultiheadAttention.load_state_dict", "_syft_missing"],
     ["opacus.layers.DPMultiheadAttention.modules", "Iterator"],
     ["opacus.layers.DPMultiheadAttention.named_buffers", "Iterator"],
     ["opacus.layers.DPMultiheadAttention.named_children", "Iterator"],
+    ["opacus.layers.DPMultiheadAttention.named_modules", "_syft_return_absent"],
     ["opacus.layers.DPMultiheadAttention.named_parameters", "Iterator"],
     ["opacus.layers.DPMultiheadAttention.parameters", "Iterator"],
     [
@@ -1055,13 +1805,87 @@
       "opacus.layers.DPMultiheadAttention.share_memory",
       "torch.nn.modules.module.T"
     ],
+    ["opacus.layers.DPMultiheadAttention.state_dict", "_syft_missing"],
+    ["opacus.layers.DPMultiheadAttention.to", "_syft_missing"],
     ["opacus.layers.DPMultiheadAttention.train", "torch.nn.modules.module.T"],
     ["opacus.layers.DPMultiheadAttention.type", "torch.nn.modules.module.T"],
     ["opacus.layers.DPMultiheadAttention.xpu", "torch.nn.modules.module.T"],
     ["opacus.layers.DPMultiheadAttention.zero_grad", "NoneType"],
     [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.__delattr__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.__dir__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.__init__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.__repr__",
+      "_syft_missing"
+    ],
+    [
       "opacus.layers.DifferentiallyPrivateDistributedDataParallel.__setattr__",
       "NoneType"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.__setstate__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel._apply",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel._call_impl",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel._call_impl",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel._get_backward_hooks",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel._get_name",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel._load_from_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel._maybe_warn_non_full_backward_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel._named_members",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel._register_load_state_dict_pre_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel._register_state_dict_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel._replicate_for_data_parallel",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel._save_to_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel._slow_forward",
+      "_syft_missing"
     ],
     [
       "opacus.layers.DifferentiallyPrivateDistributedDataParallel.add_module",
@@ -1108,8 +1932,16 @@
       "torch.nn.modules.module.T"
     ],
     [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.forward",
+      "_syft_missing"
+    ],
+    [
       "opacus.layers.DifferentiallyPrivateDistributedDataParallel.half",
       "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.load_state_dict",
+      "_syft_return_absent"
     ],
     [
       "opacus.layers.DifferentiallyPrivateDistributedDataParallel.modules",
@@ -1122,6 +1954,10 @@
     [
       "opacus.layers.DifferentiallyPrivateDistributedDataParallel.named_children",
       "Iterator"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.named_modules",
+      "_syft_return_absent"
     ],
     [
       "opacus.layers.DifferentiallyPrivateDistributedDataParallel.named_parameters",
@@ -1164,6 +2000,14 @@
       "torch.nn.modules.module.T"
     ],
     [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.DifferentiallyPrivateDistributedDataParallel.to",
+      "_syft_missing"
+    ],
+    [
       "opacus.layers.DifferentiallyPrivateDistributedDataParallel.train",
       "torch.nn.modules.module.T"
     ],
@@ -1179,7 +2023,41 @@
       "opacus.layers.DifferentiallyPrivateDistributedDataParallel.zero_grad",
       "NoneType"
     ],
+    ["opacus.layers.ParamRenamedModule.__delattr__", "_syft_missing"],
+    ["opacus.layers.ParamRenamedModule.__dir__", "_syft_missing"],
+    ["opacus.layers.ParamRenamedModule.__init__", "_syft_return_absent"],
+    ["opacus.layers.ParamRenamedModule.__repr__", "_syft_missing"],
     ["opacus.layers.ParamRenamedModule.__setattr__", "NoneType"],
+    ["opacus.layers.ParamRenamedModule.__setstate__", "_syft_missing"],
+    ["opacus.layers.ParamRenamedModule._apply", "_syft_missing"],
+    ["opacus.layers.ParamRenamedModule._call_impl", "_syft_missing"],
+    ["opacus.layers.ParamRenamedModule._call_impl", "_syft_missing"],
+    ["opacus.layers.ParamRenamedModule._get_backward_hooks", "_syft_missing"],
+    ["opacus.layers.ParamRenamedModule._get_name", "_syft_missing"],
+    ["opacus.layers.ParamRenamedModule._load_from_state_dict", "_syft_missing"],
+    [
+      "opacus.layers.ParamRenamedModule._maybe_warn_non_full_backward_hook",
+      "_syft_missing"
+    ],
+    ["opacus.layers.ParamRenamedModule._named_members", "_syft_missing"],
+    [
+      "opacus.layers.ParamRenamedModule._register_load_state_dict_pre_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.ParamRenamedModule._register_renamed_parameters",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.ParamRenamedModule._register_state_dict_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.ParamRenamedModule._replicate_for_data_parallel",
+      "_syft_missing"
+    ],
+    ["opacus.layers.ParamRenamedModule._save_to_state_dict", "_syft_missing"],
+    ["opacus.layers.ParamRenamedModule._slow_forward", "_syft_missing"],
     ["opacus.layers.ParamRenamedModule.add_module", "NoneType"],
     ["opacus.layers.ParamRenamedModule.apply", "torch.nn.modules.module.T"],
     ["opacus.layers.ParamRenamedModule.bfloat16", "torch.nn.modules.module.T"],
@@ -1192,9 +2070,11 @@
     ["opacus.layers.ParamRenamedModule.extra_repr", "str"],
     ["opacus.layers.ParamRenamedModule.float", "torch.nn.modules.module.T"],
     ["opacus.layers.ParamRenamedModule.half", "torch.nn.modules.module.T"],
+    ["opacus.layers.ParamRenamedModule.load_state_dict", "_syft_return_absent"],
     ["opacus.layers.ParamRenamedModule.modules", "Iterator"],
     ["opacus.layers.ParamRenamedModule.named_buffers", "Iterator"],
     ["opacus.layers.ParamRenamedModule.named_children", "Iterator"],
+    ["opacus.layers.ParamRenamedModule.named_modules", "_syft_return_absent"],
     ["opacus.layers.ParamRenamedModule.named_parameters", "Iterator"],
     ["opacus.layers.ParamRenamedModule.parameters", "Iterator"],
     [
@@ -1223,11 +2103,41 @@
       "opacus.layers.ParamRenamedModule.share_memory",
       "torch.nn.modules.module.T"
     ],
+    ["opacus.layers.ParamRenamedModule.state_dict", "_syft_missing"],
+    ["opacus.layers.ParamRenamedModule.to", "_syft_missing"],
     ["opacus.layers.ParamRenamedModule.train", "torch.nn.modules.module.T"],
     ["opacus.layers.ParamRenamedModule.type", "torch.nn.modules.module.T"],
     ["opacus.layers.ParamRenamedModule.xpu", "torch.nn.modules.module.T"],
     ["opacus.layers.ParamRenamedModule.zero_grad", "NoneType"],
+    ["opacus.layers.SequenceBias.__delattr__", "_syft_missing"],
+    ["opacus.layers.SequenceBias.__dir__", "_syft_missing"],
+    ["opacus.layers.SequenceBias.__init__", "_syft_return_absent"],
+    ["opacus.layers.SequenceBias.__repr__", "_syft_missing"],
     ["opacus.layers.SequenceBias.__setattr__", "NoneType"],
+    ["opacus.layers.SequenceBias.__setstate__", "_syft_missing"],
+    ["opacus.layers.SequenceBias._apply", "_syft_missing"],
+    ["opacus.layers.SequenceBias._call_impl", "_syft_missing"],
+    ["opacus.layers.SequenceBias._call_impl", "_syft_missing"],
+    ["opacus.layers.SequenceBias._get_backward_hooks", "_syft_missing"],
+    ["opacus.layers.SequenceBias._get_name", "_syft_missing"],
+    ["opacus.layers.SequenceBias._load_from_state_dict", "_syft_missing"],
+    [
+      "opacus.layers.SequenceBias._maybe_warn_non_full_backward_hook",
+      "_syft_missing"
+    ],
+    ["opacus.layers.SequenceBias._named_members", "_syft_missing"],
+    [
+      "opacus.layers.SequenceBias._register_load_state_dict_pre_hook",
+      "_syft_missing"
+    ],
+    ["opacus.layers.SequenceBias._register_state_dict_hook", "_syft_missing"],
+    [
+      "opacus.layers.SequenceBias._replicate_for_data_parallel",
+      "_syft_missing"
+    ],
+    ["opacus.layers.SequenceBias._reset_parameters", "_syft_missing"],
+    ["opacus.layers.SequenceBias._save_to_state_dict", "_syft_missing"],
+    ["opacus.layers.SequenceBias._slow_forward", "_syft_missing"],
     ["opacus.layers.SequenceBias.add_module", "NoneType"],
     ["opacus.layers.SequenceBias.apply", "torch.nn.modules.module.T"],
     ["opacus.layers.SequenceBias.bfloat16", "torch.nn.modules.module.T"],
@@ -1239,10 +2149,13 @@
     ["opacus.layers.SequenceBias.eval", "torch.nn.modules.module.T"],
     ["opacus.layers.SequenceBias.extra_repr", "str"],
     ["opacus.layers.SequenceBias.float", "torch.nn.modules.module.T"],
+    ["opacus.layers.SequenceBias.forward", "_syft_missing"],
     ["opacus.layers.SequenceBias.half", "torch.nn.modules.module.T"],
+    ["opacus.layers.SequenceBias.load_state_dict", "_syft_return_absent"],
     ["opacus.layers.SequenceBias.modules", "Iterator"],
     ["opacus.layers.SequenceBias.named_buffers", "Iterator"],
     ["opacus.layers.SequenceBias.named_children", "Iterator"],
+    ["opacus.layers.SequenceBias.named_modules", "_syft_return_absent"],
     ["opacus.layers.SequenceBias.named_parameters", "Iterator"],
     ["opacus.layers.SequenceBias.parameters", "Iterator"],
     [
@@ -1265,13 +2178,87 @@
     ["opacus.layers.SequenceBias.register_parameter", "NoneType"],
     ["opacus.layers.SequenceBias.requires_grad_", "torch.nn.modules.module.T"],
     ["opacus.layers.SequenceBias.share_memory", "torch.nn.modules.module.T"],
+    ["opacus.layers.SequenceBias.state_dict", "_syft_missing"],
+    ["opacus.layers.SequenceBias.to", "_syft_missing"],
     ["opacus.layers.SequenceBias.train", "torch.nn.modules.module.T"],
     ["opacus.layers.SequenceBias.type", "torch.nn.modules.module.T"],
     ["opacus.layers.SequenceBias.xpu", "torch.nn.modules.module.T"],
     ["opacus.layers.SequenceBias.zero_grad", "NoneType"],
     [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.__delattr__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.__dir__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.__init__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.__repr__",
+      "_syft_missing"
+    ],
+    [
       "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.__setattr__",
       "NoneType"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.__setstate__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel._apply",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel._call_impl",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel._call_impl",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel._get_backward_hooks",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel._get_name",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel._load_from_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel._maybe_warn_non_full_backward_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel._named_members",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel._register_load_state_dict_pre_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel._register_state_dict_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel._replicate_for_data_parallel",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel._save_to_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel._slow_forward",
+      "_syft_missing"
     ],
     [
       "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.add_module",
@@ -1318,8 +2305,16 @@
       "torch.nn.modules.module.T"
     ],
     [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.forward",
+      "_syft_missing"
+    ],
+    [
       "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.half",
       "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.load_state_dict",
+      "_syft_return_absent"
     ],
     [
       "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.modules",
@@ -1332,6 +2327,10 @@
     [
       "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.named_children",
       "Iterator"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.named_modules",
+      "_syft_return_absent"
     ],
     [
       "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.named_parameters",
@@ -1374,6 +2373,14 @@
       "torch.nn.modules.module.T"
     ],
     [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.to",
+      "_syft_missing"
+    ],
+    [
       "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.train",
       "torch.nn.modules.module.T"
     ],
@@ -1389,7 +2396,74 @@
       "opacus.layers.dp_ddp.DifferentiallyPrivateDistributedDataParallel.zero_grad",
       "NoneType"
     ],
+    ["opacus.layers.dp_ddp.average_gradients", "_syft_missing"],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.__delattr__",
+      "_syft_missing"
+    ],
+    ["opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.__dir__", "_syft_missing"],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.__init__",
+      "_syft_return_absent"
+    ],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.__repr__",
+      "_syft_missing"
+    ],
     ["opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.__setattr__", "NoneType"],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.__setstate__",
+      "_syft_missing"
+    ],
+    ["opacus.layers.dp_lstm.BidirectionalDPLSTMLayer._apply", "_syft_missing"],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer._call_impl",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer._call_impl",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer._get_backward_hooks",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer._get_name",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer._load_from_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer._maybe_warn_non_full_backward_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer._named_members",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer._register_load_state_dict_pre_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer._register_state_dict_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer._replicate_for_data_parallel",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer._save_to_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer._slow_forward",
+      "_syft_missing"
+    ],
     ["opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.add_module", "NoneType"],
     [
       "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.apply",
@@ -1427,6 +2501,10 @@
       "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.half",
       "torch.nn.modules.module.T"
     ],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.load_state_dict",
+      "_syft_return_absent"
+    ],
     ["opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.modules", "Iterator"],
     [
       "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.named_buffers",
@@ -1435,6 +2513,10 @@
     [
       "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.named_children",
       "Iterator"
+    ],
+    [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.named_modules",
+      "_syft_return_absent"
     ],
     [
       "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.named_parameters",
@@ -1478,6 +2560,11 @@
       "torch.nn.modules.module.T"
     ],
     [
+      "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.state_dict",
+      "_syft_missing"
+    ],
+    ["opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.to", "_syft_missing"],
+    [
       "opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.train",
       "torch.nn.modules.module.T"
     ],
@@ -1490,9 +2577,41 @@
       "torch.nn.modules.module.T"
     ],
     ["opacus.layers.dp_lstm.BidirectionalDPLSTMLayer.zero_grad", "NoneType"],
+    ["opacus.layers.dp_lstm.DPLSTM.__delattr__", "_syft_missing"],
+    ["opacus.layers.dp_lstm.DPLSTM.__dir__", "_syft_missing"],
+    ["opacus.layers.dp_lstm.DPLSTM.__init__", "_syft_return_absent"],
+    ["opacus.layers.dp_lstm.DPLSTM.__repr__", "_syft_missing"],
     ["opacus.layers.dp_lstm.DPLSTM.__setattr__", "NoneType"],
+    ["opacus.layers.dp_lstm.DPLSTM.__setstate__", "_syft_missing"],
+    ["opacus.layers.dp_lstm.DPLSTM._apply", "_syft_missing"],
+    ["opacus.layers.dp_lstm.DPLSTM._call_impl", "_syft_missing"],
+    ["opacus.layers.dp_lstm.DPLSTM._call_impl", "_syft_missing"],
+    ["opacus.layers.dp_lstm.DPLSTM._get_backward_hooks", "_syft_missing"],
+    ["opacus.layers.dp_lstm.DPLSTM._get_name", "_syft_missing"],
+    ["opacus.layers.dp_lstm.DPLSTM._load_from_state_dict", "_syft_missing"],
+    ["opacus.layers.dp_lstm.DPLSTM._make_rename_dict", "_syft_missing"],
+    [
+      "opacus.layers.dp_lstm.DPLSTM._maybe_warn_non_full_backward_hook",
+      "_syft_missing"
+    ],
+    ["opacus.layers.dp_lstm.DPLSTM._named_members", "_syft_missing"],
     ["opacus.layers.dp_lstm.DPLSTM._permute_hidden", "torch.Tensor"],
     ["opacus.layers.dp_lstm.DPLSTM._rearrange_batch_dim", "torch.Tensor"],
+    [
+      "opacus.layers.dp_lstm.DPLSTM._register_load_state_dict_pre_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_lstm.DPLSTM._register_renamed_parameters",
+      "_syft_missing"
+    ],
+    ["opacus.layers.dp_lstm.DPLSTM._register_state_dict_hook", "_syft_missing"],
+    [
+      "opacus.layers.dp_lstm.DPLSTM._replicate_for_data_parallel",
+      "_syft_missing"
+    ],
+    ["opacus.layers.dp_lstm.DPLSTM._save_to_state_dict", "_syft_missing"],
+    ["opacus.layers.dp_lstm.DPLSTM._slow_forward", "_syft_missing"],
     ["opacus.layers.dp_lstm.DPLSTM.add_module", "NoneType"],
     ["opacus.layers.dp_lstm.DPLSTM.apply", "torch.nn.modules.module.T"],
     ["opacus.layers.dp_lstm.DPLSTM.bfloat16", "torch.nn.modules.module.T"],
@@ -1506,9 +2625,11 @@
     ["opacus.layers.dp_lstm.DPLSTM.float", "torch.nn.modules.module.T"],
     ["opacus.layers.dp_lstm.DPLSTM.forward", "tuple"],
     ["opacus.layers.dp_lstm.DPLSTM.half", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTM.load_state_dict", "_syft_return_absent"],
     ["opacus.layers.dp_lstm.DPLSTM.modules", "Iterator"],
     ["opacus.layers.dp_lstm.DPLSTM.named_buffers", "Iterator"],
     ["opacus.layers.dp_lstm.DPLSTM.named_children", "Iterator"],
+    ["opacus.layers.dp_lstm.DPLSTM.named_modules", "_syft_return_absent"],
     ["opacus.layers.dp_lstm.DPLSTM.named_parameters", "Iterator"],
     ["opacus.layers.dp_lstm.DPLSTM.parameters", "Iterator"],
     [
@@ -1534,11 +2655,43 @@
       "torch.nn.modules.module.T"
     ],
     ["opacus.layers.dp_lstm.DPLSTM.share_memory", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTM.state_dict", "_syft_missing"],
+    ["opacus.layers.dp_lstm.DPLSTM.to", "_syft_missing"],
     ["opacus.layers.dp_lstm.DPLSTM.train", "torch.nn.modules.module.T"],
     ["opacus.layers.dp_lstm.DPLSTM.type", "torch.nn.modules.module.T"],
     ["opacus.layers.dp_lstm.DPLSTM.xpu", "torch.nn.modules.module.T"],
     ["opacus.layers.dp_lstm.DPLSTM.zero_grad", "NoneType"],
+    ["opacus.layers.dp_lstm.DPLSTMCell.__delattr__", "_syft_missing"],
+    ["opacus.layers.dp_lstm.DPLSTMCell.__dir__", "_syft_missing"],
+    ["opacus.layers.dp_lstm.DPLSTMCell.__init__", "_syft_return_absent"],
+    ["opacus.layers.dp_lstm.DPLSTMCell.__repr__", "_syft_missing"],
     ["opacus.layers.dp_lstm.DPLSTMCell.__setattr__", "NoneType"],
+    ["opacus.layers.dp_lstm.DPLSTMCell.__setstate__", "_syft_missing"],
+    ["opacus.layers.dp_lstm.DPLSTMCell._apply", "_syft_missing"],
+    ["opacus.layers.dp_lstm.DPLSTMCell._call_impl", "_syft_missing"],
+    ["opacus.layers.dp_lstm.DPLSTMCell._call_impl", "_syft_missing"],
+    ["opacus.layers.dp_lstm.DPLSTMCell._get_backward_hooks", "_syft_missing"],
+    ["opacus.layers.dp_lstm.DPLSTMCell._get_name", "_syft_missing"],
+    ["opacus.layers.dp_lstm.DPLSTMCell._load_from_state_dict", "_syft_missing"],
+    [
+      "opacus.layers.dp_lstm.DPLSTMCell._maybe_warn_non_full_backward_hook",
+      "_syft_missing"
+    ],
+    ["opacus.layers.dp_lstm.DPLSTMCell._named_members", "_syft_missing"],
+    [
+      "opacus.layers.dp_lstm.DPLSTMCell._register_load_state_dict_pre_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_lstm.DPLSTMCell._register_state_dict_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_lstm.DPLSTMCell._replicate_for_data_parallel",
+      "_syft_missing"
+    ],
+    ["opacus.layers.dp_lstm.DPLSTMCell._save_to_state_dict", "_syft_missing"],
+    ["opacus.layers.dp_lstm.DPLSTMCell._slow_forward", "_syft_missing"],
     ["opacus.layers.dp_lstm.DPLSTMCell.add_module", "NoneType"],
     ["opacus.layers.dp_lstm.DPLSTMCell.apply", "torch.nn.modules.module.T"],
     ["opacus.layers.dp_lstm.DPLSTMCell.bfloat16", "torch.nn.modules.module.T"],
@@ -1552,9 +2705,11 @@
     ["opacus.layers.dp_lstm.DPLSTMCell.float", "torch.nn.modules.module.T"],
     ["opacus.layers.dp_lstm.DPLSTMCell.forward", "tuple"],
     ["opacus.layers.dp_lstm.DPLSTMCell.half", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.DPLSTMCell.load_state_dict", "_syft_return_absent"],
     ["opacus.layers.dp_lstm.DPLSTMCell.modules", "Iterator"],
     ["opacus.layers.dp_lstm.DPLSTMCell.named_buffers", "Iterator"],
     ["opacus.layers.dp_lstm.DPLSTMCell.named_children", "Iterator"],
+    ["opacus.layers.dp_lstm.DPLSTMCell.named_modules", "_syft_return_absent"],
     ["opacus.layers.dp_lstm.DPLSTMCell.named_parameters", "Iterator"],
     ["opacus.layers.dp_lstm.DPLSTMCell.parameters", "Iterator"],
     [
@@ -1579,16 +2734,52 @@
       "opacus.layers.dp_lstm.DPLSTMCell.requires_grad_",
       "torch.nn.modules.module.T"
     ],
+    ["opacus.layers.dp_lstm.DPLSTMCell.reset_parameters", "_syft_missing"],
     ["opacus.layers.dp_lstm.DPLSTMCell.set_max_batch_length", "NoneType"],
     [
       "opacus.layers.dp_lstm.DPLSTMCell.share_memory",
       "torch.nn.modules.module.T"
     ],
+    ["opacus.layers.dp_lstm.DPLSTMCell.state_dict", "_syft_missing"],
+    ["opacus.layers.dp_lstm.DPLSTMCell.to", "_syft_missing"],
     ["opacus.layers.dp_lstm.DPLSTMCell.train", "torch.nn.modules.module.T"],
     ["opacus.layers.dp_lstm.DPLSTMCell.type", "torch.nn.modules.module.T"],
     ["opacus.layers.dp_lstm.DPLSTMCell.xpu", "torch.nn.modules.module.T"],
     ["opacus.layers.dp_lstm.DPLSTMCell.zero_grad", "NoneType"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.__delattr__", "_syft_missing"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.__dir__", "_syft_missing"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.__init__", "_syft_return_absent"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.__repr__", "_syft_missing"],
     ["opacus.layers.dp_lstm.DPLSTMLayer.__setattr__", "NoneType"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.__setstate__", "_syft_missing"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer._apply", "_syft_missing"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer._call_impl", "_syft_missing"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer._call_impl", "_syft_missing"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer._get_backward_hooks", "_syft_missing"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer._get_name", "_syft_missing"],
+    [
+      "opacus.layers.dp_lstm.DPLSTMLayer._load_from_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_lstm.DPLSTMLayer._maybe_warn_non_full_backward_hook",
+      "_syft_missing"
+    ],
+    ["opacus.layers.dp_lstm.DPLSTMLayer._named_members", "_syft_missing"],
+    [
+      "opacus.layers.dp_lstm.DPLSTMLayer._register_load_state_dict_pre_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_lstm.DPLSTMLayer._register_state_dict_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_lstm.DPLSTMLayer._replicate_for_data_parallel",
+      "_syft_missing"
+    ],
+    ["opacus.layers.dp_lstm.DPLSTMLayer._save_to_state_dict", "_syft_missing"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer._slow_forward", "_syft_missing"],
     ["opacus.layers.dp_lstm.DPLSTMLayer.add_module", "NoneType"],
     ["opacus.layers.dp_lstm.DPLSTMLayer.apply", "torch.nn.modules.module.T"],
     ["opacus.layers.dp_lstm.DPLSTMLayer.bfloat16", "torch.nn.modules.module.T"],
@@ -1602,9 +2793,14 @@
     ["opacus.layers.dp_lstm.DPLSTMLayer.float", "torch.nn.modules.module.T"],
     ["opacus.layers.dp_lstm.DPLSTMLayer.forward", "tuple"],
     ["opacus.layers.dp_lstm.DPLSTMLayer.half", "torch.nn.modules.module.T"],
+    [
+      "opacus.layers.dp_lstm.DPLSTMLayer.load_state_dict",
+      "_syft_return_absent"
+    ],
     ["opacus.layers.dp_lstm.DPLSTMLayer.modules", "Iterator"],
     ["opacus.layers.dp_lstm.DPLSTMLayer.named_buffers", "Iterator"],
     ["opacus.layers.dp_lstm.DPLSTMLayer.named_children", "Iterator"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.named_modules", "_syft_return_absent"],
     ["opacus.layers.dp_lstm.DPLSTMLayer.named_parameters", "Iterator"],
     ["opacus.layers.dp_lstm.DPLSTMLayer.parameters", "Iterator"],
     [
@@ -1634,11 +2830,43 @@
       "opacus.layers.dp_lstm.DPLSTMLayer.share_memory",
       "torch.nn.modules.module.T"
     ],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.state_dict", "_syft_missing"],
+    ["opacus.layers.dp_lstm.DPLSTMLayer.to", "_syft_missing"],
     ["opacus.layers.dp_lstm.DPLSTMLayer.train", "torch.nn.modules.module.T"],
     ["opacus.layers.dp_lstm.DPLSTMLayer.type", "torch.nn.modules.module.T"],
     ["opacus.layers.dp_lstm.DPLSTMLayer.xpu", "torch.nn.modules.module.T"],
     ["opacus.layers.dp_lstm.DPLSTMLayer.zero_grad", "NoneType"],
+    ["opacus.layers.dp_lstm.LSTMLinear.__delattr__", "_syft_missing"],
+    ["opacus.layers.dp_lstm.LSTMLinear.__dir__", "_syft_missing"],
+    ["opacus.layers.dp_lstm.LSTMLinear.__init__", "_syft_return_absent"],
+    ["opacus.layers.dp_lstm.LSTMLinear.__repr__", "_syft_missing"],
     ["opacus.layers.dp_lstm.LSTMLinear.__setattr__", "NoneType"],
+    ["opacus.layers.dp_lstm.LSTMLinear.__setstate__", "_syft_missing"],
+    ["opacus.layers.dp_lstm.LSTMLinear._apply", "_syft_missing"],
+    ["opacus.layers.dp_lstm.LSTMLinear._call_impl", "_syft_missing"],
+    ["opacus.layers.dp_lstm.LSTMLinear._call_impl", "_syft_missing"],
+    ["opacus.layers.dp_lstm.LSTMLinear._get_backward_hooks", "_syft_missing"],
+    ["opacus.layers.dp_lstm.LSTMLinear._get_name", "_syft_missing"],
+    ["opacus.layers.dp_lstm.LSTMLinear._load_from_state_dict", "_syft_missing"],
+    [
+      "opacus.layers.dp_lstm.LSTMLinear._maybe_warn_non_full_backward_hook",
+      "_syft_missing"
+    ],
+    ["opacus.layers.dp_lstm.LSTMLinear._named_members", "_syft_missing"],
+    [
+      "opacus.layers.dp_lstm.LSTMLinear._register_load_state_dict_pre_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_lstm.LSTMLinear._register_state_dict_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_lstm.LSTMLinear._replicate_for_data_parallel",
+      "_syft_missing"
+    ],
+    ["opacus.layers.dp_lstm.LSTMLinear._save_to_state_dict", "_syft_missing"],
+    ["opacus.layers.dp_lstm.LSTMLinear._slow_forward", "_syft_missing"],
     ["opacus.layers.dp_lstm.LSTMLinear.add_module", "NoneType"],
     ["opacus.layers.dp_lstm.LSTMLinear.apply", "torch.nn.modules.module.T"],
     ["opacus.layers.dp_lstm.LSTMLinear.bfloat16", "torch.nn.modules.module.T"],
@@ -1652,9 +2880,11 @@
     ["opacus.layers.dp_lstm.LSTMLinear.float", "torch.nn.modules.module.T"],
     ["opacus.layers.dp_lstm.LSTMLinear.forward", "torch.Tensor"],
     ["opacus.layers.dp_lstm.LSTMLinear.half", "torch.nn.modules.module.T"],
+    ["opacus.layers.dp_lstm.LSTMLinear.load_state_dict", "_syft_return_absent"],
     ["opacus.layers.dp_lstm.LSTMLinear.modules", "Iterator"],
     ["opacus.layers.dp_lstm.LSTMLinear.named_buffers", "Iterator"],
     ["opacus.layers.dp_lstm.LSTMLinear.named_children", "Iterator"],
+    ["opacus.layers.dp_lstm.LSTMLinear.named_modules", "_syft_return_absent"],
     ["opacus.layers.dp_lstm.LSTMLinear.named_parameters", "Iterator"],
     ["opacus.layers.dp_lstm.LSTMLinear.parameters", "Iterator"],
     [
@@ -1684,11 +2914,62 @@
       "opacus.layers.dp_lstm.LSTMLinear.share_memory",
       "torch.nn.modules.module.T"
     ],
+    ["opacus.layers.dp_lstm.LSTMLinear.state_dict", "_syft_missing"],
+    ["opacus.layers.dp_lstm.LSTMLinear.to", "_syft_missing"],
     ["opacus.layers.dp_lstm.LSTMLinear.train", "torch.nn.modules.module.T"],
     ["opacus.layers.dp_lstm.LSTMLinear.type", "torch.nn.modules.module.T"],
     ["opacus.layers.dp_lstm.LSTMLinear.xpu", "torch.nn.modules.module.T"],
     ["opacus.layers.dp_lstm.LSTMLinear.zero_grad", "NoneType"],
+    ["opacus.layers.dp_lstm.ParamRenamedModule.__delattr__", "_syft_missing"],
+    ["opacus.layers.dp_lstm.ParamRenamedModule.__dir__", "_syft_missing"],
+    [
+      "opacus.layers.dp_lstm.ParamRenamedModule.__init__",
+      "_syft_return_absent"
+    ],
+    ["opacus.layers.dp_lstm.ParamRenamedModule.__repr__", "_syft_missing"],
     ["opacus.layers.dp_lstm.ParamRenamedModule.__setattr__", "NoneType"],
+    ["opacus.layers.dp_lstm.ParamRenamedModule.__setstate__", "_syft_missing"],
+    ["opacus.layers.dp_lstm.ParamRenamedModule._apply", "_syft_missing"],
+    ["opacus.layers.dp_lstm.ParamRenamedModule._call_impl", "_syft_missing"],
+    ["opacus.layers.dp_lstm.ParamRenamedModule._call_impl", "_syft_missing"],
+    [
+      "opacus.layers.dp_lstm.ParamRenamedModule._get_backward_hooks",
+      "_syft_missing"
+    ],
+    ["opacus.layers.dp_lstm.ParamRenamedModule._get_name", "_syft_missing"],
+    [
+      "opacus.layers.dp_lstm.ParamRenamedModule._load_from_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_lstm.ParamRenamedModule._maybe_warn_non_full_backward_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_lstm.ParamRenamedModule._named_members",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_lstm.ParamRenamedModule._register_load_state_dict_pre_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_lstm.ParamRenamedModule._register_renamed_parameters",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_lstm.ParamRenamedModule._register_state_dict_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_lstm.ParamRenamedModule._replicate_for_data_parallel",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_lstm.ParamRenamedModule._save_to_state_dict",
+      "_syft_missing"
+    ],
+    ["opacus.layers.dp_lstm.ParamRenamedModule._slow_forward", "_syft_missing"],
     ["opacus.layers.dp_lstm.ParamRenamedModule.add_module", "NoneType"],
     [
       "opacus.layers.dp_lstm.ParamRenamedModule.apply",
@@ -1725,9 +3006,17 @@
       "opacus.layers.dp_lstm.ParamRenamedModule.half",
       "torch.nn.modules.module.T"
     ],
+    [
+      "opacus.layers.dp_lstm.ParamRenamedModule.load_state_dict",
+      "_syft_return_absent"
+    ],
     ["opacus.layers.dp_lstm.ParamRenamedModule.modules", "Iterator"],
     ["opacus.layers.dp_lstm.ParamRenamedModule.named_buffers", "Iterator"],
     ["opacus.layers.dp_lstm.ParamRenamedModule.named_children", "Iterator"],
+    [
+      "opacus.layers.dp_lstm.ParamRenamedModule.named_modules",
+      "_syft_return_absent"
+    ],
     ["opacus.layers.dp_lstm.ParamRenamedModule.named_parameters", "Iterator"],
     ["opacus.layers.dp_lstm.ParamRenamedModule.parameters", "Iterator"],
     [
@@ -1756,6 +3045,8 @@
       "opacus.layers.dp_lstm.ParamRenamedModule.share_memory",
       "torch.nn.modules.module.T"
     ],
+    ["opacus.layers.dp_lstm.ParamRenamedModule.state_dict", "_syft_missing"],
+    ["opacus.layers.dp_lstm.ParamRenamedModule.to", "_syft_missing"],
     [
       "opacus.layers.dp_lstm.ParamRenamedModule.train",
       "torch.nn.modules.module.T"
@@ -1772,9 +3063,83 @@
     ["opacus.layers.dp_lstm._compute_last_states", "tuple"],
     ["opacus.layers.dp_lstm._compute_seq_lengths", "list"],
     ["opacus.layers.dp_lstm._concat_sequence_directions", "tuple"],
+    ["opacus.layers.dp_lstm.pack_padded_sequence", "_syft_missing"],
+    ["opacus.layers.dp_lstm.pad_sequence", "_syft_missing"],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.__delattr__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.__dir__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.__init__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.__repr__",
+      "_syft_missing"
+    ],
     [
       "opacus.layers.dp_multihead_attention.DPMultiheadAttention.__setattr__",
       "NoneType"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.__setstate__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention._apply",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention._call_impl",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention._call_impl",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention._get_backward_hooks",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention._get_name",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention._load_from_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention._maybe_warn_non_full_backward_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention._named_members",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention._register_load_state_dict_pre_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention._register_state_dict_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention._replicate_for_data_parallel",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention._save_to_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention._slow_forward",
+      "_syft_missing"
     ],
     [
       "opacus.layers.dp_multihead_attention.DPMultiheadAttention.add_module",
@@ -1821,8 +3186,16 @@
       "torch.nn.modules.module.T"
     ],
     [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.forward",
+      "_syft_missing"
+    ],
+    [
       "opacus.layers.dp_multihead_attention.DPMultiheadAttention.half",
       "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.load_state_dict",
+      "_syft_missing"
     ],
     [
       "opacus.layers.dp_multihead_attention.DPMultiheadAttention.modules",
@@ -1835,6 +3208,10 @@
     [
       "opacus.layers.dp_multihead_attention.DPMultiheadAttention.named_children",
       "Iterator"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.named_modules",
+      "_syft_return_absent"
     ],
     [
       "opacus.layers.dp_multihead_attention.DPMultiheadAttention.named_parameters",
@@ -1877,6 +3254,14 @@
       "torch.nn.modules.module.T"
     ],
     [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.DPMultiheadAttention.to",
+      "_syft_missing"
+    ],
+    [
       "opacus.layers.dp_multihead_attention.DPMultiheadAttention.train",
       "torch.nn.modules.module.T"
     ],
@@ -1893,8 +3278,84 @@
       "NoneType"
     ],
     [
+      "opacus.layers.dp_multihead_attention.SequenceBias.__delattr__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias.__dir__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias.__init__",
+      "_syft_return_absent"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias.__repr__",
+      "_syft_missing"
+    ],
+    [
       "opacus.layers.dp_multihead_attention.SequenceBias.__setattr__",
       "NoneType"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias.__setstate__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias._apply",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias._call_impl",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias._call_impl",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias._get_backward_hooks",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias._get_name",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias._load_from_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias._maybe_warn_non_full_backward_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias._named_members",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias._register_load_state_dict_pre_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias._register_state_dict_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias._replicate_for_data_parallel",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias._reset_parameters",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias._save_to_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias._slow_forward",
+      "_syft_missing"
     ],
     [
       "opacus.layers.dp_multihead_attention.SequenceBias.add_module",
@@ -1932,8 +3393,16 @@
       "torch.nn.modules.module.T"
     ],
     [
+      "opacus.layers.dp_multihead_attention.SequenceBias.forward",
+      "_syft_missing"
+    ],
+    [
       "opacus.layers.dp_multihead_attention.SequenceBias.half",
       "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias.load_state_dict",
+      "_syft_return_absent"
     ],
     ["opacus.layers.dp_multihead_attention.SequenceBias.modules", "Iterator"],
     [
@@ -1943,6 +3412,10 @@
     [
       "opacus.layers.dp_multihead_attention.SequenceBias.named_children",
       "Iterator"
+    ],
+    [
+      "opacus.layers.dp_multihead_attention.SequenceBias.named_modules",
+      "_syft_return_absent"
     ],
     [
       "opacus.layers.dp_multihead_attention.SequenceBias.named_parameters",
@@ -1985,6 +3458,11 @@
       "torch.nn.modules.module.T"
     ],
     [
+      "opacus.layers.dp_multihead_attention.SequenceBias.state_dict",
+      "_syft_missing"
+    ],
+    ["opacus.layers.dp_multihead_attention.SequenceBias.to", "_syft_missing"],
+    [
       "opacus.layers.dp_multihead_attention.SequenceBias.train",
       "torch.nn.modules.module.T"
     ],
@@ -1997,7 +3475,74 @@
       "torch.nn.modules.module.T"
     ],
     ["opacus.layers.dp_multihead_attention.SequenceBias.zero_grad", "NoneType"],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule.__delattr__",
+      "_syft_missing"
+    ],
+    ["opacus.layers.param_rename.ParamRenamedModule.__dir__", "_syft_missing"],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule.__init__",
+      "_syft_return_absent"
+    ],
+    ["opacus.layers.param_rename.ParamRenamedModule.__repr__", "_syft_missing"],
     ["opacus.layers.param_rename.ParamRenamedModule.__setattr__", "NoneType"],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule.__setstate__",
+      "_syft_missing"
+    ],
+    ["opacus.layers.param_rename.ParamRenamedModule._apply", "_syft_missing"],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule._call_impl",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule._call_impl",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule._get_backward_hooks",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule._get_name",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule._load_from_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule._maybe_warn_non_full_backward_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule._named_members",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule._register_load_state_dict_pre_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule._register_renamed_parameters",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule._register_state_dict_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule._replicate_for_data_parallel",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule._save_to_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule._slow_forward",
+      "_syft_missing"
+    ],
     ["opacus.layers.param_rename.ParamRenamedModule.add_module", "NoneType"],
     [
       "opacus.layers.param_rename.ParamRenamedModule.apply",
@@ -2034,11 +3579,19 @@
       "opacus.layers.param_rename.ParamRenamedModule.half",
       "torch.nn.modules.module.T"
     ],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule.load_state_dict",
+      "_syft_return_absent"
+    ],
     ["opacus.layers.param_rename.ParamRenamedModule.modules", "Iterator"],
     ["opacus.layers.param_rename.ParamRenamedModule.named_buffers", "Iterator"],
     [
       "opacus.layers.param_rename.ParamRenamedModule.named_children",
       "Iterator"
+    ],
+    [
+      "opacus.layers.param_rename.ParamRenamedModule.named_modules",
+      "_syft_return_absent"
     ],
     [
       "opacus.layers.param_rename.ParamRenamedModule.named_parameters",
@@ -2078,6 +3631,11 @@
       "torch.nn.modules.module.T"
     ],
     [
+      "opacus.layers.param_rename.ParamRenamedModule.state_dict",
+      "_syft_missing"
+    ],
+    ["opacus.layers.param_rename.ParamRenamedModule.to", "_syft_missing"],
+    [
       "opacus.layers.param_rename.ParamRenamedModule.train",
       "torch.nn.modules.module.T"
     ],
@@ -2090,9 +3648,86 @@
       "torch.nn.modules.module.T"
     ],
     ["opacus.layers.param_rename.ParamRenamedModule.zero_grad", "NoneType"],
+    ["opacus.layers.param_rename.filter_out_old_keys", "_syft_missing"],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.__delattr__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.__dir__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.__init__",
+      "_syft_return_absent"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.__repr__",
+      "_syft_missing"
+    ],
     [
       "opacus.per_sample_gradient_clip.GradSampleModule.__setattr__",
       "NoneType"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.__setstate__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule._apply",
+      "_syft_missing"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule._call_impl",
+      "_syft_missing"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule._call_impl",
+      "_syft_missing"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule._close",
+      "_syft_missing"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule._get_backward_hooks",
+      "_syft_missing"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule._get_name",
+      "_syft_missing"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule._load_from_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule._maybe_warn_non_full_backward_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule._named_members",
+      "_syft_missing"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule._register_load_state_dict_pre_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule._register_state_dict_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule._replicate_for_data_parallel",
+      "_syft_missing"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule._save_to_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule._slow_forward",
+      "_syft_missing"
     ],
     ["opacus.per_sample_gradient_clip.GradSampleModule.add_hooks", "NoneType"],
     ["opacus.per_sample_gradient_clip.GradSampleModule.add_module", "NoneType"],
@@ -2105,6 +3740,14 @@
       "torch.nn.modules.module.T"
     ],
     ["opacus.per_sample_gradient_clip.GradSampleModule.buffers", "Iterator"],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.capture_activations_hook",
+      "_syft_return_absent"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.capture_backprops_hook",
+      "_syft_return_absent"
+    ],
     ["opacus.per_sample_gradient_clip.GradSampleModule.children", "Iterator"],
     [
       "opacus.per_sample_gradient_clip.GradSampleModule.cpu",
@@ -2113,6 +3756,10 @@
     [
       "opacus.per_sample_gradient_clip.GradSampleModule.cuda",
       "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.del_grad_sample",
+      "_syft_missing"
     ],
     [
       "opacus.per_sample_gradient_clip.GradSampleModule.disable_hooks",
@@ -2136,10 +3783,18 @@
       "torch.nn.modules.module.T"
     ],
     [
+      "opacus.per_sample_gradient_clip.GradSampleModule.forward",
+      "_syft_missing"
+    ],
+    [
       "opacus.per_sample_gradient_clip.GradSampleModule.half",
       "torch.nn.modules.module.T"
     ],
     ["opacus.per_sample_gradient_clip.GradSampleModule.is_supported", "bool"],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.load_state_dict",
+      "_syft_return_absent"
+    ],
     ["opacus.per_sample_gradient_clip.GradSampleModule.modules", "Iterator"],
     [
       "opacus.per_sample_gradient_clip.GradSampleModule.named_buffers",
@@ -2148,6 +3803,10 @@
     [
       "opacus.per_sample_gradient_clip.GradSampleModule.named_children",
       "Iterator"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.GradSampleModule.named_modules",
+      "_syft_return_absent"
     ],
     [
       "opacus.per_sample_gradient_clip.GradSampleModule.named_parameters",
@@ -2199,6 +3858,11 @@
       "torch.nn.modules.module.T"
     ],
     [
+      "opacus.per_sample_gradient_clip.GradSampleModule.state_dict",
+      "_syft_missing"
+    ],
+    ["opacus.per_sample_gradient_clip.GradSampleModule.to", "_syft_missing"],
+    [
       "opacus.per_sample_gradient_clip.GradSampleModule.to_standard_module",
       "torch.nn.modules.module.Module"
     ],
@@ -2219,6 +3883,18 @@
       "torch.nn.modules.module.T"
     ],
     [
+      "opacus.per_sample_gradient_clip.GradSampleModule.zero_grad",
+      "_syft_missing"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.PerSampleGradientClipper.__init__",
+      "_syft_return_absent"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.PerSampleGradientClipper.__repr__",
+      "_syft_missing"
+    ],
+    [
       "opacus.per_sample_gradient_clip.PerSampleGradientClipper._get_aggregated_state",
       "tuple"
     ],
@@ -2229,6 +3905,10 @@
     [
       "opacus.per_sample_gradient_clip.PerSampleGradientClipper._named_params",
       "Iterator"
+    ],
+    [
+      "opacus.per_sample_gradient_clip.PerSampleGradientClipper._on_batch_clip",
+      "_syft_return_absent"
     ],
     [
       "opacus.per_sample_gradient_clip.PerSampleGradientClipper._reset_aggregated_state",
@@ -2254,6 +3934,10 @@
       "opacus.per_sample_gradient_clip.PerSampleGradientClipper.set_on_batch_clip_func",
       "NoneType"
     ],
+    [
+      "opacus.per_sample_gradient_clip.PerSampleGradientClipper.zero_grad",
+      "_syft_missing"
+    ],
     ["opacus.per_sample_gradient_clip.calc_sample_norms", "list"],
     ["opacus.privacy_analysis._compute_log_a", "float"],
     ["opacus.privacy_analysis._compute_log_a_for_frac_alpha", "float"],
@@ -2263,10 +3947,83 @@
     ["opacus.privacy_analysis._log_erfc", "float"],
     ["opacus.privacy_analysis._log_sub", "float"],
     ["opacus.privacy_analysis.get_privacy_spent", "tuple"],
+    ["opacus.privacy_engine.DPModelInspector.__init__", "_syft_return_absent"],
     ["opacus.privacy_engine.DPModelInspector.validate", "bool"],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.__delattr__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.__dir__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.__init__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.__repr__",
+      "_syft_missing"
+    ],
     [
       "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.__setattr__",
       "NoneType"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.__setstate__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel._apply",
+      "_syft_missing"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel._call_impl",
+      "_syft_missing"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel._call_impl",
+      "_syft_missing"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel._get_backward_hooks",
+      "_syft_missing"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel._get_name",
+      "_syft_missing"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel._load_from_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel._maybe_warn_non_full_backward_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel._named_members",
+      "_syft_missing"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel._register_load_state_dict_pre_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel._register_state_dict_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel._replicate_for_data_parallel",
+      "_syft_missing"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel._save_to_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel._slow_forward",
+      "_syft_missing"
     ],
     [
       "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.add_module",
@@ -2313,8 +4070,16 @@
       "torch.nn.modules.module.T"
     ],
     [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.forward",
+      "_syft_missing"
+    ],
+    [
       "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.half",
       "torch.nn.modules.module.T"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.load_state_dict",
+      "_syft_return_absent"
     ],
     [
       "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.modules",
@@ -2327,6 +4092,10 @@
     [
       "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.named_children",
       "Iterator"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.named_modules",
+      "_syft_return_absent"
     ],
     [
       "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.named_parameters",
@@ -2369,6 +4138,14 @@
       "torch.nn.modules.module.T"
     ],
     [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.to",
+      "_syft_missing"
+    ],
+    [
       "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.train",
       "torch.nn.modules.module.T"
     ],
@@ -2384,7 +4161,47 @@
       "opacus.privacy_engine.DifferentiallyPrivateDistributedDataParallel.zero_grad",
       "NoneType"
     ],
+    ["opacus.privacy_engine.GradSampleModule.__delattr__", "_syft_missing"],
+    ["opacus.privacy_engine.GradSampleModule.__dir__", "_syft_missing"],
+    ["opacus.privacy_engine.GradSampleModule.__init__", "_syft_return_absent"],
+    ["opacus.privacy_engine.GradSampleModule.__repr__", "_syft_missing"],
     ["opacus.privacy_engine.GradSampleModule.__setattr__", "NoneType"],
+    ["opacus.privacy_engine.GradSampleModule.__setstate__", "_syft_missing"],
+    ["opacus.privacy_engine.GradSampleModule._apply", "_syft_missing"],
+    ["opacus.privacy_engine.GradSampleModule._call_impl", "_syft_missing"],
+    ["opacus.privacy_engine.GradSampleModule._call_impl", "_syft_missing"],
+    ["opacus.privacy_engine.GradSampleModule._close", "_syft_missing"],
+    [
+      "opacus.privacy_engine.GradSampleModule._get_backward_hooks",
+      "_syft_missing"
+    ],
+    ["opacus.privacy_engine.GradSampleModule._get_name", "_syft_missing"],
+    [
+      "opacus.privacy_engine.GradSampleModule._load_from_state_dict",
+      "_syft_missing"
+    ],
+    [
+      "opacus.privacy_engine.GradSampleModule._maybe_warn_non_full_backward_hook",
+      "_syft_missing"
+    ],
+    ["opacus.privacy_engine.GradSampleModule._named_members", "_syft_missing"],
+    [
+      "opacus.privacy_engine.GradSampleModule._register_load_state_dict_pre_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.privacy_engine.GradSampleModule._register_state_dict_hook",
+      "_syft_missing"
+    ],
+    [
+      "opacus.privacy_engine.GradSampleModule._replicate_for_data_parallel",
+      "_syft_missing"
+    ],
+    [
+      "opacus.privacy_engine.GradSampleModule._save_to_state_dict",
+      "_syft_missing"
+    ],
+    ["opacus.privacy_engine.GradSampleModule._slow_forward", "_syft_missing"],
     ["opacus.privacy_engine.GradSampleModule.add_hooks", "NoneType"],
     ["opacus.privacy_engine.GradSampleModule.add_module", "NoneType"],
     [
@@ -2396,12 +4213,21 @@
       "torch.nn.modules.module.T"
     ],
     ["opacus.privacy_engine.GradSampleModule.buffers", "Iterator"],
+    [
+      "opacus.privacy_engine.GradSampleModule.capture_activations_hook",
+      "_syft_return_absent"
+    ],
+    [
+      "opacus.privacy_engine.GradSampleModule.capture_backprops_hook",
+      "_syft_return_absent"
+    ],
     ["opacus.privacy_engine.GradSampleModule.children", "Iterator"],
     ["opacus.privacy_engine.GradSampleModule.cpu", "torch.nn.modules.module.T"],
     [
       "opacus.privacy_engine.GradSampleModule.cuda",
       "torch.nn.modules.module.T"
     ],
+    ["opacus.privacy_engine.GradSampleModule.del_grad_sample", "_syft_missing"],
     ["opacus.privacy_engine.GradSampleModule.disable_hooks", "NoneType"],
     [
       "opacus.privacy_engine.GradSampleModule.double",
@@ -2417,14 +4243,23 @@
       "opacus.privacy_engine.GradSampleModule.float",
       "torch.nn.modules.module.T"
     ],
+    ["opacus.privacy_engine.GradSampleModule.forward", "_syft_missing"],
     [
       "opacus.privacy_engine.GradSampleModule.half",
       "torch.nn.modules.module.T"
     ],
     ["opacus.privacy_engine.GradSampleModule.is_supported", "bool"],
+    [
+      "opacus.privacy_engine.GradSampleModule.load_state_dict",
+      "_syft_return_absent"
+    ],
     ["opacus.privacy_engine.GradSampleModule.modules", "Iterator"],
     ["opacus.privacy_engine.GradSampleModule.named_buffers", "Iterator"],
     ["opacus.privacy_engine.GradSampleModule.named_children", "Iterator"],
+    [
+      "opacus.privacy_engine.GradSampleModule.named_modules",
+      "_syft_return_absent"
+    ],
     ["opacus.privacy_engine.GradSampleModule.named_parameters", "Iterator"],
     ["opacus.privacy_engine.GradSampleModule.parameters", "Iterator"],
     ["opacus.privacy_engine.GradSampleModule.parametrized_modules", "Iterable"],
@@ -2456,6 +4291,8 @@
       "opacus.privacy_engine.GradSampleModule.share_memory",
       "torch.nn.modules.module.T"
     ],
+    ["opacus.privacy_engine.GradSampleModule.state_dict", "_syft_missing"],
+    ["opacus.privacy_engine.GradSampleModule.to", "_syft_missing"],
     [
       "opacus.privacy_engine.GradSampleModule.to_standard_module",
       "torch.nn.modules.module.Module"
@@ -2470,6 +4307,15 @@
       "torch.nn.modules.module.T"
     ],
     ["opacus.privacy_engine.GradSampleModule.xpu", "torch.nn.modules.module.T"],
+    ["opacus.privacy_engine.GradSampleModule.zero_grad", "_syft_missing"],
+    [
+      "opacus.privacy_engine.PerSampleGradientClipper.__init__",
+      "_syft_return_absent"
+    ],
+    [
+      "opacus.privacy_engine.PerSampleGradientClipper.__repr__",
+      "_syft_missing"
+    ],
     [
       "opacus.privacy_engine.PerSampleGradientClipper._get_aggregated_state",
       "tuple"
@@ -2481,6 +4327,10 @@
     [
       "opacus.privacy_engine.PerSampleGradientClipper._named_params",
       "Iterator"
+    ],
+    [
+      "opacus.privacy_engine.PerSampleGradientClipper._on_batch_clip",
+      "_syft_return_absent"
     ],
     [
       "opacus.privacy_engine.PerSampleGradientClipper._reset_aggregated_state",
@@ -2503,23 +4353,59 @@
       "opacus.privacy_engine.PerSampleGradientClipper.set_on_batch_clip_func",
       "NoneType"
     ],
+    [
+      "opacus.privacy_engine.PerSampleGradientClipper.zero_grad",
+      "_syft_missing"
+    ],
     ["opacus.privacy_engine.PrivacyEngine._generate_noise", "torch.Tensor"],
+    [
+      "opacus.privacy_engine.PrivacyEngine._sample_poisson_empty_batches",
+      "_syft_missing"
+    ],
+    ["opacus.privacy_engine.PrivacyEngine._set_sample_rate", "_syft_missing"],
+    ["opacus.privacy_engine.PrivacyEngine._set_seed", "_syft_return_absent"],
+    ["opacus.privacy_engine.PrivacyEngine.attach", "NoneType"],
+    ["opacus.privacy_engine.PrivacyEngine.detach", "NoneType"],
     ["opacus.privacy_engine.PrivacyEngine.get_privacy_spent", "tuple"],
+    [
+      "opacus.privacy_engine.PrivacyEngine.get_renyi_divergence",
+      "_syft_missing"
+    ],
+    ["opacus.privacy_engine.PrivacyEngine.load_state_dict", "_syft_missing"],
+    ["opacus.privacy_engine.PrivacyEngine.state_dict", "_syft_missing"],
+    ["opacus.privacy_engine.PrivacyEngine.step", "NoneType"],
+    ["opacus.privacy_engine.PrivacyEngine.to", "opacus.privacy_engine.PrivacyEngine"],
+    ["opacus.privacy_engine.PrivacyEngine.virtual_step", "_syft_missing"],
+    ["opacus.privacy_engine.PrivacyEngine.zero_grad", "NoneType"],
+    ["opacus.privacy_engine.average_gradients", "_syft_missing"],
     ["opacus.privacy_engine.get_noise_multiplier", "float"],
+    [
+      "opacus.utils.clipping.ConstantFlatClipper.__init__",
+      "_syft_return_absent"
+    ],
     [
       "opacus.utils.clipping.ConstantFlatClipper.calc_clipping_factors",
       "Iterator"
     ],
     [
+      "opacus.utils.clipping.ConstantPerLayerClipper.__init__",
+      "_syft_return_absent"
+    ],
+    [
       "opacus.utils.clipping.ConstantPerLayerClipper.calc_clipping_factors",
       "list"
     ],
+    ["opacus.utils.clipping._Dynamic_Clipper_.__init__", "_syft_return_absent"],
     ["opacus.utils.clipping._calculate_thresh_value", "float"],
     ["opacus.utils.clipping._mean_plus_r_var", "float"],
     ["opacus.utils.clipping._otsu", "float"],
     ["opacus.utils.clipping._pvalue", "torch.Tensor"],
     ["opacus.utils.clipping._static", "float"],
     ["opacus.utils.clipping.otsu", "float"],
+    [
+      "opacus.utils.module_inspection.ModelInspector.__init__",
+      "_syft_return_absent"
+    ],
     ["opacus.utils.module_inspection.ModelInspector.validate", "bool"],
     ["opacus.utils.module_inspection.get_layer_type", "str"],
     ["opacus.utils.module_inspection.has_no_param", "bool"],
@@ -2549,10 +4435,44 @@
       "opacus.utils.packed_sequences._gen_packed_data",
       "torch.nn.utils.rnn.PackedSequence"
     ],
+    ["opacus.utils.packed_sequences.pack_padded_sequence", "_syft_missing"],
+    ["opacus.utils.packed_sequences.pad_sequence", "_syft_missing"],
+    ["opacus.utils.stats.Stat.__init__", "_syft_return_absent"],
+    ["opacus.utils.stats.Stat._aggregate", "_syft_return_absent"],
+    ["opacus.utils.stats.Stat.log", "_syft_return_absent"],
+    ["opacus.utils.stats.Stat.reset", "_syft_missing"],
+    ["opacus.utils.stats.add", "_syft_return_absent"],
+    ["opacus.utils.stats.clear", "_syft_missing"],
+    ["opacus.utils.stats.deepcopy", "_syft_missing"],
+    ["opacus.utils.stats.remove", "_syft_return_absent"],
+    ["opacus.utils.stats.reset", "_syft_return_absent"],
+    ["opacus.utils.stats.set_global_summary_writer", "_syft_return_absent"],
+    ["opacus.utils.stats.update", "_syft_return_absent"],
     ["opacus.utils.tensor_utils.calc_sample_norms", "list"],
     [
       "opacus.utils.tensor_utils.sum_over_all_but_batch_and_last_n",
       "torch.Tensor"
+    ],
+    ["opacus.utils.tensor_utils.unfold3d", "_syft_return_absent"],
+    [
+      "opacus.utils.uniform_sampler.UniformWithReplacementSampler.__class_getitem__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.utils.uniform_sampler.UniformWithReplacementSampler.__init__",
+      "_syft_return_absent"
+    ],
+    [
+      "opacus.utils.uniform_sampler.UniformWithReplacementSampler.__init_subclass__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.utils.uniform_sampler.UniformWithReplacementSampler.__iter__",
+      "_syft_missing"
+    ],
+    [
+      "opacus.utils.uniform_sampler.UniformWithReplacementSampler.__len__",
+      "_syft_missing"
     ]
   ]
 }
