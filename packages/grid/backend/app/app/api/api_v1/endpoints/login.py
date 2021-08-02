@@ -29,7 +29,7 @@ from app.utils import verify_password_reset_token
 router = APIRouter()
 
 
-@router.post("/login", status_code=200, response_class=JSONResponse)
+@router.post("/login", name="login", status_code=200, response_class=JSONResponse)
 def login_access_token(
     email: str = Body(..., example="info@openmined.org"),
     password: str = Body(..., example="changethis"),
