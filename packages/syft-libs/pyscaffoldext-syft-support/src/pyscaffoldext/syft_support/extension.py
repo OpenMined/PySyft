@@ -15,7 +15,7 @@ import pyscaffold.dependencies as deps
 from pyscaffold.extensions import Extension
 from pyscaffold.extensions import include
 from pyscaffold.extensions.no_skeleton import NoSkeleton
-from pyscaffold.operations import no_overwrite
+from pyscaffold.operations import no_overwrite, skip_on_update
 from pyscaffold.structure import merge
 from pyscaffold.templates import add_pyscaffold
 from pyscaffold.templates import get_template
@@ -74,7 +74,7 @@ def set_pkg_opts(struct: Structure, opts: ScaffoldOpts) -> ActionParams:
     if not str(path).startswith("syft-"):
         opts["project_path"] = Path("syft-" + str(path))
 
-    if not opts["package"].startswith("syft-"):
+    if not opts["package"].startswith("syft_"):
         opts["package"] = "syft_" + opts["package"]
 
     if not opts["name"].startswith("syft-"):
@@ -128,14 +128,14 @@ def add_files(struct: Structure, opts: ScaffoldOpts) -> ActionParams:
     files: Structure = {
         "setup.cfg": (setup_cfg, no_overwrite()),
         "pyproject.toml": (pyproject_toml, no_overwrite()),
-        "proto": {"sample.proto": (proto, no_overwrite())},
+        "proto": {"sample.proto": (proto, skip_on_update())},
         "src": {
             opts["package"]: {
                 "__init__.py": (init_py, no_overwrite()),
-                "package-support.json": (package_support, no_overwrite()),
+                "package-support.json": package_support,
                 "proto": {},
                 "serde": {
-                    "sample.py": (serde, no_overwrite()),
+                    "sample.py": (serde, skip_on_update()),
                 },
                 "VERSION": (VERSION, no_overwrite()),
             },
