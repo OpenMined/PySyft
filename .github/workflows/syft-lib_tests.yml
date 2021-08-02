@@ -119,12 +119,12 @@ jobs:
           git config --global user.email "john.doe@example.com"
           git config --global user.name "John Doe"
 
-      # - name: Scan for security issues
-      #   shell: bash
-      #   run: |
-      #     find . -type d -name "syft-*" -exec bandit -vr {}/src \;
-      #     bandit pyscaffoldext-syft-support/src/
-      #     safety check
+      - name: Scan for security issues
+        shell: bash
+        run: |
+          find . -type d -name "syft-*" -exec bandit -vr {}/src \;
+          bandit pyscaffoldext-syft-support/src/
+          safety check
 
       - name: Install libomp for XGBoost
         if: startsWith(runner.os, 'macos')
