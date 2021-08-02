@@ -7,6 +7,9 @@ from typing import List
 class ScalarChainManagerTensor:
     """Supports convenience methods for scalar chains of abstraction"""
 
+    def __init__(self) -> None:
+        pass
+
     def push_abstraction_top(
         self, scalar_type: type, *args: List[Any], **kwargs: Dict[str, Any]
     ) -> None:
@@ -15,6 +18,9 @@ class ScalarChainManagerTensor:
 
 
 class TensorChainManager:
+    def __init__(self) -> None:
+        pass
+
     def push_abstraction_top(
         self, tensor_type: type, *args: List[Any], **kwargs: Dict[str, Any]
     ) -> None:

@@ -5,6 +5,7 @@ from typing import Callable
 from typing import Dict as TypeDict
 from typing import List as TypeList
 from typing import Optional
+from typing import Set
 from typing import Tuple as TypeTuple
 
 # third party
@@ -35,10 +36,10 @@ ssid2obj: TypeDict[str, Any] = {}  # TODO: Fix types in circular deps
 
 
 class GetSymbolsMapper(WalkMapper):
-    def __init__(self, *args, **kwargs):
-        self.free_symbols = set()
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self.free_symbols: Set[Any] = set()
 
-    def visit(self, *args, **kwargs):
+    def visit(self, *args: Any, **kwargs: Any) -> None:
         for arg in args:
             if isinstance(arg, Variable):
                 self.free_symbols.add(arg)
@@ -57,7 +58,7 @@ def create_searchable_function_from_polynomial(
     """
     if "pymbolic" in str(type(poly)):
 
-        def _run_specific_args(tuple_of_args: tuple):
+        def _run_specific_args(tuple_of_args: tuple) -> EM:
             # kwargs = {sym: tuple_of_args[i] for sym, i in symbol2index.items()}
             # output = poly.subs(kwargs)
 

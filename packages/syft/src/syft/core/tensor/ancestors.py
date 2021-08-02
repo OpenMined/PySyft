@@ -13,8 +13,6 @@ import uuid
 from numpy.typing import ArrayLike
 
 # relative
-from ..adp.entity import Entity
-
 # syft relative
 from ..adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from .manager import TensorChainManager
@@ -67,6 +65,9 @@ class AutogradTensorAncestor(TensorChainManager):
     """Inherited by any class which might have or like to have AutogradTensor in its chain
     of .child objects"""
 
+    def __init__(self) -> None:
+        pass
+
     @property
     def grad(self) -> Any:
         child_gradient = self.child.grad
@@ -109,6 +110,9 @@ class AutogradTensorAncestor(TensorChainManager):
 class PhiTensorAncestor(TensorChainManager):
     """Inherited by any class which might have or like to have SingleEntityPhiTensor in its chain
     of .child objects"""
+
+    def __init__(self) -> None:
+        pass
 
     @property
     def min_vals(self) -> ArrayLike:
