@@ -258,15 +258,12 @@ lib_ast = create_lib_ast(None)
 
 
 @wrapt.when_imported("gym")
-# @wrapt.when_imported("opacus")
 @wrapt.when_imported("numpy")
 @wrapt.when_imported("sklearn")
 @wrapt.when_imported("pandas")
 @wrapt.when_imported("PIL")
-# @wrapt.when_imported("petlib")
 @wrapt.when_imported("openmined_psi")
 @wrapt.when_imported("pydp")
-@wrapt.when_imported("statsmodels")
 @wrapt.when_imported("sympc")
 @wrapt.when_imported("tenseal")
 @wrapt.when_imported("zksk")
@@ -279,7 +276,6 @@ def post_import_hook_third_party(module: TypeAny) -> None:
     # msg = f"inside post_import_hook_third_party module_name {module.__name__}"
     # warning(msg, print=True)
     # warnings.warn(msg, DeprecationWarning)
-    print("added internally", module.__name__)
     load(module.__name__, ignore_warning=True)
 
 
