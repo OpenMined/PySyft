@@ -2,8 +2,10 @@
 Running script: python package_support_script.py -l xgboost -d 1
 Generates:
 
-1. package_support.json
-2. lib.debug.log with all the methods/functions not added to ast with the reason.
+1. <LIB>.package_support.json
+2. <LIB>.debug.log with all the methods/functions not added to ast with the reason.
+3. [optional] also generates <LIB>.return_types.ipynb for the first time.
+    If presents, extracts return types from the notebook
 """
 # stdlib
 import argparse
@@ -13,7 +15,10 @@ import json
 import pkgutil
 import sys
 import typing
+from os import path
 from typing import Any as TypeAny
+
+import nbformat as nbf
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -88,7 +93,7 @@ def set_classes(
                     or inspect.isgetsetdescriptor(t)
                 ):
                     # print(f't for debug: {t} {module}')
-                    is_error, string = get_return_type(t, i)
+                    is_error, string = get_return_type(t, i, ax)
                     if is_error:
                         debug_list.append(string)
                     else:
@@ -111,7 +116,7 @@ def class_import(name: TypeAny) -> TypeAny:
     return mod
 
 
-def get_return_type(t: TypeAny, i: str) -> TypeAny:
+def get_return_type(t: TypeAny, i: str, ax: str) -> TypeAny:
     """
     Argument:
     t: Name of method/function of the class
@@ -172,12 +177,15 @@ def get_return_type(t: TypeAny, i: str) -> TypeAny:
                 # return 1, f"{i}.{t.__name__}: return key absent in {d}"
                 return 0, "_syft_return_absent"
     except Exception as e:
-        return 1, f"{i}.{t.__name__}: exception occoured \n\t{e}"
+        return 1, f"{i}.{ax}: exception occoured \n\t{e}"
         # debug_list.append(f"{i}.{t.__name__}: exception occoured \n\t{e}")
 
 
 def dict_allowlist(
-    classes_set: TypeAny, debug_list: TypeAny, allowlist: dict
+    classes_set: TypeAny,
+    debug_list: TypeAny,
+    allowlist: dict,
+    list_nb: list,
 ) -> TypeAny:
 
     # allowlist = {}
@@ -185,6 +193,7 @@ def dict_allowlist(
     missing_return = 0
     for i in classes_set:
         class_ = class_import(i)
+        if_class_added = False
         # print(class_)
         if class_ is None:
             continue
@@ -200,16 +209,31 @@ def dict_allowlist(
                 inspect.ismethod(t)
                 or inspect.isfunction(t)
                 or inspect.isgetsetdescriptor(t)
-                or isinstance(t, property)
+                # or isinstance(t, property) # Properties don't have return types :
             ):
                 # print(f't for debug: {t} {module}')
-                is_error, string = get_return_type(t, i)
+                is_error, string = get_return_type(t, i, ax)
                 if is_error:
                     debug_list.append(string)
                     methods_error_count += 1
                 else:
                     if string in ["_syft_missing", "_syft_return_absent"]:
                         missing_return += 1
+                        if not if_class_added:
+                            list_nb.append(nbf.v4.new_markdown_cell(f"## {i}"))
+                            if_class_added = True
+
+                        code = (
+                            f"# {i}.{t.__name__}\n"
+                            f"try:\n"
+                            f"\tobj ={i}(# __init__ parameters here)\n"
+                            f"\tret = obj.{t.__name__}()\n"
+                            f"\tprint(type(ret))\n"
+                            f"except Exception as e:\n"
+                            f'\tprint("Please fix this return type code until there is no exception")'
+                        )
+
+                        list_nb.append(nbf.v4.new_code_cell(code))
                     allowlist[i + "." + t.__name__] = string
     return allowlist, debug_list, methods_error_count, missing_return
 
@@ -221,6 +245,17 @@ def main() -> None:
 
     DEBUG_FILE_NAME = f"{package_name}.debug.log"
     PKG_SUPPORT_NAME = f"{package_name}.pkg_support.json"
+    NB_TYPES_NAME = f"{package_name}.return_types.ipynb"
+
+    create_nb = True
+
+    if path.exists(NB_TYPES_NAME):
+        create_nb = False
+
+    nb = nbf.v4.new_notebook()
+    list_nb = []
+    list_nb.append(nbf.v4.new_markdown_cell(f"# {package_name}"))
+    list_nb.append(nbf.v4.new_code_cell(f"import {package_name}"))
 
     try:
         package = __import__(package_name)
@@ -242,7 +277,7 @@ def main() -> None:
     # print(f"Number of classes {len(classes_set)}")
 
     allowlist, debug_list, methods_error_count, missing_return = dict_allowlist(
-        classes_set, debug_list, allowlist
+        classes_set, debug_list, allowlist, list_nb
     )
 
     # print(f"len(allowlist) = {len(allowlist)}")
@@ -263,6 +298,10 @@ def main() -> None:
         with open(DEBUG_FILE_NAME, "w") as f:
             for item in debug_list:
                 f.write(f"{item}\n")
+
+    nb["cells"] = list_nb
+    if create_nb:
+        nbf.write(nb, NB_TYPES_NAME)
 
     print(f"-----{package_name} Summary-----")
     print("Modules")
