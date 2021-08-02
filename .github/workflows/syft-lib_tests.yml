@@ -115,7 +115,9 @@ jobs:
         run: |
           pwd
           pip install pyscaffoldext-syft-support/
-          pip install . 
+          pip install .
+          git config --global user.email "john.doe@example.com"
+          git config --global user.name "John Doe"
 
       - name: Scan for security issues
         shell: bash
