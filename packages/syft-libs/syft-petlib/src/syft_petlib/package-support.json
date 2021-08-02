@@ -26,7 +26,6 @@
   ],
   "modules": [
     "petlib",
-    "petlib._petlib",
     "petlib.bindings",
     "petlib.bn",
     "petlib.cipher",
