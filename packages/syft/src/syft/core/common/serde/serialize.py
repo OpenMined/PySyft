@@ -45,10 +45,29 @@ def _serialize(
     :rtype: Union[str, bytes, Message]
     """
 
+    if isinstance(obj, str):
+        # syft absolute
+        from syft.lib.python import String
+
+        obj = String(obj)
+
+    elif isinstance(obj, list):
+        # syft absolute
+        from syft.lib.python import List
+
+        obj = List(obj)
+
+    elif isinstance(obj, dict):
+        # syft absolute
+        from syft.lib.python import Dict
+
+        obj = Dict(obj)
+
     is_serializable: Serializable
     if not isinstance(obj, Serializable):
         if hasattr(obj, "_sy_serializable_wrapper_type"):
             is_serializable = obj._sy_serializable_wrapper_type(value=obj)  # type: ignore
+
         else:
             traceback_and_raise(
                 Exception(
