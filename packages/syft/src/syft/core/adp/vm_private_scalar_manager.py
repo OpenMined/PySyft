@@ -3,9 +3,15 @@ import sympy as sp
 
 # relative
 from ..common.serde.recursive import RecursiveSerde
+<<<<<<< HEAD
 from .entity import Entity
 from .scalar import GammaScalar
 from .types import AcceptableSimpleType
+=======
+
+# syft relative
+from .scalar import GammaScalar
+>>>>>>> ed216c3d981452d084dafeadbfe38aeda8019cdf
 
 
 class PrimeFactory(RecursiveSerde):

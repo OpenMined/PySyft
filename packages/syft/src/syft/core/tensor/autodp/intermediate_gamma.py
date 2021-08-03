@@ -15,11 +15,21 @@ from sympy.ntheory.factor_ import factorint
 # relative
 from ...adp.publish import publish
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
+from ...common.serde.recursive import RecursiveSerde
 from ...tensor.passthrough import PassthroughTensor
 from ...tensor.passthrough import is_acceptable_simple_type
 
 
-class IntermediateGammaTensor(PassthroughTensor):
+class IntermediateGammaTensor(PassthroughTensor, RecursiveSerde):
+
+    __attr_allowlist__ = [
+        "term_tensor",
+        "coeff_tensor",
+        "bias_tensor",
+        "scalar_manager",
+        "child",
+    ]
+
     def __init__(
         self,
         term_tensor: np.ndarray,

@@ -3,6 +3,6 @@ syntax = "proto3";
 package syft.core.common;
 
 message RecursiveSerde {
-  bytes data = 1;
-  string fully_qualified_name = 2;
+  string obj_type = 1;
+  bytes data = 2;
 }

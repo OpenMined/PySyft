@@ -515,9 +515,10 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
     #         child=child, entity=entity, min_vals=min_vals, max_vals=max_vals
     #     )
 
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return Tensor_PB
+    # Cant have recursive and custom Tensor_PB
+    # @staticmethod
+    # def get_protobuf_schema() -> GeneratedProtocolMessageType:
+    #     return Tensor_PB
 
 
 @implements(SingleEntityPhiTensor, np.expand_dims)

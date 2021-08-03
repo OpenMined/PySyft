@@ -9,15 +9,47 @@ import numpy as np
 
 # relative
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
+<<<<<<< HEAD
 from ..tensor import PassthroughTensor
 
 # syft relative
+=======
+from ...common.serde.recursive import RecursiveSerde
+from ...common.uid import UID
+>>>>>>> ed216c3d981452d084dafeadbfe38aeda8019cdf
 from .intermediate_gamma import IntermediateGammaTensor
 
 
-class InitialGammaTensor(IntermediateGammaTensor):
+def numpy2list(np_obj):
+    return [list(np_obj.flatten()), np_obj.shape]
+
+
+def list2numpy(l_shape):
+    l = l_shape[0]
+    shape = l_shape[1]
+    return np.array(l).reshape(shape)
+
+
+class InitialGammaTensor(IntermediateGammaTensor, RecursiveSerde):
+
+    __attr_allowlist__ = [
+        "uid",
+        "values",
+        "min_vals",
+        "max_vals",
+        "entities",
+        "scalar_manager",
+        "term_tensor",
+        "coeff_tensor",
+        "bias_tensor",
+        "child",
+    ]
+
+    __serde_overrides__ = {"entities": [numpy2list, list2numpy]}
+
     def __init__(
         self,
+<<<<<<< HEAD
         values: Union[IntermediateGammaTensor, PassthroughTensor, np.ndarray],
         min_vals: np.ndarray,
         max_vals: np.ndarray,
@@ -25,6 +57,15 @@ class InitialGammaTensor(IntermediateGammaTensor):
         scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None,
     ) -> None:
         self.uid = uuid.uuid4()
+=======
+        values,
+        min_vals,
+        max_vals,
+        entities,
+        scalar_manager=VirtualMachinePrivateScalarManager(),
+    ):
+        self.uid = UID()
+>>>>>>> ed216c3d981452d084dafeadbfe38aeda8019cdf
         self.values = values  # child
         self.min_vals = min_vals
         self.max_vals = max_vals
