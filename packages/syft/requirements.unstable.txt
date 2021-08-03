@@ -1,1 +1,1 @@
-sympc @ git+https://github.com/OpenMined/SyMPC@16fa17ab61fc37f0aba2f565bda812ae55eb1cdc
+sympc @ git+https://github.com/OpenMined/SyMPC@17cf8070116560f0233dff31213ea9ab1659f9d3

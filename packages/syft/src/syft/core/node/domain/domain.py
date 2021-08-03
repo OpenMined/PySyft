@@ -84,6 +84,7 @@ class Domain(Node):
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
         root_key: Optional[VerifyKey] = None,
+        db_path: Optional[str] = None,
         db_engine: Any = None,
     ):
         super().__init__(
@@ -131,6 +132,9 @@ class Domain(Node):
 
         self.immediate_services_without_reply.append(ObjectRequestServiceWithoutReply)
 
+        # TODO: @Madhava change to a map of accountants that are created on first
+        # use of the DS key
+
         self.requests: List[RequestMessage] = list()
         # available_device_types = set()
         # TODO: add available compute types
@@ -166,7 +170,6 @@ class Domain(Node):
                                                      __
                                                     |  \  _   _   _  .  _
                                                     |__/ (_) ||| (_| | | )
-
 """
         )
 

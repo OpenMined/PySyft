@@ -44,7 +44,12 @@ def GenerateWrapper(
         def upcast(self) -> Any:
             return self.obj
 
-    # set __module__ and __name__
+        @staticmethod
+        def wrapped_type() -> type:
+            return wrapped_type
+
+    # TODO: refactor like proxy class to get correct name
+    # WARNING: Changing this can break the Wrapper lookup during deserialize
     module_parts = import_path.split(".")
     klass = module_parts.pop()
     Wrapper.__name__ = f"{klass}Wrapper"

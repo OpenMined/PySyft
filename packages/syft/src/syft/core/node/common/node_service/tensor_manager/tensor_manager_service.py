@@ -24,7 +24,6 @@ from syft.core.node.common.node_service.node_service import (
 from syft.core.store.storeable_object import StorableObject
 
 # relative
-# syft relative
 from .tensor_manager_messages import CreateTensorMessage
 from .tensor_manager_messages import CreateTensorResponse
 from .tensor_manager_messages import DeleteTensorMessage

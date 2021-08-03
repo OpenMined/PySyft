@@ -1,4 +1,3 @@
-# syft relative
 # relative
 from .abs import AbsOp  # noqa: 401
 from .add import AddOp  # noqa: 401

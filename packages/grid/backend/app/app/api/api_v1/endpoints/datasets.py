@@ -106,7 +106,7 @@ def get_all_dataset_metadata_route(
     if isinstance(reply, ExceptionMessage):
         return {"error": reply.exception_msg}
     else:
-        return [dataset.upcast() for dataset in reply.content]
+        return [dataset.upcast() for dataset in reply.metadatas]
 
 
 @router.get("/{dataset_id}", status_code=200, response_class=JSONResponse)
@@ -138,7 +138,7 @@ def get_specific_dataset_metadata_route(
     if isinstance(reply, ExceptionMessage):
         return {"error": reply.exception_msg}
     else:
-        return reply.content.upcast()
+        return reply.metadatas.upcast()
 
 
 @router.put("/{dataset_id}", status_code=200, response_class=JSONResponse)

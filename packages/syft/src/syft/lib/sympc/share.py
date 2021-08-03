@@ -32,7 +32,12 @@ def object2proto(obj: object) -> ShareTensor_PB:
     conf_syft = syft.serialize(
         PrimitiveFactory.generate_primitive(value=config), to_proto=True
     )
-    proto = ShareTensor_PB(session_uuid=session_uuid_syft, config=conf_syft)
+    length_rs = share.ring_size.bit_length()
+    rs_bytes = share.ring_size.to_bytes((length_rs + 7) // 8, byteorder="big")
+
+    proto = ShareTensor_PB(
+        session_uuid=session_uuid_syft, config=conf_syft, ring_size=rs_bytes
+    )
 
     tensor_data = getattr(share.tensor, "data", None)
     if tensor_data is not None:
@@ -47,12 +52,12 @@ def proto2object(proto: ShareTensor_PB) -> ShareTensor:
         if session is None:
             raise ValueError(f"The session {proto.session_uuid} could not be found")
 
-        config = dataclasses.asdict(session.config)
-    else:
-        config = syft.deserialize(proto.config, from_proto=True)
+    config = syft.deserialize(proto.config, from_proto=True)
 
     tensor = syft.deserialize(proto.tensor, from_proto=True)
-    share = ShareTensor(data=None, config=Config(**config))
+    ring_size = int.from_bytes(proto.ring_size, "big")
+
+    share = ShareTensor(data=None, config=Config(**config), ring_size=ring_size)
 
     if proto.session_uuid:
         share.session_uuid = UUID(proto.session_uuid)

@@ -9,7 +9,6 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 
 # relative
-# syft relative
 from ....core.common.serde.recursive import RecursiveSerde
 from ....proto.core.tensor.tensor_pb2 import Tensor as Tensor_PB
 from ...adp.entity import Entity
