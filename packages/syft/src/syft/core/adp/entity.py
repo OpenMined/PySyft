@@ -14,7 +14,6 @@ from syft.core.common.serde.serializable import Serializable
 from syft.core.common.serde.serializable import bind_protobuf
 
 # relative
-# syft relative
 from ...core.common import UID
 from ...proto.core.adp.entity_pb2 import Entity as Entity_PB
 

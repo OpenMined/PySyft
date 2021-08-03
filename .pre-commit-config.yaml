@@ -68,7 +68,7 @@ repos:
       - id: mypy
         name: mypy-grid
         files: ^packages/grid
-        exclude: ^(packages/syft|packages/grid/ansible|packages/grid/backend/app/alembic/versions/|packages/hagrid)
+        exclude: ^(packages/grid/ansible|packages/grid/backend/app/alembic/versions)
         args: [
             "--ignore-missing-imports",
             "--scripts-are-modules",
@@ -107,13 +107,14 @@ repos:
             "--install-types",
             "--non-interactive",
         ]
-  # - repo: local
-  #   hooks:
-  #     - id: flynt
-  #       name: flynt
-  #       entry: flynt
-  #       args: [--fail-on-change]
-  #       types: [python]
-  #       language: python
-  #       additional_dependencies:
-  #         - flynt
+  - repo: local
+    hooks:
+      - id: flynt
+        name: flynt
+        entry: flynt
+        exclude: ^(packages/grid/ansible)
+        args: [--fail-on-change]
+        types: [python]
+        language: python
+        additional_dependencies:
+          - flynt

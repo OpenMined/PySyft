@@ -1,4 +1,3 @@
-# syft relative
 # stdlib
 from typing import Optional
 from uuid import UUID

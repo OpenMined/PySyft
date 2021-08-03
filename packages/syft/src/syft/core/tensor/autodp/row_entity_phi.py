@@ -5,7 +5,6 @@ from __future__ import annotations
 import numpy as np
 
 # relative
-# syft relative
 from ....core.common.serde.recursive import RecursiveSerde
 from ...common.serde.serializable import bind_protobuf
 from ..passthrough import PassthroughTensor

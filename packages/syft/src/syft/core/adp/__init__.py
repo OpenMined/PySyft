@@ -2,7 +2,6 @@
 from typing import Optional
 
 # relative
-# syft relative
 from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules

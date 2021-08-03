@@ -10,7 +10,6 @@
 # import numpy as np
 #
 # # relative
-# # syft relative
 # from ..adp.entity import Entity
 # from ..adp.publish import publish
 # from ..adp.scalar import PhiScalar
