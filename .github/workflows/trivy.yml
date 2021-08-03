@@ -1,0 +1,31 @@
+on:
+  pull_request:
+    branches:
+      - dev
+      - demo_strike_team_branch_4
+
+    paths:
+      - "packages/hagrid/Dockerfile"
+      - "packages/grid/docker-compose.yml"
+      - "packages/grid/docker-compose.override.yml"
+
+jobs:
+  build-secure-and-push-hagrid:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+
+    - run: docker buildx build -t openmined/hagrid:${{ github.sha }} packages/hagrid
+
+    - uses: Azure/container-scan@v0
+      with:
+        image-name: openmined/hagrid:${{ github.sha }}
+
+# Q for Madhava: is this something that we would like?
+#    - uses: Azure/docker-login@v1
+#      with:
+#        login-server: contoso.azurecr.io
+#        username: ${{ secrets.REGISTRY_USERNAME }}
+#        password: ${{ secrets.REGISTRY_PASSWORD }}
+#
+#    - run: docker push openmined/hagrid:${{ github.sha }}
