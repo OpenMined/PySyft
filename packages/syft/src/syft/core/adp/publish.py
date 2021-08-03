@@ -9,7 +9,6 @@ from pymbolic.mapper.substitutor import SubstitutionMapper
 from pymbolic.mapper.substitutor import make_subst_func
 
 # relative
-# syft relative
 from .idp_gaussian_mechanism import iDPGaussianMechanism
 from .search import max_lipschitz_wrt_entity
 

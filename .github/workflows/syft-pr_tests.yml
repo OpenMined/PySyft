@@ -145,7 +145,7 @@ jobs:
 
       - name: Run normal tests
         run: |
-          pytest -m 'fast or slow' --cov syft --cov-fail-under 75 -n auto --durations=50
+          pytest -m 'fast or slow' --cov syft --cov-fail-under 70 -n auto --durations=50
 
       - name: Run supported library tests
         run: |
