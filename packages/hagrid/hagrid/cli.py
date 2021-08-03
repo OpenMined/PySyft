@@ -279,9 +279,9 @@ def create_launch_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
     host = host_term.host
     auth: Optional[AuthCredentials] = None
 
-    tail = False
-    if "tail" in kwargs and str_to_bool(kwargs["tail"]):
-        tail = True
+    tail = True
+    if "tail" in kwargs and not str_to_bool(kwargs["tail"]):
+        tail = False
 
     if host in ["docker"]:
         version = check_docker_version()
