@@ -443,7 +443,7 @@ class DomainClient(Client):
         metadata['description'] = bytes(description, 'utf-8')
 
         for k,v in metadata.items():
-            if isinstance(v, 'str'):
+            if isinstance(v, str):
                 metadata[k] = bytes(v, 'utf-8')
 
         assets = downcast(assets)
