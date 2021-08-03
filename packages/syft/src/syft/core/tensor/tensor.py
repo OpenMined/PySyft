@@ -4,7 +4,6 @@ from __future__ import annotations
 # stdlib
 from typing import Type
 from typing import Union
-from typing import Any
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -18,6 +17,7 @@ from ...proto.core.tensor.tensor_pb2 import Tensor as Tensor_PB
 from ..common.serde.deserialize import _deserialize as deserialize
 from ..common.serde.serializable import bind_protobuf
 from ..common.serde.serialize import _serialize as serialize
+from .ancestors import AutogradTensorAncestor
 from .fixed_precision_tensor_ancestor import FixedPrecisionTensorAncestor
 from .passthrough import PassthroughTensor  # type: ignore
 from .smpc.mpc_tensor_ancestor import MPCTensorAncestor
@@ -30,7 +30,6 @@ class Tensor(
     FixedPrecisionTensorAncestor,
     Serializable,
 ):
-
     def __init__(
         self,
         child: Union[Type[PassthroughTensor], Type[AutogradTensorAncestor], ArrayLike],
