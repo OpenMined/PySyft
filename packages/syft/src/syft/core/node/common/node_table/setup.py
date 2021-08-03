@@ -8,7 +8,7 @@ from . import Base
 
 
 class SetupConfig(Base):
-    __tablename__ = "setup"  # type: ignore
+    __tablename__ = "setup"
 
     id = Column(Integer(), primary_key=True, autoincrement=True)
     domain_name = Column(String(255), default="")
@@ -19,4 +19,4 @@ class SetupConfig(Base):
 
 
 def create_setup(id: int, domain_name: str, node_id: str) -> SetupConfig:
-    return SetupConfig(id=id, domain_name=domain_name, node_id=node_id)  # type: ignore
+    return SetupConfig(id=id, domain_name=domain_name, node_id=node_id)

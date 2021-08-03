@@ -14,7 +14,7 @@ states = {"creating": 0, "failed": 1, "success": 2, "destroyed": 3}
 
 
 class Environment(Base):
-    __tablename__ = "environment"  # type: ignore
+    __tablename__ = "environment"
 
     id = Column(Integer(), primary_key=True, autoincrement=True)
     state = Column(Integer)

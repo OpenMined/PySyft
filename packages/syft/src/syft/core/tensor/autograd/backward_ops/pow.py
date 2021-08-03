@@ -5,7 +5,6 @@ import uuid
 import numpy as np
 
 # relative
-# syft relative
 from ...passthrough import is_acceptable_simple_type
 from ..tensor import AutogradTensor
 from .op import Op

@@ -18,7 +18,7 @@ class Association(Base):
         network_address (String) : Network Address.
     """
 
-    __tablename__ = "association"  # type: ignore
+    __tablename__ = "association"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     date = Column(DateTime())

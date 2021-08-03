@@ -15,8 +15,7 @@ from . import Base
 
 
 class BinObject(Base):
-
-    __tablename__ = "bin_object"  # type: ignore
+    __tablename__ = "bin_object"
 
     id = Column(String(256), primary_key=True)
     binary = Column(LargeBinary(3072))

@@ -1,4 +1,3 @@
-# syft relative
 # stdlib
 from uuid import UUID
 

@@ -7,8 +7,8 @@ from fastapi import Request
 from fastapi import Response
 
 # syft absolute
-from syft import deserialize
-from syft import serialize
+from syft import deserialize  # type: ignore
+from syft import serialize  # type: ignore
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 
@@ -21,7 +21,7 @@ router = APIRouter()
 
 
 @router.get("/metadata", response_model=str)
-async def syft_metadata():
+async def syft_metadata() -> Response:
     return Response(
         node.get_metadata_for_client()._object2proto().SerializeToString(),
         media_type="application/octet-stream",

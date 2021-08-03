@@ -8,7 +8,7 @@ from . import Base
 
 
 class UserGroup(Base):
-    __tablename__ = "usergroup"  # type: ignore
+    __tablename__ = "usergroup"
 
     id = Column(Integer(), primary_key=True, autoincrement=True)
     user = Column(Integer, ForeignKey("syft_user.id"))

@@ -1,4 +1,6 @@
 # stdlib
+from typing import Callable
+from typing import Dict
 from typing import List
 from typing import Type
 from typing import Union
@@ -22,7 +24,6 @@ from syft.core.node.common.node_service.node_service import (
 from syft.core.store.storeable_object import StorableObject
 
 # relative
-# syft relative
 from .tensor_manager_messages import CreateTensorMessage
 from .tensor_manager_messages import CreateTensorResponse
 from .tensor_manager_messages import DeleteTensorMessage
@@ -185,7 +186,7 @@ def get_tensors_msg(
         )
     except Exception as e:
         return GetTensorsResponse(
-            address=msg.reply_to, success=False, content={"error": str(e)}
+            address=msg.reply_to, content={"error": str(e)}, status_code=200
         )
 
 
@@ -208,14 +209,37 @@ def del_tensor_msg(
     except Exception as e:
         return DeleteTensorResponse(
             address=msg.reply_to,
-            success=False,
+            status_code=200,
             content={"error": str(e)},
         )
 
 
 class TensorManagerService(ImmediateNodeServiceWithReply):
+    INPUT_TYPE = Union[
+        Type[CreateTensorMessage],
+        Type[UpdateTensorMessage],
+        Type[GetTensorMessage],
+        Type[GetTensorsMessage],
+        Type[DeleteTensorMessage],
+    ]
 
-    msg_handler_map = {
+    INPUT_MESSAGES = Union[
+        CreateTensorMessage,
+        UpdateTensorMessage,
+        GetTensorMessage,
+        GetTensorsMessage,
+        DeleteTensorMessage,
+    ]
+
+    OUTPUT_MESSAGES = Union[
+        CreateTensorResponse,
+        UpdateTensorResponse,
+        GetTensorResponse,
+        GetTensorsResponse,
+        DeleteTensorResponse,
+    ]
+
+    msg_handler_map: Dict[INPUT_TYPE, Callable[..., OUTPUT_MESSAGES]] = {
         CreateTensorMessage: create_tensor_msg,
         UpdateTensorMessage: update_tensor_msg,
         GetTensorMessage: get_tensor_msg,
@@ -227,21 +251,9 @@ class TensorManagerService(ImmediateNodeServiceWithReply):
     @service_auth(guests_welcome=True)
     def process(
         node: AbstractNode,
-        msg: Union[
-            CreateTensorMessage,
-            UpdateTensorMessage,
-            GetTensorMessage,
-            GetTensorsMessage,
-            DeleteTensorMessage,
-        ],
+        msg: INPUT_MESSAGES,
         verify_key: VerifyKey,
-    ) -> Union[
-        CreateTensorResponse,
-        UpdateTensorResponse,
-        GetTensorResponse,
-        GetTensorsResponse,
-        DeleteTensorResponse,
-    ]:
+    ) -> OUTPUT_MESSAGES:
         return TensorManagerService.msg_handler_map[type(msg)](msg=msg, node=node)
 
     @staticmethod

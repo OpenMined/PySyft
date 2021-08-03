@@ -11,7 +11,7 @@ import pytest
 from syft import deserialize
 from syft import serialize
 from syft.core.io.address import Address
-from syft.core.node.common.client import Client
+from syft.core.node.abstract.node import AbstractNodeClient
 from syft.core.node.common.node_service.association_request.association_request_service import (
     DeleteAssociationRequestMessage,
 )
@@ -107,7 +107,7 @@ def test_create(
     msg_constructor: Callable,
     kwargs: Dict[str, Any],
     test_fields: List[str],
-    client: Client,
+    client: AbstractNodeClient,
 ) -> None:
     if "source" in kwargs:
         kwargs["source"] = client

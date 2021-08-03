@@ -5,8 +5,6 @@ import sympy as sp
 from ..common.serde.recursive import RecursiveSerde
 from .entity import Entity
 from .scalar import GammaScalar
-
-# syft relative
 from .types import AcceptableSimpleType
 
 

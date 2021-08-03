@@ -4,6 +4,7 @@ from __future__ import annotations
 # stdlib
 from typing import Type
 from typing import Union
+from typing import Any
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -12,22 +13,24 @@ from numpy.typing import ArrayLike
 import torch as th
 
 # relative
-# syft relative
 from ...core.common.serde.serializable import Serializable
-from ...lib.util import full_name_with_name
 from ...proto.core.tensor.tensor_pb2 import Tensor as Tensor_PB
 from ..common.serde.deserialize import _deserialize as deserialize
 from ..common.serde.serializable import bind_protobuf
 from ..common.serde.serialize import _serialize as serialize
-from .ancestors import AutogradTensorAncestor
-from .ancestors import PhiTensorAncestor
-from .passthrough import PassthroughTensor
+from .fixed_precision_tensor_ancestor import FixedPrecisionTensorAncestor
+from .passthrough import PassthroughTensor  # type: ignore
+from .smpc.mpc_tensor_ancestor import MPCTensorAncestor
 
 
 @bind_protobuf
 class Tensor(
-    PassthroughTensor, AutogradTensorAncestor, PhiTensorAncestor, Serializable
+    PassthroughTensor,
+    MPCTensorAncestor,
+    FixedPrecisionTensorAncestor,
+    Serializable,
 ):
+
     def __init__(
         self,
         child: Union[Type[PassthroughTensor], Type[AutogradTensorAncestor], ArrayLike],
@@ -60,7 +63,6 @@ class Tensor(
             tensors = [serialize(self.child)]
 
         return Tensor_PB(
-            obj_type=full_name_with_name(klass=type(self)),
             use_tensors=use_tensors,
             arrays=arrays,
             tensors=tensors,
@@ -76,7 +78,8 @@ class Tensor(
             child = [deserialize(array) for array in proto.arrays]
 
         child = child[0]
-        return Tensor(child)
+        res = Tensor(child)
+        return res
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:

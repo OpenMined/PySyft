@@ -9,6 +9,12 @@ import shutil
 from typing import Dict
 from typing import Optional
 
+
+class MissingDependency(Exception):
+    pass
+
+
+allowed_hosts = ["docker", "vm", "azure", "aws", "gcp"]
 commands = ["docker", "git", "vagrant", "virtualbox", "ansible-playbook"]
 
 
@@ -17,3 +23,9 @@ def check_deps() -> Dict[str, Optional[str]]:
     for dep in commands:
         paths[dep] = shutil.which(dep)
     return paths
+
+
+DEPENDENCIES = check_deps()
+
+# vboxmanage --version
+# vagrant --version

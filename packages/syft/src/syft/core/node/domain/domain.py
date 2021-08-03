@@ -34,7 +34,6 @@ from ..common.node_manager.environment_manager import EnvironmentManager
 from ..common.node_manager.group_manager import GroupManager
 from ..common.node_manager.request_manager import RequestManager
 from ..common.node_manager.role_manager import RoleManager
-from ..common.node_manager.setup_manager import SetupManager
 from ..common.node_manager.user_manager import UserManager
 from ..common.node_service.association_request.association_request_service import (
     AssociationRequestService,
@@ -85,6 +84,7 @@ class Domain(Node):
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
         root_key: Optional[VerifyKey] = None,
+        db_path: Optional[str] = None,
         db_engine: Any = None,
     ):
         super().__init__(
@@ -106,7 +106,6 @@ class Domain(Node):
         self.roles = RoleManager(db_engine)
         self.groups = GroupManager(db_engine)
         self.environments = EnvironmentManager(db_engine)
-        self.setup = SetupManager(db_engine)
         self.association_requests = AssociationRequestManager(db_engine)
         self.data_requests = RequestManager(db_engine)
         self.datasets = DatasetManager(db_engine)
@@ -132,6 +131,9 @@ class Domain(Node):
 
         self.immediate_services_without_reply.append(ObjectRequestServiceWithoutReply)
 
+        # TODO: @Madhava change to a map of accountants that are created on first
+        # use of the DS key
+
         self.requests: List[RequestMessage] = list()
         # available_device_types = set()
         # TODO: add available compute types
@@ -152,7 +154,7 @@ class Domain(Node):
         super().post_init()
         self.set_node_uid()
 
-    def loud_print(self):
+    def loud_print(self) -> None:
         install_path = os.path.abspath(
             os.path.join(os.path.realpath(__file__), "../../../../img/")
         )
@@ -167,7 +169,6 @@ class Domain(Node):
                                                      __
                                                     |  \  _   _   _  .  _
                                                     |__/ (_) ||| (_| | | )
-
 """
         )
 

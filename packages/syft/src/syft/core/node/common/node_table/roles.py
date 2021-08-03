@@ -9,7 +9,7 @@ from . import Base
 
 
 class Role(Base):
-    __tablename__ = "role"  # type: ignore
+    __tablename__ = "role"
 
     id = Column(Integer(), primary_key=True, autoincrement=True)
     name = Column(String(255))
@@ -46,12 +46,12 @@ def create_role(
 ) -> Role:
     new_role = Role(
         name=name,  # type:ignore
-        can_triage_requests=can_triage_requests,  # type:ignore
-        can_edit_settings=can_edit_settings,  # type:ignore
-        can_create_users=can_create_users,  # type:ignore
-        can_create_groups=can_create_groups,  # type:ignore
-        can_edit_roles=can_edit_roles,  # type:ignore
-        can_manage_infrastructure=can_manage_infrastructure,  # type:ignore
-        can_upload_data=can_upload_data,  # type:ignore
+        can_triage_requests=can_triage_requests,
+        can_edit_settings=can_edit_settings,
+        can_create_users=can_create_users,
+        can_create_groups=can_create_groups,
+        can_edit_roles=can_edit_roles,
+        can_manage_infrastructure=can_manage_infrastructure,
+        can_upload_data=can_upload_data,
     )
     return new_role

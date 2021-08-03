@@ -2,7 +2,7 @@
 from raven import Client
 
 # syft absolute
-from syft import deserialize
+from syft import deserialize  # type: ignore
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 
 # grid absolute

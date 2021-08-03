@@ -3,16 +3,19 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Union
+from typing import Type
 
 # third party
-from sqlalchemy.engine.base import Engine
-from sqlalchemy.orm import DeclarativeMeta
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import Query
 from sqlalchemy.orm import sessionmaker
+
+# syft absolute
+from syft.core.node.common.node_table import Base
 
 
 class DatabaseManager:
-    def __init__(self, schema: DeclarativeMeta, db: Engine) -> None:
+    def __init__(self, schema: Type[Base], db: Engine) -> None:
         self._schema = schema
         self.db = db
 
@@ -30,7 +33,7 @@ class DatabaseManager:
         session_local.commit()
         return _obj
 
-    def query(self, **kwargs: Dict[str, Any]) -> Union[None, Any]:
+    def query(self, **kwargs: Any) -> Query:
         """Query db objects filtering by parameters
         Args:
             parameters : List of parameters used to filter.
@@ -40,7 +43,7 @@ class DatabaseManager:
         session_local.close()
         return objects
 
-    def first(self, **kwargs: Dict[str, Any]) -> Optional[Any]:
+    def first(self, **kwargs: Any) -> Optional[Any]:
         """Query db objects filtering by parameters
         Args:
             parameters : List of parameters used to filter.
@@ -50,7 +53,7 @@ class DatabaseManager:
         session_local.close()
         return objects
 
-    def last(self, **kwargs: Dict[str, Any]) -> Optional[Any]:
+    def last(self, **kwargs: Any) -> Optional[Any]:
         """Query and return the last occurrence.
 
         Args:
@@ -69,7 +72,7 @@ class DatabaseManager:
         session_local.close()
         return result
 
-    def delete(self, **kwargs: Dict[str, Any]) -> None:
+    def delete(self, **kwargs: Any) -> None:
         """Delete an object from the database.
 
         Args:
@@ -87,7 +90,7 @@ class DatabaseManager:
         session_local.commit()
         session_local.close()
 
-    def contain(self, **kwargs: Dict[str, Any]) -> bool:
+    def contain(self, **kwargs: Any) -> bool:
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
         objects = session_local.query(self._schema).filter_by(**kwargs).all()
         session_local.close()

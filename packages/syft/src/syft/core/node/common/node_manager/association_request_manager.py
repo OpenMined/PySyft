@@ -3,8 +3,12 @@ from datetime import datetime
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Optional
 from typing import Union
 import warnings
+
+# third party
+from sqlalchemy.engine import Engine
 
 # syft absolute
 from syft.core.node.abstract.node import AbstractNodeClient
@@ -22,10 +26,10 @@ class AssociationRequestManager(DatabaseManager):
 
     schema = AssociationRequest
 
-    def __init__(self, database) -> None:
+    def __init__(self, database: Engine) -> None:
         super().__init__(schema=AssociationRequestManager.schema, db=database)
 
-    def first(self, **kwargs) -> Union[None, List]:
+    def first(self, **kwargs: Any) -> Union[None, List]:
         result = super().first(**kwargs)
         if not result:
             raise AssociationRequestError
@@ -58,10 +62,10 @@ class AssociationRequestManager(DatabaseManager):
     def associations(self) -> List[Association]:
         return list(self.db.session.query(Association).all())
 
-    def association(self, **kwargs: Dict[str, Any]) -> Association:
+    def association(self, **kwargs: Dict[str, Any]) -> Optional[Association]:
         return self.db.session.query(Association).filter_by(**kwargs).first()
 
-    def set(self, node_name, response):
+    def set(self, node_name: str, response: str) -> None:
         self.modify(
             {"node": node_name},
             {"status": response, "accepted_date": datetime.now().strftime("%m/%d/%Y")},

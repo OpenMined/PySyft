@@ -3,8 +3,6 @@ import numpy as np
 
 # relative
 from ..passthrough import inputs2child
-
-# syft relative
 from ..util import implements
 from .tensor import AutogradTensor
 

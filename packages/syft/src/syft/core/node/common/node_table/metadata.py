@@ -8,7 +8,7 @@ from . import Base
 
 
 class StorageMetadata(Base):
-    __tablename__ = "storage_metadata"  # type: ignore
+    __tablename__ = "storage_metadata"
 
     id = Column(Integer(), primary_key=True, autoincrement=True)
     length = Column(Integer())
@@ -18,11 +18,10 @@ class StorageMetadata(Base):
 
 
 def get_metadata(db_session: Session) -> StorageMetadata:
-
     metadata = db_session.query(StorageMetadata).first()
 
     if metadata is None:
-        metadata = StorageMetadata(length=0)  # type: ignore
+        metadata = StorageMetadata(length=0)
         db_session.add(metadata)
         db_session.commit()
 

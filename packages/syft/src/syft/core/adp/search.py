@@ -19,7 +19,6 @@ from sympy.core.basic import Basic
 from sympy.solvers import solve
 
 # relative
-# syft relative
 from .entity import Entity
 
 # Leaving this commented out here because I'm pretty sure we can get the

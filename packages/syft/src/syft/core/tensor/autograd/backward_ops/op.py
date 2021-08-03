@@ -1,4 +1,3 @@
-# syft relative
 # stdlib
 from abc import abstractmethod
 from typing import Any

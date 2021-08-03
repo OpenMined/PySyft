@@ -6,13 +6,14 @@ from typing import Dict
 from sqlalchemy.engine import Engine
 
 # relative
+from ..node_table import Base
 from .groups import Group
 from .roles import Role
 from .user import SyftUser
 from .usergroup import UserGroup
 
 
-def model_to_json(model: Any) -> Dict[str, Any]:
+def model_to_json(model: Base) -> Dict[str, Any]:
     """Returns a JSON representation of an SQLAlchemy-backed object."""
     json = {}
     for col in model.__mapper__.attrs.keys():
@@ -27,7 +28,7 @@ def model_to_json(model: Any) -> Dict[str, Any]:
 
 
 def expand_user_object(_user: SyftUser, db: Engine) -> Dict[str, Any]:
-    def get_group(user_group: UserGroup) -> Group:
+    def get_group(user_group: UserGroup) -> Dict:
         query = db.session().query
         group = user_group.group
         group = query(Group).get(group)
@@ -38,59 +39,59 @@ def expand_user_object(_user: SyftUser, db: Engine) -> Dict[str, Any]:
     user = model_to_json(_user)
     user["role"] = query(Role).get(user["role"])
     user["role"] = model_to_json(user["role"])
-    user["groups"] = query(UserGroup).filter_by(user=user["id"]).all()
-    user["groups"] = [get_group(user_group) for user_group in user["groups"]]
-
+    user["groups"] = [
+        get_group(user_group)
+        for user_group in query(UserGroup).filter_by(user=user["id"]).all()
+    ]
     return user
 
 
 def seed_db(db: Engine) -> None:
-
     new_role = Role(
-        name="Data Scientist",  # type: ignore
-        can_triage_requests=False,  # type: ignore
-        can_edit_settings=False,  # type: ignore
-        can_create_users=False,  # type: ignore
-        can_create_groups=False,  # type: ignore
-        can_edit_roles=False,  # type: ignore
-        can_manage_infrastructure=False,  # type: ignore
-        can_upload_data=False,  # type: ignore
+        name="Data Scientist",
+        can_triage_requests=False,
+        can_edit_settings=False,
+        can_create_users=False,
+        can_create_groups=False,
+        can_edit_roles=False,
+        can_manage_infrastructure=False,
+        can_upload_data=False,
     )
     db.add(new_role)
 
     new_role = Role(
-        name="Compliance Officer",  # type: ignore
-        can_triage_requests=True,  # type: ignore
-        can_edit_settings=False,  # type: ignore
-        can_create_users=False,  # type: ignore
-        can_create_groups=False,  # type: ignore
-        can_edit_roles=False,  # type: ignore
-        can_manage_infrastructure=False,  # type: ignore
-        can_upload_data=False,  # type: ignore
+        name="Compliance Officer",
+        can_triage_requests=True,
+        can_edit_settings=False,
+        can_create_users=False,
+        can_create_groups=False,
+        can_edit_roles=False,
+        can_manage_infrastructure=False,
+        can_upload_data=False,
     )
     db.add(new_role)
 
     new_role = Role(
         name="Administrator",
-        can_triage_requests=True,  # type: ignore
-        can_edit_settings=True,  # type: ignore
-        can_create_users=True,  # type: ignore
-        can_create_groups=True,  # type: ignore
-        can_edit_roles=False,  # type: ignore
-        can_manage_infrastructure=False,  # type: ignore
-        can_upload_data=True,  # type: ignore
+        can_triage_requests=True,
+        can_edit_settings=True,
+        can_create_users=True,
+        can_create_groups=True,
+        can_edit_roles=False,
+        can_manage_infrastructure=False,
+        can_upload_data=True,
     )
     db.add(new_role)
 
     new_role = Role(
-        name="Owner",  # type: ignore
-        can_triage_requests=True,  # type: ignore
-        can_edit_settings=True,  # type: ignore
-        can_create_users=True,  # type: ignore
-        can_create_groups=True,  # type: ignore
-        can_edit_roles=True,  # type: ignore
-        can_manage_infrastructure=True,  # type: ignore
-        can_upload_data=True,  # type: ignore
+        name="Owner",
+        can_triage_requests=True,
+        can_edit_settings=True,
+        can_create_users=True,
+        can_create_groups=True,
+        can_edit_roles=True,
+        can_manage_infrastructure=True,
+        can_upload_data=True,
     )
     db.add(new_role)
     db.commit()

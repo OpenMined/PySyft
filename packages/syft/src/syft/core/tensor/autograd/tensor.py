@@ -17,7 +17,6 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 
 # relative
-# syft relative
 from .. import autograd
 from ....core.common.serde.serializable import Serializable
 from ....lib.util import full_name_with_name

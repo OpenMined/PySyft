@@ -1,6 +1,9 @@
 # stdlib
 import json
 from typing import Any
+from typing import Dict
+from typing import List
+from typing import Union
 
 # third party
 from fastapi import APIRouter
@@ -44,7 +47,7 @@ def upload_dataset_route(
     current_user: Any = Depends(deps.get_current_user),
     file: UploadFile = File(...),
     metadata: str = Form(...),
-):
+) -> Dict[str, Any]:
     """Upload a compressed dataset file(s)
 
     Args:
@@ -69,7 +72,6 @@ def upload_dataset_route(
     reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
-    resp = {}
     if isinstance(reply, ExceptionMessage):
         resp = {"error": reply.exception_msg}
     else:
@@ -81,7 +83,7 @@ def upload_dataset_route(
 @router.get("", status_code=200, response_class=JSONResponse)
 def get_all_dataset_metadata_route(
     current_user: Any = Depends(deps.get_current_user),
-):
+) -> Union[Dict[str, str], List[Any]]:
     """Retrieves all registered datasets
 
     Args:
@@ -101,20 +103,17 @@ def get_all_dataset_metadata_route(
     reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
-    resp = {}
     if isinstance(reply, ExceptionMessage):
-        resp = {"error": reply.exception_msg}
+        return {"error": reply.exception_msg}
     else:
-        resp = [dataset.upcast() for dataset in reply.content]
-
-    return resp
+        return [dataset.upcast() for dataset in reply.metadatas]
 
 
 @router.get("/{dataset_id}", status_code=200, response_class=JSONResponse)
 def get_specific_dataset_metadata_route(
     dataset_id: str,
     current_user: Any = Depends(deps.get_current_user),
-):
+) -> Union[Dict[str, str], Any]:
     """Retrieves dataset by its ID.
 
     Args:
@@ -136,13 +135,10 @@ def get_specific_dataset_metadata_route(
     reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
-    resp = {}
     if isinstance(reply, ExceptionMessage):
-        resp = {"error": reply.exception_msg}
+        return {"error": reply.exception_msg}
     else:
-        resp = reply.content.upcast()
-
-    return resp
+        return reply.metadatas.upcast()
 
 
 @router.put("/{dataset_id}", status_code=200, response_class=JSONResponse)
@@ -152,17 +148,15 @@ def update_dataset_metadata_route(
     manifest: str = Body(default=None, example="Dataset Manifest"),
     description: str = Body(default=None, example="My brief dataset description ..."),
     tags: list = Body(default=None, example=["#dataset-sample", "#labels"]),
-):
+) -> Dict[str, str]:
     # Map User Key
     user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
 
-    metadata = SyftDict(
-        {
-            "manifest": manifest,
-            "description": description,
-            "tags": tags,
-        }
-    )
+    metadata = {
+        "manifest": manifest,
+        "description": description,
+        "tags": tags,
+    }
 
     # Build Syft Message
     msg = UpdateDatasetMessage(
@@ -176,20 +170,17 @@ def update_dataset_metadata_route(
     reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
-    resp = {}
     if isinstance(reply, ExceptionMessage):
-        resp = {"error": reply.exception_msg}
+        return {"error": reply.exception_msg}
     else:
-        resp = {"message": reply.resp_msg}
-
-    return resp
+        return {"message": reply.resp_msg}
 
 
 @router.delete("/{dataset_id}", status_code=200, response_class=JSONResponse)
 def delete_dataset_route(
     dataset_id: str,
     current_user: Any = Depends(deps.get_current_user),
-):
+) -> Dict[str, str]:
     """Deletes a dataset
 
     Args:
@@ -211,8 +202,6 @@ def delete_dataset_route(
 
     # Handle Response types
     if isinstance(reply, ExceptionMessage):
-        resp = {"error": reply.exception_msg}
+        return {"error": reply.exception_msg}
     else:
-        resp = {"message": reply.resp_msg}
-
-    return resp
+        return {"message": reply.resp_msg}

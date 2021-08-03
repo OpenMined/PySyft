@@ -11,10 +11,9 @@ class ScalarChainManagerTensor:
         pass
 
     def push_abstraction_top(
-        self, scalar_type: type, *args: List[Any], **kwargs: Dict[str, Any]
+        self, scalar_type: Any, *args: List[Any], **kwargs: Dict[str, Any]
     ) -> None:
         """ """
-        pass
 
 
 class TensorChainManager:
@@ -22,12 +21,12 @@ class TensorChainManager:
         pass
 
     def push_abstraction_top(
-        self, tensor_type: type, *args: List[Any], **kwargs: Dict[str, Any]
+        self, tensor_type: Any, *args: List[Any], **kwargs: Dict[str, Any]
     ) -> None:
         """ """
-        self.child = tensor_type(self.child, *args, **kwargs)  # type: ignore
+        self.child: Any = tensor_type(self.child, *args, **kwargs)
 
     def replace_abstraction_top(
-        self, tensor_type: type, *args: List[Any], **kwargs: Dict[str, Any]
+        self, tensor_type: Any, *args: List[Any], **kwargs: Dict[str, Any]
     ) -> None:
         self.child = tensor_type(*args, **kwargs)

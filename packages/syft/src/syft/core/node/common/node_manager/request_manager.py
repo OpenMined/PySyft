@@ -1,10 +1,11 @@
 # stdlib
 from datetime import datetime
 from typing import Any
-from typing import Dict
-from typing import Union
+from typing import List
+from typing import Optional
 
 # third party
+from nacl.signing import VerifyKey
 from sqlalchemy.engine import Engine
 
 # syft absolute
@@ -23,7 +24,7 @@ class RequestManager(DatabaseManager):
 
     schema = Request
 
-    def __init__(self, database: Engine):
+    def __init__(self, database: Engine) -> None:
         super().__init__(schema=RequestManager.schema, db=database)
 
     def first(self, **kwargs: Any) -> Request:
@@ -40,10 +41,10 @@ class RequestManager(DatabaseManager):
         object_id: str,
         reason: str,
         request_type: str,
-        verify_key: Union[str, None] = None,
-        tags: Dict[str, str] = {},
+        verify_key: Optional[VerifyKey] = None,
+        tags: Optional[List[str]] = None,
         object_type: str = "",
-    ) -> Request:
+    ) -> None:
         date = datetime.now()
 
         return self.register(
@@ -59,7 +60,7 @@ class RequestManager(DatabaseManager):
             object_type=object_type,
         )
 
-    def status(self, request_id: UID) -> Union[RequestStatus]:
+    def status(self, request_id: int) -> RequestStatus:
         _req = self.first(id=request_id)
         if _req.status == "pending":
             return RequestStatus.pending
@@ -68,5 +69,5 @@ class RequestManager(DatabaseManager):
         else:
             return RequestStatus.Rejected
 
-    def set(self, request_id: UID, status: RequestStatus) -> None:
+    def set(self, request_id: int, status: RequestStatus) -> None:
         self.modify({"id": request_id}, {"status": status})

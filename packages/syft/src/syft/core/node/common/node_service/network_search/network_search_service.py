@@ -31,7 +31,7 @@ class NetworkSearchService(ImmediateNodeServiceWithReply):
         queries = set(msg.content.get("query", []))
         associations = node.association_requests.associations()
 
-        def filter_domains(url):
+        def filter_domains(url: str) -> bool:
             domain = connect(
                 url=url,  # Domain Address
                 conn_type=GridHTTPConnection,  # HTTP Connection Protocol

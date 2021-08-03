@@ -217,9 +217,10 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
                     or contains_all_in_permissions
                 ):
                     ptr_type = obj2pointer_type(obj=obj.data)
+                    id_obj = obj.id
                     ptr = ptr_type(
                         client=node,
-                        id_at_location=obj.id,
+                        id_at_location=id_obj,
                         object_type=obj.object_type,
                         tags=obj.tags,
                         description=obj.description,

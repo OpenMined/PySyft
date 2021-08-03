@@ -8,7 +8,7 @@ from . import Base
 
 
 class UserEnvironment(Base):
-    __tablename__ = "userenvironment"  # type: ignore
+    __tablename__ = "userenvironment"
 
     id = Column(Integer(), primary_key=True, autoincrement=True)
     user = Column(Integer, ForeignKey("syft_user.id"))

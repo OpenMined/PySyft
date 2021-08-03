@@ -9,7 +9,7 @@ from . import Base
 
 class Group(Base):
 
-    __tablename__ = "group"  # type: ignore
+    __tablename__ = "group"
 
     id = Column(Integer(), primary_key=True, autoincrement=True)
     name = Column(String(255))

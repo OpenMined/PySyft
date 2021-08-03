@@ -22,6 +22,7 @@ import wrapt
 # relative
 from ..ast.globals import Globals
 from ..core.node.abstract.node import AbstractNodeClient
+from ..core.tensor import create_tensor_ast
 from ..lib.plan import create_plan_ast
 from ..lib.python import create_python_ast
 from ..lib.remote_dataloader import create_remote_dataloader_ast
@@ -229,12 +230,14 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
     # numpy_ast = create_numpy_ast()
     plan_ast = create_plan_ast(client=client)
     remote_dataloader_ast = create_remote_dataloader_ast(client=client)
+    tensor_ast = create_tensor_ast(client=client)
 
     lib_ast = Globals(client=client)
     lib_ast.add_attr(attr_name="syft", attr=python_ast.attrs["syft"])
     lib_ast.add_attr(attr_name="torch", attr=torch_ast.attrs["torch"])
     lib_ast.add_attr(attr_name="torchvision", attr=torchvision_ast.attrs["torchvision"])
     lib_ast.syft.add_attr("core", attr=plan_ast.syft.core)
+    lib_ast.syft.core.add_attr("tensor", attr=tensor_ast.syft.core.tensor)
     lib_ast.syft.core.add_attr(
         "remote_dataloader", remote_dataloader_ast.syft.core.remote_dataloader
     )

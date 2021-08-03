@@ -4,9 +4,7 @@ package syft.grid.messages;
 
 import "proto/core/common/common_object.proto";
 import "proto/core/io/address.proto";
-import "proto/lib/python/dict.proto";
 import "proto/core/node/common/client.proto";
-
 
 message SendAssociationRequestMessage {
   syft.core.common.UID msg_id = 1;
@@ -15,7 +13,6 @@ message SendAssociationRequestMessage {
   syft.core.node.common.Client target = 4;
   syft.core.io.Address reply_to = 5;
   map<string, string> metadata = 6;
-
 }
 
 message ReceiveAssociationRequestMessage {
@@ -26,7 +23,6 @@ message ReceiveAssociationRequestMessage {
   syft.core.io.Address reply_to = 5;
   syft.core.node.common.Client source = 6;
   syft.core.node.common.Client target = 7;
-
 }
 
 message RespondAssociationRequestMessage {
@@ -60,9 +56,7 @@ message GetAssociationRequestsMessage {
 }
 
 message GetAssociationRequestsResponse {
-  message metadata_container{
-    map<string, string> metadata = 1;
-  }
+  message metadata_container { map<string, string> metadata = 1; }
 
   syft.core.common.UID msg_id = 1;
   repeated metadata_container metadatas = 2;

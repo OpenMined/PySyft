@@ -13,7 +13,6 @@ import numpy as np
 import numpy.typing as npt
 
 # relative
-# syft relative
 from ....core.common.serde.recursive import RecursiveSerde
 from ....proto.core.tensor.tensor_pb2 import Tensor as Tensor_PB
 from ...adp.entity import Entity
