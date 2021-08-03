@@ -109,17 +109,23 @@ jobs:
           pip install -r requirements.unstable.txt
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
+           pip install "pillow>=8.3.1"
 
       - name: Install Support lib
         shell: bash
         run: |
           pwd
+          pip install pyscaffoldext-syft-support/
           pip install .
+          pip list | grep syft
+          git config --global user.email "john.doe@example.com"
+          git config --global user.name "John Doe"
 
       - name: Scan for security issues
         shell: bash
         run: |
           find . -type d -name "syft-*" -exec bandit -vr {}/src \;
+          bandit pyscaffoldext-syft-support/src/
           safety check
 
       - name: Install libomp for XGBoost
