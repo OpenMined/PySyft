@@ -435,9 +435,12 @@ class DomainClient(Client):
                     state[tag] = ptr
         return self.store.pandas
 
-    def load_dataset(self, assets: Any, **metadata: str) -> None:
+    def load_dataset(self, assets: Any, name:str, description:str, **metadata):
         # relative
         from ....lib.python.util import downcast
+
+        metadata['name'] = bytes(name, 'utf-8')
+        metadata['description'] = bytes(description, 'utf-8')
 
         assets = downcast(assets)
         metadata = downcast(metadata)
