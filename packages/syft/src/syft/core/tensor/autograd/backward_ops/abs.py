@@ -10,7 +10,7 @@ from .op import Op
 
 
 class AbsOp(Op):
-    def forward(self, x: AutogradTensor) -> AutogradTensor:
+    def forward(self, x: AutogradTensor) -> AutogradTensor:  # type: ignore
         self.x = x
 
         return AutogradTensor(x.child.__abs__(), requires_grad=x.requires_grad)

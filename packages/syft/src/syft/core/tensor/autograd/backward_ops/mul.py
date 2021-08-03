@@ -13,7 +13,7 @@ from .op import Op
 class MulOp(Op):
     """Multiplication operation with 2 tensors"""
 
-    def forward(self, x: AutogradTensor, y: AutogradTensor) -> AutogradTensor:
+    def forward(self, x: AutogradTensor, y: AutogradTensor) -> AutogradTensor:  # type: ignore
         self.x = x
         self.y = y
 

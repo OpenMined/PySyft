@@ -1,25 +1,27 @@
 # stdlib
-from typing import List
+from typing import Any
 from typing import Optional
+from typing import Union
 import uuid
 
 # third party
 import numpy as np
 
 # relative
-from ...adp.entity import Entity
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
-from ..types import SupportedChainType
+from ..tensor import PassthroughTensor
+
+# syft relative
 from .intermediate_gamma import IntermediateGammaTensor
 
 
 class InitialGammaTensor(IntermediateGammaTensor):
     def __init__(
         self,
-        values: SupportedChainType,
+        values: Union[IntermediateGammaTensor, PassthroughTensor, np.ndarray],
         min_vals: np.ndarray,
         max_vals: np.ndarray,
-        entities: List[Entity],
+        entities: Any,  # List[Entity] gives flatten errors
         scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None,
     ) -> None:
         self.uid = uuid.uuid4()

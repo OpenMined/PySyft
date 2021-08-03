@@ -12,7 +12,7 @@ from .op import Op
 class ReshapeOp(Op):
     """Multiplication operation with 2 tensors"""
 
-    def forward(self, x: AutogradTensor, *shape: tuple) -> AutogradTensor:
+    def forward(self, x: AutogradTensor, *shape: tuple) -> AutogradTensor:  # type: ignore
         self.x = x
         self.shape = shape
         self.backward_shape = self.x.shape

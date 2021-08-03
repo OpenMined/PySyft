@@ -7,7 +7,7 @@ from .op import Op
 
 
 class ClipOp(Op):
-    def forward(
+    def forward(  # type: ignore
         self, x: AutogradTensor, y: AutogradTensor, z: AutogradTensor
     ) -> AutogradTensor:
         self.x = x
