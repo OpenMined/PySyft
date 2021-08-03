@@ -23,6 +23,8 @@ from .passthrough import PassthroughTensor  # type: ignore
 from .smpc.mpc_tensor_ancestor import MPCTensorAncestor
 
 
+from typing import Optional
+
 @bind_protobuf
 class Tensor(
     PassthroughTensor,
@@ -50,6 +52,7 @@ class Tensor(
             raise Exception("Data must be list or nd.array")
 
         super().__init__(child=child)
+        self.tag_name: Optional[str] = None
 
     def _object2proto(self) -> Tensor_PB:
         arrays = []
@@ -83,3 +86,6 @@ class Tensor(
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return Tensor_PB
+
+    def tag(self, name: str) -> None:
+        self.tag_name = name
