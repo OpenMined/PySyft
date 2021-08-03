@@ -18,21 +18,12 @@ import sys
 import typing
 from os import path
 from typing import Any as TypeAny
+from typing import Optional, Union
 from typing import Dict as TypeDict
+from typing import Tuple as TypeTuple
 from typing import List as TypeList
 
 import nbformat as nbf
-
-parser = argparse.ArgumentParser()
-parser.add_argument(
-    "-l", dest="lib", required=True, help="name of the model to be added to ast"
-)
-parser.add_argument(
-    "-d", dest="debug", type=int, help="Set it to one to get debug files", default=0
-)
-args = parser.parse_args()
-
-# package_name = 'xgboost'
 
 
 def list_submodules(list_name: TypeAny, package_name: TypeAny) -> TypeAny:
@@ -62,7 +53,7 @@ def set_classes(
 ) -> TypeAny:
 
     classes_set = set()
-    allowlist: TypeDict[str, str] = dict()
+    allowlist: TypeList[str,str] = []
     # print(f'Len of modules_list {len(modules_list)}')
     for i in modules_list:
         try:
@@ -100,7 +91,7 @@ def set_classes(
                     if is_error:
                         debug_list.append(string)
                     else:
-                        allowlist[i + "." + t.__name__] = string
+                        allowlist.append((f"{i}.{t.__name__}",string))
         except Exception as e:
             # print(f"set_classes: module_name = {i}: exception occoured \n\t{e}")
             debug_list.append(
@@ -188,12 +179,11 @@ def dict_allowlist(
     i: TypeAny,
 ) -> TypeAny:
 
-    # allowlist = {}
     methods_error_count = 0
     missing_return = 0
     # for i in classes_set:
     debug_list: TypeList[str] = list()
-    allowlist: TypeDict[str, str] = dict()
+    allowlist: TypeList[TypeTuple[str,str]] = []
     list_nb: TypeList[TypeAny] = list()
     class_ = class_import(i)
     if_class_added = False
@@ -237,15 +227,13 @@ def dict_allowlist(
                     )
 
                     list_nb.append(nbf.v4.new_code_cell(code))
-                allowlist[i + "." + t.__name__] = string
+                allowlist.append((f"${i}.${t.__name__}", string))
     return allowlist, debug_list, methods_error_count, missing_return, list_nb
 
 
-def main() -> None:
-
-    DEBUG = args.debug
-    package_name = args.lib
-
+def generate_package_support(
+    package_name: str, debug: Union[bool, int] = False, write_to_file: bool = False
+) -> Optional[str]:
     DEBUG_FILE_NAME = f"{package_name}.debug.log"
     PKG_SUPPORT_NAME = f"{package_name}.pkg_support.json"
 
@@ -298,7 +286,7 @@ def main() -> None:
             missing_return_i,
             list_nb_i,
         ) = dict_allowlist(class_)
-        allowlist = {**allowlist, **allowlist_i}  # merging dicts
+        allowlist += allowlist_i # append to list
 
         debug_list.extend(debug_list_i)
         if len(list_nb_i) > 0:
@@ -318,18 +306,15 @@ def main() -> None:
     package_support["lib"] = package_name
     # petlib doesnot have version
     # package_support["Version"] = package.__version__
-    package_support["class"] = list(classes_set)
+     # sort it all
+    classlist = list(classes_set)
+    classlist.sort()
+    modules_list.sort()
+    allowlist.sort()
+
+    package_support["classes"] = classlist
     package_support["modules"] = modules_list
     package_support["methods"] = allowlist
-
-    with open(PKG_SUPPORT_NAME, "w") as outfile:
-        json.dump(package_support, outfile)
-
-    if DEBUG:
-        # print(debug_list)
-        with open(DEBUG_FILE_NAME, "w") as f:
-            for item in debug_list:
-                f.write(f"{item}\n")
 
     print(f"-----{package_name} Summary-----")
     print("Modules")
@@ -342,6 +327,33 @@ def main() -> None:
     print(f"\tNot added:{methods_error_count}")
     print("-----------------")
 
+    if write_to_file:
+        DEBUG_FILE_NAME = f"{package_name}.debug.log"
+        PKG_SUPPORT_NAME = f"{package_name}.pkg_support.json"
+
+        with open(PKG_SUPPORT_NAME, "w") as outfile:
+            json.dump(package_support, outfile)
+
+        if debug:
+            with open(DEBUG_FILE_NAME, "w") as f:
+                for item in debug_list:
+                    f.write(f"{item}\n")
+        return
+
+    return json.dumps(package_support)
+
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-l", dest="lib", required=True, help="name of the model to be added to ast"
+    )
+    parser.add_argument(
+        "-d", dest="debug", type=int, help="Set it to one to get debug files", default=0
+)
+    args = parser.parse_args()
+
+    DEBUG = args.debug
+    package_name = args.lib
+    generate_package_support(package_name, debug=DEBUG, write_to_file=True)
+    
