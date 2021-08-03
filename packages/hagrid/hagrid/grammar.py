@@ -263,7 +263,8 @@ def validate_arg_count(arg_count: int, verb: GrammarVerb) -> bool:
 def parse_grammar(args: TypeTuple, verb: GrammarVerb) -> TypeList[GrammarTerm]:
 
 
-    # HACK BECAUSE DEFAULTS FOR DOMAIN NOT WORKING
+    # Hack because domain isn't correctly defaulting to domain when not specified (it triggers
+    # an error instead if you don't say 'domain' which is bad UX).
     found_domain_or_network = False
     for arg in args:
         if 'domain' in arg:
