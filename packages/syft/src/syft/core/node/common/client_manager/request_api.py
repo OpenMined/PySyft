@@ -54,13 +54,25 @@ class RequestAPI:
 
         return self.to_obj(obj_data)
 
-    def all(self) -> List[Any]:
+    # def all(self) -> List[Any]:
+    #     result = [
+    #         content
+    #         for content in self.perform_api_request(
+    #             syft_msg=self.__get_all_message
+    #         ).metadatas
+    #     ]
+    #
+    #     return result
+
+    def all(self, pandas: bool = False) -> Any:
         result = [
-            content
+            content.upcast()
             for content in self.perform_api_request(
                 syft_msg=self.__get_all_message
-            ).metadatas
+            ).content
         ]
+        if pandas:
+            result = DataFrame(result)
 
         return result
 
