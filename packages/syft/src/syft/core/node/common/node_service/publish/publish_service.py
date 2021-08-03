@@ -12,12 +12,12 @@ from nacl.signing import VerifyKey
 from ......core.adp.publish import publish
 from ......lib.python import List
 from ......logger import traceback_and_raise
-from ..publish.publish_messages import PublishScalarsAction
 from .....common.uid import UID
 from .....store.storeable_object import StorableObject
 from .....tensor.tensor import PassthroughTensor
 from ....abstract.node import AbstractNode
 from ....common.node_service.node_service import ImmediateNodeServiceWithoutReply
+from ..publish.publish_messages import PublishScalarsAction
 
 
 class PublishScalarsService(ImmediateNodeServiceWithoutReply):

@@ -214,7 +214,7 @@ def transfer_file(context, in_path, out_path, sync=False, set_owner=False):
                 out_fp=fp,
             )
             if not ok:
-                raise IOError("transfer of %r was interrupted." % (in_path,))
+                raise IOError(f"transfer of {in_path!r} was interrupted.")
 
             set_file_mode(tmp_path, metadata["mode"], fd=fp.fileno())
             if set_owner:

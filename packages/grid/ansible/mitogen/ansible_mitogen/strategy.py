@@ -138,11 +138,7 @@ def wrap_worker__run(self):
     """
     if setproctitle:
         setproctitle.setproctitle(
-            "worker:%s task:%s"
-            % (
-                self._host.name,
-                self._task.action,
-            )
+            f"worker:{self._host.name} task:{self._task.action}"
         )
 
     # Ignore parent's attempts to murder us when we still need to write

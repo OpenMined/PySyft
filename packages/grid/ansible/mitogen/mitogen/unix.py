@@ -119,11 +119,7 @@ class Listener(mitogen.core.Protocol):
         return stream
 
     def __repr__(self):
-        return "%s.%s(%r)" % (
-            __name__,
-            self.__class__.__name__,
-            self.path,
-        )
+        return f"{__name__}.{self.__class__.__name__}({self.path!r})"
 
     def __init__(self, router, path):
         self._router = router

@@ -124,7 +124,7 @@ class Invocation(object):
         return self._module_source
 
     def __repr__(self):
-        return "Invocation(module_name=%s)" % (self.module_name,)
+        return f"Invocation(module_name={self.module_name})"
 
 
 class Planner(object):
@@ -190,7 +190,7 @@ class Planner(object):
         return new
 
     def __repr__(self):
-        return "%s()" % (type(self).__name__,)
+        return f"{type(self).__name__}()"
 
 
 class BinaryPlanner(Planner):
@@ -240,7 +240,7 @@ class ScriptPlanner(BinaryPlanner):
             involved here, the vanilla implementation uses it and that use is
             exploited in common playbooks.
         """
-        key = "ansible_%s_interpreter" % os.path.basename(path).strip()
+        key = f"ansible_{os.path.basename(path).strip()}_interpreter"
         try:
             template = self._inv.task_vars[key]
         except KeyError:
@@ -372,7 +372,7 @@ class NewStylePlanner(ScriptPlanner):
                 call_context=binding.get_service_context(),
                 service_name="ansible_mitogen.services.ModuleDepService",
                 method_name="scan",
-                module_name="ansible_module_%s" % (self._inv.module_name,),
+                module_name=f"ansible_module_{self._inv.module_name}",
                 module_path=self._inv.module_path,
                 search_path=self.get_search_path(),
                 builtin_path=module_common._MODULE_UTILS_PATH,
@@ -497,7 +497,7 @@ def _propagate_deps(invocation, planner, context):
 
 
 def _invoke_async_task(invocation, planner):
-    job_id = "%016x" % random.randint(0, 2 ** 64)
+    job_id = f"{random.randint(0, 2 ** 64):016x}"
     context = invocation.connection.spawn_isolated_child()
     _propagate_deps(invocation, planner, context)
 

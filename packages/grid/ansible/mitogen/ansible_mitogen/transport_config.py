@@ -103,7 +103,7 @@ def run_interpreter_discovery_if_necessary(s, task_vars, action, rediscover_pyth
     if s in ["auto", "auto_legacy", "auto_silent", "auto_legacy_silent"]:
         # python is the only supported interpreter_name as of Ansible 2.8.8
         interpreter_name = "python"
-        discovered_interpreter_config = "discovered_interpreter_%s" % interpreter_name
+        discovered_interpreter_config = f"discovered_interpreter_{interpreter_name}"
 
         if task_vars.get("ansible_facts") is None:
             task_vars["ansible_facts"] = {}

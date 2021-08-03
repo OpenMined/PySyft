@@ -163,7 +163,7 @@ def save_pid(name):
         perf top -p $(anspid)
     """
     if os.environ.get("MITOGEN_SAVE_PIDS"):
-        with open(".ansible-%s.pid" % (name,), "w") as fp:
+        with open(f".ansible-{name}.pid", "w") as fp:
             fp.write(str(os.getpid()))
 
 
@@ -653,11 +653,7 @@ class MuxProcess(object):
         ansible_mitogen.logging.set_process_name("mux:" + str(self.index))
         if setproctitle:
             setproctitle.setproctitle(
-                "mitogen mux:%s (%s)"
-                % (
-                    self.index,
-                    os.path.basename(self.path),
-                )
+                f"mitogen mux:{self.index} ({os.path.basename(self.path)})"
             )
 
         self.model.parent_sock.close()

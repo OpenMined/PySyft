@@ -10,7 +10,6 @@ from pymbolic.mapper.substitutor import make_subst_func
 
 # relative
 from .idp_gaussian_mechanism import iDPGaussianMechanism
-from .scalar import PhiScalar
 from .search import max_lipschitz_wrt_entity
 
 

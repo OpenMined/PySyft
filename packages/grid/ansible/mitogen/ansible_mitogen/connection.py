@@ -90,7 +90,7 @@ def convert_bool(obj):
         return False
     if str(obj).lower() not in ("yes", "true", "1"):
         raise ansible.errors.AnsibleConnectionFailure(
-            "expected yes/no/true/false/0/1, got %r" % (obj,)
+            f"expected yes/no/true/false/0/1, got {obj!r}"
         )
     return True
 
@@ -1062,7 +1062,7 @@ class Connection(ansible.plugins.connection.ConnectionBase):
             raise
 
         if not stat.S_ISREG(st.st_mode):
-            raise IOError("%r is not a regular file." % (in_path,))
+            raise IOError(f"{in_path!r} is not a regular file.")
 
         # If the file is sufficiently small, just ship it in the argument list
         # rather than introducing an extra RTT for the child to request it from

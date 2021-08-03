@@ -78,7 +78,7 @@ def _deserialize(
     # There are serveral code paths that come through here and use different ways to
     # match and overload protobuf -> deserialize type
     obj_type = getattr(type(blob), "schema2type", None)
-    
+
     if obj_type is None:
         # TODO: This can probably be removed now we have lists of obj_types
         obj_type = getattr(blob, "obj_type", None)

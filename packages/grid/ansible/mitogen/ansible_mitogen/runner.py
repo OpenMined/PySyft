@@ -198,7 +198,7 @@ class EnvironmentFileWatcher(object):
         LOG.debug("%r installed; existing keys: %r", self, self._keys)
 
     def __repr__(self):
-        return "EnvironmentFileWatcher(%r)" % (self.path,)
+        return f"EnvironmentFileWatcher({self.path!r})"
 
     def _stat(self):
         try:
@@ -549,7 +549,7 @@ class ModuleUtilsImporter(object):
         source = ansible_mitogen.target.get_small_file(self._context, path)
         code = compile(source, path, "exec", 0, 1)
         mod = sys.modules.setdefault(fullname, imp.new_module(fullname))
-        mod.__file__ = "master:%s" % (path,)
+        mod.__file__ = f"master:{path}"
         mod.__loader__ = self
         if is_pkg:
             mod.__path__ = []
@@ -726,7 +726,7 @@ class ProgramRunner(Runner):
             return {
                 u"rc": 1,
                 u"stdout": u"",
-                u"stderr": u"%s: %s" % (type(e), e),
+                u"stderr": f"{type(e)}: {e}",
             }
 
         return {
@@ -1047,7 +1047,7 @@ class OldStyleRunner(ArgsFileRunner, ScriptRunner):
         """
         return (
             " ".join(
-                "%s=%s" % (key, shlex_quote(str(self.args[key]))) for key in self.args
+                f"{key}={shlex_quote(str(self.args[key]))}" for key in self.args
             )
             + " "
         )  # Bug-for-bug :(

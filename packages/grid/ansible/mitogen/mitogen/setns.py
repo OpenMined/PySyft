@@ -54,7 +54,7 @@ class Error(mitogen.core.StreamError):
 def setns(kind, fd):
     if LIBC.setns(int(fd), 0) == -1:
         errno = ctypes.get_errno()
-        msg = "setns(%s, %s): %s" % (fd, kind, LIBC__strerror(errno))
+        msg = f"setns({fd}, {kind}): {LIBC__strerror(errno)}"
         raise OSError(errno, msg)
 
 
@@ -187,7 +187,7 @@ class Connection(mitogen.parent.Connection):
             e = sys.exc_info()[1]
             raise Error(str(e))
 
-        os.chdir("/proc/%s/root" % (self.leader_pid,))
+        os.chdir(f"/proc/{self.leader_pid}/root")
         os.chroot(".")
         os.chdir("/")
         for fp in ns_fps:
@@ -240,7 +240,7 @@ class Connection(mitogen.parent.Connection):
         argv = super(Connection, self).get_boot_command()
         # bash will exec() if a single command was specified and the shell has
         # nothing left to do, so "; exit $?" gives bash a reason to live.
-        return ["/bin/sh", "-c", "%s; exit $?" % (mitogen.parent.Argv(argv),)]
+        return ["/bin/sh", "-c", f"{mitogen.parent.Argv(argv)}; exit $?"]
 
     def create_child(self, args):
         return mitogen.parent.create_child(args, preexec_fn=self.preexec_fn)

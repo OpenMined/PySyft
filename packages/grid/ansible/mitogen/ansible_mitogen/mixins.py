@@ -204,7 +204,7 @@ class ActionModuleMixin(ansible.plugins.action.ActionBase):
     def _generate_tmp_path(self):
         return os.path.join(
             self._connection.get_good_temp_dir(),
-            "ansible_mitogen_action_%016x" % (random.getrandbits(8 * 8),),
+            f"ansible_mitogen_action_{random.getrandbits(8 * 8):016x}",
         )
 
     def _make_tmp_path(self, remote_user=None):

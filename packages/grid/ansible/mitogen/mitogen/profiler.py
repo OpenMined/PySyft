@@ -72,7 +72,7 @@ def try_merge(stats, path):
         stats.add(path)
         return True
     except Exception as e:
-        print("%s failed. Will retry. %s" % (path, e))
+        print(f"{path} failed. Will retry. {e}")
         return False
 
 
@@ -85,7 +85,7 @@ def merge_stats(outpath, inpaths):
             time.sleep(0.2)
             continue
 
-        print("Writing %r..." % (outpath,))
+        print(f"Writing {outpath!r}...")
         for path in rest:
             # print("Merging %r into %r.." % (os.path.basename(path), outpath))
             for x in range(5):
@@ -108,9 +108,9 @@ def generate_stats(outpath, tmpdir):
             all_paths.append(path)
             paths_by_ident.setdefault(ident, []).append(path)
 
-    merge_stats("%s-all.pstat" % (outpath,), all_paths)
+    merge_stats(f"{outpath}-all.pstat", all_paths)
     for ident, paths in paths_by_ident.items():
-        merge_stats("%s-%s.pstat" % (outpath, ident), paths)
+        merge_stats(f"{outpath}-{ident}.pstat", paths)
 
 
 def do_record(tmpdir, path, *args):
@@ -132,8 +132,7 @@ def do_stat(tmpdir, sort, *args):
     valid_sorts = pstats.Stats.sort_arg_dict_default
     if sort not in valid_sorts:
         sys.stderr.write(
-            "Invalid sort %r, must be one of %s\n"
-            % (sort, ", ".join(sorted(valid_sorts)))
+            f"Invalid sort {sort!r}, must be one of {', '.join(sorted(valid_sorts))}\n"
         )
         sys.exit(1)
 
@@ -149,11 +148,11 @@ def do_stat(tmpdir, sort, *args):
         "all",
     )
     for agg in aggs:
-        path = "%s-%s.pstat" % (outfile, agg)
+        path = f"{outfile}-{agg}.pstat"
         if os.path.exists(path):
             print()
             print()
-            print("------ Aggregation %r ------" % (agg,))
+            print(f"------ Aggregation {agg!r} ------")
             print()
             do_report(tmpdir, path, sort)
             print()

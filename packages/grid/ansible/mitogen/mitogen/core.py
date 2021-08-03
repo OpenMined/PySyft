@@ -313,7 +313,7 @@ class Kwargs(dict):
                 self[k] = v
 
     def __repr__(self):
-        return "Kwargs(%s)" % (dict.__repr__(self),)
+        return f"Kwargs({dict.__repr__(self)})"
 
     def __reduce__(self):
         return (Kwargs, (dict(self),))
@@ -332,7 +332,7 @@ class CallError(Error):
         else:
             e = fmt
             cls = e.__class__
-            fmt = "%s.%s: %s" % (cls.__module__, cls.__name__, e)
+            fmt = f"{cls.__module__}.{cls.__name__}: {e}"
             tb = sys.exc_info()[2]
             if tb:
                 fmt += "\n"
@@ -525,7 +525,7 @@ def set_cloexec(fd):
     :func:`mitogen.fork.on_fork`.
     """
     flags = fcntl.fcntl(fd, fcntl.F_GETFD)
-    assert fd > 2, "fd %r <= 2" % (fd,)
+    assert fd > 2, f"fd {fd!r} <= 2"
     fcntl.fcntl(fd, fcntl.F_SETFD, flags | fcntl.FD_CLOEXEC)
 
 
@@ -610,9 +610,9 @@ class PidfulStreamHandler(logging.StreamHandler):
             path = self.template % (os.getpid(), ts)
             self.stream = open(path, "w", 1)
             set_cloexec(self.stream.fileno())
-            self.stream.write("Parent PID: %s\n" % (os.getppid(),))
+            self.stream.write(f"Parent PID: {os.getppid()}\n")
             self.stream.write(
-                "Created by:\n\n%s\n" % ("".join(traceback.format_stack()),)
+                f"Created by:\n\n{''.join(traceback.format_stack())}\n"
             )
             self.open_pid = os.getpid()
         finally:
@@ -1042,7 +1042,7 @@ class Sender(object):
         )
 
     def __repr__(self):
-        return "Sender(%r, %r)" % (self.context, self.dst_handle)
+        return f"Sender({self.context!r}, {self.dst_handle!r})"
 
     def __reduce__(self):
         return _unpickle_sender, (self.context.context_id, self.dst_handle)
@@ -1116,7 +1116,7 @@ class Receiver(object):
         )
 
     def __repr__(self):
-        return "Receiver(%r, %r)" % (self.router, self.handle)
+        return f"Receiver({self.router!r}, {self.handle!r})"
 
     def __enter__(self):
         return self
@@ -1267,7 +1267,7 @@ class Channel(Sender, Receiver):
         Sender.close(self)
 
     def __repr__(self):
-        return "Channel(%s, %s)" % (Sender.__repr__(self), Receiver.__repr__(self))
+        return f"Channel({Sender.__repr__(self)}, {Receiver.__repr__(self)})"
 
 
 class Importer(object):
@@ -1641,7 +1641,7 @@ class LogHandler(logging.Handler):
         self.local.in_emit = True
         try:
             msg = self.format(rec)
-            encoded = "%s\x00%s\x00%s" % (rec.name, rec.levelno, msg)
+            encoded = f"{rec.name}\x00{rec.levelno}\x00{msg}"
             if isinstance(encoded, UnicodeType):
                 # Logging package emits both :(
                 encoded = encoded.encode("utf-8")
@@ -1724,10 +1724,7 @@ class Stream(object):
         self.transmit_side = Side(self, wfp)
 
     def __repr__(self):
-        return "<Stream %s #%04x>" % (
-            self.name,
-            id(self) & 0xFFFF,
-        )
+        return f"<Stream {self.name} #{id(self) & 65535:04x}>"
 
     def on_receive(self, broker):
         """
@@ -1821,10 +1818,7 @@ class Protocol(object):
         return stream
 
     def __repr__(self):
-        return "%s(%s)" % (
-            self.__class__.__name__,
-            self.stream and self.stream.name,
-        )
+        return f"{self.__class__.__name__}({self.stream and self.stream.name})"
 
     def on_shutdown(self, broker):
         _v and LOG.debug("%r: shutting down", self)
@@ -1884,7 +1878,7 @@ class DelimitedProtocol(Protocol):
             else:
                 assert (
                     stream.protocol is not self
-                ), "stream protocol is no longer %r" % (self,)
+                ), f"stream protocol is no longer {self!r}"
                 stream.protocol.on_receive(broker, self._trailer)
 
     def on_line_received(self, line):
@@ -2021,7 +2015,7 @@ class Side(object):
             set_nonblock(self.fd)
 
     def __repr__(self):
-        return "<Side of %s fd %s>" % (self.stream.name or repr(self.stream), self.fd)
+        return f"<Side of {self.stream.name or repr(self.stream)} fd {self.fd}>"
 
     @classmethod
     def _on_fork(cls):
@@ -2362,7 +2356,7 @@ class Context(object):
         return data
 
     def __repr__(self):
-        return "Context(%s, %r)" % (self.context_id, self.name)
+        return f"Context({self.context_id}, {self.name!r})"
 
 
 def _unpickle_context(context_id, name, router=None):
@@ -2427,7 +2421,7 @@ class Poller(object):
         self._wfds = {}
 
     def __repr__(self):
-        return "%s" % (type(self).__name__,)
+        return f"{type(self).__name__}"
 
     def _update(self, fd):
         """
@@ -3022,7 +3016,7 @@ class Router(object):
         self.add_handler(self._on_del_route, DEL_ROUTE)
 
     def __repr__(self):
-        return "Router(%r)" % (self.broker,)
+        return f"Router({self.broker!r})"
 
     def _setup_logging(self):
         """
@@ -3653,7 +3647,7 @@ class Broker(object):
         except Exception:
             e = sys.exc_info()[1]
             LOG.exception("broker crashed")
-            syslog.syslog(syslog.LOG_ERR, "broker crashed: %s" % (e,))
+            syslog.syslog(syslog.LOG_ERR, f"broker crashed: {e}")
             syslog.closelog()  # prevent test 'fd leak'.
 
         self._alive = False  # Ensure _alive is consistent on crash.
@@ -3688,7 +3682,7 @@ class Broker(object):
         self._thread.join()
 
     def __repr__(self):
-        return "Broker(%04x)" % (id(self) & 0xFFFF,)
+        return f"Broker({id(self) & 65535:04x})"
 
 
 class Dispatcher(object):

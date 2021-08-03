@@ -228,4 +228,4 @@ def cast(obj):
     if isinstance(obj, mitogen.core.BytesType):
         return mitogen.core.BytesType(obj)
 
-    raise TypeError("Cannot serialize: %r: %r" % (type(obj), obj))
+    raise TypeError(f"Cannot serialize: {type(obj)!r}: {obj!r}")

@@ -2,14 +2,13 @@
 from __future__ import annotations
 
 # stdlib
-from typing import Type
-from typing import Union
+from typing import Optional
 
 # third party
 import numpy as np
-from numpy.typing import ArrayLike
 import torch as th
 
+# relative
 # syft relative
 from ...core.common.serde.recursive import RecursiveSerde
 from ..common.serde.serializable import bind_protobuf
@@ -17,8 +16,6 @@ from .ancestors import AutogradTensorAncestor
 from .ancestors import PhiTensorAncestor
 from .passthrough import PassthroughTensor  # type: ignore
 
-
-from typing import Optional
 
 @bind_protobuf
 class Tensor(

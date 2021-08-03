@@ -191,7 +191,7 @@ class Process(object):
             pmon.add(proc.pid, self._on_proc_exit)
 
     def __repr__(self):
-        return "Process(%r, %r)" % (self.stdin, self.stdout)
+        return f"Process({self.stdin!r}, {self.stdout!r})"
 
     def _on_proc_exit(self, status):
         LOG.debug("%r._on_proc_exit(%r)", self, status)
@@ -212,7 +212,7 @@ class Process(object):
             command, arg = msg.unpickle(throw=False)
             LOG.debug("%r._on_control(%r, %s)", self, command, arg)
 
-            func = getattr(self, "_on_%s" % (command,), None)
+            func = getattr(self, f"_on_{command}", None)
             if func:
                 return func(msg, arg)
 
@@ -292,7 +292,7 @@ def exit():
 def die(msg, *args):
     if args:
         msg %= args
-    sys.stderr.write("%s\n" % (msg,))
+    sys.stderr.write(f"{msg}\n")
     exit()
 
 
@@ -436,11 +436,11 @@ def run(dest, router, args, deadline=None, econtext=None):
         ssh_path = os.path.join(tmp_path, "ssh")
         fp = open(ssh_path, "w")
         try:
-            fp.write("#!%s\n" % (mitogen.parent.get_sys_executable(),))
+            fp.write(f"#!{mitogen.parent.get_sys_executable()}\n")
             fp.write(inspect.getsource(mitogen.core))
             fp.write("\n")
             fp.write(
-                "ExternalContext(%r).main()\n" % (_get_econtext_config(context, sock2),)
+                f"ExternalContext({_get_econtext_config(context, sock2)!r}).main()\n"
             )
         finally:
             fp.close()
@@ -449,7 +449,7 @@ def run(dest, router, args, deadline=None, econtext=None):
         env = os.environ.copy()
         env.update(
             {
-                "PATH": "%s:%s" % (tmp_path, env.get("PATH", "")),
+                "PATH": f"{tmp_path}:{env.get('PATH', '')}",
                 "ARGV0": mitogen.parent.get_sys_executable(),
                 "SSH_PATH": ssh_path,
             }

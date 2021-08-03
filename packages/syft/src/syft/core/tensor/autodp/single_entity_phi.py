@@ -8,13 +8,11 @@ from typing import Tuple as TypeTuple
 from typing import Union
 
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 import numpy.typing as npt
 
 # relative
 from ....core.common.serde.recursive import RecursiveSerde
-from ....proto.core.tensor.tensor_pb2 import Tensor as Tensor_PB
 from ...adp.entity import Entity
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...common.serde.serializable import bind_protobuf

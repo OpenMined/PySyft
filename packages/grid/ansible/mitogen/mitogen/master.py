@@ -439,7 +439,7 @@ class LogForwarder(object):
 
         name, level_s, s = msg.data.decode("utf-8", "replace").split("\x00", 2)
 
-        logger_name = "%s.[%s]" % (name, context.name)
+        logger_name = f"{name}.[{context.name}]"
         logger = self._cache.get(logger_name)
         if logger is None:
             self._cache[logger_name] = logger = logging.getLogger(logger_name)
@@ -460,7 +460,7 @@ class LogForwarder(object):
         logger.handle(record)
 
     def __repr__(self):
-        return "LogForwarder(%r)" % (self._router,)
+        return f"LogForwarder({self._router!r})"
 
 
 class FinderMethod(object):
@@ -471,7 +471,7 @@ class FinderMethod(object):
     """
 
     def __repr__(self):
-        return "%s()" % (type(self).__name__,)
+        return f"{type(self).__name__}()"
 
     def find(self, fullname):
         """
@@ -876,13 +876,13 @@ class ModuleFinder(object):
         co = compile(src, modpath, "exec")
         for level, modname, namelist in scan_code_imports(co):
             if level == -1:
-                modnames = [modname, "%s.%s" % (fullname, modname)]
+                modnames = [modname, f"{fullname}.{modname}"]
             else:
-                modnames = ["%s%s" % (self.resolve_relpath(fullname, level), modname)]
+                modnames = [f"{self.resolve_relpath(fullname, level)}{modname}"]
 
             maybe_names.extend(modnames)
             maybe_names.extend(
-                "%s.%s" % (mname, name) for mname in modnames for name in namelist
+                f"{mname}.{name}" for mname in modnames for name in namelist
             )
 
         return self._related_cache.setdefault(
@@ -1128,7 +1128,7 @@ class ModuleResponder(object):
         if stream.protocol.remote_id != context.context_id:
             stream.protocol._send(
                 mitogen.core.Message(
-                    data=b("%s\x00%s" % (context.context_id, fullname)),
+                    data=b(f"{context.context_id}\x00{fullname}"),
                     handle=mitogen.core.FORWARD_MODULE,
                     dst_id=stream.protocol.remote_id,
                 )
@@ -1373,7 +1373,7 @@ class IdAllocator(object):
         )
 
     def __repr__(self):
-        return "IdAllocator(%r)" % (self.router,)
+        return f"IdAllocator({self.router!r})"
 
     def allocate(self):
         """

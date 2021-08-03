@@ -238,7 +238,7 @@ class Connection(mitogen.parent.Connection):
     def _get_name(self):
         s = u"ssh." + mitogen.core.to_text(self.options.hostname)
         if self.options.port and self.options.port != 22:
-            s += u":%s" % (self.options.port,)
+            s += f":{self.options.port}"
         return s
 
     def _requires_pty(self):
@@ -284,9 +284,9 @@ class Connection(mitogen.parent.Connection):
         if self.options.keepalive_enabled:
             bits += [
                 "-o",
-                "ServerAliveInterval %s" % (self.options.keepalive_interval,),
+                f"ServerAliveInterval {self.options.keepalive_interval}",
                 "-o",
-                "ServerAliveCountMax %s" % (self.options.keepalive_count,),
+                f"ServerAliveCountMax {self.options.keepalive_count}",
             ]
         if not self._requires_pty():
             bits += ["-o", "BatchMode yes"]

@@ -145,7 +145,7 @@ def validate_arg_spec(spec, args):
         try:
             obj = args[name]
         except KeyError:
-            raise mitogen.core.CallError("Required argument %r missing." % (name,))
+            raise mitogen.core.CallError(f"Required argument {name!r} missing.")
 
         if not isinstance(obj, spec[name]):
             raise mitogen.core.CallError(
@@ -273,7 +273,7 @@ class Invoker(object):
         self.service = service
 
     def __repr__(self):
-        return "%s(%s)" % (type(self).__name__, self.service)
+        return f"{type(self).__name__}({self.service})"
 
     unauthorized_msg = "Caller is not authorized to invoke %r of service %r"
 
@@ -451,14 +451,14 @@ class Service(object):
 
     @classmethod
     def name(cls):
-        return u"%s.%s" % (cls.__module__, cls.__name__)
+        return f"{cls.__module__}.{cls.__name__}"
 
     def __init__(self, router):
         self.router = router
         self.select = mitogen.select.Select()
 
     def __repr__(self):
-        return "%s()" % (self.__class__.__name__,)
+        return f"{self.__class__.__name__}()"
 
     def on_message(self, event):
         """
@@ -569,7 +569,7 @@ class Pool(object):
     def add(self, service):
         name = service.name()
         if name in self._invoker_by_name:
-            raise Error("service named %r already registered" % (name,))
+            raise Error(f"service named {name!r} already registered")
         assert service.select not in self._func_by_source
         invoker = service.invoker_class(service=service)
         self._invoker_by_name[name] = invoker
@@ -996,7 +996,7 @@ class FileService(Service):
     def _generate_stat(self, path):
         st = os.stat(path)
         if not stat.S_ISREG(st.st_mode):
-            raise IOError("%r is not a regular file." % (path,))
+            raise IOError(f"{path!r} is not a regular file.")
 
         return {
             u"size": st.st_size,

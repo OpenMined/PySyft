@@ -55,7 +55,7 @@ class Connection(mitogen.parent.Connection):
     create_child_args = {"merge_stdio": True}
 
     def _get_name(self):
-        return u"kubectl.%s%s" % (self.options.pod, self.options.kubectl_args)
+        return f"kubectl.{self.options.pod}{self.options.kubectl_args}"
 
     def get_boot_command(self):
         bits = (

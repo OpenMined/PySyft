@@ -599,7 +599,7 @@ class Timer(object):
         self.func = func
 
     def __repr__(self):
-        return "Timer(%r, %r)" % (self.when, self.func)
+        return f"Timer({self.when!r}, {self.func!r})"
 
     def __eq__(self, other):
         return self.when == other.when
@@ -906,17 +906,13 @@ class CallSpec(object):
     def _get_kwargs(self):
         s = u""
         if self.kwargs:
-            s = u", ".join("%s=%r" % (k, v) for k, v in self.kwargs.items())
+            s = u", ".join(f"{k}={v!r}" for k, v in self.kwargs.items())
             if self.args:
                 s = u", " + s
         return s
 
     def __repr__(self):
-        return "%s(%s%s)" % (
-            self._get_name(),
-            self._get_args(),
-            self._get_kwargs(),
-        )
+        return f"{self._get_name()}({self._get_args()}{self._get_kwargs()})"
 
 
 class PollPoller(mitogen.core.Poller):
@@ -1438,7 +1434,7 @@ class Connection(object):
         self._router = router
 
     def __repr__(self):
-        return "Connection(%r)" % (self.stdio_stream,)
+        return f"Connection({self.stdio_stream!r})"
 
     # Minimised, gzipped, base64'd and passed to 'python -c'. It forks, dups
     # file descriptor 0 as 100, creates a pipe, then execs a new interpreter
@@ -1547,7 +1543,7 @@ class Connection(object):
         }
 
     def get_preamble(self):
-        suffix = "\nExternalContext(%r).main()\n" % (self.get_econtext_config(),)
+        suffix = f"\nExternalContext({self.get_econtext_config()!r}).main()\n"
         partial = get_core_source_partial()
         return partial.append(suffix.encode("utf-8"))
 
@@ -1557,7 +1553,7 @@ class Connection(object):
         override it to specify a default stream name, or set
         :attr:`name_prefix` to generate a default format.
         """
-        return u"%s.%s" % (self.name_prefix, self.proc.pid)
+        return f"{self.name_prefix}.{self.proc.pid}"
 
     def start_child(self):
         args = self.get_boot_command()
@@ -1566,7 +1562,7 @@ class Connection(object):
             return self.create_child(args=args, **self.create_child_args)
         except OSError:
             e = sys.exc_info()[1]
-            msg = "Child start failed: %s. Command was: %s" % (e, Argv(args))
+            msg = f"Child start failed: {e}. Command was: {Argv(args)}"
             raise mitogen.core.StreamError(msg)
 
     def _adorn_eof_error(self, e):
@@ -1575,7 +1571,7 @@ class Connection(object):
         connection.
         """
         if self.eof_error_hint:
-            e.args = ("%s\n\n%s" % (e.args[0], self.eof_error_hint),)
+            e.args = (f"{e.args[0]}\n\n{self.eof_error_hint}",)
 
     def _complete_connection(self):
         self._timer.cancel()
@@ -1883,7 +1879,7 @@ class CallChain(object):
         )
 
     def __repr__(self):
-        return "%s(%s)" % (self.__class__.__name__, self.context)
+        return f"{self.__class__.__name__}({self.context})"
 
     def __enter__(self):
         return self
@@ -2189,7 +2185,7 @@ class RouteMonitor(object):
 
         data = str(target_id)
         if name:
-            data = "%s:%s" % (target_id, name)
+            data = f"{target_id}:{name}"
         stream.protocol.send(
             mitogen.core.Message(
                 handle=handle,
@@ -2525,7 +2521,7 @@ class Router(mitogen.core.Router):
         if resp["msg"] is not None:
             raise mitogen.core.StreamError(resp["msg"])
 
-        name = u"%s.%s" % (via_context.name, resp["name"])
+        name = f"{via_context.name}.{resp['name']}"
         context = self.context_class(self, resp["id"], name=name)
         context.via = via_context
         self._write_lock.acquire()

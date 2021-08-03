@@ -21,6 +21,7 @@ import wrapt
 
 # relative
 from ..ast.globals import Globals
+from ..core.adp import create_adp_ast
 from ..core.node.abstract.node import AbstractNodeClient
 from ..core.tensor import create_tensor_ast
 from ..lib.plan import create_plan_ast
@@ -28,8 +29,6 @@ from ..lib.python import create_python_ast
 from ..lib.remote_dataloader import create_remote_dataloader_ast
 from ..lib.torch import create_torch_ast
 from ..lib.torchvision import create_torchvision_ast
-from ..core.tensor import create_tensor_ast
-from ..core.adp import create_adp_ast
 from ..logger import critical
 from ..logger import traceback_and_raise
 from ..logger import warning
