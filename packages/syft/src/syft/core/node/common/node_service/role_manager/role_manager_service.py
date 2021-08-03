@@ -1,11 +1,11 @@
 # stdlib
-import secrets
+from typing import Callable
+from typing import Dict
 from typing import List
 from typing import Type
 from typing import Union
 
 # third party
-from nacl.encoding import HexEncoder
 from nacl.signing import VerifyKey
 
 # syft absolute
@@ -32,6 +32,24 @@ from .role_manager_messages import GetRoleResponse
 from .role_manager_messages import GetRolesMessage
 from .role_manager_messages import GetRolesResponse
 from .role_manager_messages import UpdateRoleMessage
+
+INPUT_TYPE = Union[
+    Type[CreateRoleMessage],
+    Type[UpdateRoleMessage],
+    Type[GetRoleMessage],
+    Type[GetRolesMessage],
+    Type[DeleteRoleMessage],
+]
+
+INPUT_MESSAGES = Union[
+    CreateRoleMessage,
+    UpdateRoleMessage,
+    GetRoleMessage,
+    GetRolesMessage,
+    DeleteRoleMessage,
+]
+
+OUTPUT_MESSAGES = Union[SuccessResponseMessage, GetRoleResponse, GetRolesResponse]
 
 
 def create_role_msg(
@@ -162,8 +180,7 @@ def del_role_msg(
 
 
 class RoleManagerService(ImmediateNodeServiceWithReply):
-
-    msg_handler_map = {
+    msg_handler_map: Dict[INPUT_TYPE, Callable[..., OUTPUT_MESSAGES]] = {
         CreateRoleMessage: create_role_msg,
         UpdateRoleMessage: update_role_msg,
         GetRoleMessage: get_role_msg,
@@ -175,15 +192,9 @@ class RoleManagerService(ImmediateNodeServiceWithReply):
     @service_auth(guests_welcome=True)
     def process(
         node: AbstractNode,
-        msg: Union[
-            CreateRoleMessage,
-            UpdateRoleMessage,
-            GetRoleMessage,
-            GetRolesMessage,
-            DeleteRoleMessage,
-        ],
+        msg: INPUT_MESSAGES,
         verify_key: VerifyKey,
-    ) -> Union[SuccessResponseMessage, GetRoleResponse, GetRolesResponse,]:
+    ) -> OUTPUT_MESSAGES:
         return RoleManagerService.msg_handler_map[type(msg)](
             msg=msg, node=node, verify_key=verify_key
         )

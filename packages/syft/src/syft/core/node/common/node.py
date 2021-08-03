@@ -25,6 +25,7 @@ from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 # syft absolute
+from syft.core.node.common.node_manager.setup_manager import SetupManager
 from syft.core.node.common.node_table import Base
 
 # relative
@@ -83,8 +84,10 @@ from ..common.node_service.object_search_permission_update.obj_search_permission
 from ..common.node_service.resolve_pointer_type.resolve_pointer_type_service import (
     ResolvePointerTypeService,
 )
-from ..common.node_service.testing_services.remote_add_service import RemoteAddService
 from ..common.node_service.testing_services.repr_service import ReprService
+from ..common.node_service.testing_services.smpc_executor_service import (
+    SMPCExecutorService,
+)
 from .action.exception_action import ExceptionMessage
 from .action.exception_action import UnknownPrivateException
 from .client import Client
@@ -173,6 +176,7 @@ class Node(AbstractNode):
         # self.store is the elastic memory.
 
         self.store = BinObjectManager(db=self.db_engine)
+        self.setup = SetupManager(database=self.db_engine)
 
         # We need to register all the services once a node is created
         # On the off chance someone forgot to do this (super unlikely)
@@ -239,7 +243,8 @@ class Node(AbstractNode):
         self.immediate_services_without_reply.append(
             ImmediateObjectSearchPermissionUpdateService
         )
-        self.immediate_services_without_reply.append(RemoteAddService)
+
+        self.immediate_services_without_reply.append(SMPCExecutorService)
 
         # TODO: Support ImmediateNodeServiceWithReply Parent Class
         # for services which run immediately and return a reply
@@ -248,6 +253,7 @@ class Node(AbstractNode):
         self.immediate_services_with_reply.append(ImmediateObjectSearchService)
         self.immediate_services_with_reply.append(GetReprService)
         self.immediate_services_with_reply.append(ResolvePointerTypeService)
+
         # for services which can run at a later time and do not return a reply
         self.eventual_services_without_reply = list()
         self.eventual_services_without_reply.append(
@@ -319,7 +325,7 @@ class Node(AbstractNode):
                 elif type(self).__name__ == "Network":
                     self.network = location
                 print(f"Finished setting Node UID. {location}")
-        except Exception as e:
+        except Exception:
             print("Setup hasnt run yet so ignoring set_node_uid")
             pass
 

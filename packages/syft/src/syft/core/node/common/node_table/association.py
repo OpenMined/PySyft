@@ -1,5 +1,4 @@
 # third party
-from sqlalchemy import Boolean
 from sqlalchemy import Column
 from sqlalchemy import DateTime
 from sqlalchemy import Integer
@@ -26,5 +25,5 @@ class Association(Base):
     name = Column(String(255))
     address = Column(String(255))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"< Association id : {self.id}, Name: {self.name}, Address: {self.address}, Date: {self.date}>"

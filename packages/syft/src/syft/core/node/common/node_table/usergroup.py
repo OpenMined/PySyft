@@ -1,9 +1,7 @@
 # third party
-from sqlalchemy import Boolean
 from sqlalchemy import Column
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
-from sqlalchemy import String
 
 # relative
 from . import Base
@@ -16,5 +14,5 @@ class UserGroup(Base):
     user = Column(Integer, ForeignKey("syft_user.id"))
     group = Column(Integer, ForeignKey("group.id"))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"<UserGroup id: {self.id}, user: {self.user}, " f"group: {self.group}>"

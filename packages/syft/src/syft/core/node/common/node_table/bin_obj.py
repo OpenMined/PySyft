@@ -3,11 +3,8 @@ from typing import Any
 
 # third party
 from sqlalchemy import Column
-from sqlalchemy import ForeignKey
-from sqlalchemy import Integer
 from sqlalchemy import LargeBinary
 from sqlalchemy import String
-from sqlalchemy.orm.decl_api import DeclarativeMeta
 
 # syft absolute
 from syft import deserialize
@@ -17,7 +14,7 @@ from syft import serialize
 from . import Base
 
 
-class BinObject(Base):  # type: ignore
+class BinObject(Base):
     __tablename__ = "bin_object"
 
     id = Column(String(256), primary_key=True)

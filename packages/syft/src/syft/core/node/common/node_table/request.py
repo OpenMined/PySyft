@@ -1,5 +1,4 @@
 # third party
-from sqlalchemy import Boolean
 from sqlalchemy import Column
 from sqlalchemy import DateTime
 from sqlalchemy import ForeignKey
@@ -40,5 +39,8 @@ class Request(Base):
     object_type = Column(String(255))
     tags = Column(JSON())
 
-    def __str__(self):
-        return f"< Request id : {self.id}, user: {self.user_id}, Date: {self.date}, Object: {self.object_id}, reason: {self.reason}, status: {self.status}, type: {self.type} >"
+    def __str__(self) -> str:
+        return (
+            f"< Request id : {self.id}, user: {self.user_id}, Date: {self.date}, Object: {self.object_id},"
+            f" reason: {self.reason}, status: {self.status}, type: {self.object_type} >"
+        )

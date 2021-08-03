@@ -1,7 +1,4 @@
 # stdlib
-import secrets
-from threading import Thread
-import traceback
 from typing import List
 from typing import Type
 from typing import Union
@@ -9,7 +6,6 @@ from typing import Union
 # third party
 from nacl.encoding import HexEncoder
 from nacl.signing import VerifyKey
-import torch as th
 
 # syft absolute
 from syft.core.common.message import ImmediateSyftMessageWithReply
@@ -40,12 +36,6 @@ from syft.proto.core.io.address_pb2 import Address as Address_PB
 # from ...utils.executor import executor
 
 
-def send_obj(obj, node):
-    y_s = obj.data.send(
-        node.domain_client, searchable=True, tags=obj.tags, description=obj.description
-    )
-
-
 class TransferObjectService(ImmediateNodeServiceWithReply):
     @staticmethod
     @service_auth(guests_welcome=True)
@@ -55,7 +45,7 @@ class TransferObjectService(ImmediateNodeServiceWithReply):
             LoadObjectMessage,
         ],
         verify_key: VerifyKey,
-    ) -> Union[LoadObjectResponse, SaveObjectResponse,]:
+    ) -> Union[LoadObjectResponse, SaveObjectResponse]:
         _worker_address = msg.content.get("address", None)
         _obj_id = msg.content.get("uid", None)
         _current_user_id = msg.content.get("current_user", None)
@@ -111,7 +101,7 @@ class SaveObjectService(ImmediateNodeServiceWithoutReply):
         _syft_id = UID.from_string(value=_obj_id)
 
         try:
-            _obj = node.store[_syft_id]
+            _obj = node.store[_syft_id]  # noqa: 841
         except Exception:
             raise Exception("Object Not Found!")
 

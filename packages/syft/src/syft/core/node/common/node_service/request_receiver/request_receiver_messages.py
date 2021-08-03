@@ -1,6 +1,5 @@
 # stdlib
 from enum import Enum
-import time
 from typing import List
 from typing import Optional
 

@@ -1,5 +1,4 @@
 # third party
-from sqlalchemy import Boolean
 from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import String
@@ -15,10 +14,9 @@ class SetupConfig(Base):
     domain_name = Column(String(255), default="")
     node_id = Column(String(32), default="")
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"<Domain Name: {self.domain_name}>"
 
 
-def create_setup(**kwargs):
-    new_setup = SetupConfig(**kwargs)
-    return new_setup
+def create_setup(id: int, domain_name: str, node_id: str) -> SetupConfig:
+    return SetupConfig(id=id, domain_name=domain_name, node_id=node_id)

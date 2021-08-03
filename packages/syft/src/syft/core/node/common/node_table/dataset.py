@@ -1,14 +1,6 @@
-# stdlib
-from typing import Any
-from typing import Union
-
 # third party
-from sqlalchemy import Boolean
 from sqlalchemy import Column
-from sqlalchemy import ForeignKey
-from sqlalchemy import Integer
 from sqlalchemy import JSON
-from sqlalchemy import LargeBinary
 from sqlalchemy import String
 
 # relative

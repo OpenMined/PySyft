@@ -1,5 +1,6 @@
 # stdlib
 from typing import Any
+from typing import Dict
 
 # third party
 from fastapi import APIRouter
@@ -86,7 +87,7 @@ def receive_association_request(
     handshake: str = Body(..., example="<hash_code>"),
     sender: str = Body(..., example="http://<node_address>/api/v1"),
     target: str = Body(..., example="http://<target_address>/api/v1"),
-):
+) -> Dict[str, str]:
     """Receives a new association request to the sender address
     Args:
         current_user : Current session.
@@ -111,13 +112,10 @@ def receive_association_request(
     reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
-    resp = {}
     if isinstance(reply, ExceptionMessage):
-        resp = {"error": reply.exception_msg}
+        return {"error": reply.exception_msg}
     else:
-        resp = {"message": reply.resp_msg}
-
-    return resp
+        return {"message": reply.resp_msg}
 
 
 @router.post("/reply", status_code=201, response_class=JSONResponse)
@@ -127,7 +125,7 @@ def respond_association_request(
     value: str = Body(..., example="<hash_code>"),
     target: str = Body(..., example="http://<target_address>/api/v1"),
     sender: str = Body(..., example="http://<node_address>/api/v1"),
-):
+) -> Dict[str, str]:
     """Replies an association request
 
     Args:
@@ -156,19 +154,16 @@ def respond_association_request(
     reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
-    resp = {}
     if isinstance(reply, ExceptionMessage):
-        resp = {"error": reply.exception_msg}
+        return {"error": reply.exception_msg}
     else:
-        resp = {"message": reply.resp_msg}
-
-    return resp
+        return {"message": reply.resp_msg}
 
 
 @router.get("", status_code=200, response_class=JSONResponse)
 def get_all_association_requests(
     current_user: Any = Depends(deps.get_current_user),
-):
+) -> Dict[str, Any]:
     """Retrieves all association requests
     Args:
         current_user : Current session.
@@ -180,27 +175,24 @@ def get_all_association_requests(
 
     # Build Syft Message
     msg = GetAssociationRequestsMessage(
-        address=domain.address, reply_to=domain.address
+        address=node.address, reply_to=node.address
     ).sign(signing_key=user_key)
 
     # Process syft message
-    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+    reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
-    resp = {}
     if isinstance(reply, ExceptionMessage):
-        resp = {"error": reply.exception_msg}
+        return {"error": reply.exception_msg}
     else:
-        resp = reply.content
-
-    return resp
+        return reply.content
 
 
 @router.get("/{association_request_id}", status_code=200, response_class=JSONResponse)
 def get_specific_association_route(
     association_request_id: int,
     current_user: Any = Depends(deps.get_current_user),
-):
+) -> Dict[str, Any]:
     """Retrieves specific association
     Args:
         current_user : Current session.
@@ -213,22 +205,19 @@ def get_specific_association_route(
 
     # Build Syft Message
     msg = GetAssociationRequestMessage(
-        address=domain.address,
+        address=node.address,
         association_request_id=association_request_id,
-        reply_to=domain.address,
+        reply_to=node.address,
     ).sign(signing_key=user_key)
 
     # Process syft message
-    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+    reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
-    resp = {}
     if isinstance(reply, ExceptionMessage):
-        resp = {"error": reply.exception_msg}
+        return {"error": reply.exception_msg}
     else:
-        resp = reply.content
-
-    return resp
+        return reply.content
 
 
 @router.delete(
@@ -237,7 +226,7 @@ def get_specific_association_route(
 def delete_association_route(
     association_request_id: int,
     current_user: Any = Depends(deps.get_current_user),
-):
+) -> Dict[str, str]:
     """Deletes specific association
     Args:
         current_user : Current session.
@@ -250,19 +239,16 @@ def delete_association_route(
 
     # Build Syft Message
     msg = DeleteAssociationRequestMessage(
-        address=domain.address,
+        address=node.address,
         association_request_id=association_request_id,
-        reply_to=domain.address,
+        reply_to=node.address,
     ).sign(signing_key=user_key)
 
     # Process syft message
-    reply = domain.recv_immediate_msg_with_reply(msg=msg).message
+    reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
     # Handle Response types
-    resp = {}
     if isinstance(reply, ExceptionMessage):
-        resp = {"error": reply.exception_msg}
+        return {"error": reply.exception_msg}
     else:
-        resp = {"message": reply.resp_msg}
-
-    return resp
+        return {"message": reply.resp_msg}

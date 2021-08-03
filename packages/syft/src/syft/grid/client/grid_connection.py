@@ -1,7 +1,6 @@
 # stdlib
 import io
 import json
-import sys
 from typing import Any
 from typing import Dict
 from typing import Optional
@@ -58,14 +57,14 @@ class GridHTTPConnection(HTTPConnection):
                 Authorization="Bearer "
                 + json.loads(
                     '{"auth_token":"'
-                    + self.session_token
+                    + str(self.session_token)
                     + '","token_type":"'
-                    + self.token_type
+                    + str(self.token_type)
                     + '"}'
                 )["auth_token"]
             )
 
-        header["Content-Type"] = "application/octet-stream"  # type: ignore
+        header["Content-Type"] = "application/octet-stream"
 
         route = GridHTTPConnection.SYFT_ROUTE
         # if the message has no reply lets use the streaming endpoint
@@ -80,14 +79,14 @@ class GridHTTPConnection(HTTPConnection):
         msg_bytes: bytes = _serialize(obj=msg, to_bytes=True)  # type: ignore
 
         # if sys.getsizeof(msg_bytes) < GridHTTPConnection.SIZE_THRESHOLD:
-        if True:
-            r = requests.post(
-                url=self.base_url + route,
-                data=msg_bytes,
-                headers=header,
-            )
-        else:
-            r = self.send_streamed_messages(blob_message=msg_bytes)
+        # if True:
+        r = requests.post(
+            url=self.base_url + route,
+            data=msg_bytes,
+            headers=header,
+        )
+        # else:
+        #     r = self.send_streamed_messages(blob_message=msg_bytes)
 
         # Return request's response object
         # r.text provides the response body as a str
@@ -152,9 +151,9 @@ class GridHTTPConnection(HTTPConnection):
                 Authorization="Bearer "
                 + json.loads(
                     '{"auth_token":"'
-                    + self.session_token
+                    + str(self.session_token)
                     + '","token_type":"'
-                    + self.token_type
+                    + str(self.token_type)
                     + '"}'
                 )["auth_token"]
             )
@@ -192,7 +191,7 @@ class GridHTTPConnection(HTTPConnection):
         return resp
 
     @property
-    def host(self):
+    def host(self) -> str:
         return self.base_url.strip("/api/v1")
 
     @staticmethod
@@ -202,5 +201,6 @@ class GridHTTPConnection(HTTPConnection):
     def _object2proto(self) -> GridHTTPConnection_PB:
         return GridHTTPConnection_PB(base_url=self.base_url)
 
+    @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return GridHTTPConnection_PB

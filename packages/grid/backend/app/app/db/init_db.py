@@ -2,7 +2,6 @@
 from sqlalchemy.orm import Session
 
 # syft absolute
-import syft as sy
 from syft.core.node.common.node_service.node_setup.node_setup_messages import (
     CreateInitialSetUpMessage,
 )
@@ -36,7 +35,7 @@ def init_db(db: Session) -> None:
     ).sign(signing_key=node.signing_key)
 
     # Process syft message
-    reply = node.recv_immediate_msg_with_reply(msg=msg).message
+    _ = node.recv_immediate_msg_with_reply(msg=msg).message
 
     user = crud.user.get_by_email(db, email=settings.FIRST_SUPERUSER)
     if not user:

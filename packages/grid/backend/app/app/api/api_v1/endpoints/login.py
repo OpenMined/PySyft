@@ -10,8 +10,7 @@ from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 
 # syft absolute
-from syft import Domain
-from syft import serialize
+from syft import serialize  # type: ignore
 from syft.core.node.common.exceptions import InvalidCredentialsError
 from syft.core.node.common.node import Node
 

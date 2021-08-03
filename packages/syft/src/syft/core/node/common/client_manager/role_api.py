@@ -1,9 +1,8 @@
 # stdlib
 from typing import Any
-from typing import Callable
-from typing import Type
 
 # syft absolute
+from syft.core.node.abstract.node import AbstractNodeClient
 from syft.core.node.common.node_service.role_manager.role_manager_messages import (
     CreateRoleMessage,
 )
@@ -21,15 +20,14 @@ from syft.core.node.common.node_service.role_manager.role_manager_messages impor
 )
 
 # relative
-from ....node.common.node import Node
 from ....node.domain.enums import ResponseObjectEnum
 from ...common.client_manager.request_api import RequestAPI
 
 
 class RoleRequestAPI(RequestAPI):
-    def __init__(self, node: Type[Node]):
+    def __init__(self, client: AbstractNodeClient):
         super().__init__(
-            node=node,
+            client=client,
             create_msg=CreateRoleMessage,
             get_msg=GetRoleMessage,
             get_all_msg=GetRolesMessage,

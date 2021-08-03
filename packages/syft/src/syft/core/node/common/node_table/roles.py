@@ -1,7 +1,6 @@
 # third party
 from sqlalchemy import Boolean
 from sqlalchemy import Column
-from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import String
 
@@ -22,7 +21,7 @@ class Role(Base):
     can_manage_infrastructure = Column(Boolean(), default=False)
     can_upload_data = Column(Boolean(), default=False)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f"<Role id: {self.id}, name: {self.name}, "
             f"can_triage_requests: {self.can_triage_requests}, "
@@ -36,17 +35,17 @@ class Role(Base):
 
 
 def create_role(
-    name,
-    can_triage_requests,
-    can_edit_settings,
-    can_create_users,
-    can_create_groups,
-    can_edit_roles,
-    can_manage_infrastructure,
-    can_upload_data,
-):
+    name: str,
+    can_triage_requests: bool,
+    can_edit_settings: bool,
+    can_create_users: bool,
+    can_create_groups: bool,
+    can_edit_roles: bool,
+    can_manage_infrastructure: bool,
+    can_upload_data: bool,
+) -> Role:
     new_role = Role(
-        name=name,
+        name=name,  # type:ignore
         can_triage_requests=can_triage_requests,
         can_edit_settings=can_edit_settings,
         can_create_users=can_create_users,

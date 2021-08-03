@@ -9,7 +9,7 @@ import ascii_magic
 from .lib import asset_path
 
 
-def motorcycle():
+def motorcycle() -> None:
     print(
         """
                                              `
@@ -46,12 +46,11 @@ def motorcycle():
                    `:dNMs``
                  `.+mNy/.`
               `.+hNMMs``
-             `:dMMMMh.`"""
+             `:dMMMMh.`"""  # noqa: W605
     )
 
 
-def hold_on_tight():
-
+def hold_on_tight() -> None:
     rows, columns = os.popen("stty size", "r").read().split()
 
     if int(columns) >= 91:
@@ -66,7 +65,7 @@ def hold_on_tight():
 \_| |_/\___/|_|\__,_|  \___/|_| |_|  \__|_|\__, |_| |_|\__| \_| |_/\__,_|_|  |_|   \__, (_)
                                             __/ |                                   __/ |
                                            |___/                                   |___/
-            """
+            """  # noqa: W605
         )
     else:
         print(
@@ -79,33 +78,35 @@ def hold_on_tight():
 \_| |_/\___/|_|\__,_|  \___/|_| |_| \_| |_/\__,_|_|  |_|   \__, (_)
                                                             __/ |
                                                            |___/
-        """
+        """  # noqa: W605
         )
 
 
-def hagrid1():
-    ascii_magic.to_terminal(
-        ascii_magic.from_image_file(
-            img_path=str(asset_path()) + "/img/hagrid.png", columns=83
+def hagrid1() -> None:
+    try:
+        ascii_magic.to_terminal(
+            ascii_magic.from_image_file(
+                img_path=str(asset_path()) + "/img/hagrid.png", columns=83
+            )
         )
-    )
+    except Exception:
+        pass
 
 
-def hagrid2():
-    ascii_magic.to_terminal(
-        ascii_magic.from_image_file(
-            img_path=str(asset_path()) + "/img/hagrid2.png", columns=83
+def hagrid2() -> None:
+    try:
+        ascii_magic.to_terminal(
+            ascii_magic.from_image_file(
+                img_path=str(asset_path()) + "/img/hagrid2.png", columns=83
+            )
         )
-    )
+    except Exception:
+        pass
 
 
-options = [motorcycle, hagrid1, hagrid2]
-
-
-def hagrid():
+def hagrid() -> None:
     """Print a random hagrid image with the caption "hold on tight harry" """
+    options = [motorcycle, hagrid1, hagrid2]
     i = random.randint(0, 2)
-
     options[i]()
-
     hold_on_tight()

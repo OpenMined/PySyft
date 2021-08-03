@@ -2,9 +2,9 @@
 import sys
 
 # syft absolute
-from syft import Domain
-from syft import Network
-from syft import logger
+from syft import Domain  # type: ignore
+from syft import Network  # type: ignore
+from syft import logger  # type: ignore
 from syft.core.node.common.node_table import Base
 from syft.core.node.common.node_table.utils import seed_db
 

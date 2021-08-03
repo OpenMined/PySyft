@@ -1,9 +1,9 @@
 # stdlib
 from typing import Any
 from typing import Dict
-from typing import Type
 
 # syft absolute
+from syft.core.node.abstract.node import AbstractNodeClient
 from syft.core.node.common.node_service.association_request.association_request_messages import (
     DeleteAssociationRequestMessage,
 )
@@ -19,11 +19,9 @@ from syft.core.node.common.node_service.association_request.association_request_
 from syft.core.node.common.node_service.association_request.association_request_messages import (
     SendAssociationRequestMessage,
 )
-from syft.core.node.domain.enums import RequestAPIFields
 from syft.core.node.domain.exceptions import PyGridClientException
 
 # relative
-from ....node.common.node import Node
 from ....node.domain.enums import AssociationRequestResponses
 from ....node.domain.enums import RequestAPIFields
 from ....node.domain.enums import ResponseObjectEnum
@@ -31,9 +29,9 @@ from ...common.client_manager.request_api import RequestAPI
 
 
 class AssociationRequestAPI(RequestAPI):
-    def __init__(self, node: Type[Node]):
+    def __init__(self, client: AbstractNodeClient):
         super().__init__(
-            node=node,
+            client=client,
             create_msg=SendAssociationRequestMessage,
             get_msg=GetAssociationRequestMessage,
             get_all_msg=GetAssociationRequestsMessage,

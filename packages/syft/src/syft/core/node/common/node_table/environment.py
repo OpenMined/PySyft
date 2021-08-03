@@ -2,7 +2,6 @@
 from datetime import datetime
 
 # third party
-from sqlalchemy import Boolean
 from sqlalchemy import Column
 from sqlalchemy import DateTime
 from sqlalchemy import Integer
@@ -27,5 +26,9 @@ class Environment(Base):
     created_at = Column(DateTime, default=datetime.now())
     destroyed_at = Column(DateTime, default=datetime.now())
 
-    def __str__(self):
-        return f"<Group id: {self.id}, state: {self.state}, address: {self.address}, syft_address: {self.syft_address}, provider: {self.provider}, region: {self.region}, instance_type: {self.instance_type}, created_at: {self.created_at}, destroyed_at: {self.destroyed_at}>"
+    def __str__(self) -> str:
+        return (
+            f"<Group id: {self.id}, state: {self.state}, address: {self.address}, syft_address: "
+            f"{self.syft_address}, provider: {self.provider}, region: {self.region}, instance_type: "
+            f"{self.instance_type}, created_at: {self.created_at}, destroyed_at: {self.destroyed_at}>"
+        )

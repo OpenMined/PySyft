@@ -1,9 +1,11 @@
 # stdlib
 from typing import Any
-from typing import Type
+
+# syft absolute
+from syft.core.node.abstract.node import AbstractNodeClient
 
 # relative
-from ....node.common.node import Node
+from .....logger import logger
 from ....node.domain.enums import ResponseObjectEnum
 from ..node_service.user_manager.user_messages import CreateUserMessage
 from ..node_service.user_manager.user_messages import DeleteUserMessage
@@ -14,9 +16,9 @@ from .request_api import RequestAPI
 
 
 class UserRequestAPI(RequestAPI):
-    def __init__(self, node: Type[Node]):
+    def __init__(self, client: AbstractNodeClient):
         super().__init__(
-            node=node,
+            client=client,
             create_msg=CreateUserMessage,
             get_msg=GetUserMessage,
             get_all_msg=GetUsersMessage,
@@ -36,7 +38,7 @@ class UserRequestAPI(RequestAPI):
             response = self.perform_api_request(
                 syft_msg=self._create_message, content=kwargs
             )
-            logging.info(response.resp_msg)
+            logger.info(response.resp_msg)
         except Exception as e:
             for user in self.all():
                 if user["email"] == kwargs["email"]:

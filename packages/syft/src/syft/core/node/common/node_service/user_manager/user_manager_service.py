@@ -1,5 +1,6 @@
 # stdlib
-import secrets
+from typing import Callable
+from typing import Dict
 from typing import List
 from typing import Type
 from typing import Union
@@ -55,19 +56,19 @@ def create_user_msg(
         raise AuthorizationError(
             message="You can't create a new User using this email!"
         )
-    except UserNotFoundError as e:
+    except UserNotFoundError:
         # If email not registered, a new user can be created.
         pass
 
     # 2 - Custom Type
     # Create a custom user (with a custom role)
     # This user can only be created by using an account with "can_create_users" permissions
-    def create_custom_user():
+    def create_custom_user() -> None:
         _owner_role = node.roles.owner_role
         if msg.role != _owner_role.name:
             # Generate a new signing key
             _private_key = SigningKey.generate()
-            _user = node.users.signup(
+            node.users.signup(
                 name=msg.name,
                 email=msg.email,
                 password=msg.password,
@@ -85,7 +86,7 @@ def create_user_msg(
 
     # 3 - Standard type
     # Create a common user with no special permissions
-    def create_standard_user():
+    def create_standard_user() -> None:
 
         # Generate a new signing key
         _private_key = SigningKey.generate()
@@ -93,7 +94,7 @@ def create_user_msg(
         encoded_pk = _private_key.encode(encoder=HexEncoder).decode("utf-8")
         encoded_vk = _private_key.verify_key.encode(encoder=HexEncoder).decode("utf-8")
 
-        _user = node.users.signup(
+        node.users.signup(
             name=msg.name,
             email=msg.email,
             password=msg.password,
@@ -292,8 +293,9 @@ def search_users_msg(
         "role": node.roles.first(name=msg.role).id,
     }
 
-    filter_parameters = lambda key: user_parameters[key]
-    filtered_parameters = filter(filter_parameters, user_parameters.keys())
+    filtered_parameters = filter(
+        lambda key: user_parameters[key], user_parameters.keys()
+    )
     user_parameters = {key: user_parameters[key] for key in filtered_parameters}
 
     _allowed = node.users.can_triage_requests(verify_key=verify_key)
@@ -312,7 +314,7 @@ def search_users_msg(
             else:
                 _msg = [model_to_json(user) for user in users]
         except UserNotFoundError:
-            _msg = {}
+            _msg = []
     else:
         raise AuthorizationError("You're not allowed to get User information!")
 
@@ -323,8 +325,32 @@ def search_users_msg(
 
 
 class UserManagerService(ImmediateNodeServiceWithReply):
+    INPUT_TYPE = Union[
+        Type[CreateUserMessage],
+        Type[UpdateUserMessage],
+        Type[GetUserMessage],
+        Type[GetUsersMessage],
+        Type[DeleteUserMessage],
+        Type[SearchUsersMessage],
+    ]
 
-    msg_handler_map = {
+    INPUT_MESSAGES = Union[
+        CreateUserMessage,
+        UpdateUserMessage,
+        GetUserMessage,
+        GetUsersMessage,
+        DeleteUserMessage,
+        SearchUsersMessage,
+    ]
+
+    OUTPUT_MESSAGES = Union[
+        SuccessResponseMessage,
+        GetUserResponse,
+        GetUsersResponse,
+        SearchUsersResponse,
+    ]
+
+    msg_handler_map: Dict[INPUT_TYPE, Callable[..., OUTPUT_MESSAGES]] = {
         CreateUserMessage: create_user_msg,
         UpdateUserMessage: update_user_msg,
         GetUserMessage: get_user_msg,
@@ -337,21 +363,9 @@ class UserManagerService(ImmediateNodeServiceWithReply):
     @service_auth(guests_welcome=True)
     def process(
         node: AbstractNode,
-        msg: Union[
-            CreateUserMessage,
-            UpdateUserMessage,
-            GetUserMessage,
-            GetUsersMessage,
-            DeleteUserMessage,
-            SearchUsersMessage,
-        ],
+        msg: INPUT_MESSAGES,
         verify_key: VerifyKey,
-    ) -> Union[
-        SuccessResponseMessage,
-        GetUserResponse,
-        GetUsersResponse,
-        SearchUsersResponse,
-    ]:
+    ) -> OUTPUT_MESSAGES:
 
         reply = UserManagerService.msg_handler_map[type(msg)](
             msg=msg, node=node, verify_key=verify_key

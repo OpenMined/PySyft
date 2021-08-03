@@ -1,5 +1,6 @@
 # stdlib
-import secrets
+from typing import Callable
+from typing import Dict
 from typing import List
 from typing import Type
 from typing import Union
@@ -17,6 +18,9 @@ from syft.core.node.common.node_service.node_service import (
 )
 
 # relative
+from ...exceptions import AuthorizationError
+from ...exceptions import GroupNotFoundError
+from ...exceptions import MissingRequestKeyError
 from ...node_table.utils import model_to_json
 from .group_manager_messages import CreateGroupMessage
 from .group_manager_messages import CreateGroupResponse
@@ -29,9 +33,29 @@ from .group_manager_messages import GetGroupsResponse
 from .group_manager_messages import UpdateGroupMessage
 from .group_manager_messages import UpdateGroupResponse
 
-# from ..exceptions import AuthorizationError
-# from ..exceptions import GroupNotFoundError
-# from ..exceptions import MissingRequestKeyError
+INPUT_TYPE = Union[
+    Type[CreateGroupMessage],
+    Type[UpdateGroupMessage],
+    Type[GetGroupMessage],
+    Type[GetGroupsMessage],
+    Type[DeleteGroupMessage],
+]
+
+INPUT_MESSAGES = Union[
+    CreateGroupMessage,
+    UpdateGroupMessage,
+    GetGroupMessage,
+    GetGroupsMessage,
+    DeleteGroupMessage,
+]
+
+OUTPUT_MESSAGES = Union[
+    CreateGroupResponse,
+    UpdateGroupResponse,
+    GetGroupResponse,
+    GetGroupsResponse,
+    DeleteGroupResponse,
+]
 
 
 def create_group_msg(
@@ -206,8 +230,7 @@ def del_group_msg(
 
 
 class GroupManagerService(ImmediateNodeServiceWithReply):
-
-    msg_handler_map = {
+    msg_handler_map: Dict[INPUT_TYPE, Callable[..., OUTPUT_MESSAGES]] = {
         CreateGroupMessage: create_group_msg,
         UpdateGroupMessage: update_group_msg,
         GetGroupMessage: get_group_msg,
@@ -219,21 +242,9 @@ class GroupManagerService(ImmediateNodeServiceWithReply):
     @service_auth(guests_welcome=True)
     def process(
         node: AbstractNode,
-        msg: Union[
-            CreateGroupMessage,
-            UpdateGroupMessage,
-            GetGroupMessage,
-            GetGroupsMessage,
-            DeleteGroupMessage,
-        ],
+        msg: INPUT_MESSAGES,
         verify_key: VerifyKey,
-    ) -> Union[
-        CreateGroupResponse,
-        UpdateGroupResponse,
-        GetGroupResponse,
-        GetGroupsResponse,
-        DeleteGroupResponse,
-    ]:
+    ) -> OUTPUT_MESSAGES:
         return GroupManagerService.msg_handler_map[type(msg)](
             msg=msg, node=node, verify_key=verify_key
         )

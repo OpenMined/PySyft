@@ -1,5 +1,4 @@
 # third party
-from sqlalchemy import Boolean
 from sqlalchemy import Column
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
@@ -21,14 +20,21 @@ class SyftUser(Base):
     verify_key = Column(String(2048))
     role = Column(Integer, ForeignKey("role.id"))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f"<User id: {self.id}, email: {self.email}, name: {self.name}"
             f"role: {self.role}>"
         )
 
 
-def create_user(email, hashed_password, salt, private_key, role, name):
+def create_user(
+    email: str,
+    hashed_password: str,
+    salt: str,
+    private_key: str,
+    role: int,
+    name: str = "",
+) -> SyftUser:
     new_user = SyftUser(
         email=email,
         hashed_password=hashed_password,

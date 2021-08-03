@@ -6,9 +6,12 @@ from logging.config import fileConfig
 import os
 
 # third party
-from alembic import context
+from alembic import context  # type: ignore
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
+
+# syft absolute
+from syft.core.node.common.node_table import Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -24,13 +27,7 @@ fileConfig(config.config_file_name)
 # target_metadata = mymodel.Base.metadata
 # target_metadata = None
 
-# syft absolute
-from syft.core.node.common.node_table import Base
-from syft.core.node.common.node_table.bin_obj import BinObject
-
 target_metadata = Base.metadata
-
-# from app.db.base import Base  # noqa
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -38,7 +35,7 @@ target_metadata = Base.metadata
 # ... etc.
 
 
-def get_url():
+def get_url() -> str:
     user = os.getenv("POSTGRES_USER", "postgres")
     password = os.getenv("POSTGRES_PASSWORD", "")
     server = os.getenv("POSTGRES_SERVER", "db")
@@ -46,7 +43,7 @@ def get_url():
     return f"postgresql://{user}:{password}@{server}/{db}"
 
 
-def run_migrations_offline():
+def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
 
     This configures the context with just a URL
@@ -67,7 +64,7 @@ def run_migrations_offline():
         context.run_migrations()
 
 
-def run_migrations_online():
+def run_migrations_online() -> None:
     """Run migrations in 'online' mode.
 
     In this scenario we need to create an Engine

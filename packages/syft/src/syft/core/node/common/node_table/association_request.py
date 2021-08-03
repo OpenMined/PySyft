@@ -1,3 +1,6 @@
+# stdlib
+from typing import Dict
+
 # third party
 from sqlalchemy import Column
 from sqlalchemy import Integer
@@ -6,6 +9,7 @@ from sqlalchemy.types import LargeBinary
 
 # syft absolute
 from syft import deserialize
+from syft.core.node.abstract.node import AbstractNodeClient
 
 # relative
 from . import Base
@@ -38,10 +42,13 @@ class AssociationRequest(Base):
     source = Column(LargeBinary(4096), default=b"")
     target = Column(LargeBinary(4096), default=b"")
 
-    def __str__(self):
-        return f"< Association Request id : {self.id}, Name: {self.name}, Address: {self.address} , pending: {self.pending}, accepted: {self.accepted}, Date: {self.date}>"
+    def __str__(self) -> str:
+        return (
+            f"< Association Request id : {self.id}, Name: {self.name},"
+            f" Address: {self.address} , status: {self.status}, Date: {self.requested_date}>"
+        )
 
-    def get_metadata(self):
+    def get_metadata(self) -> Dict[str, str]:
         return {
             "requested_date": self.requested_date,
             "name": self.name,
@@ -50,8 +57,8 @@ class AssociationRequest(Base):
             "status": self.status,
         }
 
-    def get_source(self):
+    def get_source(self) -> AbstractNodeClient:
         return deserialize(self.source, from_bytes=True)
 
-    def get_target(self):
+    def get_target(self) -> AbstractNodeClient:
         return deserialize(self.target, from_bytes=True)
