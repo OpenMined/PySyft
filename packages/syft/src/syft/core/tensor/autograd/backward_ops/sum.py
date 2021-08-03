@@ -5,7 +5,6 @@ from uuid import UUID
 import numpy as np
 
 # relative
-# syft relative
 from ..tensor import AutogradTensor
 from .op import Op
 

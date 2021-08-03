@@ -9,6 +9,7 @@ from typing import Dict as TypeDict
 from typing import List as TypeList
 from typing import Optional
 from typing import Tuple as TypeTuple
+from typing import cast
 
 # third party
 import click
@@ -110,7 +111,7 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
         print(f"{e}")
         return
     print("Running: \n", cmd)
-    if "cmd" not in kwargs or str_to_bool(kwargs["cmd"]) is False:
+    if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
         subprocess.call(cmd, shell=True)
 
 
@@ -276,6 +277,7 @@ def generate_key_at_path(key_path: str) -> str:
 def create_launch_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
     host_term = verb.get_named_term_hostgrammar(name="host")
     host = host_term.host
+    auth: Optional[AuthCredentials] = None
 
     tail = False
     if "tail" in kwargs and str_to_bool(kwargs["tail"]):
@@ -722,6 +724,7 @@ def create_launch_custom_cmd(
 
     playbook_path = GRID_SRC_PATH + "/ansible/site.yml"
     ansible_cfg_path = GRID_SRC_PATH + "/ansible.cfg"
+    auth = cast(AuthCredentials, auth)
 
     if not os.path.exists(playbook_path):
         print(f"Can't find playbook site.yml at: {playbook_path}")

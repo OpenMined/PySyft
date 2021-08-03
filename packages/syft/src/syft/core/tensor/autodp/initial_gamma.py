@@ -10,8 +10,6 @@ import numpy as np
 from ...adp.entity import Entity
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ..types import SupportedChainType
-
-# syft relative
 from .intermediate_gamma import IntermediateGammaTensor
 
 

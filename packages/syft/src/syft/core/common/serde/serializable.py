@@ -13,10 +13,13 @@ from ....util import random_name
 
 def bind_protobuf(cls: Any) -> Any:
     protobuf_schema = cls.get_protobuf_schema()
-    # If protobuf already has schema2type, means it's related to multiple types.
-    # Set it's schema2type to None, becuase we can't take use of it anymore.
-    if getattr(protobuf_schema, "schema2type", None):
-        protobuf_schema.schema2type = None
+    # overloading a protobuf by adding multiple classes and we will check the
+    # obj_type string later to dispatch to the correct one
+    if hasattr(protobuf_schema, "schema2type"):
+        if isinstance(protobuf_schema.schema2type, list):
+            protobuf_schema.schema2type.append(cls)
+        else:
+            protobuf_schema.schema2type = [protobuf_schema.schema2type, cls]
     else:
         protobuf_schema.schema2type = cls
 
@@ -130,7 +133,6 @@ class Serializable:
         """
 
         traceback_and_raise(NotImplementedError)
-        raise NotImplementedError
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
