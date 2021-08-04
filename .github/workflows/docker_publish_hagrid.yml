@@ -1,0 +1,20 @@
+on:
+  merge:
+    branches:
+      - main
+
+    paths:
+      - "packages/hagrid/Dockerfile"
+
+jobs:
+  build-secure-hagrid:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+
+    - run: docker buildx build -t openmined/hagrid:${{ github.sha }} packages/hagrid
+
+    - name: Publish to docker hub
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" |  docker login -u ${{ secrets.DOCKER_LOGIN }} --password-stdin
+          docker push openmined/hagrid:${{ github.sha }}
