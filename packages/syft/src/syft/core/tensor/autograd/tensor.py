@@ -29,7 +29,7 @@ from ..ancestors import PhiTensorAncestor
 from ..passthrough import AcceptableSimpleType
 from ..passthrough import PassthroughTensor
 from ..passthrough import is_acceptable_simple_type
-from .backward_ops.op import Op
+# from .backward_ops.op import Op
 
 
 @bind_protobuf
@@ -48,7 +48,7 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor, Serializable):
         self._grad: DefaultDict = defaultdict(lambda: None)
 
         # operation used to create this tensor (if any)
-        self._grad_fn: Optional[Type[Op]] = None
+        self._grad_fn: Optional[Type[autograd.backward_ops.Op]] = None
 
         # list of ops which use this tensor
         self.ops: List = list()
@@ -66,7 +66,7 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor, Serializable):
     @property
     def grad_fn(
         self,
-    ) -> Optional[Type[Op]]:
+    ) -> Optional[Type[autograd.backward_ops.Op]]:
         if not self.requires_grad:
             raise Exception("This tensor is not backpropagated")
         return self._grad_fn
