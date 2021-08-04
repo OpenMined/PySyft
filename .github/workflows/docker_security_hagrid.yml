@@ -18,8 +18,3 @@ jobs:
     - name: Don't let the job fail
       if: ${{ failure() }}
       run: echo "We need to make the security checks pass"
-
-    - name: Publish to docker hub
-        run: |
-          echo "${{ secrets.DOCKER_PASSWORD }}" |  docker login -u ${{ secrets.DOCKER_LOGIN }} --password-stdin
-          docker push openmined/hagrid:${{ github.sha }}
