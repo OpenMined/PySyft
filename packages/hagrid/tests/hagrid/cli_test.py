@@ -5,7 +5,10 @@ from typing import List
 from hagrid import cli
 
 
-def test_basic_launch() -> None:
+def test_hagrid_launch() -> None:
+    """This test is important because we want to make it convenient
+    for our developers to just run 'hagrid launch' whenever they want to spin
+    up a new node with a randomly chosen name"""
 
     # COMMAND: "hagrid launch"
     args: List[str] = []
