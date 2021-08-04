@@ -3,13 +3,13 @@ import pytest
 
 # syft absolute
 import syft as sy
-import syft_petlib  # noqa :401
 
 petlib = pytest.importorskip("petlib")
 
 
 @pytest.mark.skip_windows
 def test_ecpt_serde(root_client: sy.VirtualMachineClient) -> None:
+    import syft_petlib
     ec_group = petlib.ec.EcGroup()
 
     remote_ec_group = ec_group.send(root_client)
