@@ -226,6 +226,7 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor, Serializable):
     def _object2proto(self) -> Tensor_PB:
         arrays = []
         tensors = []
+
         if isinstance(self.child, np.ndarray):
             use_tensors = False
             arrays = [serialize(self.child)]

@@ -27,7 +27,7 @@ class Tensor(
     AutogradTensorAncestor,
     PhiTensorAncestor,
     FixedPrecisionTensorAncestor,
-    MPCTensorAncestor,
+    # MPCTensorAncestor,
     RecursiveSerde
 ):
 
