@@ -93,7 +93,7 @@ jobs:
     strategy:
       max-parallel: 3
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest]
         python-version: [3.9]
         torch-version: [1.8.1]
 
