@@ -1,5 +1,5 @@
 on:
-  push:
+  pull-request:
     paths:
       - "packages/hagrid/Dockerfile"
 
