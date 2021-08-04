@@ -39,7 +39,7 @@ class LogHandler:
     def init_logger(self) -> None:
         """
         Redirects all registered std logging handlers to a loguru sink.
-        Call init() on fastapi startup.
+        Call init_logger() on fastapi startup.
         """
         intercept_handler = InterceptHandler()
 
