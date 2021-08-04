@@ -96,7 +96,6 @@ class Dict(UserDict, PyPrimitive):
     def upcast(self) -> TypeDict:
         # recursively upcast
         result = {k: upcast(v) for k, v in self.items()}
-        del result["temp_storage_for_actual_primitive"]
         return result
 
     def __contains__(self, other: Any) -> SyPrimitiveRet:

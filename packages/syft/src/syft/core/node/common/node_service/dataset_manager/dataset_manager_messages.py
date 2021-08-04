@@ -8,6 +8,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import final
 
 # syft absolute
+from syft import deserialize
 from syft import serialize
 from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
@@ -357,7 +358,10 @@ class GetDatasetsResponse(ImmediateSyftMessageWithoutReply):
 
         for _metadata in self.metadatas:
             metadata = {}
-            for k, v in _metadata.items():
+
+            for out in _metadata.items():
+                print(len(out))
+                k, v = out
                 metadata[k] = serialize(v, to_bytes=True)
 
             cm = metadata_container(metadata=metadata)
@@ -379,13 +383,19 @@ class GetDatasetsResponse(ImmediateSyftMessageWithoutReply):
             if you wish to deserialize an object.
         """
 
+        metadatas = list()
+        for metadata_container in proto.metadatas:
+            md = dict(metadata_container.metadata)
+            deser_md = {}
+            for k, v in md.items():
+                deser_md[k] = deserialize(v, from_bytes=True)
+
+            metadatas.append(deser_md)
+
         return GetDatasetsResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            metadatas=[
-                dict(metadata_container.metadata)
-                for metadata_container in proto.metadatas
-            ],
+            metadatas=metadatas,
         )
 
     @staticmethod

@@ -46,9 +46,13 @@ class DatasetRequestAPI(RequestAPI):
         )
 
     def create_syft(self, **kwargs: Any) -> None:
+        # @trask - this is a very uninformative method name,
+
         super().create(**kwargs)
 
     def create_grid_ui(self, path: str, **kwargs) -> Dict[str, str]:  # type: ignore
+        # @trask - this is a very uninformative method name.
+
         response = self.node.conn.send_files(path, metadata=kwargs)  # type: ignore
         logging.info(response[RequestAPIFields.MESSAGE])
 
@@ -80,10 +84,6 @@ class DatasetRequestAPI(RequestAPI):
         type(dataset_obj).__getitem__ = lambda x, i: x.data[i]
         dataset_obj.node = self.client
         return Dataset(dataset_obj)
-
-    def _repr_html_(self) -> str:
-        """Displays a nice table when the object is returned in Jupyter Notebook"""
-        return self.all(pandas=True)._repr_html_()  # type: ignore
 
 
 class Dataset:

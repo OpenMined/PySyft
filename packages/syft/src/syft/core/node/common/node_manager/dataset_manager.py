@@ -64,6 +64,7 @@ class DatasetManager(DatabaseManager):
             str_metadata=str_metadata,
             blob_metadata=blob_metadata,
         )
+
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
         session_local.add(_obj)
         obj_id = _obj.id
