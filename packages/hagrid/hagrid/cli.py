@@ -279,9 +279,9 @@ def create_launch_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
     host = host_term.host
     auth: Optional[AuthCredentials] = None
 
-    tail = True
-    if "tail" in kwargs and not str_to_bool(kwargs["tail"]):
-        tail = False
+    tail = False
+    if "tail" in kwargs and str_to_bool(kwargs["tail"]):
+        tail = True
 
     if host in ["docker"]:
         version = check_docker_version()
@@ -540,8 +540,10 @@ def create_launch_docker_cmd(
     cmd += " NODE_TYPE=" + str(node_type.input)
     cmd += " docker compose -p " + snake_name
     cmd += " up"
-    # if not tail:
-    #     cmd += " -d"
+
+    if not tail:
+        cmd += " -d"
+
     cmd += " --build"  # force rebuild
     cmd = "cd " + GRID_SRC_PATH + ";" + cmd
     return cmd

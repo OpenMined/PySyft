@@ -8,7 +8,6 @@ import torch as th
 # syft absolute
 import syft as sy
 
-
 # MADHAVA: this needs fixing
 @pytest.mark.xfail
 @pytest.mark.parametrize("apache_arrow_backend", [True, False])
