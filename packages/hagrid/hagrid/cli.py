@@ -540,8 +540,10 @@ def create_launch_docker_cmd(
     cmd += " NODE_TYPE=" + str(node_type.input)
     cmd += " docker compose -p " + snake_name
     cmd += " up"
+
     if not tail:
         cmd += " -d"
+
     cmd += " --build"  # force rebuild
     cmd = "cd " + GRID_SRC_PATH + ";" + cmd
     return cmd

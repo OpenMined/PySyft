@@ -216,7 +216,7 @@ class Node(AbstractNode):
 
         # for messages which don't lead to a reply, this uses
         # the type of the message to look up the service
-        # which addresses that message
+        # which addresses that message.
         self.immediate_msg_without_reply_router: Dict[
             Type[ImmediateSyftMessageWithoutReply], Any
         ] = {}
