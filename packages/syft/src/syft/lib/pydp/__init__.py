@@ -16,7 +16,7 @@ from pydp.algorithms.laplacian import Median
 from pydp.algorithms.laplacian import Min
 from pydp.algorithms.laplacian import Percentile
 
-# syft relative
+# relative
 from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules

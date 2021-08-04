@@ -1,4 +1,4 @@
-# syft relative
+# relative
 from .client import DeviceClient
 from .device import Device
 

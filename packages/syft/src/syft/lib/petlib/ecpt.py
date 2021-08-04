@@ -1,7 +1,7 @@
 # third party
 import petlib as pl
 
-# syft relative
+# relative
 from ...core.common.serde.deserialize import _deserialize as deserialize
 from ...core.common.serde.serialize import _serialize as serialize
 from ...generate_wrapper import GenerateWrapper

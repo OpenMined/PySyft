@@ -93,7 +93,7 @@ from aiortc import RTCSessionDescription
 from aiortc.contrib.signaling import object_from_string
 from aiortc.contrib.signaling import object_to_string
 
-# syft relative
+# relative
 from ... import serialize
 from ...core.common.event_loop import loop
 from ...core.common.message import SignedEventualSyftMessageWithoutReply

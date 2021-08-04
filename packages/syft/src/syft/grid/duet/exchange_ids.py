@@ -7,7 +7,7 @@ from typing import Any as TypeAny
 from typing import Optional as TypeOptional
 from typing import Tuple as TypeTuple
 
-# syft relative
+# relative
 from ...logger import debug
 from ...logger import info
 from ...logger import traceback_and_raise

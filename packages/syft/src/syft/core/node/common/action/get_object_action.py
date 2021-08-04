@@ -5,7 +5,7 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
-# syft relative
+# relative
 from ..... import serialize
 from .....logger import critical
 from .....logger import debug
@@ -26,7 +26,7 @@ from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
-from ..service.auth import AuthorizationException
+from ..node_service.auth import AuthorizationException
 from .common import ImmediateActionWithReply
 
 

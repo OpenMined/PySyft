@@ -9,7 +9,7 @@ import torch as th
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 
-# syft relative
+# relative
 from ... import deserialize
 from ... import serialize
 from ...logger import traceback_and_raise

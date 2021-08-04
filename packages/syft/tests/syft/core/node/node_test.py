@@ -5,7 +5,7 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.core.node.common.service.auth import AuthorizationException
+from syft.core.node.common.node_service.auth import AuthorizationException
 
 
 def get_signing_key() -> SigningKey:

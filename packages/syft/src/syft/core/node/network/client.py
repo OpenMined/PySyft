@@ -7,13 +7,18 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 from typing_extensions import final
 
-# syft relative
+# relative
 from ....logger import traceback_and_raise
 from ...common.uid import UID
 from ...io.location import Location
 from ...io.location import SpecificLocation
 from ...io.route import Route
 from ..common.client import Client
+from ..common.client_manager.association_api import AssociationRequestAPI
+from ..common.client_manager.dataset_api import DatasetRequestAPI
+from ..common.client_manager.group_api import GroupRequestAPI
+from ..common.client_manager.role_api import RoleRequestAPI
+from ..common.client_manager.user_api import UserRequestAPI
 
 
 @final
@@ -42,6 +47,12 @@ class NetworkClient(Client):
             signing_key=signing_key,
             verify_key=verify_key,
         )
+
+        self.groups = GroupRequestAPI(client=self)
+        self.users = UserRequestAPI(client=self)
+        self.roles = RoleRequestAPI(client=self)
+        self.association = AssociationRequestAPI(client=self)
+        self.datasets = DatasetRequestAPI(client=self)
 
         self.post_init()
 

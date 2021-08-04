@@ -2,7 +2,7 @@
 from typing import Dict
 from typing import Union
 
-# syft relative
+# relative
 from ..misc.union import UnionGenerator
 
 allowlist: Dict[str, Union[str, Dict[str, str]]] = {}  # (path: str, return_type:type)
