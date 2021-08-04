@@ -1,24 +1,37 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
+    always_run: true
     rev: v4.0.1
     hooks:
       - id: check-ast
         exclude: ^(packages/grid/ansible/)
+        always_run: true
       - id: trailing-whitespace
+        always_run: true
       - id: check-docstring-first
+        always_run: true
         exclude: ^(packages/grid/ansible/)
       - id: check-json
+        always_run: true
       - id: check-added-large-files
+        always_run: true
+        exclude: ^(notebooks/trade_demo/datasets)
       - id: check-yaml
+        always_run: true
       - id: check-merge-conflict
+        always_run: true
         args: ["--assume-in-merge"]
       - id: check-executables-have-shebangs
+        always_run: true
         exclude: ^(packages/grid/ansible/)
       - id: debug-statements
+        always_run: true
         exclude: ^(packages/grid/ansible/)
       - id: name-tests-test
+        always_run: true
         exclude: ^(packages/grid/backend/app/app/tests/utils/)
       - id: requirements-txt-fixer
+        always_run: true
   - repo: https://github.com/pycqa/isort
     rev: 5.9.2
     hooks:
@@ -28,6 +41,7 @@ repos:
     rev: 21.7b0
     hooks:
       - id: black
+        always_run: true
         exclude: ^(packages/syft/src/syft/proto|packages/syft/examples/duet)
   - repo: https://gitlab.com/pycqa/flake8
     rev: 3.9.2
@@ -43,6 +57,7 @@ repos:
     hooks:
       - id: mypy
         name: mypy-hagrid
+        always_run: true
         files: ^packages/hagrid
         exclude: ^(packages/syft|packages/grid)
         args: [
@@ -66,6 +81,7 @@ repos:
     hooks:
       - id: mypy
         name: mypy-grid
+        always_run: true
         files: ^packages/grid
         exclude: ^(packages/grid/ansible|packages/grid/backend/app/alembic/versions)
         args: [

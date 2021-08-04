@@ -153,6 +153,7 @@ jobs:
           pytest -m libs --co --durations=50
           pytest -m libs -n auto -k "not tenseal" --suppress-no-test-exit-code --durations=50
           pytest -m libs -n 1 -k "tenseal" --suppress-no-test-exit-code --durations=50
+
   #
   #  python-nb-examples:
   #    # needs: [python-linting]
