@@ -117,6 +117,7 @@ jobs:
           pwd
           pip install pyscaffoldext-syft-support/
           pip install .
+          pip list | grep syft
           git config --global user.email "john.doe@example.com"
           git config --global user.name "John Doe"
 
