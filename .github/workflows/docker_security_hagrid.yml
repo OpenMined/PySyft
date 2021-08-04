@@ -1,0 +1,28 @@
+on:
+  merge:
+    branches:
+      - main
+
+    paths:
+      - "packages/hagrid/Dockerfile"
+
+jobs:
+  build-secure-hagrid:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+
+    - run: docker buildx build -t openmined/hagrid:${{ github.sha }} packages/hagrid
+
+    - uses: Azure/container-scan@v0
+      with:
+        image-name: openmined/hagrid:${{ github.sha }}
+
+    - name: Don't let the job fail
+      if: ${{ failure() }}
+      run: echo "We need to make the security checks pass"
+
+    - name: Publish to docker hub
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" |  docker login -u ${{ secrets.DOCKER_LOGIN }} --password-stdin
+          docker push openmined/hagrid:${{ github.sha }}
