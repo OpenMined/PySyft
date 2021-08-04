@@ -71,6 +71,17 @@ class Dict(UserDict, PyPrimitive):
         # If you want to update it use the _id setter after creation.
         self._id = UID()
 
+        temp_storage_for_actual_primitive = (
+            kwargs["temp_storage_for_actual_primitive"]
+            if "temp_storage_for_actual_primitive" in kwargs
+            else False
+        )
+        if temp_storage_for_actual_primitive:
+            PyPrimitive.__init__(
+                self,
+                temp_storage_for_actual_primitive=temp_storage_for_actual_primitive,
+            )
+
     @property
     def id(self) -> UID:
         """We reveal PyPrimitive.id as a property to discourage users and
@@ -84,7 +95,9 @@ class Dict(UserDict, PyPrimitive):
 
     def upcast(self) -> TypeDict:
         # recursively upcast
-        return {k: upcast(v) for k, v in self.items()}
+        result = {k: upcast(v) for k, v in self.items()}
+        del result["temp_storage_for_actual_primitive"]
+        return result
 
     def __contains__(self, other: Any) -> SyPrimitiveRet:
         res = super().__contains__(other)
@@ -208,7 +221,17 @@ class Dict(UserDict, PyPrimitive):
             for element in self.data.values()
         ]
 
-        return Dict_PB(id=id_, keys=keys, values=values)
+        if hasattr(self, "temp_storage_for_actual_primitive"):
+            temp_storage_for_actual_primitive = self.temp_storage_for_actual_primitive
+        else:
+            temp_storage_for_actual_primitive = False
+
+        return Dict_PB(
+            id=id_,
+            keys=keys,
+            values=values,
+            temp_storage_for_actual_primitive=temp_storage_for_actual_primitive,
+        )
 
     @staticmethod
     def _proto2object(proto: Dict_PB) -> "Dict":
@@ -224,6 +247,9 @@ class Dict(UserDict, PyPrimitive):
             for element in proto.keys
         ]
         new_dict = Dict(dict(zip(keys, values)))
+        new_dict.temp_storage_for_actual_primitive = (
+            proto.temp_storage_for_actual_primitive
+        )
         new_dict._id = id_
         return new_dict
 

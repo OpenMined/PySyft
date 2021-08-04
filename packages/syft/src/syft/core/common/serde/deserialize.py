@@ -120,7 +120,9 @@ def _deserialize(
 
     res = _proto2object(proto=blob)
 
-    if isinstance(res, sy.lib.python.String):
+    if isinstance(
+        res, (sy.lib.python.String, sy.lib.python.list.List, sy.lib.python.Dict)
+    ):
         if res.temp_storage_for_actual_primitive:
             return res.upcast()
 
