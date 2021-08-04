@@ -87,7 +87,7 @@ def cli() -> None:
     default=None,
     required=False,
     type=str,
-    help="Optional: tail logs on launch",
+    help="Optional: don't tail logs on launch",
 )
 @click.option(
     "--cmd",
@@ -274,17 +274,26 @@ def generate_key_at_path(key_path: str) -> str:
     return key_path
 
 
-def create_launch_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
+def create_launch_cmd(
+    verb: GrammarVerb,
+    kwargs: TypeDict[str, Any],
+    ignore_docker_version_check: Optional[bool] = False,
+) -> str:
     host_term = verb.get_named_term_hostgrammar(name="host")
     host = host_term.host
     auth: Optional[AuthCredentials] = None
 
-    tail = False
-    if "tail" in kwargs and str_to_bool(kwargs["tail"]):
-        tail = True
+    tail = True
+    if "tail" in kwargs and not str_to_bool(kwargs["tail"]):
+        tail = False
 
     if host in ["docker"]:
-        version = check_docker_version()
+
+        if not ignore_docker_version_check:
+            version = check_docker_version()
+        else:
+            version = "n/a"
+
         if version:
             return create_launch_docker_cmd(
                 verb=verb, docker_version=version, tail=tail
@@ -506,7 +515,7 @@ def create_launch_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
 
 
 def create_launch_docker_cmd(
-    verb: GrammarVerb, docker_version: str, tail: bool = False
+    verb: GrammarVerb, docker_version: str, tail: bool = True
 ) -> str:
     host_term = verb.get_named_term_hostgrammar(name="host")
     node_name = verb.get_named_term_type(name="node_name")
@@ -531,6 +540,7 @@ def create_launch_docker_cmd(
     print("  - TAG: " + str(tag))
     print("  - PORT: " + str(host_term.free_port))
     print("  - DOCKER: " + docker_version)
+    print("  - TAIL: " + str(tail))
     print("\n")
 
     cmd = ""

@@ -40,7 +40,7 @@ message GetDatasetsMessage {
 
 message GetDatasetsResponse {
   message metadata_container {
-    map<string, string> metadata = 1;
+    map<string, bytes> metadata = 1;
   }
   syft.core.common.UID msg_id = 1;
   repeated metadata_container metadatas = 2;
