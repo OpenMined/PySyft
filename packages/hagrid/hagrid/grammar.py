@@ -123,7 +123,6 @@ class GrammarTerm:
                 input = self.default()
 
         if len(self.options) > 0 and input not in self.options:
-            raise Exception("ASDFASDFSADFADSFADSFASDFADSFASDFASFD")
             raise BadGrammar(
                 f"{input} is not valid for {self.name} please use one of the following options: {self.options}"
             )
@@ -272,7 +271,9 @@ def parse_grammar(args: TypeTuple, verb: GrammarVerb) -> TypeList[GrammarTerm]:
             found_domain_or_network = True
 
     if not found_domain_or_network:
-        args = list(args) + ["domain"]
+        args = tuple(list(args) + ["domain"])
+    else:
+        args = tuple(list(args))
 
     arg_list = list(args)
     arg_count = len(arg_list)

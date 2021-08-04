@@ -63,18 +63,6 @@ class RequestAPI:
         ]
 
         return result
-    #
-    # def all(self, pandas: bool = False) -> Any:
-    #     result = [
-    #         content.upcast()
-    #         for content in self.perform_api_request(
-    #             syft_msg=self.__get_all_message
-    #         ).content
-    #     ]
-    #     if pandas:
-    #         result = DataFrame(result)
-    #
-    #     return result
 
     def pandas(self) -> DataFrame:
         return DataFrame(self.all())
