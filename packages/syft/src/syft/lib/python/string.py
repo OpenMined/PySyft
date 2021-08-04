@@ -23,11 +23,20 @@ from .types import SyPrimitiveRet
 
 @bind_protobuf
 class String(UserString, PyPrimitive):
-    def __init__(self, value: Any = None, id: Optional[UID] = None):
+    def __init__(
+        self,
+        value: Any = None,
+        id: Optional[UID] = None,
+        temp_storage_for_actual_primitive: bool = False,
+    ):
+
         if value is None:
             value = ""
 
         UserString.__init__(self, value)
+        PyPrimitive.__init__(
+            self, temp_storage_for_actual_primitive=temp_storage_for_actual_primitive
+        )
 
         self._id: UID = id if id else UID()
 
@@ -386,12 +395,20 @@ class String(UserString, PyPrimitive):
         return self._id
 
     def _object2proto(self) -> String_PB:
-        return String_PB(data=self.data, id=serialize(obj=self.id))
+        return String_PB(
+            data=self.data,
+            id=serialize(obj=self.id),
+            temp_storage_for_actual_primitive=self.temp_storage_for_actual_primitive,
+        )
 
     @staticmethod
     def _proto2object(proto: String_PB) -> "String":
         str_id: UID = deserialize(blob=proto.id)
-        return String(value=proto.data, id=str_id)
+        return String(
+            value=proto.data,
+            id=str_id,
+            temp_storage_for_actual_primitive=proto.temp_storage_for_actual_primitive,
+        )
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
