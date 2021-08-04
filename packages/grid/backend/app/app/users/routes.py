@@ -4,7 +4,6 @@ from typing import NoReturn
 
 # third party
 from fastapi import APIRouter
-from fastapi import Body
 from fastapi import Depends
 from loguru import logger
 from starlette import status
@@ -39,7 +38,7 @@ def get_self(current_user: UserPrivate = Depends(deps.get_current_user)) -> User
 # TODO: Syft should return the newly created user and the response model should be User.
 @router.post("", name="users:create", status_code=status.HTTP_201_CREATED)
 async def create_user_grid(
-    new_user: UserCreate = Body(...),
+    new_user: UserCreate,
     current_user: UserPrivate = Depends(deps.get_current_user),
 ) -> str:
     try:
@@ -88,7 +87,7 @@ async def get_user_grid(
 )
 async def update_user_grid(
     user_id: int,
-    updated_user: UserUpdate = Body(...),
+    updated_user: UserUpdate,
     current_user: UserPrivate = Depends(deps.get_current_user),
 ) -> None:
     try:
