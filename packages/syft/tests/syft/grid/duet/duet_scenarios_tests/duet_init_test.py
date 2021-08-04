@@ -5,6 +5,11 @@ def do_test(port: int) -> None:
     duet = sy.launch_duet(loopback=True, network_url=f"http://127.0.0.1:{port}/")
     _ = sy.lib.python.List([1, 2, 3]).send(duet)
 
+    if sy.experimental_flags.flags.TEST_FLIGHT:
+        import socket
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            assert s.connect_ex(('localhost', sy.experimental_flags.flags.FLIGHT_CHANNEL_PORT)) != 0
+
     sy.core.common.event_loop.loop.run_forever()
 
 

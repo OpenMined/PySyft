@@ -4,6 +4,7 @@ class ExperimentalFlags:
         self._APACHE_ARROW_TENSOR_SERDE = True
         self._APACHE_ARROW_FLIGHT_CHANNEL = True
         self._FLIGHT_CHANNEL_PORT = 8999
+        self._TEST_FLIGHT = False
 
     @property
     def APACHE_ARROW_TENSOR_SERDE(self) -> bool:
@@ -40,5 +41,17 @@ class ExperimentalFlags:
     @FLIGHT_CHANNEL_PORT.setter
     def FLIGHT_CHANNEL_PORT(self, value: int) -> None:
         self._FLIGHT_CHANNEL_PORT = value
+
+    @property
+    def TEST_FLIGHT(self) -> int:
+        return self._TEST_FLIGHT
+
+    @TEST_FLIGHT.getter
+    def TEST_FLIGHT(self) -> int:
+        return self._TEST_FLIGHT
+
+    @TEST_FLIGHT.setter
+    def TEST_FLIGHT(self, value: int) -> None:
+        self._TEST_FLIGHT = value
 
 flags = ExperimentalFlags()
