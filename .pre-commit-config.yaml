@@ -5,12 +5,18 @@ repos:
     hooks:
       - id: check-ast
         exclude: ^(packages/grid/ansible/)
+        always_run: true
       - id: trailing-whitespace
+        always_run: true
       - id: check-docstring-first
+        always_run: true
         exclude: ^(packages/grid/ansible/)
       - id: check-json
+        always_run: true
       - id: check-added-large-files
+        always_run: true
       - id: check-yaml
+        always_run: true
       - id: check-merge-conflict
         args: ["--assume-in-merge"]
       - id: check-executables-have-shebangs
