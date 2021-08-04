@@ -15,9 +15,9 @@
 # # syft absolute
 # import syft as sy
 # syft absolute
-from syft import logger
-
-logger.remove()
+# from syft import logger
+#
+# logger.remove()
 #
 #
 #
