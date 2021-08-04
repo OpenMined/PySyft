@@ -47,7 +47,7 @@ class LogHandler:
         logging.root.setLevel(self.config.LOGURU_LEVEL)
         logging.root.handlers = [intercept_handler]
 
-        for log in [*logging.root.manager.loggerDict.keys()]:
+        for log in logging.root.manager.loggerDict.keys():
             log_instance = logging.getLogger(log)
             log_instance.handlers = []
             log_instance.propagate = True
