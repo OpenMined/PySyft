@@ -284,8 +284,8 @@ def create_launch_cmd(
     auth: Optional[AuthCredentials] = None
 
     tail = True
-    if "tail" in kwargs and not str_to_bool(kwargs["tail"]):
-        tail = False
+    if "tail" in kwargs and kwargs["tail"] is not None:
+        tail = str_to_bool(kwargs["tail"])
 
     if host in ["docker"]:
 
