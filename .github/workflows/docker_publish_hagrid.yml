@@ -1,13 +1,14 @@
 on:
-  merge:
+  push:
     branches:
+      - dev
       - main
 
     paths:
       - "packages/hagrid/Dockerfile"
 
 jobs:
-  build-secure-hagrid:
+  publish-hagrid:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
