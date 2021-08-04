@@ -1,8 +1,5 @@
 on:
-  merge:
-    branches:
-      - main
-
+  pull-request:
     paths:
       - "packages/hagrid/Dockerfile"
 
