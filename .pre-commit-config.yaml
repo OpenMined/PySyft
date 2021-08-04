@@ -15,6 +15,7 @@ repos:
         always_run: true
       - id: check-added-large-files
         always_run: true
+        exclude: ^(notebooks/trade_demo/datasets)
       - id: check-yaml
         always_run: true
       - id: check-merge-conflict
