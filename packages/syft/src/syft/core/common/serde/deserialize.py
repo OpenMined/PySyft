@@ -6,6 +6,9 @@ from typing import Union
 # third party
 from google.protobuf.message import Message
 
+# syft absolute
+import syft as sy
+
 # relative
 from ....logger import traceback_and_raise
 from ....proto.util.data_message_pb2 import DataMessage
@@ -116,4 +119,11 @@ def _deserialize(
         traceback_and_raise(deserialization_error)
 
     res = _proto2object(proto=blob)
+
+    if isinstance(
+        res, (sy.lib.python.String, sy.lib.python.list.List, sy.lib.python.Dict)
+    ):
+        if res.temp_storage_for_actual_primitive:
+            return res.upcast()
+
     return res
