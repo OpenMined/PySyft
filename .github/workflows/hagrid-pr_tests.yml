@@ -127,6 +127,7 @@ jobs:
         run: |
           pip install packaging --default-timeout=60
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
+          pip install pytest
 
       - name: Run normal tests
         run: |
