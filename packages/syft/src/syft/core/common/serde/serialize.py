@@ -49,19 +49,19 @@ def _serialize(
         # syft absolute
         from syft.lib.python import String
 
-        obj = String(obj)
+        obj = String(obj, temp_storage_for_actual_primitive=True)
 
     elif isinstance(obj, list):
         # syft absolute
         from syft.lib.python import List
 
-        obj = List(obj)
+        obj = List(obj, temp_storage_for_actual_primitive=True)
 
     elif isinstance(obj, dict):
         # syft absolute
         from syft.lib.python import Dict
 
-        obj = Dict(obj)
+        obj = Dict(obj, temp_storage_for_actual_primitive=True)
 
     is_serializable: Serializable
     if not isinstance(obj, Serializable):
