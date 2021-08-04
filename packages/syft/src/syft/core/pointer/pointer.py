@@ -157,7 +157,7 @@ class Pointer(AbstractPointer):
         # has already been made
         self._exhausted = False
 
-    def _get(self, delete_obj: bool = True, verbose: bool = False, flight: bool = True) -> StorableObject:
+    def _get(self, delete_obj: bool = True, verbose: bool = False) -> StorableObject:
         """Method to download a remote object from a pointer object if you have the right
         permissions.
 
@@ -250,7 +250,6 @@ class Pointer(AbstractPointer):
         reason: str = "",
         delete_obj: bool = True,
         verbose: bool = False,
-        flight: bool = True,
     ) -> Optional[StorableObject]:
         """Method to download a remote object from a pointer object if you have the right
         permissions. Optionally can block while waiting for approval.
@@ -267,7 +266,7 @@ class Pointer(AbstractPointer):
             )
 
         if not request_block:
-            result = self._get(delete_obj=delete_obj, verbose=verbose, flight=flight)
+            result = self._get(delete_obj=delete_obj, verbose=verbose)
         else:
             response_status = self.request(
                 reason=reason,
@@ -279,7 +278,7 @@ class Pointer(AbstractPointer):
                 response_status is not None
                 and response_status == RequestStatus.Accepted
             ):
-                result = self._get(delete_obj=delete_obj, verbose=verbose, flight=flight)
+                result = self._get(delete_obj=delete_obj, verbose=verbose)
             else:
                 return None
 

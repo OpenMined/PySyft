@@ -74,7 +74,7 @@ from ...core.common.message import SyftMessage
 from ...core.store.storeable_object import StorableObject
 from ...core.node.common.action.call_do_exchange_action import CallDoExchangeAction
 from ...core.node.common.action.get_object_action import GetObjectAction
-
+from ...experimental_flags import flags
 class Duet(WebRTCDuet):
     def __init__(
         self,
@@ -90,8 +90,7 @@ class Duet(WebRTCDuet):
             offer
         )
 
-        self.flight_enabled = True
-        location = ('0.0.0.0', 8999)
+        location = ('0.0.0.0', flags.FLIGHT_CHANNEL_PORT)
 
         # If this peer will not start the signaling process
         if not offer:
@@ -106,7 +105,7 @@ class Duet(WebRTCDuet):
                     'scheme': 'grpc+tcp',
                     'tls': False,
                     'host': 'localhost',
-                    'port': 8999,
+                    'port': flags.FLIGHT_CHANNEL_PORT,
                     'verify_client': False,
                     'root_certificates': None,
                     'auth_handler': None,
@@ -116,6 +115,9 @@ class Duet(WebRTCDuet):
             threading.Thread(target=flight_server.serve).start()
             self.flight_server = flight_server
 
+    @property
+    def flight_enabled(self) -> int:
+        return flags.APACHE_ARROW_FLIGHT_CHANNEL
 
     def send_immediate_msg_without_reply(
         self,

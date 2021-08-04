@@ -52,7 +52,7 @@ class FlightServerDuet(FlightServerBase):
 
     def do_exchange_read(self, obj_id, reader, writer):
         data = reader.read_all()
-        print(type(data))
+        # print(type(data))
         self.accessible[obj_id] = data[str(obj_id.value)]
 
     def do_exchange_write(self, obj_id, reader, writer, obj_id_str):
@@ -73,7 +73,6 @@ class FlightServerDuet(FlightServerBase):
 
     def do_exchange_dim_read(self, obj_id, reader, writer):
         data = reader.read_all()
-        print(type(data))
         self.accessible['dim'+str(obj_id.value)] = data[str(obj_id.value)]
 
     def add_accessible(self, obj, id_at_location):
