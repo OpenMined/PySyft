@@ -290,8 +290,9 @@ def launch_shorthand_support(args: TypeTuple) -> TypeTuple:
     # Default to domain if it's not provided
     if not found_domain_or_network:
 
-        if preposition_position != -1:
+        if preposition_position != 10000:
             _args.insert(preposition_position, "domain")
+            preposition_position += 1
         else:
             _args = _args + ["domain"]
 
@@ -305,12 +306,16 @@ def launch_shorthand_support(args: TypeTuple) -> TypeTuple:
 
     # if there are prepositions then combine the words in the name if there are multiple
     elif preposition_position != 10000:
+
         name = ""
         for i in range(preposition_position - 1):
             name += _args[i] + " "
         name = name[:-1]
         pmin1 = preposition_position - 1
+        print(preposition_position)
+        print(_args)
         _args = [name] + _args[pmin1:]
+        print(_args)
 
     # if there wasn't a name provided - make sure we don't have an empty place in the list
     # so that later logic will generate a name
