@@ -274,7 +274,11 @@ def generate_key_at_path(key_path: str) -> str:
     return key_path
 
 
-def create_launch_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
+def create_launch_cmd(
+    verb: GrammarVerb,
+    kwargs: TypeDict[str, Any],
+    ignore_docker_version_check: Optional[bool] = False,
+) -> str:
     host_term = verb.get_named_term_hostgrammar(name="host")
     host = host_term.host
     auth: Optional[AuthCredentials] = None
@@ -284,7 +288,12 @@ def create_launch_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
         tail = False
 
     if host in ["docker"]:
-        version = check_docker_version()
+
+        if not ignore_docker_version_check:
+            version = check_docker_version()
+        else:
+            version = "n/a"
+
         if version:
             return create_launch_docker_cmd(
                 verb=verb, docker_version=version, tail=tail
