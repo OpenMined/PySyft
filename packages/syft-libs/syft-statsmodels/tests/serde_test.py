@@ -12,7 +12,6 @@ pd = pytest.importorskip("pandas")
 statsmodels = pytest.importorskip("statsmodels")
 
 
-@pytest.mark.vendor(lib="statsmodels")
 def test_glm(root_client: sy.VirtualMachineClient) -> None:
     FAMILY = [
         statsmodels.genmod.families.Binomial,

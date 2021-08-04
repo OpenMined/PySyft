@@ -134,6 +134,13 @@ jobs:
           brew install libomp
 
       - name: Run supported library tests
+        if: matrix.os == "windows-latest"
         run: |
-          pytest --co --durations=50
-          pytest -n auto --suppress-no-test-exit-code --durations=50
+            pytest --co --duration=50 -m "not skip_windows"
+            pytest -n auto -m "not skip_windows" --suppress-no-test-exit-code --durations=50 
+      
+      - name: Run supported library tests (windows)
+        if: matrix.os != "windows-latest"
+        run: |
+            pytest --co --durations=50
+            pytest -n auto --suppress-no-test-exit-code --durations=50

@@ -19,7 +19,6 @@ except Exception:
 
 # this currently fails: https://github.com/OpenMined/PySyft/issues/5536
 @pytest.mark.skipif(_SKIP_XGB, reason="xgboost couldn't properly load")
-@pytest.mark.vendor(lib="xgboost")
 def test_xgb_base_module(root_client: sy.VirtualMachineClient) -> None:
     xgb_remote = root_client.xgboost
 
@@ -97,7 +96,6 @@ def test_xgb_base_module(root_client: sy.VirtualMachineClient) -> None:
 
 # this currently fails: https://github.com/OpenMined/PySyft/issues/5536
 @pytest.mark.skipif(_SKIP_XGB, reason="xgboost couldn't properly load")
-@pytest.mark.vendor(lib="xgboost")
 def test_xgb_ranker_class(root_client: sy.VirtualMachineClient) -> None:
     xgb_remote = root_client.xgboost
 
