@@ -49,7 +49,7 @@ def _serialize(
         # syft absolute
         from syft.lib.python import String
 
-        obj = String(obj)
+        obj = String(obj, temp_storage_for_actual_primitive=True)
 
     elif isinstance(obj, list):
         # syft absolute
