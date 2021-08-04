@@ -4,6 +4,7 @@ from typing import Dict
 from typing import Generator
 
 # third party
+from _pytest.logging import LogCaptureFixture
 from fastapi.testclient import TestClient
 from loguru import logger
 import pytest
@@ -44,9 +45,9 @@ def normal_user_token_headers(client: TestClient, db: Session) -> Dict[str, str]
 
 
 @pytest.fixture(autouse=True)
-def caplog(caplog):
+def caplog(caplog: LogCaptureFixture) -> Generator:
     class PropagateHandler(logging.Handler):
-        def emit(self, record):
+        def emit(self, record: logging.LogRecord) -> None:
             logging.getLogger(record.name).handle(record)
 
     sink_handler_id = logger.add(PropagateHandler(), format=log_handler.format_record)
