@@ -146,7 +146,7 @@ class Options(mitogen.parent.Options):
         lxc_path=None,
         lxc_info_path=None,
         machinectl_path=None,
-        **kwargs
+        **kwargs,
     ):
         super(Options, self).__init__(**kwargs)
         if kind not in GET_LEADER_BY_KIND:
@@ -246,7 +246,7 @@ class Connection(mitogen.parent.Connection):
         return mitogen.parent.create_child(args, preexec_fn=self.preexec_fn)
 
     def _get_name(self):
-        return u"setns." + self.options.container
+        return "setns." + self.options.container
 
     def connect(self, **kwargs):
         attr, func = GET_LEADER_BY_KIND[self.options.kind]

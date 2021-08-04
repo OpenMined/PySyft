@@ -215,7 +215,7 @@ class BinaryPlanner(Planner):
             path=self._inv.module_path,
             json_args=json.dumps(self._inv.module_args),
             env=self._inv.env,
-            **kwargs
+            **kwargs,
         )
 
 
