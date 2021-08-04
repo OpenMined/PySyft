@@ -1,3 +1,4 @@
+# future
 from __future__ import annotations
 
 # stdlib
@@ -7,8 +8,8 @@ from pprint import pformat
 import sys
 
 # third party
-from loguru import logger
 import loguru
+from loguru import logger
 
 # relative
 from .config import get_log_config
