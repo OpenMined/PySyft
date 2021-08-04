@@ -44,7 +44,7 @@ def normal_user_token_headers(client: TestClient, db: Session) -> Dict[str, str]
     )
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def caplog(caplog: LogCaptureFixture) -> Generator:
     class PropagateHandler(logging.Handler):
         def emit(self, record: logging.LogRecord) -> None:
