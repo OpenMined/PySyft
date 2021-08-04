@@ -23,7 +23,11 @@ from .smpc.mpc_tensor_ancestor import MPCTensorAncestor
 # TODO: Need to double check to see if smpc.ShareTensor operations are working correctly here since it's not inherited
 @bind_protobuf
 class Tensor(
-    PassthroughTensor, AutogradTensorAncestor, PhiTensorAncestor, FixedPrecisionTensorAncestor, MPCTensorAncestor,
+    PassthroughTensor,
+    AutogradTensorAncestor,
+    PhiTensorAncestor,
+    FixedPrecisionTensorAncestor,
+    MPCTensorAncestor,
     RecursiveSerde
 ):
 
@@ -44,7 +48,6 @@ class Tensor(
             raise Exception("Data must be list or nd.array")
 
         super().__init__(child=child)
-
         self.tag_name: Optional[str] = None
 
     def tag(self, name: str) -> None:
