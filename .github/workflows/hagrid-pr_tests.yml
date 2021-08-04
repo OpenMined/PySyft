@@ -128,11 +128,6 @@ jobs:
           pip install packaging --default-timeout=60
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
 
-      - name: Scan for security issues
-        run: |
-          bandit -r src
-          safety check
-
       - name: Run normal tests
         run: |
           pytest --durations=50
