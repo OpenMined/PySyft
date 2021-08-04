@@ -90,7 +90,6 @@ jobs:
           ./build_docker.sh
 
   hagrid-tests-latest-versions:
-    needs: [python-linting]
     strategy:
       max-parallel: 3
       matrix:
