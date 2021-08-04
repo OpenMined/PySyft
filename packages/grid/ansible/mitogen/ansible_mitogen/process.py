@@ -71,7 +71,7 @@ import mitogen.utils
 
 LOG = logging.getLogger(__name__)
 
-ANSIBLE_PKG_OVERRIDE = u"__version__ = %r\n" u"__author__ = %r\n"
+ANSIBLE_PKG_OVERRIDE = "__version__ = %r\n" "__author__ = %r\n"
 
 MAX_MESSAGE_SIZE = 4096 * 1048576
 
@@ -195,10 +195,10 @@ def _setup_simplejson(responder):
     sys.path.append(compat_path)
 
     for fullname, is_pkg, suffix in (
-        (u"simplejson", True, "__init__.py"),
-        (u"simplejson.decoder", False, "decoder.py"),
-        (u"simplejson.encoder", False, "encoder.py"),
-        (u"simplejson.scanner", False, "scanner.py"),
+        ("simplejson", True, "__init__.py"),
+        ("simplejson.decoder", False, "decoder.py"),
+        ("simplejson.encoder", False, "encoder.py"),
+        ("simplejson.scanner", False, "scanner.py"),
     ):
         path = os.path.join(compat_path, "simplejson", suffix)
         fp = open(path, "rb")

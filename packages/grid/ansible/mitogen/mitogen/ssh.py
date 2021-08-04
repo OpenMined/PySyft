@@ -197,7 +197,7 @@ class Options(mitogen.parent.Options):
         keepalive_interval=15,
         identities_only=True,
         ssh_debug_level=None,
-        **kwargs
+        **kwargs,
     ):
         super(Options, self).__init__(**kwargs)
 
@@ -236,7 +236,7 @@ class Connection(mitogen.parent.Connection):
     SHLEX_IGNORE = ["&&"]
 
     def _get_name(self):
-        s = u"ssh." + mitogen.core.to_text(self.options.hostname)
+        s = "ssh." + mitogen.core.to_text(self.options.hostname)
         if self.options.port and self.options.port != 22:
             s += f":{self.options.port}"
         return s

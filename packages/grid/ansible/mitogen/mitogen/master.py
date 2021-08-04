@@ -670,7 +670,7 @@ class ParentEnumerationMethod(FinderMethod):
         path = None
         modpath = []
         while True:
-            pkgname, _, modname = str_rpartition(to_text(fullname), u".")
+            pkgname, _, modname = str_rpartition(to_text(fullname), ".")
             modpath.insert(0, modname)
             if not pkgname:
                 return [], None, modpath
@@ -848,7 +848,7 @@ class ModuleFinder(object):
 
     def generate_parent_names(self, fullname):
         while "." in fullname:
-            fullname, _, _ = str_rpartition(to_text(fullname), u".")
+            fullname, _, _ = str_rpartition(to_text(fullname), ".")
             yield fullname
 
     def find_related_imports(self, fullname):
@@ -893,7 +893,7 @@ class ModuleFinder(object):
                     for name in maybe_names
                     if sys.modules.get(name) is not None
                     and not is_stdlib_name(name)
-                    and u"six.moves" not in name  # TODO: crap
+                    and "six.moves" not in name  # TODO: crap
                 )
             ),
         )
@@ -1146,7 +1146,7 @@ class ModuleResponder(object):
         path = []
         while fullname:
             path.append(fullname)
-            fullname, _, _ = str_rpartition(fullname, u".")
+            fullname, _, _ = str_rpartition(fullname, ".")
 
         stream = self._router.stream_by_id(context.context_id)
         if stream is None:

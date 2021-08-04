@@ -999,12 +999,12 @@ class FileService(Service):
             raise IOError(f"{path!r} is not a regular file.")
 
         return {
-            u"size": st.st_size,
-            u"mode": st.st_mode,
-            u"owner": self._name_or_none(pwd.getpwuid, 0, "pw_name"),
-            u"group": self._name_or_none(grp.getgrgid, 0, "gr_name"),
-            u"mtime": float(st.st_mtime),  # Python 2.4 uses int.
-            u"atime": float(st.st_atime),  # Python 2.4 uses int.
+            "size": st.st_size,
+            "mode": st.st_mode,
+            "owner": self._name_or_none(pwd.getpwuid, 0, "pw_name"),
+            "group": self._name_or_none(grp.getgrgid, 0, "gr_name"),
+            "mtime": float(st.st_mtime),  # Python 2.4 uses int.
+            "atime": float(st.st_atime),  # Python 2.4 uses int.
         }
 
     def on_shutdown(self):

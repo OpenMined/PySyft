@@ -417,10 +417,10 @@ if hasattr(UnicodeType, "rpartition"):
 else:
 
     def str_partition(s, sep):
-        return _partition(s, sep, s.find) or (s, u"", u"")
+        return _partition(s, sep, s.find) or (s, "", "")
 
     def str_rpartition(s, sep):
-        return _partition(s, sep, s.rfind) or (u"", u"", s)
+        return _partition(s, sep, s.rfind) or ("", "", s)
 
     def bytes_partition(s, sep):
         return _partition(s, sep, s.find) or (s, "", "")
@@ -611,9 +611,7 @@ class PidfulStreamHandler(logging.StreamHandler):
             self.stream = open(path, "w", 1)
             set_cloexec(self.stream.fileno())
             self.stream.write(f"Parent PID: {os.getppid()}\n")
-            self.stream.write(
-                f"Created by:\n\n{''.join(traceback.format_stack())}\n"
-            )
+            self.stream.write(f"Created by:\n\n{''.join(traceback.format_stack())}\n")
             self.open_pid = os.getpid()
         finally:
             self.release()
@@ -896,7 +894,7 @@ class Message(object):
         """
         Syntax helper to construct a dead message.
         """
-        kwargs["data"], _ = encodings.utf_8.encode(reason or u"")
+        kwargs["data"], _ = encodings.utf_8.encode(reason or "")
         return cls(reply_to=IS_DEAD, **kwargs)
 
     @classmethod
@@ -1564,7 +1562,7 @@ class Importer(object):
                 # throws ImportError, on Python 3.x it is still possible for
                 # the loader to be called to fetch metadata.
                 raise ModuleNotFoundError(self.absent_msg % (fullname,))
-            return u"master:" + self._cache[fullname][2]
+            return "master:" + self._cache[fullname][2]
 
     def get_source(self, fullname):
         if fullname in self._cache:
@@ -1690,7 +1688,7 @@ class Stream(object):
 
     #: The stream name. This is used in the :meth:`__repr__` output in any log
     #: messages, it may be any descriptive string.
-    name = u"default"
+    name = "default"
 
     def set_protocol(self, protocol):
         """
