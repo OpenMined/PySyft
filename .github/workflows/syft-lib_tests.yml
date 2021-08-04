@@ -134,7 +134,7 @@ jobs:
           brew install libomp
 
       - name: Run supported library tests (windows)
-        if: startsWith(runner.os, "windows")
+        if: startsWith(runner.os, 'windows')
         run: |
             pytest --co --duration=50 -m "not skip_windows"
             pytest -n auto -m "not skip_windows" --suppress-no-test-exit-code --durations=50 
