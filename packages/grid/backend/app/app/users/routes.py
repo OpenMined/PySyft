@@ -37,7 +37,7 @@ def get_self(current_user: UserPrivate = Depends(deps.get_current_user)) -> User
 
 
 # TODO: Syft should return the newly created user and the response model should be User.
-@router.post("", name="users:register", status_code=status.HTTP_201_CREATED)
+@router.post("", name="users:create", status_code=status.HTTP_201_CREATED)
 async def create_user_grid(
     new_user: UserCreate = Body(...),
     current_user: UserPrivate = Depends(deps.get_current_user),
@@ -52,7 +52,7 @@ async def create_user_grid(
 @router.get(
     "",
     response_model=List[User],
-    name="users:read_all_users",
+    name="users:read_all",
     status_code=status.HTTP_200_OK,
 )
 async def get_all_users_grid(
@@ -68,7 +68,7 @@ async def get_all_users_grid(
 @router.get(
     "/{user_id}",
     response_model=User,
-    name="users:read_user",
+    name="users:read_one",
     status_code=status.HTTP_200_OK,
 )
 async def get_user_grid(
@@ -83,7 +83,7 @@ async def get_user_grid(
 
 @router.patch(
     "/{user_id}",
-    name="users:update_user",
+    name="users:update",
     status_code=status.HTTP_204_NO_CONTENT,
 )
 async def update_user_grid(
