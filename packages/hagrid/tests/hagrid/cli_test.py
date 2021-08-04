@@ -7,7 +7,7 @@ from hagrid import cli
 
 def test_basic_launch() -> None:
 
-    # hagrid launch
+    # COMMAND: "hagrid launch"
     args: List[str] = []
 
     verb = cli.get_launch_verb()
