@@ -1,5 +1,4 @@
 # stdlib
-import sys
 from typing import Optional
 
 # third party
@@ -8,7 +7,6 @@ from nacl.signing import SigningKey
 # syft absolute
 from syft import Domain  # type: ignore
 from syft import Network  # type: ignore
-from syft import logger
 from syft.core.node.common.client import Client
 from syft.core.node.common.node_table import Base
 from syft.core.node.common.node_table.utils import seed_db
@@ -17,9 +15,6 @@ from syft.core.node.common.node_table.utils import seed_db
 from app.core.config import settings
 from app.db.session import SessionLocal
 from app.db.session import engine
-
-logger.add(sink=sys.stdout, level="DEBUG")
-
 
 if settings.NODE_TYPE.lower() == "domain":
     node = Domain("Domain", db_engine=engine)
