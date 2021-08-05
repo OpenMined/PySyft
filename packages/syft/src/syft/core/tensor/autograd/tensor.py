@@ -2,10 +2,10 @@
 from __future__ import annotations
 
 # stdlib
+# from typing import DefaultDict as TypeDefaultDict
 # from collections import Counter
 # from collections import defaultdict
 from typing import Any
-# from typing import DefaultDict as TypeDefaultDict
 from typing import List
 from typing import Optional
 from typing import Type
@@ -17,6 +17,8 @@ import numpy as np
 
 # relative
 from .. import autograd
+from ....core.adp.collections import DefaultDict
+from ....core.adp.collections import SerializableCounter
 from ....core.common.serde.recursive import RecursiveSerde
 from ...common.serde.serializable import bind_protobuf
 from ..ancestors import AutogradTensorAncestor
@@ -24,8 +26,6 @@ from ..ancestors import PhiTensorAncestor
 from ..passthrough import AcceptableSimpleType
 from ..passthrough import PassthroughTensor
 from ..passthrough import is_acceptable_simple_type
-from ....core.adp.collections import DefaultDict
-from ....core.adp.collections import SerializableCounter
 
 
 @bind_protobuf
@@ -53,7 +53,6 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor, RecursiveSerde):
         # tensor gradient
         self._grad: DefaultDict = DefaultDict(lambda: None)
 
-
         # operation used to create this tensor (if any)
         self._grad_fn: Optional[Type[autograd.backward_ops.Op]] = None
 
@@ -62,8 +61,10 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor, RecursiveSerde):
 
         self.backprop_id: Optional[uuid.UUID] = None
 
-        #self.n_backwards: Counter[uuid.UUID] = Counter()
-        self.n_backwards: SerializableCounter = SerializableCounter()  # may have to add [uuid.UUID] for type annotation
+        # self.n_backwards: Counter[uuid.UUID] = Counter()
+        self.n_backwards: SerializableCounter = (
+            SerializableCounter()
+        )  # may have to add [uuid.UUID] for type annotation
 
     @property
     def grad(self) -> Optional[np.ndarray]:

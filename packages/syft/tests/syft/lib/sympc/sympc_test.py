@@ -7,11 +7,7 @@ import syft as sy
 
 
 # MADHAVA: this needs fixing
-<<<<<<< HEAD
-@pytest.mark.skip(
-=======
 @pytest.mark.xfail(
->>>>>>> d6688c7d1a2dea7ca122cde60e0a14b3690aa678
     reason="This was broken when we switched from using a Dictionary obj store to a SQL one which means"
     + "that there's missing serialization functionality. Please address when you can."
 )

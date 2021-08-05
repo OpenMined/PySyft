@@ -16,11 +16,7 @@ from .usergroup import UserGroup
 def model_to_json(model: Base) -> Dict[str, Any]:
     """Returns a JSON representation of an SQLAlchemy-backed object."""
     json = {}
-<<<<<<< HEAD
-    for col in model.__mapper__.attrs.keys():
-=======
     for col in model.__mapper__.attrs.keys():  # type: ignore
->>>>>>> d6688c7d1a2dea7ca122cde60e0a14b3690aa678
         if col != "hashed_password" and col != "salt":
             if col == "date" or col == "created_at" or col == "destroyed_at":
                 # Cast datetime object to string

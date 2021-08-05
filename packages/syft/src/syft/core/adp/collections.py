@@ -1,7 +1,10 @@
-from ..common.serde.serializable import bind_protobuf
-from ..common.serde.recursive import RecursiveSerde
-from collections import defaultdict
+# stdlib
 from collections import Counter
+from collections import defaultdict
+
+# relative
+from ..common.serde.recursive import RecursiveSerde
+from ..common.serde.serializable import bind_protobuf
 
 
 @bind_protobuf
