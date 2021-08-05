@@ -207,6 +207,7 @@ class GetObjectAction(ImmediateActionWithReply):
             return msg
         except Exception as e:
             traceback_and_raise(e)
+        raise Exception(f"Unable to execute action with {type(self)}")
 
     @property
     def pprint(self) -> str:

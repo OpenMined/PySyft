@@ -101,14 +101,13 @@ repos:
             "--install-types",
             "--non-interactive",
           ]
-
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v0.910
     hooks:
       - id: mypy
         name: mypy-syft
         files: ^packages/syft
-        exclude: ^(packages/syft/src/syft/proto|packages/syft/tests/syft/lib/python|packages/syft/examples/duet|packages/syft/src/syft/core/tensor|packages/syft/src/syft/core/adp)
+        exclude: ^(packages/syft/src/syft/core/tensor|packages/syft/src/syft/core/adp|packages/syft/src/syft/proto|packages/syft/tests/syft/lib/python|packages/syft/examples/duet)
         args: [
             "--ignore-missing-imports",
             "--scripts-are-modules",
@@ -125,7 +124,6 @@ repos:
             "--install-types",
             "--non-interactive",
           ]
-
   - repo: local
     hooks:
       - id: flynt

@@ -57,7 +57,7 @@ def _serialize(
         if hasattr(obj, "temporary_box"):
             # TODO: can remove this once all of PrimitiveFactory.generate_primitive
             # supports temporary_box and is tested
-            obj.temporary_box = True
+            obj.temporary_box = True  # type: ignore
 
     is_serializable: Serializable
     if not isinstance(obj, Serializable):

@@ -1,5 +1,6 @@
 # stdlib
 from typing import List
+from typing import Optional
 from typing import Type
 
 # third party
@@ -22,7 +23,9 @@ class SMPCExecutorService(ImmediateNodeServiceWithoutReply):
 
     @staticmethod
     def process(
-        node: AbstractNode, msg: SMPCActionMessage, verify_key: VerifyKey
+        node: AbstractNode,
+        msg: SMPCActionMessage,
+        verify_key: Optional[VerifyKey] = None,
     ) -> None:
         """Given an SMPCAction, execute it (this action is sent to the node
         by the RabitMQ task)
