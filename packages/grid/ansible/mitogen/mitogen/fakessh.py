@@ -419,12 +419,12 @@ def run(dest, router, args, deadline=None, econtext=None):
 
     context_id = router.allocate_id()
     fakessh = mitogen.parent.Context(router, context_id)
-    fakessh.name = u"fakessh.%d" % (context_id,)
+    fakessh.name = "fakessh.%d" % (context_id,)
 
     sock1, sock2 = socket.socketpair()
 
     stream = mitogen.core.Stream(router, context_id)
-    stream.name = u"fakessh"
+    stream.name = "fakessh"
     stream.accept(sock1, sock1)
     router.register(fakessh, stream)
 

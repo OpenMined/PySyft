@@ -62,14 +62,14 @@ _CONSTANTS = {
 
 STRINGCHUNK = re.compile(r'(.*?)(["\\\x00-\x1f])', FLAGS)
 BACKSLASH = {
-    '"': u'"',
-    "\\": u"\\",
-    "/": u"/",
-    "b": u"\b",
-    "f": u"\f",
-    "n": u"\n",
-    "r": u"\r",
-    "t": u"\t",
+    '"': '"',
+    "\\": "\\",
+    "/": "/",
+    "b": "\b",
+    "f": "\f",
+    "n": "\n",
+    "r": "\r",
+    "t": "\t",
 }
 
 DEFAULT_ENCODING = "utf-8"
@@ -149,7 +149,7 @@ def py_scanstring(
             end = next_end
         # Append the unescaped character
         _append(char)
-    return u"".join(chunks), end
+    return "".join(chunks), end
 
 
 # Use speedup if available
