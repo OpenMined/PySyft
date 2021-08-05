@@ -32,7 +32,7 @@ class Tensor(
     RecursiveSerde
 ):
 
-    __attr_allowlist__ = ["child"]
+    __attr_allowlist__ = ["child", "tag_name"]
 
     def __init__(self, child):
         """data must be a list of numpy array"""
