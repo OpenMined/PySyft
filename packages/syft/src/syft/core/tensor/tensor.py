@@ -29,7 +29,7 @@ class Tensor(
     PhiTensorAncestor,
     FixedPrecisionTensorAncestor,
     # MPCTensorAncestor,
-    RecursiveSerde
+    RecursiveSerde,
 ):
 
     __attr_allowlist__ = ["child"]
