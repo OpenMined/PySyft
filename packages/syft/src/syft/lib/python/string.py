@@ -336,7 +336,7 @@ class String(UserString, PyPrimitive):
     def startswith(
         self,
         suffix: Union[str, UserString, tuple],
-        start: int = 0,
+        start: Optional[int] = None,
         end: Optional[int] = None,
     ) -> SyPrimitiveRet:
         suffix = str(suffix) if isinstance(suffix, UserString) else suffix
@@ -347,7 +347,7 @@ class String(UserString, PyPrimitive):
             if isinstance(suffix, tuple)
             else suffix
         )
-
+        start = start if start else 0
         end = end if end else len(self)
         res = super().startswith(suffix, start, end)
         return PrimitiveFactory.generate_primitive(value=res)

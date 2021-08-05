@@ -72,7 +72,7 @@ class PrimitiveFactory(ABC):
         value: Union[PrimitiveType, type(NotImplemented), PyPrimitive],  # type: ignore
         id: Optional[UID] = None,
         recurse: bool = False,
-        temporary_box=False,
+        temporary_box: bool = False,
     ) -> Any:
         if isinstance(value, PyPrimitive):
             return value

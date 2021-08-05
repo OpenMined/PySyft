@@ -3,7 +3,6 @@ from getpass import getpass
 import logging
 import sys
 import time
-from typing import Any
 from typing import Dict
 from typing import Optional
 from typing import Type
@@ -16,13 +15,10 @@ import requests
 
 # relative
 from ...core.io.connection import ClientConnection
-from ...core.io.location.specific import SpecificLocation
 from ...core.io.route import SoloRoute
 from ...core.node.common.client import Client
-from ...core.node.device.client import DeviceClient
 from ...core.node.domain.client import DomainClient
 from ...core.node.network.client import NetworkClient
-from ...core.node.vm.client import VirtualMachineClient
 from .grid_connection import GridHTTPConnection
 
 DEFAULT_PYGRID_PORT = 80
@@ -65,27 +61,17 @@ def connect(
     # Create a new Solo Route using the selected connection type
     route = SoloRoute(destination=spec_location, connection=conn)
 
-    location_args: Dict[Any, Optional[SpecificLocation]] = {
-        NetworkClient: None,
-        DomainClient: None,
-        DeviceClient: None,
-        VirtualMachineClient: None,
-    }
-    location_args[client_type] = spec_location
+    kwargs = {"name": name, "routes": [route], "signing_key": _user_key}
 
-    if not location_args[client_type]:
-        raise ValueError("Please provide a valid address for the node.")
+    if client_type is NetworkClient:
+        kwargs["network"] = spec_location
+    elif client_type is DomainClient:
+        kwargs["domain"] = spec_location
+    else:
+        raise NotImplementedError
 
     # Create a new client using the selected client type
-    node = client_type(
-        network=location_args[NetworkClient],
-        domain=location_args[DomainClient],
-        device=location_args[DeviceClient],
-        vm=location_args[VirtualMachineClient],
-        name=name,
-        routes=[route],
-        signing_key=_user_key,
-    )
+    node = client_type(**kwargs)
 
     return node
 

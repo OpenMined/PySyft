@@ -3,6 +3,7 @@ import logging
 import time
 from typing import Any
 from typing import Dict
+from typing import Dict as TypeDict
 from typing import List
 from typing import Optional
 from typing import Type
@@ -435,16 +436,22 @@ class DomainClient(Client):
                     state[tag] = ptr
         return self.store.pandas
 
-    def load_dataset(self, assets: Any, name: str, description: str, **metadata):
+    def load_dataset(
+        self,
+        assets: Any,
+        name: str,
+        description: str,
+        **metadata: TypeDict,
+    ) -> None:
         # relative
         from ....lib.python.util import downcast
 
-        metadata["name"] = bytes(name, "utf-8")
-        metadata["description"] = bytes(description, "utf-8")
+        metadata["name"] = bytes(name, "utf-8")  # type: ignore
+        metadata["description"] = bytes(description, "utf-8")  # type: ignore
 
         for k, v in metadata.items():
-            if isinstance(v, str):
-                metadata[k] = bytes(v, "utf-8")
+            if isinstance(v, str):  # type: ignore
+                metadata[k] = bytes(v, "utf-8")  # type: ignore
 
         assets = downcast(assets)
         metadata = downcast(metadata)
