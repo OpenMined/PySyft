@@ -463,9 +463,9 @@ class ActionModuleMixin(ansible.plugins.action.ActionBase):
 
         # Cutpasted from the base implementation.
         if "stdout" in data and "stdout_lines" not in data:
-            data["stdout_lines"] = (data["stdout"] or u"").splitlines()
+            data["stdout_lines"] = (data["stdout"] or "").splitlines()
         if "stderr" in data and "stderr_lines" not in data:
-            data["stderr_lines"] = (data["stderr"] or u"").splitlines()
+            data["stderr_lines"] = (data["stderr"] or "").splitlines()
 
         return data
 
