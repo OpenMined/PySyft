@@ -1,13 +1,9 @@
 # stdlib
 import operator
 
-<<<<<<< HEAD
-=======
 # stdlib
 from typing import Any
 from typing import Dict as TypeDict
-
->>>>>>> d6688c7d1a2dea7ca122cde60e0a14b3690aa678
 
 # third party
 import numpy as np
@@ -84,11 +80,7 @@ def test_mpc_private_public_op(op_str: str) -> None:
 @pytest.mark.parametrize(
     "method_str, kwargs", [("sum", {"axis": 0}), ("sum", {"axis": 1})]
 )
-<<<<<<< HEAD
-def test_mpc_forward_methods(method_str: str, kwargs) -> None:
-=======
 def test_mpc_forward_methods(method_str: str, kwargs: TypeDict[str, Any]) -> None:
->>>>>>> d6688c7d1a2dea7ca122cde60e0a14b3690aa678
     value = np.array([[1, 2, 3, 4, -5], [5, 6, 7, 8, 9]], dtype=np.int64)
 
     remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)

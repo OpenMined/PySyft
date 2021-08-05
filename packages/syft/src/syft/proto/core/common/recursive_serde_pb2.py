@@ -19,11 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-<<<<<<< HEAD
-    serialized_pb=b"\n'proto/core/common/recursive_serde.proto\x12\x10syft.core.common\"0\n\x0eRecursiveSerde\x12\x10\n\x08obj_type\x18\x01 \x01(\t\x12\x0c\n\x04\x64\x61ta\x18\x02 \x01(\x0c\x62\x06proto3",
-=======
     serialized_pb=b"\n'proto/core/common/recursive_serde.proto\x12\x10syft.core.common\"<\n\x0eRecursiveSerde\x12\x0c\n\x04\x64\x61ta\x18\x01 \x01(\x0c\x12\x1c\n\x14\x66ully_qualified_name\x18\x02 \x01(\tb\x06proto3",
->>>>>>> d6688c7d1a2dea7ca122cde60e0a14b3690aa678
 )
 
 
@@ -36,17 +32,6 @@ _RECURSIVESERDE = _descriptor.Descriptor(
     create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
-<<<<<<< HEAD
-            name="obj_type",
-            full_name="syft.core.common.RecursiveSerde.obj_type",
-            index=0,
-            number=1,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=b"".decode("utf-8"),
-=======
             name="data",
             full_name="syft.core.common.RecursiveSerde.data",
             index=0,
@@ -56,7 +41,6 @@ _RECURSIVESERDE = _descriptor.Descriptor(
             label=1,
             has_default_value=False,
             default_value=b"",
->>>>>>> d6688c7d1a2dea7ca122cde60e0a14b3690aa678
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -67,17 +51,6 @@ _RECURSIVESERDE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-<<<<<<< HEAD
-            name="data",
-            full_name="syft.core.common.RecursiveSerde.data",
-            index=1,
-            number=2,
-            type=12,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=b"",
-=======
             name="fully_qualified_name",
             full_name="syft.core.common.RecursiveSerde.fully_qualified_name",
             index=1,
@@ -87,7 +60,6 @@ _RECURSIVESERDE = _descriptor.Descriptor(
             label=1,
             has_default_value=False,
             default_value=b"".decode("utf-8"),
->>>>>>> d6688c7d1a2dea7ca122cde60e0a14b3690aa678
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -107,11 +79,7 @@ _RECURSIVESERDE = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=61,
-<<<<<<< HEAD
-    serialized_end=109,
-=======
     serialized_end=121,
->>>>>>> d6688c7d1a2dea7ca122cde60e0a14b3690aa678
 )
 
 DESCRIPTOR.message_types_by_name["RecursiveSerde"] = _RECURSIVESERDE
