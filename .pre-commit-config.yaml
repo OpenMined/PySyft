@@ -1,6 +1,5 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    always_run: true
     rev: v4.0.1
     hooks:
       - id: check-ast
@@ -36,6 +35,7 @@ repos:
     rev: 5.9.2
     hooks:
       - id: isort
+        always_run: true
         name: isort (python)
   - repo: https://github.com/psf/black
     rev: 21.7b0
@@ -47,6 +47,7 @@ repos:
     rev: 3.9.2
     hooks:
       - id: flake8
+        always_run: true
         args: ["--config=packages/syft/setup.cfg"]
         #       additional_dependencies:
         #         - flake8-kwarger
@@ -137,6 +138,7 @@ repos:
   - repo: local
     hooks:
       - id: flynt
+        always_run: true
         name: flynt
         entry: flynt
         exclude: ^(packages/grid/ansible)
