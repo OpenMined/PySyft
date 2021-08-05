@@ -23,6 +23,7 @@ defaults:
     working-directory: ./packages/syft
 
 jobs:
+<<<<<<< HEAD
   python-linting:
     runs-on: ubuntu-latest
     strategy:
@@ -89,8 +90,9 @@ jobs:
         #   run: |
         #     git diff --name-only $(git merge-base ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }}) | xargs docstr-coverage --accept-empty
 
+=======
+>>>>>>> d6688c7d1a2dea7ca122cde60e0a14b3690aa678
   python-tests-latest-versions:
-    needs: [python-linting]
     strategy:
       max-parallel: 3
       matrix:
@@ -132,6 +134,7 @@ jobs:
           pip install -r requirements.unstable.txt
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
+          pip install "pillow>=8.3.1"
 
       - name: Scan for security issues
         run: |

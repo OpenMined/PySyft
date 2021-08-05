@@ -313,7 +313,7 @@ class Kwargs(dict):
                 self[k] = v
 
     def __repr__(self):
-        return f"Kwargs({dict.__repr__(self)})"
+        return "Kwargs(%s)" % (dict.__repr__(self),)
 
     def __reduce__(self):
         return (Kwargs, (dict(self),))
@@ -332,7 +332,7 @@ class CallError(Error):
         else:
             e = fmt
             cls = e.__class__
-            fmt = f"{cls.__module__}.{cls.__name__}: {e}"
+            fmt = "%s.%s: %s" % (cls.__module__, cls.__name__, e)
             tb = sys.exc_info()[2]
             if tb:
                 fmt += "\n"
@@ -417,10 +417,10 @@ if hasattr(UnicodeType, "rpartition"):
 else:
 
     def str_partition(s, sep):
-        return _partition(s, sep, s.find) or (s, "", "")
+        return _partition(s, sep, s.find) or (s, u"", u"")
 
     def str_rpartition(s, sep):
-        return _partition(s, sep, s.rfind) or ("", "", s)
+        return _partition(s, sep, s.rfind) or (u"", u"", s)
 
     def bytes_partition(s, sep):
         return _partition(s, sep, s.find) or (s, "", "")
@@ -525,7 +525,7 @@ def set_cloexec(fd):
     :func:`mitogen.fork.on_fork`.
     """
     flags = fcntl.fcntl(fd, fcntl.F_GETFD)
-    assert fd > 2, f"fd {fd!r} <= 2"
+    assert fd > 2, "fd %r <= 2" % (fd,)
     fcntl.fcntl(fd, fcntl.F_SETFD, flags | fcntl.FD_CLOEXEC)
 
 
@@ -610,8 +610,10 @@ class PidfulStreamHandler(logging.StreamHandler):
             path = self.template % (os.getpid(), ts)
             self.stream = open(path, "w", 1)
             set_cloexec(self.stream.fileno())
-            self.stream.write(f"Parent PID: {os.getppid()}\n")
-            self.stream.write(f"Created by:\n\n{''.join(traceback.format_stack())}\n")
+            self.stream.write("Parent PID: %s\n" % (os.getppid(),))
+            self.stream.write(
+                "Created by:\n\n%s\n" % ("".join(traceback.format_stack()),)
+            )
             self.open_pid = os.getpid()
         finally:
             self.release()
@@ -894,7 +896,7 @@ class Message(object):
         """
         Syntax helper to construct a dead message.
         """
-        kwargs["data"], _ = encodings.utf_8.encode(reason or "")
+        kwargs["data"], _ = encodings.utf_8.encode(reason or u"")
         return cls(reply_to=IS_DEAD, **kwargs)
 
     @classmethod
@@ -1040,7 +1042,7 @@ class Sender(object):
         )
 
     def __repr__(self):
-        return f"Sender({self.context!r}, {self.dst_handle!r})"
+        return "Sender(%r, %r)" % (self.context, self.dst_handle)
 
     def __reduce__(self):
         return _unpickle_sender, (self.context.context_id, self.dst_handle)
@@ -1114,7 +1116,7 @@ class Receiver(object):
         )
 
     def __repr__(self):
-        return f"Receiver({self.router!r}, {self.handle!r})"
+        return "Receiver(%r, %r)" % (self.router, self.handle)
 
     def __enter__(self):
         return self
@@ -1265,7 +1267,7 @@ class Channel(Sender, Receiver):
         Sender.close(self)
 
     def __repr__(self):
-        return f"Channel({Sender.__repr__(self)}, {Receiver.__repr__(self)})"
+        return "Channel(%s, %s)" % (Sender.__repr__(self), Receiver.__repr__(self))
 
 
 class Importer(object):
@@ -1562,7 +1564,7 @@ class Importer(object):
                 # throws ImportError, on Python 3.x it is still possible for
                 # the loader to be called to fetch metadata.
                 raise ModuleNotFoundError(self.absent_msg % (fullname,))
-            return "master:" + self._cache[fullname][2]
+            return u"master:" + self._cache[fullname][2]
 
     def get_source(self, fullname):
         if fullname in self._cache:
@@ -1639,7 +1641,7 @@ class LogHandler(logging.Handler):
         self.local.in_emit = True
         try:
             msg = self.format(rec)
-            encoded = f"{rec.name}\x00{rec.levelno}\x00{msg}"
+            encoded = "%s\x00%s\x00%s" % (rec.name, rec.levelno, msg)
             if isinstance(encoded, UnicodeType):
                 # Logging package emits both :(
                 encoded = encoded.encode("utf-8")
@@ -1688,7 +1690,7 @@ class Stream(object):
 
     #: The stream name. This is used in the :meth:`__repr__` output in any log
     #: messages, it may be any descriptive string.
-    name = "default"
+    name = u"default"
 
     def set_protocol(self, protocol):
         """
@@ -1722,7 +1724,10 @@ class Stream(object):
         self.transmit_side = Side(self, wfp)
 
     def __repr__(self):
-        return f"<Stream {self.name} #{id(self) & 65535:04x}>"
+        return "<Stream %s #%04x>" % (
+            self.name,
+            id(self) & 0xFFFF,
+        )
 
     def on_receive(self, broker):
         """
@@ -1816,7 +1821,10 @@ class Protocol(object):
         return stream
 
     def __repr__(self):
-        return f"{self.__class__.__name__}({self.stream and self.stream.name})"
+        return "%s(%s)" % (
+            self.__class__.__name__,
+            self.stream and self.stream.name,
+        )
 
     def on_shutdown(self, broker):
         _v and LOG.debug("%r: shutting down", self)
@@ -1876,7 +1884,7 @@ class DelimitedProtocol(Protocol):
             else:
                 assert (
                     stream.protocol is not self
-                ), f"stream protocol is no longer {self!r}"
+                ), "stream protocol is no longer %r" % (self,)
                 stream.protocol.on_receive(broker, self._trailer)
 
     def on_line_received(self, line):
@@ -2013,7 +2021,7 @@ class Side(object):
             set_nonblock(self.fd)
 
     def __repr__(self):
-        return f"<Side of {self.stream.name or repr(self.stream)} fd {self.fd}>"
+        return "<Side of %s fd %s>" % (self.stream.name or repr(self.stream), self.fd)
 
     @classmethod
     def _on_fork(cls):
@@ -2354,7 +2362,7 @@ class Context(object):
         return data
 
     def __repr__(self):
-        return f"Context({self.context_id}, {self.name!r})"
+        return "Context(%s, %r)" % (self.context_id, self.name)
 
 
 def _unpickle_context(context_id, name, router=None):
@@ -2419,7 +2427,7 @@ class Poller(object):
         self._wfds = {}
 
     def __repr__(self):
-        return f"{type(self).__name__}"
+        return "%s" % (type(self).__name__,)
 
     def _update(self, fd):
         """
@@ -3014,7 +3022,7 @@ class Router(object):
         self.add_handler(self._on_del_route, DEL_ROUTE)
 
     def __repr__(self):
-        return f"Router({self.broker!r})"
+        return "Router(%r)" % (self.broker,)
 
     def _setup_logging(self):
         """
@@ -3645,7 +3653,7 @@ class Broker(object):
         except Exception:
             e = sys.exc_info()[1]
             LOG.exception("broker crashed")
-            syslog.syslog(syslog.LOG_ERR, f"broker crashed: {e}")
+            syslog.syslog(syslog.LOG_ERR, "broker crashed: %s" % (e,))
             syslog.closelog()  # prevent test 'fd leak'.
 
         self._alive = False  # Ensure _alive is consistent on crash.
@@ -3680,7 +3688,7 @@ class Broker(object):
         self._thread.join()
 
     def __repr__(self):
-        return f"Broker({id(self) & 65535:04x})"
+        return "Broker(%04x)" % (id(self) & 0xFFFF,)
 
 
 class Dispatcher(object):

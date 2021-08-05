@@ -124,7 +124,11 @@ class ActionModule(ActionBase):
                     target_name = task_vars["inventory_hostname"]
                 else:
                     target_name = self._play_context.remote_addr
-                dest = f"{self._loader.path_dwim(dest)}/{target_name}/{source_local}"
+                dest = "%s/%s/%s" % (
+                    self._loader.path_dwim(dest),
+                    target_name,
+                    source_local,
+                )
 
             dest = dest.replace("//", "/")
 

@@ -204,7 +204,7 @@ class ActionModuleMixin(ansible.plugins.action.ActionBase):
     def _generate_tmp_path(self):
         return os.path.join(
             self._connection.get_good_temp_dir(),
-            f"ansible_mitogen_action_{random.getrandbits(8 * 8):016x}",
+            "ansible_mitogen_action_%016x" % (random.getrandbits(8 * 8),),
         )
 
     def _make_tmp_path(self, remote_user=None):
@@ -463,9 +463,9 @@ class ActionModuleMixin(ansible.plugins.action.ActionBase):
 
         # Cutpasted from the base implementation.
         if "stdout" in data and "stdout_lines" not in data:
-            data["stdout_lines"] = (data["stdout"] or "").splitlines()
+            data["stdout_lines"] = (data["stdout"] or u"").splitlines()
         if "stderr" in data and "stderr_lines" not in data:
-            data["stderr_lines"] = (data["stderr"] or "").splitlines()
+            data["stderr_lines"] = (data["stderr"] or u"").splitlines()
 
         return data
 

@@ -32,11 +32,17 @@ class ListIterator(Iterator):
 class List(UserList, PyPrimitive):
     __slots__ = ["_id", "_index"]
 
-    def __init__(self, value: Optional[Any] = None, id: Optional[UID] = None):
+    def __init__(
+        self,
+        value: Optional[Any] = None,
+        id: Optional[UID] = None,
+        temporary_box: bool = False,
+    ):
         if value is None:
             value = []
 
         UserList.__init__(self, value)
+        PyPrimitive.__init__(self, temporary_box=temporary_box)
 
         self._id: UID = id if id else UID()
         self._index = 0
@@ -151,7 +157,11 @@ class List(UserList, PyPrimitive):
         id_ = serialize(obj=self.id)
         downcasted = [downcast(value=element) for element in self.data]
         data = [serialize(obj=element, to_bytes=True) for element in downcasted]
-        return List_PB(id=id_, data=data)
+        return List_PB(
+            id=id_,
+            data=data,
+            temporary_box=self.temporary_box,
+        )
 
     @staticmethod
     def _proto2object(proto: List_PB) -> "List":
@@ -161,7 +171,10 @@ class List(UserList, PyPrimitive):
         # [generator()] which is not equal to an empty list
         for element in proto.data:
             value.append(upcast(deserialize(blob=element, from_bytes=True)))
-        new_list = List(value=value)
+        new_list = List(
+            value=value,
+            temporary_box=proto.temporary_box,
+        )
         new_list._id = id_
         return new_list
 

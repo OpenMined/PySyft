@@ -5,20 +5,26 @@ import torch as th
 # syft absolute
 import syft as sy
 
-sympc = pytest.importorskip("sympc")
-Session = sympc.session.Session
-SessionManager = sympc.session.SessionManager
-MPCTensor = sympc.tensor.MPCTensor
-
 
 # MADHAVA: this needs fixing
+<<<<<<< HEAD
 @pytest.mark.skip(
+=======
+@pytest.mark.xfail(
+>>>>>>> d6688c7d1a2dea7ca122cde60e0a14b3690aa678
     reason="This was broken when we switched from using a Dictionary obj store to a SQL one which means"
     + "that there's missing serialization functionality. Please address when you can."
 )
 @pytest.mark.asyncio
 @pytest.mark.vendor(lib="sympc")
 def test_load_sympc() -> None:
+    # third party
+    import sympc
+
+    Session = sympc.session.Session
+    SessionManager = sympc.session.SessionManager
+    MPCTensor = sympc.tensor.MPCTensor
+
     alice = sy.VirtualMachine()
     alice_client = alice.get_root_client()
     bob = sy.VirtualMachine()

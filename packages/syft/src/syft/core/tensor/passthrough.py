@@ -458,4 +458,4 @@ def square(x: Type[PassthroughTensor]) -> PassthroughTensor:
     return x * x
 
 
-SupportedChainType = Union[PassthroughTensor, AcceptableSimpleType]
+SupportedChainType = Union['PassthroughTensor', AcceptableSimpleType]

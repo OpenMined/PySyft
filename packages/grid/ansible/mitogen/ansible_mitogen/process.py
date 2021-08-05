@@ -71,7 +71,7 @@ import mitogen.utils
 
 LOG = logging.getLogger(__name__)
 
-ANSIBLE_PKG_OVERRIDE = "__version__ = %r\n" "__author__ = %r\n"
+ANSIBLE_PKG_OVERRIDE = u"__version__ = %r\n" u"__author__ = %r\n"
 
 MAX_MESSAGE_SIZE = 4096 * 1048576
 
@@ -163,7 +163,7 @@ def save_pid(name):
         perf top -p $(anspid)
     """
     if os.environ.get("MITOGEN_SAVE_PIDS"):
-        with open(f".ansible-{name}.pid", "w") as fp:
+        with open(".ansible-%s.pid" % (name,), "w") as fp:
             fp.write(str(os.getpid()))
 
 
@@ -195,10 +195,10 @@ def _setup_simplejson(responder):
     sys.path.append(compat_path)
 
     for fullname, is_pkg, suffix in (
-        ("simplejson", True, "__init__.py"),
-        ("simplejson.decoder", False, "decoder.py"),
-        ("simplejson.encoder", False, "encoder.py"),
-        ("simplejson.scanner", False, "scanner.py"),
+        (u"simplejson", True, "__init__.py"),
+        (u"simplejson.decoder", False, "decoder.py"),
+        (u"simplejson.encoder", False, "encoder.py"),
+        (u"simplejson.scanner", False, "scanner.py"),
     ):
         path = os.path.join(compat_path, "simplejson", suffix)
         fp = open(path, "rb")
@@ -653,7 +653,11 @@ class MuxProcess(object):
         ansible_mitogen.logging.set_process_name("mux:" + str(self.index))
         if setproctitle:
             setproctitle.setproctitle(
-                f"mitogen mux:{self.index} ({os.path.basename(self.path)})"
+                "mitogen mux:%s (%s)"
+                % (
+                    self.index,
+                    os.path.basename(self.path),
+                )
             )
 
         self.model.parent_sock.close()

@@ -7,8 +7,12 @@ from ...core.common.serde.serializable import Serializable
 
 
 class PyPrimitive(Serializable):
-    def __init__(self) -> None:
+    def __init__(self, temporary_box: bool = False) -> None:
         self._id: UID
+
+        # sometimes we need to serialize a python primitive in such a way that we can
+        # deserialize it back as that primitive later. This flag allows us to do that.
+        self.temporary_box = temporary_box
 
     def upcast(self) -> Any:
         pass

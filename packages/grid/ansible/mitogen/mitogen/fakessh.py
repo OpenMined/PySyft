@@ -191,7 +191,7 @@ class Process(object):
             pmon.add(proc.pid, self._on_proc_exit)
 
     def __repr__(self):
-        return f"Process({self.stdin!r}, {self.stdout!r})"
+        return "Process(%r, %r)" % (self.stdin, self.stdout)
 
     def _on_proc_exit(self, status):
         LOG.debug("%r._on_proc_exit(%r)", self, status)
@@ -212,7 +212,7 @@ class Process(object):
             command, arg = msg.unpickle(throw=False)
             LOG.debug("%r._on_control(%r, %s)", self, command, arg)
 
-            func = getattr(self, f"_on_{command}", None)
+            func = getattr(self, "_on_%s" % (command,), None)
             if func:
                 return func(msg, arg)
 
@@ -292,7 +292,7 @@ def exit():
 def die(msg, *args):
     if args:
         msg %= args
-    sys.stderr.write(f"{msg}\n")
+    sys.stderr.write("%s\n" % (msg,))
     exit()
 
 
@@ -419,12 +419,12 @@ def run(dest, router, args, deadline=None, econtext=None):
 
     context_id = router.allocate_id()
     fakessh = mitogen.parent.Context(router, context_id)
-    fakessh.name = "fakessh.%d" % (context_id,)
+    fakessh.name = u"fakessh.%d" % (context_id,)
 
     sock1, sock2 = socket.socketpair()
 
     stream = mitogen.core.Stream(router, context_id)
-    stream.name = "fakessh"
+    stream.name = u"fakessh"
     stream.accept(sock1, sock1)
     router.register(fakessh, stream)
 
@@ -436,11 +436,11 @@ def run(dest, router, args, deadline=None, econtext=None):
         ssh_path = os.path.join(tmp_path, "ssh")
         fp = open(ssh_path, "w")
         try:
-            fp.write(f"#!{mitogen.parent.get_sys_executable()}\n")
+            fp.write("#!%s\n" % (mitogen.parent.get_sys_executable(),))
             fp.write(inspect.getsource(mitogen.core))
             fp.write("\n")
             fp.write(
-                f"ExternalContext({_get_econtext_config(context, sock2)!r}).main()\n"
+                "ExternalContext(%r).main()\n" % (_get_econtext_config(context, sock2),)
             )
         finally:
             fp.close()
@@ -449,7 +449,7 @@ def run(dest, router, args, deadline=None, econtext=None):
         env = os.environ.copy()
         env.update(
             {
-                "PATH": f"{tmp_path}:{env.get('PATH', '')}",
+                "PATH": "%s:%s" % (tmp_path, env.get("PATH", "")),
                 "ARGV0": mitogen.parent.get_sys_executable(),
                 "SSH_PATH": ssh_path,
             }

@@ -5,6 +5,10 @@ on:
     branches:
       - dev
       - main
+<<<<<<< HEAD
+=======
+      - "0.6.0"
+>>>>>>> d6688c7d1a2dea7ca122cde60e0a14b3690aa678
     paths:
       - ".github/workflows/*.yml"
       - "**.py"
@@ -47,11 +51,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
+<<<<<<< HEAD
       # - name: Install Protoc
       #   uses: arduino/setup-protoc@v1
       #   with:
       #     version: "3.x"
 
+=======
+>>>>>>> d6688c7d1a2dea7ca122cde60e0a14b3690aa678
       - name: Build Protos
         run: |
           set -e
@@ -59,4 +66,7 @@ jobs:
           cd packages/syft && ./scripts/build_proto.sh
 
       - uses: pre-commit/action@v2.0.3
+<<<<<<< HEAD
         continue-on-error: true
+=======
+>>>>>>> d6688c7d1a2dea7ca122cde60e0a14b3690aa678

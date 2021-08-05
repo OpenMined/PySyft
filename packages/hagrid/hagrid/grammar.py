@@ -259,7 +259,80 @@ def validate_arg_count(arg_count: int, verb: GrammarVerb) -> bool:
     return valid
 
 
+def launch_shorthand_support(args: TypeTuple) -> TypeTuple:
+    """When launching, we want to be able to default to 'domain' if it's not provided, to launch
+    nodes when no name is provided, and to support node names which have multiple words.
+
+    hagrid launch -> hagrid launch domain
+    hagrid launch United Nations -> hagrid launch "United Nations" domain
+    hagrid launch United Nations domain -> hagrid launch "United Nations" domain
+    hagrid launch on docker -> hagrid launch domain on docker
+
+    """
+
+    # Some mild analysis
+    found_domain_or_network = False
+    preposition_position = 10000
+    for i, arg in enumerate(args):
+
+        if "domain" in arg:
+            found_domain_or_network = True
+
+        elif "network" in arg:
+            found_domain_or_network = True
+
+        if "to" in arg or "from" in arg:
+            if i < preposition_position:
+                preposition_position = i
+
+    _args = list(args)
+
+    # Default to domain if it's not provided
+    if not found_domain_or_network:
+
+        if preposition_position != 10000:
+            _args.insert(preposition_position, "domain")
+            preposition_position += 1
+        else:
+            _args = _args + ["domain"]
+
+    # if there are no prepositions and the domain/network is the last word
+    if preposition_position == 10000 and _args[-1] in ["domain", "network"]:
+        name = ""
+        for arg in _args[:-1]:
+            name += arg + " "
+        name = name[:-1]
+        _args = [name] + _args[-1:]
+
+    # if there are prepositions then combine the words in the name if there are multiple
+    elif preposition_position != 10000:
+
+        name = ""
+        for i in range(preposition_position - 1):
+            name += _args[i] + " "
+        name = name[:-1]
+        pmin1 = preposition_position - 1
+        print(preposition_position)
+        print(_args)
+        _args = [name] + _args[pmin1:]
+        print(_args)
+
+    # if there wasn't a name provided - make sure we don't have an empty place in the list
+    # so that later logic will generate a name
+    if _args[0] == "":
+        _args = _args[1:]
+
+    args = tuple(_args)
+
+    return args
+
+
 def parse_grammar(args: TypeTuple, verb: GrammarVerb) -> TypeList[GrammarTerm]:
+
+    # if the command is a launch, check if any shorthands were employed
+    if verb.command == "launch":
+        args = launch_shorthand_support(args=args)
+
     arg_list = list(args)
     arg_count = len(arg_list)
     errors = []
@@ -271,12 +344,15 @@ def parse_grammar(args: TypeTuple, verb: GrammarVerb) -> TypeList[GrammarTerm]:
                 arg = None  # use None so we get the default
             else:
                 arg = arg_list.pop(0)  # use a real arg
+
             term_settings = verb.full_sentence[i]
 
             try:
+
                 term = term_settings["klass"](**term_settings)
                 term.parse_input(arg)
                 terms.append(term)
+
             except BadGrammar as e:
                 errors.append(str(e))
 

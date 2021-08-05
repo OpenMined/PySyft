@@ -410,7 +410,7 @@ class ContextService(mitogen.service.Service):
         try:
             method = getattr(self.router, spec["method"])
         except AttributeError:
-            raise Error(f"unsupported method: {spec['method']}")
+            raise Error("unsupported method: %(method)s" % spec)
 
         context = method(via=via, unidirectional=True, **spec["kwargs"])
         if via and spec.get("enable_lru"):

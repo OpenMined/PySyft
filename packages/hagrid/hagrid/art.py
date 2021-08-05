@@ -51,7 +51,12 @@ def motorcycle() -> None:
 
 
 def hold_on_tight() -> None:
-    rows, columns = os.popen("stty size", "r").read().split()
+    out = os.popen("stty size", "r").read().split()
+    if len(out) == 2:
+        rows, columns = out
+    else:
+        """not running in a proper command line (probably a unit test)"""
+        return
 
     if int(columns) >= 91:
 

@@ -119,7 +119,11 @@ class Listener(mitogen.core.Protocol):
         return stream
 
     def __repr__(self):
-        return f"{__name__}.{self.__class__.__name__}({self.path!r})"
+        return "%s.%s(%r)" % (
+            __name__,
+            self.__class__.__name__,
+            self.path,
+        )
 
     def __init__(self, router, path):
         self._router = router
@@ -164,7 +168,7 @@ class Listener(mitogen.core.Protocol):
             remote_id=context_id,
             auth_id=mitogen.context_id,
         )
-        stream.name = "unix_client.%d" % (pid,)
+        stream.name = u"unix_client.%d" % (pid,)
         stream.accept(sock, sock)
         LOG.debug("listener: accepted connection from PID %d: %s", pid, stream.name)
         self._router.register(context, stream)
@@ -192,7 +196,7 @@ def _connect(path, broker, sock):
     router = mitogen.master.Router(broker=broker)
     stream = mitogen.core.MitogenProtocol.build_stream(router, remote_id)
     stream.accept(sock, sock)
-    stream.name = "unix_listener.%d" % (pid,)
+    stream.name = u"unix_listener.%d" % (pid,)
 
     mitogen.core.listen(stream, "disconnect", _cleanup)
     mitogen.core.listen(

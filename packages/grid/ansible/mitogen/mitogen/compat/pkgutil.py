@@ -287,7 +287,8 @@ class ImpLoader:
             fullname = self.fullname
         elif fullname != self.fullname:
             raise ImportError(
-                f"Loader for module {self.fullname} cannot handle module {fullname}"
+                "Loader for module %s cannot handle "
+                "module %s" % (self.fullname, fullname)
             )
         return fullname
 
@@ -567,7 +568,7 @@ def extend_path(path, name):
                 f = open(pkgfile)
             except IOError:
                 msg = sys.exc_info()[1]
-                sys.stderr.write(f"Can't open {pkgfile}: {msg}\n")
+                sys.stderr.write("Can't open %s: %s\n" % (pkgfile, msg))
             else:
                 for line in f:
                     line = line.rstrip("\n")

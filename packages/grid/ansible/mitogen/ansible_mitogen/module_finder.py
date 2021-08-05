@@ -122,7 +122,7 @@ def find_relative(parent, name, path=()):
 def scan_fromlist(code):
     for level, modname_s, fromlist in mitogen.master.scan_code_imports(code):
         for name in fromlist:
-            yield level, f"{modname_s}.{name}"
+            yield level, "%s.%s" % (modname_s, name)
         if not fromlist:
             yield level, modname_s
 

@@ -198,7 +198,7 @@ class EnvironmentFileWatcher(object):
         LOG.debug("%r installed; existing keys: %r", self, self._keys)
 
     def __repr__(self):
-        return f"EnvironmentFileWatcher({self.path!r})"
+        return "EnvironmentFileWatcher(%r)" % (self.path,)
 
     def _stat(self):
         try:
@@ -549,7 +549,7 @@ class ModuleUtilsImporter(object):
         source = ansible_mitogen.target.get_small_file(self._context, path)
         code = compile(source, path, "exec", 0, 1)
         mod = sys.modules.setdefault(fullname, imp.new_module(fullname))
-        mod.__file__ = f"master:{path}"
+        mod.__file__ = "master:%s" % (path,)
         mod.__loader__ = self
         if is_pkg:
             mod.__path__ = []
@@ -724,15 +724,15 @@ class ProgramRunner(Runner):
             LOG.exception("While running %s", self._get_argv())
             e = sys.exc_info()[1]
             return {
-                "rc": 1,
-                "stdout": "",
-                "stderr": f"{type(e)}: {e}",
+                u"rc": 1,
+                u"stdout": u"",
+                u"stderr": u"%s: %s" % (type(e), e),
             }
 
         return {
-            "rc": rc,
-            "stdout": mitogen.core.to_text(stdout),
-            "stderr": mitogen.core.to_text(stderr),
+            u"rc": rc,
+            u"stdout": mitogen.core.to_text(stdout),
+            u"stderr": mitogen.core.to_text(stderr),
         }
 
 
@@ -1015,9 +1015,9 @@ class NewStyleRunner(ScriptRunner):
             self.atexit_wrapper.run_callbacks()
 
         return {
-            "rc": rc,
-            "stdout": mitogen.core.to_text(sys.stdout.getvalue()),
-            "stderr": mitogen.core.to_text(sys.stderr.getvalue()),
+            u"rc": rc,
+            u"stdout": mitogen.core.to_text(sys.stdout.getvalue()),
+            u"stderr": mitogen.core.to_text(sys.stderr.getvalue()),
         }
 
 
@@ -1046,6 +1046,8 @@ class OldStyleRunner(ArgsFileRunner, ScriptRunner):
         ActionBase._execute_module().
         """
         return (
-            " ".join(f"{key}={shlex_quote(str(self.args[key]))}" for key in self.args)
+            " ".join(
+                "%s=%s" % (key, shlex_quote(str(self.args[key]))) for key in self.args
+            )
             + " "
         )  # Bug-for-bug :(

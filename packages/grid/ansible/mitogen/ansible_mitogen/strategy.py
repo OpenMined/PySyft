@@ -137,7 +137,13 @@ def wrap_worker__run(self):
     CPU.
     """
     if setproctitle:
-        setproctitle.setproctitle(f"worker:{self._host.name} task:{self._task.action}")
+        setproctitle.setproctitle(
+            "worker:%s task:%s"
+            % (
+                self._host.name,
+                self._task.action,
+            )
+        )
 
     # Ignore parent's attempts to murder us when we still need to write
     # profiling output.

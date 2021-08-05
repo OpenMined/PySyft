@@ -439,7 +439,7 @@ class LogForwarder(object):
 
         name, level_s, s = msg.data.decode("utf-8", "replace").split("\x00", 2)
 
-        logger_name = f"{name}.[{context.name}]"
+        logger_name = "%s.[%s]" % (name, context.name)
         logger = self._cache.get(logger_name)
         if logger is None:
             self._cache[logger_name] = logger = logging.getLogger(logger_name)
@@ -460,7 +460,7 @@ class LogForwarder(object):
         logger.handle(record)
 
     def __repr__(self):
-        return f"LogForwarder({self._router!r})"
+        return "LogForwarder(%r)" % (self._router,)
 
 
 class FinderMethod(object):
@@ -471,7 +471,7 @@ class FinderMethod(object):
     """
 
     def __repr__(self):
-        return f"{type(self).__name__}()"
+        return "%s()" % (type(self).__name__,)
 
     def find(self, fullname):
         """
@@ -670,7 +670,7 @@ class ParentEnumerationMethod(FinderMethod):
         path = None
         modpath = []
         while True:
-            pkgname, _, modname = str_rpartition(to_text(fullname), ".")
+            pkgname, _, modname = str_rpartition(to_text(fullname), u".")
             modpath.insert(0, modname)
             if not pkgname:
                 return [], None, modpath
@@ -848,7 +848,7 @@ class ModuleFinder(object):
 
     def generate_parent_names(self, fullname):
         while "." in fullname:
-            fullname, _, _ = str_rpartition(to_text(fullname), ".")
+            fullname, _, _ = str_rpartition(to_text(fullname), u".")
             yield fullname
 
     def find_related_imports(self, fullname):
@@ -876,13 +876,13 @@ class ModuleFinder(object):
         co = compile(src, modpath, "exec")
         for level, modname, namelist in scan_code_imports(co):
             if level == -1:
-                modnames = [modname, f"{fullname}.{modname}"]
+                modnames = [modname, "%s.%s" % (fullname, modname)]
             else:
-                modnames = [f"{self.resolve_relpath(fullname, level)}{modname}"]
+                modnames = ["%s%s" % (self.resolve_relpath(fullname, level), modname)]
 
             maybe_names.extend(modnames)
             maybe_names.extend(
-                f"{mname}.{name}" for mname in modnames for name in namelist
+                "%s.%s" % (mname, name) for mname in modnames for name in namelist
             )
 
         return self._related_cache.setdefault(
@@ -893,7 +893,7 @@ class ModuleFinder(object):
                     for name in maybe_names
                     if sys.modules.get(name) is not None
                     and not is_stdlib_name(name)
-                    and "six.moves" not in name  # TODO: crap
+                    and u"six.moves" not in name  # TODO: crap
                 )
             ),
         )
@@ -1128,7 +1128,7 @@ class ModuleResponder(object):
         if stream.protocol.remote_id != context.context_id:
             stream.protocol._send(
                 mitogen.core.Message(
-                    data=b(f"{context.context_id}\x00{fullname}"),
+                    data=b("%s\x00%s" % (context.context_id, fullname)),
                     handle=mitogen.core.FORWARD_MODULE,
                     dst_id=stream.protocol.remote_id,
                 )
@@ -1146,7 +1146,7 @@ class ModuleResponder(object):
         path = []
         while fullname:
             path.append(fullname)
-            fullname, _, _ = str_rpartition(fullname, ".")
+            fullname, _, _ = str_rpartition(fullname, u".")
 
         stream = self._router.stream_by_id(context.context_id)
         if stream is None:
@@ -1373,7 +1373,7 @@ class IdAllocator(object):
         )
 
     def __repr__(self):
-        return f"IdAllocator({self.router!r})"
+        return "IdAllocator(%r)" % (self.router,)
 
     def allocate(self):
         """

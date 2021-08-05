@@ -93,14 +93,14 @@ import ansible_mitogen.runner
 LOG = logging.getLogger(__name__)
 
 MAKE_TEMP_FAILED_MSG = (
-    "Unable to find a useable temporary directory. This likely means no\n"
-    "system-supplied TMP directory can be written to, or all directories\n"
-    "were mounted on 'noexec' filesystems.\n"
-    "\n"
-    "The following paths were tried:\n"
-    "    %(paths)s\n"
-    "\n"
-    "Please check '-vvv' output for a log of individual path errors."
+    u"Unable to find a useable temporary directory. This likely means no\n"
+    u"system-supplied TMP directory can be written to, or all directories\n"
+    u"were mounted on 'noexec' filesystems.\n"
+    u"\n"
+    u"The following paths were tried:\n"
+    u"    %(paths)s\n"
+    u"\n"
+    u"Please check '-vvv' output for a log of individual path errors."
 )
 
 # Python 2.4/2.5 cannot support fork+threads whatsoever, it doesn't even fix up
@@ -129,7 +129,7 @@ def subprocess__Popen__close_fds(self, but):
     a version that is O(fds) rather than O(_SC_OPEN_MAX).
     """
     try:
-        names = os.listdir("/proc/self/fd")
+        names = os.listdir(u"/proc/self/fd")
     except OSError:
         # May fail if acting on a container that does not have /proc mounted.
         self._original_close_fds(but)
@@ -148,9 +148,9 @@ def subprocess__Popen__close_fds(self, but):
 
 
 if (
-    sys.platform.startswith("linux")
-    and sys.version < "3.0"
-    and hasattr(subprocess.Popen, "_close_fds")
+    sys.platform.startswith(u"linux")
+    and sys.version < u"3.0"
+    and hasattr(subprocess.Popen, u"_close_fds")
     and not mitogen.is_master
 ):
     subprocess.Popen._original_close_fds = subprocess.Popen._close_fds
@@ -172,7 +172,7 @@ def get_small_file(context, path):
         Bytestring file data.
     """
     pool = mitogen.service.get_or_create_pool(router=context.router)
-    service = pool.get_service("mitogen.service.PushFileService")
+    service = pool.get_service(u"mitogen.service.PushFileService")
     return service.get(path)
 
 
@@ -214,7 +214,7 @@ def transfer_file(context, in_path, out_path, sync=False, set_owner=False):
                 out_fp=fp,
             )
             if not ok:
-                raise IOError(f"transfer of {in_path!r} was interrupted.")
+                raise IOError("transfer of %r was interrupted." % (in_path,))
 
             set_file_mode(tmp_path, metadata["mode"], fd=fp.fileno())
             if set_owner:
@@ -396,9 +396,9 @@ def init_child(econtext, log_level, candidate_temp_dirs):
     good_temp_dir = find_good_temp_dir(candidate_temp_dirs)
 
     return {
-        "fork_context": _fork_parent,
-        "home_dir": mitogen.core.to_text(os.path.expanduser("~")),
-        "good_temp_dir": good_temp_dir,
+        u"fork_context": _fork_parent,
+        u"home_dir": mitogen.core.to_text(os.path.expanduser("~")),
+        u"good_temp_dir": good_temp_dir,
     }
 
 
@@ -497,7 +497,7 @@ class AsyncRunner(object):
                 "detach": True,
                 "econtext": self.econtext,
                 "emulate_tty": False,
-            },
+            }
         )
         return run_module(kwargs)
 

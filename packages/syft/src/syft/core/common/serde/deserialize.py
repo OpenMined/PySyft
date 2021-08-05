@@ -78,7 +78,10 @@ def _deserialize(
     # There are serveral code paths that come through here and use different ways to
     # match and overload protobuf -> deserialize type
     obj_type = getattr(type(blob), "schema2type", None)
+<<<<<<< HEAD
 
+=======
+>>>>>>> d6688c7d1a2dea7ca122cde60e0a14b3690aa678
     if obj_type is None:
         # TODO: This can probably be removed now we have lists of obj_types
         obj_type = getattr(blob, "obj_type", None)
@@ -87,6 +90,7 @@ def _deserialize(
         obj_type = index_syft_by_module_name(fully_qualified_name=obj_type)  # type: ignore
         obj_type = getattr(obj_type, "_sy_serializable_wrapper_type", obj_type)
     elif isinstance(obj_type, list):
+<<<<<<< HEAD
         # circular imports
         # relative
         from .recursive import RecursiveSerde
@@ -99,6 +103,9 @@ def _deserialize(
 
         elif len(obj_type) == 1:
             # if there is only one type lets use it
+=======
+        if len(obj_type) == 1:
+>>>>>>> d6688c7d1a2dea7ca122cde60e0a14b3690aa678
             obj_type = obj_type[0]
         else:
             # this means we have multiple classes that use the same proto but use the
@@ -132,4 +139,9 @@ def _deserialize(
         traceback_and_raise(deserialization_error)
 
     res = _proto2object(proto=blob)
+
+    # if its a temporary_box upcast
+    if getattr(res, "temporary_box", False) and hasattr(res, "upcast"):
+        return res.upcast()
+
     return res

@@ -11,6 +11,13 @@ import pytest
 from syft import deserialize
 from syft import serialize
 from syft.core.io.address import Address
+<<<<<<< HEAD
+=======
+
+# from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
+#     GetDatasetsResponse,
+# )
+>>>>>>> d6688c7d1a2dea7ca122cde60e0a14b3690aa678
 from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
     CreateDatasetMessage,
 )
@@ -27,9 +34,12 @@ from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages
     GetDatasetsMessage,
 )
 from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
+<<<<<<< HEAD
     GetDatasetsResponse,
 )
 from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
+=======
+>>>>>>> d6688c7d1a2dea7ca122cde60e0a14b3690aa678
     UpdateDatasetMessage,
 )
 
@@ -62,6 +72,7 @@ test_suite = [
         {"address": Address(), "reply_to": Address()},
         ["address", "reply_to"],
     ),
+<<<<<<< HEAD
     (
         GetDatasetsResponse,
         {
@@ -70,6 +81,16 @@ test_suite = [
         },
         ["address", "metadatas"],
     ),
+=======
+    # (
+    #     GetDatasetsResponse,
+    #     {
+    #         "address": Address(),
+    #         "metadatas": [metadata, metadata, metadata],
+    #     },
+    #     ["address", "metadatas"],
+    # ),
+>>>>>>> d6688c7d1a2dea7ca122cde60e0a14b3690aa678
     (
         UpdateDatasetMessage,
         {

@@ -39,7 +39,11 @@ class RepeatOp(Op):
             intermediate_shape = list(self.input_shape)
             intermediate_shape.insert(axis + 1, -1)
 
+<<<<<<< HEAD
             if self.x.shape[self.axis] == 1:  # type: ignore
+=======
+            if self.x.shape[self.axis] == 1:
+>>>>>>> d6688c7d1a2dea7ca122cde60e0a14b3690aa678
                 grad = grad.sum(axis=axis)
             else:
                 grad = grad.reshape(*intermediate_shape)

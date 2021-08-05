@@ -7,6 +7,8 @@ import torch as th
 
 # syft absolute
 import syft as sy
+from syft import deserialize
+from syft import serialize
 from syft.core.common.uid import UID
 from syft.lib.python.collections.ordered_dict import OrderedDict
 from syft.lib.python.int import Int
@@ -55,11 +57,33 @@ def test_dict_serde() -> None:
         assert deserialized_el == original_el
 
 
+def test_dict_serde_bytes() -> None:
+    t1 = th.tensor([1, 2])
+    t2 = th.tensor([1, 3])
+
+    syft_list = OrderedDict({Int(1): t1, Int(2): t2})
+    assert type(getattr(syft_list, "id", None)) is UID
+
+    serialized = serialize(syft_list, to_bytes=True)
+
+    assert isinstance(serialized, bytes)
+
+    deserialized = deserialize(serialized, from_bytes=True)
+
+    assert isinstance(deserialized, OrderedDict)
+    assert isinstance(deserialized, PyOrderectDict)
+
+    assert deserialized.id == syft_list.id
+    for deserialized_el, original_el in zip(deserialized, syft_list):
+        assert deserialized_el == original_el
+
+
 def test_list_send(root_client: sy.VirtualMachineClient) -> None:
     syft_list = OrderedDict(
         {String("t1"): String("test"), String("t2"): String("test")}
     )
     ptr = syft_list.send(root_client)
+
     # Check pointer type
     assert ptr.__class__.__name__ == "OrderedDictPointer"
 

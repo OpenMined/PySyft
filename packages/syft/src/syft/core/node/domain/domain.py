@@ -50,7 +50,6 @@ from ..common.node_service.object_request.object_request_service import (
     ObjectRequestServiceWithoutReply,
 )
 from ..common.node_service.object_request.object_request_service import RequestService
-from ..common.node_service.publish.publish_service import PublishScalarsService
 from ..common.node_service.request_answer.request_answer_messages import RequestStatus
 from ..common.node_service.request_answer.request_answer_service import (
     RequestAnswerService,
@@ -86,7 +85,6 @@ class Domain(Node):
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
         root_key: Optional[VerifyKey] = None,
-        db_path: Optional[str] = None,
         db_engine: Any = None,
     ):
         super().__init__(
@@ -111,12 +109,10 @@ class Domain(Node):
         self.association_requests = AssociationRequestManager(db_engine)
         self.data_requests = RequestManager(db_engine)
         self.datasets = DatasetManager(db_engine)
-        self.acc = AdversarialAccountant(max_budget=10)
-
         # self.immediate_services_without_reply.append(RequestReceiverService)
         # self.immediate_services_without_reply.append(AcceptOrDenyRequestService)
         # self.immediate_services_without_reply.append(UpdateRequestHandlerService)
-        self.immediate_services_without_reply.append(PublishScalarsService)
+
         self.immediate_services_with_reply.append(RequestAnswerService)
         # self.immediate_services_with_reply.append(GetAllRequestHandlersService)
 

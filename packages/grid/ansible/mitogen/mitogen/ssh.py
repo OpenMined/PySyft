@@ -197,7 +197,7 @@ class Options(mitogen.parent.Options):
         keepalive_interval=15,
         identities_only=True,
         ssh_debug_level=None,
-        **kwargs,
+        **kwargs
     ):
         super(Options, self).__init__(**kwargs)
 
@@ -236,9 +236,9 @@ class Connection(mitogen.parent.Connection):
     SHLEX_IGNORE = ["&&"]
 
     def _get_name(self):
-        s = "ssh." + mitogen.core.to_text(self.options.hostname)
+        s = u"ssh." + mitogen.core.to_text(self.options.hostname)
         if self.options.port and self.options.port != 22:
-            s += f":{self.options.port}"
+            s += u":%s" % (self.options.port,)
         return s
 
     def _requires_pty(self):
@@ -284,9 +284,9 @@ class Connection(mitogen.parent.Connection):
         if self.options.keepalive_enabled:
             bits += [
                 "-o",
-                f"ServerAliveInterval {self.options.keepalive_interval}",
+                "ServerAliveInterval %s" % (self.options.keepalive_interval,),
                 "-o",
-                f"ServerAliveCountMax {self.options.keepalive_count}",
+                "ServerAliveCountMax %s" % (self.options.keepalive_count,),
             ]
         if not self._requires_pty():
             bits += ["-o", "BatchMode yes"]

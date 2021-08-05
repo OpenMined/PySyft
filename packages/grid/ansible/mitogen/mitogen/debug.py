@@ -61,7 +61,7 @@ def disable_evil_interrupts():
 
 
 def _hex(n):
-    return f"{n:08x}"
+    return "%08x" % n
 
 
 def get_subclasses(klass):

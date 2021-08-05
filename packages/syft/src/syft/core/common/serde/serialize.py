@@ -45,10 +45,25 @@ def _serialize(
     :rtype: Union[str, bytes, Message]
     """
 
+    # relative
+    from ....lib.python.primitive_factory import isprimitive
+
+    # we have an unboxed primitive type so we need to mirror that on deserialize
+    if isprimitive(obj):
+        # relative
+        from ....lib.python.primitive_factory import PrimitiveFactory
+
+        obj = PrimitiveFactory.generate_primitive(value=obj, temporary_box=True)
+        if hasattr(obj, "temporary_box"):
+            # TODO: can remove this once all of PrimitiveFactory.generate_primitive
+            # supports temporary_box and is tested
+            obj.temporary_box = True  # type: ignore
+
     is_serializable: Serializable
     if not isinstance(obj, Serializable):
         if hasattr(obj, "_sy_serializable_wrapper_type"):
             is_serializable = obj._sy_serializable_wrapper_type(value=obj)  # type: ignore
+
         else:
             traceback_and_raise(
                 Exception(

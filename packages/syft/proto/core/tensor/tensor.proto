@@ -12,9 +12,15 @@ message Tensor {
   string obj_type = 2;
   optional syft.core.adp.Entity entity = 3;
   bool use_tensors = 4;
+<<<<<<< HEAD
   //  repeated syft.lib.numpy.NumpyProtoArrow arrays = 5;
   //  repeated Tensor tensors = 6;
   //  bool requires_grad = 7;
+=======
+  repeated syft.lib.numpy.NumpyProto arrays = 5;
+  repeated Tensor tensors = 6;
+  bool requires_grad = 7;
+>>>>>>> d6688c7d1a2dea7ca122cde60e0a14b3690aa678
 }
 
 // DataTensor<GenericTensor>
