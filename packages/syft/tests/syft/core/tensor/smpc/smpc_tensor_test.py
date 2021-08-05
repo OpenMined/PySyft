@@ -1,9 +1,12 @@
 # stdlib
 import operator
+
 <<<<<<< HEAD
 =======
+# stdlib
 from typing import Any
 from typing import Dict as TypeDict
+
 >>>>>>> d6688c7d1a2dea7ca122cde60e0a14b3690aa678
 
 # third party

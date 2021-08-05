@@ -5,7 +5,6 @@ import torch as th
 # syft absolute
 import syft as sy
 
-
 # MADHAVA: this needs fixing
 <<<<<<< HEAD
 @pytest.mark.skip(

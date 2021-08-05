@@ -11,6 +11,7 @@ import pytest
 from syft import deserialize
 from syft import serialize
 from syft.core.io.address import Address
+
 <<<<<<< HEAD
 =======
 
@@ -18,6 +19,16 @@ from syft.core.io.address import Address
 #     GetDatasetsResponse,
 # )
 >>>>>>> d6688c7d1a2dea7ca122cde60e0a14b3690aa678
+# syft absolute
+from syft.core.node.common.node_service.dataset_manager.(
+    dataset_manager_messages import <<<<<<<,
+)
+from syft.core.node.common.node_service.dataset_manager.(
+    dataset_manager_messages import =======,
+)
+from syft.core.node.common.node_service.dataset_manager.(
+    dataset_manager_messages import >>>>>>>,
+)
 from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
     CreateDatasetMessage,
 )
@@ -34,13 +45,16 @@ from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages
     GetDatasetsMessage,
 )
 from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
-<<<<<<< HEAD
     GetDatasetsResponse,
 )
 from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
-=======
->>>>>>> d6688c7d1a2dea7ca122cde60e0a14b3690aa678
+    HEAD,
+)
+from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
     UpdateDatasetMessage,
+)
+from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
+    d6688c7d1a2dea7ca122cde60e0a14b3690aa678,
 )
 
 metadata = {"name": "Dataset", "fields": "age, height, weight"}
