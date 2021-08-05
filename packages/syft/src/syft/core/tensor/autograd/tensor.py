@@ -18,7 +18,7 @@ import numpy as np
 
 # relative
 from .. import autograd
-from ....core.common.serde.serializable import Serializable
+from ....core.common.serde.recursive import RecursiveSerde
 from ....lib.util import full_name_with_name
 from ....proto.core.tensor.tensor_pb2 import Tensor as Tensor_PB
 from ...common.serde.deserialize import _deserialize as deserialize
@@ -34,7 +34,17 @@ from ..passthrough import is_acceptable_simple_type
 
 
 @bind_protobuf
-class AutogradTensor(PassthroughTensor, PhiTensorAncestor, Serializable):
+class AutogradTensor(PassthroughTensor, PhiTensorAncestor, RecursiveSerde):
+
+    __attr_allowlist__ = [
+        "child",
+        "_grad",
+        "_grad_fn",
+        "ops",
+        "backprop_id",
+        "n_backwards",
+    ]
+
     def __init__(
         self,
         child: Union[Type[AutogradTensor], AcceptableSimpleType],
@@ -223,37 +233,3 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor, Serializable):
                 break
 
         return found_id
-
-    def _object2proto(self) -> Tensor_PB:
-        arrays = []
-        tensors = []
-
-        if isinstance(self.child, np.ndarray):
-            use_tensors = False
-            arrays = [serialize(self.child)]
-        else:
-            use_tensors = True
-            tensors = [serialize(self.child)]
-
-        return Tensor_PB(
-            obj_type=full_name_with_name(klass=type(self)),
-            use_tensors=use_tensors,
-            arrays=arrays,
-            tensors=tensors,
-            requires_grad=self.requires_grad,
-        )
-
-    @staticmethod
-    def _proto2object(proto: Tensor_PB) -> AutogradTensor:
-        use_tensors = proto.use_tensors
-        child: List[AutogradTensor] = []
-        if use_tensors:
-            child = [deserialize(tensor) for tensor in proto.tensors]
-        else:
-            child = [deserialize(array) for array in proto.arrays]
-
-        return AutogradTensor(child[0], requires_grad=proto.requires_grad)
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return Tensor_PB
