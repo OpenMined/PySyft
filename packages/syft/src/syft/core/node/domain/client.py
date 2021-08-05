@@ -187,7 +187,7 @@ class RequestQueueClient:
 
     def _update_handler(self, request_handler: Dict[str, Any], keep: bool) -> None:
         # syft absolute
-        from syft.core.node.domain.service.request_handler_service import (
+        from syft.core.node.common.node_service.request_handler import (
             UpdateRequestHandlerMessage,
         )
 
@@ -204,7 +204,7 @@ class RequestHandlerQueueClient:
     @property
     def handlers(self) -> List[Dict]:
         # syft absolute
-        from syft.core.node.domain.service.request_handler_service import (
+        from syft.core.node.common.node_service.request_handler import (
             GetAllRequestHandlersMessage,
         )
 

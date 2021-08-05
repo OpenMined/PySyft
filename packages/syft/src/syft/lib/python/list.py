@@ -36,15 +36,13 @@ class List(UserList, PyPrimitive):
         self,
         value: Optional[Any] = None,
         id: Optional[UID] = None,
-        temp_storage_for_actual_primitive: bool = False,
+        temporary_box: bool = False,
     ):
         if value is None:
             value = []
 
         UserList.__init__(self, value)
-        PyPrimitive.__init__(
-            self, temp_storage_for_actual_primitive=temp_storage_for_actual_primitive
-        )
+        PyPrimitive.__init__(self, temporary_box=temporary_box)
 
         self._id: UID = id if id else UID()
         self._index = 0
@@ -162,7 +160,7 @@ class List(UserList, PyPrimitive):
         return List_PB(
             id=id_,
             data=data,
-            temp_storage_for_actual_primitive=self.temp_storage_for_actual_primitive,
+            temporary_box=self.temporary_box,
         )
 
     @staticmethod
@@ -175,7 +173,7 @@ class List(UserList, PyPrimitive):
             value.append(upcast(deserialize(blob=element, from_bytes=True)))
         new_list = List(
             value=value,
-            temp_storage_for_actual_primitive=proto.temp_storage_for_actual_primitive,
+            temporary_box=proto.temporary_box,
         )
         new_list._id = id_
         return new_list

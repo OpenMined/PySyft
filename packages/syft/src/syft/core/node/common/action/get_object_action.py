@@ -33,7 +33,7 @@ from .common import ImmediateActionWithReply
 @bind_protobuf
 class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
     """
-    GetObjectResponseMessages are the type of messages that are sent in reponse to a
+    GetObjectResponseMessages are the type of messages that are sent in response to a
     :class:`GetObjectAction`. They contain the object that was asked for.
 
     Attributes:
