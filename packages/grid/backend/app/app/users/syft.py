@@ -19,11 +19,11 @@ from syft.core.node.common.node_service.user_manager.user_manager_service import
 )
 
 # grid absolute
-from app.utils import send_message_with_reply
 from app.users.models import User
 from app.users.models import UserCreate
 from app.users.models import UserPrivate
 from app.users.models import UserUpdate
+from app.utils import send_message_with_reply
 
 
 def create_user(new_user: UserCreate, current_user: UserPrivate) -> str:
