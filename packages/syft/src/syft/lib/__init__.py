@@ -231,7 +231,6 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
     # numpy_ast = create_numpy_ast()
     plan_ast = create_plan_ast(client=client)
     adp_ast = create_adp_ast(client=client)
-    tensor_ast = create_tensor_ast(client=client)
     remote_dataloader_ast = create_remote_dataloader_ast(client=client)
     tensor_ast = create_tensor_ast(client=client)
 
