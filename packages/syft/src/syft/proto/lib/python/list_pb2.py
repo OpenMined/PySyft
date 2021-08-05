@@ -24,7 +24,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x1bproto/lib/python/list.proto\x12\x0fsyft.lib.python\x1a%proto/core/common/common_object.proto"b\n\x04List\x12\x0c\n\x04\x64\x61ta\x18\x01 \x03(\x0c\x12!\n\x02id\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UID\x12)\n!temp_storage_for_actual_primitive\x18\x03 \x01(\x08\x62\x06proto3',
+    serialized_pb=b'\n\x1bproto/lib/python/list.proto\x12\x0fsyft.lib.python\x1a%proto/core/common/common_object.proto"N\n\x04List\x12\x0c\n\x04\x64\x61ta\x18\x01 \x03(\x0c\x12!\n\x02id\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x15\n\rtemporary_box\x18\x03 \x01(\x08\x62\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
     ],
@@ -78,8 +78,8 @@ _LIST = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="temp_storage_for_actual_primitive",
-            full_name="syft.lib.python.List.temp_storage_for_actual_primitive",
+            name="temporary_box",
+            full_name="syft.lib.python.List.temporary_box",
             index=2,
             number=3,
             type=8,
@@ -106,7 +106,7 @@ _LIST = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=87,
-    serialized_end=185,
+    serialized_end=165,
 )
 
 _LIST.fields_by_name[
