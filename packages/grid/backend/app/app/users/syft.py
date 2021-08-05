@@ -19,7 +19,7 @@ from syft.core.node.common.node_service.user_manager.user_manager_service import
 )
 
 # grid absolute
-from app.models.messages import GridToSyftMessage
+from app.utils import send_message_with_reply
 from app.users.models import User
 from app.users.models import UserCreate
 from app.users.models import UserPrivate
@@ -27,45 +27,46 @@ from app.users.models import UserUpdate
 
 
 def create_user(new_user: UserCreate, current_user: UserPrivate) -> str:
-    message = GridToSyftMessage(
+    reply = send_message_with_reply(
         signing_key=current_user.get_signing_key(),
-        syft_message_type=CreateUserMessage,
+        message_type=CreateUserMessage,
+        **dict(new_user)
     )
-    response = message.send_with_reply(**dict(new_user))
-    return response.resp_msg
+    return reply.resp_msg
 
 
 def get_all_users(current_user: UserPrivate) -> List[User]:
-    message = GridToSyftMessage(
-        signing_key=current_user.get_signing_key(),
-        syft_message_type=GetUsersMessage,
+    reply = send_message_with_reply(
+        signing_key=current_user.get_signing_key(), message_type=GetUsersMessage
     )
-    response = message.send_with_reply()
-    return [user.upcast() for user in response.content]
+    return [user.upcast() for user in reply.content]
 
 
 def get_user(user_id: int, current_user: UserPrivate) -> User:
-    message = GridToSyftMessage(
-        signing_key=current_user.get_signing_key(), syft_message_type=GetUserMessage
+    reply = send_message_with_reply(
+        signing_key=current_user.get_signing_key(),
+        message_type=GetUserMessage,
+        user_id=user_id,
     )
-    response = message.send_with_reply(user_id=user_id)
-    return response.content.upcast()
+    return reply.content.upcast()
 
 
 def update_user(
     user_id: int, current_user: UserPrivate, updated_user: UserUpdate
 ) -> str:
-    message = GridToSyftMessage(
+    reply = send_message_with_reply(
         signing_key=current_user.get_signing_key(),
-        syft_message_type=UpdateUserMessage,
+        message_type=UpdateUserMessage,
+        user_id=user_id,
+        **dict(updated_user)
     )
-    response = message.send_with_reply(user_id=user_id, **dict(updated_user))
-    return response.resp_msg
+    return reply.resp_msg
 
 
-def delete_user(user_id: int, current_user: UserPrivate) -> None:
-    message = GridToSyftMessage(
+def delete_user(user_id: int, current_user: UserPrivate) -> str:
+    reply = send_message_with_reply(
         signing_key=current_user.get_signing_key(),
-        syft_message_type=DeleteUserMessage,
+        message_type=DeleteUserMessage,
+        user_id=user_id,
     )
-    message.send_with_reply(user_id=user_id)
+    return reply.message
