@@ -71,15 +71,11 @@ class Dict(UserDict, PyPrimitive):
         # If you want to update it use the _id setter after creation.
         self._id = UID()
 
-        temp_storage_for_actual_primitive = (
-            kwargs["temp_storage_for_actual_primitive"]
-            if "temp_storage_for_actual_primitive" in kwargs
-            else False
-        )
-        if temp_storage_for_actual_primitive:
+        temporary_box = kwargs["temporary_box"] if "temporary_box" in kwargs else False
+        if temporary_box:
             PyPrimitive.__init__(
                 self,
-                temp_storage_for_actual_primitive=temp_storage_for_actual_primitive,
+                temporary_box=temporary_box,
             )
 
     @property
@@ -96,6 +92,8 @@ class Dict(UserDict, PyPrimitive):
     def upcast(self) -> TypeDict:
         # recursively upcast
         result = {k: upcast(v) for k, v in self.items()}
+        if "temporary_box" in result:
+            del result["temporary_box"]
         return result
 
     def __contains__(self, other: Any) -> SyPrimitiveRet:
@@ -220,16 +218,16 @@ class Dict(UserDict, PyPrimitive):
             for element in self.data.values()
         ]
 
-        if hasattr(self, "temp_storage_for_actual_primitive"):
-            temp_storage_for_actual_primitive = self.temp_storage_for_actual_primitive
+        if hasattr(self, "temporary_box"):
+            temporary_box = self.temporary_box
         else:
-            temp_storage_for_actual_primitive = False
+            temporary_box = False
 
         return Dict_PB(
             id=id_,
             keys=keys,
             values=values,
-            temp_storage_for_actual_primitive=temp_storage_for_actual_primitive,
+            temporary_box=temporary_box,
         )
 
     @staticmethod
@@ -246,9 +244,7 @@ class Dict(UserDict, PyPrimitive):
             for element in proto.keys
         ]
         new_dict = Dict(dict(zip(keys, values)))
-        new_dict.temp_storage_for_actual_primitive = (
-            proto.temp_storage_for_actual_primitive
-        )
+        new_dict.temporary_box = proto.temporary_box
         new_dict._id = id_
         return new_dict
 
