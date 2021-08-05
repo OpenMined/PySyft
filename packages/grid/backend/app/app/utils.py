@@ -22,7 +22,7 @@ def send_message_with_reply(
     address: Optional[Address] = None,
     reply_to: Optional[Address] = None,
     **content: Any
-):
+) -> Dict:
     client = get_client(signing_key)
 
     if address is None:
