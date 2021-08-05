@@ -226,14 +226,20 @@ def dict_allowlist(
                         list_nb.append(nbf.v4.new_markdown_cell(f"## {i}"))
                         if_class_added = True
 
+                    i_ = i.replace(".", "_")
+
                     code = (
                         f"# {i}.{t.__name__}\n"
                         f"try:\n"
-                        f"\tobj ={i}(# __init__ parameters here)\n"
+                        f"\tobj ={i}()\n"
                         f"\tret = obj.{t.__name__}()\n"
-                        f"\tprint(type(ret))\n"
+                        f"\ttype_{i_}_{t.__name__} = ret.__module__ + '.' + ret.__class__.__name__\n"
+                        f"\tprint('{i}.{t.__name__}: Done')\n"
                         f"except Exception as e:\n"
-                        f'\tprint("Please fix this return type code until there is no exception")'
+                        f"\ttype_{i_}_{t.__name__} = '_syft_missing'\n"
+                        f"\tprint('{i}.{t.__name__}: Return unavailable')\n"
+                        f'\tprint("  Please fix this return type code until there is no exception")\n'
+                        f"\tprint('  Error:', e)\n"
                     )
 
                     list_nb.append(nbf.v4.new_code_cell(code))
@@ -290,6 +296,7 @@ def main() -> None:
     methods_error_count = 0
     missing_return = 0
     list_nb: TypeList[TypeAny] = list()
+    missing_classes = list()
     for class_ in classes_set:
         (
             allowlist_i,
@@ -301,9 +308,13 @@ def main() -> None:
         allowlist = {**allowlist, **allowlist_i}  # merging dicts
 
         debug_list.extend(debug_list_i)
+
         if len(list_nb_i) > 0:
             nb = nbf.v4.new_notebook()
-            NB_TYPES_NAME = f"{package_name}_missing_return/{class_}.ipynb"
+            class_name = class_.replace(".", "_")
+            NB_TYPES_NAME = f"{package_name}_missing_return/{class_name}.ipynb"
+
+            missing_classes.append(class_name)
 
             nb["cells"] = list_nb_i
             nbf.write(nb, NB_TYPES_NAME)
@@ -313,6 +324,15 @@ def main() -> None:
         missing_return += missing_return_i
 
     # print(f"len(allowlist) = {len(allowlist)}")
+
+    if len(missing_classes) > 0:
+        # create an __init__ file :)
+
+        initial_file = f = open(f"{package_name}_missing_return/__init__.py", "w")
+
+        for a in missing_classes:
+            initial_file.write(f"from . import {a}\n")
+
     package_support = {}
 
     package_support["lib"] = package_name
