@@ -57,7 +57,7 @@ def get_land_verb() -> GrammarVerb:
     }
 
     return GrammarVerb(
-        command="launch",
+        command="land",
         full_sentence=full_sentence,
         abbreviations=abbreviations,
     )

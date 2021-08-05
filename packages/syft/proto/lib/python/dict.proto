@@ -7,4 +7,5 @@ message Dict {
   repeated bytes keys = 1;
   repeated bytes values = 2;
   syft.core.common.UID id = 3;
+  bool temporary_box = 4;
 }
