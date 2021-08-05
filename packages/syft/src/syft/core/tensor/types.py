@@ -9,4 +9,4 @@ import numpy as np
 from .passthrough import PassthroughTensor
 
 AcceptableSimpleType = Union[int, bool, float, np.ndarray]
-SupportedChainType = Union[Type[PassthroughTensor], AcceptableSimpleType]
+SupportedChainType = Union['PassthroughTensor', AcceptableSimpleType]

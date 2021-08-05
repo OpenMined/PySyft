@@ -50,7 +50,7 @@ class FixedPrecisionTensor(PassthroughTensor, Serializable):
         res.child = self.child - other.child
         return res
 
-    def _object2proto(self) -> FixedPrecisionTensor_PB:
+    def _object2proto(self) -> "FixedPrecisionTensor_PB":
         # syft absolute
         from syft.core.tensor.share_tensor import ShareTensor
         from syft.core.tensor.tensor import Tensor
