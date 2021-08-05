@@ -3,22 +3,32 @@ A nice option is to put your ``autouse`` fixtures here.
 Functions that can be imported and re-used are more suitable for the ``helpers`` file.
 """
 import os
-from pathlib import Path
-from tempfile import mkdtemp
-from typing import Generator
 
 import pytest
 
-from .helpers import rmpath
+from .test_helpers import find_package_bin, rmpath, uniqstr
 
 
 @pytest.fixture
-def tmpfolder(tmp_path: Path) -> Generator:
+def tmpfolder(tmp_path):
     old_path = os.getcwd()
-    new_path = mkdtemp(dir=str(tmp_path))
-    os.chdir(new_path)
+    new_path = tmp_path / uniqstr()
+    new_path.mkdir(parents=True, exist_ok=True)
+    os.chdir(str(new_path))
     try:
-        yield Path(new_path)
+        yield new_path
     finally:
         os.chdir(old_path)
         rmpath(new_path)
+
+
+@pytest.fixture(autouse=True)
+def cwd(tmpdir):
+    """Guarantee a blank folder as workspace"""
+    with tmpdir.as_cwd():
+        yield tmpdir
+
+
+@pytest.fixture
+def putup():
+    return find_package_bin("pyscaffold.cli", "putup")

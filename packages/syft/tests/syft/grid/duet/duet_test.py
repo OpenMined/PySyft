@@ -9,6 +9,9 @@ from typing import Tuple
 # third party
 import pytest
 
+# syft absolute
+from syft.grid.duet import test_duet_network
+
 # syft relative
 from .duet_scenarios_tests import register_duet_scenarios
 from .process_test import SyftTestProcess
@@ -18,6 +21,11 @@ set_start_method("spawn", force=True)
 
 registered_tests: List[Tuple[str, Callable, Callable]] = []
 register_duet_scenarios(registered_tests)
+
+
+@pytest.mark.fast
+def test_duet_network_availability() -> None:
+    assert test_duet_network() is True
 
 
 @pytest.mark.slow

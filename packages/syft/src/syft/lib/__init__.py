@@ -2,7 +2,6 @@
 import functools
 import importlib
 import sys
-import warnings
 from types import ModuleType
 from typing import Any
 from typing import Any as TypeAny
@@ -13,16 +12,18 @@ from typing import Optional
 from typing import Set as TypeSet
 from typing import Tuple as TypeTuple
 from typing import Union as TypeUnion
-
-import wrapt
+import warnings
 
 # third party
 from cachetools import cached
 from cachetools.keys import hashkey
 from packaging import version
+import wrapt
 
 # syft relative
-from ..ast import add_classes, add_methods, add_modules
+from ..ast import add_classes
+from ..ast import add_methods
+from ..ast import add_modules
 from ..ast.globals import Globals
 from ..core.node.abstract.node import AbstractNodeClient
 from ..generate_wrapper import GenerateWrapper
@@ -31,8 +32,11 @@ from ..lib.python import create_python_ast
 from ..lib.remote_dataloader import create_remote_dataloader_ast
 from ..lib.torch import create_torch_ast
 from ..lib.torchvision import create_torchvision_ast
-from ..logger import critical, traceback_and_raise, warning
+from ..logger import critical
+from ..logger import traceback_and_raise
+from ..logger import warning
 from .misc import create_union_ast
+from .misc.union import UnionGenerator
 from .util import generic_update_ast
 
 
@@ -265,7 +269,6 @@ lib_ast = create_lib_ast(None)
 @wrapt.when_imported("statsmodels")
 @wrapt.when_imported("sympc")
 @wrapt.when_imported("tenseal")
-@wrapt.when_imported("xgboost")
 @wrapt.when_imported("zksk")
 @wrapt.when_imported("pytorch_lightning")
 @wrapt.when_imported("transformers")
@@ -279,7 +282,38 @@ def post_import_hook_third_party(module: TypeAny) -> None:
     load(module.__name__, ignore_warning=True)
 
 
-def create_support_ast(
+def _map2syft_types(
+    methods: TypeList[TypeTuple[str, str]]
+) -> TypeList[TypeTuple[str, str]]:
+    primitive_map = {
+        "bool": "syft.lib.python.Bool",
+        "complex": "syft.lib.python.Complex",
+        "dict": "syft.lib.python.Dict",
+        "float": "syft.lib.python.Float",
+        "int": "syft.lib.python.Int",
+        # "Iterator":"syft.lib.python.Iterator",
+        "list": "syft.lib.python.List",
+        "NoneType": "syft.lib.python._SyNone",
+        "range": "syft.lib.python.Range",
+        "set": "syft.lib.python.Set",
+        "slice": "syft.lib.python.Slice",
+        "str": "syft.lib.python.String",
+        "tuple": "syft.lib.python.Tuple",
+    }
+    for i, (func, return_type) in enumerate(methods):
+        if return_type.startswith("Union"):
+            types = return_type[5:].strip("[]").split(",")
+            for i in range(len(types)):
+                if types[i] in primitive_map:
+                    types[i] = primitive_map[types[i]]
+            methods[i] = (func, UnionGenerator[tuple(types)])
+
+        elif return_type in primitive_map:
+            methods[i] = (func, primitive_map[return_type])
+    return methods
+
+
+def _create_support_ast(
     modules: TypeList[TypeTuple[str, TypeAny]],
     classes: TypeList[TypeTuple[str, str, TypeAny]],
     methods: TypeList[TypeTuple[str, str]],
@@ -301,11 +335,22 @@ def add_lib_external(
     config: TypeDict[str, TypeAny], objects: Iterable[TypeDict[str, TypeAny]]
 ) -> None:
     lib = config["lib"]
+
+    # Generate proto wrappers
+    if isinstance(objects, Iterable):
+        for serde_object in objects:
+            GenerateWrapper(**serde_object)
+    else:
+        critical("Serde objects is expected to be an Iterable.")
+
+    methods = _map2syft_types(config["methods"])
+    # create_ast and update_ast function
     create_ast = functools.partial(
-        create_support_ast, config["modules"], config["classes"], config["methods"]
+        _create_support_ast, config["modules"], config["classes"], methods
     )
     update_ast = functools.partial(generic_update_ast, lib, create_ast)
 
+    # update and add lib to lib_ast and clients
     global lib_ast
     update_ast(ast_or_client=lib_ast)
     # cache the constructor for future created clients
@@ -315,9 +360,3 @@ def add_lib_external(
     for _, client in lib_ast.registered_clients.items():
         update_ast(ast_or_client=client)
         _regenerate_unions(lib_ast=lib_ast, client=client)
-
-    if isinstance(objects, Iterable):
-        for serde_object in objects:
-            GenerateWrapper(**serde_object)
-    else:
-        critical("Serde objects is expected to be an Iterable.")
