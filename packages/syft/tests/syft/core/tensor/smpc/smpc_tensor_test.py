@@ -1,7 +1,5 @@
 # stdlib
 import operator
-
-# stdlib
 from typing import Any
 from typing import Dict as TypeDict
 
