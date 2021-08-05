@@ -36,7 +36,7 @@ syft.core.node.domain.service.request\_answer\_message module
 syft.core.node.domain.service.request\_handler\_service module
 --------------------------------------------------------------
 
-.. automodule:: syft.core.node.domain.service.request_handler_service
+.. automodule:: syft.core.node.common.node_service.request_handler
    :members:
    :undoc-members:
    :show-inheritance:
