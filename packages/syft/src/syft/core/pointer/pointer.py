@@ -443,9 +443,12 @@ class Pointer(AbstractPointer):
             if timeout_secs is None:
                 timeout_secs = 30  # default if not explicitly set
 
+            from ..node.common.node_service.request_answer.request_answer_messages import RequestAnswerMessage
+            from ..node.common.node_service.request_answer.request_answer_messages import RequestStatus
+
             # relative
-            from ..node.domain.service import RequestAnswerMessage
-            from ..node.domain.service import RequestStatus
+            # from ..node.domain.service import RequestAnswerMessage
+            # from ..node.domain.service import RequestStatus
 
             output_string = "> Waiting for Blocking Request: "
             output_string += f"  {self.id_at_location}"
