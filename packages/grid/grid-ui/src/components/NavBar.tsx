@@ -9,15 +9,15 @@ import {useMe, useRequests, useDomainStatus} from '@/lib/data'
 import {useAuth} from '@/context/auth-context'
 
 const navigation = [
-  {name: 'Datasets', href: '/datasets'},
-  {name: 'Models', href: '/models'},
-  {name: 'Requests', href: '/requests'},
-  {name: 'Tensors', href: '/tensors'},
+  {name: 'Datasets', href: '/datasets', disabled: true},
+  {name: 'Models', href: '/models', disabled: true},
+  {name: 'Requests', href: '/requests', disabled: true},
+  {name: 'Tensors', href: '/tensors', disabled: true},
   {name: 'Users', href: '/users'},
   {name: 'Roles & Permissions', href: '/permissions'},
-  {name: 'Dashboard', href: '/dashboard'},
-  {name: 'Networks', href: '#'}, //networks'},
-  {name: 'Settings', href: '/settings'}
+  {name: 'Dashboard', href: '/dashboard', disabled: true},
+  {name: 'Networks', href: '#', disabled: true}, //networks'},
+  {name: 'Settings', href: '/settings', disabled: true}
 ]
 
 const SidebarContext = createContext(null)
@@ -168,19 +168,29 @@ function Navigation() {
 
   return (
     <nav className="px-2 mt-5 space-y-1">
-      {navigation.map(item => (
-        <Link href={item.href} key={item.href}>
-          <a
+      {navigation.map(item =>
+        item.disabled ? (
+          <span
             className={cn(
-              item.href === current
-                ? 'bg-cyan-500 text-white'
-                : 'text-gray-800 hover:text-white hover:bg-sky-600 hover:bg-opacity-75 active:bg-opacity-100',
-              'group flex items-center px-2 py-2 text-sm font-regular rounded-sm'
+              'text-gray-400 cursor-default',
+              'flex items-center px-2 py-2 text-sm font-regular rounded-sm'
             )}>
-            {item.name} {item.href === '/requests' && totalRequests > 0 && `(${totalRequests})`}
-          </a>
-        </Link>
-      ))}
+            {item.name}
+          </span>
+        ) : (
+          <Link href={item.href} key={item.href}>
+            <a
+              className={cn(
+                item.href === current
+                  ? 'bg-cyan-500 text-white'
+                  : 'text-gray-800 hover:text-white hover:bg-sky-600 hover:bg-opacity-75 active:bg-opacity-100',
+                'group flex items-center px-2 py-2 text-sm font-regular rounded-sm'
+              )}>
+              {item.name} {item.href === '/requests' && totalRequests > 0 && `(${totalRequests})`}
+            </a>
+          </Link>
+        )
+      )}
     </nav>
   )
 }
