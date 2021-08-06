@@ -1,7 +1,11 @@
+# future
+from __future__ import annotations
+
 # stdlib
 from collections import OrderedDict
 from typing import Any
-from typing import Dict
+from typing import Dict as TypeDict
+from typing import Optional
 
 # third party
 import numpy as np
@@ -12,9 +16,29 @@ from sqlalchemy import String
 
 # relative
 from . import Base
+from .....lib.python.primitive_factory import PyPrimitive
+from .....lib.python.string import String as SyftString
 from ....common.serde.recursive import RecursiveSerde
 from ....common.uid import UID
-from ...lib.biblib.bib import Parser
+from ...lib.biblib.bib import Entry  # type: ignore
+from ...lib.biblib.bib import Parser  # type: ignore
+
+
+class Bibtex:
+    def __init__(self, out: str) -> None:
+        self.out = out
+
+    def __str__(self) -> str:
+        return self.out
+
+    def _repr_html_(self) -> str:
+        print(self.out)
+        return f"<b>{self.out}</b>"
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, Bibtex):
+            return self.out == other.out
+        return self == other
 
 
 class DatasetDBObject(Base):
@@ -51,6 +75,7 @@ class DatasetDBObject(Base):
 
 class Dataset(RecursiveSerde):
 
+    json_representable = (str, int, bool, float)
     __attr_allowlist__ = [
         "id",
         "private_assets",
@@ -62,30 +87,72 @@ class Dataset(RecursiveSerde):
     ]
 
     def __init__(
-        self, private_assets, name, description, bibtex: str, id=None, **public_metadata
-    ):
-
-        # Base.__init__(self)
-
+        self,
+        *,
+        private_assets: TypeDict[str, Any],
+        name: str,
+        description: str,
+        bibtex: str,
+        id: Optional[UID] = None,
+        **public_metadata: TypeDict[str, Any],
+    ) -> None:
         if id is None:
             id = UID()
         self.id = id
 
         # this information is PRIVATE and MANDATORY (but can be empty dict)
-        self.private_assets: Dict[str, Any] = private_assets
+        self.private_assets: TypeDict[str, Any] = private_assets
 
         # this information is PUBLIC and MANDATORY
         self.name = name
         self.description = description
 
         self.citations = Parser().parse(str_or_fp_or_iter=bibtex).get_entries()
-
         self.metadata_names = ["name", "description"] + list(public_metadata.keys())
 
         for k, v in public_metadata.items():
             setattr(self, k, v)
 
-    def to_db_object(self):
+    def __eq__(self, other: Any) -> bool:
+        # values like Tensor or nd.array == return a Self not a bool
+        def comp_dict(left: TypeDict, right: TypeDict) -> bool:
+            # keys dont match so not equal
+            if len(left.keys()) != len(right.keys()):
+                return False
+            for k in left.keys():
+                # key is missing so not equal
+                if k not in right.keys():
+                    return False
+                l_value = left[k]
+                r_value = right[k]
+                res = l_value == r_value
+                # result is not a bool so it might be a Tensor or np.ndarray
+                if not isinstance(res, bool):
+                    if hasattr(res, "all"):
+                        # check if all the values are True
+                        res = res.all()
+                    else:
+                        # unknown type so cant compare
+                        raise Exception(f"Unable to compare {k} result of == is: {res}")
+                if res is False:
+                    return res
+            return True
+
+        if isinstance(other, Dataset):
+            return (
+                self.id == other.id
+                and comp_dict(self.private_assets, other.private_assets)
+                and self.name == other.name
+                and self.description == other.description
+                and self.citations == other.citations
+                and self.bibtex == other.bibtex
+                and comp_dict(self._public_json_metadata, other._public_json_metadata)
+                and comp_dict(self._public_blob_metadata, other._public_blob_metadata)
+            )
+
+        return self == other
+
+    def to_db_object(self) -> DatasetDBObject:
         return DatasetDBObject(
             id=self.id,
             private_assets=self.private_assets,
@@ -98,7 +165,7 @@ class Dataset(RecursiveSerde):
         )
 
     @staticmethod
-    def from_db_object(dataset_db_obj: DatasetDBObject) -> "Dataset":
+    def from_db_object(dataset_db_obj: DatasetDBObject) -> Dataset:
 
         private_assets = dataset_db_obj.private_assets
         name = dataset_db_obj.name
@@ -109,27 +176,37 @@ class Dataset(RecursiveSerde):
         public_metadata = {}
         public_metadata.update(dataset_db_obj.public_json_metadata)
         public_metadata.update(dataset_db_obj.public_blob_metadata)
+        public_metadata.pop("name")
+        public_metadata.pop("description")
+
+        return Dataset(
+            private_assets=private_assets,
+            name=name,
+            description=description,
+            bibtex=str(bibtex),
+            id=id,
+            **public_metadata,
+        )
 
     @property
-    def citations_dict(self):
-        """I was lazy and didn't want to build a custom serializer, so I created this property and
-        the setter below so that I could just use RecursiveSerde."""
+    def citations_dict(self) -> TypeDict:
+        """I was lazy and didn't want to build a custom serializer, so I created this
+        property and the setter below so that I could just use RecursiveSerde."""
         out_dict = {}
 
         for k, v in dict(self.citations).items():
-            # syft absolute
-            from syft.lib.python.string import String as SyftString
-
+            if isinstance(k, PyPrimitive):
+                k = k.upcast()
             out_dict[k] = SyftString(v.to_bib())
         return out_dict
 
     @citations_dict.setter
-    def citations_dict(self, new_dict):
-        """I was lazy and didn't want to build a custom serializer, so I created this setter and
-        the property above so that I could just use RecursiveSerde."""
+    def citations_dict(self, new_dict: TypeDict) -> None:
+        """I was lazy and didn't want to build a custom serializer, so I created this
+        setter and the property above so that I could just use RecursiveSerde."""
         new_citations = {}
         for k, v in new_dict.items():
-            if not isinstance(v, str):
+            if isinstance(v, PyPrimitive):
                 v = v.upcast()
             new_citations[k] = list(
                 Parser().parse(str_or_fp_or_iter=v).get_entries().values()
@@ -137,26 +214,37 @@ class Dataset(RecursiveSerde):
         self.citations = OrderedDict(new_citations)
 
     @property
-    def _public_json_metadata(self):
+    def _public_json_metadata(self) -> TypeDict:
         out = {}
         for key in self.metadata_names:
+            if isinstance(key, PyPrimitive):
+                key = key.upcast()
+
             val = getattr(self, key)
-            if isinstance(val, (str, int, bool, float)):
+            if isinstance(val, PyPrimitive):
+                val = val.upcast()
+
+            if isinstance(val, Dataset.json_representable):
                 out[key] = val
         return out
 
     @property
-    def _public_blob_metadata(self):
-
+    def _public_blob_metadata(self) -> TypeDict:
         out = {}
         for key in self.metadata_names:
+            if isinstance(key, PyPrimitive):
+                key = key.upcast()
+
             val = getattr(self, key)
-            if not isinstance(val, str):
+            if isinstance(val, PyPrimitive):
+                val = val.upcast()
+
+            if not isinstance(val, Dataset.json_representable):
                 out[key] = val
         return out
 
     @property
-    def public_metadata(self):
+    def public_metadata(self) -> TypeDict:
         """I was lazy and didn't want to build a custom serializer, so I created this property and
         the setter below so that I could just use RecursiveSerde"""
         out = {}
@@ -166,14 +254,17 @@ class Dataset(RecursiveSerde):
         return out
 
     @public_metadata.setter
-    def public_metadata(self, new_val):
+    def public_metadata(self, new_val: TypeDict) -> None:
         """I was lazy and didn't want to build a custom serializer, so I created this setter and
         the property above so that I could just use RecursiveSerde."""
+        if not hasattr(self, "metadata_names"):
+            self.metadata_names = ["name", "description"]
+        self.metadata_names += list(str(key) for key in new_val.keys())
         for key, val in new_val.items():
             setattr(self, key, val)
 
     @property
-    def pandas(self):
+    def pandas(self) -> pd.DataFrame:
         data = np.array(
             [str(self.private_assets.keys())] + list(self.public_metadata.values()),
             dtype=object,
@@ -186,7 +277,7 @@ class Dataset(RecursiveSerde):
         )
         return pd.DataFrame(data, columns=columns)
 
-    def entry2citation_string(self, entity):
+    def entry2citation_string(self, entity: Entry) -> str:
 
         pd.set_option("display.max_colwidth", 1000)
         out = ""
@@ -221,7 +312,7 @@ class Dataset(RecursiveSerde):
 
         return out
 
-    def citations2table(self, citations):
+    def citations2table(self, citations: TypeDict) -> pd.DataFrame:
         outs = list()
         for key in citations.keys():
             outs.append(self.entry2citation_string(citations[key]))
@@ -238,27 +329,19 @@ class Dataset(RecursiveSerde):
         return df
 
     @property
-    def refs(self):
+    def refs(self) -> pd.DataFrame:
         return self.citations2table(self.citations)
 
     @property
-    def bibtex(self):
+    def bibtex(self) -> Bibtex:
 
         out = ""
         for cite in self.citations.values():
             out += cite.to_bib() + "\n\n"
 
-        class Bibtex:
-            def __str__(self):
-                return out
+        return Bibtex(out=out)
 
-            def _repr_html_(self):
-                print(out)
-                return
-
-        return Bibtex()
-
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         out = "<h3>Dataset: " + self.name + "</h3>"
         out += self.description[0:1000] + "<br /><br /><br />"
 
@@ -268,11 +351,11 @@ class Dataset(RecursiveSerde):
             out += "<br />"
             out += self.refs._repr_html_()
 
-        if hasattr(self, "sample") and isinstance(self.sample, pd.DataFrame):
+        if hasattr(self, "sample") and isinstance(self.sample, pd.DataFrame):  # type: ignore
             out += "<br /><hr /><center><h4>Sample Data</h4></center><hr />"
-            out += self.sample[0:3]._repr_html_()
+            out += self.sample[0:3]._repr_html_()  # type: ignore
 
-        if not isinstance(out, str):
+        if isinstance(out, PyPrimitive):
             out = out.upcast()
 
         return out

@@ -30,7 +30,6 @@ class RequestAPI:
         response_key: str = "",
     ):
         self.__create_message = create_msg
-        self._create_message = self.__create_message
         self.__get_message = get_msg
         self.__get_all_message = get_all_msg
         self.__update_message = update_msg

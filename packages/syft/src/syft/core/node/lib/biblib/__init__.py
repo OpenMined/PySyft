@@ -1,1 +1,1 @@
-__all__ = 'bib algo messages'.split()
+__all__ = "bib algo messages".split()

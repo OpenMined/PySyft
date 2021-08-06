@@ -12,19 +12,7 @@ from pandas import DataFrame
 from syft import deserialize
 from syft.core.node.abstract.node import AbstractNodeClient
 from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
-    CreateDatasetMessage,
-)
-from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
-    DeleteDatasetMessage,
-)
-from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
-    GetDatasetMessage,
-)
-from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
-    GetDatasetsMessage,
-)
-from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
-    UpdateDatasetMessage,
+    DatasetCreateMessage,
 )
 
 # relative
@@ -37,11 +25,11 @@ class DatasetRequestAPI(RequestAPI):
     def __init__(self, client: AbstractNodeClient):
         super().__init__(
             client=client,
-            create_msg=CreateDatasetMessage,
-            get_msg=GetDatasetMessage,
-            get_all_msg=GetDatasetsMessage,
-            update_msg=UpdateDatasetMessage,
-            delete_msg=DeleteDatasetMessage,
+            create_msg=DatasetCreateMessage,
+            get_msg=None,
+            get_all_msg=None,
+            update_msg=None,
+            delete_msg=None,
             response_key=ResponseObjectEnum.DATASET,
         )
 

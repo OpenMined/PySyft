@@ -317,6 +317,7 @@ left_name = [
 ]
 
 right_name = [
+    "abadi",
     "altman",
     "bach",
     "bengio",

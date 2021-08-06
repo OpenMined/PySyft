@@ -36,7 +36,7 @@ class UserRequestAPI(RequestAPI):
     def create(self, **kwargs: Any) -> None:
         try:
             response = self.perform_api_request(
-                syft_msg=self._create_message, content=kwargs
+                syft_msg=self.__create_message, content=kwargs
             )
             logger.info(response.resp_msg)
         except Exception as e:
