@@ -110,6 +110,9 @@ class RequestQueueClient:
     def __repr__(self) -> str:
         return repr(self.requests)
 
+    def _repr_html_(self) -> str:
+        return self.pandas._repr_html_()
+
     @property
     def pandas(self) -> pd.DataFrame:
         request_lines = [
