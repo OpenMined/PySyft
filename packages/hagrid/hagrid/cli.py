@@ -284,8 +284,8 @@ def create_launch_cmd(
     auth: Optional[AuthCredentials] = None
 
     tail = True
-    if "tail" in kwargs and not str_to_bool(kwargs["tail"]):
-        tail = False
+    if "tail" in kwargs:
+        tail = str_to_bool(kwargs["tail"])
 
     if host in ["docker"]:
 
@@ -515,7 +515,7 @@ def create_launch_cmd(
 
 
 def create_launch_docker_cmd(
-    verb: GrammarVerb, docker_version: str, tail: bool = True
+    verb: GrammarVerb, docker_version: str, tail: bool = False
 ) -> str:
     host_term = verb.get_named_term_hostgrammar(name="host")
     node_name = verb.get_named_term_type(name="node_name")
@@ -551,8 +551,8 @@ def create_launch_docker_cmd(
     cmd += " docker compose -p " + snake_name
     cmd += " up"
 
-    if not tail:
-        cmd += " -d"
+    # if not tail:
+    #     cmd += " -d"
 
     cmd += " --build"  # force rebuild
     cmd = "cd " + GRID_SRC_PATH + ";" + cmd
