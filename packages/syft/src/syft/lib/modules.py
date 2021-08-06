@@ -1,49 +1,52 @@
-# # stdlib
-# # import sklearn
-# # stdlib
-# import functools
+# import syft as sy
+import sys
+import importlib
+import ast
+import wrapt
 
-# # import syft
-# import importlib
-# import sys
-# from typing import Any as TypeAny
-# from typing import Callable
-# from typing import Dict as TypeDict
-# from typing import Iterable
-# from typing import List as TypeList
-# from typing import Optional
-# from typing import Tuple as TypeTuple
-# from typing import Union as TypeUnion
+# hook_loaded = set()
+# sys.modules["xgboost"]
+modules_imported = set()
+old_import = __import__
 
-# # third party
-# from lib import create_lib_ast
-# from lib import load
+id(__builtins__.__import__)
 
-# # import sklearn
-# import wrapt
+queue=[]
 
-# # syft relative
-# from ..ast import add_classes
-# from ..ast import add_methods
-# from ..ast import add_modules
-# from ..ast.globals import Globals
-# from .util import generic_update_ast
-
-# lib_ast = create_lib_ast(None)
-# bind_lib = ""
+def my_import(module, *args, **kwargs):
+    if module not in modules_imported and not module.startswith("syft") and not module.startswith("_") and "." not in module:
+    # if not module.startswith("syft") and "." not in module:
+        queue.append(f"syft_{module}")
+        modules_imported.add(module)
+    return old_import(module, *args, **kwargs)
 
 
-# def register_library(lib: str, update_ast: Callable, objects):
-#     load(lib, ignore_warning=True)
-#     if "__SYFT_PACKAGE_SUPPORT" not in sys.modules:
-#         sys.modules["__SYFT_PACKAGE_SUPPORT"] = []
-#     sys.modules["__SYFT_PACKAGE_SUPPORT"].append(lib)
-#     bind_library(lib)
+@wrapt.when_imported("xgboost")
+def post_import_hook(module):
+    print("hook called")
+    print(queue)
+    while queue:
+        syft_module=queue[0]
+        try:
+            importlib.import_module(syft_module)
+            globals()[syft_module]=sys.modules[syft_module]
+        except Exception as e:
+            print(f"Failed to load {syft_module}\n {e}")
+        queue.pop(0)
 
+__builtins__.__import__ = my_import
 
-# def bind_library(lib: str):
-#     global bind_lib
-#     bind_lib = f"sy.{lib}"
-#     package = "syft.lib"
-#     module_path = f"{package}.{lib}"
-#     globals()[bind_lib] = sys.modules[module_path]
+id(__builtins__.__import__)
+
+# def my_import(module, *args, **kwargs):
+#     modules_imported.add(module)
+#     #     print(module, 'loaded successfully')
+#     if module == "xgboost":
+#         return old_import(module, *args, **kwargs)
+#     return old_import(module, *args, **kwargs)
+
+import xgboost
+
+print(xgboost)
+print(syft_xgboost)
+print(sys.path)
