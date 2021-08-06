@@ -7,16 +7,9 @@ Running script
 import argparse
 import json
 
-parser = argparse.ArgumentParser()
-parser.add_argument(
-    "-l", dest="lib", required=True, help="name of the model to be added to ast"
-)
-args = parser.parse_args()
 
+def update_json(package_name: str) -> None:
 
-def main() -> None:
-
-    package_name = args.lib
     PKG_SUPPORT_NAME = f"{package_name}.pkg_support.json"
     i = f"{package_name}_missing_return"
     print(i)
@@ -62,4 +55,11 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-l", dest="lib", required=True, help="name of the model to be added to ast"
+    )
+    args = parser.parse_args()
+
+    package_name = args.lib
+    update_json(package_name)

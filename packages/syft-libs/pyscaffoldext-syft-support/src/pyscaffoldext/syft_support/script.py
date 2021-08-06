@@ -23,15 +23,6 @@ from typing import List as TypeList
 
 import nbformat as nbf
 
-parser = argparse.ArgumentParser()
-parser.add_argument(
-    "-l", dest="lib", required=True, help="name of the model to be added to ast"
-)
-parser.add_argument(
-    "-d", dest="debug", type=int, help="Set it to one to get debug files", default=0
-)
-args = parser.parse_args()
-
 # package_name = 'xgboost'
 
 
@@ -247,7 +238,7 @@ def dict_allowlist(
     return allowlist, debug_list, methods_error_count, missing_return, list_nb
 
 
-def main() -> None:
+def generate_package_support(DEBUG: bool, package_name: str) -> None:
 
     DEBUG = args.debug
     package_name = args.lib
@@ -333,7 +324,7 @@ def main() -> None:
         for a in missing_classes:
             initial_file.write(f"from . import {a}\n")
 
-    package_support = {}
+    package_support: TypeDict[str, TypeAny] = dict()
 
     package_support["lib"] = package_name
     # petlib doesnot have version
@@ -364,4 +355,17 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-l", dest="lib", required=True, help="name of the model to be added to ast"
+    )
+    parser.add_argument(
+        "-d", dest="debug", type=int, help="Set it to one to get debug files", default=0
+    )
+    args = parser.parse_args()
+
+    DEBUG = args.debug
+    package_name = args.lib
+
+    generate_package_support(DEBUG, package_name)
