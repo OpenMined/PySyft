@@ -101,9 +101,11 @@ class RequestAPI:
             content = {}
         content[RequestAPIFields.ADDRESS] = self.client.address
         content[RequestAPIFields.REPLY_TO] = self.client.address
+
         signed_msg = syft_msg_constructor(**content).sign(
             signing_key=self.client.signing_key
         )  # type: ignore
+
         response = self.client.send_immediate_msg_with_reply(msg=signed_msg)
         if isinstance(response, ExceptionMessage):
             raise response.exception_type

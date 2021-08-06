@@ -8,7 +8,7 @@ from nacl.signing import VerifyKey
 
 # relative
 from ......core.node.abstract.node import AbstractNode
-from ......core.node.common.action.common import ImmediateActionWithoutReply
+from ......core.node.common.action.common import ImmediateSyftMessageWithoutReply
 from ......core.node.common.node_service.node_service import (
     ImmediateNodeServiceWithReply,
 )
@@ -33,5 +33,5 @@ class DatasetManagerService(ImmediateNodeServiceWithReply):
         return msg.process(node=node, verify_key=verify_key)
 
     @staticmethod
-    def message_handler_types() -> List[Type[ImmediateActionWithoutReply]]:
+    def message_handler_types() -> List[Type[ImmediateSyftMessageWithoutReply]]:
         return [DatasetCreateMessage]

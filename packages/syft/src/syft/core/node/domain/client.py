@@ -2,7 +2,6 @@
 import logging
 import time
 from typing import Any
-from typing import Dict
 from typing import Dict as TypeDict
 from typing import List
 from typing import Optional
@@ -31,6 +30,7 @@ from ...common.uid import UID
 from ...io.address import Address
 from ...io.location import Location
 from ...io.route import Route
+from ...node.common.node_table.dataset import Dataset
 from ..common.client import Client
 from ..common.client_manager.association_api import AssociationRequestAPI
 from ..common.client_manager.dataset_api import DatasetRequestAPI
@@ -164,8 +164,8 @@ class RequestQueueClient:
         timeout_secs: int = -1,
         element_quota: Optional[int] = None,
         id: Optional[UID] = None,
-    ) -> Dict[str, Any]:
-        handler_opts: Dict[str, Any] = {}
+    ) -> TypeDict[str, Any]:
+        handler_opts: TypeDict[str, Any] = {}
         if action not in ["accept", "deny"]:
             traceback_and_raise(Exception("Action must be 'accept' or 'deny'"))
         handler_opts["action"] = action
@@ -186,7 +186,7 @@ class RequestQueueClient:
 
         return handler_opts
 
-    def _update_handler(self, request_handler: Dict[str, Any], keep: bool) -> None:
+    def _update_handler(self, request_handler: TypeDict[str, Any], keep: bool) -> None:
         # syft absolute
         from syft.core.node.common.node_service.request_handler import (
             UpdateRequestHandlerMessage,
@@ -203,7 +203,7 @@ class RequestHandlerQueueClient:
         self.client = client
 
     @property
-    def handlers(self) -> List[Dict]:
+    def handlers(self) -> List[TypeDict]:
         # syft absolute
         from syft.core.node.common.node_service.request_handler import (
             GetAllRequestHandlersMessage,
@@ -216,7 +216,7 @@ class RequestHandlerQueueClient:
             self.client.send_immediate_msg_with_reply(msg=msg), "handlers"
         )
 
-    def __getitem__(self, key: Union[str, int]) -> Dict:
+    def __getitem__(self, key: Union[str, int]) -> TypeDict:
         """
         allow three ways to get an request handler:
             1. use id: str
@@ -225,7 +225,7 @@ class RequestHandlerQueueClient:
         """
         if isinstance(key, str):
             matches = 0
-            match_handler: Optional[Dict] = None
+            match_handler: Optional[TypeDict] = None
             for handler in self.handlers:
                 if key in str(handler["id"].value).replace("-", ""):
                     return handler
@@ -248,7 +248,7 @@ class RequestHandlerQueueClient:
 
     @property
     def pandas(self) -> pd.DataFrame:
-        def _get_time_remaining(handler: dict) -> int:
+        def _get_time_remaining(handler: TypeDict) -> int:
             timeout_secs = handler.get("timeout_secs", -1)
             if timeout_secs == -1:
                 return -1
@@ -349,7 +349,7 @@ class DomainClient(Client):
         self.association.create(source=self, target=target, metadata=metadata)
 
     def _perform_grid_request(
-        self, grid_msg: Any, content: Optional[Dict[Any, Any]] = None
+        self, grid_msg: Any, content: Optional[TypeDict[Any, Any]] = None
     ) -> SyftMessage:
         if content is None:
             content = {}
@@ -428,7 +428,7 @@ class DomainClient(Client):
         no_dash = str(self.id).replace("-", "")
         return f"<{type(self).__name__}: {no_dash}>"
 
-    def update_vars(self, state: dict) -> pd.DataFrame:
+    def update_vars(self, state: TypeDict) -> pd.DataFrame:
         for ptr in self.store.store:
             tags = getattr(ptr, "tags", None)
             if tags is not None:
@@ -436,28 +436,24 @@ class DomainClient(Client):
                     state[tag] = ptr
         return self.store.pandas
 
-    def load_dataset(
-        self,
-        assets: Any,
-        name: str,
-        description: str,
-        **metadata: TypeDict,
-    ) -> None:
+    def load_dataset(self, dataset: Dataset) -> None:
         # relative
-        from ....lib.python.util import downcast
+        # from ....lib.python.util import downcast
 
-        metadata["name"] = bytes(name, "utf-8")  # type: ignore
-        metadata["description"] = bytes(description, "utf-8")  # type: ignore
+        # metadata["name"] = bytes(name, "utf-8")  # type: ignore
+        # metadata["description"] = bytes(description, "utf-8")  # type: ignore
 
-        for k, v in metadata.items():
-            if isinstance(v, str):  # type: ignore
-                metadata[k] = bytes(v, "utf-8")  # type: ignore
+        # for k, v in metadata.items():
+        #     if isinstance(v, str):  # type: ignore
+        #         metadata[k] = bytes(v, "utf-8")  # type: ignore
 
-        assets = downcast(assets)
-        metadata = downcast(metadata)
+        # assets = downcast(assets)
+        # metadata = downcast(metadata)
 
-        binary_dataset = serialize(assets, to_bytes=True)
+        # binary_dataset = serialize(assets, to_bytes=True)
+
+        # dataset: Dataset, address: Address, msg_id
 
         self.datasets.create_syft(
-            dataset=binary_dataset, metadata=metadata, platform="syft"
+            dataset=dataset, address=self.address.target_id.id, reply_to=self.id
         )

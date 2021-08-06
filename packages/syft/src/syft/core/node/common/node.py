@@ -54,6 +54,9 @@ from ..common.node_service.auth import AuthorizationException
 from ..common.node_service.child_node_lifecycle.child_node_lifecycle_service import (
     ChildNodeLifecycleService,
 )
+from ..common.node_service.dataset_manager.dataset_manager_service import (
+    DatasetManagerService,
+)
 from ..common.node_service.get_repr.get_repr_service import GetReprService
 from ..common.node_service.heritage_update.heritage_update_service import (
     HeritageUpdateService,
@@ -243,6 +246,7 @@ class Node(AbstractNode):
         self.immediate_services_without_reply.append(
             ImmediateObjectSearchPermissionUpdateService
         )
+        self.immediate_services_without_reply.append(DatasetManagerService)
 
         self.immediate_services_without_reply.append(SMPCExecutorService)
 

@@ -92,7 +92,7 @@ class Dataset(RecursiveSerde):
         private_assets: TypeDict[str, Any],
         name: str,
         description: str,
-        bibtex: str,
+        bibtex: Optional[str] = None,
         id: Optional[UID] = None,
         **public_metadata: TypeDict[str, Any],
     ) -> None:
@@ -107,7 +107,9 @@ class Dataset(RecursiveSerde):
         self.name = name
         self.description = description
 
-        self.citations = Parser().parse(str_or_fp_or_iter=bibtex).get_entries()
+        self.citations = {}
+        if bibtex:
+            self.citations = Parser().parse(str_or_fp_or_iter=bibtex).get_entries()
         self.metadata_names = ["name", "description"] + list(public_metadata.keys())
 
         for k, v in public_metadata.items():
@@ -198,6 +200,7 @@ class Dataset(RecursiveSerde):
             if isinstance(k, PyPrimitive):
                 k = k.upcast()
             out_dict[k] = SyftString(v.to_bib())
+
         return out_dict
 
     @citations_dict.setter
@@ -211,6 +214,7 @@ class Dataset(RecursiveSerde):
             new_citations[k] = list(
                 Parser().parse(str_or_fp_or_iter=v).get_entries().values()
             )[0]
+
         self.citations = OrderedDict(new_citations)
 
     @property
@@ -226,6 +230,7 @@ class Dataset(RecursiveSerde):
 
             if isinstance(val, Dataset.json_representable):
                 out[key] = val
+
         return out
 
     @property

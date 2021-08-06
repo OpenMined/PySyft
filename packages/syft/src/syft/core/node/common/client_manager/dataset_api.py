@@ -35,7 +35,6 @@ class DatasetRequestAPI(RequestAPI):
 
     def create_syft(self, **kwargs: Any) -> None:
         # @trask - this is a very uninformative method name,
-
         super().create(**kwargs)
 
     def create_grid_ui(self, path: str, **kwargs) -> Dict[str, str]:  # type: ignore

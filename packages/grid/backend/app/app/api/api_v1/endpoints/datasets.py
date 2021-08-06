@@ -13,31 +13,24 @@ from fastapi import File
 from fastapi import Form
 from fastapi import UploadFile
 from fastapi.responses import JSONResponse
-from nacl.encoding import HexEncoder
-from nacl.signing import SigningKey
 
 # syft absolute
+# from nacl.encoding import HexEncoder
+# from nacl.signing import SigningKey
 from syft.core.node.common.action.exception_action import ExceptionMessage
-from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
-    CreateDatasetMessage,
-)
-from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
-    DeleteDatasetMessage,
-)
-from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
-    GetDatasetMessage,
-)
-from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
-    GetDatasetsMessage,
-)
-from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
-    UpdateDatasetMessage,
-)
-from syft.lib.python import Dict as SyftDict
 
 # grid absolute
 from app.api import deps
 from app.core.node import node
+
+# from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
+#     CreateDatasetMessage,
+#     DeleteDatasetMessage,
+#     GetDatasetMessage,
+#     GetDatasetsMessage,
+#     UpdateDatasetMessage,
+# )
+
 
 router = APIRouter()
 
@@ -58,15 +51,17 @@ def upload_dataset_route(
         resp: JSON structure containing a log message.
     """
     # Map User Key
-    user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
+    # user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
     metadata = json.loads(metadata)
 
-    msg = CreateDatasetMessage(
-        address=node.address,
-        dataset=file.file.read(),
-        metadata=SyftDict(metadata),
-        reply_to=node.address,
-    ).sign(signing_key=user_key)
+    # msg = CreateDatasetMessage(
+    #     address=node.address,
+    #     dataset=file.file.read(),
+    #     metadata=SyftDict(metadata),
+    #     reply_to=node.address,
+    # ).sign(signing_key=user_key)
+
+    msg = None
 
     # Process syft message
     reply = node.recv_immediate_msg_with_reply(msg=msg).message
@@ -92,12 +87,14 @@ def get_all_dataset_metadata_route(
         resp: JSON structure containing registered datasets.
     """
     # Map User Key
-    user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
+    # user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
 
     # Build Syft Message
-    msg = GetDatasetsMessage(address=node.address, reply_to=node.address).sign(
-        signing_key=user_key
-    )
+    # msg = GetDatasetsMessage(address=node.address, reply_to=node.address).sign(
+    #     signing_key=user_key
+    # )
+
+    msg = None
 
     # Process syft message
     reply = node.recv_immediate_msg_with_reply(msg=msg).message
@@ -124,12 +121,14 @@ def get_specific_dataset_metadata_route(
     """
 
     # Map User Key
-    user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
+    # user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
 
     # Build Syft Message
-    msg = GetDatasetMessage(
-        address=node.address, dataset_id=dataset_id, reply_to=node.address
-    ).sign(signing_key=user_key)
+    # msg = GetDatasetMessage(
+    #     address=node.address, dataset_id=dataset_id, reply_to=node.address
+    # ).sign(signing_key=user_key)
+
+    msg = None
 
     # Process syft message
     reply = node.recv_immediate_msg_with_reply(msg=msg).message
@@ -150,21 +149,23 @@ def update_dataset_metadata_route(
     tags: list = Body(default=None, example=["#dataset-sample", "#labels"]),
 ) -> Dict[str, str]:
     # Map User Key
-    user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
+    # user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
 
-    metadata = {
-        "manifest": manifest,
-        "description": description,
-        "tags": tags,
-    }
+    # metadata = {
+    #     "manifest": manifest,
+    #     "description": description,
+    #     "tags": tags,
+    # }
 
     # Build Syft Message
-    msg = UpdateDatasetMessage(
-        address=node.address,
-        dataset_id=dataset_id,
-        metadata=metadata,
-        reply_to=node.address,
-    ).sign(signing_key=user_key)
+    # msg = UpdateDatasetMessage(
+    #     address=node.address,
+    #     dataset_id=dataset_id,
+    #     metadata=metadata,
+    #     reply_to=node.address,
+    # ).sign(signing_key=user_key)
+
+    msg = None
 
     # Process syft message
     reply = node.recv_immediate_msg_with_reply(msg=msg).message
@@ -190,12 +191,14 @@ def delete_dataset_route(
         resp: JSON structure containing a log message
     """
     # Map User Key
-    user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
+    # user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
 
     # Build Syft Message
-    msg = DeleteDatasetMessage(
-        address=node.address, dataset_id=dataset_id, reply_to=node.address
-    ).sign(signing_key=user_key)
+    # msg = DeleteDatasetMessage(
+    #     address=node.address, dataset_id=dataset_id, reply_to=node.address
+    # ).sign(signing_key=user_key)
+
+    msg = None
 
     # Process syft message
     reply = node.recv_immediate_msg_with_reply(msg=msg).message
