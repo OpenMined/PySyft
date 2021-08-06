@@ -238,7 +238,7 @@ def dict_allowlist(
     return allowlist, debug_list, methods_error_count, missing_return, list_nb
 
 
-def generate_package_support(DEBUG: bool, package_name: str) -> None:
+def generate_package_support(package_name: str, DEBUG: bool = False) -> None:
 
     DEBUG = args.debug
     package_name = args.lib
@@ -368,4 +368,4 @@ if __name__ == "__main__":
     DEBUG = args.debug
     package_name = args.lib
 
-    generate_package_support(DEBUG, package_name)
+    generate_package_support(package_name, DEBUG)
