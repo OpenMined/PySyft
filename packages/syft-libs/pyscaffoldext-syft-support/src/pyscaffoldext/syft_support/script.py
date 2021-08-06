@@ -238,10 +238,10 @@ def dict_allowlist(
     return allowlist, debug_list, methods_error_count, missing_return, list_nb
 
 
-def generate_package_support(package_name: str, DEBUG: bool = False) -> None:
+def generate_package_support(package_name: str, DEBUG: bool = False) -> str:
 
-    DEBUG = args.debug
-    package_name = args.lib
+    # DEBUG = args.debug
+    # package_name = args.lib
 
     DEBUG_FILE_NAME = f"{package_name}.debug.log"
     PKG_SUPPORT_NAME = f"{package_name}.pkg_support.json"
@@ -352,6 +352,8 @@ def generate_package_support(package_name: str, DEBUG: bool = False) -> None:
     print(f"\tReturn type absent: {missing_return}")
     print(f"\tNot added:{methods_error_count}")
     print("-----------------")
+
+    return json.dumps(package_support)
 
 
 if __name__ == "__main__":
