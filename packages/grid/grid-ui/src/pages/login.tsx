@@ -34,7 +34,7 @@ export default function Login() {
     try {
       setLoading(true)
       await login(values)
-      router.push('/dashboard')
+      router.push('/users')
     } catch ({message}) {
       setError(message)
     } finally {
