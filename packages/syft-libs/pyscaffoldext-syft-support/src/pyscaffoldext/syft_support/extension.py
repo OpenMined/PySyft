@@ -1,24 +1,21 @@
 # stdlib
-from argparse import ArgumentParser
 import importlib
+from argparse import ArgumentParser
 from pathlib import Path
 from typing import List
+
+import pyscaffold.dependencies as deps
 
 # third party
 from configupdater.configupdater import ConfigUpdater
 from pyscaffold import structure
-from pyscaffold.actions import Action
-from pyscaffold.actions import ActionParams
-from pyscaffold.actions import ScaffoldOpts
-from pyscaffold.actions import Structure
-import pyscaffold.dependencies as deps
-from pyscaffold.extensions import Extension
-from pyscaffold.extensions import include
+from pyscaffold.actions import Action, ActionParams, ScaffoldOpts, Structure
+from pyscaffold.extensions import Extension, include
 from pyscaffold.extensions.no_skeleton import NoSkeleton
 from pyscaffold.operations import no_overwrite, skip_on_update
 from pyscaffold.structure import merge
-from pyscaffold.templates import add_pyscaffold
-from pyscaffold.templates import get_template
+from pyscaffold.templates import add_pyscaffold, get_template
+
 from pyscaffoldext.markdown.extension import Markdown
 
 # syft relative
@@ -123,7 +120,7 @@ def add_files(struct: Structure, opts: ScaffoldOpts) -> ActionParams:
     pyproject_toml = get_template("pyproject_toml", relative_to=templates.__name__)
 
     module = opts["name"][5:]
-    package_support = generate_package_support(module)
+    package_support = generate_package_support(package_name=module)
 
     files: Structure = {
         "setup.cfg": (setup_cfg, no_overwrite()),

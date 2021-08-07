@@ -25,6 +25,8 @@ from typing import List as TypeList
 
 import nbformat as nbf
 
+# package_name = 'xgboost'
+
 
 def list_submodules(list_name: TypeAny, package_name: TypeAny) -> TypeAny:
     try:
@@ -216,14 +218,20 @@ def dict_allowlist(
                         list_nb.append(nbf.v4.new_markdown_cell(f"## {i}"))
                         if_class_added = True
 
+                    i_ = i.replace(".", "_")
+
                     code = (
                         f"# {i}.{t.__name__}\n"
                         f"try:\n"
-                        f"\tobj ={i}(# __init__ parameters here)\n"
+                        f"\tobj ={i}()\n"
                         f"\tret = obj.{t.__name__}()\n"
-                        f"\tprint(type(ret))\n"
+                        f"\ttype_{i_}_{t.__name__} = ret.__module__ + '.' + ret.__class__.__name__\n"
+                        f"\tprint('{i}.{t.__name__}: Done')\n"
                         f"except Exception as e:\n"
-                        f'\tprint("Please fix this return type code until there is no exception")'
+                        f"\ttype_{i_}_{t.__name__} = '_syft_missing'\n"
+                        f"\tprint('{i}.{t.__name__}: Return unavailable')\n"
+                        f'\tprint("  Please fix this return type code until there is no exception")\n'
+                        f"\tprint('  Error:', e)\n"
                     )
 
                     list_nb.append(nbf.v4.new_code_cell(code))
@@ -231,9 +239,11 @@ def dict_allowlist(
     return allowlist, debug_list, methods_error_count, missing_return, list_nb
 
 
-def generate_package_support(
-    package_name: str, debug: Union[bool, int] = False, write_to_file: bool = False
-) -> Optional[str]:
+def generate_package_support(package_name: str, DEBUG: bool = False) -> str:
+
+    # DEBUG = args.debug
+    # package_name = args.lib
+
     DEBUG_FILE_NAME = f"{package_name}.debug.log"
     PKG_SUPPORT_NAME = f"{package_name}.pkg_support.json"
 
@@ -278,6 +288,7 @@ def generate_package_support(
     methods_error_count = 0
     missing_return = 0
     list_nb: TypeList[TypeAny] = list()
+    missing_classes = list()
     for class_ in classes_set:
         (
             allowlist_i,
@@ -289,9 +300,13 @@ def generate_package_support(
         allowlist += allowlist_i # append to list
 
         debug_list.extend(debug_list_i)
+
         if len(list_nb_i) > 0:
             nb = nbf.v4.new_notebook()
-            NB_TYPES_NAME = f"{package_name}_missing_return/{class_}.ipynb"
+            class_name = class_.replace(".", "_")
+            NB_TYPES_NAME = f"{package_name}_missing_return/{class_name}.ipynb"
+
+            missing_classes.append(class_name)
 
             nb["cells"] = list_nb_i
             nbf.write(nb, NB_TYPES_NAME)
@@ -301,7 +316,16 @@ def generate_package_support(
         missing_return += missing_return_i
 
     # print(f"len(allowlist) = {len(allowlist)}")
-    package_support = {}
+
+    if len(missing_classes) > 0:
+        # create an __init__ file :)
+
+        initial_file = f = open(f"{package_name}_missing_return/__init__.py", "w")
+
+        for a in missing_classes:
+            initial_file.write(f"from . import {a}\n")
+
+    package_support: TypeDict[str, TypeAny] = dict()
 
     package_support["lib"] = package_name
     # petlib doesnot have version
@@ -327,19 +351,6 @@ def generate_package_support(
     print(f"\tNot added:{methods_error_count}")
     print("-----------------")
 
-    if write_to_file:
-        DEBUG_FILE_NAME = f"{package_name}.debug.log"
-        PKG_SUPPORT_NAME = f"{package_name}.pkg_support.json"
-
-        with open(PKG_SUPPORT_NAME, "w") as outfile:
-            json.dump(package_support, outfile)
-
-        if debug:
-            with open(DEBUG_FILE_NAME, "w") as f:
-                for item in debug_list:
-                    f.write(f"{item}\n")
-        return
-
     return json.dumps(package_support)
 
 
@@ -350,10 +361,10 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "-d", dest="debug", type=int, help="Set it to one to get debug files", default=0
-)
+    )
     args = parser.parse_args()
 
     DEBUG = args.debug
     package_name = args.lib
-    generate_package_support(package_name, debug=DEBUG, write_to_file=True)
-    
+
+    generate_package_support(package_name, DEBUG)
