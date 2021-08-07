@@ -6,6 +6,7 @@ from uuid import UUID
 import sympc
 from sympc.config import Config
 from sympc.tensor import ReplicatedSharedTensor
+import torch
 
 # syft absolute
 import syft
@@ -39,8 +40,12 @@ def object2proto(obj: object) -> ReplicatedSharedTensor_PB:
         session_uuid=session_uuid_syft, config=conf_syft, ring_size=rs_bytes
     )
 
-    for tensor in share.shares:
-        proto.tensor.append(syft.serialize(tensor, to_proto=True))
+    if isinstance(share.shares[0], torch.Tensor):
+        for tensor in share.shares:
+            proto.tensor.append(syft.serialize(tensor, to_proto=True))
+    else:
+        for array in share.shares:
+            proto.array.append(syft.serialize(array, to_proto=True))
 
     return proto
 
@@ -55,8 +60,12 @@ def proto2object(proto: ReplicatedSharedTensor_PB) -> ReplicatedSharedTensor:
 
     output_shares = []
 
-    for tensor in proto.tensor:
-        output_shares.append(syft.deserialize(tensor, from_proto=True))
+    if proto.tensor:
+        for tensor in proto.tensor:
+            output_shares.append(syft.deserialize(tensor, from_proto=True))
+    else:
+        for array in proto.array:
+            output_shares.append(syft.deserialize(array, from_proto=True))
 
     ring_size = int.from_bytes(proto.ring_size, "big")
 
