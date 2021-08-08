@@ -236,7 +236,7 @@ def dict_allowlist(
                     )
 
                     list_nb.append(nbf.v4.new_code_cell(code))
-                allowlist.append((f"${i}.${t.__name__}", string))
+                allowlist.append((f"{i}.{t.__name__}", string))
     return allowlist, debug_list, methods_error_count, missing_return, list_nb
 
 

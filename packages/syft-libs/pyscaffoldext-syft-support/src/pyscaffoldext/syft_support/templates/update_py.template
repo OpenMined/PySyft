@@ -1,56 +1,40 @@
-"""
-Running script
-1. jupyter nbconvert --to python --execute <Libname>_missing_return/*.ipynb
-2. python update.py -l <Libname>
-
-"""
 # import argparse
+from importlib.machinery import SourceFileLoader
 import json
 import os
 from pathlib import Path
-from importlib.machinery import SourceFileLoader
 
 def update_json() -> None:
     root_dir = os.path.abspath(Path(os.path.dirname(__file__)) / "..")
-    PKG_SUPPORT_NAME = Path(f"{root_dir}","src","${package}","package-support.json")
-    
+    PKG_SUPPORT_NAME = Path(f"{root_dir}","src","syft_mypkg","package-support.json")
+    path_to_missing = Path(f"{root_dir}","_missing_return","__init__.py")
+    _missing_return = SourceFileLoader("_missing_return",str(path_to_missing)).load_module()
+
     with open(PKG_SUPPORT_NAME) as f:
         package_support = json.load(f)
-    print(package_support.keys())
-    path_to_missing = str(Path(f"{root_dir}","_missing_return","__init__.py"))
-    i = SourceFileLoader("_missing_return",path_to_missing).load_module()
 
-    package_support = dict()
-
-    # print(module_xd.__name__)
-    # print(exec(f"{module_xd.__name__}.xgboost_sklearn_XGBRFClassifier.type_xgboost_sklearn_XGBRFClassifier_fit"))
     allowlist = package_support["methods"]
 
-    for key in allowlist.keys():
-        if allowlist[key] in ["_syft_missing", "_syft_return_absent"]:
-            # rewrite allowlist[key] =
+    for x,(method,return_type) in enumerate(allowlist):
+        if return_type in ["_syft_missing", "_syft_return_absent"]:
 
-            arr = key.split(".")[:-1]
+            arr = method.split(".")[:-1]
 
             class_ = str()
 
             for a in arr:
                 class_ += a + "_"
 
-            key_ = key.replace(".", "_")
+            method_ = method.replace(".", "_")
             # executing this string should work :)
             try:
-                # print(f"allowlist[key] = {i}.{class_[:-1]}.type_{key_}")
-                # value = "_syft_missing"
-                # print(f"Executing value = {i}.{class_[:-1]}.type_{key_}")
-                exec(f"allowlist[key] = {i}.{class_[:-1]}.type_{key_}")
-                # print(exec(f'{i}.{class_[:-1]}.type_{key_}'))
-                if allowlist[key] not in ["_syft_missing", "_syft_return_absent"]:
-                    print(f"Updating {allowlist[key]}")
-                    # allowlist[key] = value
+                return_type = eval(f"_missing_return.{class_[:-1]}.type_{method_}")
+                if return_type not in ["_syft_missing", "_syft_return_absent"]:
+                    print(f"Updating {return_type}")
+                    allowlist[x] = (method,return_type)
             except Exception as e:
                 print(f"Some Exception in update.py\n\t{e}")
-
+    
     package_support["methods"] = allowlist
 
     with open(PKG_SUPPORT_NAME, "w") as outfile:
