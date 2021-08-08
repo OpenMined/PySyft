@@ -146,7 +146,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         # Get the list of actions to be run
         actions = actions_generator(self._self.id_at_location, *args_id, **kwargs)  # type: ignore
         actions = SMPCActionMessage.filter_actions_after_rank(
-            resolved_self.data, actions
+            resolved_self.data.rank, actions
         )
 
         client = node.get_client()

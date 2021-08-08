@@ -187,9 +187,7 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
             Pointer to object returned by class method.
         """
         # relative
-        from ..core.node.common.action.smpc_action_message import (
-            MAP_FUNC_TO_NR_GENERATOR_INVOKES,
-        )
+        from ..core.node.common.action.smpc_action_message import SMPCActionMessage
 
         seed_id_locations = kwargs.get("seed_id_locations", None)
         if seed_id_locations:
@@ -199,13 +197,10 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
 
         seed_id_locations = secrets.randbits(64)
         kwargs["seed_id_locations"] = str(seed_id_locations)
-        generator = np.random.default_rng(seed_id_locations)
-
-        nr_ops = MAP_FUNC_TO_NR_GENERATOR_INVOKES[attr_path_and_name.split(".")[-1]]
-        for _ in range(nr_ops):
-            generator.bytes(16)
-
-        id_at_location = UID(UUID(bytes=generator.bytes(16)))
+        op = attr_path_and_name.split(".")[-1]
+        id_at_location = SMPCActionMessage.get_id_at_location_from_op(
+            seed_id_locations, op
+        )
 
         # we want to get the return type which matches the attr_path_and_name
         # so we ask lib_ast for the return type name that matches out

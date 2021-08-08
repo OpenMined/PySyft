@@ -1,5 +1,6 @@
 # stdlib
 import functools
+from functools import lru_cache
 import itertools
 import operator
 import secrets
@@ -9,9 +10,11 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 # third party
 import numpy as np
+import torch
 
 # syft absolute
 from syft.core.tensor.passthrough import PassthroughTensor
@@ -186,13 +189,25 @@ class MPCTensor(PassthroughTensor):
         return result
 
     @staticmethod
+    @lru_cache(maxsize=128)
     def __get_shape(
+        op_str: str,
         x_shape: Tuple[int],
         y_shape: Tuple[int],
-        operator: Callable[[np.ndarray, np.ndarray], Any],
     ) -> Tuple[int]:
-        res = operator(np.empty(x_shape), np.empty(y_shape)).shape
-        return res
+        """Get the shape of apply an operation on two values
+
+        Args:
+            op_str (str): the operation to be applied
+            x_shape (Tuple[int]): the shape of op1
+            y_shape (Tuple[int]): the shape of op2
+
+        Returns:
+            The shape of the result
+        """
+        op = getattr(operator, op_str)
+        res = op(np.empty(x_shape), np.empty(y_shape)).shape
+        return tuple(res)
 
     def __getattribute__(self, attr_name: str) -> Any:
         if attr_name in METHODS_FORWARD_ALL_SHARES:
@@ -217,34 +232,94 @@ class MPCTensor(PassthroughTensor):
             return functools.partial(method_all_shares, self)
         return object.__getattribute__(self, attr_name)
 
-    def apply_private_op(self, other: "MPCTensor", op: str) -> "MPCTensor":
-        operation = getattr(operator, op)
+    def __apply_private_op(self, other: "MPCTensor", op_str: str) -> List[ShareTensor]:
+        op = getattr(operator, op_str)
         if isinstance(other, MPCTensor):
-            res_shares = [operation(a, b) for a, b in zip(self.child, other.child)]
+            res_shares = [op(a, b) for a, b in zip(self.child, other.child)]
         else:
             raise ValueError("Add works only for the MPCTensor at the moment!")
+        return res_shares
 
-        new_shape = MPCTensor.__get_shape(self.mpc_shape, other.mpc_shape, operation)
-        res = MPCTensor(shares=res_shares, shape=new_shape)
+    def __apply_public_op(self, y: "MPCTensor", op_str: str) -> List[ShareTensor]:
+        op = getattr(operator, op_str)
+        if op_str in {"mul", "matmul", "add", "sub"}:
+            res_shares = [op(share, y) for share in self.child]
+        else:
+            raise ValueError(f"{op_str} not supported")
+
+        return res_shares
+
+    def __apply_op(
+        self,
+        y: Union[int, float, torch.Tensor, np.ndarray, "MPCTensor"],
+        op_str: str,
+    ) -> "MPCTensor":
+        """Apply an operation on "self" which is a MPCTensor "y".
+
+         This function checks if "y" is private or public value.
+
+        Args:
+            y (Union[int, float, torch.Tensor, np.ndarray, "MPCTensor"]: tensor to apply the operation.
+            op_str (str): the operation.
+
+        Returns:
+            MPCTensor. the operation "op_str" applied on "self" and "y"
+        """
+        is_private = isinstance(y, MPCTensor)
+
+        if is_private:
+            result = self.__apply_private_op(y, op_str)
+        else:
+            result = self.__apply_public_op(y, op_str)
+
+        if isinstance(y, (float, int)):
+            y_shape = (1,)
+        else:
+            y_shape = y.shape
+
+        shape = MPCTensor.__get_shape(op_str, self.mpc_shape, y_shape)
+        result = MPCTensor(shares=result, shape=shape)
+        return result
+
+    def add(
+        self, y: Union[int, float, np.ndarray, torch.tensor, "MPCTensor"]
+    ) -> "MPCTensor":
+        """Apply the "add" operation between "self" and "y".
+
+        Args:
+            y (Union["MPCTensor", torch.Tensor, float, int]): self + y
+
+        Returns:
+            MPCTensor. Result of the operation.
+        """
+        res = self.__apply_op(y, "add")
         return res
 
-    def __add__(self, other: "MPCTensor") -> "MPCTensor":
-        res = self.apply_private_op(other, "__add__")
+    def sub(self, y: "MPCTensor") -> "MPCTensor":
+        res = self.__apply_op(y, "sub")
         return res
 
-    def __sub__(self, other: "MPCTensor") -> "MPCTensor":
-        res = self.apply_private_op(other, "__sub__")
+    def rsub(self, y: "MPCTensor") -> "MPCTensor":
+        new_self = self * (-1)
+        res = new_self.__apply_op(y, "add")
         return res
 
-    def __mul__(self, other: Any) -> "MPCTensor":
-        if isinstance(other, MPCTensor):
+    def mul(
+        self, y: Union[int, float, np.ndarray, torch.tensor, "MPCTensor"]
+    ) -> "MPCTensor":
+        if isinstance(y, MPCTensor):
             raise ValueError("Private multiplication not yet implemented!")
         else:
             res_shares = [
-                operator.mul(a, b) for a, b in zip(self.child, itertools.repeat(other))
+                operator.mul(a, b) for a, b in zip(self.child, itertools.repeat(y))
             ]
 
-        new_shape = MPCTensor.__get_shape(self.mpc_shape, other.shape, operator.mul)
+        if isinstance(y, (float, int)):
+            y_shape = (1,)
+        else:
+            y_shape = y.shape
+
+        new_shape = MPCTensor.__get_shape("mul", self.mpc_shape, y_shape)
         res = MPCTensor(shares=res_shares, shape=new_shape)
 
         return res
@@ -255,3 +330,9 @@ class MPCTensor(PassthroughTensor):
             res = f"{res}\n\t{share}"
 
         return res
+
+    __add__ = add
+    __radd__ = add
+    __sub__ = sub
+    __rsub__ = rsub
+    __mul__ = mul
