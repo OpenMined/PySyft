@@ -5,7 +5,6 @@ import itertools
 import operator
 import secrets
 from typing import Any
-from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -21,6 +20,7 @@ from syft.core.tensor.passthrough import PassthroughTensor
 from syft.core.tensor.smpc.share_tensor import ShareTensor
 
 # relative
+from ..util import implements
 from .utils import ispointer
 
 METHODS_FORWARD_ALL_SHARES = {
@@ -274,6 +274,8 @@ class MPCTensor(PassthroughTensor):
 
         if isinstance(y, (float, int)):
             y_shape = (1,)
+        elif isinstance(y, MPCTensor):
+            y_shape = y.mpc_shape
         else:
             y_shape = y.shape
 
@@ -336,3 +338,19 @@ class MPCTensor(PassthroughTensor):
     __sub__ = sub
     __rsub__ = rsub
     __mul__ = mul
+    __rmul__ = mul
+
+
+@implements(MPCTensor, np.add)
+def add(x: np.ndarray, y: MPCTensor):
+    return y.add(x)
+
+
+@implements(MPCTensor, np.subtract)
+def sub(x: np.ndarray, y: MPCTensor):
+    return y.rsub(x)
+
+
+@implements(MPCTensor, np.multiply)
+def mul(x: np.ndarray, y: MPCTensor):
+    return y.mul(x)

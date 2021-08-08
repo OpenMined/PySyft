@@ -14,11 +14,7 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
-from uuid import UUID
 import warnings
-
-# third party
-import numpy as np
 
 # relative
 from .. import ast

@@ -140,7 +140,7 @@ class ShareTensor(PassthroughTensor, Serializable):
             raise ValueError(f"NPArray should have type int, but found {share.dtype}")
 
         if isinstance(share, torch.Tensor) and torch.is_floating_point(share):
-            raise ValueError(f"Torch tensor should have type int, but found float")
+            raise ValueError("Torch tensor should have type int, but found float")
 
     def apply_function(
         self, y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"], op_str: str
@@ -159,7 +159,8 @@ class ShareTensor(PassthroughTensor, Serializable):
         if isinstance(y, ShareTensor):
             value = op(self.child, y.child)
         else:
-            value = op(self.child, y)
+            # TODO: Converting y to numpy because doing "numpy op torch tensor" raises exception
+            value = op(self.child, np.array(y, np.int64))
 
         res = self.copy_tensor()
         res.child = value
@@ -284,6 +285,8 @@ class ShareTensor(PassthroughTensor, Serializable):
     def _object2proto(self) -> ShareTensor_PB:
         if isinstance(self.child, np.ndarray):
             return ShareTensor_PB(array=serialize(self.child), rank=self.rank)
+        elif isinstance(self.child, torch.Tensor):
+            return ShareTensor_PB(array=serialize(np.array(self.child)), rank=self.rank)
         else:
             return ShareTensor_PB(tensor=serialize(self.child), rank=self.rank)
 

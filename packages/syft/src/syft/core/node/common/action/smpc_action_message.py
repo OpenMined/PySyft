@@ -1,7 +1,5 @@
 # stdlib
 from copy import deepcopy
-from enum import Enum
-from enum import unique
 import functools
 import operator
 from typing import Any
