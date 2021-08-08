@@ -149,7 +149,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
             resolved_self.data.rank, actions
         )
 
-        client = node.get_client()
+        client = node.get_client()  # type: ignore
         for action in actions:
             client.send_immediate_msg_without_reply(msg=action)
 

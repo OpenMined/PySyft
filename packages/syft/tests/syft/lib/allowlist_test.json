@@ -2837,7 +2837,13 @@
         ]
       },
       "shape": {
-        "profile": "tensor_property_noinput"
+        "profile": "tensor_property_noinput",
+        "skip": [
+          {
+            "lte_version": "1.8.1",
+            "reason": "untested"
+          }
+        ]
       },
       "short": {
         "profile": "tensor_method_noinput"
@@ -9389,15 +9395,8 @@
         "profile": "tensor_property_noinput",
         "skip": [
           {
-            "lte_version": "1.7.1",
-            "reason": "untested"
-          }
-        ],
-        "not_available": [
-          {
-            "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.8.1",
-            "gte_version": "1.8.0"
+            "reason": "untested"
           }
         ]
       },

@@ -115,7 +115,7 @@ def test_mpc_public_private_op(op_str: str, public_value_type: str) -> None:
 @pytest.mark.parametrize(
     "method_str, kwargs", [("sum", {"axis": 0}), ("sum", {"axis": 1})]
 )
-def test_mpc_forward_methods(method_str: str, kwargs) -> None:
+def test_mpc_forward_methods(method_str: str, kwargs: TypeDict[str, Any]) -> None:
     value = np.array([[1, 2, 3, 4, -5], [5, 6, 7, 8, 9]], dtype=np.int64)
 
     remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
