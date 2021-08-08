@@ -6,7 +6,7 @@ from pathlib import Path
 
 def update_json() -> None:
     root_dir = os.path.abspath(Path(os.path.dirname(__file__)) / "..")
-    PKG_SUPPORT_NAME = Path(f"{root_dir}","src","syft_mypkg","package-support.json")
+    PKG_SUPPORT_NAME = Path(f"{root_dir}","src","${package}","package-support.json")
     path_to_missing = Path(f"{root_dir}","_missing_return","__init__.py")
     _missing_return = SourceFileLoader("_missing_return",str(path_to_missing)).load_module()
 
