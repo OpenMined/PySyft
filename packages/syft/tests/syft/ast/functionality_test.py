@@ -12,6 +12,7 @@ from typing import Tuple
 from typing import Union as TypeUnion
 
 # third party
+import pandas as pd
 import pytest
 
 # syft absolute
@@ -20,10 +21,8 @@ from syft.ast import add_dynamic_objects
 from syft.ast.globals import Globals
 from syft.core.node.abstract.node import AbstractNodeClient
 from syft.core.node.common.client import Client
+from syft.core.test import module_test
 from syft.lib import lib_ast
-
-# syft relative
-from . import module_test
 
 sys.modules["module_test"] = module_test
 
@@ -44,6 +43,9 @@ module_test_methods = [
     ("module_test.C.dummy_reloadable_func", "syft.lib.python.Int"),
     ("module_test.global_value", "syft.lib.python.Int"),
     ("module_test.global_function", "syft.lib.python.Int"),
+    ("module_test.D", "module_test.D"),
+    ("module_test.D.get_n", "syft.lib.python.Int"),
+    ("module_test.D.get_data", "pandas.DataFrame"),
 ]
 
 dynamic_objects = [("module_test.C.dynamic_object", "syft.lib.python.Int")]
@@ -307,3 +309,14 @@ def test_dynamic_object_set(custom_client: Client) -> None:
     obj_ptr.dynamic_object = value
 
     assert obj_ptr.dynamic_object.get() == 0  # type: ignore
+
+
+def test_auto_serde_wrapper(custom_client: Client) -> None:
+    data = pd.DataFrame({"A": [1, 2, 3]})
+    n = 1
+
+    d_ptr = custom_client.module_test.D(n, data)
+    d = module_test.D(n, data)
+
+    assert d_ptr.get_n().get() == d.get_n()
+    assert d.get_data().equals(d_ptr.get_data().get())

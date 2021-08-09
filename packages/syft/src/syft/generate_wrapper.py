@@ -66,6 +66,32 @@ def GenerateWrapper(
     )
 
 
+def GenerateAutoSerdeWrapper(
+    Wrapper: "syft.core.common.serde.RecursiveSerde",
+    wrapped_type: type,
+    import_path: str,
+) -> None:
+    module_parts = import_path.split(".")
+    klass = module_parts.pop()
+    Wrapper.__name__ = f"{klass}Wrapper"
+    Wrapper.__module__ = f"syft.wrappers.{'.'.join(module_parts)}"
+    # create a fake module `wrappers` under `syft`
+    if "wrappers" not in syft.__dict__:
+        syft.__dict__["wrappers"] = module_type(name="wrappers")
+    # for each part of the path, create a fake module and add it to it's parent
+    parent = syft.__dict__["wrappers"]
+    for n in module_parts:
+        if n not in parent.__dict__:
+            parent.__dict__[n] = module_type(name=n)
+        parent = parent.__dict__[n]
+    # finally add our wrapper class to the end of the path
+    parent.__dict__[Wrapper.__name__] = Wrapper
+
+    aggressive_set_attr(
+        obj=wrapped_type, name="_sy_serializable_wrapper_type", attr=Wrapper
+    )
+
+
 def GenerateProtobufWrapper(
     cls_pb: GeneratedProtocolMessageType, import_path: str
 ) -> None:
