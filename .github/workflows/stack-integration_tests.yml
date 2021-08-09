@@ -80,6 +80,7 @@ jobs:
           chmod +x ~/.docker/cli-plugins/docker-compose
           # contents of the tox task
           pip install -e packages/hagrid
+          pip install -e packages/syft
           docker --version
           docker compose version
           export HAGRID_ART=false
