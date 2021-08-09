@@ -115,7 +115,7 @@ jobs:
       max-parallel: 3
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        python-version: [3.8]
+        python-version: [3.9]
         torch-version: [1.8.1]
 
     runs-on: ${{ matrix.os }}
@@ -152,6 +152,7 @@ jobs:
           pip install -r requirements.unstable.txt
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
+          pip install "pillow<=8.2.0"
 
       - name: Scan for security issues
         run: |
@@ -179,7 +180,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        python-version: [3.8]
+        python-version: [3.9]
         torch-version: [1.8.1]
         os: [ubuntu-latest]
     steps:
@@ -215,6 +216,7 @@ jobs:
           pip install -r requirements.unstable.txt
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
+          pip install "pillow<=8.2.0"
 
       - name: Run notebook API examples
         if: ${{ matrix.os == 'ubuntu-latest' }}
@@ -238,7 +240,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        python-version: [3.8]
+        python-version: [3.9]
         torch-version: [1.8.1]
 
     steps:
@@ -274,6 +276,7 @@ jobs:
           pip install -r requirements.unstable.txt
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
+          pip install "pillow<=8.2.0"
 
       - name: Test PyGrid
         run: |
@@ -287,7 +290,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        python-version: [3.8]
+        python-version: [3.9]
         torch-version: [1.8.1]
 
     steps:
@@ -317,12 +320,13 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pip install packaging --default-timeout=60
+          pip install packaging
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
           pip install -r requirements.unstable.txt
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
+          pip install "pillow<=8.2.0"
 
       - name: Test PyGrid
         run: |

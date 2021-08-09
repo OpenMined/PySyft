@@ -18,7 +18,7 @@ jobs:
       max-parallel: 1
       matrix:
         os: [ubuntu-latest]
-        python-version: [3.8]
+        python-version: [3.9]
         torch-version: [1.8.1]
 
     runs-on: ${{ matrix.os }}
@@ -55,6 +55,7 @@ jobs:
           pip install -r requirements.unstable.txt
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
+          pip install "pillow<=8.2.0"
 
       - name: Scan for security issues
         run: |

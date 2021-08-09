@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+import "proto/lib/python/string.proto";
+
+package statsmodel;
+
+message ResultsProto {
+  syft.lib.python.String summary = 1;
+}

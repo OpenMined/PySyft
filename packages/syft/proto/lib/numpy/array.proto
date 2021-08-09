@@ -1,8 +1,6 @@
 syntax = "proto3";
 
 package syft.lib.numpy;
-import "proto/lib/torch/tensor.proto";
-
 
 message NumpyProto {
   oneof data {

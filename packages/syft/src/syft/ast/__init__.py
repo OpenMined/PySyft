@@ -75,6 +75,8 @@ from . import klass  # noqa: F401
 from . import module  # noqa: F401
 from . import property  # noqa: F401
 from . import static_attr  # noqa: F401
+from ..logger import warning
+from .denylist import deny
 
 
 def get_parent(
@@ -147,6 +149,9 @@ def add_classes(
         paths: A list of classes, each of which is a tuple of the path, the return type, and its reference.
     """
     for path, return_type, ref in paths:
+        if deny(path):
+            warning(f"{path} denied. Cannot be added to AST.", print=True)
+            continue
         parent = get_parent(path, ast)
         attr_name = path.rsplit(".", 1)[-1]
         parent.add_attr(
@@ -172,6 +177,9 @@ def add_methods(
         paths: A list of methods, each of which is a tuple of the method's path and its return type.
     """
     for path, return_type in paths:
+        if deny(path):
+            warning(f"WARN: {path} denied. Cannot be added to AST.", print=True)
+            continue
         parent = get_parent(path, ast)
         path_list = path.split(".")
         parent.add_path(
