@@ -3,6 +3,16 @@ from importlib.machinery import SourceFileLoader
 import json
 import os
 from pathlib import Path
+import importlib
+from typing import Any as TypeAny
+
+def class_import(name: TypeAny) -> TypeAny:
+    components = name.split(".")
+    mod = importlib.import_module(components[0])
+    for comp in components[1:]:
+        mod = getattr(mod, comp, None)
+    return mod
+
 
 def update_json() -> None:
     root_dir = os.path.abspath(Path(os.path.dirname(__file__)) / "..")
@@ -18,17 +28,17 @@ def update_json() -> None:
     for x,(method,return_type) in enumerate(allowlist):
         if return_type in ["_syft_missing", "_syft_return_absent"]:
 
-            arr = method.split(".")[:-1]
+            tmp_class = class_import(".".join(method.split(".")[:-1]))
+            original_class = tmp_class.__module__+"."+tmp_class.__name__
+            class_ = original_class.replace(".", "_")
 
-            class_ = str()
+            method_name = method.split(".")[-1]
+            method_path = original_class+"."+method_name
+            method_ = method_path.replace(".", "_")
 
-            for a in arr:
-                class_ += a + "_"
-
-            method_ = method.replace(".", "_")
             # executing this string should work :)
             try:
-                return_type = eval(f"_missing_return.{class_[:-1]}.type_{method_}")
+                return_type = eval(f"_missing_return.{class_}.type_{method_}")
                 if return_type not in ["_syft_missing", "_syft_return_absent"]:
                     print(f"Updating {return_type}")
                     allowlist[x] = (method,return_type)
