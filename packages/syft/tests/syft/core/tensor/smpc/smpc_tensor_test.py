@@ -107,7 +107,7 @@ def test_mpc_public_private_op(op_str: str, public_value_type: str) -> None:
     # TODO: Conversion to numpy is required because numpy op torch_tensor
     # gives back
     # TypeError: Concatenation operation is not implemented for NumPy arrays, use np.concatenate() instead.
-    res = op(value_1, mpc_tensor_2).reconstruct()
+    res = op(np.array(value_1), mpc_tensor_2).reconstruct()
     expected = op(np.array(value_1), value_2)
 
     assert (res == np.array(expected)).all()
