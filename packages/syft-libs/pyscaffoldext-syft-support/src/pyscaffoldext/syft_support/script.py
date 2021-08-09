@@ -2,9 +2,9 @@
 Running script: python package_support_script.py -l xgboost -d 1
 Generates:
 
-1. <LIB>.package_support.json
+1. <LIB>.pkg_support.json
 2. <LIB>.debug.log with all the methods/functions not added to ast with the reason.
-3. [optional] also generates <LIB>.return_types.ipynb for the first time.
+3. also generates <LIB>.return_types.ipynb for the first time.
     If presents, extracts return types from the notebook
 """
 # stdlib
@@ -20,13 +20,16 @@ from os import path
 from typing import Any as TypeAny
 from typing import Dict as TypeDict
 from typing import List as TypeList
+from typing import Set as TypeSet
 
 import nbformat as nbf
 
 # package_name = 'xgboost'
 
 
-def list_submodules(list_name: TypeAny, package_name: TypeAny) -> TypeAny:
+def list_submodules(
+    list_name: TypeAny, package_name: TypeAny, ignore_list: TypeSet
+) -> TypeAny:
     try:
         prefix = package_name.__name__
         for loader, module_name, is_pkg in pkgutil.walk_packages(package_name.__path__):
@@ -35,10 +38,11 @@ def list_submodules(list_name: TypeAny, package_name: TypeAny) -> TypeAny:
                 continue
                 # inspect.ismodule(__import__('sklearn.neighbors.tests.test_neighbors_tree')) is True
             module_name = f"{prefix}.{module_name}"
-            list_name.append(module_name)
-            module_name = __import__(module_name, fromlist="dummylist")
+            if module_name not in ignore_list:
+                list_name.append(module_name)
+                module_name = __import__(module_name, fromlist="dummylist")
             if is_pkg:
-                list_submodules(list_name, module_name)
+                list_submodules(list_name, module_name, ignore_list)
     except Exception as e:
         # print("error with prefix", prefix)
         # e = e
@@ -47,9 +51,7 @@ def list_submodules(list_name: TypeAny, package_name: TypeAny) -> TypeAny:
 
 
 def set_classes(
-    modules_list: TypeAny,
-    root_module: str,
-    debug_list: TypeAny,
+    modules_list: TypeAny, root_module: str, debug_list: TypeAny, ignore_list: TypeSet
 ) -> TypeAny:
 
     classes_set = set()
@@ -65,7 +67,7 @@ def set_classes(
                 t = getattr(module, ax)
                 if inspect.isclass(t):  # classes in modules
                     mod_name = t.__module__.split(".")
-                    if root_module == mod_name[0]:
+                    if root_module == mod_name[0] and f"{i}.{ax}" not in ignore_list:
                         # print(f'{t} {t.__module__}')
                         # classes_set.add(module.__name__ + "." + t.__name__) # Number of classes 1224
                         classes_set.add(i + "." + ax)
@@ -245,6 +247,7 @@ def generate_package_support(package_name: str, DEBUG: bool = False) -> str:
 
     DEBUG_FILE_NAME = f"{package_name}.debug.log"
     PKG_SUPPORT_NAME = f"{package_name}.pkg_support.json"
+    IGN_LIST = f"{package_name}.ignorelist.txt"
 
     DR_NAME = f"{package_name}_missing_return"
 
@@ -253,6 +256,10 @@ def generate_package_support(package_name: str, DEBUG: bool = False) -> str:
     if not path.exists(DR_NAME):
         os.mkdir(DR_NAME)
         # create_nb = False
+
+    ignore_list = set()
+    if os.path.isfile(IGN_LIST):
+        ignore_list = set(line.strip() for line in open(IGN_LIST))
 
     #
     # list_nb = []
@@ -268,12 +275,12 @@ def generate_package_support(package_name: str, DEBUG: bool = False) -> str:
     modules_list = [package_name]
     debug_list: TypeList[str] = list()
 
-    list_submodules(modules_list, package)
+    list_submodules(modules_list, package, ignore_list)
 
     # print(f"Number of modules {len(modules_list)}")
 
     classes_set, debug_list, allowlist = set_classes(
-        modules_list, package_name, debug_list
+        modules_list, package_name, debug_list, ignore_list
     )
 
     # print(f"Number of classes {len(classes_set)}")
