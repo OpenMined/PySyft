@@ -7,8 +7,8 @@ HANDLED_FUNCTIONS: Dict[Any, Any] = {}
 
 def query_implementation(tensor_type: Any, func: Any) -> Any:
     name = func.__name__
-    cache = HANDLED_FUNCTIONS[tensor_type]
-    if name in cache:
+    cache = HANDLED_FUNCTIONS.get(tensor_type, None)
+    if cache and name in cache:
         return HANDLED_FUNCTIONS[tensor_type][func.__name__]
     return None
 
