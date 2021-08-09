@@ -11,6 +11,7 @@ on:
     branches:
       - "0.6.0"
       - "demo_strike_team_branch_4"
+      - "dev"
     paths:
       - ".github/workflows/stack-*.yml"
   workflow_dispatch:
