@@ -20,8 +20,3 @@ def test_dataowner_can_connect_to_node(notebook_run):
     domain_name = notebook_run.ref("do_domain_node.name")
     assert domain_name == 'test_node'
 
-
-def test_dataowner_can_create_data_user(notebook_run):
-    domain_name = notebook_run.ref("ds_domain_node.name")
-    assert domain_name == 'test_node'
-
