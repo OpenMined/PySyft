@@ -2,9 +2,9 @@
 Running script: python package_support_script.py -l xgboost -d 1
 Generates:
 
-1. <LIB>.package_support.json
+1. <LIB>.pkg_support.json
 2. <LIB>.debug.log with all the methods/functions not added to ast with the reason.
-3. [optional] also generates <LIB>.return_types.ipynb for the first time.
+3. also generates <LIB>.return_types.ipynb for the first time.
     If presents, extracts return types from the notebook
 """
 # stdlib
@@ -18,10 +18,12 @@ import sys
 import typing
 from os import path
 from typing import Any as TypeAny
-from typing import Optional, Union
 from typing import Dict as TypeDict
-from typing import Tuple as TypeTuple
 from typing import List as TypeList
+from typing import Optional
+from typing import Set as TypeSet
+from typing import Tuple as TypeTuple
+from typing import Union
 
 import nbformat as nbf
 from pyscaffold.operations import no_overwrite
@@ -29,7 +31,9 @@ from pyscaffold.operations import no_overwrite
 # package_name = 'xgboost'
 
 
-def list_submodules(list_name: TypeAny, package_name: TypeAny) -> TypeAny:
+def list_submodules(
+    list_name: TypeAny, package_name: TypeAny, ignore_list: TypeSet
+) -> TypeAny:
     try:
         prefix = package_name.__name__
         for loader, module_name, is_pkg in pkgutil.walk_packages(package_name.__path__):
@@ -38,10 +42,11 @@ def list_submodules(list_name: TypeAny, package_name: TypeAny) -> TypeAny:
                 continue
                 # inspect.ismodule(__import__('sklearn.neighbors.tests.test_neighbors_tree')) is True
             module_name = f"{prefix}.{module_name}"
-            list_name.append(module_name)
-            module_name = __import__(module_name, fromlist="dummylist")
+            if module_name not in ignore_list:
+                list_name.append(module_name)
+                module_name = __import__(module_name, fromlist="dummylist")
             if is_pkg:
-                list_submodules(list_name, module_name)
+                list_submodules(list_name, module_name, ignore_list)
     except Exception as e:
         # print("error with prefix", prefix)
         # e = e
@@ -50,9 +55,7 @@ def list_submodules(list_name: TypeAny, package_name: TypeAny) -> TypeAny:
 
 
 def set_classes(
-    modules_list: TypeAny,
-    root_module: str,
-    debug_list: TypeAny,
+    modules_list: TypeAny, root_module: str, debug_list: TypeAny, ignore_list: TypeSet
 ) -> TypeAny:
 
     classes_set = set()
@@ -68,7 +71,7 @@ def set_classes(
                 t = getattr(module, ax)
                 if inspect.isclass(t):  # classes in modules
                     mod_name = t.__module__.split(".")
-                    if root_module == mod_name[0]:
+                    if root_module == mod_name[0] and f"{i}.{ax}" not in ignore_list:
                         # print(f'{t} {t.__module__}')
                         # classes_set.add(module.__name__ + "." + t.__name__) # Number of classes 1224
                         classes_set.add(i + "." + ax)
@@ -178,6 +181,16 @@ def get_return_type(t: TypeAny, i: str, ax: str) -> TypeAny:
         # debug_list.append(f"{i}.{t.__name__}: exception occoured \n\t{e}")
 
 
+def add_nb_class_header(class_path: str) -> str:
+    module_name = class_path.split(".")[0]
+    return (
+        f"import {module_name}\n"
+        + "def class_constructor(*args, **kwargs):\n"
+        + f"\tobj = {class_path}()\n"
+        + f"\treturn obj\n"
+    ).replace("\t", " " * 4)
+
+
 def dict_allowlist(
     i: TypeAny,
 ) -> TypeAny:
@@ -196,6 +209,9 @@ def dict_allowlist(
     for ax in dir(class_):
         # print(f'{ax} {class_}')
         # module = class_
+        if ax == "__init__":
+            continue
+
         t = getattr(class_, ax, None)  # Sometimes it return None
         if t is None:
             # print('None')
@@ -205,7 +221,6 @@ def dict_allowlist(
             inspect.ismethod(t)
             or inspect.isfunction(t)
             or inspect.isgetsetdescriptor(t)
-            # or isinstance(t, property) # Properties don't have return types :
         ):
             # print(f't for debug: {t} {module}')
             is_error, string = get_return_type(t, i, ax)
@@ -217,6 +232,9 @@ def dict_allowlist(
                     missing_return += 1
                     if not if_class_added:
                         list_nb.append(nbf.v4.new_markdown_cell(f"## {i}"))
+                        list_nb.append(
+                            nbf.v4.new_code_cell(add_nb_class_header(class_path=i))
+                        )
                         if_class_added = True
 
                     i_ = i.replace(".", "_")
@@ -224,19 +242,44 @@ def dict_allowlist(
                     code = (
                         f"# {i}.{t.__name__}\n"
                         f"try:\n"
-                        f"\tobj ={i}()\n"
+                        f"\tobj = class_constructor()\n"
                         f"\tret = obj.{t.__name__}()\n"
-                        f"\ttype_{i_}_{t.__name__} = ret.__module__ + '.' + ret.__class__.__name__\n"
-                        f"\tprint('{i}.{t.__name__}: Done')\n"
+                        f"\ttype_{i_}_{t.__name__} = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__\n"
+                        f"\tprint('✅ {i}.{t.__name__}: ', type(ret))\n"
                         f"except Exception as e:\n"
                         f"\ttype_{i_}_{t.__name__} = '_syft_missing'\n"
-                        f"\tprint('{i}.{t.__name__}: Return unavailable')\n"
+                        f"\tprint('❌ {i}.{t.__name__}: Return unavailable')\n"
                         f'\tprint("  Please fix this return type code until there is no exception")\n'
                         f"\tprint('  Error:', e)\n"
-                    )
+                    ).replace("\t", " " * 4)
 
                     list_nb.append(nbf.v4.new_code_cell(code))
-                allowlist.append((f"{i}.{t.__name__}", string))
+                allowlist[i + "." + t.__name__] = string
+
+        elif isinstance(t, property):
+            missing_return += 1
+            if not if_class_added:
+                list_nb.append(nbf.v4.new_markdown_cell(f"## {i}"))
+                if_class_added = True
+
+            i_ = i.replace(".", "_")
+
+            code = (
+                f"# {i}.{ax}\n"
+                f"try:\n"
+                f"\tobj = class_constructor()\n"
+                f"\tret = obj.{ax}\n"
+                f"\ttype_{i_}_{ax} = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__\n"
+                f"\tprint('✅ {i}.{ax}:', type(ret))\n"
+                f"except Exception as e:\n"
+                f"\ttype_{i_}_{ax} = '_syft_missing'\n"
+                f"\tprint('❌ {i}.{ax}: Return unavailable')\n"
+                f'\tprint("  Please fix this return type code until there is no exception")\n'
+                f"\tprint('  Error:', e)\n"
+            ).replace("\t", " " * 4)
+
+            list_nb.append(nbf.v4.new_code_cell(code))
+
     return allowlist, debug_list, methods_error_count, missing_return, list_nb
 
 
@@ -249,6 +292,7 @@ def generate_package_support(
 
     DEBUG_FILE_NAME = f"{package_name}.debug.log"
     PKG_SUPPORT_NAME = f"{package_name}.pkg_support.json"
+    IGN_LIST = f"{package_name}.ignorelist.txt"
 
     # missing_return_dir holds all the notebooks and files
     # in missing_return/ directory
@@ -257,6 +301,10 @@ def generate_package_support(
 
     # create_nb = True
     # create_nb = False
+
+    ignore_list = set()
+    if os.path.isfile(IGN_LIST):
+        ignore_list = set(line.strip() for line in open(IGN_LIST))
 
     #
     # list_nb = []
@@ -272,12 +320,12 @@ def generate_package_support(
     modules_list = [package_name]
     debug_list: TypeList[str] = list()
 
-    list_submodules(modules_list, package)
+    list_submodules(modules_list, package, ignore_list)
 
     # print(f"Number of modules {len(modules_list)}")
 
     classes_set, debug_list, allowlist = set_classes(
-        modules_list, package_name, debug_list
+        modules_list, package_name, debug_list, ignore_list
     )
 
     # print(f"Number of classes {len(classes_set)}")
