@@ -23,16 +23,16 @@ def syft_lib_import(module, *args, **kwargs):
 
 @wrapt.when_imported("xgboost")
 def post_import_hook(module):
-    print("hook called")
-    print(queue)
     with open("sy_libs_log.txt", "w+") as f:
+        f.write("hook called\n")
+        f.write(f"{str(queue)}\n")
         while queue:
             syft_module=queue[0]
             try:
                 importlib.import_module(syft_module)
                 globals()[syft_module]=sys.modules[syft_module]
             except Exception as e:
-                f.write(f"Failed to load {syft_module}\n {e}")
+                f.write(f"Failed to load {syft_module}\n {e}\n")
             queue.pop(0)
     
 __builtins__.__import__ = syft_lib_import
