@@ -17,7 +17,6 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 
 # relative
-from ..... import logger
 from ..... import serialize
 from .....core.common.uid import UID
 from .....proto.core.node.common.action.smpc_action_message_pb2 import (
@@ -271,7 +270,7 @@ def smpc_mul(
 
 # Given an SMPC Action map it to an action constructor
 MAP_FUNC_TO_ACTION: Dict[
-    str, Callable[[UID, UID, int, Any], List[SMPCActionMessage]]
+    str, Callable[[int, UID, UID, int, Any], List[SMPCActionMessage]]
 ] = {
     "__add__": functools.partial(smpc_basic_op, "add"),
     "__sub__": functools.partial(smpc_basic_op, "sub"),
