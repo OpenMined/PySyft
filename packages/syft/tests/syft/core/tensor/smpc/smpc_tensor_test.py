@@ -1,6 +1,7 @@
 # stdlib
 import operator
-from typing import Dict
+from typing import Any
+from typing import Dict as TypeDict
 from typing import Final
 from typing import Union
 
@@ -18,7 +19,7 @@ from syft.core.tensor.smpc.share_tensor import ShareTensor
 vms = [sy.VirtualMachine(name=name) for name in ["alice", "bob", "theo", "andrew"]]
 clients = [vm.get_client() for vm in vms]
 
-PUBLIC_VALUES: Final[Dict[str, Union[np.ndarray, torch.Tensor, int]]] = {
+PUBLIC_VALUES: Final[TypeDict[str, Union[np.ndarray, torch.Tensor, int]]] = {
     "numpy_array": np.array([32], dtype=np.int64),
     "torch_tensor": torch.tensor([42], dtype=torch.int64),
     "int": 42,

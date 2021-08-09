@@ -1,3 +1,6 @@
+# future
+from __future__ import annotations
+
 # stdlib
 from copy import deepcopy
 import functools
@@ -23,7 +26,6 @@ from .....proto.core.node.common.action.smpc_action_message_pb2 import (
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import bind_protobuf
-from ....common.uid import UID
 from ....io.address import Address
 from ....tensor.smpc.share_tensor import ShareTensor
 
@@ -58,8 +60,8 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
 
     @staticmethod
     def filter_actions_after_rank(
-        rank: int, actions: List["SMPCActionMessage"]
-    ) -> List["SMPCActionMessage"]:
+        rank: int, actions: List[SMPCActionMessage]
+    ) -> List[SMPCActionMessage]:
         """
         Filter the actions depending on the rank of each party
 
@@ -158,7 +160,7 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(proto: SMPCActionMessage_PB) -> "SMPCActionMessage":
+    def _proto2object(proto: SMPCActionMessage_PB) -> SMPCActionMessage:
         """Creates a ObjectWithID from a protobuf
 
         As a requirement of all objects which inherit from Serializable,
