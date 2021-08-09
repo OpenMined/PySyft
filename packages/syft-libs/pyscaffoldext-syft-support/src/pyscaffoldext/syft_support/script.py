@@ -177,6 +177,16 @@ def get_return_type(t: TypeAny, i: str, ax: str) -> TypeAny:
         # debug_list.append(f"{i}.{t.__name__}: exception occoured \n\t{e}")
 
 
+def add_nb_class_header(class_path: str) -> str:
+    module_name = class_path.split(".")[0]
+    return (
+        f"import {module_name}\n"
+        + "def class_constructor(*args, **kwargs):\n"
+        + f"\tobj = {class_path}()\n"
+        + f"\treturn obj\n"
+    ).replace("\t", " " * 4)
+
+
 def dict_allowlist(
     i: TypeAny,
 ) -> TypeAny:
@@ -196,6 +206,9 @@ def dict_allowlist(
     for ax in dir(class_):
         # print(f'{ax} {class_}')
         # module = class_
+        if ax == "__init__":
+            continue
+
         t = getattr(class_, ax, None)  # Sometimes it return None
         if t is None:
             # print('None')
@@ -216,6 +229,9 @@ def dict_allowlist(
                     missing_return += 1
                     if not if_class_added:
                         list_nb.append(nbf.v4.new_markdown_cell(f"## {i}"))
+                        list_nb.append(
+                            nbf.v4.new_code_cell(add_nb_class_header(class_path=i))
+                        )
                         if_class_added = True
 
                     i_ = i.replace(".", "_")
@@ -223,16 +239,16 @@ def dict_allowlist(
                     code = (
                         f"# {i}.{t.__name__}\n"
                         f"try:\n"
-                        f"\tobj ={i}()\n"
+                        f"\tobj = class_constructor()\n"
                         f"\tret = obj.{t.__name__}()\n"
-                        f"\ttype_{i_}_{t.__name__} = ret.__module__ + '.' + ret.__class__.__name__\n"
-                        f"\tprint('{i}.{t.__name__}: Done')\n"
+                        f"\ttype_{i_}_{t.__name__} = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__\n"
+                        f"\tprint('✅ {i}.{t.__name__}: ', type(ret))\n"
                         f"except Exception as e:\n"
                         f"\ttype_{i_}_{t.__name__} = '_syft_missing'\n"
-                        f"\tprint('{i}.{t.__name__}: Return unavailable')\n"
+                        f"\tprint('❌ {i}.{t.__name__}: Return unavailable')\n"
                         f'\tprint("  Please fix this return type code until there is no exception")\n'
                         f"\tprint('  Error:', e)\n"
-                    )
+                    ).replace("\t", " " * 4)
 
                     list_nb.append(nbf.v4.new_code_cell(code))
                 allowlist[i + "." + t.__name__] = string
@@ -248,16 +264,16 @@ def dict_allowlist(
             code = (
                 f"# {i}.{ax}\n"
                 f"try:\n"
-                f"\tobj ={i}()\n"
-                f"\tret = obj.{ax}()\n"
-                f"\ttype_{i_}_{ax} = ret.__module__ + '.' + ret.__class__.__name__\n"
-                f"\tprint('{i}.{ax}: Done')\n"
+                f"\tobj = class_constructor()\n"
+                f"\tret = obj.{ax}\n"
+                f"\ttype_{i_}_{ax} = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__\n"
+                f"\tprint('✅ {i}.{ax}:', type(ret))\n"
                 f"except Exception as e:\n"
                 f"\ttype_{i_}_{ax} = '_syft_missing'\n"
-                f"\tprint('{i}.{ax}: Return unavailable')\n"
+                f"\tprint('❌ {i}.{ax}: Return unavailable')\n"
                 f'\tprint("  Please fix this return type code until there is no exception")\n'
                 f"\tprint('  Error:', e)\n"
-            )
+            ).replace("\t", " " * 4)
 
             list_nb.append(nbf.v4.new_code_cell(code))
 

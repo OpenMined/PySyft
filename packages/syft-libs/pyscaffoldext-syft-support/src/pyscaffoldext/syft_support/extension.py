@@ -1,5 +1,6 @@
 # stdlib
 import importlib
+import sys
 from argparse import ArgumentParser
 from pathlib import Path
 from typing import List
@@ -81,7 +82,10 @@ def set_pkg_opts(struct: Structure, opts: ScaffoldOpts) -> ActionParams:
     try:
         importlib.import_module(module)
     except ImportError:
-        raise ImportError(f"Make support {module} is installed and can be imported")
+        print(
+            f"pyscaffold syft support extension is unable to import {module}. Try: pip install {module}"
+        )
+        sys.exit(1)
 
     if not opts["requirements"]:
         opts["requirements"] = ["syft", module]
