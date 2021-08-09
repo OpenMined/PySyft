@@ -205,7 +205,6 @@ def dict_allowlist(
             inspect.ismethod(t)
             or inspect.isfunction(t)
             or inspect.isgetsetdescriptor(t)
-            # or isinstance(t, property) # Properties don't have return types :
         ):
             # print(f't for debug: {t} {module}')
             is_error, string = get_return_type(t, i, ax)
@@ -237,6 +236,31 @@ def dict_allowlist(
 
                     list_nb.append(nbf.v4.new_code_cell(code))
                 allowlist[i + "." + t.__name__] = string
+
+        elif isinstance(t, property):
+            missing_return += 1
+            if not if_class_added:
+                list_nb.append(nbf.v4.new_markdown_cell(f"## {i}"))
+                if_class_added = True
+
+            i_ = i.replace(".", "_")
+
+            code = (
+                f"# {i}.{ax}\n"
+                f"try:\n"
+                f"\tobj ={i}()\n"
+                f"\tret = obj.{ax}()\n"
+                f"\ttype_{i_}_{ax} = ret.__module__ + '.' + ret.__class__.__name__\n"
+                f"\tprint('{i}.{ax}: Done')\n"
+                f"except Exception as e:\n"
+                f"\ttype_{i_}_{ax} = '_syft_missing'\n"
+                f"\tprint('{i}.{ax}: Return unavailable')\n"
+                f'\tprint("  Please fix this return type code until there is no exception")\n'
+                f"\tprint('  Error:', e)\n"
+            )
+
+            list_nb.append(nbf.v4.new_code_cell(code))
+
     return allowlist, debug_list, methods_error_count, missing_return, list_nb
 
 
