@@ -25,18 +25,22 @@ class ShareTensor(PassthroughTensor, Serializable):
     def __init__(
         self,
         rank: int,
+        nr_parties: int,
         ring_size: int = 2 ** 64,
         value: Optional[Any] = None,
     ) -> None:
         self.rank = rank
         self.ring_size = ring_size
+        self.nr_parties = nr_parties
         self.min_value, self.max_value = ShareTensor.compute_min_max_from_ring(
             self.ring_size
         )
         super().__init__(value)
 
     def copy_tensor(self):
-        return ShareTensor(rank=self.rank, ring_size=self.ring_size)
+        return ShareTensor(
+            rank=self.rank, nr_parties=self.nr_parties, ring_size=self.ring_size
+        )
 
     @staticmethod
     @lru_cache(32)
@@ -110,7 +114,7 @@ class ShareTensor(PassthroughTensor, Serializable):
 
         share = value.child
         if not isinstance(share, ShareTensor):
-            share = ShareTensor(value=share, rank=rank)
+            share = ShareTensor(value=share, rank=rank, nr_parties=nr_parties)
 
         shares = [
             generator_shares.integers(
@@ -284,18 +288,34 @@ class ShareTensor(PassthroughTensor, Serializable):
 
     def _object2proto(self) -> ShareTensor_PB:
         if isinstance(self.child, np.ndarray):
-            return ShareTensor_PB(array=serialize(self.child), rank=self.rank)
+            return ShareTensor_PB(
+                array=serialize(self.child), rank=self.rank, nr_parties=self.nr_parties
+            )
         elif isinstance(self.child, torch.Tensor):
-            return ShareTensor_PB(array=serialize(np.array(self.child)), rank=self.rank)
+            return ShareTensor_PB(
+                array=serialize(np.array(self.child)),
+                rank=self.rank,
+                nr_parties=self.nr_parties,
+            )
         else:
-            return ShareTensor_PB(tensor=serialize(self.child), rank=self.rank)
+            return ShareTensor_PB(
+                tensor=serialize(self.child), rank=self.rank, nr_parties=self.nr_parties
+            )
 
     @staticmethod
     def _proto2object(proto: ShareTensor_PB) -> "ShareTensor":
         if proto.HasField("tensor"):
-            res = ShareTensor(rank=proto.rank, value=deserialize(proto.tensor))
+            res = ShareTensor(
+                rank=proto.rank,
+                nr_parties=proto.nr_parties,
+                value=deserialize(proto.tensor),
+            )
         else:
-            res = ShareTensor(rank=proto.rank, value=deserialize(proto.array))
+            res = ShareTensor(
+                rank=proto.rank,
+                nr_parties=proto.nr_parties,
+                value=deserialize(proto.array),
+            )
 
         return res
 

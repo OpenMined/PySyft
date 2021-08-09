@@ -43,7 +43,6 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
         kwargs_id: Dict[str, UID],
         result_id: UID,
         address: Address,
-        ranks_not_to_run_action: Optional[List[int]] = None,
         ranks_to_run_action: Optional[List[int]] = None,
         msg_id: Optional[UID] = None,
     ) -> None:
@@ -52,8 +51,7 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
         self.args_id = args_id
         self.kwargs_id = kwargs_id
         self.id_at_location = result_id
-        self.ranks_not_to_run_action = ranks_not_to_run_action
-        self.ranks_to_run_action = ranks_to_run_action
+        self.ranks_to_run_action = ranks_to_run_action if ranks_to_run_action else []
         self.address = address
         self.msg_id = msg_id
         super().__init__(address=address, msg_id=msg_id)
@@ -72,40 +70,14 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
         """
         res_actions = []
         for action in actions:
-
-            should_not_run = (
-                isinstance(action.ranks_not_to_run_action, list)
-                and rank in action.ranks_not_to_run_action
-            )
-
-            should_run = False
-            if (
-                action.ranks_to_run_action == []
-                or (
-                    isinstance(action.ranks_to_run_action, list)
-                    and rank in action.ranks_to_run_action
-                )
-                or (
-                    isinstance(action.ranks_not_to_run_action, list)
-                    and rank not in action.ranks_not_to_run_action
-                )
-            ):
-                should_run = True
-
-            logger.error(f"Rank {rank} {should_not_run} {should_run}")
-            if should_not_run and should_run:
-                raise ValueError(
-                    f"Rank {rank} is also in actions to be run and to not run for {action.name_action}"
-                )
-
-            if should_run:
+            if rank in action.ranks_to_run_action:
                 res_actions.append(action)
 
         return res_actions
 
     @staticmethod
     def get_action_generator_from_op(
-        operation_str: str,
+        operation_str: str, nr_parties: int
     ) -> Callable[[UID, UID, int, Any], Any]:
         """ "
         Get the generator for the operation provided by the argument
@@ -113,7 +85,7 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
             operation_str (str): the name of the operation
 
         """
-        return MAP_FUNC_TO_ACTION[operation_str]
+        return functools.partial(MAP_FUNC_TO_ACTION[operation_str], nr_parties)
 
     @staticmethod
     def get_id_at_location_from_op(seed: bytes, operation_str: str) -> UID:
@@ -205,7 +177,12 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
 
 
 def smpc_basic_op(
-    op_str: str, self_id: UID, other_id: UID, seed_id_locations: int, node: Any
+    op_str: str,
+    nr_parties: int,
+    self_id: UID,
+    other_id: UID,
+    seed_id_locations: int,
+    node: Any,
 ) -> List[SMPCActionMessage]:
     """Generator for SMPC public/private operations add/sub"""
 
@@ -226,7 +203,7 @@ def smpc_basic_op(
                 self_id=self_id,
                 args_id=[other_id],
                 kwargs_id={},
-                ranks_to_run_action=[],
+                ranks_to_run_action=range(nr_parties),
                 result_id=result_id,
                 address=node.address,
             )
@@ -238,7 +215,7 @@ def smpc_basic_op(
                 self_id=self_id,
                 args_id=[],
                 kwargs_id={},
-                ranks_not_to_run_action=[0],
+                ranks_to_run_action=range(1, nr_parties),
                 result_id=result_id,
                 address=node.address,
             )
@@ -261,7 +238,7 @@ def smpc_basic_op(
 
 
 def smpc_mul(
-    self_id: UID, other_id: UID, seed_id_locations: int, node: Any
+    nr_parties: int, self_id: UID, other_id: UID, seed_id_locations: int, node: Any
 ) -> List[SMPCActionMessage]:
     """Generator for the smpc_mul with a public value"""
     generator = np.random.default_rng(seed_id_locations)
@@ -283,7 +260,7 @@ def smpc_mul(
                 self_id=self_id,
                 args_id=[other_id],
                 kwargs_id={},
-                ranks_to_run_action=[],
+                ranks_to_run_action=range(nr_parties),
                 result_id=result_id,
                 address=node.address,
             )
