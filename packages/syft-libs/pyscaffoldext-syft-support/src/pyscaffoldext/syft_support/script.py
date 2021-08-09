@@ -20,9 +20,13 @@ from os import path
 from typing import Any as TypeAny
 from typing import Dict as TypeDict
 from typing import List as TypeList
+from typing import Optional
 from typing import Set as TypeSet
+from typing import Tuple as TypeTuple
+from typing import Union
 
 import nbformat as nbf
+from pyscaffold.operations import no_overwrite
 
 # package_name = 'xgboost'
 
@@ -55,7 +59,7 @@ def set_classes(
 ) -> TypeAny:
 
     classes_set = set()
-    allowlist: TypeDict[str, str] = dict()
+    allowlist: TypeList[str, str] = []
     # print(f'Len of modules_list {len(modules_list)}')
     for i in modules_list:
         try:
@@ -93,7 +97,7 @@ def set_classes(
                     if is_error:
                         debug_list.append(string)
                     else:
-                        allowlist[i + "." + t.__name__] = string
+                        allowlist.append((f"{i}.{t.__name__}", string))
         except Exception as e:
             # print(f"set_classes: module_name = {i}: exception occoured \n\t{e}")
             debug_list.append(
@@ -191,12 +195,11 @@ def dict_allowlist(
     i: TypeAny,
 ) -> TypeAny:
 
-    # allowlist = {}
     methods_error_count = 0
     missing_return = 0
     # for i in classes_set:
     debug_list: TypeList[str] = list()
-    allowlist: TypeDict[str, str] = dict()
+    allowlist: TypeList[TypeTuple[str, str]] = []
     list_nb: TypeList[TypeAny] = list()
     class_ = class_import(i)
     if_class_added = False
@@ -280,7 +283,9 @@ def dict_allowlist(
     return allowlist, debug_list, methods_error_count, missing_return, list_nb
 
 
-def generate_package_support(package_name: str, DEBUG: bool = False) -> str:
+def generate_package_support(
+    package_name: str, DEBUG: bool = False
+) -> TypeTuple[str, TypeDict[str, str]]:
 
     # DEBUG = args.debug
     # package_name = args.lib
@@ -289,13 +294,13 @@ def generate_package_support(package_name: str, DEBUG: bool = False) -> str:
     PKG_SUPPORT_NAME = f"{package_name}.pkg_support.json"
     IGN_LIST = f"{package_name}.ignorelist.txt"
 
-    DR_NAME = f"{package_name}_missing_return"
+    # missing_return_dir holds all the notebooks and files
+    # in missing_return/ directory
+    # with file_name:content as key:value pair
+    missing_returns_dir: TypeDict[str, str] = {}
 
     # create_nb = True
-
-    if not path.exists(DR_NAME):
-        os.mkdir(DR_NAME)
-        # create_nb = False
+    # create_nb = False
 
     ignore_list = set()
     if os.path.isfile(IGN_LIST):
@@ -343,19 +348,19 @@ def generate_package_support(package_name: str, DEBUG: bool = False) -> str:
             missing_return_i,
             list_nb_i,
         ) = dict_allowlist(class_)
-        allowlist = {**allowlist, **allowlist_i}  # merging dicts
+        allowlist += allowlist_i  # append to list
 
         debug_list.extend(debug_list_i)
 
         if len(list_nb_i) > 0:
             nb = nbf.v4.new_notebook()
             class_name = class_.replace(".", "_")
-            NB_TYPES_NAME = f"{package_name}_missing_return/{class_name}.ipynb"
+            nb_name = f"{class_name}.ipynb"
 
             missing_classes.append(class_name)
 
             nb["cells"] = list_nb_i
-            nbf.write(nb, NB_TYPES_NAME)
+            missing_returns_dir[nb_name] = (nbf.writes(nb), no_overwrite())
 
             list_nb.extend(list_nb_i)
         methods_error_count += methods_error_count_i
@@ -365,29 +370,23 @@ def generate_package_support(package_name: str, DEBUG: bool = False) -> str:
 
     if len(missing_classes) > 0:
         # create an __init__ file :)
-
-        initial_file = f = open(f"{package_name}_missing_return/__init__.py", "w")
-
-        for a in missing_classes:
-            initial_file.write(f"from . import {a}\n")
+        init_file = "".join(f"from . import {a}\n" for a in missing_classes)
+        missing_returns_dir["__init__.py"] = (init_file, no_overwrite())
 
     package_support: TypeDict[str, TypeAny] = dict()
 
     package_support["lib"] = package_name
     # petlib doesnot have version
     # package_support["Version"] = package.__version__
-    package_support["class"] = list(classes_set)
+    # sort it all
+    classlist = list(classes_set)
+    classlist.sort()
+    modules_list.sort()
+    allowlist.sort()
+
+    package_support["classes"] = classlist
     package_support["modules"] = modules_list
     package_support["methods"] = allowlist
-
-    with open(PKG_SUPPORT_NAME, "w") as outfile:
-        json.dump(package_support, outfile)
-
-    if DEBUG:
-        # print(debug_list)
-        with open(DEBUG_FILE_NAME, "w") as f:
-            for item in debug_list:
-                f.write(f"{item}\n")
 
     print(f"-----{package_name} Summary-----")
     print("Modules")
@@ -400,11 +399,10 @@ def generate_package_support(package_name: str, DEBUG: bool = False) -> str:
     print(f"\tNot added:{methods_error_count}")
     print("-----------------")
 
-    return json.dumps(package_support)
+    return json.dumps(package_support), missing_returns_dir
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-l", dest="lib", required=True, help="name of the model to be added to ast"

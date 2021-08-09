@@ -122,14 +122,17 @@ def add_files(struct: Structure, opts: ScaffoldOpts) -> ActionParams:
     conftest_py = get_template("conftest_py", relative_to=templates.__name__)
     VERSION = get_template("VERSION", relative_to=templates.__name__)
     pyproject_toml = get_template("pyproject_toml", relative_to=templates.__name__)
+    update_py = get_template("update_py",relative_to=templates.__name__)
+    update_sh = get_template("update_sh",relative_to=templates.__name__)
 
     module = opts["name"][5:]
-    package_support = generate_package_support(package_name=module)
+    package_support, missing_return_dir = generate_package_support(package_name=module)
 
     files: Structure = {
         "setup.cfg": (setup_cfg, no_overwrite()),
         "pyproject.toml": (pyproject_toml, no_overwrite()),
         "proto": {"sample.proto": (proto, skip_on_update())},
+        "_missing_return": missing_return_dir,
         "src": {
             opts["package"]: {
                 "__init__.py": (init_py, no_overwrite()),
@@ -146,6 +149,8 @@ def add_files(struct: Structure, opts: ScaffoldOpts) -> ActionParams:
         },
         "scripts": {
             "build_proto.sh": (build_proto, no_overwrite()),
+            "update.py":(update_py,no_overwrite()),
+            "update.sh":(update_sh,no_overwrite())
         },
     }
 
