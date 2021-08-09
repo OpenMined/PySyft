@@ -203,7 +203,7 @@ def smpc_basic_op(
                 self_id=self_id,
                 args_id=[other_id],
                 kwargs_id={},
-                ranks_to_run_action=range(nr_parties),
+                ranks_to_run_action=list(range(nr_parties)),
                 result_id=result_id,
                 address=node.address,
             )
@@ -215,7 +215,7 @@ def smpc_basic_op(
                 self_id=self_id,
                 args_id=[],
                 kwargs_id={},
-                ranks_to_run_action=range(1, nr_parties),
+                ranks_to_run_action=list(range(1, nr_parties)),
                 result_id=result_id,
                 address=node.address,
             )
@@ -260,7 +260,7 @@ def smpc_mul(
                 self_id=self_id,
                 args_id=[other_id],
                 kwargs_id={},
-                ranks_to_run_action=range(nr_parties),
+                ranks_to_run_action=list(range(nr_parties)),
                 result_id=result_id,
                 address=node.address,
             )
