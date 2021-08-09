@@ -254,7 +254,7 @@ def dict_allowlist(
                     ).replace("\t", " " * 4)
 
                     list_nb.append(nbf.v4.new_code_cell(code))
-                allowlist[i + "." + t.__name__] = string
+                allowlist.append((i + "." + t.__name__, string))
 
         elif isinstance(t, property):
             missing_return += 1
@@ -352,9 +352,9 @@ def generate_package_support(
 
         debug_list.extend(debug_list_i)
         tmp_class = class_import(class_)
-        original_path = tmp_class.__module__+"."+tmp_class.__name__
+        original_path = tmp_class.__module__ + "." + tmp_class.__name__
 
-        if len(list_nb_i) > 0  and original_path == class_:
+        if len(list_nb_i) > 0 and original_path == class_:
             nb = nbf.v4.new_notebook()
             class_name = class_.replace(".", "_")
             nb_name = f"{class_name}.ipynb"
