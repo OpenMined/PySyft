@@ -77,7 +77,7 @@ def publish(scalars: TypeList[Any], acc: Any, sigma: float = 1.5) -> TypeList[An
 
 
 def get_mechanism_for_entity(
-    scalars: TypeList[Any], entity: Type[Entity], sigma=1.5
+    scalars: TypeList[Any], entity: Entity, sigma: float = 1.5
 ) -> Type[iDPGaussianMechanism]:
     m_id = "ms_"
     for s in scalars:
