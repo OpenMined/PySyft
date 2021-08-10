@@ -182,7 +182,7 @@ class PhiTensorAncestor(TensorChainManager):
                     )
 
                 if isinstance(max_val, (float, int)):
-                    max_vals = (self.child[i : i + 1] * 0) + max_val   # noqa: E203
+                    max_vals = (self.child[i : i + 1] * 0) + max_val  # noqa: E203
                 else:
                     raise Exception(
                         "min_val should be a float, got "
