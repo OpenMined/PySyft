@@ -9,13 +9,13 @@ from typing_extensions import final
 # syft relative
 from ......proto.core.node.domain.service.publish_scalars_service_pb2 import (
     PublishScalarsAction as PublishScalarsAction_PB,
-)
-from .....common.message import ImmediateSyftMessageWithoutReply
-from .....common.serde.deserialize import _deserialize as deserialize
-from .....common.serde.serializable import bind_protobuf
-from .....common.serde.serialize import _serialize as serialize
-from .....common.uid import UID
-from .....io.address import Address
+)  # type: ignore
+from .....common.message import ImmediateSyftMessageWithoutReply  # type: ignore
+from .....common.serde.deserialize import _deserialize as deserialize  # type: ignore
+from .....common.serde.serializable import bind_protobuf  # type: ignore
+from .....common.serde.serialize import _serialize as serialize  # type: ignore
+from .....common.uid import UID  # type: ignore
+from .....io.address import Address  # type: ignore
 
 
 @bind_protobuf
