@@ -16,7 +16,6 @@ from .ancestors import AutogradTensorAncestor
 from .ancestors import PhiTensorAncestor
 from .fixed_precision_tensor_ancestor import FixedPrecisionTensorAncestor
 from .passthrough import PassthroughTensor  # type: ignore
-from .smpc.mpc_tensor_ancestor import MPCTensorAncestor
 
 # from .smpc.share_tensor import ShareTensor
 

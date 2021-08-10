@@ -23,7 +23,6 @@ defaults:
     working-directory: ./packages/syft
 
 jobs:
-<<<<<<< HEAD
   python-linting:
     runs-on: ubuntu-latest
     strategy:
@@ -90,8 +89,6 @@ jobs:
         #   run: |
         #     git diff --name-only $(git merge-base ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }}) | xargs docstr-coverage --accept-empty
 
-=======
->>>>>>> d6688c7d1a2dea7ca122cde60e0a14b3690aa678
   python-tests-latest-versions:
     strategy:
       max-parallel: 3
