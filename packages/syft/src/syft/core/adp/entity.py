@@ -20,7 +20,7 @@ from ...proto.core.adp.entity_pb2 import Entity as Entity_PB
 
 @bind_protobuf
 class Entity(Serializable):
-    def __init__(self, *, id: Optional[UID] = None, **attributes) -> None:
+    def __init__(self, *, id: Optional[UID] = None, **attributes: Any) -> None:
 
         # If someone doesn't provide a unique name - make one up!
         if "name" not in attributes.keys():
@@ -30,7 +30,7 @@ class Entity(Serializable):
         self.id = id if id else UID()
 
     @property
-    def name(self):
+    def name(self) -> None:
         return self.attributes["name"]
 
     def __hash__(self) -> int:

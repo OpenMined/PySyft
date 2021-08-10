@@ -79,7 +79,7 @@ def create_searchable_function_from_polynomial(
 
 
 @lru_cache(maxsize=None)
-def minimize_poly(poly: Basic, *rranges, force_all_searches: bool = False, **s2i):
+def minimize_poly(poly: Basic, *rranges, force_all_searches: bool = False, **s2i) -> TypeList[optimize.OptimizeResult]:
     """Minimizes a polynomial using types basic enough for lru_cache"""
 
     # convert polynomial to function object with API necessary for scipy optimizer
@@ -89,7 +89,7 @@ def minimize_poly(poly: Basic, *rranges, force_all_searches: bool = False, **s2i
     return minimize_function(f=search_fun, rranges=rranges, force_all_searches=False)
 
 
-def flatten_and_maximize_sympoly(poly, force_all_searches: bool = False):
+def flatten_and_maximize_sympoly(poly: Basic, force_all_searches: bool = False) -> TypeList[optimize.OptimizeResult]:
 
     i2s = list(poly.free_symbols)
     s2i = {s: i for i, s in enumerate(i2s)}
