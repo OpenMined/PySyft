@@ -38,7 +38,7 @@ class GetSymbolsMapper(WalkMapper):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.free_symbols: Set[Any] = set()
 
-    def visit(self, *args: Any, **kwargs: Any) -> None:
+    def visit(self, *args: Any, **kwargs: Any) -> bool:
         for arg in args:
             if isinstance(arg, Variable):
                 self.free_symbols.add(arg)
@@ -79,7 +79,9 @@ def create_searchable_function_from_polynomial(
 
 
 @lru_cache(maxsize=None)
-def minimize_poly(poly: Basic, *rranges, force_all_searches: bool = False, **s2i) -> TypeList[optimize.OptimizeResult]:
+def minimize_poly(
+    poly: Basic, *rranges: TypeTuple, force_all_searches: bool = False, **s2i: TypeDict
+) -> TypeList[optimize.OptimizeResult]:
     """Minimizes a polynomial using types basic enough for lru_cache"""
 
     # convert polynomial to function object with API necessary for scipy optimizer
@@ -89,7 +91,9 @@ def minimize_poly(poly: Basic, *rranges, force_all_searches: bool = False, **s2i
     return minimize_function(f=search_fun, rranges=rranges, force_all_searches=False)
 
 
-def flatten_and_maximize_sympoly(poly: Basic, force_all_searches: bool = False) -> TypeList[optimize.OptimizeResult]:
+def flatten_and_maximize_sympoly(
+    poly: Basic, force_all_searches: bool = False
+) -> TypeList[optimize.OptimizeResult]:
 
     i2s = list(poly.free_symbols)
     s2i = {s: i for i, s in enumerate(i2s)}
@@ -112,7 +116,7 @@ def flatten_and_maximize_sympoly(poly: Basic, force_all_searches: bool = False) 
     )
 
 
-def flatten_and_maximize_poly(poly, force_all_searches: bool = False):
+def flatten_and_maximize_poly(poly: Any, force_all_searches: bool = False):
 
     mapper = GetSymbolsMapper()
     mapper(poly)
@@ -139,7 +143,7 @@ def flatten_and_maximize_poly(poly, force_all_searches: bool = False):
 
 
 def create_lookup_tables_for_symbol(
-    polynomial,
+    polynomial: Any,
 ) -> TypeTuple[TypeList[str], TypeDict[str, int]]:
 
     mapper = GetSymbolsMapper()
@@ -152,8 +156,8 @@ def create_lookup_tables_for_symbol(
 
 
 def minimize_function(
-    f,
-    rranges,
+    f: Any,
+    rranges: Any,
     constraints: TypeList[TypeDict[str, Any]] = [],
     force_all_searches: bool = False,
 ) -> TypeList[optimize.OptimizeResult]:
@@ -181,7 +185,7 @@ def minimize_function(
     return results
 
 
-def max_lipschitz_wrt_entity(scalars, entity: Entity):
+def max_lipschitz_wrt_entity(scalars: Any, entity: Entity) -> float:
     result = max_lipschitz_via_jacobian(scalars, input_entity=entity)[0][-1]
     if isinstance(result, float):
         return -result
@@ -195,7 +199,7 @@ def max_lipschitz_via_jacobian(
     data_dependent: bool = True,
     force_all_searches: bool = False,
     try_hessian_shortcut: bool = False,
-):
+) -> TypeList:
     # scalars = R^d` representing the d' dimentional output of g
     # input_entity = the 'i'th entity for which we want to compute a lipschitz bound
 
