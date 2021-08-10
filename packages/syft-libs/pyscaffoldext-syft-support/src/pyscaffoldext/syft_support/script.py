@@ -238,19 +238,23 @@ def dict_allowlist(
                         if_class_added = True
 
                     i_ = i.replace(".", "_")
-
                     code = (
                         f"# {i}.{t.__name__}\n"
                         f"try:\n"
                         f"\tobj = class_constructor()\n"
                         f"\tret = obj.{t.__name__}()\n"
-                        f"\ttype_{i_}_{t.__name__} = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__\n"
-                        f"\tprint('✅ {i}.{t.__name__}: ', type(ret))\n"
+                        f"\ttype_{i_}_{t.__name__} = (\n"
+                        f"\tgetattr(ret, '__module__', None) + '.' + ret.__class__.__name__\n"
+                        f"\t\tif getattr(ret, '__module__', None)\n"
+                        f"\t\telse ret.__class__.__name__\n"
+                        f"\t\t)\n"
+                        f'\t\tprint("✅ {i}.{t.__name__}:"\n',
+                        f"type_{i_}_{t.__name__})\n"
                         f"except Exception as e:\n"
                         f"\ttype_{i_}_{t.__name__} = '_syft_missing'\n"
                         f"\tprint('❌ {i}.{t.__name__}: Return unavailable')\n"
                         f'\tprint("  Please fix this return type code until there is no exception")\n'
-                        f"\tprint('  Error:', e)\n"
+                        f"\tprint('   Error:', e)\n",
                     ).replace("\t", " " * 4)
 
                     list_nb.append(nbf.v4.new_code_cell(code))
@@ -269,13 +273,18 @@ def dict_allowlist(
                 f"try:\n"
                 f"\tobj = class_constructor()\n"
                 f"\tret = obj.{ax}\n"
-                f"\ttype_{i_}_{ax} = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__\n"
-                f"\tprint('✅ {i}.{ax}:', type(ret))\n"
+                f"\ttype_{i_}_{ax} = (\n"
+                f"\tgetattr(ret, '__module__', None) + '.' + ret.__class__.__name__\n"
+                f"\t\tif getattr(ret, '__module__', None)\n"
+                f"\t\telse ret.__class__.__name__\n"
+                f"\t\t)\n"
+                f'\t\tprint("✅ {i}.{ax}:"\n',
+                f"type_{i_}_{ax})\n"
                 f"except Exception as e:\n"
                 f"\ttype_{i_}_{ax} = '_syft_missing'\n"
                 f"\tprint('❌ {i}.{ax}: Return unavailable')\n"
                 f'\tprint("  Please fix this return type code until there is no exception")\n'
-                f"\tprint('  Error:', e)\n"
+                f"\tprint('  Error:', e)\n",
             ).replace("\t", " " * 4)
 
             list_nb.append(nbf.v4.new_code_cell(code))
@@ -352,7 +361,12 @@ def generate_package_support(
 
         debug_list.extend(debug_list_i)
         tmp_class = class_import(class_)
-        original_path = tmp_class.__module__ + "." + tmp_class.__name__
+        try:
+            original_path = tmp_class.__module__ + "." + tmp_class.__name__
+        except AttributeError as e:
+            print(class_)
+            print(tmp_class)
+            print(e)
 
         if len(list_nb_i) > 0 and original_path == class_:
             nb = nbf.v4.new_notebook()
