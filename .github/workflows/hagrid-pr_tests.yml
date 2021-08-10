@@ -88,8 +88,6 @@ jobs:
       - name: Build the Docker image
         run: |
           ./build_docker.sh
-<<<<<<< HEAD
-=======
 
   hagrid-tests-latest-versions:
     strategy:
@@ -135,4 +133,3 @@ jobs:
       - name: Run normal tests
         run: |
           pytest --durations=50
->>>>>>> d6688c7d1a2dea7ca122cde60e0a14b3690aa678

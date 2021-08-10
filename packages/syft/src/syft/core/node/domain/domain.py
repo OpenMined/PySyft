@@ -20,7 +20,6 @@ from ....logger import critical
 from ....logger import debug
 from ....logger import info
 from ....logger import traceback
-from ...adp.adversarial_accountant import AdversarialAccountant
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage
 from ...common.uid import UID
