@@ -8,6 +8,7 @@ from nacl.signing import VerifyKey
 
 # relative
 from ...... import lib
+from ...... import logger
 from ......logger import traceback_and_raise
 from .....store.storeable_object import StorableObject
 from ....abstract.node import AbstractNode
@@ -53,6 +54,7 @@ class SMPCExecutorService(ImmediateNodeServiceWithoutReply):
             upcasted_args,
             upcasted_kwargs,
         ) = lib.python.util.upcast_args_and_kwargs(args, kwargs)
+        logger.warning(func)
         result = func(_self, *upcasted_args, **upcasted_kwargs)
 
         if lib.python.primitive_factory.isprimitive(value=result):

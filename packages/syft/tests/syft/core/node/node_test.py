@@ -95,12 +95,12 @@ def test_known_child_nodes() -> None:
     bob_phone_client.register(client=bob_vm_client)
 
     assert len(bob_phone.known_child_nodes) == 1
-    assert bob_vm in bob_phone.known_child_nodes
+    assert bob_vm.id in [node.id for node in bob_phone.known_child_nodes]
 
     bob_phone_client.register(client=bob_vm_client_2)
 
     assert len(bob_phone.known_child_nodes) == 2
-    assert bob_vm_2 in bob_phone.known_child_nodes
+    assert bob_vm_2.id in [node.id for node in bob_phone.known_child_nodes]
 
 
 @pytest.mark.slow
