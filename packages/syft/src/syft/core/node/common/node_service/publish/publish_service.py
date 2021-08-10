@@ -9,15 +9,15 @@ from nacl.signing import VerifyKey
 
 # relative
 # syft relative
-from ......core.adp.publish import publish
-from ......lib.python import List
-from ......logger import traceback_and_raise
-from .....common.uid import UID
-from .....store.storeable_object import StorableObject
-from .....tensor.tensor import PassthroughTensor
-from ....abstract.node import AbstractNode
-from ....common.node_service.node_service import ImmediateNodeServiceWithoutReply
-from ..publish.publish_messages import PublishScalarsAction
+from .....adp.publish import publish #type: ignore
+from ......lib.python import List #type: ignore
+from ......logger import traceback_and_raise #type: ignore
+from .....common.uid import UID #type: ignore
+from .....store.storeable_object import StorableObject #type: ignore
+from .....tensor.tensor import PassthroughTensor #type: ignore
+from ....abstract.node import AbstractNode #type: ignore
+from ....common.node_service.node_service import ImmediateNodeServiceWithoutReply#type: ignore
+from ..publish.publish_messages import PublishScalarsAction#type: ignore
 
 
 class PublishScalarsService(ImmediateNodeServiceWithoutReply):
