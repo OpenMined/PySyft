@@ -8,16 +8,19 @@ from typing import Type
 from nacl.signing import VerifyKey
 
 # relative
+from ......lib.python import List  # type: ignore
+from ......logger import traceback_and_raise  # type: ignore
+
 # syft relative
-from .....adp.publish import publish #type: ignore
-from ......lib.python import List #type: ignore
-from ......logger import traceback_and_raise #type: ignore
-from .....common.uid import UID #type: ignore
-from .....store.storeable_object import StorableObject #type: ignore
-from .....tensor.tensor import PassthroughTensor #type: ignore
-from ....abstract.node import AbstractNode #type: ignore
-from ....common.node_service.node_service import ImmediateNodeServiceWithoutReply#type: ignore
-from ..publish.publish_messages import PublishScalarsAction#type: ignore
+from .....adp.publish import publish  # type: ignore
+from .....common.uid import UID  # type: ignore
+from .....store.storeable_object import StorableObject  # type: ignore
+from .....tensor.tensor import PassthroughTensor  # type: ignore
+from ....abstract.node import AbstractNode  # type: ignore
+from ....common.node_service.node_service import (
+    ImmediateNodeServiceWithoutReply,  # type: ignore
+)
+from ..publish.publish_messages import PublishScalarsAction  # type: ignore
 
 
 class PublishScalarsService(ImmediateNodeServiceWithoutReply):
