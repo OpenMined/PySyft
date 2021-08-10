@@ -33,6 +33,7 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor, RecursiveSerde):
 
     __attr_allowlist__ = [
         "child",
+        "requires_grad",
         "_grad",
         "_grad_fn",
         "ops",
