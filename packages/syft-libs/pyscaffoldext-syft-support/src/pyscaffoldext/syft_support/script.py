@@ -248,8 +248,8 @@ def dict_allowlist(
                         f"\t\tif getattr(ret, '__module__', None)\n"
                         f"\t\telse ret.__class__.__name__\n"
                         f"\t\t)\n"
-                        f'\t\tprint("✅ {i}.{t.__name__}:"\n'
-                        f"type_{i_}_{t.__name__})\n"
+                        f'\tprint("✅ {i}.{t.__name__}:",\n'
+                        f"\t\ttype_{i_}_{t.__name__})\n"
                         f"except Exception as e:\n"
                         f"\ttype_{i_}_{t.__name__} = '_syft_missing'\n"
                         f"\tprint('❌ {i}.{t.__name__}: Return unavailable')\n"
