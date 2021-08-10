@@ -1,7 +1,11 @@
 # stdlib
 from copy import deepcopy
+from packages.syft.src.syft.core.adp.entity import Entity
 import random
 from typing import Any
+from typing import Type
+from typing import List as TypeList
+from typing import Dict as TypeDict
 
 # third party
 import numpy as np
@@ -13,7 +17,7 @@ from .idp_gaussian_mechanism import iDPGaussianMechanism
 from .search import max_lipschitz_wrt_entity
 
 
-def publish(scalars, acc: Any, sigma: float = 1.5) -> float:
+def publish(scalars: TypeList[Any], acc: Any, sigma: float = 1.5) -> TypeList[Any]:
 
     acc_original = acc
 
@@ -72,7 +76,9 @@ def publish(scalars, acc: Any, sigma: float = 1.5) -> float:
     return output
 
 
-def get_mechanism_for_entity(scalars, entity, sigma=1.5):
+def get_mechanism_for_entity(
+    scalars: TypeList[Any], entity: Type[Entity], sigma=1.5
+) -> Type[iDPGaussianMechanism]:
     m_id = "ms_"
     for s in scalars:
         m_id += str(s.id).split(" ")[1][:-1] + "_"
@@ -90,7 +96,9 @@ def get_mechanism_for_entity(scalars, entity, sigma=1.5):
     )
 
 
-def get_all_entity_mechanisms(scalars, sigma: float = 1.5):
+def get_all_entity_mechanisms(
+    scalars: TypeList[Any], sigma: float = 1.5
+) -> TypeDict[Entity, Any]:
     entities = set()
     for s in scalars:
         for i_s in s.input_scalars:

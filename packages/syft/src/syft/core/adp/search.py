@@ -67,7 +67,9 @@ def create_searchable_function_from_polynomial(
 
     else:
 
-        def _run_specific_args(tuple_of_args: tuple):
+        def _run_specific_args(
+            tuple_of_args: tuple,
+        ) -> EM:
             kwargs = {sym: tuple_of_args[i] for sym, i in symbol2index.items()}
             output = poly.subs(kwargs)
 
@@ -116,7 +118,9 @@ def flatten_and_maximize_sympoly(
     )
 
 
-def flatten_and_maximize_poly(poly: Any, force_all_searches: bool = False):
+def flatten_and_maximize_poly(
+    poly: Any, force_all_searches: bool = False
+) -> TypeList[optimize.OptimizeResult]:
 
     mapper = GetSymbolsMapper()
     mapper(poly)
@@ -199,7 +203,7 @@ def max_lipschitz_via_jacobian(
     data_dependent: bool = True,
     force_all_searches: bool = False,
     try_hessian_shortcut: bool = False,
-) -> TypeList:
+) -> TypeTuple[TypeList[float], Any]:
     # scalars = R^d` representing the d' dimentional output of g
     # input_entity = the 'i'th entity for which we want to compute a lipschitz bound
 
