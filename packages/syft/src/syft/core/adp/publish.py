@@ -1,6 +1,5 @@
 # stdlib
 from copy import deepcopy
-from packages.syft.src.syft.core.adp.entity import Entity
 import random
 from typing import Any
 from typing import Type
@@ -15,6 +14,7 @@ from pymbolic.mapper.substitutor import make_subst_func
 # relative
 from .idp_gaussian_mechanism import iDPGaussianMechanism
 from .search import max_lipschitz_wrt_entity
+from .entity import Entity
 
 
 def publish(scalars: TypeList[Any], acc: Any, sigma: float = 1.5) -> TypeList[Any]:
