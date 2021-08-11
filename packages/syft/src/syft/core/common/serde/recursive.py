@@ -1,4 +1,6 @@
 # stdlib
+from typing import Callable
+from typing import Dict
 from typing import List
 
 # third party
@@ -28,6 +30,7 @@ class RecursiveSerde(Serializable):
 
     # put attr names here - set this to None to include all attrs (not recommended)
     __attr_allowlist__: List[str] = []
+    __serde_overrides__ = {}
 
     def _object2proto(self) -> RecursiveSerde_PB:
 
@@ -36,8 +39,12 @@ class RecursiveSerde(Serializable):
             attrs = {}
             for attr_name in self.__attr_allowlist__:
                 if hasattr(self, attr_name):
-                    attrs[attr_name] = getattr(self, attr_name)
-
+                    if self.__serde_overrides__.get(attr_name, None) is None:
+                        attrs[attr_name] = getattr(self, attr_name)
+                    else:
+                        attrs[attr_name] = self.__serde_overrides__[attr_name][0](
+                            getattr(self, attr_name)
+                        )
         # else include all attrs
         else:
             attrs = self.__dict__  # type: ignore
@@ -57,7 +64,12 @@ class RecursiveSerde(Serializable):
         obj = class_type.__new__(class_type)  # type: ignore
 
         for attr_name, attr_value in attrs.items():
-            setattr(obj, attr_name, attr_value)
+            if obj.__serde_overrides__.get(attr_name, None) is None:
+                setattr(obj, attr_name, attr_value)
+            else:
+                setattr(
+                    obj, attr_name, obj.__serde_overrides__[attr_name][1](attr_value)
+                )
 
         return obj
 
