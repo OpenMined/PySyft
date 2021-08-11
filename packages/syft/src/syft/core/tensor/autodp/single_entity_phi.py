@@ -17,6 +17,7 @@ from ...adp.entity import Entity
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...common.serde.serializable import bind_protobuf
 from ..ancestors import AutogradTensorAncestor
+from ..ancestors import AcceptableSimpleType
 from ..passthrough import PassthroughTensor
 from ..passthrough import SupportedChainType
 from ..passthrough import implements
@@ -84,7 +85,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             scalar_manager=scalar_manager,
         )
 
-    def publish(self, acc: Any, sigma: float):
+    def publish(self, acc: Any, sigma: float) -> AcceptableSimpleType:
         return self.__class__(self.child.publish(acc=acc, sigma=sigma))
 
     @property
