@@ -261,7 +261,7 @@ lib_ast = create_lib_ast(None)
 @wrapt.when_imported("opacus")
 @wrapt.when_imported("numpy")
 @wrapt.when_imported("sklearn")
-@wrapt.when_imported("pandas")
+# @wrapt.when_imported("pandas")
 @wrapt.when_imported("PIL")
 @wrapt.when_imported("petlib")
 @wrapt.when_imported("openmined_psi")
@@ -303,6 +303,7 @@ def _map2syft_types(
     for i, (func, return_type) in enumerate(methods):
         if return_type.startswith("Union"):
             types = return_type[5:].strip("[]").split(",")
+            types = [t.strip() for t in types]
             for i in range(len(types)):
                 if types[i] in primitive_map:
                     types[i] = primitive_map[types[i]]

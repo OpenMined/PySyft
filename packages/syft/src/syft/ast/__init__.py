@@ -127,15 +127,19 @@ def add_modules(
 
         parent = get_parent(target_module, ast)
         attr_name = target_module.rsplit(".", 1)[-1]
-        parent.add_attr(
-            attr_name=attr_name,
-            attr=module.Module(
-                path_and_name=target_module,
-                object_ref=ref,
-                return_type_name="",
-                client=ast.client,
-            ),
-        )
+        try:
+            parent.add_attr(
+                attr_name=attr_name,
+                attr=module.Module(
+                    path_and_name=target_module,
+                    object_ref=ref,
+                    return_type_name="",
+                    client=ast.client,
+                ),
+            )
+        except AttributeError as e:
+            print(target_module, attr_name)
+            raise e
 
 
 def add_classes(

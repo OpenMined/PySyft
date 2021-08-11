@@ -176,7 +176,11 @@ class Module(ast.attribute.Attribute):
             return
 
         if path[index] not in self.attrs:
-            attr_ref = getattr(self.object_ref, path[index])
+            try:
+                attr_ref = getattr(self.object_ref, path[index])
+            except AttributeError as e:
+                print(e)
+                return
 
             if inspect.ismodule(attr_ref):
                 self.add_attr(
