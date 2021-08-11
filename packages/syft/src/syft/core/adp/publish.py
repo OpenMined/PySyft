@@ -2,9 +2,9 @@
 from copy import deepcopy
 import random
 from typing import Any
-from typing import Type
-from typing import List as TypeList
 from typing import Dict as TypeDict
+from typing import List as TypeList
+from typing import Type
 
 # third party
 import numpy as np
@@ -12,9 +12,9 @@ from pymbolic.mapper.substitutor import SubstitutionMapper
 from pymbolic.mapper.substitutor import make_subst_func
 
 # relative
+from .entity import Entity
 from .idp_gaussian_mechanism import iDPGaussianMechanism
 from .search import max_lipschitz_wrt_entity
-from .entity import Entity
 
 
 def publish(scalars: TypeList[Any], acc: Any, sigma: float = 1.5) -> TypeList[Any]:

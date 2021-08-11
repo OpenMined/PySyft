@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 # stdlib
-from typing import Any, Optional
+from typing import Any
+from typing import Optional
 
 # third party
 import numpy as np

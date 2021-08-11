@@ -5,17 +5,16 @@ from uuid import UUID
 import numpy as np
 
 # relative
+from .....core.common.serde.recursive import RecursiveSerde
 from ...passthrough import is_acceptable_simple_type
 from ..tensor import AutogradTensor
 from .op import Op
-from .....core.common.serde.recursive import RecursiveSerde
 
 
 class AddOp(Op, RecursiveSerde):
     """Sumation operation with 2 tensors"""
-    
-    __attr_allowlist__ = [
-    ]
+
+    __attr_allowlist__ = []
 
     def forward(self, x: AutogradTensor, y: AutogradTensor) -> AutogradTensor:  # type: ignore
         self.x = x

@@ -18,10 +18,10 @@ from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...common.serde.serializable import bind_protobuf
 from ..ancestors import AutogradTensorAncestor
 from ..passthrough import PassthroughTensor
+from ..passthrough import SupportedChainType
 from ..passthrough import implements
 from ..passthrough import inputs2child
 from ..passthrough import is_acceptable_simple_type
-from ..passthrough import SupportedChainType
 from .initial_gamma import InitialGammaTensor
 
 
@@ -86,7 +86,6 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
 
     def publish(self, acc: Any, sigma: float):
         return self.__class__(self.child.publish(acc=acc, sigma=sigma))
-
 
     @property
     def min_vals(self) -> np.ndarray:

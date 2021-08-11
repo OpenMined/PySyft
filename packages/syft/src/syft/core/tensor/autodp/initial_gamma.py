@@ -10,9 +10,9 @@ import numpy as np
 # relative
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...common.serde.recursive import RecursiveSerde
+from ...common.uid import UID
 from ..passthrough import PassthroughTensor
 from .intermediate_gamma import IntermediateGammaTensor
-from ...common.uid import UID
 
 
 def numpy2list(np_obj):
