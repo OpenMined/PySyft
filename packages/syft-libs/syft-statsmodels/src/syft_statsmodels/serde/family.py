@@ -10,6 +10,10 @@ from syft.lib.python.primitive_factory import PrimitiveFactory
 from syft.lib.python.string import String
 
 # syft relative
+from ...generate_wrapper import GenerateWrapper
+from ...lib.python.primitive_factory import PrimitiveFactory
+from ...lib.python.string import String
+from ...proto.lib.statsmodels.family_pb2 import FamilyProto
 from ..proto.family_pb2 import FamilyProto  # type: ignore
 
 FAMILY_2_STR: Dict[Type[statsmodels.genmod.families.family.Family], str] = {

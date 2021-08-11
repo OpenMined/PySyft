@@ -7,7 +7,7 @@ from google.protobuf.empty_pb2 import Empty as Empty_PB
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
-# syft relative
+# relative
 from ...generate_wrapper import GenerateWrapper
 from ...proto.core.auth.signed_message_pb2 import VerifyAll as VerifyAllWrapper_PB
 from ...proto.core.auth.signed_message_pb2 import VerifyKey as VerifyKey_PB

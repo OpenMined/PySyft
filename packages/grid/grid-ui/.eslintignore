@@ -1,0 +1,7 @@
+node_modules
+out
+.next
+coverage
+tailwind.config.js
+dist
+

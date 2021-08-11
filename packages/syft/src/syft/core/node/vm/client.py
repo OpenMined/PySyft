@@ -7,7 +7,7 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 from typing_extensions import final
 
-# syft relative
+# relative
 from ...common.uid import UID
 from ...io.location import Location
 from ...io.location.specific import SpecificLocation

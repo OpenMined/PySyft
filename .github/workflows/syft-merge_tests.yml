@@ -11,9 +11,9 @@ name: Syft Merge Tests
 on:
   push:
     branches:
-      - master
       - main
       - dev
+      - "0.6.0"
     paths:
       - ".github/workflows/syft-*.yml"
       - "packages/syft/**.py"

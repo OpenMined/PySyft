@@ -1,6 +1,4 @@
 # third party
-# third party
-# third party
 from statsmodels.genmod.generalized_linear_model import GLMResultsWrapper
 
 # syft absolute

@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 # third party
 from typing_extensions import final
 
-# syft relative
+# relative
 from ...common.uid import UID
 from ...node.common.action.garbage_collect_batched_action import (
     GarbageCollectBatchedAction,
@@ -16,7 +16,8 @@ from ..pointer import Pointer
 from .gc_strategy import GCStrategy
 
 if TYPE_CHECKING:
-    # syft relative
+
+    # relative
     from ...node.common.client import Client
 
 

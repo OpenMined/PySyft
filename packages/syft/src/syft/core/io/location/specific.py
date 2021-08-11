@@ -4,7 +4,7 @@ from typing import Optional
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft relative
+# relative
 from ....proto.core.io.location_pb2 import SpecificLocation as SpecificLocation_PB
 from ....util import validate_type
 from ...common.object import ObjectWithID

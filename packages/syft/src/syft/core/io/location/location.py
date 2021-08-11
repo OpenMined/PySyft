@@ -5,7 +5,7 @@ from typing import Optional
 from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft relative
+# relative
 from ....logger import traceback_and_raise
 from ...common.serde.serializable import Serializable
 from ...common.uid import UID

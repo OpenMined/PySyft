@@ -16,7 +16,7 @@ from typing import Union
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
-# syft relative
+# relative
 from ... import serialize
 from ...logger import traceback_and_raise
 from ...proto.core.node.common.action.action_pb2 import Action as Action_PB
@@ -153,7 +153,8 @@ class Plan(Serializable):
         This is a workaround until we have a way to execute plans locally.
         """
         # prevent circular dependency
-        # syft relative
+
+        # relative
         from ...core.node.vm.vm import VirtualMachine  # noqa: F401
 
         alice = VirtualMachine(name="plan_executor")

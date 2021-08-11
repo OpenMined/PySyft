@@ -1,7 +1,7 @@
 # third party
 import pandas as pd
 
-# syft relative
+# relative
 from ...generate_wrapper import GenerateWrapper
 from ...lib.python.list import List
 from ...lib.python.primitive_factory import PrimitiveFactory
