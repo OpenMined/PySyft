@@ -3,9 +3,9 @@ from typing import Any
 
 # third party
 from sqlalchemy import Column
+from sqlalchemy import Float
 from sqlalchemy import LargeBinary
 from sqlalchemy import String
-from sqlalchemy import Float
 
 # syft absolute
 from syft import deserialize

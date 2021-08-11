@@ -69,7 +69,7 @@ class AutogradTensorAncestor(TensorChainManager):
         pass
 
     @property
-    def grad(self) -> None:  # type: ignore
+    def grad(self):  # type: ignore
         child_gradient = self.child.grad
         if child_gradient is None:
             return None
@@ -115,15 +115,15 @@ class PhiTensorAncestor(TensorChainManager):
         pass
 
     @property
-    def min_vals(self) -> None:  # type: ignore
+    def min_vals(self):  # type: ignore
         return self.__class__(self.child.min_vals)
 
     @property
-    def max_vals(self) -> None:  # type: ignore
+    def max_vals(self):  # type: ignore
         return self.__class__(self.child.max_vals)
 
     @property
-    def gamma(self) -> None:  # type: ignore
+    def gamma(self):  # type: ignore
         return self.__class__(self.child.gamma)
 
     def publish(self, acc: Any, sigma: float) -> PhiTensorAncestor:

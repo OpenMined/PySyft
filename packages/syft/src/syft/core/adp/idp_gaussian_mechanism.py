@@ -8,7 +8,9 @@ from autodp import fdp_bank
 from autodp.autodp_core import Mechanism
 import numpy as np
 
+# relative
 from ..common.serde.recursive import RecursiveSerde
+
 
 @lru_cache(maxsize=None)
 def _individual_RDP_gaussian(
@@ -38,10 +40,10 @@ def individual_RDP_gaussian(params: Dict, alpha: float) -> np.float64:
 # Example of a specific mechanism that inherits the Mechanism class
 class iDPGaussianMechanism(Mechanism, RecursiveSerde):
     __attr_allowlist__ = [
-            "name",
-            "params",
-            "entity",
-            "fdp",
+        "name",
+        "params",
+        "entity",
+        "fdp",
     ]
 
     def __init__(

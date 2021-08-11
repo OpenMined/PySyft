@@ -1,5 +1,4 @@
 # stdlib
-from typing import Callable
 from typing import Dict
 from typing import List
 
@@ -12,7 +11,6 @@ from syft import serialize
 
 # relative
 from ....core.common.serde.serializable import bind_protobuf
-from ....lib.python.dict import Dict
 from ....proto.core.common.recursive_serde_pb2 import (
     RecursiveSerde as RecursiveSerde_PB,
 )
