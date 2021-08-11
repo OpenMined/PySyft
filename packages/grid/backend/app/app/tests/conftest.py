@@ -1,8 +1,8 @@
 # third party
+import pytest
 from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
 from httpx import AsyncClient
-import pytest
 
 
 @pytest.fixture

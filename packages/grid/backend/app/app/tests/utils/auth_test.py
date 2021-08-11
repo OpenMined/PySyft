@@ -2,6 +2,7 @@
 from typing import Dict
 
 # third party
+import pytest
 from fastapi import FastAPI
 from httpx import AsyncClient
 
@@ -20,3 +21,10 @@ async def authenticate_owner(app: FastAPI, client: AsyncClient) -> Dict[str, str
     return await authenticate_user(
         app, client, email="info@openmined.org", password="changethis"
     )
+
+
+@pytest.mark.asyncio
+async def test_authenticate_user(app: FastAPI, client: AsyncClient) -> None:
+    res = authenticate_owner(app=app, client=client)
+    print(res)
+    assert True is False
