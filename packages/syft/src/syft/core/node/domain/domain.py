@@ -113,7 +113,7 @@ class Domain(Node):
         self.association_requests = AssociationRequestManager(db_engine)
         self.data_requests = RequestManager(db_engine)
         self.datasets = DatasetManager(db_engine)
-        self.acc = AdversarialAccountant(max_budget=10000)
+        self.acc = AdversarialAccountant(db_engine=db_engine, max_budget=10000)
 
         # self.immediate_services_without_reply.append(RequestReceiverService)
         # self.immediate_services_without_reply.append(AcceptOrDenyRequestService)
