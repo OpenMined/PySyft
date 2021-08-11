@@ -5,19 +5,15 @@ from uuid import UUID
 from numpy import ndarray
 
 # relative
-from ..tensor import AutogradTensor
 from .....core.common.serde.recursive import RecursiveSerde
+from ..tensor import AutogradTensor
 from .op import Op
 
 
 class ReshapeOp(Op, RecursiveSerde):
     """Multiplication operation with 2 tensors"""
 
-    __attr_allowlist__ = [
-        "x",
-        "shape",
-        "backward_shape"
-    ]
+    __attr_allowlist__ = ["x", "shape", "backward_shape"]
 
     def forward(self, x: AutogradTensor, *shape: tuple) -> AutogradTensor:  # type: ignore
         self.x = x

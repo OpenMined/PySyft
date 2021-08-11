@@ -1,8 +1,8 @@
 # stdlib
 from typing import Any
+from typing import List as TypeList
 from typing import Optional
 from typing import Union
-import uuid
 
 # third party
 import numpy as np
@@ -10,16 +10,16 @@ import numpy as np
 # relative
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...common.serde.recursive import RecursiveSerde
+from ...common.uid import UID
 from ..passthrough import PassthroughTensor
 from .intermediate_gamma import IntermediateGammaTensor
-from ...common.uid import UID
 
 
-def numpy2list(np_obj):
+def numpy2list(np_obj) -> TypeList:
     return [list(np_obj.flatten()), np_obj.shape]
 
 
-def list2numpy(l_shape):
+def list2numpy(l_shape) -> np.ndarray:
     list_length = l_shape[0]
     shape = l_shape[1]
     return np.array(list_length).reshape(shape)

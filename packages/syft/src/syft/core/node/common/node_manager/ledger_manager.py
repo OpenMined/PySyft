@@ -1,10 +1,9 @@
 # stdlib
 from typing import Any
-from typing import List
 
 # third party
+from sqlalchemy import String
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import sessionmaker
 
 # relative
 from ..node_table.ledger import Ledger
@@ -67,7 +66,7 @@ class LedgerManager(DatabaseManager):
                 mechanism_id=mechanism_id
         )
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: String(256)) -> Any:
         if super().contain(entity_name=key):
             super().first(entity_name=key)
         else:

@@ -14,6 +14,7 @@ from sqlalchemy.engine import Engine
 from .entity import Entity
 from .scalar import PhiScalar
 from ..node.common.node_manager.ledger_manager import LedgerManager
+from ..common.serde.recursive import RecursiveSerde
 
 class AdversarialAccountant:
     def __init__(self, db_engine: Engine, max_budget: float = 10, delta: float = 1e-6) -> None:
@@ -21,7 +22,7 @@ class AdversarialAccountant:
         self.max_budget = max_budget
         self.delta = delta
 
-    def append(self, entity2mechanisms: TypeDict[str, TypeList[Mechanism]]) -> None:
+    def append(self, entity2mechanisms: TypeDict[Entity, TypeList[Mechanism]]) -> None:
         for key, ms in entity2mechanisms.items():
             if key not in self.entity2ledger.keys():
                 self.entity2ledger[key] = list()
@@ -44,7 +45,7 @@ class AdversarialAccountant:
         #     entity=entity,
         # )
 
-    def has_budget(self, entity_name: str) -> bool:
+    def has_budget(self, entity_name: Entity) -> bool:
         eps = self.get_eps_for_entity(entity_name)
         if eps is not None:
             return eps < self.max_budget
@@ -52,11 +53,11 @@ class AdversarialAccountant:
         #     return eps.value < self.max_budget
 
     @property
-    def entities(self) -> TypeKeysView[str]:
+    def entities(self) -> TypeKeysView[Entity]:
         return self.entity2ledger.keys()
 
     @property
-    def overbudgeted_entities(self) -> TypeSet[str]:
+    def overbudgeted_entities(self) -> TypeSet[Entity]:
         entities = set()
 
         for entity_name in self.entities:
@@ -68,3 +69,9 @@ class AdversarialAccountant:
     def print_ledger(self, delta: float = 1e-6) -> None:
         for entity, mechanisms in self.entity2ledger.items():
             print(str(entity) + "\t" + str(self.get_eps_for_entity(entity)))
+
+class AccountantReference(RecursiveSerde):
+    __attr_allowlist__ = ['msg']
+
+    def __init__(self, msg):
+        self.msg = msg
