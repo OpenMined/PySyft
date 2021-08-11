@@ -1,26 +1,30 @@
+# stdlib
+from importlib.util import find_spec
 import logging
 import os
-import shlex
-import stat
-import sys
-import traceback
-from importlib.util import find_spec
 from pathlib import Path
-from shutil import rmtree, which
-from subprocess import STDOUT, CalledProcessError, check_output
+import shlex
+from shutil import rmtree
+from shutil import which
+import stat
+from subprocess import CalledProcessError
+from subprocess import STDOUT
+from subprocess import check_output
+import sys
 from time import sleep
+import traceback
 from uuid import uuid4
 from warnings import warn
 
-import pytest
+# third party
 from pyscaffold.shell import get_executable
+import pytest
 
 IS_POSIX = os.name == "posix"
 
 PYTHON = sys.executable
-"""Same python executable executing the tests... Hopefully the one inside the virtualenv
-inside tox folder. If we install packages by mistake is not a huge problem.
-"""
+# Same python executable executing the tests... Hopefully the one inside the virtualenv
+# inside tox folder. If we install packages by mistake is not a huge problem.
 
 
 def uniqstr():

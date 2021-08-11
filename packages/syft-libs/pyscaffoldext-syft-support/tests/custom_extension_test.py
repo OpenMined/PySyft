@@ -1,8 +1,9 @@
+# stdlib
 from pathlib import Path
 
+# third party
 from pyscaffold import cli
 from pyscaffold.file_system import chdir
-
 from pyscaffoldext.syft_support.extension import SyftSupport
 
 EXT_FLAG = SyftSupport().flag

@@ -2,11 +2,16 @@
 A nice option is to put your ``autouse`` fixtures here.
 Functions that can be imported and re-used are more suitable for the ``helpers`` file.
 """
+# stdlib
 import os
 
+# third party
 import pytest
 
-from .test_helpers import find_package_bin, rmpath, uniqstr
+# relative
+from .test_helpers import find_package_bin
+from .test_helpers import rmpath
+from .test_helpers import uniqstr
 
 
 @pytest.fixture
