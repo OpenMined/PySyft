@@ -7,15 +7,17 @@ from typing import Set as TypeSet
 # third party
 from autodp.autodp_core import Mechanism
 from autodp.transformer_zoo import Composition
+from sqlalchemy.engine import Engine
+
 
 # relative
 from .entity import Entity
 from .scalar import PhiScalar
-
+from ..node.common.node_manager.ledger_manager import LedgerManager
 
 class AdversarialAccountant:
-    def __init__(self, max_budget: float = 10, delta: float = 1e-6) -> None:
-        self.entity2ledger: TypeDict[Entity, Mechanism] = {}
+    def __init__(self, db_engine: Engine, max_budget: float = 10, delta: float = 1e-6) -> None:
+        self.entity2ledger = LedgerManager(db_engine)
         self.max_budget = max_budget
         self.delta = delta
 
@@ -26,10 +28,10 @@ class AdversarialAccountant:
             for m in ms:
                 self.entity2ledger[key].append(m)
 
-    def get_eps_for_entity(self, entity: Entity) -> PhiScalar:
+    def get_eps_for_entity(self, entity_name: str) -> PhiScalar:
         # compose them with the transformation: compose
         compose = Composition()
-        mechanisms = self.entity2ledger[entity]
+        mechanisms = self.entity2ledger[entity_name]
         composed_mech = compose(mechanisms, [1] * len(mechanisms))
 
         return composed_mech.get_approxDP(self.delta)
