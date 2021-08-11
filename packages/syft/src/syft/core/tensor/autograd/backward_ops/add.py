@@ -8,10 +8,14 @@ import numpy as np
 from ...passthrough import is_acceptable_simple_type
 from ..tensor import AutogradTensor
 from .op import Op
+from .....core.common.serde.recursive import RecursiveSerde
 
 
-class AddOp(Op):
+class AddOp(Op, RecursiveSerde):
     """Sumation operation with 2 tensors"""
+    
+    __attr_allowlist__ = [
+    ]
 
     def forward(self, x: AutogradTensor, y: AutogradTensor) -> AutogradTensor:  # type: ignore
         self.x = x

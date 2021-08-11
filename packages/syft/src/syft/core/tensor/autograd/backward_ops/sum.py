@@ -6,11 +6,20 @@ import numpy as np
 
 # relative
 from ..tensor import AutogradTensor
+from .....core.common.serde.recursive import RecursiveSerde
+
 from .op import Op
 
 
-class SumOp(Op):
+class SumOp(Op, RecursiveSerde):
     """Sum operation across a dimension"""
+
+    __attr_allowlist__ = [
+        "x",
+        "axis",
+        "dim_at_axis",
+        "backward_shape"
+    ]
 
     def forward(self, x: AutogradTensor, axis: int) -> AutogradTensor:  # type: ignore
         self.x = x
