@@ -1,4 +1,5 @@
 # stdlib
+from typing import Any
 from typing import Dict
 from typing import List
 
@@ -28,7 +29,7 @@ class RecursiveSerde(Serializable):
 
     # put attr names here - set this to None to include all attrs (not recommended)
     __attr_allowlist__: List[str] = []
-    __serde_overrides__ = {}
+    __serde_overrides__: Dict[Any, Any] = {}
 
     def _object2proto(self) -> RecursiveSerde_PB:
 

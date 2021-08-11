@@ -1,3 +1,6 @@
+# stdlib
+from typing import Any
+
 # third party
 from sqlalchemy.engine import Engine
 
@@ -15,12 +18,12 @@ class LedgerManager(DatabaseManager):
     def __init__(self, database: Engine) -> None:
         super().__init__(db=database, schema=LedgerManager.schema)
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key, value) -> None:
         if super().contain(entity_name=key):
             super().delete(entity_name=key)
         super().register(value)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key) -> Any:
         if super().contain(entity_name=key):
             super().first(entity_name=key)
         else:
