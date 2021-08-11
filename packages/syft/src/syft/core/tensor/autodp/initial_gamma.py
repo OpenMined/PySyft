@@ -12,6 +12,7 @@ from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...common.serde.recursive import RecursiveSerde
 from ..passthrough import PassthroughTensor
 from .intermediate_gamma import IntermediateGammaTensor
+from ...common.uid import UID
 
 
 def numpy2list(np_obj):
@@ -49,7 +50,7 @@ class InitialGammaTensor(IntermediateGammaTensor, RecursiveSerde):
         entities: Any,  # List[Entity] gives flatten errors
         scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None,
     ) -> None:
-        self.uid = uuid.uuid4()
+        self.uid = UID()
         self.values = values  # child
         self.min_vals = min_vals
         self.max_vals = max_vals
