@@ -11,7 +11,7 @@ from autodp.transformer_zoo import Composition
 # relative
 from .entity import Entity
 from .scalar import PhiScalar
-
+from ..common.serde.recursive import RecursiveSerde
 
 class AdversarialAccountant:
     def __init__(self, max_budget: float = 10, delta: float = 1e-6) -> None:
@@ -66,3 +66,9 @@ class AdversarialAccountant:
     def print_ledger(self, delta: float = 1e-6) -> None:
         for entity, mechanisms in self.entity2ledger.items():
             print(str(entity) + "\t" + str(self.get_eps_for_entity(entity)))
+
+class AccountantReference(RecursiveSerde):
+    __attr_allowlist__ = ['msg']
+
+    def __init__(self, msg):
+        self.msg = msg
