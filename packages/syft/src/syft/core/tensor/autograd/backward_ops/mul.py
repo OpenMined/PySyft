@@ -7,11 +7,17 @@ from numpy import ndarray
 # relative
 from ...passthrough import is_acceptable_simple_type
 from ..tensor import AutogradTensor
+from .....core.common.serde.recursive import RecursiveSerde
 from .op import Op
 
 
-class MulOp(Op):
+class MulOp(Op, RecursiveSerde):
     """Multiplication operation with 2 tensors"""
+
+    __attr_allowlist__ = [
+        "x",
+        "y",
+    ]
 
     def forward(self, x: AutogradTensor, y: AutogradTensor) -> AutogradTensor:  # type: ignore
         self.x = x
