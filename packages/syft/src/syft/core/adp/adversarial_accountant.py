@@ -26,7 +26,7 @@ class AdversarialAccountant:
             for m in ms:
                 self.entity2ledger[key].append(m)
 
-    def get_eps_for_entity(self, entity: Entity) -> PhiScalar:
+    def get_eps_for_entity(self, entity: str) -> PhiScalar:
         # compose them with the transformation: compose
         compose = Composition()
         mechanisms = self.entity2ledger[entity]

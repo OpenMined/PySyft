@@ -2,7 +2,6 @@
 from typing import Any
 from typing import Optional
 from typing import Union
-import uuid
 
 # third party
 import numpy as np
