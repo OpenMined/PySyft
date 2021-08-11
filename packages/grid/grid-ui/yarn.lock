@@ -2017,7 +2017,7 @@ cssnano-preset-simple@1.2.2:
   integrity sha512-gtvrcRSGtP3hA/wS8mFVinFnQdEsEpm3v4I/s/KmNjpdWaThV/4E5EojAzFXxyT5OCSRPLlHR9iQexAqKHlhGQ==
   dependencies:
     caniuse-lite "^1.0.30001179"
-    postcss "^7.0.32"
+    postcss "^8.2.10"
 
 cssnano-simple@1.2.2:
   version "1.2.2"
@@ -2025,7 +2025,7 @@ cssnano-simple@1.2.2:
   integrity sha512-4slyYc1w4JhSbhVX5xi9G0aQ42JnRyPg+7l7cqoNyoIDzfWx40Rq3JQZnoAWDu60A4AvKVp9ln/YSUOdhDX68g==
   dependencies:
     cssnano-preset-simple "1.2.2"
-    postcss "^7.0.32"
+    postcss "^8.2.10"
 
 cssom@^0.4.4:
   version "0.4.4"
@@ -4507,7 +4507,7 @@ next@10.0.8:
     p-limit "3.1.0"
     path-browserify "1.0.1"
     pnp-webpack-plugin "1.6.4"
-    postcss "8.1.7"
+    postcss "^8.2.10"
     process "0.11.10"
     prop-types "15.7.2"
     raw-body "2.4.1"
