@@ -84,6 +84,10 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             scalar_manager=scalar_manager,
         )
 
+    def publish(self, acc: Any, sigma: float):
+        return self.__class__(self.child.publish(acc=acc, sigma=sigma))
+
+
     @property
     def min_vals(self) -> np.ndarray:
 
