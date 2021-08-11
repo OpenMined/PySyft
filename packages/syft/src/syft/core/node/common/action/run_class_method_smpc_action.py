@@ -126,6 +126,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
 
         method_name = self.path.split(".")[-1]
+        nr_parties = resolved_self.data.nr_parties
 
         seed_id_locations = resolved_kwargs.get("seed_id_locations", None)
         if seed_id_locations is None:
@@ -134,7 +135,9 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
             )
 
         resolved_kwargs.pop("seed_id_locations")
-        actions_generator = SMPCActionMessage.get_action_generator_from_op(method_name)
+        actions_generator = SMPCActionMessage.get_action_generator_from_op(
+            operation_str=method_name, nr_parties=nr_parties
+        )
         args_id = [arg.id_at_location for arg in self.args]
 
         # TODO: For the moment we don't run any SMPC operation that provides any kwarg
@@ -146,7 +149,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         # Get the list of actions to be run
         actions = actions_generator(self._self.id_at_location, *args_id, **kwargs)  # type: ignore
         actions = SMPCActionMessage.filter_actions_after_rank(
-            resolved_self.data, actions
+            resolved_self.data.rank, actions
         )
 
         client = node.get_client()  # type: ignore
