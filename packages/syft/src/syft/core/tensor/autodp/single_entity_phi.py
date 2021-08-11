@@ -21,7 +21,7 @@ from ..passthrough import PassthroughTensor
 from ..passthrough import implements
 from ..passthrough import inputs2child
 from ..passthrough import is_acceptable_simple_type
-from ..types import SupportedChainType
+from ..passthrough import SupportedChainType
 from .initial_gamma import InitialGammaTensor
 
 
