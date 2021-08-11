@@ -1,6 +1,6 @@
 # stdlib
 from typing import Any
-from typing import Dict
+from typing import Dict as DictType
 from typing import List
 
 # third party
@@ -11,6 +11,9 @@ from syft import deserialize
 from syft import serialize
 
 # relative
+
+from ....lib.python import Dict
+
 from ....core.common.serde.serializable import bind_protobuf
 from ....proto.core.common.recursive_serde_pb2 import (
     RecursiveSerde as RecursiveSerde_PB,
@@ -29,7 +32,7 @@ class RecursiveSerde(Serializable):
 
     # put attr names here - set this to None to include all attrs (not recommended)
     __attr_allowlist__: List[str] = []
-    __serde_overrides__: Dict[Any, Any] = {}
+    __serde_overrides__: DictType[Any, Any] = {}
 
     def _object2proto(self) -> RecursiveSerde_PB:
 
