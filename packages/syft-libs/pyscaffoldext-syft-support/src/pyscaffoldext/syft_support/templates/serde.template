@@ -5,7 +5,7 @@
 # from syft.lib.python.primitive_factory import PrimitiveFactory
 # from syft.lib.python.string import String
 
-# syft relative
+# relative
 # from ..proto.results_pb2 import ResultsProto
 
 

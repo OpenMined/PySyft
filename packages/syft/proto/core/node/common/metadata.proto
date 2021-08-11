@@ -9,4 +9,5 @@ message Metadata {
   syft.core.common.UID id = 1;
   string name = 2;
   syft.core.io.SpecificLocation node = 3;
+  string node_type = 4;
 }

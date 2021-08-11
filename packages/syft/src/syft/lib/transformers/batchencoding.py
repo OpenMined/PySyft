@@ -1,7 +1,7 @@
 # third party
 from transformers.tokenization_utils_base import BatchEncoding
 
-# syft relative
+# relative
 from ...generate_wrapper import GenerateWrapper
 from ...lib.python.dict import Dict
 from ...lib.python.primitive_factory import PrimitiveFactory

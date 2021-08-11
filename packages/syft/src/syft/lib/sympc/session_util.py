@@ -10,7 +10,7 @@ from sympc.protocol.protocol import Protocol
 from sympc.session import Session
 from sympc.store import CryptoStore
 
-# syft relative
+# relative
 from ...logger import warning
 from ...proto.lib.sympc.session_pb2 import MPCSession as MPCSession_PB
 from ..python import Dict
@@ -23,6 +23,11 @@ def protobuf_session_serializer(session: Session) -> MPCSession_PB:
 
     length_rs = session.ring_size.bit_length()
     rs_bytes = session.ring_size.to_bytes((length_rs + 7) // 8, byteorder="big")
+
+    # length_nr_parties = session.nr_parties.bit_length()
+    # nr_parties_bytes = session.nr_parties.to_bytes(
+    #     (length_nr_parties + 7) // 8, byteorder="big"
+    # )
 
     uuid = str(session.uuid)
 

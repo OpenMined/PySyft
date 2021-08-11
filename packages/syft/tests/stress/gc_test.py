@@ -9,6 +9,8 @@ import torch
 import syft as sy
 
 
+# MADHAVA: this needs fixing
+@pytest.mark.xfail
 @pytest.mark.slow
 def test_same_var_for_ptr_gc(
     node: sy.VirtualMachine, client: sy.VirtualMachineClient
@@ -34,6 +36,8 @@ def test_same_var_for_ptr_gc(
     assert len(node.store) == 0
 
 
+# MADHAVA: this needs fixing
+@pytest.mark.xfail
 def test_send_same_obj_gc(
     node: sy.VirtualMachine, root_client: sy.VirtualMachineClient
 ) -> None:

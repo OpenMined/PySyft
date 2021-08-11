@@ -8,7 +8,7 @@ from typing import Tuple as TypeTuple
 from packaging import version
 import pandas as pd
 
-# syft relative
+# relative
 from . import categorical  # noqa: 401
 from . import categorical_dtype  # noqa: 401
 from . import frame  # noqa: 401

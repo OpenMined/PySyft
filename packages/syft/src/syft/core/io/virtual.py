@@ -8,7 +8,7 @@ execute the exact same functionality but do so over a network"""
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import final
 
-# syft relative
+# relative
 from ...proto.core.io.connection_pb2 import (
     VirtualClientConnection as VirtualClientConnection_PB,
 )

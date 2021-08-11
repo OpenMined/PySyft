@@ -1,0 +1,7 @@
+# ---
+# - name: Install hagrid
+#   shell: "pip install -e ."
+#   become_user: "{{ om_user }}"
+#   args:
+#     chdir: "/home/om/PySyft/packages/hagrid"
+#     executable: /bin/bash

@@ -65,7 +65,7 @@ from typing import List as TypeList
 from typing import Tuple as TypeTuple
 from typing import Union
 
-# syft relative
+# relative
 from . import attribute  # noqa: F401
 from . import callable  # noqa: F401
 from . import dynamic_object  # noqa: F401

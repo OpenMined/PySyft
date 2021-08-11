@@ -57,12 +57,6 @@ jobs:
           pip install black isort --default-timeout=60
           find . -name "build_proto.sh" -execdir bash -c 'cd .. && sh scripts/build_proto.sh'  \;
 
-      - name: Hack pre-commit # https://github.com/pre-commit/action/issues/44
-        working-directory: ./packages/syft
-        run: |
-          pwd
-          ls
-          cp .pre-commit-config.yaml ../../
       - uses: pre-commit/action@v2.0.3
 
   lib-tests-latest:
@@ -109,13 +103,17 @@ jobs:
           pip install -r requirements.unstable.txt
           pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
+           pip install "pillow>=8.3.1"
 
       - name: Install Support lib
         shell: bash
         run: |
           pwd
           pip install pyscaffoldext-syft-support/
-          pip install . 
+          pip install .
+          pip list | grep syft
+          git config --global user.email "john.doe@example.com"
+          git config --global user.name "John Doe"
 
       - name: Scan for security issues
         shell: bash
