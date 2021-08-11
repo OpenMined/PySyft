@@ -2,13 +2,13 @@
 import operator
 from typing import Any
 from typing import Dict as TypeDict
-from typing import Final
 from typing import Union
 
 # third party
 import numpy as np
 import pytest
 import torch
+from typing_extensions import Final
 
 # syft absolute
 import syft as sy
