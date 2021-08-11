@@ -8,7 +8,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from syft_proto.execution.v1.plan_pb2 import Plan as Plan_PB
 import torch as th
 
-# syft relative
+# relative
 from .....core.common.object import Serializable
 from .....logger import traceback_and_raise
 

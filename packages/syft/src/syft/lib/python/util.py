@@ -5,7 +5,7 @@ from typing import List
 from typing import Tuple
 from typing import Union
 
-# syft relative
+# relative
 from .primitive_factory import PrimitiveFactory
 from .primitive_factory import isprimitive
 

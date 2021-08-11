@@ -3,7 +3,7 @@
 # third party
 from sympc.session import Session
 
-# syft relative
+# relative
 from ...generate_wrapper import GenerateWrapper
 from ...proto.lib.sympc.session_pb2 import MPCSession as MPCSession_PB
 from .session_util import protobuf_session_deserializer

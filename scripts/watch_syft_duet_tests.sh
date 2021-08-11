@@ -1,3 +1,4 @@
+#!/bin/bash
 chsum1=""
 
 while [[ true ]]

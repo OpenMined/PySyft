@@ -4,7 +4,7 @@ from typing import Iterable
 from typing import Optional
 from typing import Type
 
-# syft relative
+# relative
 from ...logger import debug
 from ...logger import traceback_and_raise
 from ..common.storeable_object import AbstractStorableObject

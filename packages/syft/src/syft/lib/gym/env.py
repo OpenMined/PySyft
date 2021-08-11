@@ -1,7 +1,7 @@
 # third party
 import gym
 
-# syft relative
+# relative
 from ...generate_wrapper import GenerateWrapper
 from ...proto.lib.gym.env_pb2 import Env as Env_PB
 

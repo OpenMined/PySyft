@@ -14,7 +14,7 @@ import pytest
 # syft absolute
 import syft as sy
 
-# syft relative
+# relative
 from ..pytest_benchmarks.benchmark_send_get_local_test import send_get_list_local
 from ..pytest_benchmarks.benchmark_send_get_local_test import send_get_string_local
 from ..pytest_benchmarks.benchmark_send_get_multiprocess_test import (

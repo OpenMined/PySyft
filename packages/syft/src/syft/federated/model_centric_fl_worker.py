@@ -12,7 +12,7 @@ from typing import Union
 import requests
 from syft_proto.execution.v1.plan_pb2 import Plan as PlanTorchscriptPB
 
-# syft relative
+# relative
 from ..core.plan import Plan
 from ..core.plan.translation.torchscript.plan import PlanTorchscript
 from ..federated.model_centric_fl_base import ModelCentricFLBase

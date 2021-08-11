@@ -10,12 +10,12 @@ if [ $? -ne 0 ]; then
 fi
 
 # check protoc version >= 3.15.0
-VERSION=$(protoc --version | grep -op '[0-9].*')
+VERSION=$(protoc --version | grep -o '[0-9].*')
 # no easy way to do as bash does not support float comparisions.
 function version_lt() { test "$(echo "$@" | tr " " "\n" | sort -rV | head -n 1)" != "$1"; }
 if version_lt $VERSION 3.15.0; then
-	echo "you have Protobuf $VERSION, Please upgrade to Protobuf >= 3.15.0"
-	exit 1
+    echo "you have Protobuf $VERSION, Please upgrade to Protobuf >= 3.15.0"
+    exit 1
 fi
 
 rm -rf "${CLEAN}"
@@ -31,6 +31,4 @@ else
     echo "Linux"
     find src/syft/proto -name "*_pb2.py" -print0 | xargs -0 sed -i 's/from \(proto.*\) import /from syft.\1 import /g'
 fi
-
-black src/syft/proto
-isort src/syft/proto
+cd ../../ && isort . && black .

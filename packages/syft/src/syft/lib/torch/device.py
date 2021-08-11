@@ -5,7 +5,7 @@ from typing import Optional
 # third party
 from torch import device
 
-# syft relative
+# relative
 from ...generate_wrapper import GenerateWrapper
 from ...proto.lib.torch.device_pb2 import Device as Device_PB
 

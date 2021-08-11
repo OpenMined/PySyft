@@ -5,7 +5,7 @@ from typing import Dict as TypeDict
 from typing import List as ListType
 from typing import Optional
 
-# syft relative
+# relative
 from ..federated import JSONDict
 from ..logger import traceback_and_raise
 from .model_centric_fl_base import GridError

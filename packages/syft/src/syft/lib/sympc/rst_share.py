@@ -10,7 +10,7 @@ from sympc.tensor import ReplicatedSharedTensor
 # syft absolute
 import syft
 
-# syft relative
+# relative
 from ...generate_wrapper import GenerateWrapper
 from ...proto.lib.sympc.replicatedshared_tensor_pb2 import (
     ReplicatedSharedTensor as ReplicatedSharedTensor_PB,
