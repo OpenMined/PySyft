@@ -115,7 +115,7 @@ from ..node.common.node_service.object_search_permission_update.obj_search_permi
     ObjectSearchPermissionUpdateMessage,
 )
 from ..store.storeable_object import StorableObject
-
+from ...util import obj2pointer_type
 
 # TODO: Fix the Client, Address, Location confusion
 @bind_protobuf
