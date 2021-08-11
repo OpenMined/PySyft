@@ -125,6 +125,7 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.core.tensor.tensor.Tensor.ndim", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.private", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.prod", "syft.core.tensor.tensor.Tensor"),
+        ("syft.core.tensor.tensor.Tensor.publish", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.repeat", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.requires_grad", "syft.lib.python.Bool"),
         ("syft.core.tensor.tensor.Tensor.reshape", "syft.core.tensor.tensor.Tensor"),
