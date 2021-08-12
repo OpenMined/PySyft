@@ -12,6 +12,14 @@ import numpy as np
 from ..common.serde.recursive import RecursiveSerde
 
 
+## methods serialize/deserialize np.int64 number
+## syft.serde seems to not support np.int64 serialization/deserialization
+def numpy64tolist(value):
+    return value.tolist()
+
+def listtonumpy64(value):
+    return np.int64(value)
+
 @lru_cache(maxsize=None)
 def _individual_RDP_gaussian(
     sigma: float, value: float, L: float, alpha: float
@@ -44,7 +52,19 @@ class iDPGaussianMechanism(Mechanism, RecursiveSerde):
         "params",
         "entity",
         "fdp",
+        "eps_pureDP",
+        "delta0",
+        "RDP_off",
+        "approxDP_off",
+        "fdp_off",
+        "use_basic_rdp_to_approx_dp_conversion",
+        "use_fdp_based_rdp_to_approx_dp_conversion",
     ]
+
+    # delta0 is a numpy.int64 number (not supported by syft.serde)
+    __serde_overrides__ = {
+            "delta0": [numpy64tolist, listtonumpy64],
+    }
 
     def __init__(
         self,
