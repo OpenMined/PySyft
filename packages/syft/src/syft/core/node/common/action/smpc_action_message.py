@@ -1,4 +1,9 @@
+# future
+from __future__ import annotations
+
 # stdlib
+from copy import deepcopy
+import functools
 import operator
 from typing import Any
 from typing import Callable
@@ -13,13 +18,13 @@ import numpy as np
 
 # relative
 from ..... import serialize
+from .....core.common.uid import UID
 from .....proto.core.node.common.action.smpc_action_message_pb2 import (
     SMPCActionMessage as SMPCActionMessage_PB,
 )
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import bind_protobuf
-from ....common.uid import UID
 from ....io.address import Address
 from ....tensor.smpc.share_tensor import ShareTensor
 
@@ -45,15 +50,15 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
         self.args_id = args_id
         self.kwargs_id = kwargs_id
         self.id_at_location = result_id
-        self.ranks_to_run_action = ranks_to_run_action
+        self.ranks_to_run_action = ranks_to_run_action if ranks_to_run_action else []
         self.address = address
         self.msg_id = msg_id
         super().__init__(address=address, msg_id=msg_id)
 
     @staticmethod
     def filter_actions_after_rank(
-        rank: int, actions: List["SMPCActionMessage"]
-    ) -> List["SMPCActionMessage"]:
+        rank: int, actions: List[SMPCActionMessage]
+    ) -> List[SMPCActionMessage]:
         """
         Filter the actions depending on the rank of each party
 
@@ -64,18 +69,14 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
         """
         res_actions = []
         for action in actions:
-            if action.ranks_to_run_action is None:
-                raise ValueError(
-                    "Attribute ranks_to_run_action should not be None when filtering"
-                )
-
-            if action.ranks_to_run_action == [] or rank in action.ranks_to_run_action:
+            if rank in action.ranks_to_run_action:
                 res_actions.append(action)
+
         return res_actions
 
     @staticmethod
     def get_action_generator_from_op(
-        operation_str: str,
+        operation_str: str, nr_parties: int
     ) -> Callable[[UID, UID, int, Any], Any]:
         """ "
         Get the generator for the operation provided by the argument
@@ -83,7 +84,27 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
             operation_str (str): the name of the operation
 
         """
-        return MAP_FUNC_TO_ACTION[operation_str]
+        return functools.partial(MAP_FUNC_TO_ACTION[operation_str], nr_parties)
+
+    @staticmethod
+    def get_id_at_location_from_op(seed: bytes, operation_str: str) -> UID:
+        generator = np.random.default_rng(seed)
+        nr_ops = MAP_FUNC_TO_NR_GENERATOR_INVOKES[operation_str]
+        for _ in range(nr_ops):
+            generator.bytes(16)
+
+        return UID(UUID(bytes=generator.bytes(16)))
+
+    def __str__(self) -> str:
+        res = f"SMPCAction: {self.name_action}, "
+        res = f"{res}Self ID: {self.self_id}, "
+        res = f"{res}Args IDs: {self.args_id}, "
+        res = f"{res}Kwargs IDs: {self.kwargs_id}, "
+        res = f"{res}Result ID: {self.id_at_location}, "
+        res = f"{res}Ranks to run action: {self.ranks_to_run_action}"
+        return res
+
+    __repr__ = __str__
 
     def _object2proto(self) -> SMPCActionMessage_PB:
         """Returns a protobuf serialization of self.
@@ -110,7 +131,7 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(proto: SMPCActionMessage_PB) -> "SMPCActionMessage":
+    def _proto2object(proto: SMPCActionMessage_PB) -> SMPCActionMessage:
         """Creates a ObjectWithID from a protobuf
 
         As a requirement of all objects which inherit from Serializable,
@@ -154,13 +175,19 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
         return SMPCActionMessage_PB
 
 
-def smpc_add(
-    self_id: UID, other_id: UID, seed_id_locations: int, node: Any
+def smpc_basic_op(
+    op_str: str,
+    nr_parties: int,
+    self_id: UID,
+    other_id: UID,
+    seed_id_locations: int,
+    node: Any,
 ) -> List[SMPCActionMessage]:
-    """Generator for the smpc_ad"""
+    """Generator for SMPC public/private operations add/sub"""
+
     generator = np.random.default_rng(seed_id_locations)
 
-    for _ in range(MAP_FUNC_TO_NR_GENERATOR_INVOKES["__add__"]):
+    for _ in range(MAP_FUNC_TO_NR_GENERATOR_INVOKES[f"__{op_str}__"]):
         generator.bytes(16)
 
     result_id = UID(UUID(bytes=generator.bytes(16)))
@@ -171,63 +198,32 @@ def smpc_add(
         # All parties should add the other share if empty list
         actions.append(
             SMPCActionMessage(
-                "mpc_add",
+                f"mpc_{op_str}",
                 self_id=self_id,
                 args_id=[other_id],
                 kwargs_id={},
-                ranks_to_run_action=[],
+                ranks_to_run_action=list(range(nr_parties)),
                 result_id=result_id,
                 address=node.address,
             )
         )
     else:
-        # Only rank 0 (the first party) would add that public value
         actions.append(
             SMPCActionMessage(
-                "mpc_add",
+                "mpc_noop",
                 self_id=self_id,
-                args_id=[other_id],
+                args_id=[],
                 kwargs_id={},
-                ranks_to_run_action=[0],
+                ranks_to_run_action=list(range(1, nr_parties)),
                 result_id=result_id,
                 address=node.address,
             )
         )
 
-    return actions
-
-
-def smpc_sub(
-    self_id: UID, other_id: UID, seed_id_locations: int, node: Any
-) -> List[SMPCActionMessage]:
-    """Generator for the smpc_sub"""
-    generator = np.random.default_rng(seed_id_locations)
-
-    for _ in range(MAP_FUNC_TO_NR_GENERATOR_INVOKES["__sub__"]):
-        generator.bytes(16)
-
-    result_id = UID(UUID(bytes=generator.bytes(16)))
-    other = node.store[other_id].data
-
-    actions = []
-    if isinstance(other, ShareTensor):
-        # All parties should add the other share if empty list
+        # Only rank 0 (the first party) would do the add/sub for the public value
         actions.append(
             SMPCActionMessage(
-                "mpc_sub",
-                self_id=self_id,
-                args_id=[other_id],
-                kwargs_id={},
-                ranks_to_run_action=[],
-                result_id=result_id,
-                address=node.address,
-            )
-        )
-    else:
-        # Only rank 0 (the first party) would add that public value
-        actions.append(
-            SMPCActionMessage(
-                "mpc_sub",
+                f"mpc_{op_str}",
                 self_id=self_id,
                 args_id=[other_id],
                 kwargs_id={},
@@ -241,7 +237,7 @@ def smpc_sub(
 
 
 def smpc_mul(
-    self_id: UID, other_id: UID, seed_id_locations: int, node: Any
+    nr_parties: int, self_id: UID, other_id: UID, seed_id_locations: int, node: Any
 ) -> List[SMPCActionMessage]:
     """Generator for the smpc_mul with a public value"""
     generator = np.random.default_rng(seed_id_locations)
@@ -263,7 +259,7 @@ def smpc_mul(
                 self_id=self_id,
                 args_id=[other_id],
                 kwargs_id={},
-                ranks_to_run_action=[],
+                ranks_to_run_action=list(range(nr_parties)),
                 result_id=result_id,
                 address=node.address,
             )
@@ -274,11 +270,11 @@ def smpc_mul(
 
 # Given an SMPC Action map it to an action constructor
 MAP_FUNC_TO_ACTION: Dict[
-    str, Callable[[UID, UID, int, Any], List[SMPCActionMessage]]
+    str, Callable[[int, UID, UID, int, Any], List[SMPCActionMessage]]
 ] = {
-    "__add__": smpc_add,
+    "__add__": functools.partial(smpc_basic_op, "add"),
+    "__sub__": functools.partial(smpc_basic_op, "sub"),
     "__mul__": smpc_mul,
-    "__sub__": smpc_sub,
 }
 
 
@@ -287,4 +283,5 @@ _MAP_ACTION_TO_FUNCTION: Dict[str, Callable[..., Any]] = {
     "mpc_add": operator.add,
     "mpc_sub": operator.sub,
     "mpc_mul": operator.mul,
+    "mpc_noop": deepcopy,
 }

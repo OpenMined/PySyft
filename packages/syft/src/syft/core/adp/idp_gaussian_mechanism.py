@@ -1,12 +1,28 @@
 # stdlib
 from functools import lru_cache
 from typing import Dict
+from typing import Optional
+
+from nacl.signing import VerifyKey
 
 # third party
 from autodp import dp_bank
 from autodp import fdp_bank
 from autodp.autodp_core import Mechanism
 import numpy as np
+
+# relative
+from ..common.serde.recursive import RecursiveSerde
+
+
+# methods serialize/deserialize np.int64 number
+# syft.serde seems to not support np.int64 serialization/deserialization
+def numpy64tolist(value):
+    return value.tolist()
+
+
+def listtonumpy64(value):
+    return np.int64(value)
 
 
 @lru_cache(maxsize=None)
@@ -35,7 +51,27 @@ def individual_RDP_gaussian(params: Dict, alpha: float) -> np.float64:
 
 
 # Example of a specific mechanism that inherits the Mechanism class
-class iDPGaussianMechanism(Mechanism):
+class iDPGaussianMechanism(Mechanism, RecursiveSerde):
+    __attr_allowlist__ = [
+        "name",
+        "params",
+        "entity",
+        "fdp",
+        "eps_pureDP",
+        "delta0",
+        "RDP_off",
+        "approxDP_off",
+        "fdp_off",
+        "use_basic_rdp_to_approx_dp_conversion",
+        "use_fdp_based_rdp_to_approx_dp_conversion",
+        "user_key"
+    ]
+
+    # delta0 is a numpy.int64 number (not supported by syft.serde)
+    __serde_overrides__ = {
+        "delta0": [numpy64tolist, listtonumpy64],
+    }
+
     def __init__(
         self,
         sigma: float,
@@ -48,9 +84,12 @@ class iDPGaussianMechanism(Mechanism):
         fdp_off: bool = True,
         use_basic_rdp_to_approx_dp_conversion: bool = False,
         use_fdp_based_rdp_to_approx_dp_conversion: bool = False,
+        user_key: Optional[VerifyKey] = None,
     ):
         # the sigma parameter is the std of the noise divide by the l2 sensitivity
         Mechanism.__init__(self)
+
+        self.user_key = user_key
 
         self.name = name  # When composing
         self.params = {

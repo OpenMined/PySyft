@@ -1,19 +1,23 @@
 # stdlib
+from typing import Any
 from uuid import UUID
 
 # third party
 import numpy as np
 
 # relative
+from .....core.common.serde.recursive import RecursiveSerde
 from ...passthrough import is_acceptable_simple_type
 from ..tensor import AutogradTensor
 from .op import Op
 
 
-class AddOp(Op):
+class AddOp(Op, RecursiveSerde):
     """Sumation operation with 2 tensors"""
 
-    def forward(self, x: AutogradTensor, y: AutogradTensor) -> AutogradTensor:
+    __attr_allowlist__: Any = []
+
+    def forward(self, x: AutogradTensor, y: AutogradTensor) -> AutogradTensor:  # type: ignore
         self.x = x
         self.y = y
 

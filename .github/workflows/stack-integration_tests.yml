@@ -68,9 +68,7 @@ jobs:
 
       - name: Install tox
         run: |
-          pip install tox pytest requests --upgrade
-          pip install testbook
-          pip install -U jupyter
+          pip install tox --upgrade
 
       - name: Run integration tests
         shell: bash
@@ -79,17 +77,5 @@ jobs:
           DOCKER_COMPOSE_VERSION=v2.0.0-beta.6
           curl -sSL https://github.com/docker/compose-cli/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-amd64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
-          # contents of the tox task
-          pip install -e packages/hagrid
-          pip install -e packages/syft
-          docker --version
-          docker compose version
-          export HAGRID_ART=false
-          HAGRID_ART=false hagrid launch test_node domain to docker:9081 1>/dev/null
-          sleep 10
-          docker ps
-          bash -c '(docker logs test_node_frontend_1 -f &) | grep -q "event - compiled successfully" || true'
-          sleep 70
-          pytest tests/integration -vvvv
-          HAGRID_ART=false hagrid land test_node 1>/dev/null
-          # tox -e stack.test.integration
+          tox -e stack.test.integration
+

@@ -2,24 +2,27 @@
 from __future__ import annotations
 
 # stdlib
+from typing import Any
 from typing import Optional
+from typing import Tuple as TypeTuple
+from typing import Union
 
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
+import numpy.typing as npt
 
 # relative
 from ....core.common.serde.recursive import RecursiveSerde
-from ....proto.core.tensor.tensor_pb2 import Tensor as Tensor_PB
 from ...adp.entity import Entity
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...common.serde.serializable import bind_protobuf
 from ..ancestors import AutogradTensorAncestor
+from ..passthrough import AcceptableSimpleType
 from ..passthrough import PassthroughTensor
+from ..passthrough import SupportedChainType
 from ..passthrough import implements
 from ..passthrough import inputs2child
 from ..passthrough import is_acceptable_simple_type
-from ..types import SupportedChainType
 from .initial_gamma import InitialGammaTensor
 
 
@@ -81,6 +84,9 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             entities=entities,
             scalar_manager=scalar_manager,
         )
+
+    def publish(self, acc: Any, sigma: float) -> AcceptableSimpleType:
+        return self.gamma.publish(acc=acc, sigma=sigma)
 
     @property
     def min_vals(self) -> np.ndarray:
@@ -208,7 +214,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             scalar_manager=self.scalar_manager,
         )
 
-    def __getitem__(self, key) -> SingleEntityPhiTensor:
+    def __getitem__(self, key: Any) -> SingleEntityPhiTensor:
 
         data = self.child.__getitem__(key)
         min_vals = self.min_vals.__getitem__(key)
@@ -276,7 +282,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
 
     def __mul__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
 
-        if other.__class__ == SingleEntityPhiTensor:
+        if isinstance(other, SingleEntityPhiTensor):
 
             if self.entity != other.entity:
                 # this should return a GammaTensor
@@ -382,9 +388,10 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
                 scalar_manager=self.scalar_manager,
             )
         else:
-            return self * (1 / other)
+            # Ignoring unsupported operand error b/c other logic is taken care of
+            return self * (1 / other)  # type: ignore
 
-    def dot(self, other: SupportedChainType):
+    def dot(self, other: SupportedChainType) -> SingleEntityPhiTensor:
         return self.manual_dot(other)
 
     # ndarray.flatten(order='C')
@@ -402,7 +409,9 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             scalar_manager=self.scalar_manager,
         )
 
-    def repeat(self, repeats, axis=None):
+    def repeat(
+        self, repeats: Union[int, TypeTuple[int, ...]], axis: Optional[int] = None
+    ) -> SingleEntityPhiTensor:
 
         data = self.child.repeat(repeats, axis=axis)
         min_vals = self.min_vals.repeat(repeats, axis=axis)
@@ -417,7 +426,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             scalar_manager=self.scalar_manager,
         )
 
-    def reshape(self, *args):
+    def reshape(self, *args: Any) -> SingleEntityPhiTensor:
 
         data = self.child.reshape(*args)
         min_vals = self.min_vals.reshape(*args)
@@ -432,7 +441,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             scalar_manager=self.scalar_manager,
         )
 
-    def sum(self, *args, **kwargs):
+    def sum(self, *args: Any, **kwargs: Any) -> SingleEntityPhiTensor:
 
         data = self.child.sum(*args, **kwargs)
         min_vals = self.min_vals.sum(*args, **kwargs)
@@ -447,7 +456,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             scalar_manager=self.scalar_manager,
         )
 
-    def transpose(self, *args, **kwargs):
+    def transpose(self, *args: Any, **kwargs: Any) -> SingleEntityPhiTensor:
 
         data = self.child.transpose(*args)
         min_vals = self.min_vals.transpose(*args)
@@ -508,13 +517,14 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
     #         child=child, entity=entity, min_vals=min_vals, max_vals=max_vals
     #     )
 
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return Tensor_PB
+    # Cant have recursive and custom Tensor_PB
+    # @staticmethod
+    # def get_protobuf_schema() -> GeneratedProtocolMessageType:
+    #     return Tensor_PB
 
 
 @implements(SingleEntityPhiTensor, np.expand_dims)
-def expand_dims(a, axis):
+def expand_dims(a: npt.ArrayLike, axis: Optional[int] = None) -> SingleEntityPhiTensor:
 
     entity = a.entity
 
@@ -533,7 +543,7 @@ def expand_dims(a, axis):
 
 
 @implements(SingleEntityPhiTensor, np.mean)
-def mean(*args, **kwargs):
+def mean(*args: Any, **kwargs: Any) -> SingleEntityPhiTensor:
     entity = args[0].entity
     scalar_manager = args[0].scalar_manager
 
@@ -547,7 +557,7 @@ def mean(*args, **kwargs):
     min_vals = np.mean([x.min_vals for x in args], **kwargs)
     max_vals = np.mean([x.max_vals for x in args], **kwargs)
 
-    args, kwargs = inputs2child(*args, **kwargs)
+    args, kwargs = inputs2child(*args, **kwargs)  # type: ignore
 
     data = np.mean(args, **kwargs)
 

@@ -12,7 +12,7 @@ from .op import Op
 class TransposeOp(Op):
     """Repeat operation across a dimension"""
 
-    def forward(self, x: AutogradTensor, *dims: tuple) -> AutogradTensor:
+    def forward(self, x: AutogradTensor, *dims: tuple) -> AutogradTensor:  # type: ignore
         self.x = x
         self.dims = dims
 

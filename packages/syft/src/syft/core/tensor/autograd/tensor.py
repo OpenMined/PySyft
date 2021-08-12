@@ -2,61 +2,71 @@
 from __future__ import annotations
 
 # stdlib
-from collections import Counter
-from collections import defaultdict
+# from typing import DefaultDict as TypeDefaultDict
+# from collections import Counter
+# from collections import defaultdict
 from typing import Any
-from typing import DefaultDict
+from typing import Dict as TypeDict
 from typing import List
 from typing import Optional
+from typing import Type
 from typing import Union
 import uuid
 
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 
 # relative
 from .. import autograd
-from ....core.common.serde.serializable import Serializable
-from ....lib.util import full_name_with_name
-from ....proto.core.tensor.tensor_pb2 import Tensor as Tensor_PB
-from ...common.serde.deserialize import _deserialize as deserialize
+from ....core.adp.collections import DefaultDict
+from ....core.adp.collections import SerializableCounter
+from ....core.common.serde.recursive import RecursiveSerde
 from ...common.serde.serializable import bind_protobuf
-from ...common.serde.serialize import _serialize as serialize
 from ..ancestors import AutogradTensorAncestor
 from ..ancestors import PhiTensorAncestor
+from ..passthrough import AcceptableSimpleType
 from ..passthrough import PassthroughTensor
 from ..passthrough import is_acceptable_simple_type
 
 
 @bind_protobuf
-class AutogradTensor(PassthroughTensor, PhiTensorAncestor, Serializable):
-    def __init__(self, child: AutogradTensor, requires_grad: bool = False) -> None:
+class AutogradTensor(PassthroughTensor, PhiTensorAncestor, RecursiveSerde):
+
+    __attr_allowlist__ = [
+        "child",
+        "requires_grad",
+        "_grad",
+        "_grad_fn",
+        "ops",
+        "backprop_id",
+        "n_backwards",
+    ]
+
+    def __init__(
+        self,
+        child: Union[Type[AutogradTensor], AcceptableSimpleType],
+        requires_grad: bool = False,
+    ) -> None:
         super().__init__(child)
 
         # whether to run backpropagation or not
         self.requires_grad = requires_grad
 
         # tensor gradient
-        self._grad: DefaultDict = defaultdict(lambda: None)
+        self._grad: TypeDict = DefaultDict(lambda: None)
 
         # operation used to create this tensor (if any)
-        # TODO: Keep updating the list inside the union as they're built out
-        self._grad_fn: Optional[
-            Union[
-                autograd.backward_ops.AddOp,
-                autograd.backward_ops.SubOp,
-                autograd.backward_ops.MulOp,
-                autograd.backward_ops.DotOp,
-            ]
-        ] = None
+        self._grad_fn: Optional[Type[autograd.backward_ops.Op]] = None
 
         # list of ops which use this tensor
         self.ops: List = list()
 
         self.backprop_id: Optional[uuid.UUID] = None
 
-        self.n_backwards: Counter[uuid.UUID] = Counter()
+        # self.n_backwards: Counter[uuid.UUID] = Counter()
+        self.n_backwards: SerializableCounter = (
+            SerializableCounter()
+        )  # may have to add [uuid.UUID] for type annotation
 
     @property
     def grad(self) -> Optional[np.ndarray]:
@@ -64,76 +74,69 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor, Serializable):
             return None
         return self._grad[self.backprop_id]
 
-    # TODO: Keep updating the list inside the Union with new Ops as they're built out.
     @property
     def grad_fn(
         self,
-    ) -> Union[
-        None,
-        autograd.backward_ops.AddOp,
-        autograd.backward_ops.SubOp,
-        autograd.backward_ops.MulOp,
-        autograd.backward_ops.DotOp,
-    ]:
+    ) -> Optional[Type[autograd.backward_ops.Op]]:
         if not self.requires_grad:
             raise Exception("This tensor is not backpropagated")
         return self._grad_fn
 
     # Autograd Tensor Operations
+    """ Note: Ignoring return type incompatibilities since AutogradTensorAncestor doesn't inherit from
+    PassThroughTensor"""
+
     def __abs__(self) -> AutogradTensorAncestor:
         op = autograd.backward_ops.AbsOp()
         return op(self)
 
-    def __add__(self, other: AutogradTensor) -> AutogradTensorAncestor:
+    def __add__(self, other: AutogradTensor) -> AutogradTensorAncestor:  # type: ignore
         op = autograd.backward_ops.AddOp()
         return op(self, other)
 
-    def __sub__(self, other: AutogradTensor) -> AutogradTensorAncestor:
+    def __sub__(self, other: AutogradTensor) -> AutogradTensorAncestor:  # type: ignore
         op = autograd.backward_ops.SubOp()
         return op(self, other)
 
-    def __mul__(self, other: AutogradTensor) -> AutogradTensorAncestor:
+    def __mul__(self, other: AutogradTensor) -> AutogradTensorAncestor:  # type: ignore
         op = autograd.backward_ops.MulOp()
         return op(self, other)
 
-    def __rmul__(self, other: AutogradTensor) -> AutogradTensorAncestor:
+    def __rmul__(self, other: AutogradTensor) -> AutogradTensorAncestor:  # type: ignore
         op = autograd.backward_ops.MulOp()
         return op(self, other)
 
-    def __truediv__(self, other: AutogradTensor) -> AutogradTensorAncestor:
+    def __truediv__(self, other: AutogradTensor) -> AutogradTensorAncestor:  # type: ignore
         if is_acceptable_simple_type(other):
-            return self * (1 / other)
+            # Ignoring type annotation error because only int, floats, np.ndarrays will be parsed
+            return self * (1 / other)  # type: ignore
         return NotImplemented
 
-    def __pow__(
-        self, other: Union[AutogradTensor, Union[int, bool, float, Any]]
-    ) -> AutogradTensorAncestor:
+    def __pow__(self, other: Any) -> AutogradTensorAncestor:  # type: ignore
         op = autograd.backward_ops.PowOp()
         return op(self, other)
 
-    def __rpow__(
-        self, other: Union[AutogradTensor, Union[int, bool, float, Any]]
-    ) -> AutogradTensorAncestor:
+    def __rpow__(self, other: Any) -> AutogradTensorAncestor:  # type: ignore
         op = autograd.backward_ops.RPowOp()
         return op(self, other)
 
-    def reshape(self, *shape: tuple) -> AutogradTensorAncestor:
+    def reshape(self, *shape: tuple) -> AutogradTensorAncestor:  # type: ignore
         op = autograd.backward_ops.ReshapeOp()
         return op(self, *shape)
 
-    def repeat(self, *args: int, **kwargs: int) -> AutogradTensorAncestor:
+    def repeat(self, *args: int, **kwargs: int) -> AutogradTensorAncestor:  # type: ignore
         op = autograd.backward_ops.RepeatOp()
         return op(self, *args, **kwargs)
 
-    def copy(self) -> AutogradTensorAncestor:
+    def copy(self) -> AutogradTensorAncestor:  # type: ignore
         op = autograd.backward_ops.CopyOp()
         return op(self)
 
-    def sum(self, *args: int, **kwargs: int) -> AutogradTensorAncestor:
+    def sum(self, *args: int, **kwargs: int) -> AutogradTensorAncestor:  # type: ignore
         op = autograd.backward_ops.SumOp()
         return op(self, *args, **kwargs)
 
-    def transpose(self, *dims: tuple) -> AutogradTensorAncestor:
+    def transpose(self, *dims: tuple) -> AutogradTensorAncestor:  # type: ignore
         op = autograd.backward_ops.TransposeOp()
         return op(self, *dims)
 
@@ -181,7 +184,7 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor, Serializable):
         # if all gradients are accounted for - backprop
         if self.n_backwards[backprop_id] >= len(self.ops):
 
-            self.grad_fn.backward(grad, backprop_id=backprop_id)
+            self.grad_fn.backward(grad, backprop_id=backprop_id)  # type: ignore
 
         # if some gradietns appear to be missing - parse forward in
         # the graph to double check
@@ -214,7 +217,7 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor, Serializable):
                 "do nothing - we're going to get another gradient"
             else:
                 # backprop anyway - we've got all the grads we're gonna get
-                self.grad_fn.backward(grad, backprop_id=backprop_id)
+                self.grad_fn.backward(grad, backprop_id=backprop_id)  # type: ignore
 
         return True
 
@@ -230,36 +233,3 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor, Serializable):
                 break
 
         return found_id
-
-    def _object2proto(self) -> Tensor_PB:
-        arrays = []
-        tensors = []
-        if isinstance(self.child, np.ndarray):
-            use_tensors = False
-            arrays = [serialize(self.child)]
-        else:
-            use_tensors = True
-            tensors = [serialize(self.child)]
-
-        return Tensor_PB(
-            obj_type=full_name_with_name(klass=type(self)),
-            use_tensors=use_tensors,
-            arrays=arrays,
-            tensors=tensors,
-            requires_grad=self.requires_grad,
-        )
-
-    @staticmethod
-    def _proto2object(proto: Tensor_PB) -> AutogradTensor:
-        use_tensors = proto.use_tensors
-        child: List[AutogradTensor] = []
-        if use_tensors:
-            child = [deserialize(tensor) for tensor in proto.tensors]
-        else:
-            child = [deserialize(array) for array in proto.arrays]
-
-        return AutogradTensor(child[0], requires_grad=proto.requires_grad)
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return Tensor_PB

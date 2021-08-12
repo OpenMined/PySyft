@@ -347,7 +347,6 @@ class GetDatasetsResponse(ImmediateSyftMessageWithoutReply):
             the other public serialization methods if you wish to serialize an
             object.
         """
-
         msg = GetDatasetsResponse_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),

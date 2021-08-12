@@ -43,22 +43,22 @@ from .search import ssid2obj
 
 # the most generic class
 class Scalar(Serializable):
-    def publish(self, acc: Any, sigma: float = 1.5) -> float:
+    def publish(self, acc: Any, sigma: float = 1.5) -> TypeList[Any]:
         # relative
         from .publish import publish
 
         return publish([self], acc=acc, sigma=sigma)
 
     @property
-    def max_val(self) -> Optional[float]:
+    def max_val(self) -> Optional[np.float64]:
         raise NotImplementedError
 
     @property
-    def min_val(self) -> Optional[float]:
+    def min_val(self) -> Optional[np.float64]:
         raise NotImplementedError
 
     @property
-    def value(self) -> Optional[float]:
+    def value(self) -> Optional[np.float64]:
         raise NotImplementedError
 
     def __str__(self) -> str:
@@ -142,7 +142,7 @@ class IntermediateScalar(Scalar):
         return None
 
     @property
-    def value(self) -> Optional[float]:
+    def value(self) -> Optional[np.float64]:
         if self.poly is not None:
             result = EM(
                 context={obj.poly.name: obj.value for obj in self.input_scalars}
@@ -524,7 +524,7 @@ class IntermediateGammaScalar(IntermediateScalar):
         else:
             return -float(result.fun)
 
-    def max_lipschitz_wrt_entity(self, entity) -> float:
+    def max_lipschitz_wrt_entity(self, entity: Entity) -> float:
         result = self.max_lipschitz_via_jacobian(input_entity=entity)[0][-1]
         if isinstance(result, float):
             return -result
