@@ -4,6 +4,7 @@ from typing import Any
 from typing import List
 
 # third party
+from nacl.signing import VerifyKey
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
 

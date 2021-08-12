@@ -76,7 +76,7 @@ def publish(
         # this is when we actually insert into the database
         acc.temp_append(ms)
 
-        overbudgeted_entities = acc.overbudgeted_entities
+        overbudgeted_entities = acc.overbudgeted_entities(user_key=user_key)
 
     output = [s.value + random.gauss(0, sigma) for s in scalars]
 

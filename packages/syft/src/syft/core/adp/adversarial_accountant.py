@@ -89,14 +89,14 @@ class AdversarialAccountant:
         #     entity=entity,
         # )
 
-    def has_budget(self, entity_name: str) -> bool:
-        eps = self.get_eps_for_entity(entity_name)
+    def has_budget(self, entity_name: str, user_key: VerifyKey) -> bool:
+        eps = self.get_eps_for_entity(entity_name, user_key=user_key)
         if eps is not None:
             return eps < self.max_budget
         # if eps.value is not None:
         #     return eps.value < self.max_budget
 
-    def user_budget(self, user_key: Optional[VerifyKey]):
+    def user_budget(self, user_key: VerifyKey):
 
         max_spend = 0
 
@@ -112,12 +112,11 @@ class AdversarialAccountant:
     def entities(self) -> TypeKeysView[Entity]:
         return self.entity2ledger.keys()
 
-    @property
-    def overbudgeted_entities(self) -> TypeSet[Entity]:
+    def overbudgeted_entities(self, user_key: VerifyKey) -> TypeSet[Entity]:
         entities = set()
 
         for entity_name in self.entities:
-            if not self.has_budget(entity_name):
+            if not self.has_budget(entity_name, user_key=user_key):
                 entities.add(entity_name)
 
         return entities
