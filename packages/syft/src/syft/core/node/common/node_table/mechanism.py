@@ -39,7 +39,7 @@ class Mechanism(Base):
                     obj_list[i].params["value"],
                     obj_list[i].params["L"],
                     obj_list[i].entity,
-                    user_key = obj_list[i].user_key
+                    user_key=obj_list[i].user_key,
                 )
                 for i in range(len(obj_list))
             ]

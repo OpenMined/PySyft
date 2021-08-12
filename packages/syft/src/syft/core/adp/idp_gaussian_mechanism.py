@@ -18,7 +18,6 @@ from ..common.serde.recursive import RecursiveSerde
 # syft.serde seems to not support np.int64 serialization/deserialization
 def numpy64tolist(value):
     list_version = value.tolist()
-    print("NUMPY TO LIST:" + str(list_version))
     return list_version
 
 
