@@ -69,4 +69,6 @@ def delete_user(user_id: int, current_user: UserPrivate) -> str:
         message_type=DeleteUserMessage,
         user_id=user_id,
     )
-    return reply.message
+
+    # return reply.message - if the other one doesn't work try this one? ;)
+    return reply.resp_msg
