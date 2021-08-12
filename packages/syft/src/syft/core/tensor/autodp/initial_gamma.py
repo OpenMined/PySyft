@@ -15,11 +15,11 @@ from ..passthrough import PassthroughTensor
 from .intermediate_gamma import IntermediateGammaTensor
 
 
-def numpy2list(np_obj) -> TypeList:
+def numpy2list(np_obj: np.ndarray) -> TypeList:
     return [list(np_obj.flatten()), np_obj.shape]
 
 
-def list2numpy(l_shape) -> np.ndarray:
+def list2numpy(l_shape: Any) -> np.ndarray:
     list_length = l_shape[0]
     shape = l_shape[1]
     return np.array(list_length).reshape(shape)

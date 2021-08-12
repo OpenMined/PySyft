@@ -1,4 +1,5 @@
 # stdlib
+from typing import Any
 from uuid import UUID
 
 # third party
@@ -14,7 +15,7 @@ from .op import Op
 class AddOp(Op, RecursiveSerde):
     """Sumation operation with 2 tensors"""
 
-    __attr_allowlist__ = []
+    __attr_allowlist__: Any = []
 
     def forward(self, x: AutogradTensor, y: AutogradTensor) -> AutogradTensor:  # type: ignore
         self.x = x

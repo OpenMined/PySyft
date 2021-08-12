@@ -68,9 +68,6 @@ from ..device import DeviceClient
 from .client import DomainClient
 
 
-
-
-
 class Domain(Node):
     domain: SpecificLocation
     root_key: Optional[VerifyKey]

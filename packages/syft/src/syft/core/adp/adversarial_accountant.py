@@ -9,15 +9,17 @@ from autodp.autodp_core import Mechanism
 from autodp.transformer_zoo import Composition
 from sqlalchemy.engine import Engine
 
-
 # relative
+from ..common.serde.recursive import RecursiveSerde
+from ..node.common.node_manager.ledger_manager import LedgerManager
 from .entity import Entity
 from .scalar import PhiScalar
-from ..node.common.node_manager.ledger_manager import LedgerManager
-from ..common.serde.recursive import RecursiveSerde
+
 
 class AdversarialAccountant:
-    def __init__(self, db_engine: Engine, max_budget: float = 10, delta: float = 1e-6) -> None:
+    def __init__(
+        self, db_engine: Engine, max_budget: float = 10, delta: float = 1e-6
+    ) -> None:
         self.entity2ledger = LedgerManager(db_engine)
         self.max_budget = max_budget
         self.delta = delta
@@ -70,8 +72,9 @@ class AdversarialAccountant:
         for entity, mechanisms in self.entity2ledger.items():
             print(str(entity) + "\t" + str(self.get_eps_for_entity(entity)))
 
+
 class AccountantReference(RecursiveSerde):
-    __attr_allowlist__ = ['msg']
+    __attr_allowlist__ = ["msg"]
 
     def __init__(self, msg):
         self.msg = msg

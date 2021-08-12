@@ -1,21 +1,21 @@
 # stdlib
+from collections.abc import KeysView
 from typing import Any
 from typing import List
-from collections.abc import KeysView
 
 # third party
-from sqlalchemy import String
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
 
 # relative
-from ..node_table.ledger import Ledger
-from ..node_table.entity import Entity as EntitySchema
-from ..node_table.mechanism import Mechanism as MechanismSchema
 from ....adp.entity import Entity
+from ..node_table.entity import Entity as EntitySchema
+from ..node_table.ledger import Ledger
+from ..node_table.mechanism import Mechanism as MechanismSchema
 
 # from ..exceptions import SetupNotFoundError
 from .database_manager import DatabaseManager
+
 
 class EntityManager(DatabaseManager):
     schema = EntitySchema
@@ -23,8 +23,8 @@ class EntityManager(DatabaseManager):
     def __init__(self, database: Engine) -> None:
         super().__init__(db=database, schema=EntityManager.schema)
 
-    def register(self, name) -> Any:
-        entity = Entity(name=name)        
+    def register(self, name: str):  # type: ignore
+        entity = Entity(name=name)
         _obj = self._schema(name=entity.name)
         _obj.obj = entity
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
@@ -33,13 +33,14 @@ class EntityManager(DatabaseManager):
         session_local.close()
         return entity.name
 
+
 class MechanismManager(DatabaseManager):
     schema = MechanismSchema
 
     def __init__(self, database: Engine) -> None:
         super().__init__(db=database, schema=MechanismManager.schema)
 
-    def register(self, mechanism) -> Any:
+    def register(self, mechanism):  # type: ignore
         _obj = self._schema()
         _obj.obj = mechanism
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
@@ -48,8 +49,8 @@ class MechanismManager(DatabaseManager):
         obj_id = _obj.id
         session_local.close()
         return obj_id
-    
-    def append(self, mech_id: int, mechanism) -> None:
+
+    def append(self, mech_id: int, mechanism: MechanismSchema) -> None:
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
         mech_instance = session_local.query(self._schema).filter_by(id=mech_id).first()
         new_list = mech_instance.obj + [mechanism]
@@ -57,7 +58,8 @@ class MechanismManager(DatabaseManager):
         session_local.flush()
         session_local.commit()
         session_local.close()
-        
+
+
 class LedgerManager(DatabaseManager):
 
     schema = Ledger
@@ -66,12 +68,9 @@ class LedgerManager(DatabaseManager):
         super().__init__(db=database, schema=LedgerManager.schema)
         self.entity_manager = EntityManager(database)
         self.mechanism_manager = MechanismManager(database)
-    
+
     def register(self, entity_name, mechanism_id) -> Any:
-        _obj = self._schema(
-                entity_name=entity_name,
-                mechanism_id=mechanism_id
-        )
+        _obj = self._schema(entity_name=entity_name, mechanism_id=mechanism_id)
         obj_id = _obj.id
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
         session_local.add(_obj)
@@ -79,21 +78,24 @@ class LedgerManager(DatabaseManager):
         session_local.close()
         return obj_id
 
-    def append(self, entity_name, mechanism):
+    def append(self, entity_name, mechanism) -> None:
         ledger_instance = super().first(entity_name=entity_name)
-        self.mechanism_manager.append(
-                ledger_instance.mechanism_id,
-                mechanism
-        )
+        self.mechanism_manager.append(ledger_instance.mechanism_id, mechanism)
 
     def keys(self) -> KeysView:
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
-        keys = [entity[0] for entity in session_local.query(self._schema.entity_name).all()]
+        keys = [
+            entity[0] for entity in session_local.query(self._schema.entity_name).all()
+        ]
         return KeysView(keys)
+
     def items(self) -> List:
         ledger_list = super().all()
-        return [ ( ledger.entity_name, self.__getitem__(ledger.entity_name) ) for ledger in ledger_list ]
-        
+        return [
+            (ledger.entity_name, self.__getitem__(ledger.entity_name))
+            for ledger in ledger_list
+        ]
+
     def __setitem__(self, entity_name, value):
         if super().contain(entity_name=entity_name):
             ledger_instance = super().first(entity_name=entity_name)
@@ -101,12 +103,9 @@ class LedgerManager(DatabaseManager):
             self.mechanism_manager.delete(id=ledger_instance.mechanism_id)
             super().delete(entity_name=entity_name)
 
-        entity_name = self.entity_manager.register(name=entity_name)
-        mechanism_id = self.mechanism_manager.register(value)
-        result = self.register(
-                entity_name=entity_name,
-                mechanism_id=mechanism_id
-        )
+        # entity_name = self.entity_manager.register(name=entity_name)
+        # mechanism_id = self.mechanism_manager.register(value)
+        # result = self.register(entity_name=entity_name, mechanism_id=mechanism_id)
 
     def __getitem__(self, entity_name: str) -> Any:
         if super().contain(entity_name=entity_name):

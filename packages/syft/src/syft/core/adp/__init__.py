@@ -7,11 +7,12 @@ from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
 from ...core.node.abstract.node import AbstractNodeClient
+from .adversarial_accountant import AccountantReference
 from .scalar import GammaScalar  # noqa: 401
 from .scalar import IntermediatePhiScalar  # noqa: 401
 from .scalar import PhiScalar  # noqa: 401
 from .scalar import Scalar  # noqa: 401
-from .adversarial_accountant import AccountantReference
+
 
 def create_adp_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
     ast = Globals(client)
@@ -26,7 +27,11 @@ def create_adp_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.core.adp.IntermediatePhiScalar",
             IntermediatePhiScalar,
         ),
-        ("syft.core.adp.AccountantReference", "syft.core.adp.AccountantReference", AccountantReference)
+        (
+            "syft.core.adp.AccountantReference",
+            "syft.core.adp.AccountantReference",
+            AccountantReference,
+        ),
     ]
 
     methods = [

@@ -524,7 +524,7 @@ class IntermediateGammaScalar(IntermediateScalar):
         else:
             return -float(result.fun)
 
-    def max_lipschitz_wrt_entity(self, entity) -> float:
+    def max_lipschitz_wrt_entity(self, entity: Entity) -> float:
         result = self.max_lipschitz_via_jacobian(input_entity=entity)[0][-1]
         if isinstance(result, float):
             return -result
