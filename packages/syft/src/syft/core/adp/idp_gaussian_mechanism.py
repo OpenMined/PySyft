@@ -12,8 +12,8 @@ import numpy as np
 from ..common.serde.recursive import RecursiveSerde
 
 
-## methods serialize/deserialize np.int64 number
-## syft.serde seems to not support np.int64 serialization/deserialization
+# methods serialize/deserialize np.int64 number
+# syft.serde seems to not support np.int64 serialization/deserialization
 def numpy64tolist(value):
     return value.tolist()
 

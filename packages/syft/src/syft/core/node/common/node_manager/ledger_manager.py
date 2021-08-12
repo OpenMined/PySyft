@@ -4,7 +4,6 @@ from typing import Any
 from typing import List
 
 # third party
-from sqlalchemy import String
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
 
@@ -106,7 +105,7 @@ class LedgerManager(DatabaseManager):
 
         entity_name = self.entity_manager.register(name=entity_name)
         mechanism_id = self.mechanism_manager.register(value)
-        result = self.register(entity_name=entity_name, mechanism_id=mechanism_id)
+        self.register(entity_name=entity_name, mechanism_id=mechanism_id)
 
     def __getitem__(self, entity_name: str) -> Any:
         if super().contain(entity_name=entity_name):

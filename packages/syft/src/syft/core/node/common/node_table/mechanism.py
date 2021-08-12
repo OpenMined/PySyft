@@ -5,7 +5,6 @@ from typing import Any
 from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import LargeBinary
-from sqlalchemy import String
 
 # syft absolute
 from syft import deserialize
