@@ -11,10 +11,8 @@ from syft import deserialize
 from syft import serialize
 
 # relative
-
-from ....lib.python import Dict
-
 from ....core.common.serde.serializable import bind_protobuf
+from ....lib.python import Dict
 from ....proto.core.common.recursive_serde_pb2 import (
     RecursiveSerde as RecursiveSerde_PB,
 )

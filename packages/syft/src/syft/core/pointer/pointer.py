@@ -103,6 +103,7 @@ from ...logger import debug
 from ...logger import error
 from ...logger import warning
 from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
+from ...util import obj2pointer_type
 from ..common.pointer import AbstractPointer
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import bind_protobuf
@@ -115,7 +116,7 @@ from ..node.common.node_service.object_search_permission_update.obj_search_permi
     ObjectSearchPermissionUpdateMessage,
 )
 from ..store.storeable_object import StorableObject
-from ...util import obj2pointer_type
+
 
 # TODO: Fix the Client, Address, Location confusion
 @bind_protobuf
@@ -248,8 +249,12 @@ class Pointer(AbstractPointer):
 
     def publish(self, client: Any, sigma: float = 1.5) -> Any:
         # syft relative
+        # relative
         from ...lib.python import Float
-        from ..node.common.node_service.publish.publish_service import PublishScalarsAction
+        from ..node.common.node_service.publish.publish_service import (
+            PublishScalarsAction,
+        )
+
         print("a")
         id_at_location = UID()
         print("b")
@@ -474,8 +479,12 @@ class Pointer(AbstractPointer):
             # relative
             # from ..node.domain.service import RequestAnswerMessage
             # from ..node.domain.service import RequestStatus
-            from ..node.common.node_service.request_answer.request_answer_messages import RequestAnswerMessage
-            from ..node.common.node_service.request_answer.request_answer_messages import RequestStatus
+            from ..node.common.node_service.request_answer.request_answer_messages import (
+                RequestAnswerMessage,
+            )
+            from ..node.common.node_service.request_answer.request_answer_messages import (
+                RequestStatus,
+            )
 
             output_string = "> Waiting for Blocking Request: "
             output_string += f"  {self.id_at_location}"

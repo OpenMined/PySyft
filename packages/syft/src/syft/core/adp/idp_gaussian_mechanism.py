@@ -17,8 +17,10 @@ from ..common.serde.recursive import RecursiveSerde
 def numpy64tolist(value):
     return value.tolist()
 
+
 def listtonumpy64(value):
     return np.int64(value)
+
 
 @lru_cache(maxsize=None)
 def _individual_RDP_gaussian(
@@ -63,7 +65,7 @@ class iDPGaussianMechanism(Mechanism, RecursiveSerde):
 
     # delta0 is a numpy.int64 number (not supported by syft.serde)
     __serde_overrides__ = {
-            "delta0": [numpy64tolist, listtonumpy64],
+        "delta0": [numpy64tolist, listtonumpy64],
     }
 
     def __init__(
