@@ -6,6 +6,7 @@ from __future__ import annotations
 # from collections import Counter
 # from collections import defaultdict
 from typing import Any
+from typing import Dict as TypeDict
 from typing import List
 from typing import Optional
 from typing import Type
@@ -52,7 +53,7 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor, RecursiveSerde):
         self.requires_grad = requires_grad
 
         # tensor gradient
-        self._grad: DefaultDict = DefaultDict(lambda: None)
+        self._grad: TypeDict = DefaultDict(lambda: None)
 
         # operation used to create this tensor (if any)
         self._grad_fn: Optional[Type[autograd.backward_ops.Op]] = None

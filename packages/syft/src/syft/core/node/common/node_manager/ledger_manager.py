@@ -23,7 +23,11 @@ class EntityManager(DatabaseManager):
     def __init__(self, database: Engine) -> None:
         super().__init__(db=database, schema=EntityManager.schema)
 
+<<<<<<< HEAD
     def register(self, name) -> Any:
+=======
+    def register(self, name: str):  # type: ignore
+>>>>>>> 456f598b185e5eaed4ddedf2e3406d9a9ba053cf
         entity = Entity(name=name)
         _obj = self._schema(name=entity.name)
         _obj.obj = entity
@@ -40,7 +44,7 @@ class MechanismManager(DatabaseManager):
     def __init__(self, database: Engine) -> None:
         super().__init__(db=database, schema=MechanismManager.schema)
 
-    def register(self, mechanism) -> Any:
+    def register(self, mechanism):  # type: ignore
         _obj = self._schema()
         _obj.obj = mechanism
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
@@ -50,7 +54,11 @@ class MechanismManager(DatabaseManager):
         session_local.close()
         return obj_id
 
+<<<<<<< HEAD
     def append(self, mech_id: int, mechanism) -> None:
+=======
+    def append(self, mech_id: int, mechanism: MechanismSchema) -> None:
+>>>>>>> 456f598b185e5eaed4ddedf2e3406d9a9ba053cf
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
         mech_instance = session_local.query(self._schema).filter_by(id=mech_id).first()
         new_list = mech_instance.obj + [mechanism]
@@ -78,7 +86,7 @@ class LedgerManager(DatabaseManager):
         session_local.close()
         return obj_id
 
-    def append(self, entity_name, mechanism):
+    def append(self, entity_name, mechanism) -> None:
         ledger_instance = super().first(entity_name=entity_name)
         self.mechanism_manager.append(ledger_instance.mechanism_id, mechanism)
 

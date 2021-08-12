@@ -42,9 +42,9 @@ class PublishScalarsService(ImmediateNodeServiceWithoutReply):
                 publish_object = node.store[publish_id]
 
                 if isinstance(publish_object.data, PassthroughTensor):
-                    result = publish_object.data.publish(acc=node.acc, sigma=msg.sigma)
+                    result = publish_object.data.publish(acc=node.acc, sigma=msg.sigma, user_key=verify_key)
                 else:
-                    result = publish([publish_object.data], node.acc, msg.sigma)
+                    result = publish([publish_object.data], node.acc, msg.sigma, user_key=verify_key)
                 results.append(result)
             except Exception as e:
                 log = (

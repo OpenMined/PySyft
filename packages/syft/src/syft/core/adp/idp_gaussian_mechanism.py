@@ -1,6 +1,9 @@
 # stdlib
 from functools import lru_cache
 from typing import Dict
+from typing import Optional
+
+from nacl.signing import VerifyKey
 
 # third party
 from autodp import dp_bank
@@ -61,6 +64,7 @@ class iDPGaussianMechanism(Mechanism, RecursiveSerde):
         "fdp_off",
         "use_basic_rdp_to_approx_dp_conversion",
         "use_fdp_based_rdp_to_approx_dp_conversion",
+        "user_key"
     ]
 
     # delta0 is a numpy.int64 number (not supported by syft.serde)
@@ -80,9 +84,12 @@ class iDPGaussianMechanism(Mechanism, RecursiveSerde):
         fdp_off: bool = True,
         use_basic_rdp_to_approx_dp_conversion: bool = False,
         use_fdp_based_rdp_to_approx_dp_conversion: bool = False,
+        user_key: Optional[VerifyKey] = None,
     ):
         # the sigma parameter is the std of the noise divide by the l2 sensitivity
         Mechanism.__init__(self)
+
+        self.user_key = user_key
 
         self.name = name  # When composing
         self.params = {
