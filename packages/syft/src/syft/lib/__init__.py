@@ -2,6 +2,7 @@
 import functools
 import importlib
 import sys
+import warnings
 from types import ModuleType
 from typing import Any
 from typing import Any as TypeAny
@@ -12,13 +13,12 @@ from typing import Optional
 from typing import Set as TypeSet
 from typing import Tuple as TypeTuple
 from typing import Union as TypeUnion
-import warnings
 
 # third party
+import wrapt
 from cachetools import cached
 from cachetools.keys import hashkey
 from packaging import version
-import wrapt
 
 # syft relative
 from ..ast import add_classes
@@ -260,7 +260,7 @@ lib_ast = create_lib_ast(None)
 @wrapt.when_imported("gym")
 @wrapt.when_imported("opacus")
 @wrapt.when_imported("numpy")
-@wrapt.when_imported("sklearn")
+# @wrapt.when_imported("sklearn")
 @wrapt.when_imported("pandas")
 @wrapt.when_imported("PIL")
 @wrapt.when_imported("petlib")

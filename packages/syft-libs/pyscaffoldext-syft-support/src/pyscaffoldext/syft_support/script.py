@@ -16,14 +16,11 @@ import os
 import pkgutil
 import sys
 import typing
-from os import path
 from typing import Any as TypeAny
 from typing import Dict as TypeDict
 from typing import List as TypeList
-from typing import Optional
 from typing import Set as TypeSet
 from typing import Tuple as TypeTuple
-from typing import Union
 
 import nbformat as nbf
 from pyscaffold.operations import no_overwrite
@@ -97,7 +94,12 @@ def set_classes(
                     if is_error:
                         debug_list.append(string)
                     else:
-                        allowlist.append((f"{i}.{t.__name__}", string))
+                        # if string in ["_syft_missing", "_syft_return_absent"]:
+                        # print("to be done")
+                        # hello  = 1
+                        # Create a notebook with module_name and add function into it
+                        allowlist.append((f"{i}.{ax}", string))
+
         except Exception as e:
             # print(f"set_classes: module_name = {i}: exception occoured \n\t{e}")
             debug_list.append(
@@ -242,19 +244,22 @@ def dict_allowlist(
                     code = (
                         f"# {i}.{t.__name__}\n"
                         f"try:\n"
-                        f"\tobj = class_constructor()\n"
+                        f"\tobj = class_constructor() # noqa F821\n"
                         f"\tret = obj.{t.__name__}()\n"
-                        f"\ttype_{i_}_{t.__name__} = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__\n"
-                        f"\tprint('✅ {i}.{t.__name__}: ', type(ret))\n"
+                        f"\ttype_{i_}_{t.__name__} = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__\n"  # noqa E501
+                        f"\tprint('✅ {i}.{t.__name__}: ', type(ret)) # noqa E501\n"
                         f"except Exception as e:\n"
                         f"\ttype_{i_}_{t.__name__} = '_syft_missing'\n"
-                        f"\tprint('❌ {i}.{t.__name__}: Return unavailable')\n"
+                        f"\tprint('❌ {i}.{t.__name__}: Return unavailable') # noqa E501\n"
                         f'\tprint("  Please fix this return type code until there is no exception")\n'
                         f"\tprint('  Error:', e)\n"
                     ).replace("\t", " " * 4)
 
                     list_nb.append(nbf.v4.new_code_cell(code))
-                allowlist.append((i + "." + t.__name__, string))
+
+                if i + "." + t.__name__ == "sklearn.cluster._bicluster.isspmatrix":
+                    print(t, i, ax)
+                allowlist.append(((i + "." + ax), string))
 
         elif isinstance(t, property):
             missing_return += 1
@@ -267,13 +272,13 @@ def dict_allowlist(
             code = (
                 f"# {i}.{ax}\n"
                 f"try:\n"
-                f"\tobj = class_constructor()\n"
+                f"\tobj = class_constructor() # noqa F821\n"
                 f"\tret = obj.{ax}\n"
                 f"\ttype_{i_}_{ax} = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__\n"
-                f"\tprint('✅ {i}.{ax}:', type(ret))\n"
+                f"\tprint('✅ {i}.{ax}:', type(ret)) # noqa E501\n"
                 f"except Exception as e:\n"
                 f"\ttype_{i_}_{ax} = '_syft_missing'\n"
-                f"\tprint('❌ {i}.{ax}: Return unavailable')\n"
+                f"\tprint('❌ {i}.{ax}: Return unavailable') # noqa E501\n"
                 f'\tprint("  Please fix this return type code until there is no exception")\n'
                 f"\tprint('  Error:', e)\n"
             ).replace("\t", " " * 4)
@@ -290,7 +295,7 @@ def generate_package_support(
     # DEBUG = args.debug
     # package_name = args.lib
 
-    DEBUG_FILE_NAME = f"{package_name}.debug.log"
+    DEBUG_FILE_NAME = f"{package_name}.debug.log"  # noqa F841
     PKG_SUPPORT_NAME = f"{package_name}.pkg_support.json"
     IGN_LIST = f"{package_name}.ignorelist.txt"
 
@@ -372,14 +377,19 @@ def generate_package_support(
 
     if len(missing_classes) > 0:
         # create an __init__ file :)
-        init_file = "".join(f"from . import {a}\n" for a in missing_classes)
+        init_file = "".join(
+            f"from . import {a} # noqa: F401\n" for a in missing_classes
+        )
         missing_returns_dir["__init__.py"] = (init_file, no_overwrite())
 
     package_support: TypeDict[str, TypeAny] = dict()
 
     package_support["lib"] = package_name
     # petlib doesnot have version
-    # package_support["Version"] = package.__version__
+    try:
+        package_support["Version"] = package.__version__
+    except Exception:
+        package_support["Version"] = "NA"
     # sort it all
     classlist = list(classes_set)
     classlist.sort()
@@ -389,6 +399,9 @@ def generate_package_support(
     package_support["classes"] = classlist
     package_support["modules"] = modules_list
     package_support["methods"] = allowlist
+
+    with open(PKG_SUPPORT_NAME, "w") as outfile:
+        json.dump(package_support, outfile)
 
     print(f"-----{package_name} Summary-----")
     print("Modules")

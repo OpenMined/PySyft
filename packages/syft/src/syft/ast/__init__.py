@@ -66,6 +66,7 @@ from typing import Tuple as TypeTuple
 from typing import Union
 
 # syft relative
+from ..logger import warning
 from . import attribute  # noqa: F401
 from . import callable  # noqa: F401
 from . import dynamic_object  # noqa: F401
@@ -75,7 +76,6 @@ from . import klass  # noqa: F401
 from . import module  # noqa: F401
 from . import property  # noqa: F401
 from . import static_attr  # noqa: F401
-from ..logger import warning
 from .denylist import deny
 
 
@@ -177,6 +177,8 @@ def add_methods(
         paths: A list of methods, each of which is a tuple of the method's path and its return type.
     """
     for path, return_type in paths:
+        if return_type in ["_syft_missing", "_syft_return_absent"]:
+            continue
         if deny(path):
             warning(f"WARN: {path} denied. Cannot be added to AST.", print=True)
             continue
