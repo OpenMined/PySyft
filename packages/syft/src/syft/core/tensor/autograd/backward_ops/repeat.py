@@ -6,23 +6,15 @@ from uuid import UUID
 from numpy import ndarray
 
 # relative
-from ..tensor import AutogradTensor
 from .....core.common.serde.recursive import RecursiveSerde
-
+from ..tensor import AutogradTensor
 from .op import Op
 
 
 class RepeatOp(Op, RecursiveSerde):
     """Repeat operation across a dimension"""
 
-    __attr_allowlist__ = [
-        "x",
-        "axis",
-        "repeats",
-        "input_shape",
-        "output_shape"
-    ]
-
+    __attr_allowlist__ = ["x", "axis", "repeats", "input_shape", "output_shape"]
 
     def forward(  # type: ignore
         self, x: AutogradTensor, repeats: int, axis: Optional[int] = None

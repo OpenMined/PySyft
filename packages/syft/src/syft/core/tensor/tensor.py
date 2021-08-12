@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+from typing import Any
 from typing import Optional
 
 # third party
@@ -33,7 +34,7 @@ class Tensor(
 
     __attr_allowlist__ = ["child", "tag_name"]
 
-    def __init__(self, child):
+    def __init__(self, child: Any) -> None:
         """data must be a list of numpy array"""
 
         if isinstance(child, list):

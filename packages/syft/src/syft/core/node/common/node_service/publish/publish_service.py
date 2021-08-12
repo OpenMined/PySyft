@@ -28,9 +28,16 @@ class PublishScalarsService(ImmediateNodeServiceWithoutReply):
     def process(
         node: AbstractNode, msg: PublishScalarsAction, verify_key: VerifyKey
     ) -> None:
+
+        print("\n\nPROCESSING PUBLISH SCALAR ACTION!!!\n\n")
+        print(node.acc.entity2ledger)
+        node.acc.print_ledger()
+        print(node.acc)
+
         # get scalar objects from store
         results = List()
         for publish_id in msg.publish_ids_at_location:
+
             try:
                 publish_object = node.store[publish_id]
 
