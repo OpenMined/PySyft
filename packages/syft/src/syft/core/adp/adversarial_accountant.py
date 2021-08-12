@@ -8,6 +8,7 @@ from typing import Set as TypeSet
 # third party
 from autodp.autodp_core import Mechanism
 from autodp.transformer_zoo import Composition
+from nacl.signing import VerifyKey
 from sqlalchemy.engine import Engine
 
 # relative
@@ -36,10 +37,12 @@ class AdversarialAccountant:
                 self.temp_entity2ledger[key.name].append(m)
 
     def append(self, entity2mechanisms: TypeDict[str, TypeList[Mechanism]]) -> None:
+        keys = list(self.entity2ledger.keys())
         for key, ms in entity2mechanisms.items():
-            if key not in self.entity2ledger.keys():
+            if key not in keys:
                 print("New Key:" + str(key))
                 self.entity2ledger[key] = list()
+                keys.append(key)
             for m in ms:
                 print("Mech:" + str(m))
                 self.entity2ledger.append(key, m)
@@ -92,6 +95,18 @@ class AdversarialAccountant:
             return eps < self.max_budget
         # if eps.value is not None:
         #     return eps.value < self.max_budget
+
+    def user_budget(self, user_key: Optional[VerifyKey]):
+
+        max_spend = 0
+
+        for ent in self.entities:
+            spend = self.get_eps_for_entity(entity_name=ent, user_key=user_key)
+            if spend > max_spend:
+                max_spend = spend
+
+        return max_spend
+
 
     @property
     def entities(self) -> TypeKeysView[Entity]:
