@@ -11,6 +11,7 @@ from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from nacl.signing import VerifyKey
 import numpy as np
 from pymbolic import var
 from pymbolic.interop.sympy import PymbolicToSympyMapper
@@ -43,11 +44,13 @@ from .search import ssid2obj
 
 # the most generic class
 class Scalar(Serializable):
-    def publish(self, acc: Any, sigma: float = 1.5) -> TypeList[Any]:
+    def publish(
+        self, acc: Any, user_key: VerifyKey, sigma: float = 1.5
+    ) -> TypeList[Any]:
         # relative
         from .publish import publish
 
-        return publish([self], acc=acc, sigma=sigma)
+        return publish([self], acc=acc, sigma=sigma, user_key=user_key)
 
     @property
     def max_val(self) -> Optional[np.float64]:

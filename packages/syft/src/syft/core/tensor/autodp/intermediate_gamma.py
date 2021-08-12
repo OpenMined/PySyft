@@ -9,6 +9,7 @@ from typing import Tuple
 from typing import Union
 
 # third party
+from nacl.signing import VerifyKey
 import numpy as np
 from sympy.ntheory.factor_ import factorint
 
@@ -51,9 +52,9 @@ class IntermediateGammaTensor(PassthroughTensor, RecursiveSerde):
     def full_shape(self) -> Tuple[int]:
         return self.term_tensor.shape
 
-    def publish(self, acc: Any, sigma: float) -> np.ndarray:
+    def publish(self, acc: Any, sigma: float, user_key: VerifyKey) -> np.ndarray:
         return np.array(
-            publish(scalars=self.flat_scalars, acc=acc, sigma=sigma)
+            publish(scalars=self.flat_scalars, acc=acc, sigma=sigma, user_key=user_key)
         ).reshape(self.shape)
 
     @property
@@ -87,6 +88,7 @@ class IntermediateGammaTensor(PassthroughTensor, RecursiveSerde):
     def sum(
         self, axis: Optional[Union[int, Tuple[int, ...]]] = None
     ) -> IntermediateGammaTensor:
+
         new_term_tensor = np.swapaxes(self.term_tensor, axis, -1).squeeze(axis)
         new_coeff_tensor = np.swapaxes(self.coeff_tensor, axis, -1).squeeze(axis)
         new_bias_tensor = self.bias_tensor.sum(axis)

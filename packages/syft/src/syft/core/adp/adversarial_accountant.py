@@ -22,31 +22,31 @@ class AdversarialAccountant:
         self, db_engine: Engine, max_budget: float = 10, delta: float = 1e-6
     ) -> None:
         self.entity2ledger = LedgerManager(db_engine)
+        self.temp_entity2ledger = {}
         self.max_budget = max_budget
         self.delta = delta
 
-    def append(self, entity2mechanisms: TypeDict[Entity, TypeList[Mechanism]]) -> None:
+    def temp_append(
+        self, entity2mechanisms: TypeDict[Entity, TypeList[Mechanism]]
+    ) -> None:
+        for key, ms in entity2mechanisms.items():
+            if key not in self.temp_entity2ledger.keys():
+                self.temp_entity2ledger[key.name] = list()
+            for m in ms:
+                self.temp_entity2ledger[key.name].append(m)
+
+    def append(self, entity2mechanisms: TypeDict[str, TypeList[Mechanism]]) -> None:
         for key, ms in entity2mechanisms.items():
             if key not in self.entity2ledger.keys():
+                print("New Key:" + str(key))
                 self.entity2ledger[key] = list()
             for m in ms:
+                print("Mech:" + str(m))
                 self.entity2ledger.append(key, m)
 
-    def get_eps_for_entity(self, entity_name: str) -> PhiScalar:
-        # compose them with the transformation: compose
-        compose = Composition()
-        mechanisms = self.entity2ledger[entity_name]
-        composed_mech = compose(mechanisms, [1] * len(mechanisms))
-
-        return composed_mech.get_approxDP(self.delta)
-
-        # # Query for eps given delta
-        # return PhiScalar(
-        #     value=composed_mech.get_approxDP(self.delta),
-        #     min_val=0,
-        #     max_val=self.max_budget,
-        #     entity=entity,
-        # )
+    def save_temp_ledger_to_longterm_ledger(self):
+        print(self.entity2ledger.keys())
+        self.append(entity2mechanisms=self.temp_entity2ledger)
 
     def get_eps_for_entity(
         self, entity_name: str, user_key: Optional[str] = None
@@ -54,21 +54,29 @@ class AdversarialAccountant:
         # compose them with the transformation: compose
         compose = Composition()
         mechanisms = self.entity2ledger[entity_name]
+        if entity_name in self.temp_entity2ledger:
+            mechanisms = mechanisms + self.temp_entity2ledger[entity_name]
+        # print("Mechanisms before filtering: ", mechanisms)
+        # print("User key of mechanism: ", mechanisms[0].user_key)
+        # print("Input user key: ", user_key)
         if user_key is not None:
             filtered_mechanisms = []
             for mech in mechanisms:
                 if mech.user_key == user_key:
                     filtered_mechanisms.append(mech)
             mechanisms = filtered_mechanisms
+        # print("Mechanisma after filtering: ", mechanisms)
         # use verify key to specify the user
         # for all entities in the db,
         # how do we ensure that no data scientist
         # exceeds the budget of any entity?
 
         # map dataset
-        composed_mech = compose(mechanisms, [1] * len(mechanisms))
-
-        return composed_mech.get_approxDP(self.delta)
+        if len(mechanisms) > 0:
+            composed_mech = compose(mechanisms, [1] * len(mechanisms))
+            return composed_mech.get_approxDP(self.delta)
+        else:
+            return None
 
         # # Query for eps given delta
         # return PhiScalar(
@@ -78,7 +86,7 @@ class AdversarialAccountant:
         #     entity=entity,
         # )
 
-    def has_budget(self, entity_name: Entity) -> bool:
+    def has_budget(self, entity_name: str) -> bool:
         eps = self.get_eps_for_entity(entity_name)
         if eps is not None:
             return eps < self.max_budget

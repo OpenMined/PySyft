@@ -17,7 +17,9 @@ from ..common.serde.recursive import RecursiveSerde
 # methods serialize/deserialize np.int64 number
 # syft.serde seems to not support np.int64 serialization/deserialization
 def numpy64tolist(value):
-    return value.tolist()
+    list_version = value.tolist()
+    print("NUMPY TO LIST:" + str(list_version))
+    return list_version
 
 
 def listtonumpy64(value):
@@ -85,6 +87,7 @@ class iDPGaussianMechanism(Mechanism, RecursiveSerde):
         use_fdp_based_rdp_to_approx_dp_conversion: bool = False,
         user_key: Optional[VerifyKey] = None,
     ):
+
         # the sigma parameter is the std of the noise divide by the l2 sensitivity
         Mechanism.__init__(self)
 
@@ -92,9 +95,9 @@ class iDPGaussianMechanism(Mechanism, RecursiveSerde):
 
         self.name = name  # When composing
         self.params = {
-            "sigma": sigma,
-            "value": value,
-            "L": L,
+            "sigma": float(sigma),
+            "value": float(value),
+            "L": float(L),
         }  # This will be useful for the Calibrator
         self.entity = entity
         # TODO: should a generic unspecified mechanism have a name and a param dictionary?

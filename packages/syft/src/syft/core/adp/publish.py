@@ -13,6 +13,8 @@ from pymbolic.mapper.substitutor import SubstitutionMapper
 from pymbolic.mapper.substitutor import make_subst_func
 
 # relative
+from ..common.serde.deserialize import _deserialize as deserialize
+from ..common.serde.serialize import _serialize as serialize
 from .entity import Entity
 from .idp_gaussian_mechanism import iDPGaussianMechanism
 from .search import max_lipschitz_wrt_entity
@@ -22,14 +24,13 @@ def publish(
     scalars: TypeList[Any], acc: Any, user_key: VerifyKey, sigma: float = 1.5
 ) -> TypeList[Any]:
 
-    acc_original = acc
-
-    acc_temp = deepcopy(acc_original)
+    acc.temp_entity2ledger = {}
 
     ms = get_all_entity_mechanisms(scalars=scalars, sigma=sigma)
-    acc_temp.append(ms)
+    acc.temp_append(ms)
 
-    overbudgeted_entities = acc_temp.overbudgeted_entities
+    overbudgeted_entities = acc.overbudgeted_entities
+
     # so that we don't modify the original polynomial
     # it might be fine to do so but just playing it safe
     if len(overbudgeted_entities) > 0:
@@ -64,7 +65,7 @@ def publish(
             if should_break:
                 break
 
-        acc_temp = deepcopy(acc_original)
+        acc.temp_entity2ledger = {}
 
         # get mechanisms for new publish event
         ms = get_all_entity_mechanisms(scalars=scalars, sigma=sigma)
@@ -72,13 +73,14 @@ def publish(
         for mechs in ms:
             mechs.user_key = user_key
 
-        acc_temp.append(ms)
+        # this is when we actually insert into the database
+        acc.temp_append(ms)
 
-        overbudgeted_entities = acc_temp.overbudgeted_entities
+        overbudgeted_entities = acc.overbudgeted_entities
 
     output = [s.value + random.gauss(0, sigma) for s in scalars]
 
-    acc_original.entity2ledger = deepcopy(acc_temp.entity2ledger)
+    acc.save_temp_ledger_to_longterm_ledger()
 
     return output
 

@@ -8,6 +8,7 @@ from typing import Tuple as TypeTuple
 from typing import Union
 
 # third party
+from nacl.signing import VerifyKey
 import numpy as np
 import numpy.typing as npt
 
@@ -85,8 +86,10 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             scalar_manager=scalar_manager,
         )
 
-    def publish(self, acc: Any, sigma: float) -> AcceptableSimpleType:
-        return self.gamma.publish(acc=acc, sigma=sigma)
+    def publish(
+        self, acc: Any, sigma: float, user_key: VerifyKey
+    ) -> AcceptableSimpleType:
+        return self.gamma.publish(acc=acc, sigma=sigma, user_key=user_key)
 
     @property
     def min_vals(self) -> np.ndarray:
