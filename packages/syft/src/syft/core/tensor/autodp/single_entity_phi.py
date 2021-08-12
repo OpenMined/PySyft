@@ -107,14 +107,15 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
 
     def __eq__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
 
-        if is_acceptable_simple_type(other) or len(self.child) == len(other.child): # type: ignore
-            # if the tensor being added is also private
+        if is_acceptable_simple_type(other) or self.child.shape == other.child.shape: # type: ignore
+            # if the tensor being compared is also private
             if isinstance(other, SingleEntityPhiTensor):
                 if self.entity != other.entity:
                     # this should return a GammaTensor
                     return NotImplemented
                 data = self.child == other.child
             else:
+                # this can still fail, if shape1 = (1,s), and shape2 = (,s) --> as an example
                 data = self.child == other
             min_vals = self.min_vals * 0.
             max_vals = self.max_vals * 0. + 1.
@@ -128,7 +129,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
                 ) 
         else:
             raise Exception(
-                f"Tensor lens do not match for __eq__: {len(self.child)} != {len(other.child)}"  # type: ignore
+                f"Tensor shapes do not match for __eq__: {len(self.child)} != {len(other.child)}"  # type: ignore
             )
 
     def __abs__(self) -> SingleEntityPhiTensor:
