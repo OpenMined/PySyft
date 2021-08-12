@@ -10,7 +10,7 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
-# syft relative
+# relative
 from .. import ast
 from .. import lib
 from ..core.node.abstract.node import AbstractNodeClient

@@ -27,7 +27,7 @@ from syft.core.plan.plan_builder import ROOT_CLIENT
 from syft.core.plan.plan_builder import make_plan
 from syft.lib.python import _SyNone
 
-# syft relative
+# relative
 from .. import lib_ast
 from ...core.pointer.pointer import Pointer
 from ...generate_wrapper import GenerateWrapper

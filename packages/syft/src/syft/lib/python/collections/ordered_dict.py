@@ -9,7 +9,7 @@ from typing import Optional
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft relative
+# relative
 from .... import deserialize
 from .... import serialize
 from ....core.common.serde.serializable import bind_protobuf
@@ -169,7 +169,7 @@ class OrderedDict(PyOrderedDict, PyPrimitive):
         id_: UID = deserialize(blob=proto.id)
         # deserialize from bytes so that we can avoid using StorableObject
         # otherwise we get recursion where the permissions of StorableObject
-        # themselves utilise OrederedDict
+        # themselves utilise OrderedDict
         values = [
             deserialize(blob=upcast(value=element), from_bytes=True)
             for element in proto.values

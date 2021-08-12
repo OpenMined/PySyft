@@ -28,7 +28,7 @@ or
   - Add tests for your new GCStrategy
   - And that's all!
 """
-# syft relative
+# relative
 from .garbage_collection import GarbageCollection
 from .gc_batched import GCBatched
 from .gc_simple import GCSimple

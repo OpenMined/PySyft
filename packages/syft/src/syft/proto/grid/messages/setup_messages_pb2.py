@@ -25,7 +25,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n(proto/grid/messages/setup_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\xa4\x01\n\x19\x43reateInitialSetUpMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x91\x01\n\x1a\x43reateInitialSetUpResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9a\x01\n\x0fGetSetUpMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x87\x01\n\x10GetSetUpResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9d\x01\n\x12UpdateSetupMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x8a\x01\n\x13UpdateSetupResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
+    serialized_pb=b'\n(proto/grid/messages/setup_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\xd7\x01\n\x19\x43reateInitialSetUpMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\r\n\x05\x65mail\x18\x04 \x01(\t\x12\x10\n\x08password\x18\x05 \x01(\t\x12\x13\n\x0b\x64omain_name\x18\x06 \x01(\t\x12\'\n\x08reply_to\x18\x07 \x01(\x0b\x32\x15.syft.core.io.Address"\x9a\x01\n\x0fGetSetUpMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x87\x01\n\x10GetSetUpResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9d\x01\n\x12UpdateSetupMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x8a\x01\n\x13UpdateSetupResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
@@ -80,8 +80,8 @@ _CREATEINITIALSETUPMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="content",
-            full_name="syft.grid.messages.CreateInitialSetUpMessage.content",
+            name="name",
+            full_name="syft.grid.messages.CreateInitialSetUpMessage.name",
             index=2,
             number=3,
             type=9,
@@ -99,10 +99,67 @@ _CREATEINITIALSETUPMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="reply_to",
-            full_name="syft.grid.messages.CreateInitialSetUpMessage.reply_to",
+            name="email",
+            full_name="syft.grid.messages.CreateInitialSetUpMessage.email",
             index=3,
             number=4,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="password",
+            full_name="syft.grid.messages.CreateInitialSetUpMessage.password",
+            index=4,
+            number=5,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="domain_name",
+            full_name="syft.grid.messages.CreateInitialSetUpMessage.domain_name",
+            index=5,
+            number=6,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.CreateInitialSetUpMessage.reply_to",
+            index=6,
+            number=7,
             type=11,
             cpp_type=10,
             label=1,
@@ -127,105 +184,7 @@ _CREATEINITIALSETUPMESSAGE = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=133,
-    serialized_end=297,
-)
-
-
-_CREATEINITIALSETUPRESPONSE = _descriptor.Descriptor(
-    name="CreateInitialSetUpResponse",
-    full_name="syft.grid.messages.CreateInitialSetUpResponse",
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    create_key=_descriptor._internal_create_key,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name="msg_id",
-            full_name="syft.grid.messages.CreateInitialSetUpResponse.msg_id",
-            index=0,
-            number=1,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="status_code",
-            full_name="syft.grid.messages.CreateInitialSetUpResponse.status_code",
-            index=1,
-            number=2,
-            type=5,
-            cpp_type=1,
-            label=1,
-            has_default_value=False,
-            default_value=0,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="content",
-            full_name="syft.grid.messages.CreateInitialSetUpResponse.content",
-            index=2,
-            number=3,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=b"".decode("utf-8"),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.grid.messages.CreateInitialSetUpResponse.address",
-            index=3,
-            number=4,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax="proto3",
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=300,
-    serialized_end=445,
+    serialized_end=348,
 )
 
 
@@ -322,8 +281,8 @@ _GETSETUPMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=448,
-    serialized_end=602,
+    serialized_start=351,
+    serialized_end=505,
 )
 
 
@@ -420,8 +379,8 @@ _GETSETUPRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=605,
-    serialized_end=740,
+    serialized_start=508,
+    serialized_end=643,
 )
 
 
@@ -518,8 +477,8 @@ _UPDATESETUPMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=743,
-    serialized_end=900,
+    serialized_start=646,
+    serialized_end=803,
 )
 
 
@@ -616,8 +575,8 @@ _UPDATESETUPRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=903,
-    serialized_end=1041,
+    serialized_start=806,
+    serialized_end=944,
 )
 
 _CREATEINITIALSETUPMESSAGE.fields_by_name[
@@ -628,12 +587,6 @@ _CREATEINITIALSETUPMESSAGE.fields_by_name[
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 _CREATEINITIALSETUPMESSAGE.fields_by_name[
     "reply_to"
-].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_CREATEINITIALSETUPRESPONSE.fields_by_name[
-    "msg_id"
-].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-_CREATEINITIALSETUPRESPONSE.fields_by_name[
-    "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 _GETSETUPMESSAGE.fields_by_name[
     "msg_id"
@@ -668,9 +621,6 @@ _UPDATESETUPRESPONSE.fields_by_name[
 DESCRIPTOR.message_types_by_name[
     "CreateInitialSetUpMessage"
 ] = _CREATEINITIALSETUPMESSAGE
-DESCRIPTOR.message_types_by_name[
-    "CreateInitialSetUpResponse"
-] = _CREATEINITIALSETUPRESPONSE
 DESCRIPTOR.message_types_by_name["GetSetUpMessage"] = _GETSETUPMESSAGE
 DESCRIPTOR.message_types_by_name["GetSetUpResponse"] = _GETSETUPRESPONSE
 DESCRIPTOR.message_types_by_name["UpdateSetupMessage"] = _UPDATESETUPMESSAGE
@@ -687,17 +637,6 @@ CreateInitialSetUpMessage = _reflection.GeneratedProtocolMessageType(
     },
 )
 _sym_db.RegisterMessage(CreateInitialSetUpMessage)
-
-CreateInitialSetUpResponse = _reflection.GeneratedProtocolMessageType(
-    "CreateInitialSetUpResponse",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _CREATEINITIALSETUPRESPONSE,
-        "__module__": "proto.grid.messages.setup_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.CreateInitialSetUpResponse)
-    },
-)
-_sym_db.RegisterMessage(CreateInitialSetUpResponse)
 
 GetSetUpMessage = _reflection.GeneratedProtocolMessageType(
     "GetSetUpMessage",

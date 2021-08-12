@@ -1,7 +1,7 @@
 # third party
 import petlib as pl
 
-# syft relative
+# relative
 from ...generate_wrapper import GenerateWrapper
 from ...proto.lib.petlib.bn_pb2 import Bn as Bn_PB
 

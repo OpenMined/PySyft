@@ -44,7 +44,7 @@ def update_json() -> None:
                     allowlist[x] = (method,return_type)
             except Exception as e:
                 print(f"Some Exception in update.py\n\t{e}")
-    
+
     package_support["methods"] = allowlist
 
     with open(PKG_SUPPORT_NAME, "w") as outfile:

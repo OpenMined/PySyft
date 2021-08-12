@@ -1,13 +1,11 @@
 # third party
-# third party
-# third party
 from statsmodels.genmod.generalized_linear_model import GLMResultsWrapper
 
 # syft absolute
 from syft.lib.python.primitive_factory import PrimitiveFactory
 from syft.lib.python.string import String
 
-# syft relative
+# relative
 from ..proto.results_pb2 import ResultsProto  # type: ignore
 
 

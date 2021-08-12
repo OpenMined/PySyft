@@ -11,7 +11,7 @@ from nacl.exceptions import BadSignatureError
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
-# syft relative
+# relative
 from ...core.common.object import ObjectWithID
 from ...core.common.serde.serialize import _serialize as serialize
 from ...core.common.uid import UID

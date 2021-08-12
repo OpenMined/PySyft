@@ -6,10 +6,11 @@ from typing import Type
 import statsmodels
 
 # syft absolute
+# absolute
 from syft.lib.python.primitive_factory import PrimitiveFactory
 from syft.lib.python.string import String
 
-# syft relative
+# relative
 from ..proto.family_pb2 import FamilyProto  # type: ignore
 
 FAMILY_2_STR: Dict[Type[statsmodels.genmod.families.family.Family], str] = {

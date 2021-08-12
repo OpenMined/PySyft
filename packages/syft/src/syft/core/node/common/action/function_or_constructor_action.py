@@ -10,7 +10,7 @@ from typing import Union
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
-# syft relative
+# relative
 from ..... import lib
 from ..... import serialize
 from .....logger import traceback_and_raise
@@ -65,7 +65,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
     def intersect_keys(
         left: Union[Dict[VerifyKey, UID], None], right: Dict[VerifyKey, UID]
     ) -> Dict[VerifyKey, UID]:
-        # FIXME duplicated in run_class_method_action.py
+        # TODO: duplicated in run_class_method_action.py
         # get the intersection of the dict keys, the value is the request_id
         # if the request_id is different for some reason we still want to keep it,
         # so only intersect the keys and then copy those over from the main dict

@@ -8,7 +8,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 # syft absolute
 import syft as sy
 
-# syft relative
+# relative
 from ... import serialize
 from ...proto.core.store.dataset_pb2 import Dataset as Dataset_PB
 from ...util import get_fully_qualified_name

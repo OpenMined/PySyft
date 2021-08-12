@@ -22,10 +22,9 @@ from typing import List as TypeList
 from typing import Set as TypeSet
 from typing import Tuple as TypeTuple
 
+# third party
 import nbformat as nbf
 from pyscaffold.operations import no_overwrite
-
-# package_name = 'xgboost'
 
 
 def list_submodules(
@@ -45,10 +44,7 @@ def list_submodules(
             if is_pkg:
                 list_submodules(list_name, module_name, ignore_list)
     except Exception as e:
-        # print("error with prefix", prefix)
-        # e = e
-
-        print(f"list_submodules error:\n package_name = {package_name.__name__}\n{e} ")
+        print(f"list_submodules error:\n package_name = {package_name.__name__}\n{e}")
 
 
 def set_classes(
@@ -56,15 +52,12 @@ def set_classes(
 ) -> TypeAny:
 
     classes_set = set()
-    allowlist: TypeList[str, str] = []
-    # print(f'Len of modules_list {len(modules_list)}')
+    allowlist: TypeList[TypeTuple[str, str]] = []
+
     for i in modules_list:
         try:
             module = importlib.import_module(i)
-            # print(f'{module} {i}')
             for ax in dir(module):
-                # print(ax)
-                # print(f' {module.__name__}, {ax}')
                 t = getattr(module, ax)
                 if inspect.isclass(t):  # classes in modules
                     mod_name = t.__module__.split(".")
@@ -82,7 +75,7 @@ def set_classes(
                     # else:
                     # print(f'in else {t.__name__} {t.__class__} {module} {root_module}')
 
-                # ToDo: add methods/fuctions in modules to allowlist
+                # TODO: add methods/functions in modules to allowlist
                 # Example: `statsmodels.api.add_constant`
                 if (
                     inspect.ismethod(t)
@@ -101,12 +94,10 @@ def set_classes(
                         allowlist.append((f"{i}.{ax}", string))
 
         except Exception as e:
-            # print(f"set_classes: module_name = {i}: exception occoured \n\t{e}")
             debug_list.append(
                 f"set_classes: module_name = {i}: exception occoured \n\t{e}"
             )
 
-    # print(f'Len of classes_set {len(classes_set)}')
     return classes_set, debug_list, allowlist
 
 
@@ -139,8 +130,6 @@ def get_return_type(t: TypeAny, i: str, ax: str) -> TypeAny:
         else:
             if "return" in d.keys():
                 if isinstance(d["return"], typing._GenericAlias):  # type: ignore
-                    # print(type(d['return']))
-                    # print(get_origin(d['return']))
                     """
                     allowlist[i + "." + t.__name__] = get_origin(
                         d["return"]
@@ -148,7 +137,6 @@ def get_return_type(t: TypeAny, i: str, ax: str) -> TypeAny:
                     """
                     return 0, str(d["return"])
                 else:
-                    # print(d['return'])
                     if d["return"].__module__ == "builtins":
                         # avoid outputs like 'builtins.str'
                         """
@@ -189,7 +177,7 @@ def add_nb_class_header(class_path: str) -> str:
         f"import {module_name}\n"
         + "def class_constructor(*args, **kwargs):\n"
         + f"\tobj = {class_path}()\n"
-        + f"\treturn obj\n"
+        + "\treturn obj\n"
     ).replace("\t", " " * 4)
 
 
@@ -290,7 +278,7 @@ def dict_allowlist(
 
 def generate_package_support(
     package_name: str, DEBUG: bool = False
-) -> TypeTuple[str, TypeDict[str, str]]:
+) -> TypeTuple[str, TypeDict[str, TypeAny]]:
 
     # DEBUG = args.debug
     # package_name = args.lib
@@ -302,7 +290,7 @@ def generate_package_support(
     # missing_return_dir holds all the notebooks and files
     # in missing_return/ directory
     # with file_name:content as key:value pair
-    missing_returns_dir: TypeDict[str, str] = {}
+    missing_returns_dir: TypeDict[str, TypeTuple[TypeAny, ...]] = {}
 
     # create_nb = True
     # create_nb = False

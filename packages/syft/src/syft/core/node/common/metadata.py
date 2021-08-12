@@ -4,7 +4,7 @@ from typing import Optional
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft relative
+# relative
 from .... import serialize
 from ....proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
 from ....util import validate_type
@@ -22,7 +22,8 @@ class Metadata(Serializable):
         node: Location,
         name: str = "",
         id: Optional[UID] = None,
-    ):
+        node_type: str = "",
+    ) -> None:
         super().__init__()
         self.name = name
         self.node = node
@@ -30,6 +31,7 @@ class Metadata(Serializable):
             self.id = id
         else:
             self.id = UID()
+        self.node_type = node_type
 
     def _object2proto(self) -> Metadata_PB:
         """Returns a protobuf serialization of self.
@@ -47,7 +49,10 @@ class Metadata(Serializable):
             object.
         """
         return Metadata_PB(
-            name=self.name, id=serialize(self.id), node=serialize(self.node)
+            name=self.name,
+            id=serialize(self.id),
+            node=serialize(self.node),
+            node_type=self.node_type,
         )
 
     @staticmethod
@@ -69,6 +74,7 @@ class Metadata(Serializable):
             id=validate_type(_deserialize(blob=proto.id), UID, optional=True),
             name=proto.name,
             node=validate_type(_deserialize(blob=proto.node), Location),
+            node_type=proto.node_type,
         )
 
     @staticmethod

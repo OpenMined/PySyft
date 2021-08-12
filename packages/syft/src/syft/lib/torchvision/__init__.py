@@ -7,7 +7,7 @@ from typing import Union
 from packaging import version
 import torchvision as tv
 
-# syft relative
+# relative
 from ...ast.globals import Globals
 from ...logger import critical
 from .allowlist import allowlist
