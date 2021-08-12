@@ -46,6 +46,7 @@ export interface User {
   email: string
   id: number
   role: string
+  budget: number
 }
 
 export type UserPermissions =
@@ -77,6 +78,7 @@ export interface Me {
   email: string
   permissions: GridPermissions
   role: Pick<Role, 'id' | 'name'>
+  budget: number
 }
 
 export interface Settings {

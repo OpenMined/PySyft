@@ -12,7 +12,8 @@ message CreateInitialSetUpMessage {
   string email = 4;
   string password = 5;
   string domain_name = 6;
-  syft.core.io.Address reply_to = 7;
+  float budget = 7;
+  syft.core.io.Address reply_to = 8;
 }
 
 message GetSetUpMessage {
