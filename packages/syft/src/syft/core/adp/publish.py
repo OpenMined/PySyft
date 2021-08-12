@@ -7,10 +7,10 @@ from typing import List as TypeList
 from typing import Type
 
 # third party
+from nacl.signing import VerifyKey
 import numpy as np
 from pymbolic.mapper.substitutor import SubstitutionMapper
 from pymbolic.mapper.substitutor import make_subst_func
-from nacl.signing import VerifyKey
 
 # relative
 from .entity import Entity
@@ -18,7 +18,9 @@ from .idp_gaussian_mechanism import iDPGaussianMechanism
 from .search import max_lipschitz_wrt_entity
 
 
-def publish(scalars: TypeList[Any], acc: Any, user_key: VerifyKey, sigma: float = 1.5) -> TypeList[Any]:
+def publish(
+    scalars: TypeList[Any], acc: Any, user_key: VerifyKey, sigma: float = 1.5
+) -> TypeList[Any]:
 
     acc_original = acc
 

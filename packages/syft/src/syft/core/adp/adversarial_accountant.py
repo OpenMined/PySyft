@@ -2,8 +2,8 @@
 from typing import Dict as TypeDict
 from typing import KeysView as TypeKeysView
 from typing import List as TypeList
-from typing import Set as TypeSet
 from typing import Optional
+from typing import Set as TypeSet
 
 # third party
 from autodp.autodp_core import Mechanism
@@ -48,7 +48,9 @@ class AdversarialAccountant:
         #     entity=entity,
         # )
 
-    def get_eps_for_entity(self, entity_name: str, user_key: Optional[str] = None) -> PhiScalar:
+    def get_eps_for_entity(
+        self, entity_name: str, user_key: Optional[str] = None
+    ) -> PhiScalar:
         # compose them with the transformation: compose
         compose = Composition()
         mechanisms = self.entity2ledger[entity_name]
@@ -59,11 +61,11 @@ class AdversarialAccountant:
                     filtered_mechanisms.append(mech)
             mechanisms = filtered_mechanisms
         # use verify key to specify the user
-        # for all entities in the db, 
-        # how do we ensure that no data scientist 
+        # for all entities in the db,
+        # how do we ensure that no data scientist
         # exceeds the budget of any entity?
 
-        # map dataset 
+        # map dataset
         composed_mech = compose(mechanisms, [1] * len(mechanisms))
 
         return composed_mech.get_approxDP(self.delta)

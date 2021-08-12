@@ -3,12 +3,11 @@ from functools import lru_cache
 from typing import Dict
 from typing import Optional
 
-from nacl.signing import VerifyKey
-
 # third party
 from autodp import dp_bank
 from autodp import fdp_bank
 from autodp.autodp_core import Mechanism
+from nacl.signing import VerifyKey
 import numpy as np
 
 # relative
@@ -64,7 +63,7 @@ class iDPGaussianMechanism(Mechanism, RecursiveSerde):
         "fdp_off",
         "use_basic_rdp_to_approx_dp_conversion",
         "use_fdp_based_rdp_to_approx_dp_conversion",
-        "user_key"
+        "user_key",
     ]
 
     # delta0 is a numpy.int64 number (not supported by syft.serde)
