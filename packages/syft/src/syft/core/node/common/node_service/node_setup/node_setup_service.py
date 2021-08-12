@@ -80,6 +80,7 @@ def create_initial_setup(
         email=msg.email,
         password=msg.password,
         role=_admin_role.id,
+        budget=msg.budget,
         private_key=_node_private_key,
         verify_key=_verify_key,
     )
