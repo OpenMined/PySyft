@@ -47,6 +47,7 @@ export interface User {
   id: number
   role: string
   budget: number
+  budgetSpent: number
 }
 
 export interface UserMe extends Omit<User, 'role'> {
@@ -83,6 +84,7 @@ export interface Me {
   permissions: GridPermissions
   role: Pick<Role, 'id' | 'name'>
   budget: number
+  budgetSpent: number
 }
 
 export interface Settings {

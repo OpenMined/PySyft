@@ -37,8 +37,12 @@ function UserInfoTitle() {
       <div className="flex space-x-2 truncate">
         <p className="font-medium truncate">{user.name}</p>
         <Badge bgColor={entityColors.roles}>{role.name}</Badge>
+        {/* DOs, DCOs see the budget */}
         <Badge className="lowercase">
           {user.budget ?? 0} {'\u03B5'}
+        </Badge>
+        <Badge className="lowercase" bgColor="pink" textColor="gray">
+          {user.budgetSpent ?? 0} {'\u03B5'}
         </Badge>
       </div>
       <p className="text-sm text-gray-500">{user.email}</p>
@@ -230,6 +234,7 @@ interface UserSignUp {
   email: string
   password: string
   role: string
+  budget: number | string
 }
 
 export function UserCreate({onClose}: {onClose: () => void}) {
@@ -253,6 +258,7 @@ export function UserCreate({onClose}: {onClose: () => void}) {
   })
 
   const onSubmit = (values: UserSignUp) => {
+    values.budget = parseFloat(String(values.budget))
     mutation.mutate(values)
   }
 
@@ -278,6 +284,17 @@ export function UserCreate({onClose}: {onClose: () => void}) {
             name="password"
             ref={register}
             error={errors.password}
+            required
+          />
+          <Input
+            id="create-user-budget"
+            type="number"
+            label="Privacy Budget"
+            name="budget"
+            step="0.1"
+            ref={register}
+            error={errors.budget}
+            defaultValue="5.0"
             required
           />
           <Select

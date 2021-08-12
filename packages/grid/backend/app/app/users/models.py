@@ -34,6 +34,7 @@ class UserUpdate(BaseUser):
 class User(BaseUser):
     id: int
     role: Union[int, str]  # TODO: This should be int. Perhaps add role_name instead?
+    budget_spent: Optional[float]
 
 
 class UserPrivate(User):
