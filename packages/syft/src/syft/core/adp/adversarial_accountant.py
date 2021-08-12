@@ -52,21 +52,27 @@ class AdversarialAccountant:
         # compose them with the transformation: compose
         compose = Composition()
         mechanisms = self.entity2ledger[entity_name]
+        # print("Mechanisms before filtering: ", mechanisms)
+        # print("User key of mechanism: ", mechanisms[0].user_key)
+        # print("Input user key: ", user_key)
         if user_key is not None:
             filtered_mechanisms = []
             for mech in mechanisms:
                 if mech.user_key == user_key:
                     filtered_mechanisms.append(mech)
             mechanisms = filtered_mechanisms
+        # print("Mechanisma after filtering: ", mechanisms)
         # use verify key to specify the user
         # for all entities in the db, 
         # how do we ensure that no data scientist 
         # exceeds the budget of any entity?
 
         # map dataset 
-        composed_mech = compose(mechanisms, [1] * len(mechanisms))
-
-        return composed_mech.get_approxDP(self.delta)
+        if len(mechanisms) > 0:
+            composed_mech = compose(mechanisms, [1] * len(mechanisms))
+            return composed_mech.get_approxDP(self.delta)
+        else:
+            return None        
 
         # # Query for eps given delta
         # return PhiScalar(
