@@ -21,5 +21,5 @@ class Ledger(Base):
     __tablename__ = "ledger"
 
     id = Column(Integer(), primary_key=True, autoincrement=True)
-    entity_name = Column(String(256), ForeignKey("entity.name"))
-    mechanism_id = Column(Integer(), ForeignKey("mechanism.id"))
+    entity_name = Column(String(256), ForeignKey("entity.name",  ondelete="CASCADE"))
+    mechanism_id = Column(Integer(), ForeignKey("mechanism.id",  ondelete="CASCADE"))
