@@ -9,6 +9,8 @@ from typing import Optional
 from typing import Type
 import uuid
 
+from nacl.signing import VerifyKey
+
 # third party
 from numpy.typing import ArrayLike
 
@@ -126,8 +128,8 @@ class PhiTensorAncestor(TensorChainManager):
     def gamma(self):  # type: ignore
         return self.__class__(self.child.gamma)
 
-    def publish(self, acc: Any, sigma: float) -> PhiTensorAncestor:
-        return self.__class__(self.child.publish(acc=acc, sigma=sigma))
+    def publish(self, acc: Any, sigma: float, user_key: VerifyKey) -> PhiTensorAncestor:
+        return self.__class__(self.child.publish(acc=acc, sigma=sigma, user_key=user_key))
 
     def private(
         self,

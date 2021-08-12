@@ -3,6 +3,7 @@ from typing import Dict as TypeDict
 from typing import KeysView as TypeKeysView
 from typing import List as TypeList
 from typing import Set as TypeSet
+from typing import Optional
 
 # third party
 from autodp.autodp_core import Mechanism
@@ -35,6 +36,34 @@ class AdversarialAccountant:
         # compose them with the transformation: compose
         compose = Composition()
         mechanisms = self.entity2ledger[entity_name]
+        composed_mech = compose(mechanisms, [1] * len(mechanisms))
+
+        return composed_mech.get_approxDP(self.delta)
+
+        # # Query for eps given delta
+        # return PhiScalar(
+        #     value=composed_mech.get_approxDP(self.delta),
+        #     min_val=0,
+        #     max_val=self.max_budget,
+        #     entity=entity,
+        # )
+
+    def get_eps_for_entity(self, entity_name: str, user_key: Optional[str] = None) -> PhiScalar:
+        # compose them with the transformation: compose
+        compose = Composition()
+        mechanisms = self.entity2ledger[entity_name]
+        if user_key is not None:
+            filtered_mechanisms = []
+            for mech in mechanisms:
+                if mech.user_key == user_key:
+                    filtered_mechanisms.append(mech)
+            mechanisms = filtered_mechanisms
+        # use verify key to specify the user
+        # for all entities in the db, 
+        # how do we ensure that no data scientist 
+        # exceeds the budget of any entity?
+
+        # map dataset 
         composed_mech = compose(mechanisms, [1] * len(mechanisms))
 
         return composed_mech.get_approxDP(self.delta)
