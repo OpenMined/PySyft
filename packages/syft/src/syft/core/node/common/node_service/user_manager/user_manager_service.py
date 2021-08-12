@@ -153,6 +153,7 @@ def update_user_msg(
     elif msg.name:
         node.users.set(user_id=msg.user_id, name=msg.name)
 
+    # Change budget Request
     elif msg.budget:
         node.users.set(user_id=msg.budget, budget=msg.budget)
 
@@ -221,6 +222,8 @@ def get_user_msg(
             for group in node.groups.get_groups(user_id=msg.user_id)
         ]
 
+        # Get budget spent
+        _msg["budget_spent"] = node.acc.user_budget(user_key=user.verify_key)
     return GetUserResponse(
         address=msg.reply_to,
         content=SyftDict(_msg),
@@ -254,6 +257,8 @@ def get_all_users_msg(
                 node.groups.first(id=group).name
                 for group in node.groups.get_groups(user_id=user.id)
             ]
+
+            _user_json["budget_spent"] = node.acc.user_budget(user_key=user.verify_key)
             _msg.append(_user_json)
 
     return GetUsersResponse(

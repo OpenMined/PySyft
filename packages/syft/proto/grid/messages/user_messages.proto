@@ -15,7 +15,7 @@ message CreateUserMessage {
   string password = 4;
   string role = 5;
   string name = 6;
-  float budget = 7;
+  double budget = 7;
   syft.core.io.Address reply_to = 8;
 }
 
@@ -64,7 +64,7 @@ message UpdateUserMessage {
   string role = 6;
   string groups = 7;
   string name = 8;
-  float budget = 9;
+  double budget = 9;
   syft.core.io.Address reply_to = 10;
 }
 
