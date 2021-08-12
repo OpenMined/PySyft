@@ -103,9 +103,9 @@ class LedgerManager(DatabaseManager):
             self.mechanism_manager.delete(id=ledger_instance.mechanism_id)
             super().delete(entity_name=entity_name)
 
-        # entity_name = self.entity_manager.register(name=entity_name)
-        # mechanism_id = self.mechanism_manager.register(value)
-        # result = self.register(entity_name=entity_name, mechanism_id=mechanism_id)
+        entity_name = self.entity_manager.register(name=entity_name)
+        mechanism_id = self.mechanism_manager.register(value)
+        result = self.register(entity_name=entity_name, mechanism_id=mechanism_id)
 
     def __getitem__(self, entity_name: str) -> Any:
         if super().contain(entity_name=entity_name):
