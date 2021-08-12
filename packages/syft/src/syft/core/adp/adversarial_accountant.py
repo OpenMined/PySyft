@@ -27,7 +27,7 @@ class AdversarialAccountant:
             if key not in self.entity2ledger.keys():
                 self.entity2ledger[key] = list()
             for m in ms:
-                self.entity2ledger[key].append(m)
+                self.entity2ledger.append(key, m)
 
     def get_eps_for_entity(self, entity_name: str) -> PhiScalar:
         # compose them with the transformation: compose
