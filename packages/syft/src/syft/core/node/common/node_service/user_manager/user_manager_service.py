@@ -72,6 +72,7 @@ def create_user_msg(
                 name=msg.name,
                 email=msg.email,
                 password=msg.password,
+                budget=msg.budget,
                 role=node.roles.first(name=msg.role).id,
                 private_key=_private_key.encode(encoder=HexEncoder).decode("utf-8"),
                 verify_key=_private_key.verify_key.encode(encoder=HexEncoder).decode(
@@ -98,6 +99,7 @@ def create_user_msg(
             name=msg.name,
             email=msg.email,
             password=msg.password,
+            budget=msg.budget,
             role=node.roles.first(name="Data Scientist").id,
             private_key=encoded_pk,
             verify_key=encoded_vk,
@@ -150,6 +152,9 @@ def update_user_msg(
     # Change Name Request
     elif msg.name:
         node.users.set(user_id=msg.user_id, name=msg.name)
+
+    elif msg.budget:
+        node.users.set(user_id=msg.budget, budget=msg.budget)
 
     # Change Role Request
     elif msg.role:

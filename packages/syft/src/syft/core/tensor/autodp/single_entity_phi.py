@@ -108,6 +108,33 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             f"{self.__class__.__name__}(entity={self.entity.name}, child={self.child})"
         )
 
+    def __eq__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
+
+        if is_acceptable_simple_type(other) or self.child.shape == other.child.shape: # type: ignore
+            # if the tensor being compared is also private
+            if isinstance(other, SingleEntityPhiTensor):
+                if self.entity != other.entity:
+                    # this should return a GammaTensor
+                    return NotImplemented
+                data = self.child == other.child
+            else:
+                # this can still fail, if shape1 = (1,s), and shape2 = (,s) --> as an example
+                data = self.child == other
+            min_vals = self.min_vals * 0.
+            max_vals = self.max_vals * 0. + 1.
+            entity = self.entity
+            return SingleEntityPhiTensor(
+                    child=data,
+                    entity=entity,
+                    min_vals=min_vals,
+                    max_vals=max_vals,
+                    scalar_manager=self.scalar_manager,
+                ) 
+        else:
+            raise Exception(
+                f"Tensor shapes do not match for __eq__: {len(self.child)} != {len(other.child)}"  # type: ignore
+            )
+
     def __abs__(self) -> SingleEntityPhiTensor:
 
         data = self.child.abs()
