@@ -223,7 +223,8 @@ def get_user_msg(
         ]
 
         # Get budget spent
-        _msg["budget_spent"] = node.acc.user_budget(user_key=user.verify_key)
+        _msg["budget_spent"] = node.acc.user_budget(user_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder))
+   
     return GetUserResponse(
         address=msg.reply_to,
         content=SyftDict(_msg),
@@ -258,7 +259,7 @@ def get_all_users_msg(
                 for group in node.groups.get_groups(user_id=user.id)
             ]
 
-            _user_json["budget_spent"] = node.acc.user_budget(user_key=user.verify_key)
+            _user_json["budget_spent"] = node.acc.user_budget(user_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder))
             _msg.append(_user_json)
 
     return GetUsersResponse(
