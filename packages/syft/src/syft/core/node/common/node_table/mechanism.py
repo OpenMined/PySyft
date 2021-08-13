@@ -55,5 +55,4 @@ class Mechanism(Base):
 
     @obj.setter
     def obj(self, value: Any) -> None:
-        print("Saving Mech with User Key:" + str(value.user_key))
         self.mechanism_bin = serialize(value, to_bytes=True)  # TODO: techdebt fix

@@ -13,8 +13,6 @@ from pymbolic.mapper.substitutor import SubstitutionMapper
 from pymbolic.mapper.substitutor import make_subst_func
 
 # relative
-from ..common.serde.deserialize import _deserialize as deserialize
-from ..common.serde.serialize import _serialize as serialize
 from .entity import Entity
 from .idp_gaussian_mechanism import iDPGaussianMechanism
 from .search import max_lipschitz_wrt_entity
@@ -33,19 +31,18 @@ def publish(
     for name, mechs in ms.items():
         for m in mechs:
             m.user_key = user_key
-            print("mech now has user key:" + str(m.user_key))
 
     acc.temp_append(ms)
 
     overbudgeted_entities = acc.overbudgeted_entities(user_key=user_key)
 
-    # # so that we don't modify the original polynomial
-    # # it might be fine to do so but just playing it safe
-    # if len(overbudgeted_entities) > 0:
-    #     scalars = deepcopy(scalars)
+    # so that we don't modify the original polynomial
+    # it might be fine to do so but just playing it safe
+    if len(overbudgeted_entities) > 0:
+        scalars = deepcopy(scalars)
 
     iterator = 0
-    while len(overbudgeted_entities) > 0 and iterator < 11:
+    while len(overbudgeted_entities) > 0 and iterator < 3:
         print("\n\n QUERY IS OVER BUDGET!!! \n\n")
 
         iterator += 1
@@ -83,7 +80,6 @@ def publish(
         for name, mechs in ms.items():
             for m in mechs:
                 m.user_key = user_key
-                print("mech now has user key 2:" + str(m.user_key))
 
         # this is when we actually insert into the database
         acc.temp_append(ms)

@@ -144,6 +144,7 @@ class AdversarialAccountant:
     def has_budget(self, entity_name: str, user_key: VerifyKey) -> bool:
         spend = self.get_eps_for_entity(entity_name, user_key=user_key)
         print("SPEND:" + str(spend))
+        # user_budget = 0.1
         user_budget = self.entity2ledger.get_user_budget(user_key=user_key)
         print("BUDGET:" + str(user_budget))
         has_budget = spend < user_budget
@@ -175,10 +176,11 @@ class AdversarialAccountant:
                 entities.add(entity_name)
 
         return entities
-    #
-    # def print_ledger(self, delta: float = 1e-6) -> None:
-    #     for entity, mechanisms in self.entity2ledger.items():
-    #         print(str(entity) + "\t" + str(self.get_eps_for_entity(entity)))
+
+    def print_ledger(self, delta: float = 1e-6) -> None:
+        for mechanism in self.entity2ledger.mechanism_manager.all():
+            entity = self.entity2ledger.entity_manager.first(name=mechanism.entity_name)
+            print(str(mechanism.entity_name) + "\t" + str(self.get_eps_for_entity(entity)))
 
 
 class AccountantReference(RecursiveSerde):

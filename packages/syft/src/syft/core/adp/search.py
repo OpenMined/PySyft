@@ -193,8 +193,8 @@ def max_lipschitz_wrt_entity(scalars: Any, entity: Entity) -> float:
     result = max_lipschitz_via_jacobian(scalars, input_entity=entity)[0][-1]
     if isinstance(result, float):
         return -result
-    # else:
-    #     return -float(result.fun)
+    else:
+        return -float(result.fun)
 
 
 def max_lipschitz_via_jacobian(
