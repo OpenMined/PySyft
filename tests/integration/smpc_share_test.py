@@ -12,8 +12,6 @@ from syft.core.tensor.smpc.mpc_tensor import MPCTensor
 
 sy.logger.remove()
 
-here = os.path.dirname(__file__)
-
 PORT = 9081
 
 PARTIES = 2

@@ -87,9 +87,7 @@ class RowEntityPhiTensor(PassthroughTensor, RecursiveSerde):
     def shape(self) -> Tuple[Any, ...]:
         return [len(self.child)] + list(self.child[0].shape)  # type: ignore
 
-    def __eq__(
-        self, other
-    ) -> RowEntityPhiTensor:
+    def __eq__(self, other) -> RowEntityPhiTensor:
 
         if is_acceptable_simple_type(other) or len(self.child) == len(other.child):  # type: ignore
             new_list = list()
@@ -103,7 +101,6 @@ class RowEntityPhiTensor(PassthroughTensor, RecursiveSerde):
             raise Exception(
                 f"Tensor dims do not match for __eq__: {len(self.child)} != {len(other.child)}"  # type: ignore
             )
-
 
     def __add__(  # type: ignore
         self, other: Union[RowEntityPhiTensor, AcceptableSimpleType]

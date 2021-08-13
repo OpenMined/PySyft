@@ -84,7 +84,7 @@ def cli() -> None:
 )
 @click.option(
     "--tail",
-    default=None,
+    default="true",
     required=False,
     type=str,
     help="Optional: don't tail logs on launch",
@@ -551,8 +551,8 @@ def create_launch_docker_cmd(
     cmd += " docker compose -p " + snake_name
     cmd += " up"
 
-    # if not tail:
-    #     cmd += " -d"
+    if not tail:
+        cmd += " -d"
 
     cmd += " --build"  # force rebuild
     cmd = "cd " + GRID_SRC_PATH + ";" + cmd

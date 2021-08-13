@@ -476,10 +476,14 @@ class Pointer(AbstractPointer):
             if timeout_secs is None:
                 timeout_secs = 30  # default if not explicitly set
 
-            from ..node.common.node_service.request_answer.request_answer_messages import RequestAnswerMessage
-            from ..node.common.node_service.request_answer.request_answer_messages import RequestStatus
-
             # relative
+            from ..node.common.node_service.request_answer.request_answer_messages import (
+                RequestAnswerMessage,
+            )
+            from ..node.common.node_service.request_answer.request_answer_messages import (
+                RequestStatus,
+            )
+
             # from ..node.domain.service import RequestAnswerMessage
             # from ..node.domain.service import RequestStatus
 

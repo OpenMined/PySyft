@@ -63,7 +63,9 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     def logical_and(self, other):
         if is_acceptable_simple_type(other) or (self.child.shape == other.child.shape):
             return self.__class__(self.child and other)
-        raise Exception(f"Tensor shapes do not match for __eq__: {len(self.child)} != {len(other.child)}")
+        raise Exception(
+            f"Tensor shapes do not match for __eq__: {len(self.child)} != {len(other.child)}"
+        )
 
     def __abs__(self) -> Union[Type[PassthroughTensor], AcceptableSimpleType]:
         return self.__class__(self.child.__abs__())

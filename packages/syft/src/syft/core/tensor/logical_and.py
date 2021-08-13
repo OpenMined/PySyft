@@ -1,3 +1,4 @@
+# relative
 from .autodp.single_entity_phi import SingleEntityPhiTensor
 from .passthrough import is_acceptable_simple_type
 
@@ -11,8 +12,8 @@ def logical_and(a, b) -> SingleEntityPhiTensor:
                 data = a.child and b.child
             else:
                 data = a.child and b
-            min_vals = a.min_vals * 0.
-            max_vals = a.max_vals * 0. + 1.
+            min_vals = a.min_vals * 0.0
+            max_vals = a.max_vals * 0.0 + 1.0
             entity = a.entity
             return SingleEntityPhiTensor(
                 child=data,
@@ -32,4 +33,6 @@ def logical_and(a, b) -> SingleEntityPhiTensor:
             return b.__class__(b.child * a)
         elif is_acceptable_simple_type(b) or (b.shape == a.shape):
             return a.__class__(a.child * b)
-        raise Exception(f"Tensor shapes do not match for __eq__: {len(a.child)} != {len(b.child)}")
+        raise Exception(
+            f"Tensor shapes do not match for __eq__: {len(a.child)} != {len(b.child)}"
+        )

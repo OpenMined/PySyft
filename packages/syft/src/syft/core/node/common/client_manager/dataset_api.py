@@ -1,8 +1,9 @@
 # stdlib
 import ast
 import logging
-from typing import Any, List
+from typing import Any
 from typing import Dict
+from typing import List
 from typing import Union
 
 # third party
@@ -64,7 +65,7 @@ class DatasetRequestAPI(RequestAPI):
         for dataset in result:
             new_dataset = {}
             for k, v_blob in dataset.items():
-                if k not in ['str_metadata', 'blob_metadata', 'manifest']:
+                if k not in ["str_metadata", "blob_metadata", "manifest"]:
                     new_dataset[k] = deserialize(v_blob, from_bytes=True)
             new_all.append(new_dataset)
 
@@ -76,7 +77,7 @@ class DatasetRequestAPI(RequestAPI):
 
         if isinstance(key, int):
             a = self.all()
-            return Dataset(a[key:key+1],self.client, **a[key])
+            return Dataset(a[key : key + 1], self.client, **a[key])
 
     def __delitem__(self, key: str) -> Any:
         self.delete(dataset_id=key)
@@ -100,11 +101,11 @@ class DatasetRequestAPI(RequestAPI):
         return Dataset(dataset_obj)
 
 
+# third party
 import pandas as pd
 
 
-class Dataset():
-
+class Dataset:
     def __init__(self, raw, client, description, name, id, tags, data):
         self.raw = raw
         self.description = description
@@ -120,11 +121,12 @@ class Dataset():
 
     def __getitem__(self, key):
         for d in self.data:
-            if d['name'] == key:
-                return self.client.store[d['id'].replace("-", "")]
+            if d["name"] == key:
+                return self.client.store[d["id"].replace("-", "")]
 
     def _repr_html_(self) -> str:
         return self.pandas._repr_html_()
+
 
 # class Dataset:
 #     def __init__(self, dataset_metadata: Any) -> None:

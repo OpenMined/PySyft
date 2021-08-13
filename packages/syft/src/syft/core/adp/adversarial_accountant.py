@@ -163,7 +163,6 @@ class AdversarialAccountant:
 
         return max_spend
 
-
     @property
     def entities(self) -> TypeKeysView[Entity]:
         return self.entity2ledger.keys()
