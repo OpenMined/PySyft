@@ -68,8 +68,8 @@ class AdversarialAccountant:
 
             mechanisms = filtered_mechanisms
 
-        print("Num mechanisms before TEMP:" + str(len(mechanisms)))
-        print("self.temp_entity2ledger:" + str(self.temp_entity2ledger))
+        # print("Num mechanisms before TEMP:" + str(len(mechanisms)))
+        # print("self.temp_entity2ledger:" + str(self.temp_entity2ledger))
 
         if entity in self.temp_entity2ledger.keys():
             mechanisms = mechanisms + self.temp_entity2ledger[entity]
@@ -89,7 +89,7 @@ class AdversarialAccountant:
 
         #     mechanisms = filtered_mechanisms
 
-        print("Num mechanisms after TEMP:" + str(len(mechanisms)))
+        # print("Num mechanisms after TEMP:" + str(len(mechanisms)))
         # for m in mechanisms:
         # print("Filtered Mechanism Entity:" + str(m.entity_name))
 
@@ -115,7 +115,7 @@ class AdversarialAccountant:
         else:
             eps = 0
 
-        print("Epsilon" + str(eps))
+        # print("Epsilon" + str(eps))
         return float(eps)
 
         # # Query for eps given delta
@@ -128,13 +128,13 @@ class AdversarialAccountant:
 
     def has_budget(self, entity: Entity, user_key: VerifyKey) -> bool:
         spend = self.get_eps_for_entity(entity=entity, user_key=user_key)
-        print("SPEND:" + str(spend))
+        # print("SPEND:" + str(spend))
         user_budget = self.entity2ledger.get_user_budget(user_key=user_key)
-        print("USER BUDGET:" + str(user_budget))
+        # print("USER BUDGET:" + str(user_budget))
         # print("ACCOUNTANT MAX BUDGET", self.max_budget)
         # @Andrew can we use <= or does it have to be <
         has_budget = spend <= user_budget
-        print(f"has_budget = {spend} < {user_budget}")
+        # print(f"has_budget = {spend} < {user_budget}")
 
         return has_budget
 
