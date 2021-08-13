@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
+from typing import Dict as TypeDict
 from typing import Optional
 
 # third party
@@ -14,13 +15,16 @@ from syft.core.common.serde.serializable import Serializable
 from syft.core.common.serde.serializable import bind_protobuf
 
 # relative
+# syft relative
 from ...core.common import UID
 from ...proto.core.adp.entity_pb2 import Entity as Entity_PB
 
 
 @bind_protobuf
 class Entity(Serializable):
-    def __init__(self, *, id: Optional[UID] = None, **attributes: Any) -> None:
+    def __init__(
+        self, *, id: Optional[UID] = None, **attributes: TypeDict[str, Any]
+    ) -> None:
 
         # If someone doesn't provide a unique name - make one up!
         if "name" not in attributes.keys():
@@ -30,7 +34,7 @@ class Entity(Serializable):
         self.id = id if id else UID()
 
     @property
-    def name(self) -> None:
+    def name(self) -> str:
         return self.attributes["name"]
 
     def __hash__(self) -> int:

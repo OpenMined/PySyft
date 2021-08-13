@@ -55,7 +55,7 @@ class iDPGaussianMechanism(Mechanism, RecursiveSerde):
     __attr_allowlist__ = [
         "name",
         "params",
-        "entity",
+        "entity_name",
         "fdp",
         "eps_pureDP",
         "delta0",
@@ -77,7 +77,7 @@ class iDPGaussianMechanism(Mechanism, RecursiveSerde):
         sigma: float,
         value: float,
         L: np.float,
-        entity: str,
+        entity_name: str,
         name: str = "Gaussian",
         RDP_off: bool = False,
         approxDP_off: bool = False,
@@ -98,7 +98,7 @@ class iDPGaussianMechanism(Mechanism, RecursiveSerde):
             "value": float(value),
             "L": float(L),
         }  # This will be useful for the Calibrator
-        self.entity = entity
+        self.entity_name = entity_name
         # TODO: should a generic unspecified mechanism have a name and a param dictionary?
 
         self.delta0 = 0

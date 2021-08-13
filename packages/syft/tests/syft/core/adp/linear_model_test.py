@@ -1,17 +1,36 @@
 # third party
+from nacl.encoding import HexEncoder
+from nacl.signing import SigningKey
 import numpy as np
 import pytest
 
 # syft absolute
+from syft import Domain
 from syft.core.adp.adversarial_accountant import AdversarialAccountant
 from syft.core.adp.entity import Entity
-from syft.core.adp.publish import publish
 from syft.core.adp.scalar import PhiScalar
+from syft.core.node.common.node_table.utils import create_memory_db_engine
 from syft.core.tensor.tensor import Tensor
 
 
-@pytest.mark.xfail
-def test_autodp_phiscalar_publish() -> None:
+def test_autodp_phiscalar_can_publish() -> None:
+    db_engine, _ = create_memory_db_engine()
+    domain = Domain(name="Bob", db_engine=db_engine)
+
+    def encode_key(key) -> str:
+        return key.encode(encoder=HexEncoder).decode("utf-8")
+
+    key = SigningKey.generate()
+    domain.users.signup(
+        name="Bob",
+        email="bob@gmail.com",
+        password="letmein",
+        budget=100,
+        role=1,
+        private_key=encode_key(key),
+        verify_key=encode_key(key.verify_key),
+    )
+
     x = PhiScalar(0, 0.01, 1)
     y = PhiScalar(0, 0.02, 1)
     z = PhiScalar(0, 0.02, 1)
@@ -19,13 +38,42 @@ def test_autodp_phiscalar_publish() -> None:
     o = x * x + y * y + z
     z = o * o * o
 
-    acc = AdversarialAccountant(max_budget=10)
-    z.publish(acc=acc, sigma=0.2)
+    z.publish(acc=domain.acc, sigma=0.2, user_key=key.verify_key)
 
-    publish([z, z], acc=acc, sigma=0.2)
+    domain.acc.print_ledger()
+    assert len(domain.acc.entities) == 3
 
-    acc.print_ledger()
-    assert len(acc.entities) == 3
+
+def test_autodp_phiscalar_cannot_publish() -> None:
+    db_engine, _ = create_memory_db_engine()
+    domain = Domain(name="Bob", db_engine=db_engine)
+
+    def encode_key(key) -> str:
+        return key.encode(encoder=HexEncoder).decode("utf-8")
+
+    key = SigningKey.generate()
+    domain.users.signup(
+        name="Bob",
+        email="bob@gmail.com",
+        password="letmein",
+        budget=0.0001,
+        role=1,
+        private_key=encode_key(key),
+        verify_key=encode_key(key.verify_key),
+    )
+
+    x = PhiScalar(0, 0.01, 1)
+    y = PhiScalar(0, 0.02, 1)
+    z = PhiScalar(0, 0.02, 1)
+
+    o = x * x + y * y + z
+    z = o * o * o
+
+    # domain.acc.max_budget = 0.0001
+    z.publish(acc=domain.acc, sigma=0.2, user_key=key.verify_key)
+
+    domain.acc.print_ledger()
+    assert len(domain.acc.entities) == 0
 
 
 @pytest.mark.xfail

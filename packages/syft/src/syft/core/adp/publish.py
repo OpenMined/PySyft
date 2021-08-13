@@ -21,20 +21,20 @@ from .search import max_lipschitz_wrt_entity
 def publish(
     scalars: TypeList[Any], acc: Any, user_key: VerifyKey, sigma: float = 1.5
 ) -> TypeList[Any]:
-
-    print('publish with user key:' + str(user_key))
-
     acc.temp_entity2ledger = {}
 
     ms = get_all_entity_mechanisms(scalars=scalars, sigma=sigma)
 
-    for name, mechs in ms.items():
+    # add the user_key to all of the mechanisms
+    for _, mechs in ms.items():
         for m in mechs:
             m.user_key = user_key
 
     acc.temp_append(ms)
 
-    overbudgeted_entities = acc.overbudgeted_entities(user_key=user_key)
+    overbudgeted_entities = acc.overbudgeted_entities(
+        temp_entities=acc.temp_entity2ledger, user_key=user_key
+    )
 
     # so that we don't modify the original polynomial
     # it might be fine to do so but just playing it safe
@@ -77,18 +77,16 @@ def publish(
         # get mechanisms for new publish event
         ms = get_all_entity_mechanisms(scalars=scalars, sigma=sigma)
 
-        for name, mechs in ms.items():
+        for _, mechs in ms.items():
             for m in mechs:
                 m.user_key = user_key
 
         # this is when we actually insert into the database
         acc.temp_append(ms)
 
-        overbudgeted_entities = acc.overbudgeted_entities(user_key=user_key)
-
-
-    if len(overbudgeted_entities) > 0:
-        print("\n\nOVER BUDGET BUT I CAN'T SEEM TO DO ANYTHING ABOUT IT!!!\n\n")
+        overbudgeted_entities = acc.overbudgeted_entities(
+            temp_entities=acc.temp_entity2ledger, user_key=user_key
+        )
 
     output = [s.value + random.gauss(0, sigma) for s in scalars]
 
@@ -113,7 +111,7 @@ def get_mechanism_for_entity(
         sigma=sigma,
         value=value,
         L=L,
-        entity=entity.name,
+        entity_name=entity.name,
         name=m_id,
     )
 

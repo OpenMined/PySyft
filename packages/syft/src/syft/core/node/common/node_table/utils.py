@@ -1,11 +1,15 @@
 # stdlib
 from typing import Any
 from typing import Dict
+from typing import Tuple as TypeTuple
 
 # third party
+from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
+from sqlalchemy.orm import sessionmaker
 
 # relative
+from . import Base
 from ..node_table import Base
 from .groups import Group
 from .roles import Role
@@ -95,3 +99,11 @@ def seed_db(db: Engine) -> None:
     )
     db.add(new_role)
     db.commit()
+
+
+def create_memory_db_engine() -> TypeTuple[Engine, sessionmaker]:
+    db_engine = create_engine("sqlite://", echo=False)
+    Base.metadata.create_all(db_engine)
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=db_engine)
+    seed_db(SessionLocal())
+    return db_engine, SessionLocal

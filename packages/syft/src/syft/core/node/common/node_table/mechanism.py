@@ -4,8 +4,8 @@ from typing import Any
 # third party
 from sqlalchemy import Column
 from sqlalchemy import Integer
-from sqlalchemy import String
 from sqlalchemy import LargeBinary
+from sqlalchemy import String
 
 # syft absolute
 from syft import deserialize
@@ -32,9 +32,7 @@ class Mechanism(Base):
 
     @property
     def obj(self) -> Any:
-        _obj = deserialize(
-            self.mechanism_bin, from_bytes=True
-        )  # TODO: techdebt fix
+        _obj = deserialize(self.mechanism_bin, from_bytes=True)  # TODO: techdebt fix
         # iDPGaussianMechanism.__new__ used by the recursive serde
         # will not initialize iDPGaussianMechanism super class.
         # Since we're extending a third party lib class to perform dp (autodp lib)
@@ -42,14 +40,13 @@ class Mechanism(Base):
         # autodp internal methods created in execution time (e.g. RenyiDP)
         # if len(obj_list):
         iDPGaussianMechanism.__init__(
-                _obj,
-                _obj.params["sigma"],
-                _obj.params["value"],
-                _obj.params["L"],
-                _obj.entity,
-                user_key=_obj.user_key,
-            )
-
+            _obj,
+            _obj.params["sigma"],
+            _obj.params["value"],
+            _obj.params["L"],
+            _obj.entity_name,
+            user_key=_obj.user_key,
+        )
 
         return _obj
 

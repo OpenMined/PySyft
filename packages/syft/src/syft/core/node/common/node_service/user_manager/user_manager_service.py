@@ -124,7 +124,9 @@ def update_user_msg(
     node: AbstractNode,
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
-    _valid_parameters = msg.email or msg.password or msg.role or msg.groups or msg.name or msg.budget
+    _valid_parameters = (
+        msg.email or msg.password or msg.role or msg.groups or msg.name or msg.budget
+    )
     _same_user = int(node.users.get_user(verify_key).id) == msg.user_id
     _allowed = _same_user or node.users.can_create_users(verify_key=verify_key)
 
@@ -223,8 +225,10 @@ def get_user_msg(
         ]
 
         # Get budget spent
-        _msg["budget_spent"] = node.acc.user_budget(user_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder))
-   
+        _msg["budget_spent"] = node.acc.user_budget(
+            user_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder)
+        )
+
     return GetUserResponse(
         address=msg.reply_to,
         content=SyftDict(_msg),
@@ -259,7 +263,9 @@ def get_all_users_msg(
                 for group in node.groups.get_groups(user_id=user.id)
             ]
 
-            _user_json["budget_spent"] = node.acc.user_budget(user_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder))
+            _user_json["budget_spent"] = node.acc.user_budget(
+                user_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder)
+            )
             _msg.append(_user_json)
 
     return GetUsersResponse(

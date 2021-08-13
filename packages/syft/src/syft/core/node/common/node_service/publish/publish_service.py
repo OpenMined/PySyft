@@ -7,9 +7,10 @@ from typing import Type
 # third party
 from nacl.signing import VerifyKey
 
-# relative
+# syft absolute
 from syft.core.common.serde import _deserialize
 
+# relative
 from ......lib.python import List  # type: ignore
 from ......logger import traceback_and_raise  # type: ignore
 

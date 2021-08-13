@@ -8,16 +8,14 @@ from typing import Set as TypeSet
 # third party
 from autodp.autodp_core import Mechanism
 from autodp.transformer_zoo import Composition
-from nacl.encoding import HexEncoder
 from nacl.signing import VerifyKey
 from sqlalchemy.engine import Engine
 
 # relative
-from syft.core.common.serde import _deserialize
-
 from ..common.serde.recursive import RecursiveSerde
 from ..node.common.node_manager.ledger_manager import LedgerManager
 from .entity import Entity
+from .idp_gaussian_mechanism import iDPGaussianMechanism
 from .scalar import PhiScalar
 
 
@@ -35,45 +33,30 @@ class AdversarialAccountant:
     ) -> None:
         for key, ms in entity2mechanisms.items():
             if key not in self.temp_entity2ledger.keys():
-                self.temp_entity2ledger[key.name] = list()
+                self.temp_entity2ledger[key] = list()
             for m in ms:
-                self.temp_entity2ledger[key.name].append(m)
+                self.temp_entity2ledger[key].append(m)
 
     def append(self, entity2mechanisms: TypeDict[str, TypeList[Mechanism]]) -> None:
-
         mechanisms = list()
-        for key, ms in entity2mechanisms.items():
+        for _, ms in entity2mechanisms.items():
             for m in ms:
                 mechanisms.append(m)
 
         self.entity2ledger.register_mechanisms(mechanisms)
 
-
     def save_temp_ledger_to_longterm_ledger(self):
         self.append(entity2mechanisms=self.temp_entity2ledger)
 
     def get_eps_for_entity(
-        self, entity_name: str, user_key: Optional[VerifyKey] = None
+        self, entity: Entity, user_key: Optional[VerifyKey] = None
     ) -> PhiScalar:
-
-        print("GET EPS FOR ENTITY()")
-
         # compose them with the transformation: compose
         compose = Composition()
 
-        print("Entity Type:" + str(type(entity_name)))
-        print("Entity:" + str(entity_name))
-        print("entity name:" + str(entity_name.name))
-
-        all_ents = self.entity2ledger.entity_manager.all()
-        # for e in all_ents:
-        #     print("Known Entity Name:" + str(e.name))
-
         # fetch mechanisms from the database
-        table_mechanisms = self.entity2ledger.query(entity_name=entity_name.name)
+        table_mechanisms = self.entity2ledger.query(entity_name=entity.name)
         mechanisms = [x.obj for x in table_mechanisms]
-
-        # print('Mechansms returned:' + str(mechanisms))
 
         # filter out mechanisms that weren't created by this data scientist user
         if user_key is not None:
@@ -84,7 +67,6 @@ class AdversarialAccountant:
                 # print("Comparing Right:" + str(user_key) + " of type " + str(type(user_key)))
 
                 # user_key = VerifyKey(user_key.encode("utf-8"), encoder=HexEncoder)
-
 
                 if mech.user_key == user_key:
                     filtered_mechanisms.append(mech)
@@ -94,8 +76,8 @@ class AdversarialAccountant:
         print("Num mechanisms before TEMP:" + str(len(mechanisms)))
         print("self.temp_entity2ledger:" + str(self.temp_entity2ledger))
 
-        if entity_name.name in self.temp_entity2ledger.keys():
-            mechanisms = mechanisms + self.temp_entity2ledger[entity_name.name]
+        if entity in self.temp_entity2ledger.keys():
+            mechanisms = mechanisms + self.temp_entity2ledger[entity]
 
         # filter out mechanisms that weren't created by this data scientist user
         if user_key is not None:
@@ -107,7 +89,6 @@ class AdversarialAccountant:
 
                 # user_key = VerifyKey(user_key.encode("utf-8"), encoder=HexEncoder)
 
-
                 if mech.user_key == user_key:
                     filtered_mechanisms.append(mech)
 
@@ -115,7 +96,7 @@ class AdversarialAccountant:
 
         print("Num mechanisms after TEMP:" + str(len(mechanisms)))
         # for m in mechanisms:
-            # print("Filtered Mechanism Entity:" + str(m.entity))
+        # print("Filtered Mechanism Entity:" + str(m.entity_name))
 
         # print("Mechanisma after filtering: ", mechanisms)
         # use verify key to specify the user
@@ -130,7 +111,7 @@ class AdversarialAccountant:
         else:
             eps = 0
 
-        print('Epsilon' + str(eps))
+        print("Epsilon" + str(eps))
         return float(eps)
 
         # # Query for eps given delta
@@ -144,16 +125,15 @@ class AdversarialAccountant:
     def has_budget(self, entity_name: str, user_key: VerifyKey) -> bool:
         spend = self.get_eps_for_entity(entity_name, user_key=user_key)
         print("SPEND:" + str(spend))
-        # user_budget = 0.1
         user_budget = self.entity2ledger.get_user_budget(user_key=user_key)
-        print("BUDGET:" + str(user_budget))
+        print("USER BUDGET:" + str(user_budget))
+        print("ACCOUNTANT MAX BUDGET", self.max_budget)
         has_budget = spend < user_budget
-        print("HAS Budget:" + str(has_budget))
+        print(f"has_budget = {spend} < {user_budget}")
 
         return has_budget
 
     def user_budget(self, user_key: VerifyKey):
-
         max_spend = 0
 
         for ent in self.entities:
@@ -167,10 +147,14 @@ class AdversarialAccountant:
     def entities(self) -> TypeKeysView[Entity]:
         return self.entity2ledger.keys()
 
-    def overbudgeted_entities(self, user_key: VerifyKey) -> TypeSet[Entity]:
+    def overbudgeted_entities(
+        self,
+        temp_entities: TypeDict[Entity, TypeList[iDPGaussianMechanism]],
+        user_key: VerifyKey,
+    ) -> TypeSet[Entity]:
         entities = set()
 
-        for entity_name in self.entities:
+        for entity_name in temp_entities:
             if not self.has_budget(entity_name, user_key=user_key):
                 entities.add(entity_name)
 
@@ -179,7 +163,9 @@ class AdversarialAccountant:
     def print_ledger(self, delta: float = 1e-6) -> None:
         for mechanism in self.entity2ledger.mechanism_manager.all():
             entity = self.entity2ledger.entity_manager.first(name=mechanism.entity_name)
-            print(str(mechanism.entity_name) + "\t" + str(self.get_eps_for_entity(entity)))
+            print(
+                str(mechanism.entity_name) + "\t" + str(self.get_eps_for_entity(entity))
+            )
 
 
 class AccountantReference(RecursiveSerde):
