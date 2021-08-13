@@ -155,7 +155,7 @@ def update_user_msg(
 
     # Change budget Request
     elif msg.budget:
-        node.users.set(user_id=msg.budget, budget=msg.budget)
+        node.users.set(user_id=msg.user_id, budget=msg.budget)
 
     # Change Role Request
     elif msg.role:
