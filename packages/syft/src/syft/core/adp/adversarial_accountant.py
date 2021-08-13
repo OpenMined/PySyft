@@ -63,13 +63,7 @@ class AdversarialAccountant:
         if user_key is not None:
             filtered_mechanisms = []
             for mech in mechanisms:
-                # left = _deserialize(mech.user_key, from_bytes=True)
-                # print("Comparing Left:" + str(mech.user_key) + " of type " + str(type(mech.user_key)))
-                # print("Comparing Right:" + str(user_key) + " of type " + str(type(user_key)))
-
-                encoded_key = VerifyKey(user_key.encode("utf-8"), encoder=HexEncoder)
-
-                if mech.user_key == encoded_key:
+                if mech.user_key == user_key:
                     filtered_mechanisms.append(mech)
 
             mechanisms = filtered_mechanisms
@@ -132,8 +126,8 @@ class AdversarialAccountant:
         #     entity=entity,
         # )
 
-    def has_budget(self, entity_name: str, user_key: VerifyKey) -> bool:
-        spend = self.get_eps_for_entity(entity_name, user_key=user_key)
+    def has_budget(self, entity: Entity, user_key: VerifyKey) -> bool:
+        spend = self.get_eps_for_entity(entity=entity, user_key=user_key)
         print("SPEND:" + str(spend))
         user_budget = self.entity2ledger.get_user_budget(user_key=user_key)
         print("USER BUDGET:" + str(user_budget))
@@ -148,7 +142,7 @@ class AdversarialAccountant:
         max_spend = 0
 
         for ent in self.entities:
-            spend = self.get_eps_for_entity(entity_name=ent, user_key=user_key)
+            spend = self.get_eps_for_entity(entity=ent, user_key=user_key)
             if spend > max_spend:
                 max_spend = spend
 
@@ -165,9 +159,9 @@ class AdversarialAccountant:
     ) -> TypeSet[Entity]:
         entities = set()
 
-        for entity_name in temp_entities:
-            if not self.has_budget(entity_name, user_key=user_key):
-                entities.add(entity_name)
+        for entity, _ in temp_entities.items():
+            if not self.has_budget(entity, user_key=user_key):
+                entities.add(entity)
 
         return entities
 
