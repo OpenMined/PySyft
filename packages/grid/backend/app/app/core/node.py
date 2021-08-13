@@ -1,9 +1,7 @@
 # stdlib
-import sys
 from typing import Optional
 
 # third party
-from loguru import logger
 from nacl.signing import SigningKey
 
 # syft absolute
@@ -17,8 +15,6 @@ from syft.core.node.common.node_table.utils import seed_db
 from app.core.config import settings
 from app.db.session import SessionLocal
 from app.db.session import engine
-
-logger.add(sys.stdout, level="DEBUG")
 
 if settings.NODE_TYPE.lower() == "domain":
     node = Domain("Domain", db_engine=engine)
