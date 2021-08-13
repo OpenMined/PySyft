@@ -8,6 +8,7 @@ from typing import Set as TypeSet
 # third party
 from autodp.autodp_core import Mechanism
 from autodp.transformer_zoo import Composition
+from nacl.encoding import HexEncoder
 from nacl.signing import VerifyKey
 from sqlalchemy.engine import Engine
 
@@ -66,9 +67,9 @@ class AdversarialAccountant:
                 # print("Comparing Left:" + str(mech.user_key) + " of type " + str(type(mech.user_key)))
                 # print("Comparing Right:" + str(user_key) + " of type " + str(type(user_key)))
 
-                # user_key = VerifyKey(user_key.encode("utf-8"), encoder=HexEncoder)
+                encoded_key = VerifyKey(user_key.encode("utf-8"), encoder=HexEncoder)
 
-                if mech.user_key == user_key:
+                if mech.user_key == encoded_key:
                     filtered_mechanisms.append(mech)
 
             mechanisms = filtered_mechanisms
@@ -79,20 +80,20 @@ class AdversarialAccountant:
         if entity in self.temp_entity2ledger.keys():
             mechanisms = mechanisms + self.temp_entity2ledger[entity]
 
-        # filter out mechanisms that weren't created by this data scientist user
-        if user_key is not None:
-            filtered_mechanisms = []
-            for mech in mechanisms:
-                # left = _deserialize(mech.user_key, from_bytes=True)
-                # print("Comparing Left:" + str(mech.user_key) + " of type " + str(type(mech.user_key)))
-                # print("Comparing Right:" + str(user_key) + " of type " + str(type(user_key)))
+        # # filter out mechanisms that weren't created by this data scientist user
+        # if user_key is not None:
+        #     filtered_mechanisms = []
+        #     for mech in mechanisms:
+        #         # left = _deserialize(mech.user_key, from_bytes=True)
+        #         # print("Comparing Left:" + str(mech.user_key) + " of type " + str(type(mech.user_key)))
+        #         # print("Comparing Right:" + str(user_key) + " of type " + str(type(user_key)))
 
-                # user_key = VerifyKey(user_key.encode("utf-8"), encoder=HexEncoder)
+        #         # user_key = VerifyKey(user_key.encode("utf-8"), encoder=HexEncoder)
 
-                if mech.user_key == user_key:
-                    filtered_mechanisms.append(mech)
+        #         if mech.user_key == user_key:
+        #             filtered_mechanisms.append(mech)
 
-            mechanisms = filtered_mechanisms
+        #     mechanisms = filtered_mechanisms
 
         print("Num mechanisms after TEMP:" + str(len(mechanisms)))
         # for m in mechanisms:
@@ -108,6 +109,15 @@ class AdversarialAccountant:
         if len(mechanisms) > 0:
             composed_mech = compose(mechanisms, [1] * len(mechanisms))
             eps = composed_mech.get_approxDP(self.delta)
+
+            # if we have a user key, get the budget and clamp the epsilon
+            # if user_key is not None:
+            #     user_budget = self.entity2ledger.get_user_budget(user_key=user_key)
+            #     print("USER BUDGET:" + str(user_budget))
+            #     print(f"EPS: {eps}")
+            #     if eps > user_budget:
+            #         print("setting the eps to the user budget")
+            #         eps = user_budget
         else:
             eps = 0
 
@@ -127,8 +137,9 @@ class AdversarialAccountant:
         print("SPEND:" + str(spend))
         user_budget = self.entity2ledger.get_user_budget(user_key=user_key)
         print("USER BUDGET:" + str(user_budget))
-        print("ACCOUNTANT MAX BUDGET", self.max_budget)
-        has_budget = spend < user_budget
+        # print("ACCOUNTANT MAX BUDGET", self.max_budget)
+        # @Andrew can we use <= or does it have to be <
+        has_budget = spend <= user_budget
         print(f"has_budget = {spend} < {user_budget}")
 
         return has_budget

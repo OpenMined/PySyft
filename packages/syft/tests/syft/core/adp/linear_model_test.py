@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 
 # syft absolute
+import syft as sy
 from syft import Domain
 from syft.core.adp.adversarial_accountant import AdversarialAccountant
 from syft.core.adp.entity import Entity
@@ -74,6 +75,61 @@ def test_autodp_phiscalar_cannot_publish() -> None:
 
     domain.acc.print_ledger()
     assert len(domain.acc.entities) == 0
+
+
+def test_autodp_phiscalar_substitute_publish() -> None:
+    db_engine, _ = create_memory_db_engine()
+    domain = Domain(name="Bob", db_engine=db_engine)
+
+    def encode_key(key) -> str:
+        return key.encode(encoder=HexEncoder).decode("utf-8")
+
+    # create user with matching client key
+    client = domain.get_root_client()
+
+    key = client.signing_key
+    domain.users.signup(
+        name="Bob",
+        email="bob@gmail.com",
+        password="letmein",
+        budget=10,
+        role=1,
+        private_key=encode_key(key),
+        verify_key=encode_key(key.verify_key),
+    )
+
+    # create data
+
+    n = 10
+
+    data = list()
+    for i in range(n):
+        data.append(i + 1)
+
+    # Load some sample data
+    data_batch = np.array([13] * n)
+
+    entities = list()
+    for i in range(n):
+        entities.append(Entity(name=str(i)))
+
+    # Upload a private dataset to the Domain object, as the root owner
+    data = sy.Tensor(data_batch).private(0, 20, entities=entities).tag("data")
+
+    # send data
+    data_ptr = data.send(client)
+
+    # do calculation
+    s_ptr = data_ptr.sum(0) / 10
+
+    out = s_ptr.publish(client=client, sigma=1)
+    result = out.get()
+
+    result_float = result.child.item() - 13
+    assert result_float < 5  # less than 5 inaccurate
+
+    domain.acc.print_ledger()
+    assert len(domain.acc.entities) == 10
 
 
 @pytest.mark.xfail
