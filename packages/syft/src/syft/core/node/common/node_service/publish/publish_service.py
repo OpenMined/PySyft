@@ -8,6 +8,8 @@ from typing import Type
 from nacl.signing import VerifyKey
 
 # relative
+from syft.core.common.serde import _deserialize
+
 from ......lib.python import List  # type: ignore
 from ......logger import traceback_and_raise  # type: ignore
 
@@ -30,8 +32,9 @@ class PublishScalarsService(ImmediateNodeServiceWithoutReply):
     ) -> None:
 
         print("\n\nPROCESSING PUBLISH SCALAR ACTION!!!\n\n")
+        print("Verify Key:" + str(type(verify_key)))
+        # print("Deser Verify Key:" + str(_deserialize(verify_key, from_bytes=True)))
         print(node.acc.entity2ledger)
-        node.acc.print_ledger()
         print(node.acc)
 
         # get scalar objects from store

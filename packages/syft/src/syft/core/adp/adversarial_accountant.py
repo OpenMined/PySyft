@@ -8,10 +8,13 @@ from typing import Set as TypeSet
 # third party
 from autodp.autodp_core import Mechanism
 from autodp.transformer_zoo import Composition
+from nacl.encoding import HexEncoder
 from nacl.signing import VerifyKey
 from sqlalchemy.engine import Engine
 
 # relative
+from syft.core.common.serde import _deserialize
+
 from ..common.serde.recursive import RecursiveSerde
 from ..node.common.node_manager.ledger_manager import LedgerManager
 from .entity import Entity
@@ -37,37 +40,83 @@ class AdversarialAccountant:
                 self.temp_entity2ledger[key.name].append(m)
 
     def append(self, entity2mechanisms: TypeDict[str, TypeList[Mechanism]]) -> None:
-        keys = list(self.entity2ledger.keys())
+
+        mechanisms = list()
         for key, ms in entity2mechanisms.items():
-            if key not in keys:
-                print("New Key:" + str(key))
-                self.entity2ledger[key] = list()
-                keys.append(key)
             for m in ms:
-                print("Mech:" + str(m))
-                self.entity2ledger.append(key, m)
+                mechanisms.append(m)
+
+        self.entity2ledger.register_mechanisms(mechanisms)
+
 
     def save_temp_ledger_to_longterm_ledger(self):
-        print(self.entity2ledger.keys())
         self.append(entity2mechanisms=self.temp_entity2ledger)
 
     def get_eps_for_entity(
-        self, entity_name: str, user_key: Optional[str] = None
+        self, entity_name: str, user_key: Optional[VerifyKey] = None
     ) -> PhiScalar:
+
+        print("GET EPS FOR ENTITY()")
+
         # compose them with the transformation: compose
         compose = Composition()
-        mechanisms = self.entity2ledger[entity_name]
-        if entity_name in self.temp_entity2ledger:
-            mechanisms = mechanisms + self.temp_entity2ledger[entity_name]
-        # print("Mechanisms before filtering: ", mechanisms)
-        # print("User key of mechanism: ", mechanisms[0].user_key)
-        # print("Input user key: ", user_key)
+
+        print("Entity Type:" + str(type(entity_name)))
+        print("Entity:" + str(entity_name))
+        print("entity name:" + str(entity_name.name))
+
+        all_ents = self.entity2ledger.entity_manager.all()
+        # for e in all_ents:
+        #     print("Known Entity Name:" + str(e.name))
+
+        # fetch mechanisms from the database
+        table_mechanisms = self.entity2ledger.query(entity_name=entity_name.name)
+        mechanisms = [x.obj for x in table_mechanisms]
+
+        # print('Mechansms returned:' + str(mechanisms))
+
+        # filter out mechanisms that weren't created by this data scientist user
         if user_key is not None:
             filtered_mechanisms = []
             for mech in mechanisms:
+                # left = _deserialize(mech.user_key, from_bytes=True)
+                # print("Comparing Left:" + str(mech.user_key) + " of type " + str(type(mech.user_key)))
+                # print("Comparing Right:" + str(user_key) + " of type " + str(type(user_key)))
+
+                # user_key = VerifyKey(user_key.encode("utf-8"), encoder=HexEncoder)
+
+
                 if mech.user_key == user_key:
                     filtered_mechanisms.append(mech)
+
             mechanisms = filtered_mechanisms
+
+        print("Num mechanisms before TEMP:" + str(len(mechanisms)))
+        print("self.temp_entity2ledger:" + str(self.temp_entity2ledger))
+
+        if entity_name.name in self.temp_entity2ledger.keys():
+            mechanisms = mechanisms + self.temp_entity2ledger[entity_name.name]
+
+        # filter out mechanisms that weren't created by this data scientist user
+        if user_key is not None:
+            filtered_mechanisms = []
+            for mech in mechanisms:
+                # left = _deserialize(mech.user_key, from_bytes=True)
+                # print("Comparing Left:" + str(mech.user_key) + " of type " + str(type(mech.user_key)))
+                # print("Comparing Right:" + str(user_key) + " of type " + str(type(user_key)))
+
+                # user_key = VerifyKey(user_key.encode("utf-8"), encoder=HexEncoder)
+
+
+                if mech.user_key == user_key:
+                    filtered_mechanisms.append(mech)
+
+            mechanisms = filtered_mechanisms
+
+        print("Num mechanisms after TEMP:" + str(len(mechanisms)))
+        # for m in mechanisms:
+            # print("Filtered Mechanism Entity:" + str(m.entity))
+
         # print("Mechanisma after filtering: ", mechanisms)
         # use verify key to specify the user
         # for all entities in the db,
@@ -77,9 +126,12 @@ class AdversarialAccountant:
         # map dataset
         if len(mechanisms) > 0:
             composed_mech = compose(mechanisms, [1] * len(mechanisms))
-            return composed_mech.get_approxDP(self.delta)
+            eps = composed_mech.get_approxDP(self.delta)
         else:
-            return None
+            eps = 0
+
+        print('Epsilon' + str(eps))
+        return float(eps)
 
         # # Query for eps given delta
         # return PhiScalar(
@@ -90,11 +142,14 @@ class AdversarialAccountant:
         # )
 
     def has_budget(self, entity_name: str, user_key: VerifyKey) -> bool:
-        eps = self.get_eps_for_entity(entity_name, user_key=user_key)
-        if eps is not None:
-            return eps < self.max_budget
-        # if eps.value is not None:
-        #     return eps.value < self.max_budget
+        spend = self.get_eps_for_entity(entity_name, user_key=user_key)
+        print("SPEND:" + str(spend))
+        user_budget = self.entity2ledger.get_user_budget(user_key=user_key)
+        print("BUDGET:" + str(user_budget))
+        has_budget = spend < user_budget
+        print("HAS Budget:" + str(has_budget))
+
+        return has_budget
 
     def user_budget(self, user_key: VerifyKey):
 
@@ -120,10 +175,10 @@ class AdversarialAccountant:
                 entities.add(entity_name)
 
         return entities
-
-    def print_ledger(self, delta: float = 1e-6) -> None:
-        for entity, mechanisms in self.entity2ledger.items():
-            print(str(entity) + "\t" + str(self.get_eps_for_entity(entity)))
+    #
+    # def print_ledger(self, delta: float = 1e-6) -> None:
+    #     for entity, mechanisms in self.entity2ledger.items():
+    #         print(str(entity) + "\t" + str(self.get_eps_for_entity(entity)))
 
 
 class AccountantReference(RecursiveSerde):
