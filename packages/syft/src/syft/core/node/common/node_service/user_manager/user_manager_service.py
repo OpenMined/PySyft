@@ -124,7 +124,7 @@ def update_user_msg(
     node: AbstractNode,
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
-    _valid_parameters = msg.email or msg.password or msg.role or msg.groups or msg.name
+    _valid_parameters = msg.email or msg.password or msg.role or msg.groups or msg.name or msg.budget
     _same_user = int(node.users.get_user(verify_key).id) == msg.user_id
     _allowed = _same_user or node.users.can_create_users(verify_key=verify_key)
 

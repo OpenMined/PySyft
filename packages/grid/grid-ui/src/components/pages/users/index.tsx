@@ -31,16 +31,18 @@ export function UserList({users, me}: UsersAsProp & {me: Me}) {
 }
 
 function UserInfoTitle() {
-  const {user, role} = useContext(UserListContext)
+  const {user, role, me} = useContext(UserListContext)
   return (
     <div>
       <div className="flex space-x-2 truncate">
         <p className="font-medium truncate">{user.name}</p>
         <Badge bgColor={entityColors.roles}>{role.name}</Badge>
-        {/* DOs, DCOs see the budget */}
-        <Badge className="lowercase">
-          {user.budget ?? 0} {'\u03B5'}
-        </Badge>
+        {/* Only DOs and DCOs can see the budget */}
+        {(user.id === me.id || me.permissions.canTriageRequests) && (
+          <Badge className="lowercase">
+            {user.budget ?? 0} {'\u03B5'}
+          </Badge>
+        )}
         <Badge className="lowercase" bgColor="pink" textColor="gray">
           {user.budgetSpent ?? 0} {'\u03B5'}
         </Badge>
@@ -189,6 +191,38 @@ function ChangeEmail() {
   )
 }
 
+function ChangeEpsilon() {
+  const {user} = useContext(UserListContext)
+  const [budget, setBudget] = useState<string>(user.budget)
+  const queryClient = useQueryClient()
+  const invalidate = () => queryClient.invalidateQueries(cacheKeys.users)
+  const mutation = useMutation(() => api.patch(`${cacheKeys.users}/${user.id}`, {budget: parseFloat(budget)}), {
+    onSuccess: invalidate
+  })
+
+  return (
+    <div className="flex max-w-xl space-x-4">
+      <Input
+        id={`user-epsilon-${user.budget}`}
+        label="Change user privacy budget limit"
+        container="flex-grow w-full"
+        onChange={(e: ChangeEvent<HTMLInputElement>) => setBudget(e.target.value)}
+        value={budget}
+        type="number"
+        name="budget"
+        step="0.1"
+      />
+      <NormalButton
+        className="flex-shrink-0 w-24 mt-auto"
+        disabled={mutation.isLoading}
+        onClick={() => mutation.mutate()}
+        isLoading={mutation.isLoading}>
+        Submit
+      </NormalButton>
+    </div>
+  )
+}
+
 function useInvalidate(queries: string | string[]) {
   const queryClient = useQueryClient()
   return () => queryClient.invalidateQueries(queries)
@@ -222,6 +256,7 @@ function UserInfoPanel() {
         <>
           <ChangeEmail />
           <ChangePassword />
+          <ChangeEpsilon />
         </>
       )}
       {user.id !== 1 && me.permissions.canCreateUsers && <DeleteUser />}
