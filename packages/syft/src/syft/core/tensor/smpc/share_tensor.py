@@ -19,6 +19,9 @@ from syft.core.common.serde.serialize import _serialize as serialize
 from syft.core.tensor.passthrough import PassthroughTensor
 from syft.proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB
 
+# relative
+from ..fixed_precision_tensor import FixedPrecisionTensor
+
 
 @bind_protobuf
 class ShareTensor(PassthroughTensor, Serializable):
@@ -123,7 +126,11 @@ class ShareTensor(PassthroughTensor, Serializable):
             for _ in range(nr_parties)
         ]
         share.child += shares[rank] - shares[(rank + 1) % nr_parties]
-        return share
+
+        fpt = FixedPrecisionTensor(value=share.child)
+        share.child = fpt.child
+        fpt.child = share
+        return fpt
 
     @staticmethod
     def sanity_check(

@@ -1,15 +1,18 @@
 # stdlib
 from typing import Any
 from typing import Optional
+from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
+import torch
 
 # syft absolute
 from syft.core.tensor.passthrough import PassthroughTensor
 
 # relative
+from ... import logger
 from ...core.common.serde.serializable import Serializable
 from ...proto.core.tensor.fixed_precision_tensor_pb2 import (
     FixedPrecisionTensor as FixedPrecisionTensor_PB,
@@ -36,23 +39,73 @@ class FixedPrecisionTensor(PassthroughTensor, Serializable):
         correction = (self.child < 0).astype(np.int64)
         dividend = self.child // self._scale - correction
         remainder = self.child % self._scale
-        remainder += (remainder == 0).astype(np.int64) * self._scale * correction
+        remainder = remainder + (remainder == 0).astype(np.int64) * self._scale * correction
         value = dividend.astype(np.float32) + remainder.astype(np.float32) / self._scale
         return value
 
-    def __add__(self, other: Any) -> "FixedPrecisionTensor":
+    def add(self, y: Any) -> "FixedPrecisionTensor":
+        if not isinstance(y, FixedPrecisionTensor):
+            y = FixedPrecisionTensor(value=y, base=self._base, precision=self._precision)
+
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)
-        res.child = self.child + other.child
+        # Already encoded, don't pass it in the constructor such that we do not re-encode
+        res.child = self.child + y.child
         return res
 
-    def __sub__(self, other: Any) -> "FixedPrecisionTensor":
+    def sub(self, y: Any) -> "FixedPrecisionTensor":
+        if not isinstance(y, FixedPrecisionTensor):
+            y = FixedPrecisionTensor(value=y, base=self._base, precision=self._precision)
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)
-        res.child = self.child - other.child
+        res.child = self.child - y.child
+        return res
+
+    def rsub(self, y: Any) -> "FixedPrecisionTensor":
+        if not isinstance(y, FixedPrecisionTensor):
+            y = FixedPrecisionTensor(base=self._base, precision=self._precision)
+
+        if self._base != y._base:
+            raise ValueError(f"Different base for operators {self._base} and {y._base}")
+        if self._precision != y._precision:
+            # TODO: Maybe take the highest precision? (need to think a little about this)
+            logger.warning(
+                f"Different precision for operators {self._precision} and {y._precision}"
+            )
+
+        res = FixedPrecisionTensor(base=self._base, precision=self._precision)
+        res.child = y.child - self.child
+        return res
+
+    def mul(
+        self, y: Union[int, float, torch.Tensor, np.ndarray]
+    ) -> "FixedPrecisionTensor":
+        if not isinstance(y, int):
+            raise ValueError("Multiplication works only with integer values")
+
+        res = FixedPrecisionTensor(base=self._base, precision=self._precision)
+        res.child = self.child * y
+        return res
+
+    def truediv(self, y: int) -> "FixedPrecisionTensor":
+        if not isinstance(y, int):
+            raise ValueError(f"Truediv should have as divisor an integer,, but found {type(y)}")
+
+        res = FixedPrecisionTensor(base=self._base, precision=self._precision)
+        # Manually place it such that we do not re-encode it
+        res.child = value=self.child // y
+        return res
+
+    def mod(self, y: int) -> "FixedPrecisionTensor":
+        if not isinstance(y, int):
+            raise ValueError(f"Modulo should have as divisor an integer, but found {type(y)}")
+
+        res = FixedPrecisionTensor(base=self._base, precision=self._precision)
+        # Manually place it such that we do not re-encode it
+        res.child = value=self.child % y
         return res
 
     def _object2proto(self) -> FixedPrecisionTensor_PB:
         # syft absolute
-        from syft.core.tensor.share_tensor import ShareTensor
+        from syft.core.tensor.smpc.share_tensor import ShareTensor
         from syft.core.tensor.tensor import Tensor
 
         if isinstance(self.child, Tensor):
@@ -84,3 +137,11 @@ class FixedPrecisionTensor(PassthroughTensor, Serializable):
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return FixedPrecisionTensor_PB
+
+    __add__ = add
+    __radd__ = add
+    __sub__ = sub
+    __mul__ = mul
+    __rmul__ = mul
+    __truediv__ = truediv
+    __div__ = truediv

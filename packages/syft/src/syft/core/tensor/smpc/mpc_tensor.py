@@ -18,11 +18,14 @@ import torch
 # syft absolute
 from syft.core.tensor.passthrough import PassthroughTensor
 from syft.core.tensor.smpc.share_tensor import ShareTensor
+from syft.core.tensor.fixed_precision_tensor import FixedPrecisionTensor
 
 # relative
 from ..util import implements
 from .utils import ispointer
 
+
+# Add methods here that should be forwarded to all shares
 METHODS_FORWARD_ALL_SHARES = {
     "t",
     "squeeze",
@@ -47,6 +50,7 @@ class MPCTensor(PassthroughTensor):
         shares: Optional[List[ShareTensor]] = None,
         shape: Optional[Tuple[int]] = None,
         seed_shares: Optional[int] = None,
+        ttp: Optional[str] = None,
     ) -> None:
         if secret is None and shares is None:
             raise ValueError("Secret or shares should be populated!")
@@ -78,6 +82,7 @@ class MPCTensor(PassthroughTensor):
         res = MPCTensor._mpc_from_shares(shares, parties)
 
         self.mpc_shape = shape
+        self.ttp = ttp
 
         super().__init__(res)
 
@@ -174,19 +179,17 @@ class MPCTensor(PassthroughTensor):
         # TODO: It might be that the resulted shares (if we run any computation) might
         # not be available at this point
 
-        local_shares = [share.get_copy() for share in self.child]
-        is_share_tensor = isinstance(local_shares[0], ShareTensor)
+        local_fpt_shares = [share.get_copy() for share in self.child]
 
-        if is_share_tensor:
-            local_shares = [share.child for share in local_shares]
+        # We have FPT > ShareTensor > Value
+        for fpt_share in local_fpt_shares:
+            fpt_share.child = fpt_share.child.child
 
-        result = local_shares[0]
-        for share in local_shares[1:]:
+        result = local_fpt_shares[0]
+        for share in local_fpt_shares[1:]:
             result = result + share
 
-        # if not is_share_tensor:
-        #    result = result.decode()
-        return result
+        return result.decode()
 
     @staticmethod
     @lru_cache(maxsize=128)
