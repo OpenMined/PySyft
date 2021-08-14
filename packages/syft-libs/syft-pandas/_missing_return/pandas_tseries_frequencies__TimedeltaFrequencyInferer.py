@@ -23,17 +23,23 @@ try:
     obj = class_constructor()
     ret = obj._infer_daily_rule()
     type_pandas_tseries_frequencies__TimedeltaFrequencyInferer__infer_daily_rule = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.tseries.frequencies._TimedeltaFrequencyInferer._infer_daily_rule:",
-        type_pandas_tseries_frequencies__TimedeltaFrequencyInferer__infer_daily_rule)
+    )
+    print(
+        "✅ pandas.tseries.frequencies._TimedeltaFrequencyInferer._infer_daily_rule:",
+        type_pandas_tseries_frequencies__TimedeltaFrequencyInferer__infer_daily_rule,
+    )
 except Exception as e:
-    type_pandas_tseries_frequencies__TimedeltaFrequencyInferer__infer_daily_rule = '_syft_missing'
-    print('❌ pandas.tseries.frequencies._TimedeltaFrequencyInferer._infer_daily_rule: Return unavailable')
+    type_pandas_tseries_frequencies__TimedeltaFrequencyInferer__infer_daily_rule = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.tseries.frequencies._TimedeltaFrequencyInferer._infer_daily_rule: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[3]:
@@ -44,15 +50,20 @@ try:
     obj = class_constructor()
     ret = obj.month_position_check()
     type_pandas_tseries_frequencies__TimedeltaFrequencyInferer_month_position_check = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.tseries.frequencies._TimedeltaFrequencyInferer.month_position_check:",
-        type_pandas_tseries_frequencies__TimedeltaFrequencyInferer_month_position_check)
+    )
+    print(
+        "✅ pandas.tseries.frequencies._TimedeltaFrequencyInferer.month_position_check:",
+        type_pandas_tseries_frequencies__TimedeltaFrequencyInferer_month_position_check,
+    )
 except Exception as e:
-    type_pandas_tseries_frequencies__TimedeltaFrequencyInferer_month_position_check = '_syft_missing'
-    print('❌ pandas.tseries.frequencies._TimedeltaFrequencyInferer.month_position_check: Return unavailable')
+    type_pandas_tseries_frequencies__TimedeltaFrequencyInferer_month_position_check = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.tseries.frequencies._TimedeltaFrequencyInferer.month_position_check: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
-
+    print("   Error:", e)

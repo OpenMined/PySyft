@@ -43,7 +43,7 @@ except Exception as e:
 
 # pandas._config.config.CallableDynamicDoc.__doc__
 try:
-    obj = class_constructor()
+    obj = pandas._config.config.CallableDynamicDoc(lambda x: x, "")
     ret = obj.__doc__
     type_pandas__config_config_CallableDynamicDoc___doc__ = (
         getattr(ret, "__module__", None) + "." + ret.__class__.__name__
@@ -59,3 +59,6 @@ except Exception as e:
     print("❌ pandas._config.config.CallableDynamicDoc.__doc__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
     print("  Error:", e)
+
+
+# In[ ]:

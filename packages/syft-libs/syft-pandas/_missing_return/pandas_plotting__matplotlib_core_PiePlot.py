@@ -23,17 +23,19 @@ try:
     obj = class_constructor()
     ret = obj._add_table()
     type_pandas_plotting__matplotlib_core_PiePlot__add_table = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.plotting._matplotlib.core.PiePlot._add_table:",
-        type_pandas_plotting__matplotlib_core_PiePlot__add_table)
+    )
+    print(
+        "✅ pandas.plotting._matplotlib.core.PiePlot._add_table:",
+        type_pandas_plotting__matplotlib_core_PiePlot__add_table,
+    )
 except Exception as e:
-    type_pandas_plotting__matplotlib_core_PiePlot__add_table = '_syft_missing'
-    print('❌ pandas.plotting._matplotlib.core.PiePlot._add_table: Return unavailable')
+    type_pandas_plotting__matplotlib_core_PiePlot__add_table = "_syft_missing"
+    print("❌ pandas.plotting._matplotlib.core.PiePlot._add_table: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[3]:
@@ -44,17 +46,21 @@ try:
     obj = class_constructor()
     ret = obj._adorn_subplots()
     type_pandas_plotting__matplotlib_core_PiePlot__adorn_subplots = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.plotting._matplotlib.core.PiePlot._adorn_subplots:",
-        type_pandas_plotting__matplotlib_core_PiePlot__adorn_subplots)
+    )
+    print(
+        "✅ pandas.plotting._matplotlib.core.PiePlot._adorn_subplots:",
+        type_pandas_plotting__matplotlib_core_PiePlot__adorn_subplots,
+    )
 except Exception as e:
-    type_pandas_plotting__matplotlib_core_PiePlot__adorn_subplots = '_syft_missing'
-    print('❌ pandas.plotting._matplotlib.core.PiePlot._adorn_subplots: Return unavailable')
+    type_pandas_plotting__matplotlib_core_PiePlot__adorn_subplots = "_syft_missing"
+    print(
+        "❌ pandas.plotting._matplotlib.core.PiePlot._adorn_subplots: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[4]:
@@ -65,17 +71,21 @@ try:
     obj = class_constructor()
     ret = obj._apply_style_colors()
     type_pandas_plotting__matplotlib_core_PiePlot__apply_style_colors = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.plotting._matplotlib.core.PiePlot._apply_style_colors:",
-        type_pandas_plotting__matplotlib_core_PiePlot__apply_style_colors)
+    )
+    print(
+        "✅ pandas.plotting._matplotlib.core.PiePlot._apply_style_colors:",
+        type_pandas_plotting__matplotlib_core_PiePlot__apply_style_colors,
+    )
 except Exception as e:
-    type_pandas_plotting__matplotlib_core_PiePlot__apply_style_colors = '_syft_missing'
-    print('❌ pandas.plotting._matplotlib.core.PiePlot._apply_style_colors: Return unavailable')
+    type_pandas_plotting__matplotlib_core_PiePlot__apply_style_colors = "_syft_missing"
+    print(
+        "❌ pandas.plotting._matplotlib.core.PiePlot._apply_style_colors: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[5]:
@@ -86,17 +96,19 @@ try:
     obj = class_constructor()
     ret = obj._args_adjust()
     type_pandas_plotting__matplotlib_core_PiePlot__args_adjust = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.plotting._matplotlib.core.PiePlot._args_adjust:",
-        type_pandas_plotting__matplotlib_core_PiePlot__args_adjust)
+    )
+    print(
+        "✅ pandas.plotting._matplotlib.core.PiePlot._args_adjust:",
+        type_pandas_plotting__matplotlib_core_PiePlot__args_adjust,
+    )
 except Exception as e:
-    type_pandas_plotting__matplotlib_core_PiePlot__args_adjust = '_syft_missing'
-    print('❌ pandas.plotting._matplotlib.core.PiePlot._args_adjust: Return unavailable')
+    type_pandas_plotting__matplotlib_core_PiePlot__args_adjust = "_syft_missing"
+    print("❌ pandas.plotting._matplotlib.core.PiePlot._args_adjust: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[6]:
@@ -107,17 +119,21 @@ try:
     obj = class_constructor()
     ret = obj._compute_plot_data()
     type_pandas_plotting__matplotlib_core_PiePlot__compute_plot_data = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.plotting._matplotlib.core.PiePlot._compute_plot_data:",
-        type_pandas_plotting__matplotlib_core_PiePlot__compute_plot_data)
+    )
+    print(
+        "✅ pandas.plotting._matplotlib.core.PiePlot._compute_plot_data:",
+        type_pandas_plotting__matplotlib_core_PiePlot__compute_plot_data,
+    )
 except Exception as e:
-    type_pandas_plotting__matplotlib_core_PiePlot__compute_plot_data = '_syft_missing'
-    print('❌ pandas.plotting._matplotlib.core.PiePlot._compute_plot_data: Return unavailable')
+    type_pandas_plotting__matplotlib_core_PiePlot__compute_plot_data = "_syft_missing"
+    print(
+        "❌ pandas.plotting._matplotlib.core.PiePlot._compute_plot_data: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[7]:
@@ -128,17 +144,21 @@ try:
     obj = class_constructor()
     ret = obj._convert_to_ndarray()
     type_pandas_plotting__matplotlib_core_PiePlot__convert_to_ndarray = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.plotting._matplotlib.core.PiePlot._convert_to_ndarray:",
-        type_pandas_plotting__matplotlib_core_PiePlot__convert_to_ndarray)
+    )
+    print(
+        "✅ pandas.plotting._matplotlib.core.PiePlot._convert_to_ndarray:",
+        type_pandas_plotting__matplotlib_core_PiePlot__convert_to_ndarray,
+    )
 except Exception as e:
-    type_pandas_plotting__matplotlib_core_PiePlot__convert_to_ndarray = '_syft_missing'
-    print('❌ pandas.plotting._matplotlib.core.PiePlot._convert_to_ndarray: Return unavailable')
+    type_pandas_plotting__matplotlib_core_PiePlot__convert_to_ndarray = "_syft_missing"
+    print(
+        "❌ pandas.plotting._matplotlib.core.PiePlot._convert_to_ndarray: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[8]:
@@ -149,17 +169,19 @@ try:
     obj = class_constructor()
     ret = obj._get_ax()
     type_pandas_plotting__matplotlib_core_PiePlot__get_ax = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.plotting._matplotlib.core.PiePlot._get_ax:",
-        type_pandas_plotting__matplotlib_core_PiePlot__get_ax)
+    )
+    print(
+        "✅ pandas.plotting._matplotlib.core.PiePlot._get_ax:",
+        type_pandas_plotting__matplotlib_core_PiePlot__get_ax,
+    )
 except Exception as e:
-    type_pandas_plotting__matplotlib_core_PiePlot__get_ax = '_syft_missing'
-    print('❌ pandas.plotting._matplotlib.core.PiePlot._get_ax: Return unavailable')
+    type_pandas_plotting__matplotlib_core_PiePlot__get_ax = "_syft_missing"
+    print("❌ pandas.plotting._matplotlib.core.PiePlot._get_ax: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[9]:
@@ -170,17 +192,21 @@ try:
     obj = class_constructor()
     ret = obj._get_ax_layer()
     type_pandas_plotting__matplotlib_core_PiePlot__get_ax_layer = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.plotting._matplotlib.core.PiePlot._get_ax_layer:",
-        type_pandas_plotting__matplotlib_core_PiePlot__get_ax_layer)
+    )
+    print(
+        "✅ pandas.plotting._matplotlib.core.PiePlot._get_ax_layer:",
+        type_pandas_plotting__matplotlib_core_PiePlot__get_ax_layer,
+    )
 except Exception as e:
-    type_pandas_plotting__matplotlib_core_PiePlot__get_ax_layer = '_syft_missing'
-    print('❌ pandas.plotting._matplotlib.core.PiePlot._get_ax_layer: Return unavailable')
+    type_pandas_plotting__matplotlib_core_PiePlot__get_ax_layer = "_syft_missing"
+    print(
+        "❌ pandas.plotting._matplotlib.core.PiePlot._get_ax_layer: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[10]:
@@ -191,17 +217,19 @@ try:
     obj = class_constructor()
     ret = obj._get_colors()
     type_pandas_plotting__matplotlib_core_PiePlot__get_colors = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.plotting._matplotlib.core.PiePlot._get_colors:",
-        type_pandas_plotting__matplotlib_core_PiePlot__get_colors)
+    )
+    print(
+        "✅ pandas.plotting._matplotlib.core.PiePlot._get_colors:",
+        type_pandas_plotting__matplotlib_core_PiePlot__get_colors,
+    )
 except Exception as e:
-    type_pandas_plotting__matplotlib_core_PiePlot__get_colors = '_syft_missing'
-    print('❌ pandas.plotting._matplotlib.core.PiePlot._get_colors: Return unavailable')
+    type_pandas_plotting__matplotlib_core_PiePlot__get_colors = "_syft_missing"
+    print("❌ pandas.plotting._matplotlib.core.PiePlot._get_colors: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[11]:
@@ -212,17 +240,21 @@ try:
     obj = class_constructor()
     ret = obj._get_errorbars()
     type_pandas_plotting__matplotlib_core_PiePlot__get_errorbars = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.plotting._matplotlib.core.PiePlot._get_errorbars:",
-        type_pandas_plotting__matplotlib_core_PiePlot__get_errorbars)
+    )
+    print(
+        "✅ pandas.plotting._matplotlib.core.PiePlot._get_errorbars:",
+        type_pandas_plotting__matplotlib_core_PiePlot__get_errorbars,
+    )
 except Exception as e:
-    type_pandas_plotting__matplotlib_core_PiePlot__get_errorbars = '_syft_missing'
-    print('❌ pandas.plotting._matplotlib.core.PiePlot._get_errorbars: Return unavailable')
+    type_pandas_plotting__matplotlib_core_PiePlot__get_errorbars = "_syft_missing"
+    print(
+        "❌ pandas.plotting._matplotlib.core.PiePlot._get_errorbars: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[12]:
@@ -233,17 +265,21 @@ try:
     obj = class_constructor()
     ret = obj._get_subplots()
     type_pandas_plotting__matplotlib_core_PiePlot__get_subplots = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.plotting._matplotlib.core.PiePlot._get_subplots:",
-        type_pandas_plotting__matplotlib_core_PiePlot__get_subplots)
+    )
+    print(
+        "✅ pandas.plotting._matplotlib.core.PiePlot._get_subplots:",
+        type_pandas_plotting__matplotlib_core_PiePlot__get_subplots,
+    )
 except Exception as e:
-    type_pandas_plotting__matplotlib_core_PiePlot__get_subplots = '_syft_missing'
-    print('❌ pandas.plotting._matplotlib.core.PiePlot._get_subplots: Return unavailable')
+    type_pandas_plotting__matplotlib_core_PiePlot__get_subplots = "_syft_missing"
+    print(
+        "❌ pandas.plotting._matplotlib.core.PiePlot._get_subplots: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[13]:
@@ -254,17 +290,19 @@ try:
     obj = class_constructor()
     ret = obj._get_xticks()
     type_pandas_plotting__matplotlib_core_PiePlot__get_xticks = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.plotting._matplotlib.core.PiePlot._get_xticks:",
-        type_pandas_plotting__matplotlib_core_PiePlot__get_xticks)
+    )
+    print(
+        "✅ pandas.plotting._matplotlib.core.PiePlot._get_xticks:",
+        type_pandas_plotting__matplotlib_core_PiePlot__get_xticks,
+    )
 except Exception as e:
-    type_pandas_plotting__matplotlib_core_PiePlot__get_xticks = '_syft_missing'
-    print('❌ pandas.plotting._matplotlib.core.PiePlot._get_xticks: Return unavailable')
+    type_pandas_plotting__matplotlib_core_PiePlot__get_xticks = "_syft_missing"
+    print("❌ pandas.plotting._matplotlib.core.PiePlot._get_xticks: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[14]:
@@ -275,17 +313,19 @@ try:
     obj = class_constructor()
     ret = obj._iter_data()
     type_pandas_plotting__matplotlib_core_PiePlot__iter_data = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.plotting._matplotlib.core.PiePlot._iter_data:",
-        type_pandas_plotting__matplotlib_core_PiePlot__iter_data)
+    )
+    print(
+        "✅ pandas.plotting._matplotlib.core.PiePlot._iter_data:",
+        type_pandas_plotting__matplotlib_core_PiePlot__iter_data,
+    )
 except Exception as e:
-    type_pandas_plotting__matplotlib_core_PiePlot__iter_data = '_syft_missing'
-    print('❌ pandas.plotting._matplotlib.core.PiePlot._iter_data: Return unavailable')
+    type_pandas_plotting__matplotlib_core_PiePlot__iter_data = "_syft_missing"
+    print("❌ pandas.plotting._matplotlib.core.PiePlot._iter_data: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[15]:
@@ -296,17 +336,19 @@ try:
     obj = class_constructor()
     ret = obj._make_legend()
     type_pandas_plotting__matplotlib_core_PiePlot__make_legend = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.plotting._matplotlib.core.PiePlot._make_legend:",
-        type_pandas_plotting__matplotlib_core_PiePlot__make_legend)
+    )
+    print(
+        "✅ pandas.plotting._matplotlib.core.PiePlot._make_legend:",
+        type_pandas_plotting__matplotlib_core_PiePlot__make_legend,
+    )
 except Exception as e:
-    type_pandas_plotting__matplotlib_core_PiePlot__make_legend = '_syft_missing'
-    print('❌ pandas.plotting._matplotlib.core.PiePlot._make_legend: Return unavailable')
+    type_pandas_plotting__matplotlib_core_PiePlot__make_legend = "_syft_missing"
+    print("❌ pandas.plotting._matplotlib.core.PiePlot._make_legend: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[16]:
@@ -317,17 +359,19 @@ try:
     obj = class_constructor()
     ret = obj._make_plot()
     type_pandas_plotting__matplotlib_core_PiePlot__make_plot = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.plotting._matplotlib.core.PiePlot._make_plot:",
-        type_pandas_plotting__matplotlib_core_PiePlot__make_plot)
+    )
+    print(
+        "✅ pandas.plotting._matplotlib.core.PiePlot._make_plot:",
+        type_pandas_plotting__matplotlib_core_PiePlot__make_plot,
+    )
 except Exception as e:
-    type_pandas_plotting__matplotlib_core_PiePlot__make_plot = '_syft_missing'
-    print('❌ pandas.plotting._matplotlib.core.PiePlot._make_plot: Return unavailable')
+    type_pandas_plotting__matplotlib_core_PiePlot__make_plot = "_syft_missing"
+    print("❌ pandas.plotting._matplotlib.core.PiePlot._make_plot: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[17]:
@@ -338,17 +382,21 @@ try:
     obj = class_constructor()
     ret = obj._parse_errorbars()
     type_pandas_plotting__matplotlib_core_PiePlot__parse_errorbars = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.plotting._matplotlib.core.PiePlot._parse_errorbars:",
-        type_pandas_plotting__matplotlib_core_PiePlot__parse_errorbars)
+    )
+    print(
+        "✅ pandas.plotting._matplotlib.core.PiePlot._parse_errorbars:",
+        type_pandas_plotting__matplotlib_core_PiePlot__parse_errorbars,
+    )
 except Exception as e:
-    type_pandas_plotting__matplotlib_core_PiePlot__parse_errorbars = '_syft_missing'
-    print('❌ pandas.plotting._matplotlib.core.PiePlot._parse_errorbars: Return unavailable')
+    type_pandas_plotting__matplotlib_core_PiePlot__parse_errorbars = "_syft_missing"
+    print(
+        "❌ pandas.plotting._matplotlib.core.PiePlot._parse_errorbars: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[18]:
@@ -359,17 +407,21 @@ try:
     obj = class_constructor()
     ret = obj._post_plot_logic()
     type_pandas_plotting__matplotlib_core_PiePlot__post_plot_logic = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.plotting._matplotlib.core.PiePlot._post_plot_logic:",
-        type_pandas_plotting__matplotlib_core_PiePlot__post_plot_logic)
+    )
+    print(
+        "✅ pandas.plotting._matplotlib.core.PiePlot._post_plot_logic:",
+        type_pandas_plotting__matplotlib_core_PiePlot__post_plot_logic,
+    )
 except Exception as e:
-    type_pandas_plotting__matplotlib_core_PiePlot__post_plot_logic = '_syft_missing'
-    print('❌ pandas.plotting._matplotlib.core.PiePlot._post_plot_logic: Return unavailable')
+    type_pandas_plotting__matplotlib_core_PiePlot__post_plot_logic = "_syft_missing"
+    print(
+        "❌ pandas.plotting._matplotlib.core.PiePlot._post_plot_logic: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[19]:
@@ -380,17 +432,23 @@ try:
     obj = class_constructor()
     ret = obj._post_plot_logic_common()
     type_pandas_plotting__matplotlib_core_PiePlot__post_plot_logic_common = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.plotting._matplotlib.core.PiePlot._post_plot_logic_common:",
-        type_pandas_plotting__matplotlib_core_PiePlot__post_plot_logic_common)
+    )
+    print(
+        "✅ pandas.plotting._matplotlib.core.PiePlot._post_plot_logic_common:",
+        type_pandas_plotting__matplotlib_core_PiePlot__post_plot_logic_common,
+    )
 except Exception as e:
-    type_pandas_plotting__matplotlib_core_PiePlot__post_plot_logic_common = '_syft_missing'
-    print('❌ pandas.plotting._matplotlib.core.PiePlot._post_plot_logic_common: Return unavailable')
+    type_pandas_plotting__matplotlib_core_PiePlot__post_plot_logic_common = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.plotting._matplotlib.core.PiePlot._post_plot_logic_common: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[20]:
@@ -401,17 +459,21 @@ try:
     obj = class_constructor()
     ret = obj._setup_subplots()
     type_pandas_plotting__matplotlib_core_PiePlot__setup_subplots = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.plotting._matplotlib.core.PiePlot._setup_subplots:",
-        type_pandas_plotting__matplotlib_core_PiePlot__setup_subplots)
+    )
+    print(
+        "✅ pandas.plotting._matplotlib.core.PiePlot._setup_subplots:",
+        type_pandas_plotting__matplotlib_core_PiePlot__setup_subplots,
+    )
 except Exception as e:
-    type_pandas_plotting__matplotlib_core_PiePlot__setup_subplots = '_syft_missing'
-    print('❌ pandas.plotting._matplotlib.core.PiePlot._setup_subplots: Return unavailable')
+    type_pandas_plotting__matplotlib_core_PiePlot__setup_subplots = "_syft_missing"
+    print(
+        "❌ pandas.plotting._matplotlib.core.PiePlot._setup_subplots: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[21]:
@@ -422,17 +484,21 @@ try:
     obj = class_constructor()
     ret = obj._validate_color_args()
     type_pandas_plotting__matplotlib_core_PiePlot__validate_color_args = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.plotting._matplotlib.core.PiePlot._validate_color_args:",
-        type_pandas_plotting__matplotlib_core_PiePlot__validate_color_args)
+    )
+    print(
+        "✅ pandas.plotting._matplotlib.core.PiePlot._validate_color_args:",
+        type_pandas_plotting__matplotlib_core_PiePlot__validate_color_args,
+    )
 except Exception as e:
-    type_pandas_plotting__matplotlib_core_PiePlot__validate_color_args = '_syft_missing'
-    print('❌ pandas.plotting._matplotlib.core.PiePlot._validate_color_args: Return unavailable')
+    type_pandas_plotting__matplotlib_core_PiePlot__validate_color_args = "_syft_missing"
+    print(
+        "❌ pandas.plotting._matplotlib.core.PiePlot._validate_color_args: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[22]:
@@ -443,17 +509,19 @@ try:
     obj = class_constructor()
     ret = obj.draw()
     type_pandas_plotting__matplotlib_core_PiePlot_draw = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.plotting._matplotlib.core.PiePlot.draw:",
-        type_pandas_plotting__matplotlib_core_PiePlot_draw)
+    )
+    print(
+        "✅ pandas.plotting._matplotlib.core.PiePlot.draw:",
+        type_pandas_plotting__matplotlib_core_PiePlot_draw,
+    )
 except Exception as e:
-    type_pandas_plotting__matplotlib_core_PiePlot_draw = '_syft_missing'
-    print('❌ pandas.plotting._matplotlib.core.PiePlot.draw: Return unavailable')
+    type_pandas_plotting__matplotlib_core_PiePlot_draw = "_syft_missing"
+    print("❌ pandas.plotting._matplotlib.core.PiePlot.draw: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[23]:
@@ -464,17 +532,19 @@ try:
     obj = class_constructor()
     ret = obj.generate()
     type_pandas_plotting__matplotlib_core_PiePlot_generate = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.plotting._matplotlib.core.PiePlot.generate:",
-        type_pandas_plotting__matplotlib_core_PiePlot_generate)
+    )
+    print(
+        "✅ pandas.plotting._matplotlib.core.PiePlot.generate:",
+        type_pandas_plotting__matplotlib_core_PiePlot_generate,
+    )
 except Exception as e:
-    type_pandas_plotting__matplotlib_core_PiePlot_generate = '_syft_missing'
-    print('❌ pandas.plotting._matplotlib.core.PiePlot.generate: Return unavailable')
+    type_pandas_plotting__matplotlib_core_PiePlot_generate = "_syft_missing"
+    print("❌ pandas.plotting._matplotlib.core.PiePlot.generate: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[24]:
@@ -485,17 +555,21 @@ try:
     obj = class_constructor()
     ret = obj.get_default_ax()
     type_pandas_plotting__matplotlib_core_PiePlot_get_default_ax = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.plotting._matplotlib.core.PiePlot.get_default_ax:",
-        type_pandas_plotting__matplotlib_core_PiePlot_get_default_ax)
+    )
+    print(
+        "✅ pandas.plotting._matplotlib.core.PiePlot.get_default_ax:",
+        type_pandas_plotting__matplotlib_core_PiePlot_get_default_ax,
+    )
 except Exception as e:
-    type_pandas_plotting__matplotlib_core_PiePlot_get_default_ax = '_syft_missing'
-    print('❌ pandas.plotting._matplotlib.core.PiePlot.get_default_ax: Return unavailable')
+    type_pandas_plotting__matplotlib_core_PiePlot_get_default_ax = "_syft_missing"
+    print(
+        "❌ pandas.plotting._matplotlib.core.PiePlot.get_default_ax: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[25]:
@@ -506,17 +580,19 @@ try:
     obj = class_constructor()
     ret = obj.legend_title
     type_pandas_plotting__matplotlib_core_PiePlot_legend_title = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.plotting._matplotlib.core.PiePlot.legend_title:",
-        type_pandas_plotting__matplotlib_core_PiePlot_legend_title)
+    )
+    print(
+        "✅ pandas.plotting._matplotlib.core.PiePlot.legend_title:",
+        type_pandas_plotting__matplotlib_core_PiePlot_legend_title,
+    )
 except Exception as e:
-    type_pandas_plotting__matplotlib_core_PiePlot_legend_title = '_syft_missing'
-    print('❌ pandas.plotting._matplotlib.core.PiePlot.legend_title: Return unavailable')
+    type_pandas_plotting__matplotlib_core_PiePlot_legend_title = "_syft_missing"
+    print("❌ pandas.plotting._matplotlib.core.PiePlot.legend_title: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[26]:
@@ -527,17 +603,19 @@ try:
     obj = class_constructor()
     ret = obj.nseries
     type_pandas_plotting__matplotlib_core_PiePlot_nseries = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.plotting._matplotlib.core.PiePlot.nseries:",
-        type_pandas_plotting__matplotlib_core_PiePlot_nseries)
+    )
+    print(
+        "✅ pandas.plotting._matplotlib.core.PiePlot.nseries:",
+        type_pandas_plotting__matplotlib_core_PiePlot_nseries,
+    )
 except Exception as e:
-    type_pandas_plotting__matplotlib_core_PiePlot_nseries = '_syft_missing'
-    print('❌ pandas.plotting._matplotlib.core.PiePlot.nseries: Return unavailable')
+    type_pandas_plotting__matplotlib_core_PiePlot_nseries = "_syft_missing"
+    print("❌ pandas.plotting._matplotlib.core.PiePlot.nseries: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[27]:
@@ -548,17 +626,19 @@ try:
     obj = class_constructor()
     ret = obj.on_right()
     type_pandas_plotting__matplotlib_core_PiePlot_on_right = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.plotting._matplotlib.core.PiePlot.on_right:",
-        type_pandas_plotting__matplotlib_core_PiePlot_on_right)
+    )
+    print(
+        "✅ pandas.plotting._matplotlib.core.PiePlot.on_right:",
+        type_pandas_plotting__matplotlib_core_PiePlot_on_right,
+    )
 except Exception as e:
-    type_pandas_plotting__matplotlib_core_PiePlot_on_right = '_syft_missing'
-    print('❌ pandas.plotting._matplotlib.core.PiePlot.on_right: Return unavailable')
+    type_pandas_plotting__matplotlib_core_PiePlot_on_right = "_syft_missing"
+    print("❌ pandas.plotting._matplotlib.core.PiePlot.on_right: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[28]:
@@ -569,15 +649,16 @@ try:
     obj = class_constructor()
     ret = obj.result
     type_pandas_plotting__matplotlib_core_PiePlot_result = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.plotting._matplotlib.core.PiePlot.result:",
-        type_pandas_plotting__matplotlib_core_PiePlot_result)
+    )
+    print(
+        "✅ pandas.plotting._matplotlib.core.PiePlot.result:",
+        type_pandas_plotting__matplotlib_core_PiePlot_result,
+    )
 except Exception as e:
-    type_pandas_plotting__matplotlib_core_PiePlot_result = '_syft_missing'
-    print('❌ pandas.plotting._matplotlib.core.PiePlot.result: Return unavailable')
+    type_pandas_plotting__matplotlib_core_PiePlot_result = "_syft_missing"
+    print("❌ pandas.plotting._matplotlib.core.PiePlot.result: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
-
+    print("  Error:", e)

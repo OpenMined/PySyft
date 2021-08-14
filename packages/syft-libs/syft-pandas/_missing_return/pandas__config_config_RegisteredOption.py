@@ -11,7 +11,7 @@ import pandas
 
 
 def class_constructor(*args, **kwargs):
-    obj = pandas._config.config.RegisteredOption()
+    obj = pandas._config.config.RegisteredOption("", "", "", "", "")
     return obj
 
 
@@ -44,7 +44,7 @@ except Exception as e:
 # pandas._config.config.RegisteredOption.__new__
 try:
     obj = class_constructor()
-    ret = obj.__new__()
+    ret = obj
     type_pandas__config_config_RegisteredOption___new__ = (
         getattr(ret, "__module__", None) + "." + ret.__class__.__name__
         if getattr(ret, "__module__", None)
@@ -113,7 +113,7 @@ except Exception as e:
 # pandas._config.config.RegisteredOption._make
 try:
     obj = class_constructor()
-    ret = obj._make()
+    ret = obj._make(["", "", "", "", ""])
     type_pandas__config_config_RegisteredOption__make = (
         getattr(ret, "__module__", None) + "." + ret.__class__.__name__
         if getattr(ret, "__module__", None)
@@ -151,3 +151,6 @@ except Exception as e:
     print("❌ pandas._config.config.RegisteredOption._replace: Return unavailable")
     print("  Please fix this return type code until there is no exception")
     print("   Error:", e)
+
+
+# In[ ]:

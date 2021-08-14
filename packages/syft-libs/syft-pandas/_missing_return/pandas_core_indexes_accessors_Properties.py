@@ -23,17 +23,19 @@ try:
     obj = class_constructor()
     ret = obj.__setattr__()
     type_pandas_core_indexes_accessors_Properties___setattr__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.Properties.__setattr__:",
-        type_pandas_core_indexes_accessors_Properties___setattr__)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.Properties.__setattr__:",
+        type_pandas_core_indexes_accessors_Properties___setattr__,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_Properties___setattr__ = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.Properties.__setattr__: Return unavailable')
+    type_pandas_core_indexes_accessors_Properties___setattr__ = "_syft_missing"
+    print("❌ pandas.core.indexes.accessors.Properties.__setattr__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[3]:
@@ -44,17 +46,23 @@ try:
     obj = class_constructor()
     ret = obj._add_delegate_accessors()
     type_pandas_core_indexes_accessors_Properties__add_delegate_accessors = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.Properties._add_delegate_accessors:",
-        type_pandas_core_indexes_accessors_Properties__add_delegate_accessors)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.Properties._add_delegate_accessors:",
+        type_pandas_core_indexes_accessors_Properties__add_delegate_accessors,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_Properties__add_delegate_accessors = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.Properties._add_delegate_accessors: Return unavailable')
+    type_pandas_core_indexes_accessors_Properties__add_delegate_accessors = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.Properties._add_delegate_accessors: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[4]:
@@ -65,17 +73,19 @@ try:
     obj = class_constructor()
     ret = obj._constructor
     type_pandas_core_indexes_accessors_Properties__constructor = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.Properties._constructor:",
-        type_pandas_core_indexes_accessors_Properties__constructor)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.Properties._constructor:",
+        type_pandas_core_indexes_accessors_Properties__constructor,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_Properties__constructor = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.Properties._constructor: Return unavailable')
+    type_pandas_core_indexes_accessors_Properties__constructor = "_syft_missing"
+    print("❌ pandas.core.indexes.accessors.Properties._constructor: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[5]:
@@ -86,17 +96,21 @@ try:
     obj = class_constructor()
     ret = obj._delegate_method()
     type_pandas_core_indexes_accessors_Properties__delegate_method = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.Properties._delegate_method:",
-        type_pandas_core_indexes_accessors_Properties__delegate_method)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.Properties._delegate_method:",
+        type_pandas_core_indexes_accessors_Properties__delegate_method,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_Properties__delegate_method = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.Properties._delegate_method: Return unavailable')
+    type_pandas_core_indexes_accessors_Properties__delegate_method = "_syft_missing"
+    print(
+        "❌ pandas.core.indexes.accessors.Properties._delegate_method: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[6]:
@@ -107,17 +121,23 @@ try:
     obj = class_constructor()
     ret = obj._delegate_property_get()
     type_pandas_core_indexes_accessors_Properties__delegate_property_get = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.Properties._delegate_property_get:",
-        type_pandas_core_indexes_accessors_Properties__delegate_property_get)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.Properties._delegate_property_get:",
+        type_pandas_core_indexes_accessors_Properties__delegate_property_get,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_Properties__delegate_property_get = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.Properties._delegate_property_get: Return unavailable')
+    type_pandas_core_indexes_accessors_Properties__delegate_property_get = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.Properties._delegate_property_get: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[7]:
@@ -128,17 +148,23 @@ try:
     obj = class_constructor()
     ret = obj._delegate_property_set()
     type_pandas_core_indexes_accessors_Properties__delegate_property_set = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.Properties._delegate_property_set:",
-        type_pandas_core_indexes_accessors_Properties__delegate_property_set)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.Properties._delegate_property_set:",
+        type_pandas_core_indexes_accessors_Properties__delegate_property_set,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_Properties__delegate_property_set = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.Properties._delegate_property_set: Return unavailable')
+    type_pandas_core_indexes_accessors_Properties__delegate_property_set = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.Properties._delegate_property_set: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[8]:
@@ -149,17 +175,19 @@ try:
     obj = class_constructor()
     ret = obj._freeze()
     type_pandas_core_indexes_accessors_Properties__freeze = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.Properties._freeze:",
-        type_pandas_core_indexes_accessors_Properties__freeze)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.Properties._freeze:",
+        type_pandas_core_indexes_accessors_Properties__freeze,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_Properties__freeze = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.Properties._freeze: Return unavailable')
+    type_pandas_core_indexes_accessors_Properties__freeze = "_syft_missing"
+    print("❌ pandas.core.indexes.accessors.Properties._freeze: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[9]:
@@ -170,15 +198,16 @@ try:
     obj = class_constructor()
     ret = obj._get_values()
     type_pandas_core_indexes_accessors_Properties__get_values = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.Properties._get_values:",
-        type_pandas_core_indexes_accessors_Properties__get_values)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.Properties._get_values:",
+        type_pandas_core_indexes_accessors_Properties__get_values,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_Properties__get_values = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.Properties._get_values: Return unavailable')
+    type_pandas_core_indexes_accessors_Properties__get_values = "_syft_missing"
+    print("❌ pandas.core.indexes.accessors.Properties._get_values: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
-
+    print("   Error:", e)

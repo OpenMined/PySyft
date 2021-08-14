@@ -14,15 +14,17 @@ from typing import Set as TypeSet
 from typing import Tuple as TypeTuple
 from typing import Union as TypeUnion
 
-import wrapt
-
 # third party
+import wrapt
 from cachetools import cached
 from cachetools.keys import hashkey
 from packaging import version
 
 # relative
-from ..ast import add_classes, add_dynamic_objects, add_methods, add_modules
+from ..ast import add_classes
+from ..ast import add_dynamic_objects
+from ..ast import add_methods
+from ..ast import add_modules
 from ..ast.globals import Globals
 from ..core.node.abstract.node import AbstractNodeClient
 from ..core.tensor import create_tensor_ast
@@ -32,7 +34,9 @@ from ..lib.python import create_python_ast
 from ..lib.remote_dataloader import create_remote_dataloader_ast
 from ..lib.torch import create_torch_ast
 from ..lib.torchvision import create_torchvision_ast
-from ..logger import critical, traceback_and_raise, warning
+from ..logger import critical
+from ..logger import traceback_and_raise
+from ..logger import warning
 from .misc import create_union_ast
 from .misc.union import UnionGenerator
 from .util import generic_update_ast
@@ -336,6 +340,12 @@ def _map2syft_types(
         if return_type.startswith("Union") and chk_unsupported_unions(return_type):
             types = return_type[5:].strip("[]").split(",")
             types = [t.strip() for t in types]
+            # TODO: tech debt add support
+            try:
+                types.remove("numpy.int64")
+                types.remove("object")
+            except ValueError as e:
+                pass
             for i in range(len(types)):
                 if types[i].lower() in primitive_map:
                     types[i] = primitive_map[types[i].lower()]

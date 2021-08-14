@@ -23,17 +23,21 @@ try:
     obj = class_constructor()
     ret = obj.__class_getitem__()
     type_pandas_core_window_rolling_BaseWindow___class_getitem__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.window.rolling.BaseWindow.__class_getitem__:",
-        type_pandas_core_window_rolling_BaseWindow___class_getitem__)
+    )
+    print(
+        "✅ pandas.core.window.rolling.BaseWindow.__class_getitem__:",
+        type_pandas_core_window_rolling_BaseWindow___class_getitem__,
+    )
 except Exception as e:
-    type_pandas_core_window_rolling_BaseWindow___class_getitem__ = '_syft_missing'
-    print('❌ pandas.core.window.rolling.BaseWindow.__class_getitem__: Return unavailable')
+    type_pandas_core_window_rolling_BaseWindow___class_getitem__ = "_syft_missing"
+    print(
+        "❌ pandas.core.window.rolling.BaseWindow.__class_getitem__: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[3]:
@@ -44,17 +48,19 @@ try:
     obj = class_constructor()
     ret = obj.__getattr__()
     type_pandas_core_window_rolling_BaseWindow___getattr__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.window.rolling.BaseWindow.__getattr__:",
-        type_pandas_core_window_rolling_BaseWindow___getattr__)
+    )
+    print(
+        "✅ pandas.core.window.rolling.BaseWindow.__getattr__:",
+        type_pandas_core_window_rolling_BaseWindow___getattr__,
+    )
 except Exception as e:
-    type_pandas_core_window_rolling_BaseWindow___getattr__ = '_syft_missing'
-    print('❌ pandas.core.window.rolling.BaseWindow.__getattr__: Return unavailable')
+    type_pandas_core_window_rolling_BaseWindow___getattr__ = "_syft_missing"
+    print("❌ pandas.core.window.rolling.BaseWindow.__getattr__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[4]:
@@ -65,17 +71,19 @@ try:
     obj = class_constructor()
     ret = obj.__getitem__()
     type_pandas_core_window_rolling_BaseWindow___getitem__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.window.rolling.BaseWindow.__getitem__:",
-        type_pandas_core_window_rolling_BaseWindow___getitem__)
+    )
+    print(
+        "✅ pandas.core.window.rolling.BaseWindow.__getitem__:",
+        type_pandas_core_window_rolling_BaseWindow___getitem__,
+    )
 except Exception as e:
-    type_pandas_core_window_rolling_BaseWindow___getitem__ = '_syft_missing'
-    print('❌ pandas.core.window.rolling.BaseWindow.__getitem__: Return unavailable')
+    type_pandas_core_window_rolling_BaseWindow___getitem__ = "_syft_missing"
+    print("❌ pandas.core.window.rolling.BaseWindow.__getitem__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[5]:
@@ -86,17 +94,21 @@ try:
     obj = class_constructor()
     ret = obj.__init_subclass__()
     type_pandas_core_window_rolling_BaseWindow___init_subclass__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.window.rolling.BaseWindow.__init_subclass__:",
-        type_pandas_core_window_rolling_BaseWindow___init_subclass__)
+    )
+    print(
+        "✅ pandas.core.window.rolling.BaseWindow.__init_subclass__:",
+        type_pandas_core_window_rolling_BaseWindow___init_subclass__,
+    )
 except Exception as e:
-    type_pandas_core_window_rolling_BaseWindow___init_subclass__ = '_syft_missing'
-    print('❌ pandas.core.window.rolling.BaseWindow.__init_subclass__: Return unavailable')
+    type_pandas_core_window_rolling_BaseWindow___init_subclass__ = "_syft_missing"
+    print(
+        "❌ pandas.core.window.rolling.BaseWindow.__init_subclass__: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[6]:
@@ -107,17 +119,19 @@ try:
     obj = class_constructor()
     ret = obj.__iter__()
     type_pandas_core_window_rolling_BaseWindow___iter__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.window.rolling.BaseWindow.__iter__:",
-        type_pandas_core_window_rolling_BaseWindow___iter__)
+    )
+    print(
+        "✅ pandas.core.window.rolling.BaseWindow.__iter__:",
+        type_pandas_core_window_rolling_BaseWindow___iter__,
+    )
 except Exception as e:
-    type_pandas_core_window_rolling_BaseWindow___iter__ = '_syft_missing'
-    print('❌ pandas.core.window.rolling.BaseWindow.__iter__: Return unavailable')
+    type_pandas_core_window_rolling_BaseWindow___iter__ = "_syft_missing"
+    print("❌ pandas.core.window.rolling.BaseWindow.__iter__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[7]:
@@ -128,17 +142,19 @@ try:
     obj = class_constructor()
     ret = obj._dir_additions()
     type_pandas_core_window_rolling_BaseWindow__dir_additions = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.window.rolling.BaseWindow._dir_additions:",
-        type_pandas_core_window_rolling_BaseWindow__dir_additions)
+    )
+    print(
+        "✅ pandas.core.window.rolling.BaseWindow._dir_additions:",
+        type_pandas_core_window_rolling_BaseWindow__dir_additions,
+    )
 except Exception as e:
-    type_pandas_core_window_rolling_BaseWindow__dir_additions = '_syft_missing'
-    print('❌ pandas.core.window.rolling.BaseWindow._dir_additions: Return unavailable')
+    type_pandas_core_window_rolling_BaseWindow__dir_additions = "_syft_missing"
+    print("❌ pandas.core.window.rolling.BaseWindow._dir_additions: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[8]:
@@ -149,17 +165,19 @@ try:
     obj = class_constructor()
     ret = obj._gotitem()
     type_pandas_core_window_rolling_BaseWindow__gotitem = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.window.rolling.BaseWindow._gotitem:",
-        type_pandas_core_window_rolling_BaseWindow__gotitem)
+    )
+    print(
+        "✅ pandas.core.window.rolling.BaseWindow._gotitem:",
+        type_pandas_core_window_rolling_BaseWindow__gotitem,
+    )
 except Exception as e:
-    type_pandas_core_window_rolling_BaseWindow__gotitem = '_syft_missing'
-    print('❌ pandas.core.window.rolling.BaseWindow._gotitem: Return unavailable')
+    type_pandas_core_window_rolling_BaseWindow__gotitem = "_syft_missing"
+    print("❌ pandas.core.window.rolling.BaseWindow._gotitem: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[9]:
@@ -170,17 +188,19 @@ try:
     obj = class_constructor()
     ret = obj._index_array
     type_pandas_core_window_rolling_BaseWindow__index_array = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.window.rolling.BaseWindow._index_array:",
-        type_pandas_core_window_rolling_BaseWindow__index_array)
+    )
+    print(
+        "✅ pandas.core.window.rolling.BaseWindow._index_array:",
+        type_pandas_core_window_rolling_BaseWindow__index_array,
+    )
 except Exception as e:
-    type_pandas_core_window_rolling_BaseWindow__index_array = '_syft_missing'
-    print('❌ pandas.core.window.rolling.BaseWindow._index_array: Return unavailable')
+    type_pandas_core_window_rolling_BaseWindow__index_array = "_syft_missing"
+    print("❌ pandas.core.window.rolling.BaseWindow._index_array: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[10]:
@@ -191,17 +211,19 @@ try:
     obj = class_constructor()
     ret = obj._selection_list
     type_pandas_core_window_rolling_BaseWindow__selection_list = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.window.rolling.BaseWindow._selection_list:",
-        type_pandas_core_window_rolling_BaseWindow__selection_list)
+    )
+    print(
+        "✅ pandas.core.window.rolling.BaseWindow._selection_list:",
+        type_pandas_core_window_rolling_BaseWindow__selection_list,
+    )
 except Exception as e:
-    type_pandas_core_window_rolling_BaseWindow__selection_list = '_syft_missing'
-    print('❌ pandas.core.window.rolling.BaseWindow._selection_list: Return unavailable')
+    type_pandas_core_window_rolling_BaseWindow__selection_list = "_syft_missing"
+    print("❌ pandas.core.window.rolling.BaseWindow._selection_list: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[11]:
@@ -212,17 +234,19 @@ try:
     obj = class_constructor()
     ret = obj.aggregate()
     type_pandas_core_window_rolling_BaseWindow_aggregate = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.window.rolling.BaseWindow.aggregate:",
-        type_pandas_core_window_rolling_BaseWindow_aggregate)
+    )
+    print(
+        "✅ pandas.core.window.rolling.BaseWindow.aggregate:",
+        type_pandas_core_window_rolling_BaseWindow_aggregate,
+    )
 except Exception as e:
-    type_pandas_core_window_rolling_BaseWindow_aggregate = '_syft_missing'
-    print('❌ pandas.core.window.rolling.BaseWindow.aggregate: Return unavailable')
+    type_pandas_core_window_rolling_BaseWindow_aggregate = "_syft_missing"
+    print("❌ pandas.core.window.rolling.BaseWindow.aggregate: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[12]:
@@ -233,17 +257,19 @@ try:
     obj = class_constructor()
     ret = obj.aggregate()
     type_pandas_core_window_rolling_BaseWindow_aggregate = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.window.rolling.BaseWindow.aggregate:",
-        type_pandas_core_window_rolling_BaseWindow_aggregate)
+    )
+    print(
+        "✅ pandas.core.window.rolling.BaseWindow.aggregate:",
+        type_pandas_core_window_rolling_BaseWindow_aggregate,
+    )
 except Exception as e:
-    type_pandas_core_window_rolling_BaseWindow_aggregate = '_syft_missing'
-    print('❌ pandas.core.window.rolling.BaseWindow.aggregate: Return unavailable')
+    type_pandas_core_window_rolling_BaseWindow_aggregate = "_syft_missing"
+    print("❌ pandas.core.window.rolling.BaseWindow.aggregate: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[13]:
@@ -254,17 +280,19 @@ try:
     obj = class_constructor()
     ret = obj.is_datetimelike
     type_pandas_core_window_rolling_BaseWindow_is_datetimelike = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.window.rolling.BaseWindow.is_datetimelike:",
-        type_pandas_core_window_rolling_BaseWindow_is_datetimelike)
+    )
+    print(
+        "✅ pandas.core.window.rolling.BaseWindow.is_datetimelike:",
+        type_pandas_core_window_rolling_BaseWindow_is_datetimelike,
+    )
 except Exception as e:
-    type_pandas_core_window_rolling_BaseWindow_is_datetimelike = '_syft_missing'
-    print('❌ pandas.core.window.rolling.BaseWindow.is_datetimelike: Return unavailable')
+    type_pandas_core_window_rolling_BaseWindow_is_datetimelike = "_syft_missing"
+    print("❌ pandas.core.window.rolling.BaseWindow.is_datetimelike: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[14]:
@@ -275,15 +303,16 @@ try:
     obj = class_constructor()
     ret = obj.win_type
     type_pandas_core_window_rolling_BaseWindow_win_type = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.window.rolling.BaseWindow.win_type:",
-        type_pandas_core_window_rolling_BaseWindow_win_type)
+    )
+    print(
+        "✅ pandas.core.window.rolling.BaseWindow.win_type:",
+        type_pandas_core_window_rolling_BaseWindow_win_type,
+    )
 except Exception as e:
-    type_pandas_core_window_rolling_BaseWindow_win_type = '_syft_missing'
-    print('❌ pandas.core.window.rolling.BaseWindow.win_type: Return unavailable')
+    type_pandas_core_window_rolling_BaseWindow_win_type = "_syft_missing"
+    print("❌ pandas.core.window.rolling.BaseWindow.win_type: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
-
+    print("  Error:", e)

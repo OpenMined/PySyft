@@ -23,17 +23,19 @@ try:
     obj = class_constructor()
     ret = obj.GenericAlias()
     type_pandas_io_json__json_JsonReader_GenericAlias = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.json._json.JsonReader.GenericAlias:",
-        type_pandas_io_json__json_JsonReader_GenericAlias)
+    )
+    print(
+        "✅ pandas.io.json._json.JsonReader.GenericAlias:",
+        type_pandas_io_json__json_JsonReader_GenericAlias,
+    )
 except Exception as e:
-    type_pandas_io_json__json_JsonReader_GenericAlias = '_syft_missing'
-    print('❌ pandas.io.json._json.JsonReader.GenericAlias: Return unavailable')
+    type_pandas_io_json__json_JsonReader_GenericAlias = "_syft_missing"
+    print("❌ pandas.io.json._json.JsonReader.GenericAlias: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[3]:
@@ -44,17 +46,19 @@ try:
     obj = class_constructor()
     ret = obj.__enter__()
     type_pandas_io_json__json_JsonReader___enter__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.json._json.JsonReader.__enter__:",
-        type_pandas_io_json__json_JsonReader___enter__)
+    )
+    print(
+        "✅ pandas.io.json._json.JsonReader.__enter__:",
+        type_pandas_io_json__json_JsonReader___enter__,
+    )
 except Exception as e:
-    type_pandas_io_json__json_JsonReader___enter__ = '_syft_missing'
-    print('❌ pandas.io.json._json.JsonReader.__enter__: Return unavailable')
+    type_pandas_io_json__json_JsonReader___enter__ = "_syft_missing"
+    print("❌ pandas.io.json._json.JsonReader.__enter__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[4]:
@@ -65,17 +69,19 @@ try:
     obj = class_constructor()
     ret = obj.__exit__()
     type_pandas_io_json__json_JsonReader___exit__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.json._json.JsonReader.__exit__:",
-        type_pandas_io_json__json_JsonReader___exit__)
+    )
+    print(
+        "✅ pandas.io.json._json.JsonReader.__exit__:",
+        type_pandas_io_json__json_JsonReader___exit__,
+    )
 except Exception as e:
-    type_pandas_io_json__json_JsonReader___exit__ = '_syft_missing'
-    print('❌ pandas.io.json._json.JsonReader.__exit__: Return unavailable')
+    type_pandas_io_json__json_JsonReader___exit__ = "_syft_missing"
+    print("❌ pandas.io.json._json.JsonReader.__exit__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[5]:
@@ -86,17 +92,19 @@ try:
     obj = class_constructor()
     ret = obj.__iter__()
     type_pandas_io_json__json_JsonReader___iter__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.json._json.JsonReader.__iter__:",
-        type_pandas_io_json__json_JsonReader___iter__)
+    )
+    print(
+        "✅ pandas.io.json._json.JsonReader.__iter__:",
+        type_pandas_io_json__json_JsonReader___iter__,
+    )
 except Exception as e:
-    type_pandas_io_json__json_JsonReader___iter__ = '_syft_missing'
-    print('❌ pandas.io.json._json.JsonReader.__iter__: Return unavailable')
+    type_pandas_io_json__json_JsonReader___iter__ = "_syft_missing"
+    print("❌ pandas.io.json._json.JsonReader.__iter__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[6]:
@@ -107,17 +115,19 @@ try:
     obj = class_constructor()
     ret = obj.__next__()
     type_pandas_io_json__json_JsonReader___next__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.json._json.JsonReader.__next__:",
-        type_pandas_io_json__json_JsonReader___next__)
+    )
+    print(
+        "✅ pandas.io.json._json.JsonReader.__next__:",
+        type_pandas_io_json__json_JsonReader___next__,
+    )
 except Exception as e:
-    type_pandas_io_json__json_JsonReader___next__ = '_syft_missing'
-    print('❌ pandas.io.json._json.JsonReader.__next__: Return unavailable')
+    type_pandas_io_json__json_JsonReader___next__ = "_syft_missing"
+    print("❌ pandas.io.json._json.JsonReader.__next__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[7]:
@@ -128,17 +138,19 @@ try:
     obj = class_constructor()
     ret = obj.__subclasshook__()
     type_pandas_io_json__json_JsonReader___subclasshook__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.json._json.JsonReader.__subclasshook__:",
-        type_pandas_io_json__json_JsonReader___subclasshook__)
+    )
+    print(
+        "✅ pandas.io.json._json.JsonReader.__subclasshook__:",
+        type_pandas_io_json__json_JsonReader___subclasshook__,
+    )
 except Exception as e:
-    type_pandas_io_json__json_JsonReader___subclasshook__ = '_syft_missing'
-    print('❌ pandas.io.json._json.JsonReader.__subclasshook__: Return unavailable')
+    type_pandas_io_json__json_JsonReader___subclasshook__ = "_syft_missing"
+    print("❌ pandas.io.json._json.JsonReader.__subclasshook__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[8]:
@@ -149,17 +161,21 @@ try:
     obj = class_constructor()
     ret = obj._get_data_from_filepath()
     type_pandas_io_json__json_JsonReader__get_data_from_filepath = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.json._json.JsonReader._get_data_from_filepath:",
-        type_pandas_io_json__json_JsonReader__get_data_from_filepath)
+    )
+    print(
+        "✅ pandas.io.json._json.JsonReader._get_data_from_filepath:",
+        type_pandas_io_json__json_JsonReader__get_data_from_filepath,
+    )
 except Exception as e:
-    type_pandas_io_json__json_JsonReader__get_data_from_filepath = '_syft_missing'
-    print('❌ pandas.io.json._json.JsonReader._get_data_from_filepath: Return unavailable')
+    type_pandas_io_json__json_JsonReader__get_data_from_filepath = "_syft_missing"
+    print(
+        "❌ pandas.io.json._json.JsonReader._get_data_from_filepath: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[9]:
@@ -170,17 +186,19 @@ try:
     obj = class_constructor()
     ret = obj._get_object_parser()
     type_pandas_io_json__json_JsonReader__get_object_parser = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.json._json.JsonReader._get_object_parser:",
-        type_pandas_io_json__json_JsonReader__get_object_parser)
+    )
+    print(
+        "✅ pandas.io.json._json.JsonReader._get_object_parser:",
+        type_pandas_io_json__json_JsonReader__get_object_parser,
+    )
 except Exception as e:
-    type_pandas_io_json__json_JsonReader__get_object_parser = '_syft_missing'
-    print('❌ pandas.io.json._json.JsonReader._get_object_parser: Return unavailable')
+    type_pandas_io_json__json_JsonReader__get_object_parser = "_syft_missing"
+    print("❌ pandas.io.json._json.JsonReader._get_object_parser: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[10]:
@@ -191,17 +209,19 @@ try:
     obj = class_constructor()
     ret = obj._preprocess_data()
     type_pandas_io_json__json_JsonReader__preprocess_data = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.json._json.JsonReader._preprocess_data:",
-        type_pandas_io_json__json_JsonReader__preprocess_data)
+    )
+    print(
+        "✅ pandas.io.json._json.JsonReader._preprocess_data:",
+        type_pandas_io_json__json_JsonReader__preprocess_data,
+    )
 except Exception as e:
-    type_pandas_io_json__json_JsonReader__preprocess_data = '_syft_missing'
-    print('❌ pandas.io.json._json.JsonReader._preprocess_data: Return unavailable')
+    type_pandas_io_json__json_JsonReader__preprocess_data = "_syft_missing"
+    print("❌ pandas.io.json._json.JsonReader._preprocess_data: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[11]:
@@ -212,17 +232,19 @@ try:
     obj = class_constructor()
     ret = obj.close()
     type_pandas_io_json__json_JsonReader_close = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.json._json.JsonReader.close:",
-        type_pandas_io_json__json_JsonReader_close)
+    )
+    print(
+        "✅ pandas.io.json._json.JsonReader.close:",
+        type_pandas_io_json__json_JsonReader_close,
+    )
 except Exception as e:
-    type_pandas_io_json__json_JsonReader_close = '_syft_missing'
-    print('❌ pandas.io.json._json.JsonReader.close: Return unavailable')
+    type_pandas_io_json__json_JsonReader_close = "_syft_missing"
+    print("❌ pandas.io.json._json.JsonReader.close: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[12]:
@@ -233,15 +255,16 @@ try:
     obj = class_constructor()
     ret = obj.read()
     type_pandas_io_json__json_JsonReader_read = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.json._json.JsonReader.read:",
-        type_pandas_io_json__json_JsonReader_read)
+    )
+    print(
+        "✅ pandas.io.json._json.JsonReader.read:",
+        type_pandas_io_json__json_JsonReader_read,
+    )
 except Exception as e:
-    type_pandas_io_json__json_JsonReader_read = '_syft_missing'
-    print('❌ pandas.io.json._json.JsonReader.read: Return unavailable')
+    type_pandas_io_json__json_JsonReader_read = "_syft_missing"
+    print("❌ pandas.io.json._json.JsonReader.read: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
-
+    print("   Error:", e)

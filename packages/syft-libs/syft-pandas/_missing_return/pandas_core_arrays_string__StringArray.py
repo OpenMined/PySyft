@@ -23,17 +23,19 @@ try:
     obj = class_constructor()
     ret = obj.__abs__()
     type_pandas_core_arrays_string__StringArray___abs__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__abs__:",
-        type_pandas_core_arrays_string__StringArray___abs__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__abs__:",
+        type_pandas_core_arrays_string__StringArray___abs__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___abs__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__abs__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___abs__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__abs__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[3]:
@@ -44,17 +46,19 @@ try:
     obj = class_constructor()
     ret = obj.__add__()
     type_pandas_core_arrays_string__StringArray___add__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__add__:",
-        type_pandas_core_arrays_string__StringArray___add__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__add__:",
+        type_pandas_core_arrays_string__StringArray___add__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___add__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__add__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___add__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__add__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[4]:
@@ -65,17 +69,19 @@ try:
     obj = class_constructor()
     ret = obj.__and__()
     type_pandas_core_arrays_string__StringArray___and__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__and__:",
-        type_pandas_core_arrays_string__StringArray___and__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__and__:",
+        type_pandas_core_arrays_string__StringArray___and__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___and__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__and__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___and__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__and__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[5]:
@@ -86,17 +92,21 @@ try:
     obj = class_constructor()
     ret = obj.__array_ufunc__()
     type_pandas_core_arrays_string__StringArray___array_ufunc__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__array_ufunc__:",
-        type_pandas_core_arrays_string__StringArray___array_ufunc__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__array_ufunc__:",
+        type_pandas_core_arrays_string__StringArray___array_ufunc__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___array_ufunc__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__array_ufunc__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___array_ufunc__ = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.string_.StringArray.__array_ufunc__: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[6]:
@@ -107,17 +117,21 @@ try:
     obj = class_constructor()
     ret = obj.__arrow_array__()
     type_pandas_core_arrays_string__StringArray___arrow_array__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__arrow_array__:",
-        type_pandas_core_arrays_string__StringArray___arrow_array__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__arrow_array__:",
+        type_pandas_core_arrays_string__StringArray___arrow_array__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___arrow_array__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__arrow_array__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___arrow_array__ = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.string_.StringArray.__arrow_array__: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[7]:
@@ -128,17 +142,19 @@ try:
     obj = class_constructor()
     ret = obj.__divmod__()
     type_pandas_core_arrays_string__StringArray___divmod__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__divmod__:",
-        type_pandas_core_arrays_string__StringArray___divmod__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__divmod__:",
+        type_pandas_core_arrays_string__StringArray___divmod__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___divmod__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__divmod__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___divmod__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__divmod__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[8]:
@@ -149,17 +165,19 @@ try:
     obj = class_constructor()
     ret = obj.__eq__()
     type_pandas_core_arrays_string__StringArray___eq__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__eq__:",
-        type_pandas_core_arrays_string__StringArray___eq__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__eq__:",
+        type_pandas_core_arrays_string__StringArray___eq__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___eq__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__eq__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___eq__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__eq__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[9]:
@@ -170,17 +188,19 @@ try:
     obj = class_constructor()
     ret = obj.__floordiv__()
     type_pandas_core_arrays_string__StringArray___floordiv__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__floordiv__:",
-        type_pandas_core_arrays_string__StringArray___floordiv__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__floordiv__:",
+        type_pandas_core_arrays_string__StringArray___floordiv__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___floordiv__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__floordiv__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___floordiv__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__floordiv__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[10]:
@@ -191,17 +211,19 @@ try:
     obj = class_constructor()
     ret = obj.__ge__()
     type_pandas_core_arrays_string__StringArray___ge__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__ge__:",
-        type_pandas_core_arrays_string__StringArray___ge__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__ge__:",
+        type_pandas_core_arrays_string__StringArray___ge__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___ge__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__ge__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___ge__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__ge__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[11]:
@@ -212,17 +234,19 @@ try:
     obj = class_constructor()
     ret = obj.__gt__()
     type_pandas_core_arrays_string__StringArray___gt__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__gt__:",
-        type_pandas_core_arrays_string__StringArray___gt__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__gt__:",
+        type_pandas_core_arrays_string__StringArray___gt__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___gt__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__gt__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___gt__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__gt__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[12]:
@@ -233,17 +257,19 @@ try:
     obj = class_constructor()
     ret = obj.__iadd__()
     type_pandas_core_arrays_string__StringArray___iadd__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__iadd__:",
-        type_pandas_core_arrays_string__StringArray___iadd__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__iadd__:",
+        type_pandas_core_arrays_string__StringArray___iadd__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___iadd__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__iadd__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___iadd__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__iadd__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[13]:
@@ -254,17 +280,19 @@ try:
     obj = class_constructor()
     ret = obj.__iand__()
     type_pandas_core_arrays_string__StringArray___iand__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__iand__:",
-        type_pandas_core_arrays_string__StringArray___iand__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__iand__:",
+        type_pandas_core_arrays_string__StringArray___iand__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___iand__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__iand__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___iand__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__iand__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[14]:
@@ -275,17 +303,19 @@ try:
     obj = class_constructor()
     ret = obj.__ifloordiv__()
     type_pandas_core_arrays_string__StringArray___ifloordiv__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__ifloordiv__:",
-        type_pandas_core_arrays_string__StringArray___ifloordiv__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__ifloordiv__:",
+        type_pandas_core_arrays_string__StringArray___ifloordiv__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___ifloordiv__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__ifloordiv__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___ifloordiv__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__ifloordiv__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[15]:
@@ -296,17 +326,19 @@ try:
     obj = class_constructor()
     ret = obj.__ilshift__()
     type_pandas_core_arrays_string__StringArray___ilshift__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__ilshift__:",
-        type_pandas_core_arrays_string__StringArray___ilshift__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__ilshift__:",
+        type_pandas_core_arrays_string__StringArray___ilshift__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___ilshift__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__ilshift__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___ilshift__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__ilshift__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[16]:
@@ -317,17 +349,19 @@ try:
     obj = class_constructor()
     ret = obj.__imatmul__()
     type_pandas_core_arrays_string__StringArray___imatmul__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__imatmul__:",
-        type_pandas_core_arrays_string__StringArray___imatmul__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__imatmul__:",
+        type_pandas_core_arrays_string__StringArray___imatmul__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___imatmul__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__imatmul__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___imatmul__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__imatmul__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[17]:
@@ -338,17 +372,19 @@ try:
     obj = class_constructor()
     ret = obj.__imod__()
     type_pandas_core_arrays_string__StringArray___imod__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__imod__:",
-        type_pandas_core_arrays_string__StringArray___imod__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__imod__:",
+        type_pandas_core_arrays_string__StringArray___imod__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___imod__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__imod__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___imod__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__imod__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[18]:
@@ -359,17 +395,19 @@ try:
     obj = class_constructor()
     ret = obj.__imul__()
     type_pandas_core_arrays_string__StringArray___imul__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__imul__:",
-        type_pandas_core_arrays_string__StringArray___imul__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__imul__:",
+        type_pandas_core_arrays_string__StringArray___imul__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___imul__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__imul__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___imul__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__imul__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[19]:
@@ -380,17 +418,19 @@ try:
     obj = class_constructor()
     ret = obj.__ior__()
     type_pandas_core_arrays_string__StringArray___ior__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__ior__:",
-        type_pandas_core_arrays_string__StringArray___ior__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__ior__:",
+        type_pandas_core_arrays_string__StringArray___ior__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___ior__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__ior__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___ior__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__ior__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[20]:
@@ -401,17 +441,19 @@ try:
     obj = class_constructor()
     ret = obj.__ipow__()
     type_pandas_core_arrays_string__StringArray___ipow__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__ipow__:",
-        type_pandas_core_arrays_string__StringArray___ipow__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__ipow__:",
+        type_pandas_core_arrays_string__StringArray___ipow__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___ipow__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__ipow__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___ipow__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__ipow__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[21]:
@@ -422,17 +464,19 @@ try:
     obj = class_constructor()
     ret = obj.__irshift__()
     type_pandas_core_arrays_string__StringArray___irshift__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__irshift__:",
-        type_pandas_core_arrays_string__StringArray___irshift__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__irshift__:",
+        type_pandas_core_arrays_string__StringArray___irshift__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___irshift__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__irshift__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___irshift__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__irshift__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[22]:
@@ -443,17 +487,19 @@ try:
     obj = class_constructor()
     ret = obj.__isub__()
     type_pandas_core_arrays_string__StringArray___isub__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__isub__:",
-        type_pandas_core_arrays_string__StringArray___isub__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__isub__:",
+        type_pandas_core_arrays_string__StringArray___isub__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___isub__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__isub__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___isub__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__isub__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[23]:
@@ -464,17 +510,19 @@ try:
     obj = class_constructor()
     ret = obj.__itruediv__()
     type_pandas_core_arrays_string__StringArray___itruediv__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__itruediv__:",
-        type_pandas_core_arrays_string__StringArray___itruediv__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__itruediv__:",
+        type_pandas_core_arrays_string__StringArray___itruediv__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___itruediv__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__itruediv__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___itruediv__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__itruediv__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[24]:
@@ -485,17 +533,19 @@ try:
     obj = class_constructor()
     ret = obj.__ixor__()
     type_pandas_core_arrays_string__StringArray___ixor__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__ixor__:",
-        type_pandas_core_arrays_string__StringArray___ixor__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__ixor__:",
+        type_pandas_core_arrays_string__StringArray___ixor__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___ixor__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__ixor__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___ixor__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__ixor__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[25]:
@@ -506,17 +556,19 @@ try:
     obj = class_constructor()
     ret = obj.__le__()
     type_pandas_core_arrays_string__StringArray___le__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__le__:",
-        type_pandas_core_arrays_string__StringArray___le__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__le__:",
+        type_pandas_core_arrays_string__StringArray___le__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___le__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__le__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___le__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__le__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[26]:
@@ -527,17 +579,19 @@ try:
     obj = class_constructor()
     ret = obj.__lshift__()
     type_pandas_core_arrays_string__StringArray___lshift__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__lshift__:",
-        type_pandas_core_arrays_string__StringArray___lshift__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__lshift__:",
+        type_pandas_core_arrays_string__StringArray___lshift__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___lshift__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__lshift__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___lshift__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__lshift__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[27]:
@@ -548,17 +602,19 @@ try:
     obj = class_constructor()
     ret = obj.__lt__()
     type_pandas_core_arrays_string__StringArray___lt__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__lt__:",
-        type_pandas_core_arrays_string__StringArray___lt__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__lt__:",
+        type_pandas_core_arrays_string__StringArray___lt__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___lt__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__lt__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___lt__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__lt__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[28]:
@@ -569,17 +625,19 @@ try:
     obj = class_constructor()
     ret = obj.__matmul__()
     type_pandas_core_arrays_string__StringArray___matmul__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__matmul__:",
-        type_pandas_core_arrays_string__StringArray___matmul__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__matmul__:",
+        type_pandas_core_arrays_string__StringArray___matmul__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___matmul__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__matmul__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___matmul__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__matmul__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[29]:
@@ -590,17 +648,19 @@ try:
     obj = class_constructor()
     ret = obj.__mod__()
     type_pandas_core_arrays_string__StringArray___mod__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__mod__:",
-        type_pandas_core_arrays_string__StringArray___mod__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__mod__:",
+        type_pandas_core_arrays_string__StringArray___mod__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___mod__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__mod__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___mod__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__mod__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[30]:
@@ -611,17 +671,19 @@ try:
     obj = class_constructor()
     ret = obj.__mul__()
     type_pandas_core_arrays_string__StringArray___mul__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__mul__:",
-        type_pandas_core_arrays_string__StringArray___mul__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__mul__:",
+        type_pandas_core_arrays_string__StringArray___mul__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___mul__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__mul__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___mul__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__mul__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[31]:
@@ -632,17 +694,19 @@ try:
     obj = class_constructor()
     ret = obj.__ne__()
     type_pandas_core_arrays_string__StringArray___ne__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__ne__:",
-        type_pandas_core_arrays_string__StringArray___ne__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__ne__:",
+        type_pandas_core_arrays_string__StringArray___ne__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___ne__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__ne__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___ne__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__ne__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[32]:
@@ -653,17 +717,19 @@ try:
     obj = class_constructor()
     ret = obj.__neg__()
     type_pandas_core_arrays_string__StringArray___neg__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__neg__:",
-        type_pandas_core_arrays_string__StringArray___neg__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__neg__:",
+        type_pandas_core_arrays_string__StringArray___neg__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___neg__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__neg__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___neg__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__neg__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[33]:
@@ -674,17 +740,19 @@ try:
     obj = class_constructor()
     ret = obj.__or__()
     type_pandas_core_arrays_string__StringArray___or__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__or__:",
-        type_pandas_core_arrays_string__StringArray___or__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__or__:",
+        type_pandas_core_arrays_string__StringArray___or__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___or__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__or__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___or__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__or__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[34]:
@@ -695,17 +763,19 @@ try:
     obj = class_constructor()
     ret = obj.__pos__()
     type_pandas_core_arrays_string__StringArray___pos__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__pos__:",
-        type_pandas_core_arrays_string__StringArray___pos__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__pos__:",
+        type_pandas_core_arrays_string__StringArray___pos__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___pos__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__pos__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___pos__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__pos__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[35]:
@@ -716,17 +786,19 @@ try:
     obj = class_constructor()
     ret = obj.__pow__()
     type_pandas_core_arrays_string__StringArray___pow__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__pow__:",
-        type_pandas_core_arrays_string__StringArray___pow__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__pow__:",
+        type_pandas_core_arrays_string__StringArray___pow__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___pow__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__pow__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___pow__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__pow__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[36]:
@@ -737,17 +809,19 @@ try:
     obj = class_constructor()
     ret = obj.__radd__()
     type_pandas_core_arrays_string__StringArray___radd__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__radd__:",
-        type_pandas_core_arrays_string__StringArray___radd__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__radd__:",
+        type_pandas_core_arrays_string__StringArray___radd__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___radd__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__radd__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___radd__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__radd__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[37]:
@@ -758,17 +832,19 @@ try:
     obj = class_constructor()
     ret = obj.__rand__()
     type_pandas_core_arrays_string__StringArray___rand__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__rand__:",
-        type_pandas_core_arrays_string__StringArray___rand__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__rand__:",
+        type_pandas_core_arrays_string__StringArray___rand__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___rand__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__rand__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___rand__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__rand__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[38]:
@@ -779,17 +855,19 @@ try:
     obj = class_constructor()
     ret = obj.__rdivmod__()
     type_pandas_core_arrays_string__StringArray___rdivmod__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__rdivmod__:",
-        type_pandas_core_arrays_string__StringArray___rdivmod__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__rdivmod__:",
+        type_pandas_core_arrays_string__StringArray___rdivmod__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___rdivmod__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__rdivmod__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___rdivmod__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__rdivmod__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[39]:
@@ -800,17 +878,19 @@ try:
     obj = class_constructor()
     ret = obj.__rfloordiv__()
     type_pandas_core_arrays_string__StringArray___rfloordiv__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__rfloordiv__:",
-        type_pandas_core_arrays_string__StringArray___rfloordiv__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__rfloordiv__:",
+        type_pandas_core_arrays_string__StringArray___rfloordiv__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___rfloordiv__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__rfloordiv__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___rfloordiv__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__rfloordiv__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[40]:
@@ -821,17 +901,19 @@ try:
     obj = class_constructor()
     ret = obj.__rlshift__()
     type_pandas_core_arrays_string__StringArray___rlshift__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__rlshift__:",
-        type_pandas_core_arrays_string__StringArray___rlshift__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__rlshift__:",
+        type_pandas_core_arrays_string__StringArray___rlshift__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___rlshift__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__rlshift__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___rlshift__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__rlshift__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[41]:
@@ -842,17 +924,19 @@ try:
     obj = class_constructor()
     ret = obj.__rmatmul__()
     type_pandas_core_arrays_string__StringArray___rmatmul__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__rmatmul__:",
-        type_pandas_core_arrays_string__StringArray___rmatmul__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__rmatmul__:",
+        type_pandas_core_arrays_string__StringArray___rmatmul__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___rmatmul__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__rmatmul__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___rmatmul__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__rmatmul__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[42]:
@@ -863,17 +947,19 @@ try:
     obj = class_constructor()
     ret = obj.__rmod__()
     type_pandas_core_arrays_string__StringArray___rmod__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__rmod__:",
-        type_pandas_core_arrays_string__StringArray___rmod__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__rmod__:",
+        type_pandas_core_arrays_string__StringArray___rmod__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___rmod__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__rmod__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___rmod__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__rmod__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[43]:
@@ -884,17 +970,19 @@ try:
     obj = class_constructor()
     ret = obj.__rmul__()
     type_pandas_core_arrays_string__StringArray___rmul__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__rmul__:",
-        type_pandas_core_arrays_string__StringArray___rmul__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__rmul__:",
+        type_pandas_core_arrays_string__StringArray___rmul__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___rmul__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__rmul__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___rmul__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__rmul__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[44]:
@@ -905,17 +993,19 @@ try:
     obj = class_constructor()
     ret = obj.__ror__()
     type_pandas_core_arrays_string__StringArray___ror__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__ror__:",
-        type_pandas_core_arrays_string__StringArray___ror__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__ror__:",
+        type_pandas_core_arrays_string__StringArray___ror__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___ror__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__ror__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___ror__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__ror__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[45]:
@@ -926,17 +1016,19 @@ try:
     obj = class_constructor()
     ret = obj.__rpow__()
     type_pandas_core_arrays_string__StringArray___rpow__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__rpow__:",
-        type_pandas_core_arrays_string__StringArray___rpow__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__rpow__:",
+        type_pandas_core_arrays_string__StringArray___rpow__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___rpow__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__rpow__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___rpow__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__rpow__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[46]:
@@ -947,17 +1039,19 @@ try:
     obj = class_constructor()
     ret = obj.__rrshift__()
     type_pandas_core_arrays_string__StringArray___rrshift__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__rrshift__:",
-        type_pandas_core_arrays_string__StringArray___rrshift__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__rrshift__:",
+        type_pandas_core_arrays_string__StringArray___rrshift__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___rrshift__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__rrshift__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___rrshift__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__rrshift__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[47]:
@@ -968,17 +1062,19 @@ try:
     obj = class_constructor()
     ret = obj.__rshift__()
     type_pandas_core_arrays_string__StringArray___rshift__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__rshift__:",
-        type_pandas_core_arrays_string__StringArray___rshift__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__rshift__:",
+        type_pandas_core_arrays_string__StringArray___rshift__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___rshift__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__rshift__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___rshift__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__rshift__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[48]:
@@ -989,17 +1085,19 @@ try:
     obj = class_constructor()
     ret = obj.__rsub__()
     type_pandas_core_arrays_string__StringArray___rsub__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__rsub__:",
-        type_pandas_core_arrays_string__StringArray___rsub__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__rsub__:",
+        type_pandas_core_arrays_string__StringArray___rsub__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___rsub__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__rsub__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___rsub__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__rsub__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[49]:
@@ -1010,17 +1108,19 @@ try:
     obj = class_constructor()
     ret = obj.__rtruediv__()
     type_pandas_core_arrays_string__StringArray___rtruediv__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__rtruediv__:",
-        type_pandas_core_arrays_string__StringArray___rtruediv__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__rtruediv__:",
+        type_pandas_core_arrays_string__StringArray___rtruediv__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___rtruediv__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__rtruediv__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___rtruediv__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__rtruediv__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[50]:
@@ -1031,17 +1131,19 @@ try:
     obj = class_constructor()
     ret = obj.__rxor__()
     type_pandas_core_arrays_string__StringArray___rxor__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__rxor__:",
-        type_pandas_core_arrays_string__StringArray___rxor__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__rxor__:",
+        type_pandas_core_arrays_string__StringArray___rxor__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___rxor__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__rxor__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___rxor__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__rxor__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[51]:
@@ -1052,17 +1154,19 @@ try:
     obj = class_constructor()
     ret = obj.__setitem__()
     type_pandas_core_arrays_string__StringArray___setitem__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__setitem__:",
-        type_pandas_core_arrays_string__StringArray___setitem__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__setitem__:",
+        type_pandas_core_arrays_string__StringArray___setitem__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___setitem__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__setitem__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___setitem__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__setitem__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[52]:
@@ -1073,17 +1177,19 @@ try:
     obj = class_constructor()
     ret = obj.__sub__()
     type_pandas_core_arrays_string__StringArray___sub__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__sub__:",
-        type_pandas_core_arrays_string__StringArray___sub__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__sub__:",
+        type_pandas_core_arrays_string__StringArray___sub__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___sub__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__sub__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___sub__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__sub__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[53]:
@@ -1094,17 +1200,19 @@ try:
     obj = class_constructor()
     ret = obj.__truediv__()
     type_pandas_core_arrays_string__StringArray___truediv__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__truediv__:",
-        type_pandas_core_arrays_string__StringArray___truediv__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__truediv__:",
+        type_pandas_core_arrays_string__StringArray___truediv__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___truediv__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__truediv__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___truediv__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__truediv__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[54]:
@@ -1115,17 +1223,19 @@ try:
     obj = class_constructor()
     ret = obj.__xor__()
     type_pandas_core_arrays_string__StringArray___xor__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.__xor__:",
-        type_pandas_core_arrays_string__StringArray___xor__)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.__xor__:",
+        type_pandas_core_arrays_string__StringArray___xor__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray___xor__ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.__xor__: Return unavailable')
+    type_pandas_core_arrays_string__StringArray___xor__ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.__xor__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[55]:
@@ -1136,17 +1246,19 @@ try:
     obj = class_constructor()
     ret = obj._cmp_method()
     type_pandas_core_arrays_string__StringArray__cmp_method = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._cmp_method:",
-        type_pandas_core_arrays_string__StringArray__cmp_method)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._cmp_method:",
+        type_pandas_core_arrays_string__StringArray__cmp_method,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__cmp_method = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._cmp_method: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__cmp_method = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._cmp_method: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[56]:
@@ -1157,17 +1269,19 @@ try:
     obj = class_constructor()
     ret = obj._box_func()
     type_pandas_core_arrays_string__StringArray__box_func = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._box_func:",
-        type_pandas_core_arrays_string__StringArray__box_func)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._box_func:",
+        type_pandas_core_arrays_string__StringArray__box_func,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__box_func = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._box_func: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__box_func = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._box_func: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[57]:
@@ -1178,17 +1292,19 @@ try:
     obj = class_constructor()
     ret = obj._cmp_method()
     type_pandas_core_arrays_string__StringArray__cmp_method = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._cmp_method:",
-        type_pandas_core_arrays_string__StringArray__cmp_method)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._cmp_method:",
+        type_pandas_core_arrays_string__StringArray__cmp_method,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__cmp_method = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._cmp_method: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__cmp_method = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._cmp_method: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[58]:
@@ -1199,17 +1315,21 @@ try:
     obj = class_constructor()
     ret = obj._logical_method()
     type_pandas_core_arrays_string__StringArray__logical_method = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._logical_method:",
-        type_pandas_core_arrays_string__StringArray__logical_method)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._logical_method:",
+        type_pandas_core_arrays_string__StringArray__logical_method,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__logical_method = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._logical_method: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__logical_method = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.string_.StringArray._logical_method: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[59]:
@@ -1220,17 +1340,19 @@ try:
     obj = class_constructor()
     ret = obj._reduce()
     type_pandas_core_arrays_string__StringArray__reduce = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._reduce:",
-        type_pandas_core_arrays_string__StringArray__reduce)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._reduce:",
+        type_pandas_core_arrays_string__StringArray__reduce,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__reduce = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._reduce: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__reduce = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._reduce: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[60]:
@@ -1241,17 +1363,21 @@ try:
     obj = class_constructor()
     ret = obj._str_capitalize()
     type_pandas_core_arrays_string__StringArray__str_capitalize = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_capitalize:",
-        type_pandas_core_arrays_string__StringArray__str_capitalize)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_capitalize:",
+        type_pandas_core_arrays_string__StringArray__str_capitalize,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_capitalize = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_capitalize: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_capitalize = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.string_.StringArray._str_capitalize: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[61]:
@@ -1262,17 +1388,19 @@ try:
     obj = class_constructor()
     ret = obj._str_casefold()
     type_pandas_core_arrays_string__StringArray__str_casefold = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_casefold:",
-        type_pandas_core_arrays_string__StringArray__str_casefold)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_casefold:",
+        type_pandas_core_arrays_string__StringArray__str_casefold,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_casefold = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_casefold: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_casefold = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_casefold: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[62]:
@@ -1283,17 +1411,19 @@ try:
     obj = class_constructor()
     ret = obj._str_contains()
     type_pandas_core_arrays_string__StringArray__str_contains = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_contains:",
-        type_pandas_core_arrays_string__StringArray__str_contains)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_contains:",
+        type_pandas_core_arrays_string__StringArray__str_contains,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_contains = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_contains: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_contains = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_contains: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[63]:
@@ -1304,17 +1434,19 @@ try:
     obj = class_constructor()
     ret = obj._str_count()
     type_pandas_core_arrays_string__StringArray__str_count = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_count:",
-        type_pandas_core_arrays_string__StringArray__str_count)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_count:",
+        type_pandas_core_arrays_string__StringArray__str_count,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_count = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_count: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_count = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_count: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[64]:
@@ -1325,17 +1457,19 @@ try:
     obj = class_constructor()
     ret = obj._str_encode()
     type_pandas_core_arrays_string__StringArray__str_encode = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_encode:",
-        type_pandas_core_arrays_string__StringArray__str_encode)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_encode:",
+        type_pandas_core_arrays_string__StringArray__str_encode,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_encode = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_encode: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_encode = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_encode: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[65]:
@@ -1346,17 +1480,19 @@ try:
     obj = class_constructor()
     ret = obj._str_endswith()
     type_pandas_core_arrays_string__StringArray__str_endswith = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_endswith:",
-        type_pandas_core_arrays_string__StringArray__str_endswith)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_endswith:",
+        type_pandas_core_arrays_string__StringArray__str_endswith,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_endswith = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_endswith: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_endswith = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_endswith: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[66]:
@@ -1367,17 +1503,19 @@ try:
     obj = class_constructor()
     ret = obj._str_extract()
     type_pandas_core_arrays_string__StringArray__str_extract = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_extract:",
-        type_pandas_core_arrays_string__StringArray__str_extract)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_extract:",
+        type_pandas_core_arrays_string__StringArray__str_extract,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_extract = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_extract: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_extract = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_extract: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[67]:
@@ -1388,17 +1526,19 @@ try:
     obj = class_constructor()
     ret = obj._str_find()
     type_pandas_core_arrays_string__StringArray__str_find = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_find:",
-        type_pandas_core_arrays_string__StringArray__str_find)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_find:",
+        type_pandas_core_arrays_string__StringArray__str_find,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_find = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_find: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_find = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_find: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[68]:
@@ -1409,17 +1549,19 @@ try:
     obj = class_constructor()
     ret = obj._str_find_()
     type_pandas_core_arrays_string__StringArray__str_find_ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_find_:",
-        type_pandas_core_arrays_string__StringArray__str_find_)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_find_:",
+        type_pandas_core_arrays_string__StringArray__str_find_,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_find_ = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_find_: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_find_ = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_find_: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[69]:
@@ -1430,17 +1572,19 @@ try:
     obj = class_constructor()
     ret = obj._str_findall()
     type_pandas_core_arrays_string__StringArray__str_findall = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_findall:",
-        type_pandas_core_arrays_string__StringArray__str_findall)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_findall:",
+        type_pandas_core_arrays_string__StringArray__str_findall,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_findall = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_findall: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_findall = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_findall: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[70]:
@@ -1451,17 +1595,19 @@ try:
     obj = class_constructor()
     ret = obj._str_get()
     type_pandas_core_arrays_string__StringArray__str_get = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_get:",
-        type_pandas_core_arrays_string__StringArray__str_get)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_get:",
+        type_pandas_core_arrays_string__StringArray__str_get,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_get = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_get: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_get = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_get: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[71]:
@@ -1472,17 +1618,21 @@ try:
     obj = class_constructor()
     ret = obj._str_get_dummies()
     type_pandas_core_arrays_string__StringArray__str_get_dummies = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_get_dummies:",
-        type_pandas_core_arrays_string__StringArray__str_get_dummies)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_get_dummies:",
+        type_pandas_core_arrays_string__StringArray__str_get_dummies,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_get_dummies = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_get_dummies: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_get_dummies = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.string_.StringArray._str_get_dummies: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[72]:
@@ -1493,17 +1643,19 @@ try:
     obj = class_constructor()
     ret = obj._str_getitem()
     type_pandas_core_arrays_string__StringArray__str_getitem = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_getitem:",
-        type_pandas_core_arrays_string__StringArray__str_getitem)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_getitem:",
+        type_pandas_core_arrays_string__StringArray__str_getitem,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_getitem = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_getitem: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_getitem = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_getitem: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[73]:
@@ -1514,17 +1666,19 @@ try:
     obj = class_constructor()
     ret = obj._str_index()
     type_pandas_core_arrays_string__StringArray__str_index = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_index:",
-        type_pandas_core_arrays_string__StringArray__str_index)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_index:",
+        type_pandas_core_arrays_string__StringArray__str_index,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_index = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_index: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_index = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_index: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[74]:
@@ -1535,17 +1689,19 @@ try:
     obj = class_constructor()
     ret = obj._str_isalnum()
     type_pandas_core_arrays_string__StringArray__str_isalnum = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_isalnum:",
-        type_pandas_core_arrays_string__StringArray__str_isalnum)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_isalnum:",
+        type_pandas_core_arrays_string__StringArray__str_isalnum,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_isalnum = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_isalnum: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_isalnum = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_isalnum: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[75]:
@@ -1556,17 +1712,19 @@ try:
     obj = class_constructor()
     ret = obj._str_isalpha()
     type_pandas_core_arrays_string__StringArray__str_isalpha = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_isalpha:",
-        type_pandas_core_arrays_string__StringArray__str_isalpha)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_isalpha:",
+        type_pandas_core_arrays_string__StringArray__str_isalpha,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_isalpha = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_isalpha: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_isalpha = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_isalpha: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[76]:
@@ -1577,17 +1735,19 @@ try:
     obj = class_constructor()
     ret = obj._str_isdecimal()
     type_pandas_core_arrays_string__StringArray__str_isdecimal = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_isdecimal:",
-        type_pandas_core_arrays_string__StringArray__str_isdecimal)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_isdecimal:",
+        type_pandas_core_arrays_string__StringArray__str_isdecimal,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_isdecimal = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_isdecimal: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_isdecimal = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_isdecimal: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[77]:
@@ -1598,17 +1758,19 @@ try:
     obj = class_constructor()
     ret = obj._str_isdigit()
     type_pandas_core_arrays_string__StringArray__str_isdigit = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_isdigit:",
-        type_pandas_core_arrays_string__StringArray__str_isdigit)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_isdigit:",
+        type_pandas_core_arrays_string__StringArray__str_isdigit,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_isdigit = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_isdigit: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_isdigit = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_isdigit: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[78]:
@@ -1619,17 +1781,19 @@ try:
     obj = class_constructor()
     ret = obj._str_islower()
     type_pandas_core_arrays_string__StringArray__str_islower = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_islower:",
-        type_pandas_core_arrays_string__StringArray__str_islower)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_islower:",
+        type_pandas_core_arrays_string__StringArray__str_islower,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_islower = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_islower: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_islower = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_islower: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[79]:
@@ -1640,17 +1804,19 @@ try:
     obj = class_constructor()
     ret = obj._str_isnumeric()
     type_pandas_core_arrays_string__StringArray__str_isnumeric = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_isnumeric:",
-        type_pandas_core_arrays_string__StringArray__str_isnumeric)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_isnumeric:",
+        type_pandas_core_arrays_string__StringArray__str_isnumeric,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_isnumeric = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_isnumeric: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_isnumeric = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_isnumeric: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[80]:
@@ -1661,17 +1827,19 @@ try:
     obj = class_constructor()
     ret = obj._str_isspace()
     type_pandas_core_arrays_string__StringArray__str_isspace = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_isspace:",
-        type_pandas_core_arrays_string__StringArray__str_isspace)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_isspace:",
+        type_pandas_core_arrays_string__StringArray__str_isspace,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_isspace = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_isspace: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_isspace = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_isspace: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[81]:
@@ -1682,17 +1850,19 @@ try:
     obj = class_constructor()
     ret = obj._str_istitle()
     type_pandas_core_arrays_string__StringArray__str_istitle = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_istitle:",
-        type_pandas_core_arrays_string__StringArray__str_istitle)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_istitle:",
+        type_pandas_core_arrays_string__StringArray__str_istitle,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_istitle = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_istitle: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_istitle = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_istitle: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[82]:
@@ -1703,17 +1873,19 @@ try:
     obj = class_constructor()
     ret = obj._str_isupper()
     type_pandas_core_arrays_string__StringArray__str_isupper = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_isupper:",
-        type_pandas_core_arrays_string__StringArray__str_isupper)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_isupper:",
+        type_pandas_core_arrays_string__StringArray__str_isupper,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_isupper = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_isupper: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_isupper = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_isupper: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[83]:
@@ -1724,17 +1896,19 @@ try:
     obj = class_constructor()
     ret = obj._str_join()
     type_pandas_core_arrays_string__StringArray__str_join = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_join:",
-        type_pandas_core_arrays_string__StringArray__str_join)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_join:",
+        type_pandas_core_arrays_string__StringArray__str_join,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_join = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_join: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_join = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_join: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[84]:
@@ -1745,17 +1919,19 @@ try:
     obj = class_constructor()
     ret = obj._str_len()
     type_pandas_core_arrays_string__StringArray__str_len = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_len:",
-        type_pandas_core_arrays_string__StringArray__str_len)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_len:",
+        type_pandas_core_arrays_string__StringArray__str_len,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_len = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_len: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_len = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_len: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[85]:
@@ -1766,17 +1942,19 @@ try:
     obj = class_constructor()
     ret = obj._str_lower()
     type_pandas_core_arrays_string__StringArray__str_lower = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_lower:",
-        type_pandas_core_arrays_string__StringArray__str_lower)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_lower:",
+        type_pandas_core_arrays_string__StringArray__str_lower,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_lower = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_lower: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_lower = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_lower: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[86]:
@@ -1787,17 +1965,19 @@ try:
     obj = class_constructor()
     ret = obj._str_lstrip()
     type_pandas_core_arrays_string__StringArray__str_lstrip = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_lstrip:",
-        type_pandas_core_arrays_string__StringArray__str_lstrip)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_lstrip:",
+        type_pandas_core_arrays_string__StringArray__str_lstrip,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_lstrip = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_lstrip: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_lstrip = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_lstrip: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[87]:
@@ -1808,17 +1988,19 @@ try:
     obj = class_constructor()
     ret = obj._str_normalize()
     type_pandas_core_arrays_string__StringArray__str_normalize = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_normalize:",
-        type_pandas_core_arrays_string__StringArray__str_normalize)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_normalize:",
+        type_pandas_core_arrays_string__StringArray__str_normalize,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_normalize = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_normalize: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_normalize = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_normalize: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[88]:
@@ -1829,17 +2011,19 @@ try:
     obj = class_constructor()
     ret = obj._str_pad()
     type_pandas_core_arrays_string__StringArray__str_pad = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_pad:",
-        type_pandas_core_arrays_string__StringArray__str_pad)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_pad:",
+        type_pandas_core_arrays_string__StringArray__str_pad,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_pad = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_pad: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_pad = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_pad: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[89]:
@@ -1850,17 +2034,19 @@ try:
     obj = class_constructor()
     ret = obj._str_partition()
     type_pandas_core_arrays_string__StringArray__str_partition = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_partition:",
-        type_pandas_core_arrays_string__StringArray__str_partition)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_partition:",
+        type_pandas_core_arrays_string__StringArray__str_partition,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_partition = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_partition: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_partition = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_partition: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[90]:
@@ -1871,17 +2057,19 @@ try:
     obj = class_constructor()
     ret = obj._str_repeat()
     type_pandas_core_arrays_string__StringArray__str_repeat = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_repeat:",
-        type_pandas_core_arrays_string__StringArray__str_repeat)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_repeat:",
+        type_pandas_core_arrays_string__StringArray__str_repeat,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_repeat = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_repeat: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_repeat = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_repeat: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[91]:
@@ -1892,17 +2080,19 @@ try:
     obj = class_constructor()
     ret = obj._str_rfind()
     type_pandas_core_arrays_string__StringArray__str_rfind = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_rfind:",
-        type_pandas_core_arrays_string__StringArray__str_rfind)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_rfind:",
+        type_pandas_core_arrays_string__StringArray__str_rfind,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_rfind = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_rfind: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_rfind = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_rfind: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[92]:
@@ -1913,17 +2103,19 @@ try:
     obj = class_constructor()
     ret = obj._str_rindex()
     type_pandas_core_arrays_string__StringArray__str_rindex = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_rindex:",
-        type_pandas_core_arrays_string__StringArray__str_rindex)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_rindex:",
+        type_pandas_core_arrays_string__StringArray__str_rindex,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_rindex = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_rindex: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_rindex = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_rindex: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[93]:
@@ -1934,17 +2126,21 @@ try:
     obj = class_constructor()
     ret = obj._str_rpartition()
     type_pandas_core_arrays_string__StringArray__str_rpartition = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_rpartition:",
-        type_pandas_core_arrays_string__StringArray__str_rpartition)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_rpartition:",
+        type_pandas_core_arrays_string__StringArray__str_rpartition,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_rpartition = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_rpartition: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_rpartition = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.string_.StringArray._str_rpartition: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[94]:
@@ -1955,17 +2151,19 @@ try:
     obj = class_constructor()
     ret = obj._str_rsplit()
     type_pandas_core_arrays_string__StringArray__str_rsplit = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_rsplit:",
-        type_pandas_core_arrays_string__StringArray__str_rsplit)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_rsplit:",
+        type_pandas_core_arrays_string__StringArray__str_rsplit,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_rsplit = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_rsplit: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_rsplit = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_rsplit: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[95]:
@@ -1976,17 +2174,19 @@ try:
     obj = class_constructor()
     ret = obj._str_rstrip()
     type_pandas_core_arrays_string__StringArray__str_rstrip = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_rstrip:",
-        type_pandas_core_arrays_string__StringArray__str_rstrip)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_rstrip:",
+        type_pandas_core_arrays_string__StringArray__str_rstrip,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_rstrip = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_rstrip: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_rstrip = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_rstrip: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[96]:
@@ -1997,17 +2197,19 @@ try:
     obj = class_constructor()
     ret = obj._str_slice()
     type_pandas_core_arrays_string__StringArray__str_slice = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_slice:",
-        type_pandas_core_arrays_string__StringArray__str_slice)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_slice:",
+        type_pandas_core_arrays_string__StringArray__str_slice,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_slice = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_slice: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_slice = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_slice: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[97]:
@@ -2018,17 +2220,21 @@ try:
     obj = class_constructor()
     ret = obj._str_slice_replace()
     type_pandas_core_arrays_string__StringArray__str_slice_replace = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_slice_replace:",
-        type_pandas_core_arrays_string__StringArray__str_slice_replace)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_slice_replace:",
+        type_pandas_core_arrays_string__StringArray__str_slice_replace,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_slice_replace = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_slice_replace: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_slice_replace = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.string_.StringArray._str_slice_replace: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[98]:
@@ -2039,17 +2245,19 @@ try:
     obj = class_constructor()
     ret = obj._str_split()
     type_pandas_core_arrays_string__StringArray__str_split = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_split:",
-        type_pandas_core_arrays_string__StringArray__str_split)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_split:",
+        type_pandas_core_arrays_string__StringArray__str_split,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_split = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_split: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_split = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_split: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[99]:
@@ -2060,17 +2268,21 @@ try:
     obj = class_constructor()
     ret = obj._str_startswith()
     type_pandas_core_arrays_string__StringArray__str_startswith = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_startswith:",
-        type_pandas_core_arrays_string__StringArray__str_startswith)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_startswith:",
+        type_pandas_core_arrays_string__StringArray__str_startswith,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_startswith = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_startswith: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_startswith = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.string_.StringArray._str_startswith: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[100]:
@@ -2081,17 +2293,19 @@ try:
     obj = class_constructor()
     ret = obj._str_strip()
     type_pandas_core_arrays_string__StringArray__str_strip = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_strip:",
-        type_pandas_core_arrays_string__StringArray__str_strip)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_strip:",
+        type_pandas_core_arrays_string__StringArray__str_strip,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_strip = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_strip: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_strip = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_strip: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[101]:
@@ -2102,17 +2316,19 @@ try:
     obj = class_constructor()
     ret = obj._str_swapcase()
     type_pandas_core_arrays_string__StringArray__str_swapcase = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_swapcase:",
-        type_pandas_core_arrays_string__StringArray__str_swapcase)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_swapcase:",
+        type_pandas_core_arrays_string__StringArray__str_swapcase,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_swapcase = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_swapcase: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_swapcase = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_swapcase: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[102]:
@@ -2123,17 +2339,19 @@ try:
     obj = class_constructor()
     ret = obj._str_title()
     type_pandas_core_arrays_string__StringArray__str_title = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_title:",
-        type_pandas_core_arrays_string__StringArray__str_title)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_title:",
+        type_pandas_core_arrays_string__StringArray__str_title,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_title = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_title: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_title = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_title: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[103]:
@@ -2144,17 +2362,19 @@ try:
     obj = class_constructor()
     ret = obj._str_translate()
     type_pandas_core_arrays_string__StringArray__str_translate = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_translate:",
-        type_pandas_core_arrays_string__StringArray__str_translate)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_translate:",
+        type_pandas_core_arrays_string__StringArray__str_translate,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_translate = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_translate: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_translate = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_translate: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[104]:
@@ -2165,17 +2385,19 @@ try:
     obj = class_constructor()
     ret = obj._str_upper()
     type_pandas_core_arrays_string__StringArray__str_upper = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_upper:",
-        type_pandas_core_arrays_string__StringArray__str_upper)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_upper:",
+        type_pandas_core_arrays_string__StringArray__str_upper,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_upper = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_upper: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_upper = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_upper: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[105]:
@@ -2186,17 +2408,19 @@ try:
     obj = class_constructor()
     ret = obj._str_wrap()
     type_pandas_core_arrays_string__StringArray__str_wrap = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._str_wrap:",
-        type_pandas_core_arrays_string__StringArray__str_wrap)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._str_wrap:",
+        type_pandas_core_arrays_string__StringArray__str_wrap,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__str_wrap = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._str_wrap: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__str_wrap = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._str_wrap: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[106]:
@@ -2207,17 +2431,19 @@ try:
     obj = class_constructor()
     ret = obj._validate()
     type_pandas_core_arrays_string__StringArray__validate = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._validate:",
-        type_pandas_core_arrays_string__StringArray__validate)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._validate:",
+        type_pandas_core_arrays_string__StringArray__validate,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__validate = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._validate: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__validate = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray._validate: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[107]:
@@ -2228,17 +2454,21 @@ try:
     obj = class_constructor()
     ret = obj._validate_scalar()
     type_pandas_core_arrays_string__StringArray__validate_scalar = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._validate_scalar:",
-        type_pandas_core_arrays_string__StringArray__validate_scalar)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._validate_scalar:",
+        type_pandas_core_arrays_string__StringArray__validate_scalar,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__validate_scalar = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._validate_scalar: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__validate_scalar = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.string_.StringArray._validate_scalar: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[108]:
@@ -2249,17 +2479,23 @@ try:
     obj = class_constructor()
     ret = obj._validate_searchsorted_value()
     type_pandas_core_arrays_string__StringArray__validate_searchsorted_value = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._validate_searchsorted_value:",
-        type_pandas_core_arrays_string__StringArray__validate_searchsorted_value)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._validate_searchsorted_value:",
+        type_pandas_core_arrays_string__StringArray__validate_searchsorted_value,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__validate_searchsorted_value = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._validate_searchsorted_value: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__validate_searchsorted_value = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.arrays.string_.StringArray._validate_searchsorted_value: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[109]:
@@ -2270,17 +2506,23 @@ try:
     obj = class_constructor()
     ret = obj._validate_setitem_value()
     type_pandas_core_arrays_string__StringArray__validate_setitem_value = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._validate_setitem_value:",
-        type_pandas_core_arrays_string__StringArray__validate_setitem_value)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._validate_setitem_value:",
+        type_pandas_core_arrays_string__StringArray__validate_setitem_value,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__validate_setitem_value = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._validate_setitem_value: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__validate_setitem_value = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.arrays.string_.StringArray._validate_setitem_value: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[110]:
@@ -2291,17 +2533,21 @@ try:
     obj = class_constructor()
     ret = obj._validate_shift_value()
     type_pandas_core_arrays_string__StringArray__validate_shift_value = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._validate_shift_value:",
-        type_pandas_core_arrays_string__StringArray__validate_shift_value)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._validate_shift_value:",
+        type_pandas_core_arrays_string__StringArray__validate_shift_value,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__validate_shift_value = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._validate_shift_value: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__validate_shift_value = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.string_.StringArray._validate_shift_value: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[111]:
@@ -2312,17 +2558,21 @@ try:
     obj = class_constructor()
     ret = obj._values_for_factorize()
     type_pandas_core_arrays_string__StringArray__values_for_factorize = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._values_for_factorize:",
-        type_pandas_core_arrays_string__StringArray__values_for_factorize)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._values_for_factorize:",
+        type_pandas_core_arrays_string__StringArray__values_for_factorize,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__values_for_factorize = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._values_for_factorize: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__values_for_factorize = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.string_.StringArray._values_for_factorize: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[112]:
@@ -2333,17 +2583,21 @@ try:
     obj = class_constructor()
     ret = obj._wrap_ndarray_result()
     type_pandas_core_arrays_string__StringArray__wrap_ndarray_result = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray._wrap_ndarray_result:",
-        type_pandas_core_arrays_string__StringArray__wrap_ndarray_result)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray._wrap_ndarray_result:",
+        type_pandas_core_arrays_string__StringArray__wrap_ndarray_result,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray__wrap_ndarray_result = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray._wrap_ndarray_result: Return unavailable')
+    type_pandas_core_arrays_string__StringArray__wrap_ndarray_result = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.string_.StringArray._wrap_ndarray_result: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[113]:
@@ -2354,17 +2608,19 @@ try:
     obj = class_constructor()
     ret = obj.argmax()
     type_pandas_core_arrays_string__StringArray_argmax = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.argmax:",
-        type_pandas_core_arrays_string__StringArray_argmax)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.argmax:",
+        type_pandas_core_arrays_string__StringArray_argmax,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray_argmax = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.argmax: Return unavailable')
+    type_pandas_core_arrays_string__StringArray_argmax = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.argmax: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[114]:
@@ -2375,17 +2631,19 @@ try:
     obj = class_constructor()
     ret = obj.argmin()
     type_pandas_core_arrays_string__StringArray_argmin = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.argmin:",
-        type_pandas_core_arrays_string__StringArray_argmin)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.argmin:",
+        type_pandas_core_arrays_string__StringArray_argmin,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray_argmin = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.argmin: Return unavailable')
+    type_pandas_core_arrays_string__StringArray_argmin = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.argmin: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[115]:
@@ -2396,17 +2654,19 @@ try:
     obj = class_constructor()
     ret = obj.astype()
     type_pandas_core_arrays_string__StringArray_astype = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.astype:",
-        type_pandas_core_arrays_string__StringArray_astype)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.astype:",
+        type_pandas_core_arrays_string__StringArray_astype,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray_astype = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.astype: Return unavailable')
+    type_pandas_core_arrays_string__StringArray_astype = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.astype: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[116]:
@@ -2417,17 +2677,19 @@ try:
     obj = class_constructor()
     ret = obj.dropna()
     type_pandas_core_arrays_string__StringArray_dropna = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.dropna:",
-        type_pandas_core_arrays_string__StringArray_dropna)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.dropna:",
+        type_pandas_core_arrays_string__StringArray_dropna,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray_dropna = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.dropna: Return unavailable')
+    type_pandas_core_arrays_string__StringArray_dropna = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.dropna: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[117]:
@@ -2438,17 +2700,19 @@ try:
     obj = class_constructor()
     ret = obj.dtype
     type_pandas_core_arrays_string__StringArray_dtype = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.dtype:",
-        type_pandas_core_arrays_string__StringArray_dtype)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.dtype:",
+        type_pandas_core_arrays_string__StringArray_dtype,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray_dtype = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.dtype: Return unavailable')
+    type_pandas_core_arrays_string__StringArray_dtype = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.dtype: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[118]:
@@ -2459,17 +2723,19 @@ try:
     obj = class_constructor()
     ret = obj.searchsorted()
     type_pandas_core_arrays_string__StringArray_searchsorted = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.searchsorted:",
-        type_pandas_core_arrays_string__StringArray_searchsorted)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.searchsorted:",
+        type_pandas_core_arrays_string__StringArray_searchsorted,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray_searchsorted = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.searchsorted: Return unavailable')
+    type_pandas_core_arrays_string__StringArray_searchsorted = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.searchsorted: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[119]:
@@ -2480,17 +2746,19 @@ try:
     obj = class_constructor()
     ret = obj.shift()
     type_pandas_core_arrays_string__StringArray_shift = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.shift:",
-        type_pandas_core_arrays_string__StringArray_shift)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.shift:",
+        type_pandas_core_arrays_string__StringArray_shift,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray_shift = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.shift: Return unavailable')
+    type_pandas_core_arrays_string__StringArray_shift = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.shift: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[120]:
@@ -2501,15 +2769,16 @@ try:
     obj = class_constructor()
     ret = obj.value_counts()
     type_pandas_core_arrays_string__StringArray_value_counts = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.string_.StringArray.value_counts:",
-        type_pandas_core_arrays_string__StringArray_value_counts)
+    )
+    print(
+        "✅ pandas.core.arrays.string_.StringArray.value_counts:",
+        type_pandas_core_arrays_string__StringArray_value_counts,
+    )
 except Exception as e:
-    type_pandas_core_arrays_string__StringArray_value_counts = '_syft_missing'
-    print('❌ pandas.core.arrays.string_.StringArray.value_counts: Return unavailable')
+    type_pandas_core_arrays_string__StringArray_value_counts = "_syft_missing"
+    print("❌ pandas.core.arrays.string_.StringArray.value_counts: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
-
+    print("   Error:", e)

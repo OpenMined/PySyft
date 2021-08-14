@@ -23,17 +23,23 @@ try:
     obj = class_constructor()
     ret = obj.__setattr__()
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties___setattr__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.__setattr__:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties___setattr__)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.__setattr__:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties___setattr__,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties___setattr__ = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.__setattr__: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties___setattr__ = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.__setattr__: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[3]:
@@ -44,17 +50,23 @@ try:
     obj = class_constructor()
     ret = obj._add_delegate_accessors()
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__add_delegate_accessors = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties._add_delegate_accessors:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__add_delegate_accessors)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties._add_delegate_accessors:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__add_delegate_accessors,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__add_delegate_accessors = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties._add_delegate_accessors: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__add_delegate_accessors = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties._add_delegate_accessors: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[4]:
@@ -65,17 +77,23 @@ try:
     obj = class_constructor()
     ret = obj._constructor
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__constructor = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties._constructor:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__constructor)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties._constructor:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__constructor,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__constructor = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties._constructor: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__constructor = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties._constructor: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[5]:
@@ -86,17 +104,23 @@ try:
     obj = class_constructor()
     ret = obj._delegate_method()
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__delegate_method = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties._delegate_method:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__delegate_method)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties._delegate_method:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__delegate_method,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__delegate_method = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties._delegate_method: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__delegate_method = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties._delegate_method: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[6]:
@@ -107,17 +131,23 @@ try:
     obj = class_constructor()
     ret = obj._delegate_property_get()
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__delegate_property_get = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties._delegate_property_get:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__delegate_property_get)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties._delegate_property_get:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__delegate_property_get,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__delegate_property_get = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties._delegate_property_get: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__delegate_property_get = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties._delegate_property_get: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[7]:
@@ -128,17 +158,23 @@ try:
     obj = class_constructor()
     ret = obj._delegate_property_set()
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__delegate_property_set = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties._delegate_property_set:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__delegate_property_set)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties._delegate_property_set:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__delegate_property_set,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__delegate_property_set = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties._delegate_property_set: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__delegate_property_set = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties._delegate_property_set: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[8]:
@@ -149,17 +185,23 @@ try:
     obj = class_constructor()
     ret = obj._freeze()
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__freeze = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties._freeze:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__freeze)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties._freeze:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__freeze,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__freeze = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties._freeze: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__freeze = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties._freeze: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[9]:
@@ -170,17 +212,23 @@ try:
     obj = class_constructor()
     ret = obj._get_values()
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__get_values = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties._get_values:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__get_values)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties._get_values:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__get_values,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__get_values = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties._get_values: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties__get_values = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties._get_values: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[10]:
@@ -191,17 +239,23 @@ try:
     obj = class_constructor()
     ret = obj.asfreq()
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_asfreq = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.asfreq:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_asfreq)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.asfreq:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_asfreq,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_asfreq = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.asfreq: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_asfreq = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.asfreq: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[11]:
@@ -212,17 +266,23 @@ try:
     obj = class_constructor()
     ret = obj.ceil()
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_ceil = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.ceil:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_ceil)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.ceil:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_ceil,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_ceil = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.ceil: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_ceil = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.ceil: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[12]:
@@ -233,17 +293,23 @@ try:
     obj = class_constructor()
     ret = obj.components
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_components = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.components:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_components)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.components:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_components,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_components = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.components: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_components = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.components: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[13]:
@@ -254,17 +320,23 @@ try:
     obj = class_constructor()
     ret = obj.date
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_date = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.date:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_date)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.date:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_date,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_date = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.date: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_date = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.date: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[14]:
@@ -275,17 +347,23 @@ try:
     obj = class_constructor()
     ret = obj.day
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_day = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.day:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_day)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.day:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_day,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_day = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.day: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_day = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.day: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[15]:
@@ -296,17 +374,23 @@ try:
     obj = class_constructor()
     ret = obj.day_name()
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_day_name = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.day_name:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_day_name)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.day_name:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_day_name,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_day_name = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.day_name: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_day_name = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.day_name: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[16]:
@@ -317,17 +401,23 @@ try:
     obj = class_constructor()
     ret = obj.day_of_week
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_day_of_week = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.day_of_week:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_day_of_week)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.day_of_week:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_day_of_week,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_day_of_week = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.day_of_week: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_day_of_week = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.day_of_week: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[17]:
@@ -338,17 +428,23 @@ try:
     obj = class_constructor()
     ret = obj.day_of_year
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_day_of_year = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.day_of_year:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_day_of_year)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.day_of_year:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_day_of_year,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_day_of_year = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.day_of_year: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_day_of_year = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.day_of_year: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[18]:
@@ -359,17 +455,23 @@ try:
     obj = class_constructor()
     ret = obj.dayofweek
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_dayofweek = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.dayofweek:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_dayofweek)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.dayofweek:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_dayofweek,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_dayofweek = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.dayofweek: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_dayofweek = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.dayofweek: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[19]:
@@ -380,17 +482,23 @@ try:
     obj = class_constructor()
     ret = obj.dayofyear
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_dayofyear = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.dayofyear:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_dayofyear)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.dayofyear:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_dayofyear,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_dayofyear = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.dayofyear: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_dayofyear = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.dayofyear: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[20]:
@@ -401,17 +509,23 @@ try:
     obj = class_constructor()
     ret = obj.days
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_days = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.days:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_days)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.days:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_days,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_days = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.days: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_days = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.days: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[21]:
@@ -422,17 +536,23 @@ try:
     obj = class_constructor()
     ret = obj.days_in_month
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_days_in_month = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.days_in_month:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_days_in_month)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.days_in_month:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_days_in_month,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_days_in_month = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.days_in_month: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_days_in_month = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.days_in_month: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[22]:
@@ -443,17 +563,23 @@ try:
     obj = class_constructor()
     ret = obj.daysinmonth
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_daysinmonth = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.daysinmonth:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_daysinmonth)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.daysinmonth:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_daysinmonth,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_daysinmonth = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.daysinmonth: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_daysinmonth = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.daysinmonth: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[23]:
@@ -464,17 +590,23 @@ try:
     obj = class_constructor()
     ret = obj.end_time
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_end_time = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.end_time:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_end_time)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.end_time:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_end_time,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_end_time = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.end_time: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_end_time = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.end_time: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[24]:
@@ -485,17 +617,23 @@ try:
     obj = class_constructor()
     ret = obj.floor()
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_floor = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.floor:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_floor)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.floor:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_floor,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_floor = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.floor: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_floor = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.floor: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[25]:
@@ -506,17 +644,23 @@ try:
     obj = class_constructor()
     ret = obj.freq
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_freq = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.freq:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_freq)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.freq:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_freq,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_freq = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.freq: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_freq = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.freq: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[26]:
@@ -527,17 +671,23 @@ try:
     obj = class_constructor()
     ret = obj.hour
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_hour = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.hour:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_hour)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.hour:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_hour,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_hour = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.hour: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_hour = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.hour: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[27]:
@@ -548,17 +698,23 @@ try:
     obj = class_constructor()
     ret = obj.is_leap_year
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_leap_year = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.is_leap_year:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_leap_year)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.is_leap_year:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_leap_year,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_leap_year = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.is_leap_year: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_leap_year = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.is_leap_year: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[28]:
@@ -569,17 +725,23 @@ try:
     obj = class_constructor()
     ret = obj.is_month_end
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_month_end = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.is_month_end:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_month_end)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.is_month_end:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_month_end,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_month_end = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.is_month_end: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_month_end = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.is_month_end: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[29]:
@@ -590,17 +752,23 @@ try:
     obj = class_constructor()
     ret = obj.is_month_start
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_month_start = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.is_month_start:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_month_start)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.is_month_start:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_month_start,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_month_start = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.is_month_start: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_month_start = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.is_month_start: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[30]:
@@ -611,17 +779,23 @@ try:
     obj = class_constructor()
     ret = obj.is_quarter_end
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_quarter_end = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.is_quarter_end:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_quarter_end)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.is_quarter_end:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_quarter_end,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_quarter_end = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.is_quarter_end: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_quarter_end = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.is_quarter_end: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[31]:
@@ -632,17 +806,23 @@ try:
     obj = class_constructor()
     ret = obj.is_quarter_start
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_quarter_start = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.is_quarter_start:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_quarter_start)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.is_quarter_start:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_quarter_start,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_quarter_start = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.is_quarter_start: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_quarter_start = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.is_quarter_start: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[32]:
@@ -653,17 +833,23 @@ try:
     obj = class_constructor()
     ret = obj.is_year_end
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_year_end = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.is_year_end:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_year_end)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.is_year_end:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_year_end,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_year_end = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.is_year_end: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_year_end = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.is_year_end: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[33]:
@@ -674,17 +860,23 @@ try:
     obj = class_constructor()
     ret = obj.is_year_start
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_year_start = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.is_year_start:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_year_start)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.is_year_start:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_year_start,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_year_start = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.is_year_start: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_is_year_start = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.is_year_start: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[34]:
@@ -695,17 +887,23 @@ try:
     obj = class_constructor()
     ret = obj.isocalendar()
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_isocalendar = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.isocalendar:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_isocalendar)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.isocalendar:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_isocalendar,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_isocalendar = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.isocalendar: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_isocalendar = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.isocalendar: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[35]:
@@ -716,17 +914,23 @@ try:
     obj = class_constructor()
     ret = obj.microsecond
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_microsecond = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.microsecond:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_microsecond)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.microsecond:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_microsecond,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_microsecond = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.microsecond: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_microsecond = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.microsecond: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[36]:
@@ -737,17 +941,23 @@ try:
     obj = class_constructor()
     ret = obj.microseconds
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_microseconds = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.microseconds:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_microseconds)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.microseconds:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_microseconds,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_microseconds = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.microseconds: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_microseconds = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.microseconds: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[37]:
@@ -758,17 +968,23 @@ try:
     obj = class_constructor()
     ret = obj.minute
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_minute = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.minute:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_minute)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.minute:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_minute,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_minute = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.minute: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_minute = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.minute: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[38]:
@@ -779,17 +995,23 @@ try:
     obj = class_constructor()
     ret = obj.month
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_month = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.month:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_month)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.month:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_month,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_month = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.month: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_month = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.month: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[39]:
@@ -800,17 +1022,23 @@ try:
     obj = class_constructor()
     ret = obj.month_name()
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_month_name = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.month_name:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_month_name)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.month_name:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_month_name,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_month_name = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.month_name: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_month_name = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.month_name: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[40]:
@@ -821,17 +1049,23 @@ try:
     obj = class_constructor()
     ret = obj.nanosecond
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_nanosecond = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.nanosecond:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_nanosecond)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.nanosecond:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_nanosecond,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_nanosecond = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.nanosecond: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_nanosecond = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.nanosecond: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[41]:
@@ -842,17 +1076,23 @@ try:
     obj = class_constructor()
     ret = obj.nanoseconds
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_nanoseconds = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.nanoseconds:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_nanoseconds)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.nanoseconds:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_nanoseconds,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_nanoseconds = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.nanoseconds: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_nanoseconds = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.nanoseconds: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[42]:
@@ -863,17 +1103,23 @@ try:
     obj = class_constructor()
     ret = obj.normalize()
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_normalize = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.normalize:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_normalize)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.normalize:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_normalize,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_normalize = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.normalize: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_normalize = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.normalize: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[43]:
@@ -884,17 +1130,23 @@ try:
     obj = class_constructor()
     ret = obj.quarter
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_quarter = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.quarter:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_quarter)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.quarter:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_quarter,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_quarter = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.quarter: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_quarter = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.quarter: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[44]:
@@ -905,17 +1157,23 @@ try:
     obj = class_constructor()
     ret = obj.qyear
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_qyear = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.qyear:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_qyear)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.qyear:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_qyear,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_qyear = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.qyear: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_qyear = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.qyear: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[45]:
@@ -926,17 +1184,23 @@ try:
     obj = class_constructor()
     ret = obj.round()
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_round = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.round:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_round)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.round:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_round,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_round = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.round: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_round = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.round: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[46]:
@@ -947,17 +1211,23 @@ try:
     obj = class_constructor()
     ret = obj.second
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_second = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.second:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_second)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.second:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_second,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_second = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.second: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_second = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.second: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[47]:
@@ -968,17 +1238,23 @@ try:
     obj = class_constructor()
     ret = obj.seconds
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_seconds = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.seconds:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_seconds)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.seconds:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_seconds,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_seconds = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.seconds: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_seconds = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.seconds: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[48]:
@@ -989,17 +1265,23 @@ try:
     obj = class_constructor()
     ret = obj.start_time
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_start_time = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.start_time:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_start_time)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.start_time:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_start_time,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_start_time = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.start_time: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_start_time = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.start_time: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[49]:
@@ -1010,17 +1292,23 @@ try:
     obj = class_constructor()
     ret = obj.strftime()
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_strftime = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.strftime:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_strftime)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.strftime:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_strftime,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_strftime = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.strftime: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_strftime = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.strftime: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[50]:
@@ -1031,17 +1319,23 @@ try:
     obj = class_constructor()
     ret = obj.time
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_time = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.time:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_time)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.time:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_time,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_time = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.time: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_time = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.time: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[51]:
@@ -1052,17 +1346,23 @@ try:
     obj = class_constructor()
     ret = obj.timetz
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_timetz = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.timetz:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_timetz)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.timetz:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_timetz,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_timetz = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.timetz: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_timetz = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.timetz: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[52]:
@@ -1073,17 +1373,23 @@ try:
     obj = class_constructor()
     ret = obj.to_period()
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_to_period = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.to_period:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_to_period)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.to_period:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_to_period,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_to_period = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.to_period: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_to_period = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.to_period: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[53]:
@@ -1094,17 +1400,23 @@ try:
     obj = class_constructor()
     ret = obj.to_timestamp()
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_to_timestamp = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.to_timestamp:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_to_timestamp)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.to_timestamp:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_to_timestamp,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_to_timestamp = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.to_timestamp: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_to_timestamp = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.to_timestamp: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[54]:
@@ -1115,17 +1427,23 @@ try:
     obj = class_constructor()
     ret = obj.total_seconds()
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_total_seconds = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.total_seconds:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_total_seconds)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.total_seconds:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_total_seconds,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_total_seconds = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.total_seconds: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_total_seconds = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.total_seconds: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[55]:
@@ -1136,17 +1454,23 @@ try:
     obj = class_constructor()
     ret = obj.tz
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_tz = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.tz:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_tz)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.tz:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_tz,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_tz = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.tz: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_tz = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.tz: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[56]:
@@ -1157,17 +1481,23 @@ try:
     obj = class_constructor()
     ret = obj.tz_convert()
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_tz_convert = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.tz_convert:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_tz_convert)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.tz_convert:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_tz_convert,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_tz_convert = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.tz_convert: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_tz_convert = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.tz_convert: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[57]:
@@ -1178,17 +1508,23 @@ try:
     obj = class_constructor()
     ret = obj.tz_localize()
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_tz_localize = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.tz_localize:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_tz_localize)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.tz_localize:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_tz_localize,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_tz_localize = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.tz_localize: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_tz_localize = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.tz_localize: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[58]:
@@ -1199,17 +1535,23 @@ try:
     obj = class_constructor()
     ret = obj.week
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_week = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.week:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_week)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.week:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_week,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_week = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.week: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_week = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.week: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[59]:
@@ -1220,17 +1562,23 @@ try:
     obj = class_constructor()
     ret = obj.weekday
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_weekday = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.weekday:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_weekday)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.weekday:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_weekday,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_weekday = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.weekday: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_weekday = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.weekday: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[60]:
@@ -1241,17 +1589,23 @@ try:
     obj = class_constructor()
     ret = obj.weekofyear
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_weekofyear = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.weekofyear:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_weekofyear)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.weekofyear:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_weekofyear,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_weekofyear = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.weekofyear: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_weekofyear = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.weekofyear: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[61]:
@@ -1262,15 +1616,20 @@ try:
     obj = class_constructor()
     ret = obj.year
     type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_year = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.year:",
-        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_year)
+    )
+    print(
+        "✅ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.year:",
+        type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_year,
+    )
 except Exception as e:
-    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_year = '_syft_missing'
-    print('❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.year: Return unavailable')
+    type_pandas_core_indexes_accessors_CombinedDatetimelikeProperties_year = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.indexes.accessors.CombinedDatetimelikeProperties.year: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
-
+    print("  Error:", e)

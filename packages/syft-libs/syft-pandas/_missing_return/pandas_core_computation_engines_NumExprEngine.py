@@ -23,17 +23,21 @@ try:
     obj = class_constructor()
     ret = obj._evaluate()
     type_pandas_core_computation_engines_NumExprEngine__evaluate = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.computation.engines.NumExprEngine._evaluate:",
-        type_pandas_core_computation_engines_NumExprEngine__evaluate)
+    )
+    print(
+        "✅ pandas.core.computation.engines.NumExprEngine._evaluate:",
+        type_pandas_core_computation_engines_NumExprEngine__evaluate,
+    )
 except Exception as e:
-    type_pandas_core_computation_engines_NumExprEngine__evaluate = '_syft_missing'
-    print('❌ pandas.core.computation.engines.NumExprEngine._evaluate: Return unavailable')
+    type_pandas_core_computation_engines_NumExprEngine__evaluate = "_syft_missing"
+    print(
+        "❌ pandas.core.computation.engines.NumExprEngine._evaluate: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[3]:
@@ -44,15 +48,18 @@ try:
     obj = class_constructor()
     ret = obj._is_aligned
     type_pandas_core_computation_engines_NumExprEngine__is_aligned = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.computation.engines.NumExprEngine._is_aligned:",
-        type_pandas_core_computation_engines_NumExprEngine__is_aligned)
+    )
+    print(
+        "✅ pandas.core.computation.engines.NumExprEngine._is_aligned:",
+        type_pandas_core_computation_engines_NumExprEngine__is_aligned,
+    )
 except Exception as e:
-    type_pandas_core_computation_engines_NumExprEngine__is_aligned = '_syft_missing'
-    print('❌ pandas.core.computation.engines.NumExprEngine._is_aligned: Return unavailable')
+    type_pandas_core_computation_engines_NumExprEngine__is_aligned = "_syft_missing"
+    print(
+        "❌ pandas.core.computation.engines.NumExprEngine._is_aligned: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
-
+    print("  Error:", e)

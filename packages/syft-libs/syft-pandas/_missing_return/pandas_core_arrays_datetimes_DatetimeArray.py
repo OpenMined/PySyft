@@ -23,17 +23,19 @@ try:
     obj = class_constructor()
     ret = obj.__add__()
     type_pandas_core_arrays_datetimes_DatetimeArray___add__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.__add__:",
-        type_pandas_core_arrays_datetimes_DatetimeArray___add__)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.__add__:",
+        type_pandas_core_arrays_datetimes_DatetimeArray___add__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray___add__ = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.__add__: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray___add__ = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.__add__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[3]:
@@ -44,17 +46,19 @@ try:
     obj = class_constructor()
     ret = obj.__and__()
     type_pandas_core_arrays_datetimes_DatetimeArray___and__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.__and__:",
-        type_pandas_core_arrays_datetimes_DatetimeArray___and__)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.__and__:",
+        type_pandas_core_arrays_datetimes_DatetimeArray___and__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray___and__ = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.__and__: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray___and__ = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.__and__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[4]:
@@ -65,17 +69,19 @@ try:
     obj = class_constructor()
     ret = obj.__divmod__()
     type_pandas_core_arrays_datetimes_DatetimeArray___divmod__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.__divmod__:",
-        type_pandas_core_arrays_datetimes_DatetimeArray___divmod__)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.__divmod__:",
+        type_pandas_core_arrays_datetimes_DatetimeArray___divmod__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray___divmod__ = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.__divmod__: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray___divmod__ = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.__divmod__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[5]:
@@ -86,17 +92,19 @@ try:
     obj = class_constructor()
     ret = obj.__eq__()
     type_pandas_core_arrays_datetimes_DatetimeArray___eq__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.__eq__:",
-        type_pandas_core_arrays_datetimes_DatetimeArray___eq__)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.__eq__:",
+        type_pandas_core_arrays_datetimes_DatetimeArray___eq__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray___eq__ = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.__eq__: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray___eq__ = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.__eq__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[6]:
@@ -107,17 +115,21 @@ try:
     obj = class_constructor()
     ret = obj.__floordiv__()
     type_pandas_core_arrays_datetimes_DatetimeArray___floordiv__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.__floordiv__:",
-        type_pandas_core_arrays_datetimes_DatetimeArray___floordiv__)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.__floordiv__:",
+        type_pandas_core_arrays_datetimes_DatetimeArray___floordiv__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray___floordiv__ = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.__floordiv__: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray___floordiv__ = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray.__floordiv__: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[7]:
@@ -128,17 +140,19 @@ try:
     obj = class_constructor()
     ret = obj.__ge__()
     type_pandas_core_arrays_datetimes_DatetimeArray___ge__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.__ge__:",
-        type_pandas_core_arrays_datetimes_DatetimeArray___ge__)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.__ge__:",
+        type_pandas_core_arrays_datetimes_DatetimeArray___ge__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray___ge__ = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.__ge__: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray___ge__ = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.__ge__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[8]:
@@ -149,17 +163,19 @@ try:
     obj = class_constructor()
     ret = obj.__gt__()
     type_pandas_core_arrays_datetimes_DatetimeArray___gt__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.__gt__:",
-        type_pandas_core_arrays_datetimes_DatetimeArray___gt__)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.__gt__:",
+        type_pandas_core_arrays_datetimes_DatetimeArray___gt__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray___gt__ = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.__gt__: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray___gt__ = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.__gt__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[9]:
@@ -170,17 +186,19 @@ try:
     obj = class_constructor()
     ret = obj.__iadd__()
     type_pandas_core_arrays_datetimes_DatetimeArray___iadd__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.__iadd__:",
-        type_pandas_core_arrays_datetimes_DatetimeArray___iadd__)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.__iadd__:",
+        type_pandas_core_arrays_datetimes_DatetimeArray___iadd__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray___iadd__ = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.__iadd__: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray___iadd__ = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.__iadd__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[10]:
@@ -191,17 +209,19 @@ try:
     obj = class_constructor()
     ret = obj.__isub__()
     type_pandas_core_arrays_datetimes_DatetimeArray___isub__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.__isub__:",
-        type_pandas_core_arrays_datetimes_DatetimeArray___isub__)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.__isub__:",
+        type_pandas_core_arrays_datetimes_DatetimeArray___isub__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray___isub__ = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.__isub__: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray___isub__ = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.__isub__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[11]:
@@ -212,17 +232,19 @@ try:
     obj = class_constructor()
     ret = obj.__iter__()
     type_pandas_core_arrays_datetimes_DatetimeArray___iter__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.__iter__:",
-        type_pandas_core_arrays_datetimes_DatetimeArray___iter__)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.__iter__:",
+        type_pandas_core_arrays_datetimes_DatetimeArray___iter__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray___iter__ = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.__iter__: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray___iter__ = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.__iter__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[12]:
@@ -233,17 +255,19 @@ try:
     obj = class_constructor()
     ret = obj.__le__()
     type_pandas_core_arrays_datetimes_DatetimeArray___le__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.__le__:",
-        type_pandas_core_arrays_datetimes_DatetimeArray___le__)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.__le__:",
+        type_pandas_core_arrays_datetimes_DatetimeArray___le__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray___le__ = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.__le__: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray___le__ = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.__le__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[13]:
@@ -254,17 +278,19 @@ try:
     obj = class_constructor()
     ret = obj.__lt__()
     type_pandas_core_arrays_datetimes_DatetimeArray___lt__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.__lt__:",
-        type_pandas_core_arrays_datetimes_DatetimeArray___lt__)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.__lt__:",
+        type_pandas_core_arrays_datetimes_DatetimeArray___lt__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray___lt__ = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.__lt__: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray___lt__ = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.__lt__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[14]:
@@ -275,17 +301,19 @@ try:
     obj = class_constructor()
     ret = obj.__mod__()
     type_pandas_core_arrays_datetimes_DatetimeArray___mod__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.__mod__:",
-        type_pandas_core_arrays_datetimes_DatetimeArray___mod__)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.__mod__:",
+        type_pandas_core_arrays_datetimes_DatetimeArray___mod__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray___mod__ = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.__mod__: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray___mod__ = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.__mod__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[15]:
@@ -296,17 +324,19 @@ try:
     obj = class_constructor()
     ret = obj.__mul__()
     type_pandas_core_arrays_datetimes_DatetimeArray___mul__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.__mul__:",
-        type_pandas_core_arrays_datetimes_DatetimeArray___mul__)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.__mul__:",
+        type_pandas_core_arrays_datetimes_DatetimeArray___mul__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray___mul__ = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.__mul__: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray___mul__ = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.__mul__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[16]:
@@ -317,17 +347,19 @@ try:
     obj = class_constructor()
     ret = obj.__ne__()
     type_pandas_core_arrays_datetimes_DatetimeArray___ne__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.__ne__:",
-        type_pandas_core_arrays_datetimes_DatetimeArray___ne__)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.__ne__:",
+        type_pandas_core_arrays_datetimes_DatetimeArray___ne__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray___ne__ = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.__ne__: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray___ne__ = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.__ne__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[17]:
@@ -338,17 +370,19 @@ try:
     obj = class_constructor()
     ret = obj.__or__()
     type_pandas_core_arrays_datetimes_DatetimeArray___or__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.__or__:",
-        type_pandas_core_arrays_datetimes_DatetimeArray___or__)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.__or__:",
+        type_pandas_core_arrays_datetimes_DatetimeArray___or__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray___or__ = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.__or__: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray___or__ = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.__or__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[18]:
@@ -359,17 +393,19 @@ try:
     obj = class_constructor()
     ret = obj.__pow__()
     type_pandas_core_arrays_datetimes_DatetimeArray___pow__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.__pow__:",
-        type_pandas_core_arrays_datetimes_DatetimeArray___pow__)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.__pow__:",
+        type_pandas_core_arrays_datetimes_DatetimeArray___pow__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray___pow__ = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.__pow__: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray___pow__ = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.__pow__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[19]:
@@ -380,17 +416,19 @@ try:
     obj = class_constructor()
     ret = obj.__radd__()
     type_pandas_core_arrays_datetimes_DatetimeArray___radd__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.__radd__:",
-        type_pandas_core_arrays_datetimes_DatetimeArray___radd__)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.__radd__:",
+        type_pandas_core_arrays_datetimes_DatetimeArray___radd__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray___radd__ = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.__radd__: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray___radd__ = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.__radd__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[20]:
@@ -401,17 +439,19 @@ try:
     obj = class_constructor()
     ret = obj.__rand__()
     type_pandas_core_arrays_datetimes_DatetimeArray___rand__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.__rand__:",
-        type_pandas_core_arrays_datetimes_DatetimeArray___rand__)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.__rand__:",
+        type_pandas_core_arrays_datetimes_DatetimeArray___rand__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray___rand__ = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.__rand__: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray___rand__ = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.__rand__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[21]:
@@ -422,17 +462,21 @@ try:
     obj = class_constructor()
     ret = obj.__rdivmod__()
     type_pandas_core_arrays_datetimes_DatetimeArray___rdivmod__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.__rdivmod__:",
-        type_pandas_core_arrays_datetimes_DatetimeArray___rdivmod__)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.__rdivmod__:",
+        type_pandas_core_arrays_datetimes_DatetimeArray___rdivmod__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray___rdivmod__ = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.__rdivmod__: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray___rdivmod__ = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray.__rdivmod__: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[22]:
@@ -443,17 +487,21 @@ try:
     obj = class_constructor()
     ret = obj.__rfloordiv__()
     type_pandas_core_arrays_datetimes_DatetimeArray___rfloordiv__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.__rfloordiv__:",
-        type_pandas_core_arrays_datetimes_DatetimeArray___rfloordiv__)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.__rfloordiv__:",
+        type_pandas_core_arrays_datetimes_DatetimeArray___rfloordiv__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray___rfloordiv__ = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.__rfloordiv__: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray___rfloordiv__ = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray.__rfloordiv__: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[23]:
@@ -464,17 +512,19 @@ try:
     obj = class_constructor()
     ret = obj.__rmod__()
     type_pandas_core_arrays_datetimes_DatetimeArray___rmod__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.__rmod__:",
-        type_pandas_core_arrays_datetimes_DatetimeArray___rmod__)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.__rmod__:",
+        type_pandas_core_arrays_datetimes_DatetimeArray___rmod__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray___rmod__ = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.__rmod__: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray___rmod__ = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.__rmod__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[24]:
@@ -485,17 +535,19 @@ try:
     obj = class_constructor()
     ret = obj.__rmul__()
     type_pandas_core_arrays_datetimes_DatetimeArray___rmul__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.__rmul__:",
-        type_pandas_core_arrays_datetimes_DatetimeArray___rmul__)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.__rmul__:",
+        type_pandas_core_arrays_datetimes_DatetimeArray___rmul__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray___rmul__ = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.__rmul__: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray___rmul__ = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.__rmul__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[25]:
@@ -506,17 +558,19 @@ try:
     obj = class_constructor()
     ret = obj.__ror__()
     type_pandas_core_arrays_datetimes_DatetimeArray___ror__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.__ror__:",
-        type_pandas_core_arrays_datetimes_DatetimeArray___ror__)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.__ror__:",
+        type_pandas_core_arrays_datetimes_DatetimeArray___ror__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray___ror__ = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.__ror__: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray___ror__ = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.__ror__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[26]:
@@ -527,17 +581,19 @@ try:
     obj = class_constructor()
     ret = obj.__rpow__()
     type_pandas_core_arrays_datetimes_DatetimeArray___rpow__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.__rpow__:",
-        type_pandas_core_arrays_datetimes_DatetimeArray___rpow__)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.__rpow__:",
+        type_pandas_core_arrays_datetimes_DatetimeArray___rpow__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray___rpow__ = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.__rpow__: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray___rpow__ = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.__rpow__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[27]:
@@ -548,17 +604,19 @@ try:
     obj = class_constructor()
     ret = obj.__rsub__()
     type_pandas_core_arrays_datetimes_DatetimeArray___rsub__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.__rsub__:",
-        type_pandas_core_arrays_datetimes_DatetimeArray___rsub__)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.__rsub__:",
+        type_pandas_core_arrays_datetimes_DatetimeArray___rsub__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray___rsub__ = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.__rsub__: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray___rsub__ = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.__rsub__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[28]:
@@ -569,17 +627,21 @@ try:
     obj = class_constructor()
     ret = obj.__rtruediv__()
     type_pandas_core_arrays_datetimes_DatetimeArray___rtruediv__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.__rtruediv__:",
-        type_pandas_core_arrays_datetimes_DatetimeArray___rtruediv__)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.__rtruediv__:",
+        type_pandas_core_arrays_datetimes_DatetimeArray___rtruediv__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray___rtruediv__ = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.__rtruediv__: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray___rtruediv__ = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray.__rtruediv__: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[29]:
@@ -590,17 +652,19 @@ try:
     obj = class_constructor()
     ret = obj.__rxor__()
     type_pandas_core_arrays_datetimes_DatetimeArray___rxor__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.__rxor__:",
-        type_pandas_core_arrays_datetimes_DatetimeArray___rxor__)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.__rxor__:",
+        type_pandas_core_arrays_datetimes_DatetimeArray___rxor__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray___rxor__ = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.__rxor__: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray___rxor__ = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.__rxor__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[30]:
@@ -611,17 +675,19 @@ try:
     obj = class_constructor()
     ret = obj.__sub__()
     type_pandas_core_arrays_datetimes_DatetimeArray___sub__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.__sub__:",
-        type_pandas_core_arrays_datetimes_DatetimeArray___sub__)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.__sub__:",
+        type_pandas_core_arrays_datetimes_DatetimeArray___sub__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray___sub__ = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.__sub__: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray___sub__ = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.__sub__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[31]:
@@ -632,17 +698,21 @@ try:
     obj = class_constructor()
     ret = obj.__truediv__()
     type_pandas_core_arrays_datetimes_DatetimeArray___truediv__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.__truediv__:",
-        type_pandas_core_arrays_datetimes_DatetimeArray___truediv__)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.__truediv__:",
+        type_pandas_core_arrays_datetimes_DatetimeArray___truediv__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray___truediv__ = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.__truediv__: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray___truediv__ = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray.__truediv__: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[32]:
@@ -653,17 +723,19 @@ try:
     obj = class_constructor()
     ret = obj.__xor__()
     type_pandas_core_arrays_datetimes_DatetimeArray___xor__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.__xor__:",
-        type_pandas_core_arrays_datetimes_DatetimeArray___xor__)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.__xor__:",
+        type_pandas_core_arrays_datetimes_DatetimeArray___xor__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray___xor__ = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.__xor__: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray___xor__ = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.__xor__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[33]:
@@ -674,17 +746,23 @@ try:
     obj = class_constructor()
     ret = obj._add_datetimelike_scalar()
     type_pandas_core_arrays_datetimes_DatetimeArray__add_datetimelike_scalar = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._add_datetimelike_scalar:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__add_datetimelike_scalar)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._add_datetimelike_scalar:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__add_datetimelike_scalar,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__add_datetimelike_scalar = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._add_datetimelike_scalar: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__add_datetimelike_scalar = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray._add_datetimelike_scalar: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[34]:
@@ -695,17 +773,23 @@ try:
     obj = class_constructor()
     ret = obj._add_datetimelike_scalar()
     type_pandas_core_arrays_datetimes_DatetimeArray__add_datetimelike_scalar = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._add_datetimelike_scalar:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__add_datetimelike_scalar)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._add_datetimelike_scalar:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__add_datetimelike_scalar,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__add_datetimelike_scalar = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._add_datetimelike_scalar: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__add_datetimelike_scalar = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray._add_datetimelike_scalar: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[35]:
@@ -716,17 +800,19 @@ try:
     obj = class_constructor()
     ret = obj._add_nat()
     type_pandas_core_arrays_datetimes_DatetimeArray__add_nat = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._add_nat:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__add_nat)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._add_nat:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__add_nat,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__add_nat = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._add_nat: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__add_nat = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray._add_nat: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[36]:
@@ -737,17 +823,21 @@ try:
     obj = class_constructor()
     ret = obj._add_period()
     type_pandas_core_arrays_datetimes_DatetimeArray__add_period = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._add_period:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__add_period)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._add_period:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__add_period,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__add_period = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._add_period: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__add_period = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray._add_period: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[37]:
@@ -758,17 +848,23 @@ try:
     obj = class_constructor()
     ret = obj._add_timedelta_arraylike()
     type_pandas_core_arrays_datetimes_DatetimeArray__add_timedelta_arraylike = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._add_timedelta_arraylike:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__add_timedelta_arraylike)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._add_timedelta_arraylike:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__add_timedelta_arraylike,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__add_timedelta_arraylike = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._add_timedelta_arraylike: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__add_timedelta_arraylike = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray._add_timedelta_arraylike: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[38]:
@@ -779,17 +875,23 @@ try:
     obj = class_constructor()
     ret = obj._add_timedeltalike_scalar()
     type_pandas_core_arrays_datetimes_DatetimeArray__add_timedeltalike_scalar = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._add_timedeltalike_scalar:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__add_timedeltalike_scalar)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._add_timedeltalike_scalar:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__add_timedeltalike_scalar,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__add_timedeltalike_scalar = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._add_timedeltalike_scalar: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__add_timedeltalike_scalar = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray._add_timedeltalike_scalar: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[39]:
@@ -800,17 +902,23 @@ try:
     obj = class_constructor()
     ret = obj._addsub_object_array()
     type_pandas_core_arrays_datetimes_DatetimeArray__addsub_object_array = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._addsub_object_array:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__addsub_object_array)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._addsub_object_array:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__addsub_object_array,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__addsub_object_array = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._addsub_object_array: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__addsub_object_array = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray._addsub_object_array: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[40]:
@@ -821,17 +929,21 @@ try:
     obj = class_constructor()
     ret = obj._arith_method()
     type_pandas_core_arrays_datetimes_DatetimeArray__arith_method = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._arith_method:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__arith_method)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._arith_method:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__arith_method,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__arith_method = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._arith_method: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__arith_method = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray._arith_method: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[41]:
@@ -842,17 +954,23 @@ try:
     obj = class_constructor()
     ret = obj._check_compatible_with()
     type_pandas_core_arrays_datetimes_DatetimeArray__check_compatible_with = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._check_compatible_with:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__check_compatible_with)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._check_compatible_with:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__check_compatible_with,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__check_compatible_with = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._check_compatible_with: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__check_compatible_with = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray._check_compatible_with: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[42]:
@@ -863,17 +981,21 @@ try:
     obj = class_constructor()
     ret = obj._cmp_method()
     type_pandas_core_arrays_datetimes_DatetimeArray__cmp_method = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._cmp_method:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__cmp_method)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._cmp_method:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__cmp_method,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__cmp_method = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._cmp_method: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__cmp_method = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray._cmp_method: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[43]:
@@ -884,17 +1006,19 @@ try:
     obj = class_constructor()
     ret = obj._formatter()
     type_pandas_core_arrays_datetimes_DatetimeArray__formatter = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._formatter:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__formatter)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._formatter:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__formatter,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__formatter = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._formatter: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__formatter = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray._formatter: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[44]:
@@ -905,17 +1029,21 @@ try:
     obj = class_constructor()
     ret = obj._from_sequence()
     type_pandas_core_arrays_datetimes_DatetimeArray__from_sequence = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._from_sequence:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__from_sequence)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._from_sequence:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__from_sequence,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__from_sequence = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._from_sequence: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__from_sequence = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray._from_sequence: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[45]:
@@ -926,17 +1054,23 @@ try:
     obj = class_constructor()
     ret = obj._from_sequence_not_strict()
     type_pandas_core_arrays_datetimes_DatetimeArray__from_sequence_not_strict = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._from_sequence_not_strict:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__from_sequence_not_strict)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._from_sequence_not_strict:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__from_sequence_not_strict,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__from_sequence_not_strict = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._from_sequence_not_strict: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__from_sequence_not_strict = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray._from_sequence_not_strict: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[46]:
@@ -947,17 +1081,21 @@ try:
     obj = class_constructor()
     ret = obj._generate_range()
     type_pandas_core_arrays_datetimes_DatetimeArray__generate_range = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._generate_range:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__generate_range)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._generate_range:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__generate_range,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__generate_range = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._generate_range: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__generate_range = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray._generate_range: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[47]:
@@ -968,17 +1106,19 @@ try:
     obj = class_constructor()
     ret = obj._hasnans
     type_pandas_core_arrays_datetimes_DatetimeArray__hasnans = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._hasnans:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__hasnans)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._hasnans:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__hasnans,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__hasnans = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._hasnans: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__hasnans = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray._hasnans: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[48]:
@@ -989,17 +1129,23 @@ try:
     obj = class_constructor()
     ret = obj._is_monotonic_decreasing
     type_pandas_core_arrays_datetimes_DatetimeArray__is_monotonic_decreasing = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._is_monotonic_decreasing:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__is_monotonic_decreasing)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._is_monotonic_decreasing:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__is_monotonic_decreasing,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__is_monotonic_decreasing = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._is_monotonic_decreasing: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__is_monotonic_decreasing = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray._is_monotonic_decreasing: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[49]:
@@ -1010,17 +1156,23 @@ try:
     obj = class_constructor()
     ret = obj._is_monotonic_increasing
     type_pandas_core_arrays_datetimes_DatetimeArray__is_monotonic_increasing = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._is_monotonic_increasing:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__is_monotonic_increasing)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._is_monotonic_increasing:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__is_monotonic_increasing,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__is_monotonic_increasing = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._is_monotonic_increasing: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__is_monotonic_increasing = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray._is_monotonic_increasing: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[50]:
@@ -1031,17 +1183,19 @@ try:
     obj = class_constructor()
     ret = obj._is_unique
     type_pandas_core_arrays_datetimes_DatetimeArray__is_unique = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._is_unique:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__is_unique)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._is_unique:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__is_unique,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__is_unique = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._is_unique: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__is_unique = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray._is_unique: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[51]:
@@ -1052,17 +1206,19 @@ try:
     obj = class_constructor()
     ret = obj._isnan
     type_pandas_core_arrays_datetimes_DatetimeArray__isnan = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._isnan:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__isnan)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._isnan:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__isnan,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__isnan = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._isnan: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__isnan = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray._isnan: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[52]:
@@ -1073,17 +1229,21 @@ try:
     obj = class_constructor()
     ret = obj._logical_method()
     type_pandas_core_arrays_datetimes_DatetimeArray__logical_method = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._logical_method:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__logical_method)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._logical_method:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__logical_method,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__logical_method = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._logical_method: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__logical_method = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray._logical_method: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[53]:
@@ -1094,17 +1254,19 @@ try:
     obj = class_constructor()
     ret = obj._reduce()
     type_pandas_core_arrays_datetimes_DatetimeArray__reduce = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._reduce:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__reduce)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._reduce:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__reduce,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__reduce = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._reduce: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__reduce = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray._reduce: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[54]:
@@ -1115,17 +1277,21 @@ try:
     obj = class_constructor()
     ret = obj._resolution_obj
     type_pandas_core_arrays_datetimes_DatetimeArray__resolution_obj = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._resolution_obj:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__resolution_obj)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._resolution_obj:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__resolution_obj,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__resolution_obj = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._resolution_obj: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__resolution_obj = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray._resolution_obj: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[55]:
@@ -1136,17 +1302,19 @@ try:
     obj = class_constructor()
     ret = obj._round()
     type_pandas_core_arrays_datetimes_DatetimeArray__round = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._round:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__round)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._round:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__round,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__round = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._round: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__round = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray._round: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[56]:
@@ -1157,17 +1325,23 @@ try:
     obj = class_constructor()
     ret = obj._sub_datetime_arraylike()
     type_pandas_core_arrays_datetimes_DatetimeArray__sub_datetime_arraylike = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._sub_datetime_arraylike:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__sub_datetime_arraylike)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._sub_datetime_arraylike:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__sub_datetime_arraylike,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__sub_datetime_arraylike = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._sub_datetime_arraylike: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__sub_datetime_arraylike = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray._sub_datetime_arraylike: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[57]:
@@ -1178,17 +1352,23 @@ try:
     obj = class_constructor()
     ret = obj._sub_datetimelike_scalar()
     type_pandas_core_arrays_datetimes_DatetimeArray__sub_datetimelike_scalar = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._sub_datetimelike_scalar:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__sub_datetimelike_scalar)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._sub_datetimelike_scalar:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__sub_datetimelike_scalar,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__sub_datetimelike_scalar = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._sub_datetimelike_scalar: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__sub_datetimelike_scalar = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray._sub_datetimelike_scalar: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[58]:
@@ -1199,17 +1379,19 @@ try:
     obj = class_constructor()
     ret = obj._sub_nat()
     type_pandas_core_arrays_datetimes_DatetimeArray__sub_nat = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._sub_nat:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__sub_nat)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._sub_nat:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__sub_nat,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__sub_nat = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._sub_nat: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__sub_nat = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray._sub_nat: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[59]:
@@ -1220,17 +1402,21 @@ try:
     obj = class_constructor()
     ret = obj._sub_period()
     type_pandas_core_arrays_datetimes_DatetimeArray__sub_period = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._sub_period:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__sub_period)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._sub_period:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__sub_period,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__sub_period = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._sub_period: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__sub_period = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray._sub_period: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[60]:
@@ -1241,17 +1427,21 @@ try:
     obj = class_constructor()
     ret = obj._sub_period_array()
     type_pandas_core_arrays_datetimes_DatetimeArray__sub_period_array = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._sub_period_array:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__sub_period_array)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._sub_period_array:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__sub_period_array,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__sub_period_array = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._sub_period_array: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__sub_period_array = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray._sub_period_array: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[61]:
@@ -1262,17 +1452,21 @@ try:
     obj = class_constructor()
     ret = obj._time_shift()
     type_pandas_core_arrays_datetimes_DatetimeArray__time_shift = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._time_shift:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__time_shift)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._time_shift:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__time_shift,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__time_shift = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._time_shift: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__time_shift = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray._time_shift: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[62]:
@@ -1283,17 +1477,23 @@ try:
     obj = class_constructor()
     ret = obj._validate_comparison_value()
     type_pandas_core_arrays_datetimes_DatetimeArray__validate_comparison_value = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._validate_comparison_value:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__validate_comparison_value)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._validate_comparison_value:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__validate_comparison_value,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__validate_comparison_value = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._validate_comparison_value: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__validate_comparison_value = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray._validate_comparison_value: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[63]:
@@ -1304,17 +1504,23 @@ try:
     obj = class_constructor()
     ret = obj._validate_frequency()
     type_pandas_core_arrays_datetimes_DatetimeArray__validate_frequency = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._validate_frequency:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__validate_frequency)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._validate_frequency:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__validate_frequency,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__validate_frequency = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._validate_frequency: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__validate_frequency = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray._validate_frequency: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[64]:
@@ -1325,17 +1531,21 @@ try:
     obj = class_constructor()
     ret = obj._validate_listlike()
     type_pandas_core_arrays_datetimes_DatetimeArray__validate_listlike = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._validate_listlike:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__validate_listlike)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._validate_listlike:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__validate_listlike,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__validate_listlike = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._validate_listlike: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__validate_listlike = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray._validate_listlike: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[65]:
@@ -1346,17 +1556,21 @@ try:
     obj = class_constructor()
     ret = obj._validate_scalar()
     type_pandas_core_arrays_datetimes_DatetimeArray__validate_scalar = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._validate_scalar:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__validate_scalar)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._validate_scalar:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__validate_scalar,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__validate_scalar = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._validate_scalar: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__validate_scalar = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray._validate_scalar: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[66]:
@@ -1367,17 +1581,23 @@ try:
     obj = class_constructor()
     ret = obj._validate_searchsorted_value()
     type_pandas_core_arrays_datetimes_DatetimeArray__validate_searchsorted_value = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._validate_searchsorted_value:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__validate_searchsorted_value)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._validate_searchsorted_value:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__validate_searchsorted_value,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__validate_searchsorted_value = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._validate_searchsorted_value: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__validate_searchsorted_value = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray._validate_searchsorted_value: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[67]:
@@ -1388,17 +1608,23 @@ try:
     obj = class_constructor()
     ret = obj._validate_setitem_value()
     type_pandas_core_arrays_datetimes_DatetimeArray__validate_setitem_value = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._validate_setitem_value:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__validate_setitem_value)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._validate_setitem_value:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__validate_setitem_value,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__validate_setitem_value = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._validate_setitem_value: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__validate_setitem_value = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray._validate_setitem_value: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[68]:
@@ -1409,17 +1635,23 @@ try:
     obj = class_constructor()
     ret = obj._validate_shift_value()
     type_pandas_core_arrays_datetimes_DatetimeArray__validate_shift_value = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._validate_shift_value:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__validate_shift_value)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._validate_shift_value:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__validate_shift_value,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__validate_shift_value = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._validate_shift_value: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__validate_shift_value = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray._validate_shift_value: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[69]:
@@ -1430,17 +1662,23 @@ try:
     obj = class_constructor()
     ret = obj._values_for_factorize()
     type_pandas_core_arrays_datetimes_DatetimeArray__values_for_factorize = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._values_for_factorize:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__values_for_factorize)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._values_for_factorize:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__values_for_factorize,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__values_for_factorize = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._values_for_factorize: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__values_for_factorize = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray._values_for_factorize: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[70]:
@@ -1451,17 +1689,19 @@ try:
     obj = class_constructor()
     ret = obj._with_freq()
     type_pandas_core_arrays_datetimes_DatetimeArray__with_freq = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray._with_freq:",
-        type_pandas_core_arrays_datetimes_DatetimeArray__with_freq)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray._with_freq:",
+        type_pandas_core_arrays_datetimes_DatetimeArray__with_freq,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray__with_freq = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray._with_freq: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray__with_freq = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray._with_freq: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[71]:
@@ -1472,17 +1712,19 @@ try:
     obj = class_constructor()
     ret = obj.argmax()
     type_pandas_core_arrays_datetimes_DatetimeArray_argmax = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.argmax:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_argmax)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.argmax:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_argmax,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_argmax = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.argmax: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_argmax = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.argmax: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[72]:
@@ -1493,17 +1735,19 @@ try:
     obj = class_constructor()
     ret = obj.argmin()
     type_pandas_core_arrays_datetimes_DatetimeArray_argmin = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.argmin:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_argmin)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.argmin:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_argmin,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_argmin = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.argmin: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_argmin = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.argmin: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[73]:
@@ -1514,17 +1758,19 @@ try:
     obj = class_constructor()
     ret = obj.asi8
     type_pandas_core_arrays_datetimes_DatetimeArray_asi8 = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.asi8:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_asi8)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.asi8:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_asi8,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_asi8 = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.asi8: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_asi8 = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.asi8: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[74]:
@@ -1535,17 +1781,19 @@ try:
     obj = class_constructor()
     ret = obj.astype()
     type_pandas_core_arrays_datetimes_DatetimeArray_astype = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.astype:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_astype)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.astype:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_astype,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_astype = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.astype: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_astype = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.astype: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[75]:
@@ -1556,17 +1804,19 @@ try:
     obj = class_constructor()
     ret = obj.ceil()
     type_pandas_core_arrays_datetimes_DatetimeArray_ceil = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.ceil:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_ceil)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.ceil:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_ceil,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_ceil = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.ceil: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_ceil = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.ceil: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[76]:
@@ -1577,17 +1827,19 @@ try:
     obj = class_constructor()
     ret = obj.date
     type_pandas_core_arrays_datetimes_DatetimeArray_date = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.date:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_date)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.date:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_date,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_date = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.date: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_date = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.date: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[77]:
@@ -1598,17 +1850,19 @@ try:
     obj = class_constructor()
     ret = obj.day
     type_pandas_core_arrays_datetimes_DatetimeArray_day = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.day:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_day)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.day:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_day,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_day = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.day: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_day = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.day: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[78]:
@@ -1619,17 +1873,19 @@ try:
     obj = class_constructor()
     ret = obj.day_name()
     type_pandas_core_arrays_datetimes_DatetimeArray_day_name = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.day_name:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_day_name)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.day_name:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_day_name,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_day_name = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.day_name: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_day_name = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.day_name: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[79]:
@@ -1640,17 +1896,21 @@ try:
     obj = class_constructor()
     ret = obj.day_of_week
     type_pandas_core_arrays_datetimes_DatetimeArray_day_of_week = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.day_of_week:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_day_of_week)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.day_of_week:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_day_of_week,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_day_of_week = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.day_of_week: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_day_of_week = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray.day_of_week: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[80]:
@@ -1661,17 +1921,21 @@ try:
     obj = class_constructor()
     ret = obj.day_of_year
     type_pandas_core_arrays_datetimes_DatetimeArray_day_of_year = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.day_of_year:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_day_of_year)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.day_of_year:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_day_of_year,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_day_of_year = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.day_of_year: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_day_of_year = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray.day_of_year: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[81]:
@@ -1682,17 +1946,19 @@ try:
     obj = class_constructor()
     ret = obj.dayofweek
     type_pandas_core_arrays_datetimes_DatetimeArray_dayofweek = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.dayofweek:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_dayofweek)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.dayofweek:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_dayofweek,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_dayofweek = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.dayofweek: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_dayofweek = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.dayofweek: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[82]:
@@ -1703,17 +1969,19 @@ try:
     obj = class_constructor()
     ret = obj.dayofyear
     type_pandas_core_arrays_datetimes_DatetimeArray_dayofyear = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.dayofyear:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_dayofyear)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.dayofyear:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_dayofyear,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_dayofyear = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.dayofyear: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_dayofyear = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.dayofyear: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[83]:
@@ -1724,17 +1992,21 @@ try:
     obj = class_constructor()
     ret = obj.days_in_month
     type_pandas_core_arrays_datetimes_DatetimeArray_days_in_month = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.days_in_month:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_days_in_month)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.days_in_month:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_days_in_month,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_days_in_month = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.days_in_month: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_days_in_month = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray.days_in_month: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[84]:
@@ -1745,17 +2017,21 @@ try:
     obj = class_constructor()
     ret = obj.daysinmonth
     type_pandas_core_arrays_datetimes_DatetimeArray_daysinmonth = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.daysinmonth:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_daysinmonth)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.daysinmonth:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_daysinmonth,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_daysinmonth = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.daysinmonth: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_daysinmonth = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray.daysinmonth: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[85]:
@@ -1766,17 +2042,19 @@ try:
     obj = class_constructor()
     ret = obj.dropna()
     type_pandas_core_arrays_datetimes_DatetimeArray_dropna = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.dropna:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_dropna)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.dropna:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_dropna,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_dropna = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.dropna: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_dropna = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.dropna: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[86]:
@@ -1787,17 +2065,19 @@ try:
     obj = class_constructor()
     ret = obj.dtype
     type_pandas_core_arrays_datetimes_DatetimeArray_dtype = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.dtype:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_dtype)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.dtype:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_dtype,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_dtype = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.dtype: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_dtype = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.dtype: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[87]:
@@ -1808,17 +2088,19 @@ try:
     obj = class_constructor()
     ret = obj.factorize()
     type_pandas_core_arrays_datetimes_DatetimeArray_factorize = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.factorize:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_factorize)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.factorize:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_factorize,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_factorize = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.factorize: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_factorize = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.factorize: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[88]:
@@ -1829,17 +2111,19 @@ try:
     obj = class_constructor()
     ret = obj.floor()
     type_pandas_core_arrays_datetimes_DatetimeArray_floor = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.floor:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_floor)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.floor:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_floor,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_floor = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.floor: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_floor = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.floor: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[89]:
@@ -1850,17 +2134,19 @@ try:
     obj = class_constructor()
     ret = obj.freq
     type_pandas_core_arrays_datetimes_DatetimeArray_freq = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.freq:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_freq)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.freq:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_freq,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_freq = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.freq: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_freq = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.freq: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[90]:
@@ -1871,17 +2157,19 @@ try:
     obj = class_constructor()
     ret = obj.freqstr
     type_pandas_core_arrays_datetimes_DatetimeArray_freqstr = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.freqstr:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_freqstr)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.freqstr:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_freqstr,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_freqstr = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.freqstr: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_freqstr = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.freqstr: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[91]:
@@ -1892,17 +2180,19 @@ try:
     obj = class_constructor()
     ret = obj.hour
     type_pandas_core_arrays_datetimes_DatetimeArray_hour = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.hour:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_hour)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.hour:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_hour,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_hour = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.hour: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_hour = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.hour: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[92]:
@@ -1913,17 +2203,21 @@ try:
     obj = class_constructor()
     ret = obj.inferred_freq
     type_pandas_core_arrays_datetimes_DatetimeArray_inferred_freq = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.inferred_freq:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_inferred_freq)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.inferred_freq:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_inferred_freq,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_inferred_freq = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.inferred_freq: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_inferred_freq = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray.inferred_freq: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[93]:
@@ -1934,17 +2228,21 @@ try:
     obj = class_constructor()
     ret = obj.is_leap_year
     type_pandas_core_arrays_datetimes_DatetimeArray_is_leap_year = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.is_leap_year:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_is_leap_year)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.is_leap_year:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_is_leap_year,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_is_leap_year = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.is_leap_year: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_is_leap_year = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray.is_leap_year: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[94]:
@@ -1955,17 +2253,21 @@ try:
     obj = class_constructor()
     ret = obj.is_month_end
     type_pandas_core_arrays_datetimes_DatetimeArray_is_month_end = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.is_month_end:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_is_month_end)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.is_month_end:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_is_month_end,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_is_month_end = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.is_month_end: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_is_month_end = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray.is_month_end: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[95]:
@@ -1976,17 +2278,21 @@ try:
     obj = class_constructor()
     ret = obj.is_month_start
     type_pandas_core_arrays_datetimes_DatetimeArray_is_month_start = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.is_month_start:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_is_month_start)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.is_month_start:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_is_month_start,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_is_month_start = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.is_month_start: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_is_month_start = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray.is_month_start: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[96]:
@@ -1997,17 +2303,21 @@ try:
     obj = class_constructor()
     ret = obj.is_normalized
     type_pandas_core_arrays_datetimes_DatetimeArray_is_normalized = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.is_normalized:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_is_normalized)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.is_normalized:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_is_normalized,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_is_normalized = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.is_normalized: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_is_normalized = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray.is_normalized: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[97]:
@@ -2018,17 +2328,21 @@ try:
     obj = class_constructor()
     ret = obj.is_quarter_end
     type_pandas_core_arrays_datetimes_DatetimeArray_is_quarter_end = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.is_quarter_end:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_is_quarter_end)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.is_quarter_end:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_is_quarter_end,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_is_quarter_end = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.is_quarter_end: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_is_quarter_end = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray.is_quarter_end: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[98]:
@@ -2039,17 +2353,21 @@ try:
     obj = class_constructor()
     ret = obj.is_quarter_start
     type_pandas_core_arrays_datetimes_DatetimeArray_is_quarter_start = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.is_quarter_start:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_is_quarter_start)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.is_quarter_start:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_is_quarter_start,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_is_quarter_start = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.is_quarter_start: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_is_quarter_start = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray.is_quarter_start: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[99]:
@@ -2060,17 +2378,21 @@ try:
     obj = class_constructor()
     ret = obj.is_year_end
     type_pandas_core_arrays_datetimes_DatetimeArray_is_year_end = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.is_year_end:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_is_year_end)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.is_year_end:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_is_year_end,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_is_year_end = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.is_year_end: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_is_year_end = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray.is_year_end: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[100]:
@@ -2081,17 +2403,21 @@ try:
     obj = class_constructor()
     ret = obj.is_year_start
     type_pandas_core_arrays_datetimes_DatetimeArray_is_year_start = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.is_year_start:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_is_year_start)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.is_year_start:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_is_year_start,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_is_year_start = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.is_year_start: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_is_year_start = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray.is_year_start: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[101]:
@@ -2102,17 +2428,19 @@ try:
     obj = class_constructor()
     ret = obj.map()
     type_pandas_core_arrays_datetimes_DatetimeArray_map = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.map:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_map)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.map:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_map,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_map = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.map: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_map = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.map: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[102]:
@@ -2123,17 +2451,21 @@ try:
     obj = class_constructor()
     ret = obj.microsecond
     type_pandas_core_arrays_datetimes_DatetimeArray_microsecond = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.microsecond:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_microsecond)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.microsecond:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_microsecond,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_microsecond = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.microsecond: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_microsecond = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray.microsecond: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[103]:
@@ -2144,17 +2476,19 @@ try:
     obj = class_constructor()
     ret = obj.minute
     type_pandas_core_arrays_datetimes_DatetimeArray_minute = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.minute:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_minute)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.minute:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_minute,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_minute = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.minute: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_minute = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.minute: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[104]:
@@ -2165,17 +2499,19 @@ try:
     obj = class_constructor()
     ret = obj.month
     type_pandas_core_arrays_datetimes_DatetimeArray_month = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.month:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_month)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.month:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_month,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_month = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.month: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_month = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.month: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[105]:
@@ -2186,17 +2522,19 @@ try:
     obj = class_constructor()
     ret = obj.month_name()
     type_pandas_core_arrays_datetimes_DatetimeArray_month_name = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.month_name:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_month_name)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.month_name:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_month_name,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_month_name = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.month_name: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_month_name = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.month_name: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[106]:
@@ -2207,17 +2545,19 @@ try:
     obj = class_constructor()
     ret = obj.nanosecond
     type_pandas_core_arrays_datetimes_DatetimeArray_nanosecond = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.nanosecond:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_nanosecond)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.nanosecond:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_nanosecond,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_nanosecond = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.nanosecond: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_nanosecond = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.nanosecond: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[107]:
@@ -2228,17 +2568,19 @@ try:
     obj = class_constructor()
     ret = obj.quarter
     type_pandas_core_arrays_datetimes_DatetimeArray_quarter = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.quarter:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_quarter)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.quarter:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_quarter,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_quarter = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.quarter: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_quarter = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.quarter: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[108]:
@@ -2249,17 +2591,19 @@ try:
     obj = class_constructor()
     ret = obj.resolution
     type_pandas_core_arrays_datetimes_DatetimeArray_resolution = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.resolution:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_resolution)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.resolution:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_resolution,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_resolution = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.resolution: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_resolution = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.resolution: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[109]:
@@ -2270,17 +2614,19 @@ try:
     obj = class_constructor()
     ret = obj.round()
     type_pandas_core_arrays_datetimes_DatetimeArray_round = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.round:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_round)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.round:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_round,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_round = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.round: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_round = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.round: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[110]:
@@ -2291,17 +2637,21 @@ try:
     obj = class_constructor()
     ret = obj.searchsorted()
     type_pandas_core_arrays_datetimes_DatetimeArray_searchsorted = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.searchsorted:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_searchsorted)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.searchsorted:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_searchsorted,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_searchsorted = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.searchsorted: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_searchsorted = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray.searchsorted: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[111]:
@@ -2312,17 +2662,19 @@ try:
     obj = class_constructor()
     ret = obj.second
     type_pandas_core_arrays_datetimes_DatetimeArray_second = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.second:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_second)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.second:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_second,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_second = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.second: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_second = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.second: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[112]:
@@ -2333,17 +2685,19 @@ try:
     obj = class_constructor()
     ret = obj.shift()
     type_pandas_core_arrays_datetimes_DatetimeArray_shift = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.shift:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_shift)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.shift:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_shift,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_shift = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.shift: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_shift = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.shift: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[113]:
@@ -2354,17 +2708,19 @@ try:
     obj = class_constructor()
     ret = obj.std()
     type_pandas_core_arrays_datetimes_DatetimeArray_std = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.std:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_std)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.std:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_std,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_std = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.std: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_std = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.std: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[114]:
@@ -2375,17 +2731,19 @@ try:
     obj = class_constructor()
     ret = obj.time
     type_pandas_core_arrays_datetimes_DatetimeArray_time = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.time:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_time)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.time:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_time,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_time = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.time: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_time = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.time: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[115]:
@@ -2396,17 +2754,19 @@ try:
     obj = class_constructor()
     ret = obj.timetz
     type_pandas_core_arrays_datetimes_DatetimeArray_timetz = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.timetz:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_timetz)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.timetz:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_timetz,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_timetz = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.timetz: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_timetz = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.timetz: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[116]:
@@ -2417,17 +2777,19 @@ try:
     obj = class_constructor()
     ret = obj.tz
     type_pandas_core_arrays_datetimes_DatetimeArray_tz = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.tz:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_tz)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.tz:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_tz,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_tz = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.tz: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_tz = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.tz: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[117]:
@@ -2438,17 +2800,19 @@ try:
     obj = class_constructor()
     ret = obj.tzinfo
     type_pandas_core_arrays_datetimes_DatetimeArray_tzinfo = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.tzinfo:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_tzinfo)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.tzinfo:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_tzinfo,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_tzinfo = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.tzinfo: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_tzinfo = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.tzinfo: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[118]:
@@ -2459,17 +2823,21 @@ try:
     obj = class_constructor()
     ret = obj.value_counts()
     type_pandas_core_arrays_datetimes_DatetimeArray_value_counts = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.value_counts:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_value_counts)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.value_counts:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_value_counts,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_value_counts = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.value_counts: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_value_counts = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.datetimes.DatetimeArray.value_counts: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[119]:
@@ -2480,17 +2848,19 @@ try:
     obj = class_constructor()
     ret = obj.week
     type_pandas_core_arrays_datetimes_DatetimeArray_week = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.week:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_week)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.week:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_week,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_week = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.week: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_week = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.week: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[120]:
@@ -2501,17 +2871,19 @@ try:
     obj = class_constructor()
     ret = obj.weekday
     type_pandas_core_arrays_datetimes_DatetimeArray_weekday = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.weekday:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_weekday)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.weekday:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_weekday,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_weekday = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.weekday: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_weekday = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.weekday: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[121]:
@@ -2522,17 +2894,19 @@ try:
     obj = class_constructor()
     ret = obj.weekofyear
     type_pandas_core_arrays_datetimes_DatetimeArray_weekofyear = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.weekofyear:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_weekofyear)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.weekofyear:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_weekofyear,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_weekofyear = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.weekofyear: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_weekofyear = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.weekofyear: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[122]:
@@ -2543,15 +2917,16 @@ try:
     obj = class_constructor()
     ret = obj.year
     type_pandas_core_arrays_datetimes_DatetimeArray_year = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.datetimes.DatetimeArray.year:",
-        type_pandas_core_arrays_datetimes_DatetimeArray_year)
+    )
+    print(
+        "✅ pandas.core.arrays.datetimes.DatetimeArray.year:",
+        type_pandas_core_arrays_datetimes_DatetimeArray_year,
+    )
 except Exception as e:
-    type_pandas_core_arrays_datetimes_DatetimeArray_year = '_syft_missing'
-    print('❌ pandas.core.arrays.datetimes.DatetimeArray.year: Return unavailable')
+    type_pandas_core_arrays_datetimes_DatetimeArray_year = "_syft_missing"
+    print("❌ pandas.core.arrays.datetimes.DatetimeArray.year: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
-
+    print("  Error:", e)

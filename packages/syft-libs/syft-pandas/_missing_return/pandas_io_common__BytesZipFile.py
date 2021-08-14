@@ -23,17 +23,19 @@ try:
     obj = class_constructor()
     ret = obj._RealGetContents()
     type_pandas_io_common__BytesZipFile__RealGetContents = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.common._BytesZipFile._RealGetContents:",
-        type_pandas_io_common__BytesZipFile__RealGetContents)
+    )
+    print(
+        "✅ pandas.io.common._BytesZipFile._RealGetContents:",
+        type_pandas_io_common__BytesZipFile__RealGetContents,
+    )
 except Exception as e:
-    type_pandas_io_common__BytesZipFile__RealGetContents = '_syft_missing'
-    print('❌ pandas.io.common._BytesZipFile._RealGetContents: Return unavailable')
+    type_pandas_io_common__BytesZipFile__RealGetContents = "_syft_missing"
+    print("❌ pandas.io.common._BytesZipFile._RealGetContents: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[3]:
@@ -44,17 +46,19 @@ try:
     obj = class_constructor()
     ret = obj.__del__()
     type_pandas_io_common__BytesZipFile___del__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.common._BytesZipFile.__del__:",
-        type_pandas_io_common__BytesZipFile___del__)
+    )
+    print(
+        "✅ pandas.io.common._BytesZipFile.__del__:",
+        type_pandas_io_common__BytesZipFile___del__,
+    )
 except Exception as e:
-    type_pandas_io_common__BytesZipFile___del__ = '_syft_missing'
-    print('❌ pandas.io.common._BytesZipFile.__del__: Return unavailable')
+    type_pandas_io_common__BytesZipFile___del__ = "_syft_missing"
+    print("❌ pandas.io.common._BytesZipFile.__del__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[4]:
@@ -65,17 +69,19 @@ try:
     obj = class_constructor()
     ret = obj.__enter__()
     type_pandas_io_common__BytesZipFile___enter__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.common._BytesZipFile.__enter__:",
-        type_pandas_io_common__BytesZipFile___enter__)
+    )
+    print(
+        "✅ pandas.io.common._BytesZipFile.__enter__:",
+        type_pandas_io_common__BytesZipFile___enter__,
+    )
 except Exception as e:
-    type_pandas_io_common__BytesZipFile___enter__ = '_syft_missing'
-    print('❌ pandas.io.common._BytesZipFile.__enter__: Return unavailable')
+    type_pandas_io_common__BytesZipFile___enter__ = "_syft_missing"
+    print("❌ pandas.io.common._BytesZipFile.__enter__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[5]:
@@ -86,17 +92,19 @@ try:
     obj = class_constructor()
     ret = obj.__exit__()
     type_pandas_io_common__BytesZipFile___exit__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.common._BytesZipFile.__exit__:",
-        type_pandas_io_common__BytesZipFile___exit__)
+    )
+    print(
+        "✅ pandas.io.common._BytesZipFile.__exit__:",
+        type_pandas_io_common__BytesZipFile___exit__,
+    )
 except Exception as e:
-    type_pandas_io_common__BytesZipFile___exit__ = '_syft_missing'
-    print('❌ pandas.io.common._BytesZipFile.__exit__: Return unavailable')
+    type_pandas_io_common__BytesZipFile___exit__ = "_syft_missing"
+    print("❌ pandas.io.common._BytesZipFile.__exit__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[6]:
@@ -107,17 +115,19 @@ try:
     obj = class_constructor()
     ret = obj.__repr__()
     type_pandas_io_common__BytesZipFile___repr__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.common._BytesZipFile.__repr__:",
-        type_pandas_io_common__BytesZipFile___repr__)
+    )
+    print(
+        "✅ pandas.io.common._BytesZipFile.__repr__:",
+        type_pandas_io_common__BytesZipFile___repr__,
+    )
 except Exception as e:
-    type_pandas_io_common__BytesZipFile___repr__ = '_syft_missing'
-    print('❌ pandas.io.common._BytesZipFile.__repr__: Return unavailable')
+    type_pandas_io_common__BytesZipFile___repr__ = "_syft_missing"
+    print("❌ pandas.io.common._BytesZipFile.__repr__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[7]:
@@ -128,17 +138,19 @@ try:
     obj = class_constructor()
     ret = obj._extract_member()
     type_pandas_io_common__BytesZipFile__extract_member = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.common._BytesZipFile._extract_member:",
-        type_pandas_io_common__BytesZipFile__extract_member)
+    )
+    print(
+        "✅ pandas.io.common._BytesZipFile._extract_member:",
+        type_pandas_io_common__BytesZipFile__extract_member,
+    )
 except Exception as e:
-    type_pandas_io_common__BytesZipFile__extract_member = '_syft_missing'
-    print('❌ pandas.io.common._BytesZipFile._extract_member: Return unavailable')
+    type_pandas_io_common__BytesZipFile__extract_member = "_syft_missing"
+    print("❌ pandas.io.common._BytesZipFile._extract_member: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[8]:
@@ -149,17 +161,19 @@ try:
     obj = class_constructor()
     ret = obj._fpclose()
     type_pandas_io_common__BytesZipFile__fpclose = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.common._BytesZipFile._fpclose:",
-        type_pandas_io_common__BytesZipFile__fpclose)
+    )
+    print(
+        "✅ pandas.io.common._BytesZipFile._fpclose:",
+        type_pandas_io_common__BytesZipFile__fpclose,
+    )
 except Exception as e:
-    type_pandas_io_common__BytesZipFile__fpclose = '_syft_missing'
-    print('❌ pandas.io.common._BytesZipFile._fpclose: Return unavailable')
+    type_pandas_io_common__BytesZipFile__fpclose = "_syft_missing"
+    print("❌ pandas.io.common._BytesZipFile._fpclose: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[9]:
@@ -170,17 +184,19 @@ try:
     obj = class_constructor()
     ret = obj._open_to_write()
     type_pandas_io_common__BytesZipFile__open_to_write = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.common._BytesZipFile._open_to_write:",
-        type_pandas_io_common__BytesZipFile__open_to_write)
+    )
+    print(
+        "✅ pandas.io.common._BytesZipFile._open_to_write:",
+        type_pandas_io_common__BytesZipFile__open_to_write,
+    )
 except Exception as e:
-    type_pandas_io_common__BytesZipFile__open_to_write = '_syft_missing'
-    print('❌ pandas.io.common._BytesZipFile._open_to_write: Return unavailable')
+    type_pandas_io_common__BytesZipFile__open_to_write = "_syft_missing"
+    print("❌ pandas.io.common._BytesZipFile._open_to_write: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[10]:
@@ -191,17 +207,19 @@ try:
     obj = class_constructor()
     ret = obj._sanitize_windows_name()
     type_pandas_io_common__BytesZipFile__sanitize_windows_name = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.common._BytesZipFile._sanitize_windows_name:",
-        type_pandas_io_common__BytesZipFile__sanitize_windows_name)
+    )
+    print(
+        "✅ pandas.io.common._BytesZipFile._sanitize_windows_name:",
+        type_pandas_io_common__BytesZipFile__sanitize_windows_name,
+    )
 except Exception as e:
-    type_pandas_io_common__BytesZipFile__sanitize_windows_name = '_syft_missing'
-    print('❌ pandas.io.common._BytesZipFile._sanitize_windows_name: Return unavailable')
+    type_pandas_io_common__BytesZipFile__sanitize_windows_name = "_syft_missing"
+    print("❌ pandas.io.common._BytesZipFile._sanitize_windows_name: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[11]:
@@ -212,17 +230,19 @@ try:
     obj = class_constructor()
     ret = obj._write_end_record()
     type_pandas_io_common__BytesZipFile__write_end_record = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.common._BytesZipFile._write_end_record:",
-        type_pandas_io_common__BytesZipFile__write_end_record)
+    )
+    print(
+        "✅ pandas.io.common._BytesZipFile._write_end_record:",
+        type_pandas_io_common__BytesZipFile__write_end_record,
+    )
 except Exception as e:
-    type_pandas_io_common__BytesZipFile__write_end_record = '_syft_missing'
-    print('❌ pandas.io.common._BytesZipFile._write_end_record: Return unavailable')
+    type_pandas_io_common__BytesZipFile__write_end_record = "_syft_missing"
+    print("❌ pandas.io.common._BytesZipFile._write_end_record: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[12]:
@@ -233,17 +253,19 @@ try:
     obj = class_constructor()
     ret = obj._writecheck()
     type_pandas_io_common__BytesZipFile__writecheck = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.common._BytesZipFile._writecheck:",
-        type_pandas_io_common__BytesZipFile__writecheck)
+    )
+    print(
+        "✅ pandas.io.common._BytesZipFile._writecheck:",
+        type_pandas_io_common__BytesZipFile__writecheck,
+    )
 except Exception as e:
-    type_pandas_io_common__BytesZipFile__writecheck = '_syft_missing'
-    print('❌ pandas.io.common._BytesZipFile._writecheck: Return unavailable')
+    type_pandas_io_common__BytesZipFile__writecheck = "_syft_missing"
+    print("❌ pandas.io.common._BytesZipFile._writecheck: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[13]:
@@ -254,17 +276,19 @@ try:
     obj = class_constructor()
     ret = obj.close()
     type_pandas_io_common__BytesZipFile_close = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.common._BytesZipFile.close:",
-        type_pandas_io_common__BytesZipFile_close)
+    )
+    print(
+        "✅ pandas.io.common._BytesZipFile.close:",
+        type_pandas_io_common__BytesZipFile_close,
+    )
 except Exception as e:
-    type_pandas_io_common__BytesZipFile_close = '_syft_missing'
-    print('❌ pandas.io.common._BytesZipFile.close: Return unavailable')
+    type_pandas_io_common__BytesZipFile_close = "_syft_missing"
+    print("❌ pandas.io.common._BytesZipFile.close: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[14]:
@@ -275,17 +299,19 @@ try:
     obj = class_constructor()
     ret = obj.closed
     type_pandas_io_common__BytesZipFile_closed = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.common._BytesZipFile.closed:",
-        type_pandas_io_common__BytesZipFile_closed)
+    )
+    print(
+        "✅ pandas.io.common._BytesZipFile.closed:",
+        type_pandas_io_common__BytesZipFile_closed,
+    )
 except Exception as e:
-    type_pandas_io_common__BytesZipFile_closed = '_syft_missing'
-    print('❌ pandas.io.common._BytesZipFile.closed: Return unavailable')
+    type_pandas_io_common__BytesZipFile_closed = "_syft_missing"
+    print("❌ pandas.io.common._BytesZipFile.closed: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[15]:
@@ -296,17 +322,19 @@ try:
     obj = class_constructor()
     ret = obj.comment
     type_pandas_io_common__BytesZipFile_comment = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.common._BytesZipFile.comment:",
-        type_pandas_io_common__BytesZipFile_comment)
+    )
+    print(
+        "✅ pandas.io.common._BytesZipFile.comment:",
+        type_pandas_io_common__BytesZipFile_comment,
+    )
 except Exception as e:
-    type_pandas_io_common__BytesZipFile_comment = '_syft_missing'
-    print('❌ pandas.io.common._BytesZipFile.comment: Return unavailable')
+    type_pandas_io_common__BytesZipFile_comment = "_syft_missing"
+    print("❌ pandas.io.common._BytesZipFile.comment: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[16]:
@@ -317,17 +345,19 @@ try:
     obj = class_constructor()
     ret = obj.extract()
     type_pandas_io_common__BytesZipFile_extract = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.common._BytesZipFile.extract:",
-        type_pandas_io_common__BytesZipFile_extract)
+    )
+    print(
+        "✅ pandas.io.common._BytesZipFile.extract:",
+        type_pandas_io_common__BytesZipFile_extract,
+    )
 except Exception as e:
-    type_pandas_io_common__BytesZipFile_extract = '_syft_missing'
-    print('❌ pandas.io.common._BytesZipFile.extract: Return unavailable')
+    type_pandas_io_common__BytesZipFile_extract = "_syft_missing"
+    print("❌ pandas.io.common._BytesZipFile.extract: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[17]:
@@ -338,17 +368,19 @@ try:
     obj = class_constructor()
     ret = obj.extractall()
     type_pandas_io_common__BytesZipFile_extractall = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.common._BytesZipFile.extractall:",
-        type_pandas_io_common__BytesZipFile_extractall)
+    )
+    print(
+        "✅ pandas.io.common._BytesZipFile.extractall:",
+        type_pandas_io_common__BytesZipFile_extractall,
+    )
 except Exception as e:
-    type_pandas_io_common__BytesZipFile_extractall = '_syft_missing'
-    print('❌ pandas.io.common._BytesZipFile.extractall: Return unavailable')
+    type_pandas_io_common__BytesZipFile_extractall = "_syft_missing"
+    print("❌ pandas.io.common._BytesZipFile.extractall: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[18]:
@@ -359,17 +391,19 @@ try:
     obj = class_constructor()
     ret = obj.getinfo()
     type_pandas_io_common__BytesZipFile_getinfo = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.common._BytesZipFile.getinfo:",
-        type_pandas_io_common__BytesZipFile_getinfo)
+    )
+    print(
+        "✅ pandas.io.common._BytesZipFile.getinfo:",
+        type_pandas_io_common__BytesZipFile_getinfo,
+    )
 except Exception as e:
-    type_pandas_io_common__BytesZipFile_getinfo = '_syft_missing'
-    print('❌ pandas.io.common._BytesZipFile.getinfo: Return unavailable')
+    type_pandas_io_common__BytesZipFile_getinfo = "_syft_missing"
+    print("❌ pandas.io.common._BytesZipFile.getinfo: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[19]:
@@ -380,17 +414,19 @@ try:
     obj = class_constructor()
     ret = obj.infolist()
     type_pandas_io_common__BytesZipFile_infolist = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.common._BytesZipFile.infolist:",
-        type_pandas_io_common__BytesZipFile_infolist)
+    )
+    print(
+        "✅ pandas.io.common._BytesZipFile.infolist:",
+        type_pandas_io_common__BytesZipFile_infolist,
+    )
 except Exception as e:
-    type_pandas_io_common__BytesZipFile_infolist = '_syft_missing'
-    print('❌ pandas.io.common._BytesZipFile.infolist: Return unavailable')
+    type_pandas_io_common__BytesZipFile_infolist = "_syft_missing"
+    print("❌ pandas.io.common._BytesZipFile.infolist: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[20]:
@@ -401,17 +437,19 @@ try:
     obj = class_constructor()
     ret = obj.namelist()
     type_pandas_io_common__BytesZipFile_namelist = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.common._BytesZipFile.namelist:",
-        type_pandas_io_common__BytesZipFile_namelist)
+    )
+    print(
+        "✅ pandas.io.common._BytesZipFile.namelist:",
+        type_pandas_io_common__BytesZipFile_namelist,
+    )
 except Exception as e:
-    type_pandas_io_common__BytesZipFile_namelist = '_syft_missing'
-    print('❌ pandas.io.common._BytesZipFile.namelist: Return unavailable')
+    type_pandas_io_common__BytesZipFile_namelist = "_syft_missing"
+    print("❌ pandas.io.common._BytesZipFile.namelist: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[21]:
@@ -422,17 +460,19 @@ try:
     obj = class_constructor()
     ret = obj.open()
     type_pandas_io_common__BytesZipFile_open = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.common._BytesZipFile.open:",
-        type_pandas_io_common__BytesZipFile_open)
+    )
+    print(
+        "✅ pandas.io.common._BytesZipFile.open:",
+        type_pandas_io_common__BytesZipFile_open,
+    )
 except Exception as e:
-    type_pandas_io_common__BytesZipFile_open = '_syft_missing'
-    print('❌ pandas.io.common._BytesZipFile.open: Return unavailable')
+    type_pandas_io_common__BytesZipFile_open = "_syft_missing"
+    print("❌ pandas.io.common._BytesZipFile.open: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[22]:
@@ -443,17 +483,19 @@ try:
     obj = class_constructor()
     ret = obj.printdir()
     type_pandas_io_common__BytesZipFile_printdir = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.common._BytesZipFile.printdir:",
-        type_pandas_io_common__BytesZipFile_printdir)
+    )
+    print(
+        "✅ pandas.io.common._BytesZipFile.printdir:",
+        type_pandas_io_common__BytesZipFile_printdir,
+    )
 except Exception as e:
-    type_pandas_io_common__BytesZipFile_printdir = '_syft_missing'
-    print('❌ pandas.io.common._BytesZipFile.printdir: Return unavailable')
+    type_pandas_io_common__BytesZipFile_printdir = "_syft_missing"
+    print("❌ pandas.io.common._BytesZipFile.printdir: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[23]:
@@ -464,17 +506,19 @@ try:
     obj = class_constructor()
     ret = obj.read()
     type_pandas_io_common__BytesZipFile_read = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.common._BytesZipFile.read:",
-        type_pandas_io_common__BytesZipFile_read)
+    )
+    print(
+        "✅ pandas.io.common._BytesZipFile.read:",
+        type_pandas_io_common__BytesZipFile_read,
+    )
 except Exception as e:
-    type_pandas_io_common__BytesZipFile_read = '_syft_missing'
-    print('❌ pandas.io.common._BytesZipFile.read: Return unavailable')
+    type_pandas_io_common__BytesZipFile_read = "_syft_missing"
+    print("❌ pandas.io.common._BytesZipFile.read: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[24]:
@@ -485,17 +529,19 @@ try:
     obj = class_constructor()
     ret = obj.setpassword()
     type_pandas_io_common__BytesZipFile_setpassword = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.common._BytesZipFile.setpassword:",
-        type_pandas_io_common__BytesZipFile_setpassword)
+    )
+    print(
+        "✅ pandas.io.common._BytesZipFile.setpassword:",
+        type_pandas_io_common__BytesZipFile_setpassword,
+    )
 except Exception as e:
-    type_pandas_io_common__BytesZipFile_setpassword = '_syft_missing'
-    print('❌ pandas.io.common._BytesZipFile.setpassword: Return unavailable')
+    type_pandas_io_common__BytesZipFile_setpassword = "_syft_missing"
+    print("❌ pandas.io.common._BytesZipFile.setpassword: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[25]:
@@ -506,17 +552,19 @@ try:
     obj = class_constructor()
     ret = obj.testzip()
     type_pandas_io_common__BytesZipFile_testzip = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.common._BytesZipFile.testzip:",
-        type_pandas_io_common__BytesZipFile_testzip)
+    )
+    print(
+        "✅ pandas.io.common._BytesZipFile.testzip:",
+        type_pandas_io_common__BytesZipFile_testzip,
+    )
 except Exception as e:
-    type_pandas_io_common__BytesZipFile_testzip = '_syft_missing'
-    print('❌ pandas.io.common._BytesZipFile.testzip: Return unavailable')
+    type_pandas_io_common__BytesZipFile_testzip = "_syft_missing"
+    print("❌ pandas.io.common._BytesZipFile.testzip: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[26]:
@@ -527,17 +575,19 @@ try:
     obj = class_constructor()
     ret = obj.write()
     type_pandas_io_common__BytesZipFile_write = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.common._BytesZipFile.write:",
-        type_pandas_io_common__BytesZipFile_write)
+    )
+    print(
+        "✅ pandas.io.common._BytesZipFile.write:",
+        type_pandas_io_common__BytesZipFile_write,
+    )
 except Exception as e:
-    type_pandas_io_common__BytesZipFile_write = '_syft_missing'
-    print('❌ pandas.io.common._BytesZipFile.write: Return unavailable')
+    type_pandas_io_common__BytesZipFile_write = "_syft_missing"
+    print("❌ pandas.io.common._BytesZipFile.write: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[27]:
@@ -548,15 +598,16 @@ try:
     obj = class_constructor()
     ret = obj.writestr()
     type_pandas_io_common__BytesZipFile_writestr = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.common._BytesZipFile.writestr:",
-        type_pandas_io_common__BytesZipFile_writestr)
+    )
+    print(
+        "✅ pandas.io.common._BytesZipFile.writestr:",
+        type_pandas_io_common__BytesZipFile_writestr,
+    )
 except Exception as e:
-    type_pandas_io_common__BytesZipFile_writestr = '_syft_missing'
-    print('❌ pandas.io.common._BytesZipFile.writestr: Return unavailable')
+    type_pandas_io_common__BytesZipFile_writestr = "_syft_missing"
+    print("❌ pandas.io.common._BytesZipFile.writestr: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
-
+    print("   Error:", e)

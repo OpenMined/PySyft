@@ -2,6 +2,8 @@
 # coding: utf-8
 
 # ## pandas._config.config.option_context
+#
+# https://github.com/pandas-dev/pandas/blob/77443dce2734d57484e3f5f38eba6d1897089182/pandas/_config/config.py#L392
 
 # In[1]:
 
@@ -11,7 +13,7 @@ import pandas
 
 
 def class_constructor(*args, **kwargs):
-    obj = pandas._config.config.option_context()
+    obj = pandas._config.config.option_context("mode.chained_assignment", 101)
     return obj
 
 
@@ -105,3 +107,6 @@ except Exception as e:
     print("❌ pandas._config.config.option_context._recreate_cm: Return unavailable")
     print("  Please fix this return type code until there is no exception")
     print("   Error:", e)
+
+
+# In[ ]:

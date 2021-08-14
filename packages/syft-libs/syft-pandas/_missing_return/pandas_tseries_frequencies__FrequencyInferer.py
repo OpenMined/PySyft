@@ -23,15 +23,20 @@ try:
     obj = class_constructor()
     ret = obj.month_position_check()
     type_pandas_tseries_frequencies__FrequencyInferer_month_position_check = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.tseries.frequencies._FrequencyInferer.month_position_check:",
-        type_pandas_tseries_frequencies__FrequencyInferer_month_position_check)
+    )
+    print(
+        "✅ pandas.tseries.frequencies._FrequencyInferer.month_position_check:",
+        type_pandas_tseries_frequencies__FrequencyInferer_month_position_check,
+    )
 except Exception as e:
-    type_pandas_tseries_frequencies__FrequencyInferer_month_position_check = '_syft_missing'
-    print('❌ pandas.tseries.frequencies._FrequencyInferer.month_position_check: Return unavailable')
+    type_pandas_tseries_frequencies__FrequencyInferer_month_position_check = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.tseries.frequencies._FrequencyInferer.month_position_check: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
-
+    print("   Error:", e)

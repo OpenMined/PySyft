@@ -6,6 +6,17 @@
 # In[1]:
 
 
+# third party
+import pandas as pd
+
+
+def class_constructor():
+    return pd._libs.tslibs.nattype.NaTType()
+
+
+# In[2]:
+
+
 # pandas._libs.tslibs.nattype.NaTType.day
 try:
     obj = class_constructor()
@@ -26,53 +37,7 @@ except Exception as e:
     print("  Error:", e)
 
 
-# In[2]:
-
-
-# pandas._libs.tslibs.nattype.NaTType.day_of_week
-try:
-    obj = class_constructor()
-    ret = obj.day_of_week
-    type_pandas__libs_tslibs_nattype_NaTType_day_of_week = (
-        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
-        if getattr(ret, "__module__", None)
-        else ret.__class__.__name__
-    )
-    print(
-        "✅ pandas._libs.tslibs.nattype.NaTType.day_of_week:",
-        type_pandas__libs_tslibs_nattype_NaTType_day_of_week,
-    )
-except Exception as e:
-    type_pandas__libs_tslibs_nattype_NaTType_day_of_week = "_syft_missing"
-    print("❌ pandas._libs.tslibs.nattype.NaTType.day_of_week: Return unavailable")
-    print("  Please fix this return type code until there is no exception")
-    print("  Error:", e)
-
-
 # In[3]:
-
-
-# pandas._libs.tslibs.nattype.NaTType.day_of_year
-try:
-    obj = class_constructor()
-    ret = obj.day_of_year
-    type_pandas__libs_tslibs_nattype_NaTType_day_of_year = (
-        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
-        if getattr(ret, "__module__", None)
-        else ret.__class__.__name__
-    )
-    print(
-        "✅ pandas._libs.tslibs.nattype.NaTType.day_of_year:",
-        type_pandas__libs_tslibs_nattype_NaTType_day_of_year,
-    )
-except Exception as e:
-    type_pandas__libs_tslibs_nattype_NaTType_day_of_year = "_syft_missing"
-    print("❌ pandas._libs.tslibs.nattype.NaTType.day_of_year: Return unavailable")
-    print("  Please fix this return type code until there is no exception")
-    print("  Error:", e)
-
-
-# In[4]:
 
 
 # pandas._libs.tslibs.nattype.NaTType.dayofweek
@@ -95,7 +60,7 @@ except Exception as e:
     print("  Error:", e)
 
 
-# In[5]:
+# In[4]:
 
 
 # pandas._libs.tslibs.nattype.NaTType.dayofyear
@@ -118,7 +83,7 @@ except Exception as e:
     print("  Error:", e)
 
 
-# In[6]:
+# In[5]:
 
 
 # pandas._libs.tslibs.nattype.NaTType.days
@@ -141,7 +106,7 @@ except Exception as e:
     print("  Error:", e)
 
 
-# In[7]:
+# In[6]:
 
 
 # pandas._libs.tslibs.nattype.NaTType.days_in_month
@@ -164,7 +129,7 @@ except Exception as e:
     print("  Error:", e)
 
 
-# In[8]:
+# In[7]:
 
 
 # pandas._libs.tslibs.nattype.NaTType.daysinmonth
@@ -187,7 +152,7 @@ except Exception as e:
     print("  Error:", e)
 
 
-# In[9]:
+# In[8]:
 
 
 # pandas._libs.tslibs.nattype.NaTType.hour
@@ -210,7 +175,7 @@ except Exception as e:
     print("  Error:", e)
 
 
-# In[10]:
+# In[9]:
 
 
 # pandas._libs.tslibs.nattype.NaTType.microsecond
@@ -233,7 +198,7 @@ except Exception as e:
     print("  Error:", e)
 
 
-# In[11]:
+# In[10]:
 
 
 # pandas._libs.tslibs.nattype.NaTType.microseconds
@@ -256,7 +221,7 @@ except Exception as e:
     print("  Error:", e)
 
 
-# In[12]:
+# In[11]:
 
 
 # pandas._libs.tslibs.nattype.NaTType.millisecond
@@ -279,7 +244,7 @@ except Exception as e:
     print("  Error:", e)
 
 
-# In[13]:
+# In[12]:
 
 
 # pandas._libs.tslibs.nattype.NaTType.minute
@@ -302,7 +267,7 @@ except Exception as e:
     print("  Error:", e)
 
 
-# In[14]:
+# In[13]:
 
 
 # pandas._libs.tslibs.nattype.NaTType.month
@@ -325,7 +290,7 @@ except Exception as e:
     print("  Error:", e)
 
 
-# In[15]:
+# In[14]:
 
 
 # pandas._libs.tslibs.nattype.NaTType.nanosecond
@@ -348,7 +313,7 @@ except Exception as e:
     print("  Error:", e)
 
 
-# In[16]:
+# In[15]:
 
 
 # pandas._libs.tslibs.nattype.NaTType.nanoseconds
@@ -371,7 +336,7 @@ except Exception as e:
     print("  Error:", e)
 
 
-# In[17]:
+# In[16]:
 
 
 # pandas._libs.tslibs.nattype.NaTType.quarter
@@ -394,7 +359,7 @@ except Exception as e:
     print("  Error:", e)
 
 
-# In[18]:
+# In[17]:
 
 
 # pandas._libs.tslibs.nattype.NaTType.qyear
@@ -417,7 +382,7 @@ except Exception as e:
     print("  Error:", e)
 
 
-# In[19]:
+# In[18]:
 
 
 # pandas._libs.tslibs.nattype.NaTType.second
@@ -440,7 +405,7 @@ except Exception as e:
     print("  Error:", e)
 
 
-# In[20]:
+# In[19]:
 
 
 # pandas._libs.tslibs.nattype.NaTType.seconds
@@ -463,7 +428,7 @@ except Exception as e:
     print("  Error:", e)
 
 
-# In[21]:
+# In[20]:
 
 
 # pandas._libs.tslibs.nattype.NaTType.week
@@ -486,7 +451,7 @@ except Exception as e:
     print("  Error:", e)
 
 
-# In[22]:
+# In[21]:
 
 
 # pandas._libs.tslibs.nattype.NaTType.weekofyear
@@ -509,7 +474,7 @@ except Exception as e:
     print("  Error:", e)
 
 
-# In[23]:
+# In[22]:
 
 
 # pandas._libs.tslibs.nattype.NaTType.year
@@ -530,3 +495,6 @@ except Exception as e:
     print("❌ pandas._libs.tslibs.nattype.NaTType.year: Return unavailable")
     print("  Please fix this return type code until there is no exception")
     print("  Error:", e)
+
+
+# In[ ]:

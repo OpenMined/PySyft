@@ -23,17 +23,19 @@ try:
     obj = class_constructor()
     ret = obj._conv()
     type_pandas_util__doctools_TablePlotter__conv = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.util._doctools.TablePlotter._conv:",
-        type_pandas_util__doctools_TablePlotter__conv)
+    )
+    print(
+        "✅ pandas.util._doctools.TablePlotter._conv:",
+        type_pandas_util__doctools_TablePlotter__conv,
+    )
 except Exception as e:
-    type_pandas_util__doctools_TablePlotter__conv = '_syft_missing'
-    print('❌ pandas.util._doctools.TablePlotter._conv: Return unavailable')
+    type_pandas_util__doctools_TablePlotter__conv = "_syft_missing"
+    print("❌ pandas.util._doctools.TablePlotter._conv: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[3]:
@@ -44,17 +46,19 @@ try:
     obj = class_constructor()
     ret = obj._insert_index()
     type_pandas_util__doctools_TablePlotter__insert_index = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.util._doctools.TablePlotter._insert_index:",
-        type_pandas_util__doctools_TablePlotter__insert_index)
+    )
+    print(
+        "✅ pandas.util._doctools.TablePlotter._insert_index:",
+        type_pandas_util__doctools_TablePlotter__insert_index,
+    )
 except Exception as e:
-    type_pandas_util__doctools_TablePlotter__insert_index = '_syft_missing'
-    print('❌ pandas.util._doctools.TablePlotter._insert_index: Return unavailable')
+    type_pandas_util__doctools_TablePlotter__insert_index = "_syft_missing"
+    print("❌ pandas.util._doctools.TablePlotter._insert_index: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[4]:
@@ -65,15 +69,16 @@ try:
     obj = class_constructor()
     ret = obj.plot()
     type_pandas_util__doctools_TablePlotter_plot = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.util._doctools.TablePlotter.plot:",
-        type_pandas_util__doctools_TablePlotter_plot)
+    )
+    print(
+        "✅ pandas.util._doctools.TablePlotter.plot:",
+        type_pandas_util__doctools_TablePlotter_plot,
+    )
 except Exception as e:
-    type_pandas_util__doctools_TablePlotter_plot = '_syft_missing'
-    print('❌ pandas.util._doctools.TablePlotter.plot: Return unavailable')
+    type_pandas_util__doctools_TablePlotter_plot = "_syft_missing"
+    print("❌ pandas.util._doctools.TablePlotter.plot: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
-
+    print("   Error:", e)

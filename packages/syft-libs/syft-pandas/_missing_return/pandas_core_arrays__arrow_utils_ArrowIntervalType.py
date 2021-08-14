@@ -7,11 +7,12 @@
 
 
 # third party
-import pandas
+import pandas.core.arrays._arrow_utils
+import pyarrow as pa
 
 
 def class_constructor(*args, **kwargs):
-    obj = pandas.core.arrays._arrow_utils.ArrowIntervalType()
+    obj = pandas.core.arrays._arrow_utils.ArrowIntervalType(pa.int64(), "left")
     return obj
 
 
@@ -19,9 +20,11 @@ def class_constructor(*args, **kwargs):
 
 
 # pandas.core.arrays._arrow_utils.ArrowIntervalType.__arrow_ext_deserialize__
+# https://github.com/pandas-dev/pandas/blob/77443dce2734d57484e3f5f38eba6d1897089182/pandas/core/arrays/_arrow_utils.py#L114
 try:
     obj = class_constructor()
-    ret = obj.__arrow_ext_deserialize__()
+    # __arrow_ext_deserialize__ is a classmethod that returns instance
+    ret = obj
     type_pandas_core_arrays__arrow_utils_ArrowIntervalType___arrow_ext_deserialize__ = (
         getattr(ret, "__module__", None) + "." + ret.__class__.__name__
         if getattr(ret, "__module__", None)
@@ -75,7 +78,8 @@ except Exception as e:
 # pandas.core.arrays._arrow_utils.ArrowIntervalType.__eq__
 try:
     obj = class_constructor()
-    ret = obj.__eq__()
+    obj2 = class_constructor()
+    ret = obj.__eq__(obj2)
     type_pandas_core_arrays__arrow_utils_ArrowIntervalType___eq__ = (
         getattr(ret, "__module__", None) + "." + ret.__class__.__name__
         if getattr(ret, "__module__", None)
@@ -194,3 +198,6 @@ except Exception as e:
     )
     print("  Please fix this return type code until there is no exception")
     print("   Error:", e)
+
+
+# In[ ]:

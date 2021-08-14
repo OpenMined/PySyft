@@ -6,33 +6,32 @@
 # In[1]:
 
 
-# pandas._libs.tslibs.timestamps.Timestamp._freqstr
-try:
-    obj = class_constructor()
-    ret = obj._freqstr
-    type_pandas__libs_tslibs_timestamps_Timestamp__freqstr = (
-        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
-        if getattr(ret, "__module__", None)
-        else ret.__class__.__name__
-    )
-    print(
-        "✅ pandas._libs.tslibs.timestamps.Timestamp._freqstr:",
-        type_pandas__libs_tslibs_timestamps_Timestamp__freqstr,
-    )
-except Exception as e:
-    type_pandas__libs_tslibs_timestamps_Timestamp__freqstr = "_syft_missing"
-    print("❌ pandas._libs.tslibs.timestamps.Timestamp._freqstr: Return unavailable")
-    print("  Please fix this return type code until there is no exception")
-    print("  Error:", e)
+# third party
+import pandas
+
+
+def class_constructor(*args, **kwargs):
+    obj = pandas._libs.tslibs.timestamps.Timestamp(2020, 3, 4)
+    return obj
 
 
 # In[2]:
 
 
+class_constructor()
+
+
+# In[3]:
+
+
+# stdlib
 # pandas._libs.tslibs.timestamps.Timestamp.combine
+from datetime import date
+from datetime import time
+
 try:
     obj = class_constructor()
-    ret = obj.combine()
+    ret = obj.combine(date(2020, 3, 14), time(15, 30, 15))
     type_pandas__libs_tslibs_timestamps_Timestamp_combine = (
         getattr(ret, "__module__", None) + "." + ret.__class__.__name__
         if getattr(ret, "__module__", None)
@@ -49,7 +48,7 @@ except Exception as e:
     print("   Error:", e)
 
 
-# In[3]:
+# In[4]:
 
 
 # pandas._libs.tslibs.timestamps.Timestamp.freqstr
@@ -72,13 +71,13 @@ except Exception as e:
     print("  Error:", e)
 
 
-# In[4]:
+# In[5]:
 
 
 # pandas._libs.tslibs.timestamps.Timestamp.fromordinal
 try:
     obj = class_constructor()
-    ret = obj.fromordinal()
+    ret = obj.fromordinal(737425)
     type_pandas__libs_tslibs_timestamps_Timestamp_fromordinal = (
         getattr(ret, "__module__", None) + "." + ret.__class__.__name__
         if getattr(ret, "__module__", None)
@@ -95,13 +94,13 @@ except Exception as e:
     print("   Error:", e)
 
 
-# In[5]:
+# In[6]:
 
 
 # pandas._libs.tslibs.timestamps.Timestamp.fromtimestamp
 try:
     obj = class_constructor()
-    ret = obj.fromtimestamp()
+    ret = obj.fromtimestamp(1584199972)
     type_pandas__libs_tslibs_timestamps_Timestamp_fromtimestamp = (
         getattr(ret, "__module__", None) + "." + ret.__class__.__name__
         if getattr(ret, "__module__", None)
@@ -120,7 +119,7 @@ except Exception as e:
     print("   Error:", e)
 
 
-# In[6]:
+# In[7]:
 
 
 # pandas._libs.tslibs.timestamps.Timestamp.now
@@ -143,13 +142,14 @@ except Exception as e:
     print("   Error:", e)
 
 
-# In[7]:
+# In[8]:
 
 
 # pandas._libs.tslibs.timestamps.Timestamp.strptime
+
 try:
     obj = class_constructor()
-    ret = obj.strptime()
+    ret = obj.strptime("10/10/20", "dd/mm/yy")
     type_pandas__libs_tslibs_timestamps_Timestamp_strptime = (
         getattr(ret, "__module__", None) + "." + ret.__class__.__name__
         if getattr(ret, "__module__", None)
@@ -166,7 +166,7 @@ except Exception as e:
     print("   Error:", e)
 
 
-# In[8]:
+# In[9]:
 
 
 # pandas._libs.tslibs.timestamps.Timestamp.today
@@ -189,7 +189,7 @@ except Exception as e:
     print("   Error:", e)
 
 
-# In[9]:
+# In[10]:
 
 
 # pandas._libs.tslibs.timestamps.Timestamp.tz
@@ -212,13 +212,13 @@ except Exception as e:
     print("  Error:", e)
 
 
-# In[10]:
+# In[11]:
 
 
 # pandas._libs.tslibs.timestamps.Timestamp.utcfromtimestamp
 try:
     obj = class_constructor()
-    ret = obj.utcfromtimestamp()
+    ret = obj.utcfromtimestamp(1584199972)
     type_pandas__libs_tslibs_timestamps_Timestamp_utcfromtimestamp = (
         getattr(ret, "__module__", None) + "." + ret.__class__.__name__
         if getattr(ret, "__module__", None)
@@ -237,7 +237,7 @@ except Exception as e:
     print("   Error:", e)
 
 
-# In[11]:
+# In[12]:
 
 
 # pandas._libs.tslibs.timestamps.Timestamp.utcnow

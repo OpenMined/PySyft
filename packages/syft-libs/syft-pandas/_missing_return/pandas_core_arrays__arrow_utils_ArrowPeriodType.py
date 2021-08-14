@@ -7,11 +7,11 @@
 
 
 # third party
-import pandas
+import pandas.core.arrays._arrow_utils
 
 
 def class_constructor(*args, **kwargs):
-    obj = pandas.core.arrays._arrow_utils.ArrowPeriodType()
+    obj = pandas.core.arrays._arrow_utils.ArrowPeriodType("D")
     return obj
 
 
@@ -21,7 +21,8 @@ def class_constructor(*args, **kwargs):
 # pandas.core.arrays._arrow_utils.ArrowPeriodType.__arrow_ext_deserialize__
 try:
     obj = class_constructor()
-    ret = obj.__arrow_ext_deserialize__()
+    # __arrow_ext_deserialize__ is a classmethod that returns instance
+    ret = obj
     type_pandas_core_arrays__arrow_utils_ArrowPeriodType___arrow_ext_deserialize__ = (
         getattr(ret, "__module__", None) + "." + ret.__class__.__name__
         if getattr(ret, "__module__", None)
@@ -75,7 +76,8 @@ except Exception as e:
 # pandas.core.arrays._arrow_utils.ArrowPeriodType.__eq__
 try:
     obj = class_constructor()
-    ret = obj.__eq__()
+    obj2 = class_constructor()
+    ret = obj.__eq__(obj2)
     type_pandas_core_arrays__arrow_utils_ArrowPeriodType___eq__ = (
         getattr(ret, "__module__", None) + "." + ret.__class__.__name__
         if getattr(ret, "__module__", None)
@@ -167,3 +169,6 @@ except Exception as e:
     )
     print("  Please fix this return type code until there is no exception")
     print("   Error:", e)
+
+
+# In[ ]:

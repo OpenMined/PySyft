@@ -23,17 +23,19 @@ try:
     obj = class_constructor()
     ret = obj.__setstate__()
     type_pandas_core_dtypes_dtypes_IntervalDtype___setstate__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.dtypes.dtypes.IntervalDtype.__setstate__:",
-        type_pandas_core_dtypes_dtypes_IntervalDtype___setstate__)
+    )
+    print(
+        "✅ pandas.core.dtypes.dtypes.IntervalDtype.__setstate__:",
+        type_pandas_core_dtypes_dtypes_IntervalDtype___setstate__,
+    )
 except Exception as e:
-    type_pandas_core_dtypes_dtypes_IntervalDtype___setstate__ = '_syft_missing'
-    print('❌ pandas.core.dtypes.dtypes.IntervalDtype.__setstate__: Return unavailable')
+    type_pandas_core_dtypes_dtypes_IntervalDtype___setstate__ = "_syft_missing"
+    print("❌ pandas.core.dtypes.dtypes.IntervalDtype.__setstate__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[3]:
@@ -44,17 +46,19 @@ try:
     obj = class_constructor()
     ret = obj._can_hold_na
     type_pandas_core_dtypes_dtypes_IntervalDtype__can_hold_na = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.dtypes.dtypes.IntervalDtype._can_hold_na:",
-        type_pandas_core_dtypes_dtypes_IntervalDtype__can_hold_na)
+    )
+    print(
+        "✅ pandas.core.dtypes.dtypes.IntervalDtype._can_hold_na:",
+        type_pandas_core_dtypes_dtypes_IntervalDtype__can_hold_na,
+    )
 except Exception as e:
-    type_pandas_core_dtypes_dtypes_IntervalDtype__can_hold_na = '_syft_missing'
-    print('❌ pandas.core.dtypes.dtypes.IntervalDtype._can_hold_na: Return unavailable')
+    type_pandas_core_dtypes_dtypes_IntervalDtype__can_hold_na = "_syft_missing"
+    print("❌ pandas.core.dtypes.dtypes.IntervalDtype._can_hold_na: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[4]:
@@ -65,17 +69,19 @@ try:
     obj = class_constructor()
     ret = obj._is_boolean
     type_pandas_core_dtypes_dtypes_IntervalDtype__is_boolean = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.dtypes.dtypes.IntervalDtype._is_boolean:",
-        type_pandas_core_dtypes_dtypes_IntervalDtype__is_boolean)
+    )
+    print(
+        "✅ pandas.core.dtypes.dtypes.IntervalDtype._is_boolean:",
+        type_pandas_core_dtypes_dtypes_IntervalDtype__is_boolean,
+    )
 except Exception as e:
-    type_pandas_core_dtypes_dtypes_IntervalDtype__is_boolean = '_syft_missing'
-    print('❌ pandas.core.dtypes.dtypes.IntervalDtype._is_boolean: Return unavailable')
+    type_pandas_core_dtypes_dtypes_IntervalDtype__is_boolean = "_syft_missing"
+    print("❌ pandas.core.dtypes.dtypes.IntervalDtype._is_boolean: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[5]:
@@ -86,17 +92,19 @@ try:
     obj = class_constructor()
     ret = obj._is_numeric
     type_pandas_core_dtypes_dtypes_IntervalDtype__is_numeric = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.dtypes.dtypes.IntervalDtype._is_numeric:",
-        type_pandas_core_dtypes_dtypes_IntervalDtype__is_numeric)
+    )
+    print(
+        "✅ pandas.core.dtypes.dtypes.IntervalDtype._is_numeric:",
+        type_pandas_core_dtypes_dtypes_IntervalDtype__is_numeric,
+    )
 except Exception as e:
-    type_pandas_core_dtypes_dtypes_IntervalDtype__is_numeric = '_syft_missing'
-    print('❌ pandas.core.dtypes.dtypes.IntervalDtype._is_numeric: Return unavailable')
+    type_pandas_core_dtypes_dtypes_IntervalDtype__is_numeric = "_syft_missing"
+    print("❌ pandas.core.dtypes.dtypes.IntervalDtype._is_numeric: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[6]:
@@ -107,17 +115,19 @@ try:
     obj = class_constructor()
     ret = obj.closed
     type_pandas_core_dtypes_dtypes_IntervalDtype_closed = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.dtypes.dtypes.IntervalDtype.closed:",
-        type_pandas_core_dtypes_dtypes_IntervalDtype_closed)
+    )
+    print(
+        "✅ pandas.core.dtypes.dtypes.IntervalDtype.closed:",
+        type_pandas_core_dtypes_dtypes_IntervalDtype_closed,
+    )
 except Exception as e:
-    type_pandas_core_dtypes_dtypes_IntervalDtype_closed = '_syft_missing'
-    print('❌ pandas.core.dtypes.dtypes.IntervalDtype.closed: Return unavailable')
+    type_pandas_core_dtypes_dtypes_IntervalDtype_closed = "_syft_missing"
+    print("❌ pandas.core.dtypes.dtypes.IntervalDtype.closed: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[7]:
@@ -128,17 +138,19 @@ try:
     obj = class_constructor()
     ret = obj.na_value
     type_pandas_core_dtypes_dtypes_IntervalDtype_na_value = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.dtypes.dtypes.IntervalDtype.na_value:",
-        type_pandas_core_dtypes_dtypes_IntervalDtype_na_value)
+    )
+    print(
+        "✅ pandas.core.dtypes.dtypes.IntervalDtype.na_value:",
+        type_pandas_core_dtypes_dtypes_IntervalDtype_na_value,
+    )
 except Exception as e:
-    type_pandas_core_dtypes_dtypes_IntervalDtype_na_value = '_syft_missing'
-    print('❌ pandas.core.dtypes.dtypes.IntervalDtype.na_value: Return unavailable')
+    type_pandas_core_dtypes_dtypes_IntervalDtype_na_value = "_syft_missing"
+    print("❌ pandas.core.dtypes.dtypes.IntervalDtype.na_value: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[8]:
@@ -149,17 +161,19 @@ try:
     obj = class_constructor()
     ret = obj.names
     type_pandas_core_dtypes_dtypes_IntervalDtype_names = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.dtypes.dtypes.IntervalDtype.names:",
-        type_pandas_core_dtypes_dtypes_IntervalDtype_names)
+    )
+    print(
+        "✅ pandas.core.dtypes.dtypes.IntervalDtype.names:",
+        type_pandas_core_dtypes_dtypes_IntervalDtype_names,
+    )
 except Exception as e:
-    type_pandas_core_dtypes_dtypes_IntervalDtype_names = '_syft_missing'
-    print('❌ pandas.core.dtypes.dtypes.IntervalDtype.names: Return unavailable')
+    type_pandas_core_dtypes_dtypes_IntervalDtype_names = "_syft_missing"
+    print("❌ pandas.core.dtypes.dtypes.IntervalDtype.names: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[9]:
@@ -170,17 +184,19 @@ try:
     obj = class_constructor()
     ret = obj.subtype
     type_pandas_core_dtypes_dtypes_IntervalDtype_subtype = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.dtypes.dtypes.IntervalDtype.subtype:",
-        type_pandas_core_dtypes_dtypes_IntervalDtype_subtype)
+    )
+    print(
+        "✅ pandas.core.dtypes.dtypes.IntervalDtype.subtype:",
+        type_pandas_core_dtypes_dtypes_IntervalDtype_subtype,
+    )
 except Exception as e:
-    type_pandas_core_dtypes_dtypes_IntervalDtype_subtype = '_syft_missing'
-    print('❌ pandas.core.dtypes.dtypes.IntervalDtype.subtype: Return unavailable')
+    type_pandas_core_dtypes_dtypes_IntervalDtype_subtype = "_syft_missing"
+    print("❌ pandas.core.dtypes.dtypes.IntervalDtype.subtype: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[10]:
@@ -191,15 +207,16 @@ try:
     obj = class_constructor()
     ret = obj.type
     type_pandas_core_dtypes_dtypes_IntervalDtype_type = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.dtypes.dtypes.IntervalDtype.type:",
-        type_pandas_core_dtypes_dtypes_IntervalDtype_type)
+    )
+    print(
+        "✅ pandas.core.dtypes.dtypes.IntervalDtype.type:",
+        type_pandas_core_dtypes_dtypes_IntervalDtype_type,
+    )
 except Exception as e:
-    type_pandas_core_dtypes_dtypes_IntervalDtype_type = '_syft_missing'
-    print('❌ pandas.core.dtypes.dtypes.IntervalDtype.type: Return unavailable')
+    type_pandas_core_dtypes_dtypes_IntervalDtype_type = "_syft_missing"
+    print("❌ pandas.core.dtypes.dtypes.IntervalDtype.type: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
-
+    print("  Error:", e)

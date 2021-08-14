@@ -11,7 +11,7 @@ import pandas
 
 
 def class_constructor(*args, **kwargs):
-    obj = pandas._libs.tslibs.parsing._timelex()
+    obj = pandas._libs.tslibs.parsing._timelex("abcldasdg")
     return obj
 
 
@@ -21,7 +21,7 @@ def class_constructor(*args, **kwargs):
 # pandas._libs.tslibs.parsing._timelex.split
 try:
     obj = class_constructor()
-    ret = obj.split()
+    ret = obj.split("a")
     type_pandas__libs_tslibs_parsing__timelex_split = (
         getattr(ret, "__module__", None) + "." + ret.__class__.__name__
         if getattr(ret, "__module__", None)
@@ -36,3 +36,6 @@ except Exception as e:
     print("❌ pandas._libs.tslibs.parsing._timelex.split: Return unavailable")
     print("  Please fix this return type code until there is no exception")
     print("   Error:", e)
+
+
+# In[ ]:

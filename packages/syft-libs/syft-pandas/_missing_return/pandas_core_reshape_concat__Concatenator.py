@@ -23,17 +23,23 @@ try:
     obj = class_constructor()
     ret = obj._maybe_check_integrity()
     type_pandas_core_reshape_concat__Concatenator__maybe_check_integrity = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.reshape.concat._Concatenator._maybe_check_integrity:",
-        type_pandas_core_reshape_concat__Concatenator__maybe_check_integrity)
+    )
+    print(
+        "✅ pandas.core.reshape.concat._Concatenator._maybe_check_integrity:",
+        type_pandas_core_reshape_concat__Concatenator__maybe_check_integrity,
+    )
 except Exception as e:
-    type_pandas_core_reshape_concat__Concatenator__maybe_check_integrity = '_syft_missing'
-    print('❌ pandas.core.reshape.concat._Concatenator._maybe_check_integrity: Return unavailable')
+    type_pandas_core_reshape_concat__Concatenator__maybe_check_integrity = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.reshape.concat._Concatenator._maybe_check_integrity: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[3]:
@@ -44,15 +50,16 @@ try:
     obj = class_constructor()
     ret = obj.get_result()
     type_pandas_core_reshape_concat__Concatenator_get_result = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.reshape.concat._Concatenator.get_result:",
-        type_pandas_core_reshape_concat__Concatenator_get_result)
+    )
+    print(
+        "✅ pandas.core.reshape.concat._Concatenator.get_result:",
+        type_pandas_core_reshape_concat__Concatenator_get_result,
+    )
 except Exception as e:
-    type_pandas_core_reshape_concat__Concatenator_get_result = '_syft_missing'
-    print('❌ pandas.core.reshape.concat._Concatenator.get_result: Return unavailable')
+    type_pandas_core_reshape_concat__Concatenator_get_result = "_syft_missing"
+    print("❌ pandas.core.reshape.concat._Concatenator.get_result: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
-
+    print("   Error:", e)

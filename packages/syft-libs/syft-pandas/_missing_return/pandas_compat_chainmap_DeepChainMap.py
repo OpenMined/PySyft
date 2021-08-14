@@ -11,7 +11,7 @@ import pandas
 
 
 def class_constructor(*args, **kwargs):
-    obj = pandas.compat.chainmap.DeepChainMap()
+    obj = pandas.compat.chainmap.DeepChainMap({"a": "str"})
     return obj
 
 
@@ -67,7 +67,7 @@ except Exception as e:
 # pandas.compat.chainmap.DeepChainMap.__contains__
 try:
     obj = class_constructor()
-    ret = obj.__contains__()
+    ret = obj.__contains__("a")
     type_pandas_compat_chainmap_DeepChainMap___contains__ = (
         getattr(ret, "__module__", None) + "." + ret.__class__.__name__
         if getattr(ret, "__module__", None)
@@ -113,7 +113,7 @@ except Exception as e:
 # pandas.compat.chainmap.DeepChainMap.__eq__
 try:
     obj = class_constructor()
-    ret = obj.__eq__()
+    ret = obj.__eq__({"b": 1})
     type_pandas_compat_chainmap_DeepChainMap___eq__ = (
         getattr(ret, "__module__", None) + "." + ret.__class__.__name__
         if getattr(ret, "__module__", None)
@@ -136,8 +136,9 @@ except Exception as e:
 # pandas.compat.chainmap.DeepChainMap.__getitem__
 try:
     obj = class_constructor()
-    ret = obj.__getitem__()
-    type_pandas_compat_chainmap_DeepChainMap___getitem__ = (
+    ret = obj.__getitem__("a")
+    type_pandas_compat_chainmap_DeepChainMap___getitem__ = "Union[str, int, float]"
+    (
         getattr(ret, "__module__", None) + "." + ret.__class__.__name__
         if getattr(ret, "__module__", None)
         else ret.__class__.__name__
@@ -182,7 +183,7 @@ except Exception as e:
 # pandas.compat.chainmap.DeepChainMap.__ior__
 try:
     obj = class_constructor()
-    ret = obj.__ior__()
+    ret = obj.__ior__({})
     type_pandas_compat_chainmap_DeepChainMap___ior__ = (
         getattr(ret, "__module__", None) + "." + ret.__class__.__name__
         if getattr(ret, "__module__", None)
@@ -251,7 +252,7 @@ except Exception as e:
 # pandas.compat.chainmap.DeepChainMap.__missing__
 try:
     obj = class_constructor()
-    ret = obj.__missing__()
+    ret = obj.__missing__("a")
     type_pandas_compat_chainmap_DeepChainMap___missing__ = (
         getattr(ret, "__module__", None) + "." + ret.__class__.__name__
         if getattr(ret, "__module__", None)
@@ -274,7 +275,7 @@ except Exception as e:
 # pandas.compat.chainmap.DeepChainMap.__or__
 try:
     obj = class_constructor()
-    ret = obj.__or__()
+    ret = obj.__or__({})
     type_pandas_compat_chainmap_DeepChainMap___or__ = (
         getattr(ret, "__module__", None) + "." + ret.__class__.__name__
         if getattr(ret, "__module__", None)
@@ -320,7 +321,7 @@ except Exception as e:
 # pandas.compat.chainmap.DeepChainMap.__ror__
 try:
     obj = class_constructor()
-    ret = obj.__ror__()
+    ret = obj.__ror__({})
     type_pandas_compat_chainmap_DeepChainMap___ror__ = (
         getattr(ret, "__module__", None) + "." + ret.__class__.__name__
         if getattr(ret, "__module__", None)
@@ -412,7 +413,7 @@ except Exception as e:
 # pandas.compat.chainmap.DeepChainMap.fromkeys
 try:
     obj = class_constructor()
-    ret = obj.fromkeys()
+    ret = obj.fromkeys(["a"])
     type_pandas_compat_chainmap_DeepChainMap_fromkeys = (
         getattr(ret, "__module__", None) + "." + ret.__class__.__name__
         if getattr(ret, "__module__", None)
@@ -435,8 +436,9 @@ except Exception as e:
 # pandas.compat.chainmap.DeepChainMap.get
 try:
     obj = class_constructor()
-    ret = obj.get()
-    type_pandas_compat_chainmap_DeepChainMap_get = (
+    ret = obj.get("a")
+    type_pandas_compat_chainmap_DeepChainMap_get = "Union[str, int, float]"
+    (
         getattr(ret, "__module__", None) + "." + ret.__class__.__name__
         if getattr(ret, "__module__", None)
         else ret.__class__.__name__
@@ -550,8 +552,9 @@ except Exception as e:
 # pandas.compat.chainmap.DeepChainMap.pop
 try:
     obj = class_constructor()
-    ret = obj.pop()
-    type_pandas_compat_chainmap_DeepChainMap_pop = (
+    ret = obj.pop("a")
+    type_pandas_compat_chainmap_DeepChainMap_pop = "Union[str, int, float]"
+    (
         getattr(ret, "__module__", None) + "." + ret.__class__.__name__
         if getattr(ret, "__module__", None)
         else ret.__class__.__name__
@@ -596,8 +599,9 @@ except Exception as e:
 # pandas.compat.chainmap.DeepChainMap.setdefault
 try:
     obj = class_constructor()
-    ret = obj.setdefault()
-    type_pandas_compat_chainmap_DeepChainMap_setdefault = (
+    ret = obj.setdefault("a")
+    type_pandas_compat_chainmap_DeepChainMap_setdefault = "Union[str, int, float]"
+    (
         getattr(ret, "__module__", None) + "." + ret.__class__.__name__
         if getattr(ret, "__module__", None)
         else ret.__class__.__name__
@@ -657,3 +661,6 @@ except Exception as e:
     print("❌ pandas.compat.chainmap.DeepChainMap.values: Return unavailable")
     print("  Please fix this return type code until there is no exception")
     print("   Error:", e)
+
+
+# In[ ]:

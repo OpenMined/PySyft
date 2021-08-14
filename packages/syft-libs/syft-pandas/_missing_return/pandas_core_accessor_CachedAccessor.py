@@ -36,3 +36,6 @@ except Exception as e:
     print("❌ pandas.core.accessor.CachedAccessor.__get__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
     print("   Error:", e)
+
+
+# In[ ]:

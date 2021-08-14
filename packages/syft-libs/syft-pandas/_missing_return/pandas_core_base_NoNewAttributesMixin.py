@@ -23,17 +23,19 @@ try:
     obj = class_constructor()
     ret = obj.__setattr__()
     type_pandas_core_base_NoNewAttributesMixin___setattr__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.base.NoNewAttributesMixin.__setattr__:",
-        type_pandas_core_base_NoNewAttributesMixin___setattr__)
+    )
+    print(
+        "✅ pandas.core.base.NoNewAttributesMixin.__setattr__:",
+        type_pandas_core_base_NoNewAttributesMixin___setattr__,
+    )
 except Exception as e:
-    type_pandas_core_base_NoNewAttributesMixin___setattr__ = '_syft_missing'
-    print('❌ pandas.core.base.NoNewAttributesMixin.__setattr__: Return unavailable')
+    type_pandas_core_base_NoNewAttributesMixin___setattr__ = "_syft_missing"
+    print("❌ pandas.core.base.NoNewAttributesMixin.__setattr__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[3]:
@@ -44,15 +46,16 @@ try:
     obj = class_constructor()
     ret = obj._freeze()
     type_pandas_core_base_NoNewAttributesMixin__freeze = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.base.NoNewAttributesMixin._freeze:",
-        type_pandas_core_base_NoNewAttributesMixin__freeze)
+    )
+    print(
+        "✅ pandas.core.base.NoNewAttributesMixin._freeze:",
+        type_pandas_core_base_NoNewAttributesMixin__freeze,
+    )
 except Exception as e:
-    type_pandas_core_base_NoNewAttributesMixin__freeze = '_syft_missing'
-    print('❌ pandas.core.base.NoNewAttributesMixin._freeze: Return unavailable')
+    type_pandas_core_base_NoNewAttributesMixin__freeze = "_syft_missing"
+    print("❌ pandas.core.base.NoNewAttributesMixin._freeze: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
-
+    print("   Error:", e)

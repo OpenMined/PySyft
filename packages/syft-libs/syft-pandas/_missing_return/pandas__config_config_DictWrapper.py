@@ -11,7 +11,7 @@ import pandas
 
 
 def class_constructor(*args, **kwargs):
-    obj = pandas._config.config.DictWrapper()
+    obj = pandas._config.config.DictWrapper({"abc": 11})
     return obj
 
 
@@ -21,7 +21,7 @@ def class_constructor(*args, **kwargs):
 # pandas._config.config.DictWrapper.__getattr__
 try:
     obj = class_constructor()
-    ret = obj.__getattr__()
+    ret = obj.__getattr__("abc")
     type_pandas__config_config_DictWrapper___getattr__ = (
         getattr(ret, "__module__", None) + "." + ret.__class__.__name__
         if getattr(ret, "__module__", None)
@@ -36,3 +36,6 @@ except Exception as e:
     print("❌ pandas._config.config.DictWrapper.__getattr__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
     print("   Error:", e)
+
+
+# In[ ]:

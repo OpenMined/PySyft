@@ -23,17 +23,21 @@ try:
     obj = class_constructor()
     ret = obj._attr_getter()
     type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__attr_getter = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.html._BeautifulSoupHtml5LibFrameParser._attr_getter:",
-        type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__attr_getter)
+    )
+    print(
+        "✅ pandas.io.html._BeautifulSoupHtml5LibFrameParser._attr_getter:",
+        type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__attr_getter,
+    )
 except Exception as e:
-    type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__attr_getter = '_syft_missing'
-    print('❌ pandas.io.html._BeautifulSoupHtml5LibFrameParser._attr_getter: Return unavailable')
+    type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__attr_getter = "_syft_missing"
+    print(
+        "❌ pandas.io.html._BeautifulSoupHtml5LibFrameParser._attr_getter: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[3]:
@@ -44,17 +48,21 @@ try:
     obj = class_constructor()
     ret = obj._build_doc()
     type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__build_doc = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.html._BeautifulSoupHtml5LibFrameParser._build_doc:",
-        type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__build_doc)
+    )
+    print(
+        "✅ pandas.io.html._BeautifulSoupHtml5LibFrameParser._build_doc:",
+        type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__build_doc,
+    )
 except Exception as e:
-    type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__build_doc = '_syft_missing'
-    print('❌ pandas.io.html._BeautifulSoupHtml5LibFrameParser._build_doc: Return unavailable')
+    type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__build_doc = "_syft_missing"
+    print(
+        "❌ pandas.io.html._BeautifulSoupHtml5LibFrameParser._build_doc: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[4]:
@@ -65,17 +73,21 @@ try:
     obj = class_constructor()
     ret = obj._equals_tag()
     type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__equals_tag = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.html._BeautifulSoupHtml5LibFrameParser._equals_tag:",
-        type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__equals_tag)
+    )
+    print(
+        "✅ pandas.io.html._BeautifulSoupHtml5LibFrameParser._equals_tag:",
+        type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__equals_tag,
+    )
 except Exception as e:
-    type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__equals_tag = '_syft_missing'
-    print('❌ pandas.io.html._BeautifulSoupHtml5LibFrameParser._equals_tag: Return unavailable')
+    type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__equals_tag = "_syft_missing"
+    print(
+        "❌ pandas.io.html._BeautifulSoupHtml5LibFrameParser._equals_tag: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[5]:
@@ -86,17 +98,23 @@ try:
     obj = class_constructor()
     ret = obj._expand_colspan_rowspan()
     type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__expand_colspan_rowspan = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.html._BeautifulSoupHtml5LibFrameParser._expand_colspan_rowspan:",
-        type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__expand_colspan_rowspan)
+    )
+    print(
+        "✅ pandas.io.html._BeautifulSoupHtml5LibFrameParser._expand_colspan_rowspan:",
+        type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__expand_colspan_rowspan,
+    )
 except Exception as e:
-    type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__expand_colspan_rowspan = '_syft_missing'
-    print('❌ pandas.io.html._BeautifulSoupHtml5LibFrameParser._expand_colspan_rowspan: Return unavailable')
+    type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__expand_colspan_rowspan = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.io.html._BeautifulSoupHtml5LibFrameParser._expand_colspan_rowspan: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[6]:
@@ -107,17 +125,23 @@ try:
     obj = class_constructor()
     ret = obj._handle_hidden_tables()
     type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__handle_hidden_tables = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.html._BeautifulSoupHtml5LibFrameParser._handle_hidden_tables:",
-        type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__handle_hidden_tables)
+    )
+    print(
+        "✅ pandas.io.html._BeautifulSoupHtml5LibFrameParser._handle_hidden_tables:",
+        type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__handle_hidden_tables,
+    )
 except Exception as e:
-    type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__handle_hidden_tables = '_syft_missing'
-    print('❌ pandas.io.html._BeautifulSoupHtml5LibFrameParser._handle_hidden_tables: Return unavailable')
+    type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__handle_hidden_tables = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.io.html._BeautifulSoupHtml5LibFrameParser._handle_hidden_tables: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[7]:
@@ -128,17 +152,23 @@ try:
     obj = class_constructor()
     ret = obj._parse_tables()
     type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__parse_tables = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.html._BeautifulSoupHtml5LibFrameParser._parse_tables:",
-        type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__parse_tables)
+    )
+    print(
+        "✅ pandas.io.html._BeautifulSoupHtml5LibFrameParser._parse_tables:",
+        type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__parse_tables,
+    )
 except Exception as e:
-    type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__parse_tables = '_syft_missing'
-    print('❌ pandas.io.html._BeautifulSoupHtml5LibFrameParser._parse_tables: Return unavailable')
+    type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__parse_tables = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.io.html._BeautifulSoupHtml5LibFrameParser._parse_tables: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[8]:
@@ -149,17 +179,23 @@ try:
     obj = class_constructor()
     ret = obj._parse_tbody_tr()
     type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__parse_tbody_tr = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.html._BeautifulSoupHtml5LibFrameParser._parse_tbody_tr:",
-        type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__parse_tbody_tr)
+    )
+    print(
+        "✅ pandas.io.html._BeautifulSoupHtml5LibFrameParser._parse_tbody_tr:",
+        type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__parse_tbody_tr,
+    )
 except Exception as e:
-    type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__parse_tbody_tr = '_syft_missing'
-    print('❌ pandas.io.html._BeautifulSoupHtml5LibFrameParser._parse_tbody_tr: Return unavailable')
+    type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__parse_tbody_tr = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.io.html._BeautifulSoupHtml5LibFrameParser._parse_tbody_tr: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[9]:
@@ -170,17 +206,21 @@ try:
     obj = class_constructor()
     ret = obj._parse_td()
     type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__parse_td = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.html._BeautifulSoupHtml5LibFrameParser._parse_td:",
-        type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__parse_td)
+    )
+    print(
+        "✅ pandas.io.html._BeautifulSoupHtml5LibFrameParser._parse_td:",
+        type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__parse_td,
+    )
 except Exception as e:
-    type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__parse_td = '_syft_missing'
-    print('❌ pandas.io.html._BeautifulSoupHtml5LibFrameParser._parse_td: Return unavailable')
+    type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__parse_td = "_syft_missing"
+    print(
+        "❌ pandas.io.html._BeautifulSoupHtml5LibFrameParser._parse_td: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[10]:
@@ -191,17 +231,23 @@ try:
     obj = class_constructor()
     ret = obj._parse_tfoot_tr()
     type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__parse_tfoot_tr = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.html._BeautifulSoupHtml5LibFrameParser._parse_tfoot_tr:",
-        type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__parse_tfoot_tr)
+    )
+    print(
+        "✅ pandas.io.html._BeautifulSoupHtml5LibFrameParser._parse_tfoot_tr:",
+        type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__parse_tfoot_tr,
+    )
 except Exception as e:
-    type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__parse_tfoot_tr = '_syft_missing'
-    print('❌ pandas.io.html._BeautifulSoupHtml5LibFrameParser._parse_tfoot_tr: Return unavailable')
+    type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__parse_tfoot_tr = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.io.html._BeautifulSoupHtml5LibFrameParser._parse_tfoot_tr: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[11]:
@@ -212,17 +258,23 @@ try:
     obj = class_constructor()
     ret = obj._parse_thead_tbody_tfoot()
     type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__parse_thead_tbody_tfoot = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.html._BeautifulSoupHtml5LibFrameParser._parse_thead_tbody_tfoot:",
-        type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__parse_thead_tbody_tfoot)
+    )
+    print(
+        "✅ pandas.io.html._BeautifulSoupHtml5LibFrameParser._parse_thead_tbody_tfoot:",
+        type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__parse_thead_tbody_tfoot,
+    )
 except Exception as e:
-    type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__parse_thead_tbody_tfoot = '_syft_missing'
-    print('❌ pandas.io.html._BeautifulSoupHtml5LibFrameParser._parse_thead_tbody_tfoot: Return unavailable')
+    type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__parse_thead_tbody_tfoot = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.io.html._BeautifulSoupHtml5LibFrameParser._parse_thead_tbody_tfoot: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[12]:
@@ -233,17 +285,23 @@ try:
     obj = class_constructor()
     ret = obj._parse_thead_tr()
     type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__parse_thead_tr = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.html._BeautifulSoupHtml5LibFrameParser._parse_thead_tr:",
-        type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__parse_thead_tr)
+    )
+    print(
+        "✅ pandas.io.html._BeautifulSoupHtml5LibFrameParser._parse_thead_tr:",
+        type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__parse_thead_tr,
+    )
 except Exception as e:
-    type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__parse_thead_tr = '_syft_missing'
-    print('❌ pandas.io.html._BeautifulSoupHtml5LibFrameParser._parse_thead_tr: Return unavailable')
+    type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__parse_thead_tr = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.io.html._BeautifulSoupHtml5LibFrameParser._parse_thead_tr: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[13]:
@@ -254,17 +312,23 @@ try:
     obj = class_constructor()
     ret = obj._setup_build_doc()
     type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__setup_build_doc = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.html._BeautifulSoupHtml5LibFrameParser._setup_build_doc:",
-        type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__setup_build_doc)
+    )
+    print(
+        "✅ pandas.io.html._BeautifulSoupHtml5LibFrameParser._setup_build_doc:",
+        type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__setup_build_doc,
+    )
 except Exception as e:
-    type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__setup_build_doc = '_syft_missing'
-    print('❌ pandas.io.html._BeautifulSoupHtml5LibFrameParser._setup_build_doc: Return unavailable')
+    type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__setup_build_doc = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.io.html._BeautifulSoupHtml5LibFrameParser._setup_build_doc: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[14]:
@@ -275,17 +339,21 @@ try:
     obj = class_constructor()
     ret = obj._text_getter()
     type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__text_getter = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.html._BeautifulSoupHtml5LibFrameParser._text_getter:",
-        type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__text_getter)
+    )
+    print(
+        "✅ pandas.io.html._BeautifulSoupHtml5LibFrameParser._text_getter:",
+        type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__text_getter,
+    )
 except Exception as e:
-    type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__text_getter = '_syft_missing'
-    print('❌ pandas.io.html._BeautifulSoupHtml5LibFrameParser._text_getter: Return unavailable')
+    type_pandas_io_html__BeautifulSoupHtml5LibFrameParser__text_getter = "_syft_missing"
+    print(
+        "❌ pandas.io.html._BeautifulSoupHtml5LibFrameParser._text_getter: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[15]:
@@ -296,15 +364,18 @@ try:
     obj = class_constructor()
     ret = obj.parse_tables()
     type_pandas_io_html__BeautifulSoupHtml5LibFrameParser_parse_tables = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.html._BeautifulSoupHtml5LibFrameParser.parse_tables:",
-        type_pandas_io_html__BeautifulSoupHtml5LibFrameParser_parse_tables)
+    )
+    print(
+        "✅ pandas.io.html._BeautifulSoupHtml5LibFrameParser.parse_tables:",
+        type_pandas_io_html__BeautifulSoupHtml5LibFrameParser_parse_tables,
+    )
 except Exception as e:
-    type_pandas_io_html__BeautifulSoupHtml5LibFrameParser_parse_tables = '_syft_missing'
-    print('❌ pandas.io.html._BeautifulSoupHtml5LibFrameParser.parse_tables: Return unavailable')
+    type_pandas_io_html__BeautifulSoupHtml5LibFrameParser_parse_tables = "_syft_missing"
+    print(
+        "❌ pandas.io.html._BeautifulSoupHtml5LibFrameParser.parse_tables: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
-
+    print("   Error:", e)

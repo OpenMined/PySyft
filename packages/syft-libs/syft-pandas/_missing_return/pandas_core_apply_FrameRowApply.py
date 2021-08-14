@@ -8,64 +8,22 @@
 
 # third party
 import pandas
+import pandas.core.apply
+
+df = pandas.DataFrame({"A": [1, 2, 3], "B": [2, 3, 4]})
 
 
-def class_constructor(*args, **kwargs):
-    obj = pandas.core.apply.FrameRowApply()
-    return obj
+def class_constructor():
+    return pandas.core.apply.frame_apply(df, lambda x: x ** 2)
 
 
 # In[2]:
 
 
-# pandas.core.apply.FrameRowApply._try_aggregate_string_function
-try:
-    obj = class_constructor()
-    ret = obj._try_aggregate_string_function()
-    type_pandas_core_apply_FrameRowApply__try_aggregate_string_function = (
-        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
-        if getattr(ret, "__module__", None)
-        else ret.__class__.__name__
-    )
-    print(
-        "✅ pandas.core.apply.FrameRowApply._try_aggregate_string_function:",
-        type_pandas_core_apply_FrameRowApply__try_aggregate_string_function,
-    )
-except Exception as e:
-    type_pandas_core_apply_FrameRowApply__try_aggregate_string_function = (
-        "_syft_missing"
-    )
-    print(
-        "❌ pandas.core.apply.FrameRowApply._try_aggregate_string_function: Return unavailable"
-    )
-    print("  Please fix this return type code until there is no exception")
-    print("   Error:", e)
+class_constructor()
 
 
 # In[3]:
-
-
-# pandas.core.apply.FrameRowApply.agg
-try:
-    obj = class_constructor()
-    ret = obj.agg()
-    type_pandas_core_apply_FrameRowApply_agg = (
-        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
-        if getattr(ret, "__module__", None)
-        else ret.__class__.__name__
-    )
-    print(
-        "✅ pandas.core.apply.FrameRowApply.agg:",
-        type_pandas_core_apply_FrameRowApply_agg,
-    )
-except Exception as e:
-    type_pandas_core_apply_FrameRowApply_agg = "_syft_missing"
-    print("❌ pandas.core.apply.FrameRowApply.agg: Return unavailable")
-    print("  Please fix this return type code until there is no exception")
-    print("   Error:", e)
-
-
-# In[4]:
 
 
 # pandas.core.apply.FrameRowApply.agg_axis
@@ -88,7 +46,7 @@ except Exception as e:
     print("  Error:", e)
 
 
-# In[5]:
+# In[4]:
 
 
 # pandas.core.apply.FrameRowApply.apply_empty_result
@@ -111,7 +69,7 @@ except Exception as e:
     print("   Error:", e)
 
 
-# In[6]:
+# In[5]:
 
 
 # pandas.core.apply.FrameRowApply.apply_raw
@@ -134,7 +92,7 @@ except Exception as e:
     print("   Error:", e)
 
 
-# In[7]:
+# In[6]:
 
 
 # pandas.core.apply.FrameRowApply.apply_standard
@@ -157,7 +115,7 @@ except Exception as e:
     print("   Error:", e)
 
 
-# In[8]:
+# In[7]:
 
 
 # pandas.core.apply.FrameRowApply.columns
@@ -178,6 +136,29 @@ except Exception as e:
     print("❌ pandas.core.apply.FrameRowApply.columns: Return unavailable")
     print("  Please fix this return type code until there is no exception")
     print("  Error:", e)
+
+
+# In[8]:
+
+
+# pandas.core.apply.FrameRowApply.get_result
+try:
+    obj = class_constructor()
+    ret = obj.get_result()
+    type_pandas_core_apply_FrameRowApply_get_result = (
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
+        else ret.__class__.__name__
+    )
+    print(
+        "✅ pandas.core.apply.FrameRowApply.get_result:",
+        type_pandas_core_apply_FrameRowApply_get_result,
+    )
+except Exception as e:
+    type_pandas_core_apply_FrameRowApply_get_result = "_syft_missing"
+    print("❌ pandas.core.apply.FrameRowApply.get_result: Return unavailable")
+    print("  Please fix this return type code until there is no exception")
+    print("   Error:", e)
 
 
 # In[9]:
@@ -293,26 +274,3 @@ except Exception as e:
     print("❌ pandas.core.apply.FrameRowApply.series_generator: Return unavailable")
     print("  Please fix this return type code until there is no exception")
     print("  Error:", e)
-
-
-# In[14]:
-
-
-# pandas.core.apply.FrameRowApply.transform_dict_like
-try:
-    obj = class_constructor()
-    ret = obj.transform_dict_like()
-    type_pandas_core_apply_FrameRowApply_transform_dict_like = (
-        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
-        if getattr(ret, "__module__", None)
-        else ret.__class__.__name__
-    )
-    print(
-        "✅ pandas.core.apply.FrameRowApply.transform_dict_like:",
-        type_pandas_core_apply_FrameRowApply_transform_dict_like,
-    )
-except Exception as e:
-    type_pandas_core_apply_FrameRowApply_transform_dict_like = "_syft_missing"
-    print("❌ pandas.core.apply.FrameRowApply.transform_dict_like: Return unavailable")
-    print("  Please fix this return type code until there is no exception")
-    print("   Error:", e)

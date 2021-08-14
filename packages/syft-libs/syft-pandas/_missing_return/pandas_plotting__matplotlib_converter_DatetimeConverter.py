@@ -23,17 +23,23 @@ try:
     obj = class_constructor()
     ret = obj._convert_1d()
     type_pandas_plotting__matplotlib_converter_DatetimeConverter__convert_1d = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.plotting._matplotlib.converter.DatetimeConverter._convert_1d:",
-        type_pandas_plotting__matplotlib_converter_DatetimeConverter__convert_1d)
+    )
+    print(
+        "✅ pandas.plotting._matplotlib.converter.DatetimeConverter._convert_1d:",
+        type_pandas_plotting__matplotlib_converter_DatetimeConverter__convert_1d,
+    )
 except Exception as e:
-    type_pandas_plotting__matplotlib_converter_DatetimeConverter__convert_1d = '_syft_missing'
-    print('❌ pandas.plotting._matplotlib.converter.DatetimeConverter._convert_1d: Return unavailable')
+    type_pandas_plotting__matplotlib_converter_DatetimeConverter__convert_1d = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.plotting._matplotlib.converter.DatetimeConverter._convert_1d: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[3]:
@@ -44,17 +50,23 @@ try:
     obj = class_constructor()
     ret = obj.convert()
     type_pandas_plotting__matplotlib_converter_DatetimeConverter_convert = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.plotting._matplotlib.converter.DatetimeConverter.convert:",
-        type_pandas_plotting__matplotlib_converter_DatetimeConverter_convert)
+    )
+    print(
+        "✅ pandas.plotting._matplotlib.converter.DatetimeConverter.convert:",
+        type_pandas_plotting__matplotlib_converter_DatetimeConverter_convert,
+    )
 except Exception as e:
-    type_pandas_plotting__matplotlib_converter_DatetimeConverter_convert = '_syft_missing'
-    print('❌ pandas.plotting._matplotlib.converter.DatetimeConverter.convert: Return unavailable')
+    type_pandas_plotting__matplotlib_converter_DatetimeConverter_convert = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.plotting._matplotlib.converter.DatetimeConverter.convert: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[4]:
@@ -65,17 +77,23 @@ try:
     obj = class_constructor()
     ret = obj.default_units()
     type_pandas_plotting__matplotlib_converter_DatetimeConverter_default_units = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.plotting._matplotlib.converter.DatetimeConverter.default_units:",
-        type_pandas_plotting__matplotlib_converter_DatetimeConverter_default_units)
+    )
+    print(
+        "✅ pandas.plotting._matplotlib.converter.DatetimeConverter.default_units:",
+        type_pandas_plotting__matplotlib_converter_DatetimeConverter_default_units,
+    )
 except Exception as e:
-    type_pandas_plotting__matplotlib_converter_DatetimeConverter_default_units = '_syft_missing'
-    print('❌ pandas.plotting._matplotlib.converter.DatetimeConverter.default_units: Return unavailable')
+    type_pandas_plotting__matplotlib_converter_DatetimeConverter_default_units = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.plotting._matplotlib.converter.DatetimeConverter.default_units: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[5]:
@@ -86,15 +104,20 @@ try:
     obj = class_constructor()
     ret = obj.is_numlike()
     type_pandas_plotting__matplotlib_converter_DatetimeConverter_is_numlike = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.plotting._matplotlib.converter.DatetimeConverter.is_numlike:",
-        type_pandas_plotting__matplotlib_converter_DatetimeConverter_is_numlike)
+    )
+    print(
+        "✅ pandas.plotting._matplotlib.converter.DatetimeConverter.is_numlike:",
+        type_pandas_plotting__matplotlib_converter_DatetimeConverter_is_numlike,
+    )
 except Exception as e:
-    type_pandas_plotting__matplotlib_converter_DatetimeConverter_is_numlike = '_syft_missing'
-    print('❌ pandas.plotting._matplotlib.converter.DatetimeConverter.is_numlike: Return unavailable')
+    type_pandas_plotting__matplotlib_converter_DatetimeConverter_is_numlike = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.plotting._matplotlib.converter.DatetimeConverter.is_numlike: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
-
+    print("   Error:", e)

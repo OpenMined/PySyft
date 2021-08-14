@@ -23,15 +23,18 @@ try:
     obj = class_constructor()
     ret = obj._get_merge_keys()
     type_pandas_core_reshape_merge__OrderedMerge__get_merge_keys = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.reshape.merge._OrderedMerge._get_merge_keys:",
-        type_pandas_core_reshape_merge__OrderedMerge__get_merge_keys)
+    )
+    print(
+        "✅ pandas.core.reshape.merge._OrderedMerge._get_merge_keys:",
+        type_pandas_core_reshape_merge__OrderedMerge__get_merge_keys,
+    )
 except Exception as e:
-    type_pandas_core_reshape_merge__OrderedMerge__get_merge_keys = '_syft_missing'
-    print('❌ pandas.core.reshape.merge._OrderedMerge._get_merge_keys: Return unavailable')
+    type_pandas_core_reshape_merge__OrderedMerge__get_merge_keys = "_syft_missing"
+    print(
+        "❌ pandas.core.reshape.merge._OrderedMerge._get_merge_keys: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
-
+    print("   Error:", e)

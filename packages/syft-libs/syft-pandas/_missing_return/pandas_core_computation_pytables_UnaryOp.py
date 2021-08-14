@@ -23,17 +23,19 @@ try:
     obj = class_constructor()
     ret = obj.__call__()
     type_pandas_core_computation_pytables_UnaryOp___call__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.computation.pytables.UnaryOp.__call__:",
-        type_pandas_core_computation_pytables_UnaryOp___call__)
+    )
+    print(
+        "✅ pandas.core.computation.pytables.UnaryOp.__call__:",
+        type_pandas_core_computation_pytables_UnaryOp___call__,
+    )
 except Exception as e:
-    type_pandas_core_computation_pytables_UnaryOp___call__ = '_syft_missing'
-    print('❌ pandas.core.computation.pytables.UnaryOp.__call__: Return unavailable')
+    type_pandas_core_computation_pytables_UnaryOp___call__ = "_syft_missing"
+    print("❌ pandas.core.computation.pytables.UnaryOp.__call__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[3]:
@@ -44,17 +46,19 @@ try:
     obj = class_constructor()
     ret = obj.__iter__()
     type_pandas_core_computation_pytables_UnaryOp___iter__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.computation.pytables.UnaryOp.__iter__:",
-        type_pandas_core_computation_pytables_UnaryOp___iter__)
+    )
+    print(
+        "✅ pandas.core.computation.pytables.UnaryOp.__iter__:",
+        type_pandas_core_computation_pytables_UnaryOp___iter__,
+    )
 except Exception as e:
-    type_pandas_core_computation_pytables_UnaryOp___iter__ = '_syft_missing'
-    print('❌ pandas.core.computation.pytables.UnaryOp.__iter__: Return unavailable')
+    type_pandas_core_computation_pytables_UnaryOp___iter__ = "_syft_missing"
+    print("❌ pandas.core.computation.pytables.UnaryOp.__iter__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[4]:
@@ -65,17 +69,23 @@ try:
     obj = class_constructor()
     ret = obj.has_invalid_return_type
     type_pandas_core_computation_pytables_UnaryOp_has_invalid_return_type = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.computation.pytables.UnaryOp.has_invalid_return_type:",
-        type_pandas_core_computation_pytables_UnaryOp_has_invalid_return_type)
+    )
+    print(
+        "✅ pandas.core.computation.pytables.UnaryOp.has_invalid_return_type:",
+        type_pandas_core_computation_pytables_UnaryOp_has_invalid_return_type,
+    )
 except Exception as e:
-    type_pandas_core_computation_pytables_UnaryOp_has_invalid_return_type = '_syft_missing'
-    print('❌ pandas.core.computation.pytables.UnaryOp.has_invalid_return_type: Return unavailable')
+    type_pandas_core_computation_pytables_UnaryOp_has_invalid_return_type = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.computation.pytables.UnaryOp.has_invalid_return_type: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[5]:
@@ -86,17 +96,19 @@ try:
     obj = class_constructor()
     ret = obj.is_datetime
     type_pandas_core_computation_pytables_UnaryOp_is_datetime = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.computation.pytables.UnaryOp.is_datetime:",
-        type_pandas_core_computation_pytables_UnaryOp_is_datetime)
+    )
+    print(
+        "✅ pandas.core.computation.pytables.UnaryOp.is_datetime:",
+        type_pandas_core_computation_pytables_UnaryOp_is_datetime,
+    )
 except Exception as e:
-    type_pandas_core_computation_pytables_UnaryOp_is_datetime = '_syft_missing'
-    print('❌ pandas.core.computation.pytables.UnaryOp.is_datetime: Return unavailable')
+    type_pandas_core_computation_pytables_UnaryOp_is_datetime = "_syft_missing"
+    print("❌ pandas.core.computation.pytables.UnaryOp.is_datetime: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[6]:
@@ -107,17 +119,19 @@ try:
     obj = class_constructor()
     ret = obj.is_scalar
     type_pandas_core_computation_pytables_UnaryOp_is_scalar = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.computation.pytables.UnaryOp.is_scalar:",
-        type_pandas_core_computation_pytables_UnaryOp_is_scalar)
+    )
+    print(
+        "✅ pandas.core.computation.pytables.UnaryOp.is_scalar:",
+        type_pandas_core_computation_pytables_UnaryOp_is_scalar,
+    )
 except Exception as e:
-    type_pandas_core_computation_pytables_UnaryOp_is_scalar = '_syft_missing'
-    print('❌ pandas.core.computation.pytables.UnaryOp.is_scalar: Return unavailable')
+    type_pandas_core_computation_pytables_UnaryOp_is_scalar = "_syft_missing"
+    print("❌ pandas.core.computation.pytables.UnaryOp.is_scalar: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[7]:
@@ -128,17 +142,21 @@ try:
     obj = class_constructor()
     ret = obj.operand_types
     type_pandas_core_computation_pytables_UnaryOp_operand_types = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.computation.pytables.UnaryOp.operand_types:",
-        type_pandas_core_computation_pytables_UnaryOp_operand_types)
+    )
+    print(
+        "✅ pandas.core.computation.pytables.UnaryOp.operand_types:",
+        type_pandas_core_computation_pytables_UnaryOp_operand_types,
+    )
 except Exception as e:
-    type_pandas_core_computation_pytables_UnaryOp_operand_types = '_syft_missing'
-    print('❌ pandas.core.computation.pytables.UnaryOp.operand_types: Return unavailable')
+    type_pandas_core_computation_pytables_UnaryOp_operand_types = "_syft_missing"
+    print(
+        "❌ pandas.core.computation.pytables.UnaryOp.operand_types: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[8]:
@@ -149,17 +167,19 @@ try:
     obj = class_constructor()
     ret = obj.prune()
     type_pandas_core_computation_pytables_UnaryOp_prune = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.computation.pytables.UnaryOp.prune:",
-        type_pandas_core_computation_pytables_UnaryOp_prune)
+    )
+    print(
+        "✅ pandas.core.computation.pytables.UnaryOp.prune:",
+        type_pandas_core_computation_pytables_UnaryOp_prune,
+    )
 except Exception as e:
-    type_pandas_core_computation_pytables_UnaryOp_prune = '_syft_missing'
-    print('❌ pandas.core.computation.pytables.UnaryOp.prune: Return unavailable')
+    type_pandas_core_computation_pytables_UnaryOp_prune = "_syft_missing"
+    print("❌ pandas.core.computation.pytables.UnaryOp.prune: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[9]:
@@ -170,15 +190,16 @@ try:
     obj = class_constructor()
     ret = obj.return_type
     type_pandas_core_computation_pytables_UnaryOp_return_type = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.computation.pytables.UnaryOp.return_type:",
-        type_pandas_core_computation_pytables_UnaryOp_return_type)
+    )
+    print(
+        "✅ pandas.core.computation.pytables.UnaryOp.return_type:",
+        type_pandas_core_computation_pytables_UnaryOp_return_type,
+    )
 except Exception as e:
-    type_pandas_core_computation_pytables_UnaryOp_return_type = '_syft_missing'
-    print('❌ pandas.core.computation.pytables.UnaryOp.return_type: Return unavailable')
+    type_pandas_core_computation_pytables_UnaryOp_return_type = "_syft_missing"
+    print("❌ pandas.core.computation.pytables.UnaryOp.return_type: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
-
+    print("  Error:", e)

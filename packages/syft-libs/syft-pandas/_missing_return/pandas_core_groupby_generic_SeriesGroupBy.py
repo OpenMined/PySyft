@@ -23,17 +23,21 @@ try:
     obj = class_constructor()
     ret = obj.__class_getitem__()
     type_pandas_core_groupby_generic_SeriesGroupBy___class_getitem__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.__class_getitem__:",
-        type_pandas_core_groupby_generic_SeriesGroupBy___class_getitem__)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.__class_getitem__:",
+        type_pandas_core_groupby_generic_SeriesGroupBy___class_getitem__,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy___class_getitem__ = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.__class_getitem__: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy___class_getitem__ = "_syft_missing"
+    print(
+        "❌ pandas.core.groupby.generic.SeriesGroupBy.__class_getitem__: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[3]:
@@ -44,17 +48,19 @@ try:
     obj = class_constructor()
     ret = obj.__getattr__()
     type_pandas_core_groupby_generic_SeriesGroupBy___getattr__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.__getattr__:",
-        type_pandas_core_groupby_generic_SeriesGroupBy___getattr__)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.__getattr__:",
+        type_pandas_core_groupby_generic_SeriesGroupBy___getattr__,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy___getattr__ = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.__getattr__: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy___getattr__ = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.__getattr__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[4]:
@@ -65,17 +71,19 @@ try:
     obj = class_constructor()
     ret = obj.__getitem__()
     type_pandas_core_groupby_generic_SeriesGroupBy___getitem__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.__getitem__:",
-        type_pandas_core_groupby_generic_SeriesGroupBy___getitem__)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.__getitem__:",
+        type_pandas_core_groupby_generic_SeriesGroupBy___getitem__,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy___getitem__ = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.__getitem__: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy___getitem__ = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.__getitem__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[5]:
@@ -86,17 +94,21 @@ try:
     obj = class_constructor()
     ret = obj.__init_subclass__()
     type_pandas_core_groupby_generic_SeriesGroupBy___init_subclass__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.__init_subclass__:",
-        type_pandas_core_groupby_generic_SeriesGroupBy___init_subclass__)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.__init_subclass__:",
+        type_pandas_core_groupby_generic_SeriesGroupBy___init_subclass__,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy___init_subclass__ = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.__init_subclass__: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy___init_subclass__ = "_syft_missing"
+    print(
+        "❌ pandas.core.groupby.generic.SeriesGroupBy.__init_subclass__: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[6]:
@@ -107,17 +119,21 @@ try:
     obj = class_constructor()
     ret = obj._agg_general()
     type_pandas_core_groupby_generic_SeriesGroupBy__agg_general = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy._agg_general:",
-        type_pandas_core_groupby_generic_SeriesGroupBy__agg_general)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy._agg_general:",
+        type_pandas_core_groupby_generic_SeriesGroupBy__agg_general,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy__agg_general = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy._agg_general: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy__agg_general = "_syft_missing"
+    print(
+        "❌ pandas.core.groupby.generic.SeriesGroupBy._agg_general: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[7]:
@@ -128,17 +144,21 @@ try:
     obj = class_constructor()
     ret = obj._aggregate_named()
     type_pandas_core_groupby_generic_SeriesGroupBy__aggregate_named = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy._aggregate_named:",
-        type_pandas_core_groupby_generic_SeriesGroupBy__aggregate_named)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy._aggregate_named:",
+        type_pandas_core_groupby_generic_SeriesGroupBy__aggregate_named,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy__aggregate_named = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy._aggregate_named: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy__aggregate_named = "_syft_missing"
+    print(
+        "❌ pandas.core.groupby.generic.SeriesGroupBy._aggregate_named: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[8]:
@@ -149,17 +169,23 @@ try:
     obj = class_constructor()
     ret = obj._aggregate_with_numba()
     type_pandas_core_groupby_generic_SeriesGroupBy__aggregate_with_numba = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy._aggregate_with_numba:",
-        type_pandas_core_groupby_generic_SeriesGroupBy__aggregate_with_numba)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy._aggregate_with_numba:",
+        type_pandas_core_groupby_generic_SeriesGroupBy__aggregate_with_numba,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy__aggregate_with_numba = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy._aggregate_with_numba: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy__aggregate_with_numba = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.groupby.generic.SeriesGroupBy._aggregate_with_numba: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[9]:
@@ -170,17 +196,21 @@ try:
     obj = class_constructor()
     ret = obj._apply_filter()
     type_pandas_core_groupby_generic_SeriesGroupBy__apply_filter = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy._apply_filter:",
-        type_pandas_core_groupby_generic_SeriesGroupBy__apply_filter)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy._apply_filter:",
+        type_pandas_core_groupby_generic_SeriesGroupBy__apply_filter,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy__apply_filter = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy._apply_filter: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy__apply_filter = "_syft_missing"
+    print(
+        "❌ pandas.core.groupby.generic.SeriesGroupBy._apply_filter: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[10]:
@@ -191,17 +221,19 @@ try:
     obj = class_constructor()
     ret = obj._bool_agg()
     type_pandas_core_groupby_generic_SeriesGroupBy__bool_agg = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy._bool_agg:",
-        type_pandas_core_groupby_generic_SeriesGroupBy__bool_agg)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy._bool_agg:",
+        type_pandas_core_groupby_generic_SeriesGroupBy__bool_agg,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy__bool_agg = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy._bool_agg: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy__bool_agg = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy._bool_agg: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[11]:
@@ -212,17 +244,21 @@ try:
     obj = class_constructor()
     ret = obj._concat_objects()
     type_pandas_core_groupby_generic_SeriesGroupBy__concat_objects = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy._concat_objects:",
-        type_pandas_core_groupby_generic_SeriesGroupBy__concat_objects)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy._concat_objects:",
+        type_pandas_core_groupby_generic_SeriesGroupBy__concat_objects,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy__concat_objects = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy._concat_objects: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy__concat_objects = "_syft_missing"
+    print(
+        "❌ pandas.core.groupby.generic.SeriesGroupBy._concat_objects: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[12]:
@@ -233,17 +269,21 @@ try:
     obj = class_constructor()
     ret = obj._constructor
     type_pandas_core_groupby_generic_SeriesGroupBy__constructor = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy._constructor:",
-        type_pandas_core_groupby_generic_SeriesGroupBy__constructor)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy._constructor:",
+        type_pandas_core_groupby_generic_SeriesGroupBy__constructor,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy__constructor = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy._constructor: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy__constructor = "_syft_missing"
+    print(
+        "❌ pandas.core.groupby.generic.SeriesGroupBy._constructor: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[13]:
@@ -254,17 +294,21 @@ try:
     obj = class_constructor()
     ret = obj._cython_agg_general()
     type_pandas_core_groupby_generic_SeriesGroupBy__cython_agg_general = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy._cython_agg_general:",
-        type_pandas_core_groupby_generic_SeriesGroupBy__cython_agg_general)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy._cython_agg_general:",
+        type_pandas_core_groupby_generic_SeriesGroupBy__cython_agg_general,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy__cython_agg_general = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy._cython_agg_general: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy__cython_agg_general = "_syft_missing"
+    print(
+        "❌ pandas.core.groupby.generic.SeriesGroupBy._cython_agg_general: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[14]:
@@ -275,17 +319,21 @@ try:
     obj = class_constructor()
     ret = obj._cython_transform()
     type_pandas_core_groupby_generic_SeriesGroupBy__cython_transform = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy._cython_transform:",
-        type_pandas_core_groupby_generic_SeriesGroupBy__cython_transform)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy._cython_transform:",
+        type_pandas_core_groupby_generic_SeriesGroupBy__cython_transform,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy__cython_transform = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy._cython_transform: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy__cython_transform = "_syft_missing"
+    print(
+        "❌ pandas.core.groupby.generic.SeriesGroupBy._cython_transform: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[15]:
@@ -296,17 +344,19 @@ try:
     obj = class_constructor()
     ret = obj._get_index()
     type_pandas_core_groupby_generic_SeriesGroupBy__get_index = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy._get_index:",
-        type_pandas_core_groupby_generic_SeriesGroupBy__get_index)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy._get_index:",
+        type_pandas_core_groupby_generic_SeriesGroupBy__get_index,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy__get_index = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy._get_index: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy__get_index = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy._get_index: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[16]:
@@ -317,17 +367,21 @@ try:
     obj = class_constructor()
     ret = obj._get_indices()
     type_pandas_core_groupby_generic_SeriesGroupBy__get_indices = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy._get_indices:",
-        type_pandas_core_groupby_generic_SeriesGroupBy__get_indices)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy._get_indices:",
+        type_pandas_core_groupby_generic_SeriesGroupBy__get_indices,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy__get_indices = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy._get_indices: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy__get_indices = "_syft_missing"
+    print(
+        "❌ pandas.core.groupby.generic.SeriesGroupBy._get_indices: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[17]:
@@ -338,17 +392,19 @@ try:
     obj = class_constructor()
     ret = obj._gotitem()
     type_pandas_core_groupby_generic_SeriesGroupBy__gotitem = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy._gotitem:",
-        type_pandas_core_groupby_generic_SeriesGroupBy__gotitem)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy._gotitem:",
+        type_pandas_core_groupby_generic_SeriesGroupBy__gotitem,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy__gotitem = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy._gotitem: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy__gotitem = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy._gotitem: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[18]:
@@ -359,17 +415,19 @@ try:
     obj = class_constructor()
     ret = obj._numba_prep()
     type_pandas_core_groupby_generic_SeriesGroupBy__numba_prep = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy._numba_prep:",
-        type_pandas_core_groupby_generic_SeriesGroupBy__numba_prep)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy._numba_prep:",
+        type_pandas_core_groupby_generic_SeriesGroupBy__numba_prep,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy__numba_prep = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy._numba_prep: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy__numba_prep = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy._numba_prep: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[19]:
@@ -380,17 +438,21 @@ try:
     obj = class_constructor()
     ret = obj._obj_1d_constructor
     type_pandas_core_groupby_generic_SeriesGroupBy__obj_1d_constructor = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy._obj_1d_constructor:",
-        type_pandas_core_groupby_generic_SeriesGroupBy__obj_1d_constructor)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy._obj_1d_constructor:",
+        type_pandas_core_groupby_generic_SeriesGroupBy__obj_1d_constructor,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy__obj_1d_constructor = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy._obj_1d_constructor: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy__obj_1d_constructor = "_syft_missing"
+    print(
+        "❌ pandas.core.groupby.generic.SeriesGroupBy._obj_1d_constructor: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[20]:
@@ -401,17 +463,21 @@ try:
     obj = class_constructor()
     ret = obj._python_agg_general()
     type_pandas_core_groupby_generic_SeriesGroupBy__python_agg_general = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy._python_agg_general:",
-        type_pandas_core_groupby_generic_SeriesGroupBy__python_agg_general)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy._python_agg_general:",
+        type_pandas_core_groupby_generic_SeriesGroupBy__python_agg_general,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy__python_agg_general = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy._python_agg_general: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy__python_agg_general = "_syft_missing"
+    print(
+        "❌ pandas.core.groupby.generic.SeriesGroupBy._python_agg_general: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[21]:
@@ -422,17 +488,21 @@ try:
     obj = class_constructor()
     ret = obj._selection_list
     type_pandas_core_groupby_generic_SeriesGroupBy__selection_list = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy._selection_list:",
-        type_pandas_core_groupby_generic_SeriesGroupBy__selection_list)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy._selection_list:",
+        type_pandas_core_groupby_generic_SeriesGroupBy__selection_list,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy__selection_list = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy._selection_list: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy__selection_list = "_syft_missing"
+    print(
+        "❌ pandas.core.groupby.generic.SeriesGroupBy._selection_list: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[22]:
@@ -443,17 +513,19 @@ try:
     obj = class_constructor()
     ret = obj._transform()
     type_pandas_core_groupby_generic_SeriesGroupBy__transform = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy._transform:",
-        type_pandas_core_groupby_generic_SeriesGroupBy__transform)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy._transform:",
+        type_pandas_core_groupby_generic_SeriesGroupBy__transform,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy__transform = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy._transform: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy__transform = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy._transform: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[23]:
@@ -464,17 +536,23 @@ try:
     obj = class_constructor()
     ret = obj._transform_with_numba()
     type_pandas_core_groupby_generic_SeriesGroupBy__transform_with_numba = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy._transform_with_numba:",
-        type_pandas_core_groupby_generic_SeriesGroupBy__transform_with_numba)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy._transform_with_numba:",
+        type_pandas_core_groupby_generic_SeriesGroupBy__transform_with_numba,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy__transform_with_numba = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy._transform_with_numba: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy__transform_with_numba = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.groupby.generic.SeriesGroupBy._transform_with_numba: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[24]:
@@ -485,17 +563,19 @@ try:
     obj = class_constructor()
     ret = obj.aggregate()
     type_pandas_core_groupby_generic_SeriesGroupBy_aggregate = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.aggregate:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_aggregate)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.aggregate:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_aggregate,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_aggregate = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.aggregate: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_aggregate = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.aggregate: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[25]:
@@ -506,17 +586,19 @@ try:
     obj = class_constructor()
     ret = obj.aggregate()
     type_pandas_core_groupby_generic_SeriesGroupBy_aggregate = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.aggregate:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_aggregate)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.aggregate:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_aggregate,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_aggregate = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.aggregate: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_aggregate = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.aggregate: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[26]:
@@ -527,17 +609,19 @@ try:
     obj = class_constructor()
     ret = obj.all()
     type_pandas_core_groupby_generic_SeriesGroupBy_all = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.all:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_all)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.all:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_all,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_all = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.all: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_all = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.all: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[27]:
@@ -548,17 +632,19 @@ try:
     obj = class_constructor()
     ret = obj.any()
     type_pandas_core_groupby_generic_SeriesGroupBy_any = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.any:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_any)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.any:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_any,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_any = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.any: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_any = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.any: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[28]:
@@ -569,17 +655,19 @@ try:
     obj = class_constructor()
     ret = obj.apply()
     type_pandas_core_groupby_generic_SeriesGroupBy_apply = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.apply:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_apply)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.apply:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_apply,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_apply = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.apply: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_apply = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.apply: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[29]:
@@ -590,17 +678,19 @@ try:
     obj = class_constructor()
     ret = obj.backfill()
     type_pandas_core_groupby_generic_SeriesGroupBy_backfill = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.backfill:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_backfill)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.backfill:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_backfill,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_backfill = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.backfill: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_backfill = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.backfill: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[30]:
@@ -611,17 +701,19 @@ try:
     obj = class_constructor()
     ret = obj.backfill()
     type_pandas_core_groupby_generic_SeriesGroupBy_backfill = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.backfill:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_backfill)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.backfill:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_backfill,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_backfill = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.backfill: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_backfill = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.backfill: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[31]:
@@ -632,17 +724,19 @@ try:
     obj = class_constructor()
     ret = obj.corr
     type_pandas_core_groupby_generic_SeriesGroupBy_corr = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.corr:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_corr)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.corr:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_corr,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_corr = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.corr: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_corr = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.corr: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[32]:
@@ -653,17 +747,19 @@ try:
     obj = class_constructor()
     ret = obj.cov
     type_pandas_core_groupby_generic_SeriesGroupBy_cov = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.cov:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_cov)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.cov:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_cov,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_cov = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.cov: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_cov = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.cov: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[33]:
@@ -674,17 +770,19 @@ try:
     obj = class_constructor()
     ret = obj.cumcount()
     type_pandas_core_groupby_generic_SeriesGroupBy_cumcount = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.cumcount:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_cumcount)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.cumcount:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_cumcount,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_cumcount = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.cumcount: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_cumcount = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.cumcount: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[34]:
@@ -695,17 +793,19 @@ try:
     obj = class_constructor()
     ret = obj.cummax()
     type_pandas_core_groupby_generic_SeriesGroupBy_cummax = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.cummax:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_cummax)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.cummax:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_cummax,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_cummax = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.cummax: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_cummax = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.cummax: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[35]:
@@ -716,17 +816,19 @@ try:
     obj = class_constructor()
     ret = obj.cummin()
     type_pandas_core_groupby_generic_SeriesGroupBy_cummin = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.cummin:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_cummin)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.cummin:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_cummin,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_cummin = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.cummin: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_cummin = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.cummin: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[36]:
@@ -737,17 +839,19 @@ try:
     obj = class_constructor()
     ret = obj.cumprod()
     type_pandas_core_groupby_generic_SeriesGroupBy_cumprod = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.cumprod:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_cumprod)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.cumprod:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_cumprod,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_cumprod = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.cumprod: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_cumprod = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.cumprod: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[37]:
@@ -758,17 +862,19 @@ try:
     obj = class_constructor()
     ret = obj.cumsum()
     type_pandas_core_groupby_generic_SeriesGroupBy_cumsum = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.cumsum:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_cumsum)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.cumsum:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_cumsum,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_cumsum = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.cumsum: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_cumsum = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.cumsum: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[38]:
@@ -779,17 +885,19 @@ try:
     obj = class_constructor()
     ret = obj.describe()
     type_pandas_core_groupby_generic_SeriesGroupBy_describe = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.describe:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_describe)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.describe:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_describe,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_describe = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.describe: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_describe = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.describe: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[39]:
@@ -800,17 +908,19 @@ try:
     obj = class_constructor()
     ret = obj.diff
     type_pandas_core_groupby_generic_SeriesGroupBy_diff = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.diff:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_diff)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.diff:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_diff,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_diff = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.diff: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_diff = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.diff: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[40]:
@@ -821,17 +931,19 @@ try:
     obj = class_constructor()
     ret = obj.dtype
     type_pandas_core_groupby_generic_SeriesGroupBy_dtype = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.dtype:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_dtype)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.dtype:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_dtype,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_dtype = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.dtype: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_dtype = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.dtype: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[41]:
@@ -842,17 +954,19 @@ try:
     obj = class_constructor()
     ret = obj.ewm()
     type_pandas_core_groupby_generic_SeriesGroupBy_ewm = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.ewm:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_ewm)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.ewm:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_ewm,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_ewm = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.ewm: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_ewm = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.ewm: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[42]:
@@ -863,17 +977,19 @@ try:
     obj = class_constructor()
     ret = obj.expanding()
     type_pandas_core_groupby_generic_SeriesGroupBy_expanding = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.expanding:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_expanding)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.expanding:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_expanding,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_expanding = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.expanding: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_expanding = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.expanding: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[43]:
@@ -884,17 +1000,19 @@ try:
     obj = class_constructor()
     ret = obj.pad()
     type_pandas_core_groupby_generic_SeriesGroupBy_pad = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.pad:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_pad)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.pad:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_pad,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_pad = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.pad: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_pad = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.pad: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[44]:
@@ -905,17 +1023,19 @@ try:
     obj = class_constructor()
     ret = obj.fillna
     type_pandas_core_groupby_generic_SeriesGroupBy_fillna = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.fillna:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_fillna)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.fillna:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_fillna,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_fillna = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.fillna: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_fillna = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.fillna: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[45]:
@@ -926,17 +1046,19 @@ try:
     obj = class_constructor()
     ret = obj.filter()
     type_pandas_core_groupby_generic_SeriesGroupBy_filter = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.filter:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_filter)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.filter:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_filter,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_filter = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.filter: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_filter = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.filter: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[46]:
@@ -947,17 +1069,19 @@ try:
     obj = class_constructor()
     ret = obj.first()
     type_pandas_core_groupby_generic_SeriesGroupBy_first = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.first:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_first)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.first:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_first,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_first = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.first: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_first = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.first: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[47]:
@@ -968,17 +1092,19 @@ try:
     obj = class_constructor()
     ret = obj.groups
     type_pandas_core_groupby_generic_SeriesGroupBy_groups = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.groups:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_groups)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.groups:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_groups,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_groups = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.groups: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_groups = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.groups: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[48]:
@@ -989,17 +1115,19 @@ try:
     obj = class_constructor()
     ret = obj.head()
     type_pandas_core_groupby_generic_SeriesGroupBy_head = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.head:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_head)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.head:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_head,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_head = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.head: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_head = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.head: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[49]:
@@ -1010,17 +1138,19 @@ try:
     obj = class_constructor()
     ret = obj.hist
     type_pandas_core_groupby_generic_SeriesGroupBy_hist = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.hist:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_hist)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.hist:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_hist,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_hist = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.hist: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_hist = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.hist: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[50]:
@@ -1031,17 +1161,19 @@ try:
     obj = class_constructor()
     ret = obj.idxmax
     type_pandas_core_groupby_generic_SeriesGroupBy_idxmax = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.idxmax:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_idxmax)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.idxmax:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_idxmax,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_idxmax = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.idxmax: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_idxmax = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.idxmax: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[51]:
@@ -1052,17 +1184,19 @@ try:
     obj = class_constructor()
     ret = obj.idxmin
     type_pandas_core_groupby_generic_SeriesGroupBy_idxmin = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.idxmin:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_idxmin)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.idxmin:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_idxmin,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_idxmin = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.idxmin: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_idxmin = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.idxmin: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[52]:
@@ -1073,17 +1207,19 @@ try:
     obj = class_constructor()
     ret = obj.indices
     type_pandas_core_groupby_generic_SeriesGroupBy_indices = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.indices:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_indices)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.indices:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_indices,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_indices = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.indices: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_indices = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.indices: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[53]:
@@ -1094,17 +1230,23 @@ try:
     obj = class_constructor()
     ret = obj.is_monotonic_decreasing
     type_pandas_core_groupby_generic_SeriesGroupBy_is_monotonic_decreasing = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.is_monotonic_decreasing:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_is_monotonic_decreasing)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.is_monotonic_decreasing:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_is_monotonic_decreasing,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_is_monotonic_decreasing = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.is_monotonic_decreasing: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_is_monotonic_decreasing = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.groupby.generic.SeriesGroupBy.is_monotonic_decreasing: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[54]:
@@ -1115,17 +1257,23 @@ try:
     obj = class_constructor()
     ret = obj.is_monotonic_increasing
     type_pandas_core_groupby_generic_SeriesGroupBy_is_monotonic_increasing = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.is_monotonic_increasing:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_is_monotonic_increasing)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.is_monotonic_increasing:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_is_monotonic_increasing,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_is_monotonic_increasing = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.is_monotonic_increasing: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_is_monotonic_increasing = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.groupby.generic.SeriesGroupBy.is_monotonic_increasing: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[55]:
@@ -1136,17 +1284,19 @@ try:
     obj = class_constructor()
     ret = obj.last()
     type_pandas_core_groupby_generic_SeriesGroupBy_last = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.last:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_last)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.last:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_last,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_last = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.last: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_last = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.last: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[56]:
@@ -1157,17 +1307,19 @@ try:
     obj = class_constructor()
     ret = obj.mad
     type_pandas_core_groupby_generic_SeriesGroupBy_mad = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.mad:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_mad)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.mad:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_mad,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_mad = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.mad: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_mad = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.mad: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[57]:
@@ -1178,17 +1330,19 @@ try:
     obj = class_constructor()
     ret = obj.max()
     type_pandas_core_groupby_generic_SeriesGroupBy_max = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.max:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_max)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.max:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_max,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_max = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.max: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_max = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.max: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[58]:
@@ -1199,17 +1353,19 @@ try:
     obj = class_constructor()
     ret = obj.min()
     type_pandas_core_groupby_generic_SeriesGroupBy_min = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.min:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_min)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.min:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_min,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_min = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.min: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_min = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.min: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[59]:
@@ -1220,17 +1376,19 @@ try:
     obj = class_constructor()
     ret = obj.ngroup()
     type_pandas_core_groupby_generic_SeriesGroupBy_ngroup = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.ngroup:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_ngroup)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.ngroup:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_ngroup,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_ngroup = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.ngroup: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_ngroup = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.ngroup: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[60]:
@@ -1241,17 +1399,19 @@ try:
     obj = class_constructor()
     ret = obj.ngroups
     type_pandas_core_groupby_generic_SeriesGroupBy_ngroups = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.ngroups:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_ngroups)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.ngroups:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_ngroups,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_ngroups = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.ngroups: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_ngroups = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.ngroups: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[61]:
@@ -1262,17 +1422,19 @@ try:
     obj = class_constructor()
     ret = obj.nlargest
     type_pandas_core_groupby_generic_SeriesGroupBy_nlargest = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.nlargest:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_nlargest)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.nlargest:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_nlargest,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_nlargest = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.nlargest: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_nlargest = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.nlargest: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[62]:
@@ -1283,17 +1445,19 @@ try:
     obj = class_constructor()
     ret = obj.nsmallest
     type_pandas_core_groupby_generic_SeriesGroupBy_nsmallest = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.nsmallest:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_nsmallest)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.nsmallest:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_nsmallest,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_nsmallest = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.nsmallest: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_nsmallest = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.nsmallest: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[63]:
@@ -1304,17 +1468,19 @@ try:
     obj = class_constructor()
     ret = obj.pad()
     type_pandas_core_groupby_generic_SeriesGroupBy_pad = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.pad:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_pad)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.pad:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_pad,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_pad = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.pad: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_pad = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.pad: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[64]:
@@ -1325,17 +1491,19 @@ try:
     obj = class_constructor()
     ret = obj.pct_change()
     type_pandas_core_groupby_generic_SeriesGroupBy_pct_change = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.pct_change:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_pct_change)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.pct_change:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_pct_change,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_pct_change = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.pct_change: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_pct_change = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.pct_change: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[65]:
@@ -1346,17 +1514,19 @@ try:
     obj = class_constructor()
     ret = obj.plot
     type_pandas_core_groupby_generic_SeriesGroupBy_plot = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.plot:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_plot)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.plot:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_plot,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_plot = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.plot: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_plot = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.plot: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[66]:
@@ -1367,17 +1537,19 @@ try:
     obj = class_constructor()
     ret = obj.quantile()
     type_pandas_core_groupby_generic_SeriesGroupBy_quantile = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.quantile:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_quantile)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.quantile:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_quantile,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_quantile = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.quantile: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_quantile = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.quantile: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[67]:
@@ -1388,17 +1560,19 @@ try:
     obj = class_constructor()
     ret = obj.rank()
     type_pandas_core_groupby_generic_SeriesGroupBy_rank = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.rank:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_rank)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.rank:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_rank,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_rank = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.rank: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_rank = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.rank: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[68]:
@@ -1409,17 +1583,19 @@ try:
     obj = class_constructor()
     ret = obj.resample()
     type_pandas_core_groupby_generic_SeriesGroupBy_resample = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.resample:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_resample)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.resample:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_resample,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_resample = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.resample: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_resample = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.resample: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[69]:
@@ -1430,17 +1606,19 @@ try:
     obj = class_constructor()
     ret = obj.rolling()
     type_pandas_core_groupby_generic_SeriesGroupBy_rolling = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.rolling:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_rolling)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.rolling:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_rolling,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_rolling = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.rolling: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_rolling = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.rolling: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[70]:
@@ -1451,17 +1629,19 @@ try:
     obj = class_constructor()
     ret = obj.sem()
     type_pandas_core_groupby_generic_SeriesGroupBy_sem = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.sem:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_sem)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.sem:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_sem,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_sem = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.sem: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_sem = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.sem: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[71]:
@@ -1472,17 +1652,19 @@ try:
     obj = class_constructor()
     ret = obj.shift()
     type_pandas_core_groupby_generic_SeriesGroupBy_shift = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.shift:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_shift)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.shift:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_shift,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_shift = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.shift: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_shift = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.shift: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[72]:
@@ -1493,17 +1675,19 @@ try:
     obj = class_constructor()
     ret = obj.skew
     type_pandas_core_groupby_generic_SeriesGroupBy_skew = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.skew:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_skew)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.skew:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_skew,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_skew = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.skew: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_skew = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.skew: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[73]:
@@ -1514,17 +1698,19 @@ try:
     obj = class_constructor()
     ret = obj.std()
     type_pandas_core_groupby_generic_SeriesGroupBy_std = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.std:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_std)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.std:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_std,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_std = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.std: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_std = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.std: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[74]:
@@ -1535,17 +1721,19 @@ try:
     obj = class_constructor()
     ret = obj.tail()
     type_pandas_core_groupby_generic_SeriesGroupBy_tail = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.tail:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_tail)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.tail:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_tail,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_tail = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.tail: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_tail = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.tail: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[75]:
@@ -1556,17 +1744,19 @@ try:
     obj = class_constructor()
     ret = obj.take
     type_pandas_core_groupby_generic_SeriesGroupBy_take = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.take:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_take)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.take:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_take,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_take = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.take: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_take = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.take: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[76]:
@@ -1577,17 +1767,19 @@ try:
     obj = class_constructor()
     ret = obj.transform()
     type_pandas_core_groupby_generic_SeriesGroupBy_transform = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.transform:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_transform)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.transform:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_transform,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_transform = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.transform: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_transform = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.transform: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[77]:
@@ -1598,17 +1790,19 @@ try:
     obj = class_constructor()
     ret = obj.tshift
     type_pandas_core_groupby_generic_SeriesGroupBy_tshift = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.tshift:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_tshift)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.tshift:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_tshift,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_tshift = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.tshift: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_tshift = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.tshift: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[78]:
@@ -1619,17 +1813,19 @@ try:
     obj = class_constructor()
     ret = obj.unique
     type_pandas_core_groupby_generic_SeriesGroupBy_unique = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.unique:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_unique)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.unique:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_unique,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_unique = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.unique: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_unique = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.unique: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[79]:
@@ -1640,17 +1836,21 @@ try:
     obj = class_constructor()
     ret = obj.value_counts()
     type_pandas_core_groupby_generic_SeriesGroupBy_value_counts = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.value_counts:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_value_counts)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.value_counts:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_value_counts,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_value_counts = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.value_counts: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_value_counts = "_syft_missing"
+    print(
+        "❌ pandas.core.groupby.generic.SeriesGroupBy.value_counts: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[80]:
@@ -1661,15 +1861,16 @@ try:
     obj = class_constructor()
     ret = obj.var()
     type_pandas_core_groupby_generic_SeriesGroupBy_var = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.groupby.generic.SeriesGroupBy.var:",
-        type_pandas_core_groupby_generic_SeriesGroupBy_var)
+    )
+    print(
+        "✅ pandas.core.groupby.generic.SeriesGroupBy.var:",
+        type_pandas_core_groupby_generic_SeriesGroupBy_var,
+    )
 except Exception as e:
-    type_pandas_core_groupby_generic_SeriesGroupBy_var = '_syft_missing'
-    print('❌ pandas.core.groupby.generic.SeriesGroupBy.var: Return unavailable')
+    type_pandas_core_groupby_generic_SeriesGroupBy_var = "_syft_missing"
+    print("❌ pandas.core.groupby.generic.SeriesGroupBy.var: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
-
+    print("   Error:", e)
