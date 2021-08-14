@@ -40,6 +40,7 @@ DTYPE_REFACTOR = {
     np.dtype("uint16"): np.int16,
     np.dtype("uint32"): np.int32,
     np.dtype("uint64"): np.int64,
+}
 
 
 def arrow_serialize(obj: np.ndarray) -> bytes:

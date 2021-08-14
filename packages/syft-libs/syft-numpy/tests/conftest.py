@@ -10,6 +10,7 @@ from syft import logger
 
 logger.remove()
 
+
 @pytest.fixture(scope="session")
 def node() -> sy.VirtualMachine:
     return sy.VirtualMachine(name="Bob")
