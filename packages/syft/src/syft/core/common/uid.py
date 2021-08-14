@@ -7,7 +7,7 @@ from uuid import UUID as uuid_type
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft relative
+# relative
 from ...logger import critical
 from ...logger import traceback_and_raise
 from ...proto.core.common.common_object_pb2 import UID as UID_PB
@@ -117,6 +117,10 @@ class UID(Serializable):
         except Exception:
             return False
 
+    @property
+    def no_dash(self) -> str:
+        return str(self.value).replace("-", "")
+
     def __repr__(self) -> str:
         """Returns a human-readable version of the ID
 
@@ -124,8 +128,7 @@ class UID(Serializable):
         so that it can be easily spotted when nested inside of the human-
         readable representations of other objects."""
 
-        no_dash = str(self.value).replace("-", "")
-        return f"<{type(self).__name__}: {no_dash}>"
+        return f"<{type(self).__name__}: {self.no_dash}>"
 
     def char_emoji(self, hex_chars: str) -> str:
         base = ord("\U0001F642")

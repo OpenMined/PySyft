@@ -9,7 +9,7 @@ from typing import Optional
 # third party
 import nest_asyncio
 
-# syft relative
+# relative
 from ...logger import info
 from .environment import is_interactive
 from .environment import is_jupyter
@@ -43,9 +43,13 @@ if loop is None:
 asyncio._set_running_loop(loop)
 
 
+# use this in Grid gunicorn uvloop applications
+use_uvloop = int(str(os.environ.get("SYFT_USE_UVLOOP", "1")))
+
 # https://github.com/erdewit/nest_asyncio
 # patch the event loop to allow nested event loops
-nest_asyncio.apply(loop)
+if use_uvloop:
+    nest_asyncio.apply(loop)
 
 
 def loop_in_thread(loop: TypeAny) -> None:
@@ -97,7 +101,7 @@ thread_env = str(os.environ.get("SYFT_USE_EVENT_LOOP_THREAD", "1")).lower()
 SYFT_USE_EVENT_LOOP_THREAD = thread_env not in {"0", "false"}
 
 # REPL requires us to create the Thread and Exit handler
-if not is_jupyter and is_interactive and SYFT_USE_EVENT_LOOP_THREAD:
+if not is_jupyter and is_interactive and SYFT_USE_EVENT_LOOP_THREAD and not use_uvloop:
 
     event_loop_thread = EventLoopThread(loop=loop)
 

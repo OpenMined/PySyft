@@ -4,7 +4,7 @@
 import pandas as pd
 import pyarrow as pa
 
-# syft relative
+# relative
 from ...generate_wrapper import GenerateWrapper
 from ...proto.lib.pandas.series_pb2 import PandasSeries as PandasSeries_PB
 

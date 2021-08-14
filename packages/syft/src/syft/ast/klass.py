@@ -4,6 +4,7 @@
 from enum import Enum
 from enum import EnumMeta
 import inspect
+import secrets
 from types import ModuleType
 from typing import Any
 from typing import Callable as CallableT
@@ -15,7 +16,7 @@ from typing import Tuple
 from typing import Union
 import warnings
 
-# syft relative
+# relative
 from .. import ast
 from .. import lib
 from ..ast.callable import Callable
@@ -24,8 +25,11 @@ from ..core.common.uid import UID
 from ..core.node.common.action.get_or_set_property_action import GetOrSetPropertyAction
 from ..core.node.common.action.get_or_set_property_action import PropertyActions
 from ..core.node.common.action.run_class_method_action import RunClassMethodAction
+from ..core.node.common.action.run_class_method_smpc_action import (
+    RunClassMethodSMPCAction,
+)
 from ..core.node.common.action.save_object_action import SaveObjectAction
-from ..core.node.common.service.resolve_pointer_type_service import (
+from ..core.node.common.node_service.resolve_pointer_type.resolve_pointer_type_messages import (
     ResolvePointerTypeMessage,
 )
 from ..core.pointer.pointer import Pointer
@@ -138,7 +142,10 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
 
             # then we convert anything which isnt a pointer into a pointer
             pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
-                args=downcast_args, kwargs=downcast_kwargs, client=__self.client
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=__self.client,
+                gc_enabled=False,
             )
 
             cmd = RunClassMethodAction(
@@ -160,6 +167,88 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
         )
 
         return result
+
+    def run_class_smpc_method(
+        __self: Any,
+        *args: Tuple[Any, ...],
+        **kwargs: Any,
+    ) -> object:
+        """Run remote class method on a SharePointer and get pointer to returned object.
+
+        Args:
+            *args: Args list of class method.
+            **kwargs: Keyword args of class method.
+
+        Returns:
+            Pointer to object returned by class method.
+        """
+        # relative
+        from ..core.node.common.action.smpc_action_message import SMPCActionMessage
+
+        seed_id_locations = kwargs.get("seed_id_locations", None)
+        if seed_id_locations:
+            raise ValueError(
+                "There should not be any kwargs named seed_id_locations in the kwargs for MPCTensor"
+            )
+
+        seed_id_locations = secrets.randbits(64)
+        kwargs["seed_id_locations"] = str(seed_id_locations)
+        op = attr_path_and_name.split(".")[-1]
+        id_at_location = SMPCActionMessage.get_id_at_location_from_op(
+            seed_id_locations, op
+        )
+
+        # we want to get the return type which matches the attr_path_and_name
+        # so we ask lib_ast for the return type name that matches out
+        # attr_path_and_name and then use that to get the actual pointer klass
+        # then set the result to that pointer klass
+        return_type_name = __self.client.lib_ast.query(
+            attr_path_and_name
+        ).return_type_name
+        resolved_pointer_type = __self.client.lib_ast.query(return_type_name)
+        result = resolved_pointer_type.pointer_type(client=__self.client)
+        result.id_at_location = id_at_location
+
+        # first downcast anything primitive which is not already PyPrimitive
+        (
+            downcast_args,
+            downcast_kwargs,
+        ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+
+        # then we convert anything which isnt a pointer into a pointer
+        pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+            args=downcast_args,
+            kwargs=downcast_kwargs,
+            client=__self.client,
+            gc_enabled=False,
+        )
+
+        cmd = RunClassMethodSMPCAction(
+            path=attr_path_and_name,
+            _self=__self,
+            args=pointer_args,
+            kwargs=pointer_kwargs,
+            id_at_location=result.id_at_location,
+            address=__self.client.address,
+        )
+        __self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=__self,
+            args=args,
+            kwargs=kwargs,
+        )
+
+        return result
+
+    # relative
+    from ..core.node.common.action.smpc_action_message import MAP_FUNC_TO_ACTION
+
+    method_name = attr_path_and_name.rsplit(".", 1)[-1]
+    if "ShareTensor" in attr_path_and_name and method_name in MAP_FUNC_TO_ACTION:
+        return run_class_smpc_method
 
     return run_class_method
 
@@ -363,6 +452,7 @@ def wrap_len(attrs: Dict[str, Union[str, CallableT, property]]) -> None:
             """
             data_len_ptr = len_func(self)
             try:
+                print(self.get_request_config())
                 data_len = data_len_ptr.get(**self.get_request_config())
 
                 if data_len is None:
@@ -816,7 +906,10 @@ class Class(Callable):
 
 
 def pointerize_args_and_kwargs(
-    args: Union[List[Any], Tuple[Any, ...]], kwargs: Dict[Any, Any], client: Any
+    args: Union[List[Any], Tuple[Any, ...]],
+    kwargs: Dict[Any, Any],
+    client: Any,
+    gc_enabled: bool = True,
 ) -> Tuple[List[Any], Dict[Any, Any]]:
     """Get pointers to args and kwargs.
 
@@ -838,15 +931,16 @@ def pointerize_args_and_kwargs(
     for arg in args:
         # check if its already a pointer
         if not isinstance(arg, Pointer):
-            arg_ptr = arg.send(client, pointable=False)
+            arg_ptr = arg.send(client, pointable=not gc_enabled)
             pointer_args.append(arg_ptr)
         else:
             pointer_args.append(arg)
+            arg.gc_enabled = gc_enabled
 
     for k, arg in kwargs.items():
         # check if its already a pointer
         if not isinstance(arg, Pointer):
-            arg_ptr = arg.send(client, pointable=False)
+            arg_ptr = arg.send(client, pointable=True)
             pointer_kwargs[k] = arg_ptr
         else:
             pointer_kwargs[k] = arg

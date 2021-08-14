@@ -8,7 +8,7 @@ from typing import Tuple as TypeTuple
 import petlib as pl
 import zksk as zk  # noqa: 401 # required for pl.ec and pl.bn
 
-# syft relative
+# relative
 from . import bn  # noqa: 401
 from . import ecpt  # noqa: 401
 from . import ecpt_group  # noqa: 401

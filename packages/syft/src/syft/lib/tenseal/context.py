@@ -5,7 +5,7 @@ import sys
 from packaging import version
 import tenseal as ts
 
-# syft relative
+# relative
 from ...generate_wrapper import GenerateWrapper
 from ...logger import info
 from ...logger import traceback_and_raise

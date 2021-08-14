@@ -7,7 +7,7 @@ from typing import List
 # third party
 from typing_extensions import final
 
-# syft relative
+# relative
 from ..pointer import Pointer
 from .gc_strategy import GCStrategy
 

@@ -1,7 +1,7 @@
 # third party
 import zksk as zk  # noqa: 401
 
-# syft relative
+# relative
 from ...core.common.serde.deserialize import _deserialize as deserialize
 from ...core.common.serde.serialize import _serialize as serialize
 from ...generate_wrapper import GenerateWrapper

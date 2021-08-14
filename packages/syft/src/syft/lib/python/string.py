@@ -5,7 +5,7 @@ from typing import Any, Mapping, Optional, Union
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft relative
+# relative
 from ... import deserialize, serialize
 from ...core.common import UID
 from ...core.common.serde.serializable import bind_protobuf
@@ -19,11 +19,18 @@ from .types import SyPrimitiveRet
 
 @bind_protobuf
 class String(UserString, PyPrimitive):
-    def __init__(self, value: Any = None, id: Optional[UID] = None):
+    def __init__(
+        self,
+        value: Any = None,
+        id: Optional[UID] = None,
+        temporary_box: bool = False,
+    ):
+
         if value is None:
             value = ""
 
         UserString.__init__(self, value)
+        PyPrimitive.__init__(self, temporary_box=temporary_box)
 
         self._id: UID = id if id else UID()
 
@@ -322,10 +329,10 @@ class String(UserString, PyPrimitive):
         res = super().splitlines(keepends)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def startswith(  # type: ignore
+    def startswith(
         self,
         suffix: Union[str, UserString, tuple],
-        start: int = 0,
+        start: Optional[int] = None,
         end: Optional[int] = None,
     ) -> SyPrimitiveRet:
         suffix = str(suffix) if isinstance(suffix, UserString) else suffix
@@ -336,7 +343,7 @@ class String(UserString, PyPrimitive):
             if isinstance(suffix, tuple)
             else suffix
         )
-
+        start = start if start else 0
         end = end if end else len(self)
         res = super().startswith(suffix, start, end)
         return PrimitiveFactory.generate_primitive(value=res)
@@ -382,12 +389,20 @@ class String(UserString, PyPrimitive):
         return self._id
 
     def _object2proto(self) -> String_PB:
-        return String_PB(data=self.data, id=serialize(obj=self.id))
+        return String_PB(
+            data=self.data,
+            id=serialize(obj=self.id),
+            temporary_box=self.temporary_box,
+        )
 
     @staticmethod
     def _proto2object(proto: String_PB) -> "String":
         str_id: UID = deserialize(blob=proto.id)
-        return String(value=proto.data, id=str_id)
+        return String(
+            value=proto.data,
+            id=str_id,
+            temporary_box=proto.temporary_box,
+        )
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:

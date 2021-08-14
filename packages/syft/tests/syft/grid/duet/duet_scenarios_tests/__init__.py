@@ -3,7 +3,7 @@ from typing import Callable
 from typing import List
 from typing import Tuple
 
-# syft relative
+# relative
 from .duet_init_test import test_scenario_init
 from .duet_sanity_test import test_scenario_sanity
 from .duet_torch_test import test_scenario_torch_tensor_sanity

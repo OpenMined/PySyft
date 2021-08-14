@@ -98,7 +98,7 @@ from nacl.signing import VerifyKey
 # syft absolute
 import syft as sy
 
-# syft relative
+# relative
 from ...logger import debug
 from ...logger import error
 from ...logger import warning
@@ -110,8 +110,8 @@ from ..common.uid import UID
 from ..io.address import Address
 from ..node.abstract.node import AbstractNode
 from ..node.common.action.get_object_action import GetObjectAction
-from ..node.common.service.get_repr_service import GetReprMessage
-from ..node.common.service.obj_search_permission_service import (
+from ..node.common.node_service.get_repr.get_repr_service import GetReprMessage
+from ..node.common.node_service.object_search_permission_update.obj_search_permission_messages import (
     ObjectSearchPermissionUpdateMessage,
 )
 from ..store.storeable_object import StorableObject
@@ -218,8 +218,11 @@ class Pointer(AbstractPointer):
             if "You do not have permission to .get()" in str(
                 e
             ) or "UnknownPrivateException" in str(e):
-                # syft relative
-                from ..node.domain.service import RequestStatus
+
+                # relative
+                from ..node.common.node_service.request_receiver.request_receiver_messages import (
+                    RequestStatus,
+                )
 
                 response_status = self.request(
                     reason="Calling remote print",
@@ -257,8 +260,11 @@ class Pointer(AbstractPointer):
         :return: returns the downloaded data
         :rtype: Optional[StorableObject]
         """
-        # syft relative
-        from ..node.domain.service import RequestStatus
+
+        # relative
+        from ..node.common.node_service.request_receiver.request_receiver_messages import (
+            RequestStatus,
+        )
 
         if self._exhausted:
             raise ReferenceError(
@@ -402,8 +408,11 @@ class Pointer(AbstractPointer):
             This method should be used when the remote data associated with the pointer wants to be
             downloaded locally (or use .get() on the pointer).
         """
-        # syft relative
-        from ..node.domain.service import RequestMessage
+
+        # relative
+        from ..node.common.node_service.request_receiver.request_receiver_messages import (
+            RequestMessage,
+        )
 
         # if you request non-blocking you don't need a timeout
         # if you request blocking you need a timeout, so lets set a default on here
@@ -434,7 +443,7 @@ class Pointer(AbstractPointer):
             if timeout_secs is None:
                 timeout_secs = 30  # default if not explicitly set
 
-            # syft relative
+            # relative
             from ..node.domain.service import RequestAnswerMessage
             from ..node.domain.service import RequestStatus
 
@@ -567,7 +576,8 @@ class Pointer(AbstractPointer):
         :param request_id: The request on which you are querying the status.
         :type request_id: UID
         """
-        # syft relative
+
+        # relative
         from ..node.domain.service import RequestAnswerMessage
 
         msg = RequestAnswerMessage(

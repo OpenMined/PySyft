@@ -4,7 +4,7 @@ from typing import Any, Optional
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft relative
+# relative
 from ... import deserialize, serialize
 from ...core.common import UID
 from ...core.common.serde.serializable import bind_protobuf
@@ -47,7 +47,7 @@ class Complex(complex, PyPrimitive):
         return self._id
 
     def upcast(self) -> complex:
-        return complex(self)  # type: ignore
+        return super().complex(self)  # type: ignore
 
     def __add__(self, x: complex) -> SyPrimitiveRet:
         result = complex.__add__(self, x)
