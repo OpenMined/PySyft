@@ -2,6 +2,7 @@
 import functools
 import importlib
 import sys
+import warnings
 from types import ModuleType
 from typing import Any
 from typing import Any as TypeAny
@@ -12,18 +13,16 @@ from typing import Optional
 from typing import Set as TypeSet
 from typing import Tuple as TypeTuple
 from typing import Union as TypeUnion
-import warnings
+
+import wrapt
 
 # third party
 from cachetools import cached
 from cachetools.keys import hashkey
 from packaging import version
-import wrapt
 
 # relative
-from ..ast import add_classes
-from ..ast import add_methods
-from ..ast import add_modules
+from ..ast import add_classes, add_dynamic_objects, add_methods, add_modules
 from ..ast.globals import Globals
 from ..core.node.abstract.node import AbstractNodeClient
 from ..core.tensor import create_tensor_ast
@@ -33,9 +32,7 @@ from ..lib.python import create_python_ast
 from ..lib.remote_dataloader import create_remote_dataloader_ast
 from ..lib.torch import create_torch_ast
 from ..lib.torchvision import create_torchvision_ast
-from ..logger import critical
-from ..logger import traceback_and_raise
-from ..logger import warning
+from ..logger import critical, traceback_and_raise, warning
 from .misc import create_union_ast
 from .misc.union import UnionGenerator
 from .util import generic_update_ast
@@ -264,7 +261,7 @@ lib_ast = create_lib_ast(None)
 @wrapt.when_imported("opacus")
 @wrapt.when_imported("numpy")
 @wrapt.when_imported("sklearn")
-@wrapt.when_imported("pandas")
+# @wrapt.when_imported("pandas")
 @wrapt.when_imported("PIL")
 @wrapt.when_imported("petlib")
 @wrapt.when_imported("openmined_psi")
@@ -285,6 +282,34 @@ def post_import_hook_third_party(module: TypeAny) -> None:
     load(module.__name__, ignore_warning=True)
 
 
+# TODO: (tech debt) Need to parse Union and remove types unsupported/unknown to syft.
+def chk_unsupported_unions(return_type: str) -> bool:
+    unsupported = [
+        "Union[pandas.core.indexes.base.Index, List[Union[str, int]]]",
+        "Union[numpy.dtype, pandas.core.dtypes.base.ExtensionDtype, NoneType]",
+        "Union[Collection[~T], ~T]",
+        "Union[numpy.dtype, pandas.core.dtypes.base.ExtensionDtype]",
+        "Union[pandas.core.series.Series, str, bool, int, float, numpy.ndarray, list, object]",
+        "Union[pandas.core.series.Series, Tuple[pandas.core.series.Series, pandas.core.series.Series]]",
+        "Union[numpy.ndarray, Tuple[numpy.ndarray, numpy.ndarray]]",
+        "Union[str, pathlib.Path, IO[~AnyStr]]",
+        "Union[numpy.int64, numpy.ndarray]",
+        "Union[pandas.io.pytables.GenericFixed, pandas.io.pytables.Table]",
+        "Union[pandas.core.dtypes.base.ExtensionDtype, str, numpy.dtype, Type[Union[str, float, int, complex, bool]]]",
+        "Union[pandas.core.frame.DataFrame, Iterator[pandas.core.frame.DataFrame]]",
+        "Union[str, bool, int, float, numpy.ndarray, list, object]",
+        "Union[~DatetimeLikeScalar, pandas._libs.tslibs.nattype.NaTType]",
+        "Union[pandas.core.frame.DataFrame, pandas.io.stata.StataReader]",
+        "Union[NoneType, Type[pandas.core.dtypes.base.ExtensionDtype]]",
+        "Union[str, IO[~AnyStr], io.RawIOBase, io.BufferedIOBase, io.TextIOBase, _io.TextIOWrapper, mmap.mmap]",
+        "Union[NoneType, ~FrameOrSeries]",
+        "Union[NoneType, Callable]",
+        "Union[NoneType, datetime.tzinfo]",
+        "Union[NoneType, Hashable]",
+    ]
+    return return_type not in unsupported
+
+
 def _map2syft_types(
     methods: TypeList[TypeTuple[str, str]]
 ) -> TypeList[TypeTuple[str, str]]:
@@ -296,36 +321,46 @@ def _map2syft_types(
         "int": "syft.lib.python.Int",
         # "Iterator":"syft.lib.python.Iterator",
         "list": "syft.lib.python.List",
-        "NoneType": "syft.lib.python._SyNone",
+        "nonetype": "syft.lib.python._SyNone",
         "range": "syft.lib.python.Range",
         "set": "syft.lib.python.Set",
         "slice": "syft.lib.python.Slice",
         "str": "syft.lib.python.String",
         "tuple": "syft.lib.python.Tuple",
     }
+    new_methods: list[tuple[str, str]] = []
     for i, (func, return_type) in enumerate(methods):
-        if return_type.startswith("Union"):
-            types = return_type[5:].strip("[]").split(",")
-            for i in range(len(types)):
-                if types[i] in primitive_map:
-                    types[i] = primitive_map[types[i]]
-            methods[i] = (func, UnionGenerator[tuple(types)])
+        return_type = return_type.replace("typing.", "")
+        return_type = return_type.replace("Optional[", "Union[NoneType, ")
 
-        elif return_type in primitive_map:
-            methods[i] = (func, primitive_map[return_type])
-    return methods
+        if return_type.startswith("Union") and chk_unsupported_unions(return_type):
+            types = return_type[5:].strip("[]").split(",")
+            types = [t.strip() for t in types]
+            for i in range(len(types)):
+                if types[i].lower() in primitive_map:
+                    types[i] = primitive_map[types[i].lower()]
+            new_methods.append((func, UnionGenerator[tuple(types)]))
+
+        elif return_type.lower() in primitive_map:
+            new_methods.append((func, primitive_map[return_type.lower()]))
+        else:
+            new_methods.append((func, return_type))
+
+    return new_methods
 
 
 def _create_support_ast(
     modules: TypeList[TypeTuple[str, TypeAny]],
     classes: TypeList[TypeTuple[str, str, TypeAny]],
     methods: TypeList[TypeTuple[str, str]],
+    dynamic_objects: TypeList[TypeTuple[str, str]],
     client: TypeAny = None,
 ) -> Globals:
     ast = Globals(client=client)
     add_modules(ast, modules)
     add_classes(ast, classes)
     add_methods(ast, methods)
+    add_dynamic_objects(ast, dynamic_objects)
 
     for klass in ast.classes:
         klass.create_pointer_class()
@@ -348,8 +383,13 @@ def add_lib_external(
 
     methods = _map2syft_types(config["methods"])
     # create_ast and update_ast function
+    dynamic_objects = config["dynamic_objects"] if "dynamic_objects" in config else {}
     create_ast = functools.partial(
-        _create_support_ast, config["modules"], config["classes"], methods
+        _create_support_ast,
+        config["modules"],
+        config["classes"],
+        methods,
+        dynamic_objects,
     )
     update_ast = functools.partial(generic_update_ast, lib, create_ast)
 

@@ -87,7 +87,7 @@ def set_classes(
                     if is_error:
                         debug_list.append(string)
                     else:
-                        allowlist.append((f"{i}.{t.__name__}", string))
+                        allowlist.append((f"{i}.{ax}", string))
         except Exception as e:
             debug_list.append(
                 f"set_classes: module_name = {i}: exception occoured \n\t{e}"
@@ -223,24 +223,27 @@ def dict_allowlist(
                         if_class_added = True
 
                     i_ = i.replace(".", "_")
-
                     code = (
                         f"# {i}.{t.__name__}\n"
                         "try:\n"
                         "\tobj = class_constructor()\n"
                         f"\tret = obj.{t.__name__}()\n"
-                        f"\ttype_{i_}_{t.__name__} = getattr(ret, '__module__', 'none')"
-                        " + '.' + ret.__class__.__name__\n"
-                        f"\tprint('✅ {i}.{t.__name__}: ', type(ret))\n"
+                        f"\ttype_{i_}_{t.__name__} = (\n"
+                        f"\tgetattr(ret, '__module__', None) + '.' + ret.__class__.__name__\n"
+                        f"\t\tif getattr(ret, '__module__', None)\n"
+                        f"\t\telse ret.__class__.__name__\n"
+                        f"\t\t)\n"
+                        f'\tprint("✅ {i}.{t.__name__}:",\n'
+                        f"\t\ttype_{i_}_{t.__name__})\n"
                         f"except Exception as e:\n"
                         f"\ttype_{i_}_{t.__name__} = '_syft_missing'\n"
                         f"\tprint('❌ {i}.{t.__name__}: Return unavailable')\n"
-                        '\tprint("  Please fix this return type code until there is no exception")\n'
-                        "\tprint('  Error:', e)\n"
+                        f'\tprint("  Please fix this return type code until there is no exception")\n'
+                        f"\tprint('   Error:', e)\n"
                     ).replace("\t", " " * 4)
 
                     list_nb.append(nbf.v4.new_code_cell(code))
-                allowlist.append((i + "." + t.__name__, string))
+                allowlist.append((i + "." + ax, string))
 
         elif isinstance(t, property):
             missing_return += 1
@@ -249,14 +252,18 @@ def dict_allowlist(
                 if_class_added = True
 
             i_ = i.replace(".", "_")
-
             code = (
                 f"# {i}.{ax}\n"
                 f"try:\n"
                 f"\tobj = class_constructor()\n"
                 f"\tret = obj.{ax}\n"
-                f"\ttype_{i_}_{ax} = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__\n"
-                f"\tprint('✅ {i}.{ax}:', type(ret))\n"
+                f"\ttype_{i_}_{ax} = (\n"
+                f"\tgetattr(ret, '__module__', None) + '.' + ret.__class__.__name__\n"
+                f"\t\tif getattr(ret, '__module__', None)\n"
+                f"\t\telse ret.__class__.__name__\n"
+                f"\t\t)\n"
+                f'\tprint("✅ {i}.{ax}:",\n'
+                f"\t\ttype_{i_}_{ax})\n"
                 f"except Exception as e:\n"
                 f"\ttype_{i_}_{ax} = '_syft_missing'\n"
                 f"\tprint('❌ {i}.{ax}: Return unavailable')\n"
@@ -265,13 +272,14 @@ def dict_allowlist(
             ).replace("\t", " " * 4)
 
             list_nb.append(nbf.v4.new_code_cell(code))
+            allowlist.append((f"{i}.{ax}", "_syft_missing"))
 
     return allowlist, debug_list, methods_error_count, missing_return, list_nb
 
 
 def generate_package_support(
     package_name: str, DEBUG: bool = False
-) -> TypeTuple[str, TypeDict[str, TypeAny]]:
+) -> TypeTuple[str, TypeDict[str, TypeTuple[TypeAny, ...]]]:
 
     # DEBUG = args.debug
     # package_name = args.lib
@@ -338,6 +346,8 @@ def generate_package_support(
 
         debug_list.extend(debug_list_i)
         tmp_class = class_import(class_)
+
+        # original path will be the path to source module
         original_path = tmp_class.__module__ + "." + tmp_class.__name__
 
         if len(list_nb_i) > 0 and original_path == class_:
@@ -348,7 +358,10 @@ def generate_package_support(
             missing_classes.append(class_name)
 
             nb["cells"] = list_nb_i
-            missing_returns_dir[nb_name] = (nbf.writes(nb), no_overwrite())
+            missing_returns_dir[nb_name] = (
+                nbf.writes(nb),
+                no_overwrite(),
+            )  # type: ignore
 
             list_nb.extend(list_nb_i)
         methods_error_count += methods_error_count_i
@@ -364,8 +377,10 @@ def generate_package_support(
     package_support: TypeDict[str, TypeAny] = dict()
 
     package_support["lib"] = package_name
-    # petlib doesnot have version
-    # package_support["Version"] = package.__version__
+    try:
+        package_support["Version"] = package.__version__
+    except Exception:
+        package_support["Version"] = "NA"
     # sort it all
     classlist = list(classes_set)
     classlist.sort()

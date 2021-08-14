@@ -8,6 +8,10 @@ from typing import Set
 
 _denylist: Set[str] = {
     "pandas.read_",
+    "\S+.__getattr__$",  # noqa: W605
+    "\S+.__setattr__$",  # noqa: W605
+    "\S+.__repr__$",  # noqa: W605
+    "\S+.get$",  # noqa: W605
 }
 
 _denylist_re = list(map(re.compile, _denylist))  # type: ignore

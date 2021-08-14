@@ -64,7 +64,7 @@ def get_serde() -> TypeList[TypeDict[str, TypeAny]]:
                     serde = getattr(serde_module, "serde")
                 except AttributeError:
                     print(f"WARN: No serde found in {module_path}")
-                    pass
+                    continue
 
                 if isinstance(serde, Iterable) and not isinstance(serde, dict):
                     serde_objs.extend(serde)
