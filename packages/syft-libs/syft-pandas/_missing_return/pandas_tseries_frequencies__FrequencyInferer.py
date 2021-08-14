@@ -1,0 +1,37 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# ## pandas.tseries.frequencies._FrequencyInferer
+
+# In[1]:
+
+
+# third party
+import pandas
+
+
+def class_constructor(*args, **kwargs):
+    obj = pandas.tseries.frequencies._FrequencyInferer()
+    return obj
+
+
+# In[2]:
+
+
+# pandas.tseries.frequencies._FrequencyInferer.month_position_check
+try:
+    obj = class_constructor()
+    ret = obj.month_position_check()
+    type_pandas_tseries_frequencies__FrequencyInferer_month_position_check = (
+    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
+        if getattr(ret, '__module__', None)
+        else ret.__class__.__name__
+        )
+    print("✅ pandas.tseries.frequencies._FrequencyInferer.month_position_check:",
+        type_pandas_tseries_frequencies__FrequencyInferer_month_position_check)
+except Exception as e:
+    type_pandas_tseries_frequencies__FrequencyInferer_month_position_check = '_syft_missing'
+    print('❌ pandas.tseries.frequencies._FrequencyInferer.month_position_check: Return unavailable')
+    print("  Please fix this return type code until there is no exception")
+    print('   Error:', e)
+

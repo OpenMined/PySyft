@@ -348,7 +348,12 @@ def generate_package_support(
         tmp_class = class_import(class_)
 
         # original path will be the path to source module
-        original_path = tmp_class.__module__ + "." + tmp_class.__name__
+        try:
+            original_path = tmp_class.__module__ + "." + tmp_class.__name__
+        except AttributeError as e:
+            print(f"Failed to import {class_}")
+            print(e)
+            continue
 
         if len(list_nb_i) > 0 and original_path == class_:
             nb = nbf.v4.new_notebook()
