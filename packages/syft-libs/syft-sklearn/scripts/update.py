@@ -1,9 +1,11 @@
 # import argparse
-from importlib.machinery import SourceFileLoader
+# stdlib
+import importlib
+import inspect
 import json
 import os
+from importlib.machinery import SourceFileLoader
 from pathlib import Path
-import importlib
 from typing import Any as TypeAny
 
 
@@ -21,7 +23,7 @@ def update_json() -> None:
         f"{root_dir}", "src", "syft_sklearn", "package-support.json"
     )
     path_to_missing = Path(f"{root_dir}", "_missing_return", "__init__.py")
-    _missing_return = SourceFileLoader(
+    _missing_return = SourceFileLoader(  # noqa F841
         "_missing_return", str(path_to_missing)
     ).load_module()
 
@@ -33,7 +35,11 @@ def update_json() -> None:
     for x, (method, return_type) in enumerate(allowlist):
         if return_type in ["_syft_missing", "_syft_return_absent"]:
 
-            tmp_class = class_import(".".join(method.split(".")[:-1]))
+            tmp = class_import(".".join(method.split(".")[:-1]))
+            if not inspect.isclass(tmp):
+                continue  # TODO: change this if we create notebooks for modules
+
+            tmp_class = tmp
             original_class = tmp_class.__module__ + "." + tmp_class.__name__
             class_ = original_class.replace(".", "_")
 

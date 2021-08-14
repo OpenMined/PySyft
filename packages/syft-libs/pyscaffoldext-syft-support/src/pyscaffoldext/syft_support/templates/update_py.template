@@ -18,7 +18,9 @@ def update_json() -> None:
     root_dir = os.path.abspath(Path(os.path.dirname(__file__)) / "..")
     PKG_SUPPORT_NAME = Path(f"{root_dir}","src","${package}","package-support.json")
     path_to_missing = Path(f"{root_dir}","_missing_return","__init__.py")
-    _missing_return = SourceFileLoader("_missing_return",str(path_to_missing)).load_module()
+    _missing_return = SourceFileLoader(  # noqa F841
+        "_missing_return", str(path_to_missing)
+    ).load_module()
 
     with open(PKG_SUPPORT_NAME) as f:
         package_support = json.load(f)
@@ -28,8 +30,8 @@ def update_json() -> None:
     for x,(method,return_type) in enumerate(allowlist):
         if return_type in ["_syft_missing", "_syft_return_absent"]:
 
-            tmp_class = class_import(".".join(method.split(".")[:-1]))
-            original_class = tmp_class.__module__+"."+tmp_class.__name__
+            tmp_class = class_import(".".join(method.split(".")[:-1])) # noqa F841
+            original_class = ".".join(method.split(".")[:-1])
             class_ = original_class.replace(".", "_")
 
             method_name = method.split(".")[-1]
@@ -44,7 +46,7 @@ def update_json() -> None:
                     allowlist[x] = (method,return_type)
             except Exception as e:
                 print(f"Some Exception in update.py\n\t{e}")
-    
+
     package_support["methods"] = allowlist
 
     with open(PKG_SUPPORT_NAME, "w") as outfile:

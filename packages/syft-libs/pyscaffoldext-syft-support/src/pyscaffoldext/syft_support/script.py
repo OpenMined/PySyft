@@ -22,6 +22,7 @@ from typing import List as TypeList
 from typing import Set as TypeSet
 from typing import Tuple as TypeTuple
 
+# third party
 import nbformat as nbf
 from pyscaffold.operations import no_overwrite
 
@@ -56,7 +57,7 @@ def set_classes(
 ) -> TypeAny:
 
     classes_set = set()
-    allowlist: TypeList[str, str] = []
+    allowlist: TypeList[TypeTuple[str, str]] = list()
     # print(f'Len of modules_list {len(modules_list)}')
     for i in modules_list:
         try:
@@ -189,7 +190,7 @@ def add_nb_class_header(class_path: str) -> str:
         f"import {module_name}\n"
         + "def class_constructor(*args, **kwargs):\n"
         + f"\tobj = {class_path}()\n"
-        + f"\treturn obj\n"
+        + "\treturn obj\n"
     ).replace("\t", " " * 4)
 
 
@@ -244,7 +245,7 @@ def dict_allowlist(
                     code = (
                         f"# {i}.{t.__name__}\n"
                         f"try:\n"
-                        f"\tobj = class_constructor() # noqa F821\n"
+                        f"\tobj = class_constructor()  # noqa F821\n"
                         f"\tret = obj.{t.__name__}()\n"
                         f"\ttype_{i_}_{t.__name__} = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__\n"  # noqa E501
                         f"\tprint('✅ {i}.{t.__name__}: ', type(ret)) # noqa E501\n"
@@ -257,8 +258,6 @@ def dict_allowlist(
 
                     list_nb.append(nbf.v4.new_code_cell(code))
 
-                if i + "." + t.__name__ == "sklearn.cluster._bicluster.isspmatrix":
-                    print(t, i, ax)
                 allowlist.append(((i + "." + ax), string))
 
         elif isinstance(t, property):
@@ -367,7 +366,7 @@ def generate_package_support(
             missing_classes.append(class_name)
 
             nb["cells"] = list_nb_i
-            missing_returns_dir[nb_name] = (nbf.writes(nb), no_overwrite())
+            missing_returns_dir[nb_name] = (nbf.writes(nb), no_overwrite())  # type: ignore
 
             list_nb.extend(list_nb_i)
         methods_error_count += methods_error_count_i
@@ -380,7 +379,7 @@ def generate_package_support(
         init_file = "".join(
             f"from . import {a} # noqa: F401\n" for a in missing_classes
         )
-        missing_returns_dir["__init__.py"] = (init_file, no_overwrite())
+        missing_returns_dir["__init__.py"] = (init_file, no_overwrite())  # type: ignore
 
     package_support: TypeDict[str, TypeAny] = dict()
 

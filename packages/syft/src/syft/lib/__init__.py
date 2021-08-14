@@ -21,9 +21,7 @@ from cachetools.keys import hashkey
 from packaging import version
 
 # syft relative
-from ..ast import add_classes
-from ..ast import add_methods
-from ..ast import add_modules
+from ..ast import add_classes, add_methods, add_modules
 from ..ast.globals import Globals
 from ..core.node.abstract.node import AbstractNodeClient
 from ..generate_wrapper import GenerateWrapper
@@ -32,9 +30,7 @@ from ..lib.python import create_python_ast
 from ..lib.remote_dataloader import create_remote_dataloader_ast
 from ..lib.torch import create_torch_ast
 from ..lib.torchvision import create_torchvision_ast
-from ..logger import critical
-from ..logger import traceback_and_raise
-from ..logger import warning
+from ..logger import critical, traceback_and_raise, warning
 from .misc import create_union_ast
 from .misc.union import UnionGenerator
 from .util import generic_update_ast
@@ -299,6 +295,8 @@ def _map2syft_types(
         "slice": "syft.lib.python.Slice",
         "str": "syft.lib.python.String",
         "tuple": "syft.lib.python.Tuple",
+        # numpy doesnot have __module__
+        "none.ndarray": "numpy.ndarray",
     }
     for i, (func, return_type) in enumerate(methods):
         if return_type.startswith("Union"):
