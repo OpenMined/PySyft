@@ -90,23 +90,6 @@ def test_xgb_base_module(root_client: sy.VirtualMachineClient) -> None:
     regressor.fit(X, y)
     y_pred_regressor_rf_remote = regressor.predict(X).get()
 
-    assert np.array_equal(y_pred_classifier_rf, y_pred_classifier_rf_remote)
-    assert np.array_equal(y_pred_regressor_rf, y_pred_regressor_rf_remote)
-    assert np.array_equal(y_pred_regressor, y_pred_regressor_remote)
-    assert np.array_equal(y_pred_classifier, y_pred_classifier_remote)
-    assert np.array_equal(preds_remote, preds)
-
-
-# this currently fails: https://github.com/OpenMined/PySyft/issues/5536
-@pytest.mark.skipif(_SKIP_XGB, reason="xgboost couldn't properly load")
-@pytest.mark.vendor(lib="xgboost")
-def test_xgb_ranker_class(root_client: sy.VirtualMachineClient) -> None:
-    xgb_remote = root_client.xgboost
-
-    # import xgboost as xgb
-
-    X = np.array([[-1, -1], [-2, -1], [1, 1], [2, 1]])
-    y = np.array([0, 0, 1, 1])
     g = np.array([0, 1, 1, 2])
 
     ranker = xgb.XGBRanker()
@@ -115,4 +98,12 @@ def test_xgb_ranker_class(root_client: sy.VirtualMachineClient) -> None:
     ranker.fit(X, y, group=g)
     ranker_remote.fit(X, y, group=g)
 
-    assert np.array_equal(ranker.predict(X), ranker_remote.predict(X).get())
+    y_pred_ranker = ranker.predict(X)
+    y_pred_ranker_remote = ranker_remote.predict(X).get()
+
+    assert np.array_equal(y_pred_classifier_rf, y_pred_classifier_rf_remote)
+    assert np.array_equal(y_pred_regressor_rf, y_pred_regressor_rf_remote)
+    assert np.array_equal(y_pred_regressor, y_pred_regressor_remote)
+    assert np.array_equal(y_pred_classifier, y_pred_classifier_remote)
+    assert np.array_equal(y_pred_ranker, y_pred_ranker_remote)
+    assert np.array_equal(preds_remote, preds)
