@@ -3,7 +3,8 @@ import re
 
 # third party
 import pytest
-import syft_statsmodels  # noqa: 401
+import syft_statsmodels  # noqa: F401
+import syft_pandas  # noqa: F401
 
 # syft absolute
 # absolute
