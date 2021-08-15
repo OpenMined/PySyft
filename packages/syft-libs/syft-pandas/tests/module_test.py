@@ -8,8 +8,8 @@ from typing import List
 import pytest
 import syft_pandas  # noqa: F401
 
-# absolute
 # syft absolute
+# absolute
 import syft as sy
 
 pd = pytest.importorskip("pandas")

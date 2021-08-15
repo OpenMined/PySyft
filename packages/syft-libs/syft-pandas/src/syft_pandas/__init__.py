@@ -1,8 +1,8 @@
 # stdlib
+from importlib import import_module
 import inspect
 import json
 import os
-from importlib import import_module
 from pathlib import Path
 from typing import Any as TypeAny
 from typing import Dict as TypeDict
@@ -10,8 +10,8 @@ from typing import Iterable
 from typing import List as TypeList
 from typing import Tuple as TypeTuple
 
-# absolute
 # syft absolute
+# absolute
 import syft as sy
 
 # relative

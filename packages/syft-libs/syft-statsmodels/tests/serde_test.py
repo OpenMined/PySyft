@@ -5,8 +5,8 @@ import re
 import pytest
 import syft_statsmodels  # noqa: 401
 
-# absolute
 # syft absolute
+# absolute
 import syft as sy
 
 pd = pytest.importorskip("pandas")

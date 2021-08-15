@@ -1,24 +1,24 @@
 # stdlib
+from importlib.util import find_spec
 import logging
 import os
-import shlex
-import stat
-import sys
-import traceback
-from importlib.util import find_spec
 from pathlib import Path
+import shlex
 from shutil import rmtree
 from shutil import which
-from subprocess import STDOUT
+import stat
 from subprocess import CalledProcessError
+from subprocess import STDOUT
 from subprocess import check_output
+import sys
 from time import sleep
+import traceback
 from uuid import uuid4
 from warnings import warn
 
 # third party
-import pytest
 from pyscaffold.shell import get_executable
+import pytest
 
 IS_POSIX = os.name == "posix"
 

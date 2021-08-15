@@ -4,8 +4,8 @@
 import pandas as pd
 import pyarrow as pa
 
-# absolute
 # syft absolute
+# absolute
 from syft.generate_wrapper import GenerateWrapper
 
 # relative

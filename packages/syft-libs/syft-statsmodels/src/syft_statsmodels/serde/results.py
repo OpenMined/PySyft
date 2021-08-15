@@ -1,8 +1,8 @@
 # third party
 from statsmodels.genmod.generalized_linear_model import GLMResultsWrapper
 
-# absolute
 # syft absolute
+# absolute
 from syft.lib.python.primitive_factory import PrimitiveFactory
 from syft.lib.python.string import String
 

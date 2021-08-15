@@ -5,8 +5,8 @@ from typing import Type
 # third party
 import statsmodels
 
-# absolute
 # syft absolute
+# absolute
 from syft.lib.python.primitive_factory import PrimitiveFactory
 from syft.lib.python.string import String
 
