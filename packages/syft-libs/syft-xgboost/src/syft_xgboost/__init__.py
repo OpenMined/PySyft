@@ -1,8 +1,8 @@
 # stdlib
-from importlib import import_module
 import inspect
 import json
 import os
+from importlib import import_module
 from pathlib import Path
 from typing import Any as TypeAny
 from typing import Dict as TypeDict

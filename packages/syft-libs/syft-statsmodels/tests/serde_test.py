@@ -3,10 +3,10 @@ import re
 
 # third party
 import pytest
-import syft_statsmodels  # noqa: 401
 
 # syft absolute
 import syft as sy
+import syft_statsmodels  # noqa: 401
 
 pd = pytest.importorskip("pandas")
 statsmodels = pytest.importorskip("statsmodels")

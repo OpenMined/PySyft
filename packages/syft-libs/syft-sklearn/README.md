@@ -1,7 +1,6 @@
 # syft-sklearn
 
-Add a short description here!
-
+Allowing sklearn's functionalities to be executed remotely
 
 ## Description
 

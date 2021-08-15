@@ -1,24 +1,22 @@
 # stdlib
-from importlib.util import find_spec
 import logging
 import os
-from pathlib import Path
 import shlex
-from shutil import rmtree
-from shutil import which
 import stat
-from subprocess import CalledProcessError
-from subprocess import STDOUT
-from subprocess import check_output
 import sys
-from time import sleep
 import traceback
+from importlib.util import find_spec
+from pathlib import Path
+from shutil import rmtree, which
+from subprocess import STDOUT, CalledProcessError, check_output
+from time import sleep
 from uuid import uuid4
 from warnings import warn
 
+import pytest
+
 # third party
 from pyscaffold.shell import get_executable
-import pytest
 
 IS_POSIX = os.name == "posix"
 
@@ -27,12 +25,12 @@ PYTHON = sys.executable
 # inside tox folder. If we install packages by mistake is not a huge problem.
 
 
-def uniqstr():
+def uniqstr() -> str:
     """Generates a unique random long string every time it is called"""
     return str(uuid4())
 
 
-def rmpath(path):
+def rmpath(path) -> None:
     """Carelessly/recursively remove path.
     If an error occurs it will just be ignored, so not suitable for every usage.
     The best is to use this function for paths inside pytest tmp directories, and with
@@ -47,7 +45,7 @@ def rmpath(path):
         warn(msg + traceback.format_exc())
 
 
-def set_writable(func, path, _exc_info):
+def set_writable(func, path, _exc_info) -> None:
     sleep(1)  # Sometimes just giving time to the SO, works
 
     if not Path(path).exists():
@@ -60,7 +58,7 @@ def set_writable(func, path, _exc_info):
     func(path)
 
 
-def run(*args, **kwargs):
+def run(*args, **kwargs) -> None:
     """Run the external command. See ``subprocess.check_output``."""
     # normalize args
     if len(args) == 1:
@@ -87,7 +85,7 @@ def run(*args, **kwargs):
         raise
 
 
-def run_common_tasks(tests=True, docs=True, pre_commit=True, install=True):
+def run_common_tasks(tests=True, docs=True, pre_commit=True, install=True) -> None:
     # Requires tox, setuptools_scm and pre-commit in setup.cfg ::
     # opts.extras_require.testing
     if tests:
@@ -116,7 +114,7 @@ def run_common_tasks(tests=True, docs=True, pre_commit=True, install=True):
         run(venv_pip, "install", wheels[0])
 
 
-def find_package_bin(package, binary=None):
+def find_package_bin(package, binary=None) -> None:
     """If a ``package`` can be executed via ``python -m`` (with the current python)
     try to do that, otherwise use ``binary`` on the $PATH"""
     binary = binary or package
