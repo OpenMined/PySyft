@@ -2,7 +2,6 @@
 import functools
 import importlib
 import sys
-import warnings
 from types import ModuleType
 from typing import Any
 from typing import Any as TypeAny
@@ -13,12 +12,13 @@ from typing import Optional
 from typing import Set as TypeSet
 from typing import Tuple as TypeTuple
 from typing import Union as TypeUnion
+import warnings
 
 # third party
-import wrapt
 from cachetools import cached
 from cachetools.keys import hashkey
 from packaging import version
+import wrapt
 
 # relative
 from ..ast import add_classes

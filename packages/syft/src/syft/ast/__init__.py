@@ -66,7 +66,6 @@ from typing import Tuple as TypeTuple
 from typing import Union
 
 # relative
-from ..logger import warning
 from . import attribute  # noqa: F401
 from . import callable  # noqa: F401
 from . import dynamic_object  # noqa: F401
@@ -76,6 +75,7 @@ from . import klass  # noqa: F401
 from . import module  # noqa: F401
 from . import property  # noqa: F401
 from . import static_attr  # noqa: F401
+from ..logger import warning
 from .denylist import deny
 
 

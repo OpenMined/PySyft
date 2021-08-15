@@ -1,6 +1,7 @@
 # third party
 import pytest
 
+# absolute
 # syft absolute
 import syft as sy
 from syft import logger

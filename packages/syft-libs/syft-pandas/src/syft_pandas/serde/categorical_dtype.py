@@ -1,8 +1,8 @@
 # third party
 import pandas as pd
 
-# syft absolute
 # absolute
+# syft absolute
 from syft.generate_wrapper import GenerateWrapper
 from syft.lib.python.list import List
 from syft.lib.python.primitive_factory import PrimitiveFactory
