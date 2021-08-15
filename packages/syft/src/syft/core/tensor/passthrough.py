@@ -197,6 +197,15 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
         return self.__class__(self.child.__pow__(other.child))
 
+    def __mod__(
+        self,
+        other: Union[PassthroughTensor, AcceptableSimpleType],
+    ) -> PassthroughTensor:
+        if is_acceptable_simple_type(other):
+            return self.__class__(self.child.__mod__(other))
+
+        return self.__class__(self.child.__mod__(other.child))
+
     def __rpow__(self, other: Union[PassthroughTensor, AcceptableSimpleType]):
         if is_acceptable_simple_type(other):
             return self.__class__(self.child.__rpow__(other))
@@ -407,6 +416,12 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
     def astype(self, np_type) -> PassthroughTensor:
         return self.__class__(self.child.astype(np_type))
+
+    def all(self) -> bool:
+        return self.child.all()
+
+    def any(self) -> bool:
+        return self.child.any()
 
     def __array_function__(self, func, types, args, kwargs):
         # Note: this allows subclasses that don't override

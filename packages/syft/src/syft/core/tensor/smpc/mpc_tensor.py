@@ -189,7 +189,8 @@ class MPCTensor(PassthroughTensor):
         for share in local_fpt_shares[1:]:
             result = result + share
 
-        return result.decode()
+        maybe_tensor = result.decode()
+        return maybe_tensor
 
     @staticmethod
     @lru_cache(maxsize=128)

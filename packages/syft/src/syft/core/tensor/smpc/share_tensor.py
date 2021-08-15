@@ -117,7 +117,8 @@ class ShareTensor(PassthroughTensor, Serializable):
 
         share = value.child
         if not isinstance(share, ShareTensor):
-            share = ShareTensor(value=share, rank=rank, nr_parties=nr_parties)
+            fpt = FixedPrecisionTensor(value=share)
+            share = ShareTensor(value=fpt.child, rank=rank, nr_parties=nr_parties)
 
         shares = [
             generator_shares.integers(
@@ -127,8 +128,6 @@ class ShareTensor(PassthroughTensor, Serializable):
         ]
         share.child += shares[rank] - shares[(rank + 1) % nr_parties]
 
-        fpt = FixedPrecisionTensor(value=share.child)
-        share.child = fpt.child
         fpt.child = share
         return fpt
 
@@ -169,9 +168,12 @@ class ShareTensor(PassthroughTensor, Serializable):
         op = getattr(operator, op_str)
         if isinstance(y, ShareTensor):
             value = op(self.child, y.child)
+        elif isinstance(y, torch.Tensor):
+            # TODO: It seems there is a problem when
+            # self.child is a numpy array and y is a torch Tensor
+            value = op(self.child, y.numpy())
         else:
-            # TODO: Converting y to numpy because doing "numpy op torch tensor" raises exception
-            value = op(self.child, np.array(y, np.int64))
+            value = op(self.child, y)
 
         res = self.copy_tensor()
         res.child = value

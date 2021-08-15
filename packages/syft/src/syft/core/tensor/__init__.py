@@ -136,16 +136,18 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.core.tensor.tensor.Tensor.sum", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.take", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.transpose", "syft.core.tensor.tensor.Tensor"),
-        # SMPC
+
+        # SMPC Part
         (
             "syft.core.tensor.tensor.Tensor.fix_precision",
             "syft.core.tensor.tensor.Tensor",
         ),
         (
             "syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs",
-            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+            "syft.core.tensor.fixed_precision_tensor.FixedPrecisionTensor", # FPT > ShareTensor
         ),
         ("syft.core.tensor.tensor.Tensor.share", "syft.core.tensor.tensor.Tensor"),
+
         # Share Tensor Operations
         (
             "syft.core.tensor.smpc.share_tensor.ShareTensor.__add__",
@@ -163,6 +165,26 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.core.tensor.smpc.share_tensor.ShareTensor.sum",
             "syft.core.tensor.smpc.share_tensor.ShareTensor",
         ),
+
+        # Fixed Precision Tensor Operations
+        (
+            "syft.core.tensor.fixed_precision_tensor.FixedPrecisionTensor.__add__",
+            "syft.core.tensor.fixed_precision_tensor.FixedPrecisionTensor",
+        ),
+        (
+            "syft.core.tensor.fixed_precision_tensor.FixedPrecisionTensor.__sub__",
+            "syft.core.tensor.fixed_precision_tensor.FixedPrecisionTensor",
+        ),
+        (
+            "syft.core.tensor.fixed_precision_tensor.FixedPrecisionTensor.__mul__",
+            "syft.core.tensor.fixed_precision_tensor.FixedPrecisionTensor",
+        ),
+        (
+            "syft.core.tensor.fixed_precision_tensor.FixedPrecisionTensor.sum",
+            "syft.core.tensor.fixed_precision_tensor.FixedPrecisionTensor",
+        ),
+
+
     ]
 
     add_modules(ast, modules)

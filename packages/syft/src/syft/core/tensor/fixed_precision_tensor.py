@@ -20,6 +20,9 @@ from ...proto.core.tensor.fixed_precision_tensor_pb2 import (
 from ..common.serde.deserialize import _deserialize as deserialize
 from ..common.serde.serializable import bind_protobuf
 from ..common.serde.serialize import _serialize as serialize
+from .smpc.utils import is_int_array
+from .smpc.utils import is_int_tensor
+from .util import implements
 
 
 @bind_protobuf
@@ -31,21 +34,37 @@ class FixedPrecisionTensor(PassthroughTensor, Serializable):
         self._precision = precision
         self._scale = base ** precision
         if value is not None:
+            # syft absolute
+            from syft.core.tensor.tensor import Tensor
+
+            if not isinstance(value, Tensor):
+                value = Tensor(child=value)
+
             fpt_value = self._scale * value
             encoded_value = fpt_value.astype(np.int64)
             super().__init__(encoded_value)
+
+    def copy_tensor(self) -> "FixedPrecisionTensor":
+        res = FixedPrecisionTensor(base=self._base, precision=self._precision)
+        res.child = self.child
+        return res
 
     def decode(self) -> Any:
         correction = (self.child < 0).astype(np.int64)
         dividend = self.child // self._scale - correction
         remainder = self.child % self._scale
-        remainder = remainder + (remainder == 0).astype(np.int64) * self._scale * correction
+        remainder = (
+            remainder + (remainder == 0).astype(np.int64) * self._scale * correction
+        )
         value = dividend.astype(np.float32) + remainder.astype(np.float32) / self._scale
         return value
 
     def add(self, y: Any) -> "FixedPrecisionTensor":
+        import pdb; pdb.set_trace()
         if not isinstance(y, FixedPrecisionTensor):
-            y = FixedPrecisionTensor(value=y, base=self._base, precision=self._precision)
+            y = FixedPrecisionTensor(
+                value=y, base=self._base, precision=self._precision
+            )
 
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)
         # Already encoded, don't pass it in the constructor such that we do not re-encode
@@ -54,7 +73,9 @@ class FixedPrecisionTensor(PassthroughTensor, Serializable):
 
     def sub(self, y: Any) -> "FixedPrecisionTensor":
         if not isinstance(y, FixedPrecisionTensor):
-            y = FixedPrecisionTensor(value=y, base=self._base, precision=self._precision)
+            y = FixedPrecisionTensor(
+                value=y, base=self._base, precision=self._precision
+            )
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)
         res.child = self.child - y.child
         return res
@@ -78,29 +99,33 @@ class FixedPrecisionTensor(PassthroughTensor, Serializable):
     def mul(
         self, y: Union[int, float, torch.Tensor, np.ndarray]
     ) -> "FixedPrecisionTensor":
-        if not isinstance(y, int):
+        if isinstance(y, int) or is_int_tensor(y) or is_int_array(y):
+            res = FixedPrecisionTensor(base=self._base, precision=self._precision)
+            res.child = self.child * y
+            return res
+        else:
             raise ValueError("Multiplication works only with integer values")
-
-        res = FixedPrecisionTensor(base=self._base, precision=self._precision)
-        res.child = self.child * y
-        return res
 
     def truediv(self, y: int) -> "FixedPrecisionTensor":
         if not isinstance(y, int):
-            raise ValueError(f"Truediv should have as divisor an integer,, but found {type(y)}")
+            raise ValueError(
+                f"Truediv should have as divisor an integer,, but found {type(y)}"
+            )
 
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)
         # Manually place it such that we do not re-encode it
-        res.child = value=self.child // y
+        res.child = value = self.child // y
         return res
 
     def mod(self, y: int) -> "FixedPrecisionTensor":
         if not isinstance(y, int):
-            raise ValueError(f"Modulo should have as divisor an integer, but found {type(y)}")
+            raise ValueError(
+                f"Modulo should have as divisor an integer, but found {type(y)}"
+            )
 
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)
         # Manually place it such that we do not re-encode it
-        res.child = value=self.child % y
+        res.child = self.child % y
         return res
 
     def _object2proto(self) -> FixedPrecisionTensor_PB:
@@ -145,3 +170,4 @@ class FixedPrecisionTensor(PassthroughTensor, Serializable):
     __rmul__ = mul
     __truediv__ = truediv
     __div__ = truediv
+    __mod__ = mod

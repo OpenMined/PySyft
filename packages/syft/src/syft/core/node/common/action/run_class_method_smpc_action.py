@@ -126,7 +126,19 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
 
         method_name = self.path.split(".")[-1]
-        nr_parties = resolved_self.data.nr_parties
+
+        from ....tensor.fixed_precision_tensor import FixedPrecisionTensor
+        if isinstance(resolved_self.data, FixedPrecisionTensor):
+            # FPT > ShareTensor
+            share = resolved_self.data.child
+        elif isinstance(resolved_self.data, ShareTensor):
+            # ShareTensor
+            share = resolved_self.data
+        else:
+            raise ValueError(f"Expected FixedPrecisionTensor or ShareTensor, but found {type(resolved_self.data)}")
+
+        nr_parties = share.nr_parties
+        rank = share.rank
 
         seed_id_locations = resolved_kwargs.get("seed_id_locations", None)
         if seed_id_locations is None:
@@ -148,9 +160,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
 
         # Get the list of actions to be run
         actions = actions_generator(self._self.id_at_location, *args_id, **kwargs)  # type: ignore
-        actions = SMPCActionMessage.filter_actions_after_rank(
-            resolved_self.data.rank, actions
-        )
+        actions = SMPCActionMessage.filter_actions_after_rank(rank, actions)
 
         client = node.get_client()  # type: ignore
         for action in actions:

@@ -30,13 +30,13 @@ class Tensor(
     def __init__(self, child: Any) -> None:
         """data must be a list of numpy array"""
 
+        if isinstance(child, (int, float)):
+            child = np.array([child])
         if isinstance(child, list):
             child = np.array(child)
-
-        if isinstance(child, th.Tensor):
+        elif isinstance(child, th.Tensor):
             child = child.numpy()
-
-        if not isinstance(child, PassthroughTensor) and not isinstance(
+        elif not isinstance(child, PassthroughTensor) and not isinstance(
             child, np.ndarray
         ):
             raise Exception("Data must be list or nd.array")
