@@ -11,17 +11,21 @@ try:
     obj = class_constructor()
     ret = obj._constructor
     type_pandas_core_internals_blocks_CategoricalBlock__constructor = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.internals.blocks.CategoricalBlock._constructor:",
-        type_pandas_core_internals_blocks_CategoricalBlock__constructor)
+    )
+    print(
+        "✅ pandas.core.internals.blocks.CategoricalBlock._constructor:",
+        type_pandas_core_internals_blocks_CategoricalBlock__constructor,
+    )
 except Exception as e:
-    type_pandas_core_internals_blocks_CategoricalBlock__constructor = '_syft_missing'
-    print('❌ pandas.core.internals.blocks.CategoricalBlock._constructor: Return unavailable')
+    type_pandas_core_internals_blocks_CategoricalBlock__constructor = "_syft_missing"
+    print(
+        "❌ pandas.core.internals.blocks.CategoricalBlock._constructor: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[2]:
@@ -32,17 +36,19 @@ try:
     obj = class_constructor()
     ret = obj._slice()
     type_pandas_core_internals_blocks_CategoricalBlock__slice = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.internals.blocks.CategoricalBlock._slice:",
-        type_pandas_core_internals_blocks_CategoricalBlock__slice)
+    )
+    print(
+        "✅ pandas.core.internals.blocks.CategoricalBlock._slice:",
+        type_pandas_core_internals_blocks_CategoricalBlock__slice,
+    )
 except Exception as e:
-    type_pandas_core_internals_blocks_CategoricalBlock__slice = '_syft_missing'
-    print('❌ pandas.core.internals.blocks.CategoricalBlock._slice: Return unavailable')
+    type_pandas_core_internals_blocks_CategoricalBlock__slice = "_syft_missing"
+    print("❌ pandas.core.internals.blocks.CategoricalBlock._slice: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[3]:
@@ -53,17 +59,21 @@ try:
     obj = class_constructor()
     ret = obj._unstack()
     type_pandas_core_internals_blocks_CategoricalBlock__unstack = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.internals.blocks.CategoricalBlock._unstack:",
-        type_pandas_core_internals_blocks_CategoricalBlock__unstack)
+    )
+    print(
+        "✅ pandas.core.internals.blocks.CategoricalBlock._unstack:",
+        type_pandas_core_internals_blocks_CategoricalBlock__unstack,
+    )
 except Exception as e:
-    type_pandas_core_internals_blocks_CategoricalBlock__unstack = '_syft_missing'
-    print('❌ pandas.core.internals.blocks.CategoricalBlock._unstack: Return unavailable')
+    type_pandas_core_internals_blocks_CategoricalBlock__unstack = "_syft_missing"
+    print(
+        "❌ pandas.core.internals.blocks.CategoricalBlock._unstack: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[4]:
@@ -74,17 +84,19 @@ try:
     obj = class_constructor()
     ret = obj.astype()
     type_pandas_core_internals_blocks_CategoricalBlock_astype = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.internals.blocks.CategoricalBlock.astype:",
-        type_pandas_core_internals_blocks_CategoricalBlock_astype)
+    )
+    print(
+        "✅ pandas.core.internals.blocks.CategoricalBlock.astype:",
+        type_pandas_core_internals_blocks_CategoricalBlock_astype,
+    )
 except Exception as e:
-    type_pandas_core_internals_blocks_CategoricalBlock_astype = '_syft_missing'
-    print('❌ pandas.core.internals.blocks.CategoricalBlock.astype: Return unavailable')
+    type_pandas_core_internals_blocks_CategoricalBlock_astype = "_syft_missing"
+    print("❌ pandas.core.internals.blocks.CategoricalBlock.astype: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[5]:
@@ -95,17 +107,19 @@ try:
     obj = class_constructor()
     ret = obj.copy()
     type_pandas_core_internals_blocks_CategoricalBlock_copy = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.internals.blocks.CategoricalBlock.copy:",
-        type_pandas_core_internals_blocks_CategoricalBlock_copy)
+    )
+    print(
+        "✅ pandas.core.internals.blocks.CategoricalBlock.copy:",
+        type_pandas_core_internals_blocks_CategoricalBlock_copy,
+    )
 except Exception as e:
-    type_pandas_core_internals_blocks_CategoricalBlock_copy = '_syft_missing'
-    print('❌ pandas.core.internals.blocks.CategoricalBlock.copy: Return unavailable')
+    type_pandas_core_internals_blocks_CategoricalBlock_copy = "_syft_missing"
+    print("❌ pandas.core.internals.blocks.CategoricalBlock.copy: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[6]:
@@ -116,17 +130,21 @@ try:
     obj = class_constructor()
     ret = obj.external_values()
     type_pandas_core_internals_blocks_CategoricalBlock_external_values = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.internals.blocks.CategoricalBlock.external_values:",
-        type_pandas_core_internals_blocks_CategoricalBlock_external_values)
+    )
+    print(
+        "✅ pandas.core.internals.blocks.CategoricalBlock.external_values:",
+        type_pandas_core_internals_blocks_CategoricalBlock_external_values,
+    )
 except Exception as e:
-    type_pandas_core_internals_blocks_CategoricalBlock_external_values = '_syft_missing'
-    print('❌ pandas.core.internals.blocks.CategoricalBlock.external_values: Return unavailable')
+    type_pandas_core_internals_blocks_CategoricalBlock_external_values = "_syft_missing"
+    print(
+        "❌ pandas.core.internals.blocks.CategoricalBlock.external_values: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[7]:
@@ -137,17 +155,19 @@ try:
     obj = class_constructor()
     ret = obj.iget()
     type_pandas_core_internals_blocks_CategoricalBlock_iget = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.internals.blocks.CategoricalBlock.iget:",
-        type_pandas_core_internals_blocks_CategoricalBlock_iget)
+    )
+    print(
+        "✅ pandas.core.internals.blocks.CategoricalBlock.iget:",
+        type_pandas_core_internals_blocks_CategoricalBlock_iget,
+    )
 except Exception as e:
-    type_pandas_core_internals_blocks_CategoricalBlock_iget = '_syft_missing'
-    print('❌ pandas.core.internals.blocks.CategoricalBlock.iget: Return unavailable')
+    type_pandas_core_internals_blocks_CategoricalBlock_iget = "_syft_missing"
+    print("❌ pandas.core.internals.blocks.CategoricalBlock.iget: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[8]:
@@ -158,17 +178,21 @@ try:
     obj = class_constructor()
     ret = obj.interpolate()
     type_pandas_core_internals_blocks_CategoricalBlock_interpolate = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.internals.blocks.CategoricalBlock.interpolate:",
-        type_pandas_core_internals_blocks_CategoricalBlock_interpolate)
+    )
+    print(
+        "✅ pandas.core.internals.blocks.CategoricalBlock.interpolate:",
+        type_pandas_core_internals_blocks_CategoricalBlock_interpolate,
+    )
 except Exception as e:
-    type_pandas_core_internals_blocks_CategoricalBlock_interpolate = '_syft_missing'
-    print('❌ pandas.core.internals.blocks.CategoricalBlock.interpolate: Return unavailable')
+    type_pandas_core_internals_blocks_CategoricalBlock_interpolate = "_syft_missing"
+    print(
+        "❌ pandas.core.internals.blocks.CategoricalBlock.interpolate: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[9]:
@@ -179,17 +203,19 @@ try:
     obj = class_constructor()
     ret = obj.is_bool
     type_pandas_core_internals_blocks_CategoricalBlock_is_bool = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.internals.blocks.CategoricalBlock.is_bool:",
-        type_pandas_core_internals_blocks_CategoricalBlock_is_bool)
+    )
+    print(
+        "✅ pandas.core.internals.blocks.CategoricalBlock.is_bool:",
+        type_pandas_core_internals_blocks_CategoricalBlock_is_bool,
+    )
 except Exception as e:
-    type_pandas_core_internals_blocks_CategoricalBlock_is_bool = '_syft_missing'
-    print('❌ pandas.core.internals.blocks.CategoricalBlock.is_bool: Return unavailable')
+    type_pandas_core_internals_blocks_CategoricalBlock_is_bool = "_syft_missing"
+    print("❌ pandas.core.internals.blocks.CategoricalBlock.is_bool: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[10]:
@@ -200,17 +226,19 @@ try:
     obj = class_constructor()
     ret = obj.is_view
     type_pandas_core_internals_blocks_CategoricalBlock_is_view = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.internals.blocks.CategoricalBlock.is_view:",
-        type_pandas_core_internals_blocks_CategoricalBlock_is_view)
+    )
+    print(
+        "✅ pandas.core.internals.blocks.CategoricalBlock.is_view:",
+        type_pandas_core_internals_blocks_CategoricalBlock_is_view,
+    )
 except Exception as e:
-    type_pandas_core_internals_blocks_CategoricalBlock_is_view = '_syft_missing'
-    print('❌ pandas.core.internals.blocks.CategoricalBlock.is_view: Return unavailable')
+    type_pandas_core_internals_blocks_CategoricalBlock_is_view = "_syft_missing"
+    print("❌ pandas.core.internals.blocks.CategoricalBlock.is_view: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[11]:
@@ -221,17 +249,21 @@ try:
     obj = class_constructor()
     ret = obj.mgr_locs
     type_pandas_core_internals_blocks_CategoricalBlock_mgr_locs = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.internals.blocks.CategoricalBlock.mgr_locs:",
-        type_pandas_core_internals_blocks_CategoricalBlock_mgr_locs)
+    )
+    print(
+        "✅ pandas.core.internals.blocks.CategoricalBlock.mgr_locs:",
+        type_pandas_core_internals_blocks_CategoricalBlock_mgr_locs,
+    )
 except Exception as e:
-    type_pandas_core_internals_blocks_CategoricalBlock_mgr_locs = '_syft_missing'
-    print('❌ pandas.core.internals.blocks.CategoricalBlock.mgr_locs: Return unavailable')
+    type_pandas_core_internals_blocks_CategoricalBlock_mgr_locs = "_syft_missing"
+    print(
+        "❌ pandas.core.internals.blocks.CategoricalBlock.mgr_locs: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[12]:
@@ -242,17 +274,21 @@ try:
     obj = class_constructor()
     ret = obj.set_inplace()
     type_pandas_core_internals_blocks_CategoricalBlock_set_inplace = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.internals.blocks.CategoricalBlock.set_inplace:",
-        type_pandas_core_internals_blocks_CategoricalBlock_set_inplace)
+    )
+    print(
+        "✅ pandas.core.internals.blocks.CategoricalBlock.set_inplace:",
+        type_pandas_core_internals_blocks_CategoricalBlock_set_inplace,
+    )
 except Exception as e:
-    type_pandas_core_internals_blocks_CategoricalBlock_set_inplace = '_syft_missing'
-    print('❌ pandas.core.internals.blocks.CategoricalBlock.set_inplace: Return unavailable')
+    type_pandas_core_internals_blocks_CategoricalBlock_set_inplace = "_syft_missing"
+    print(
+        "❌ pandas.core.internals.blocks.CategoricalBlock.set_inplace: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[13]:
@@ -263,17 +299,19 @@ try:
     obj = class_constructor()
     ret = obj.setitem()
     type_pandas_core_internals_blocks_CategoricalBlock_setitem = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.internals.blocks.CategoricalBlock.setitem:",
-        type_pandas_core_internals_blocks_CategoricalBlock_setitem)
+    )
+    print(
+        "✅ pandas.core.internals.blocks.CategoricalBlock.setitem:",
+        type_pandas_core_internals_blocks_CategoricalBlock_setitem,
+    )
 except Exception as e:
-    type_pandas_core_internals_blocks_CategoricalBlock_setitem = '_syft_missing'
-    print('❌ pandas.core.internals.blocks.CategoricalBlock.setitem: Return unavailable')
+    type_pandas_core_internals_blocks_CategoricalBlock_setitem = "_syft_missing"
+    print("❌ pandas.core.internals.blocks.CategoricalBlock.setitem: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[14]:
@@ -284,15 +322,18 @@ try:
     obj = class_constructor()
     ret = obj.to_native_types()
     type_pandas_core_internals_blocks_CategoricalBlock_to_native_types = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.internals.blocks.CategoricalBlock.to_native_types:",
-        type_pandas_core_internals_blocks_CategoricalBlock_to_native_types)
+    )
+    print(
+        "✅ pandas.core.internals.blocks.CategoricalBlock.to_native_types:",
+        type_pandas_core_internals_blocks_CategoricalBlock_to_native_types,
+    )
 except Exception as e:
-    type_pandas_core_internals_blocks_CategoricalBlock_to_native_types = '_syft_missing'
-    print('❌ pandas.core.internals.blocks.CategoricalBlock.to_native_types: Return unavailable')
+    type_pandas_core_internals_blocks_CategoricalBlock_to_native_types = "_syft_missing"
+    print(
+        "❌ pandas.core.internals.blocks.CategoricalBlock.to_native_types: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
-
+    print("   Error:", e)

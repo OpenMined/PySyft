@@ -6,7 +6,7 @@ from typing import List
 
 # third party
 import pytest
-import syft_pandas
+import syft_pandas  # noqa: F401
 
 # syft absolute
 import syft as sy

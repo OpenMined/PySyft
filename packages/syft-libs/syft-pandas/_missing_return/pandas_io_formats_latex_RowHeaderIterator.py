@@ -11,17 +11,21 @@ try:
     obj = class_constructor()
     ret = obj._empty_info_line
     type_pandas_io_formats_latex_RowHeaderIterator__empty_info_line = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.formats.latex.RowHeaderIterator._empty_info_line:",
-        type_pandas_io_formats_latex_RowHeaderIterator__empty_info_line)
+    )
+    print(
+        "✅ pandas.io.formats.latex.RowHeaderIterator._empty_info_line:",
+        type_pandas_io_formats_latex_RowHeaderIterator__empty_info_line,
+    )
 except Exception as e:
-    type_pandas_io_formats_latex_RowHeaderIterator__empty_info_line = '_syft_missing'
-    print('❌ pandas.io.formats.latex.RowHeaderIterator._empty_info_line: Return unavailable')
+    type_pandas_io_formats_latex_RowHeaderIterator__empty_info_line = "_syft_missing"
+    print(
+        "❌ pandas.io.formats.latex.RowHeaderIterator._empty_info_line: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[2]:
@@ -32,17 +36,21 @@ try:
     obj = class_constructor()
     ret = obj._header_row_num
     type_pandas_io_formats_latex_RowHeaderIterator__header_row_num = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.formats.latex.RowHeaderIterator._header_row_num:",
-        type_pandas_io_formats_latex_RowHeaderIterator__header_row_num)
+    )
+    print(
+        "✅ pandas.io.formats.latex.RowHeaderIterator._header_row_num:",
+        type_pandas_io_formats_latex_RowHeaderIterator__header_row_num,
+    )
 except Exception as e:
-    type_pandas_io_formats_latex_RowHeaderIterator__header_row_num = '_syft_missing'
-    print('❌ pandas.io.formats.latex.RowHeaderIterator._header_row_num: Return unavailable')
+    type_pandas_io_formats_latex_RowHeaderIterator__header_row_num = "_syft_missing"
+    print(
+        "❌ pandas.io.formats.latex.RowHeaderIterator._header_row_num: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[3]:
@@ -53,17 +61,21 @@ try:
     obj = class_constructor()
     ret = obj.column_levels
     type_pandas_io_formats_latex_RowHeaderIterator_column_levels = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.formats.latex.RowHeaderIterator.column_levels:",
-        type_pandas_io_formats_latex_RowHeaderIterator_column_levels)
+    )
+    print(
+        "✅ pandas.io.formats.latex.RowHeaderIterator.column_levels:",
+        type_pandas_io_formats_latex_RowHeaderIterator_column_levels,
+    )
 except Exception as e:
-    type_pandas_io_formats_latex_RowHeaderIterator_column_levels = '_syft_missing'
-    print('❌ pandas.io.formats.latex.RowHeaderIterator.column_levels: Return unavailable')
+    type_pandas_io_formats_latex_RowHeaderIterator_column_levels = "_syft_missing"
+    print(
+        "❌ pandas.io.formats.latex.RowHeaderIterator.column_levels: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[4]:
@@ -74,17 +86,21 @@ try:
     obj = class_constructor()
     ret = obj.header_levels
     type_pandas_io_formats_latex_RowHeaderIterator_header_levels = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.formats.latex.RowHeaderIterator.header_levels:",
-        type_pandas_io_formats_latex_RowHeaderIterator_header_levels)
+    )
+    print(
+        "✅ pandas.io.formats.latex.RowHeaderIterator.header_levels:",
+        type_pandas_io_formats_latex_RowHeaderIterator_header_levels,
+    )
 except Exception as e:
-    type_pandas_io_formats_latex_RowHeaderIterator_header_levels = '_syft_missing'
-    print('❌ pandas.io.formats.latex.RowHeaderIterator.header_levels: Return unavailable')
+    type_pandas_io_formats_latex_RowHeaderIterator_header_levels = "_syft_missing"
+    print(
+        "❌ pandas.io.formats.latex.RowHeaderIterator.header_levels: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[5]:
@@ -95,15 +111,18 @@ try:
     obj = class_constructor()
     ret = obj.index_levels
     type_pandas_io_formats_latex_RowHeaderIterator_index_levels = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.formats.latex.RowHeaderIterator.index_levels:",
-        type_pandas_io_formats_latex_RowHeaderIterator_index_levels)
+    )
+    print(
+        "✅ pandas.io.formats.latex.RowHeaderIterator.index_levels:",
+        type_pandas_io_formats_latex_RowHeaderIterator_index_levels,
+    )
 except Exception as e:
-    type_pandas_io_formats_latex_RowHeaderIterator_index_levels = '_syft_missing'
-    print('❌ pandas.io.formats.latex.RowHeaderIterator.index_levels: Return unavailable')
+    type_pandas_io_formats_latex_RowHeaderIterator_index_levels = "_syft_missing"
+    print(
+        "❌ pandas.io.formats.latex.RowHeaderIterator.index_levels: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
-
+    print("  Error:", e)

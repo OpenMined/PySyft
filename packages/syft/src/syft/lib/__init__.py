@@ -344,8 +344,9 @@ def _map2syft_types(
             try:
                 types.remove("numpy.int64")
                 types.remove("object")
-            except ValueError as e:
+            except ValueError:
                 pass
+
             for i in range(len(types)):
                 if types[i].lower() in primitive_map:
                     types[i] = primitive_map[types[i].lower()]

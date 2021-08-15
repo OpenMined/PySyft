@@ -1,14 +1,15 @@
 # third party
 import pytest
 
-# absolute
 # syft absolute
+# absolute
 import syft as sy
 from syft import logger
 
 # from .syft.notebooks import free_port
 
 logger.remove()
+
 
 @pytest.fixture(scope="session")
 def node() -> sy.VirtualMachine:

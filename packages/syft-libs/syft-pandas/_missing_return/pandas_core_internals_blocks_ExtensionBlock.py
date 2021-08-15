@@ -11,17 +11,21 @@ try:
     obj = class_constructor()
     ret = obj._constructor
     type_pandas_core_internals_blocks_ExtensionBlock__constructor = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.internals.blocks.ExtensionBlock._constructor:",
-        type_pandas_core_internals_blocks_ExtensionBlock__constructor)
+    )
+    print(
+        "✅ pandas.core.internals.blocks.ExtensionBlock._constructor:",
+        type_pandas_core_internals_blocks_ExtensionBlock__constructor,
+    )
 except Exception as e:
-    type_pandas_core_internals_blocks_ExtensionBlock__constructor = '_syft_missing'
-    print('❌ pandas.core.internals.blocks.ExtensionBlock._constructor: Return unavailable')
+    type_pandas_core_internals_blocks_ExtensionBlock__constructor = "_syft_missing"
+    print(
+        "❌ pandas.core.internals.blocks.ExtensionBlock._constructor: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[2]:
@@ -32,17 +36,19 @@ try:
     obj = class_constructor()
     ret = obj._slice()
     type_pandas_core_internals_blocks_ExtensionBlock__slice = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.internals.blocks.ExtensionBlock._slice:",
-        type_pandas_core_internals_blocks_ExtensionBlock__slice)
+    )
+    print(
+        "✅ pandas.core.internals.blocks.ExtensionBlock._slice:",
+        type_pandas_core_internals_blocks_ExtensionBlock__slice,
+    )
 except Exception as e:
-    type_pandas_core_internals_blocks_ExtensionBlock__slice = '_syft_missing'
-    print('❌ pandas.core.internals.blocks.ExtensionBlock._slice: Return unavailable')
+    type_pandas_core_internals_blocks_ExtensionBlock__slice = "_syft_missing"
+    print("❌ pandas.core.internals.blocks.ExtensionBlock._slice: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[3]:
@@ -53,17 +59,19 @@ try:
     obj = class_constructor()
     ret = obj._unstack()
     type_pandas_core_internals_blocks_ExtensionBlock__unstack = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.internals.blocks.ExtensionBlock._unstack:",
-        type_pandas_core_internals_blocks_ExtensionBlock__unstack)
+    )
+    print(
+        "✅ pandas.core.internals.blocks.ExtensionBlock._unstack:",
+        type_pandas_core_internals_blocks_ExtensionBlock__unstack,
+    )
 except Exception as e:
-    type_pandas_core_internals_blocks_ExtensionBlock__unstack = '_syft_missing'
-    print('❌ pandas.core.internals.blocks.ExtensionBlock._unstack: Return unavailable')
+    type_pandas_core_internals_blocks_ExtensionBlock__unstack = "_syft_missing"
+    print("❌ pandas.core.internals.blocks.ExtensionBlock._unstack: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[4]:
@@ -74,17 +82,19 @@ try:
     obj = class_constructor()
     ret = obj.astype()
     type_pandas_core_internals_blocks_ExtensionBlock_astype = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.internals.blocks.ExtensionBlock.astype:",
-        type_pandas_core_internals_blocks_ExtensionBlock_astype)
+    )
+    print(
+        "✅ pandas.core.internals.blocks.ExtensionBlock.astype:",
+        type_pandas_core_internals_blocks_ExtensionBlock_astype,
+    )
 except Exception as e:
-    type_pandas_core_internals_blocks_ExtensionBlock_astype = '_syft_missing'
-    print('❌ pandas.core.internals.blocks.ExtensionBlock.astype: Return unavailable')
+    type_pandas_core_internals_blocks_ExtensionBlock_astype = "_syft_missing"
+    print("❌ pandas.core.internals.blocks.ExtensionBlock.astype: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[5]:
@@ -95,17 +105,19 @@ try:
     obj = class_constructor()
     ret = obj.copy()
     type_pandas_core_internals_blocks_ExtensionBlock_copy = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.internals.blocks.ExtensionBlock.copy:",
-        type_pandas_core_internals_blocks_ExtensionBlock_copy)
+    )
+    print(
+        "✅ pandas.core.internals.blocks.ExtensionBlock.copy:",
+        type_pandas_core_internals_blocks_ExtensionBlock_copy,
+    )
 except Exception as e:
-    type_pandas_core_internals_blocks_ExtensionBlock_copy = '_syft_missing'
-    print('❌ pandas.core.internals.blocks.ExtensionBlock.copy: Return unavailable')
+    type_pandas_core_internals_blocks_ExtensionBlock_copy = "_syft_missing"
+    print("❌ pandas.core.internals.blocks.ExtensionBlock.copy: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[6]:
@@ -116,17 +128,21 @@ try:
     obj = class_constructor()
     ret = obj.external_values()
     type_pandas_core_internals_blocks_ExtensionBlock_external_values = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.internals.blocks.ExtensionBlock.external_values:",
-        type_pandas_core_internals_blocks_ExtensionBlock_external_values)
+    )
+    print(
+        "✅ pandas.core.internals.blocks.ExtensionBlock.external_values:",
+        type_pandas_core_internals_blocks_ExtensionBlock_external_values,
+    )
 except Exception as e:
-    type_pandas_core_internals_blocks_ExtensionBlock_external_values = '_syft_missing'
-    print('❌ pandas.core.internals.blocks.ExtensionBlock.external_values: Return unavailable')
+    type_pandas_core_internals_blocks_ExtensionBlock_external_values = "_syft_missing"
+    print(
+        "❌ pandas.core.internals.blocks.ExtensionBlock.external_values: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[7]:
@@ -137,17 +153,19 @@ try:
     obj = class_constructor()
     ret = obj.iget()
     type_pandas_core_internals_blocks_ExtensionBlock_iget = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.internals.blocks.ExtensionBlock.iget:",
-        type_pandas_core_internals_blocks_ExtensionBlock_iget)
+    )
+    print(
+        "✅ pandas.core.internals.blocks.ExtensionBlock.iget:",
+        type_pandas_core_internals_blocks_ExtensionBlock_iget,
+    )
 except Exception as e:
-    type_pandas_core_internals_blocks_ExtensionBlock_iget = '_syft_missing'
-    print('❌ pandas.core.internals.blocks.ExtensionBlock.iget: Return unavailable')
+    type_pandas_core_internals_blocks_ExtensionBlock_iget = "_syft_missing"
+    print("❌ pandas.core.internals.blocks.ExtensionBlock.iget: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[8]:
@@ -158,17 +176,21 @@ try:
     obj = class_constructor()
     ret = obj.interpolate()
     type_pandas_core_internals_blocks_ExtensionBlock_interpolate = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.internals.blocks.ExtensionBlock.interpolate:",
-        type_pandas_core_internals_blocks_ExtensionBlock_interpolate)
+    )
+    print(
+        "✅ pandas.core.internals.blocks.ExtensionBlock.interpolate:",
+        type_pandas_core_internals_blocks_ExtensionBlock_interpolate,
+    )
 except Exception as e:
-    type_pandas_core_internals_blocks_ExtensionBlock_interpolate = '_syft_missing'
-    print('❌ pandas.core.internals.blocks.ExtensionBlock.interpolate: Return unavailable')
+    type_pandas_core_internals_blocks_ExtensionBlock_interpolate = "_syft_missing"
+    print(
+        "❌ pandas.core.internals.blocks.ExtensionBlock.interpolate: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[9]:
@@ -179,17 +201,19 @@ try:
     obj = class_constructor()
     ret = obj.is_bool
     type_pandas_core_internals_blocks_ExtensionBlock_is_bool = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.internals.blocks.ExtensionBlock.is_bool:",
-        type_pandas_core_internals_blocks_ExtensionBlock_is_bool)
+    )
+    print(
+        "✅ pandas.core.internals.blocks.ExtensionBlock.is_bool:",
+        type_pandas_core_internals_blocks_ExtensionBlock_is_bool,
+    )
 except Exception as e:
-    type_pandas_core_internals_blocks_ExtensionBlock_is_bool = '_syft_missing'
-    print('❌ pandas.core.internals.blocks.ExtensionBlock.is_bool: Return unavailable')
+    type_pandas_core_internals_blocks_ExtensionBlock_is_bool = "_syft_missing"
+    print("❌ pandas.core.internals.blocks.ExtensionBlock.is_bool: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[10]:
@@ -200,17 +224,19 @@ try:
     obj = class_constructor()
     ret = obj.is_view
     type_pandas_core_internals_blocks_ExtensionBlock_is_view = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.internals.blocks.ExtensionBlock.is_view:",
-        type_pandas_core_internals_blocks_ExtensionBlock_is_view)
+    )
+    print(
+        "✅ pandas.core.internals.blocks.ExtensionBlock.is_view:",
+        type_pandas_core_internals_blocks_ExtensionBlock_is_view,
+    )
 except Exception as e:
-    type_pandas_core_internals_blocks_ExtensionBlock_is_view = '_syft_missing'
-    print('❌ pandas.core.internals.blocks.ExtensionBlock.is_view: Return unavailable')
+    type_pandas_core_internals_blocks_ExtensionBlock_is_view = "_syft_missing"
+    print("❌ pandas.core.internals.blocks.ExtensionBlock.is_view: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[11]:
@@ -221,17 +247,19 @@ try:
     obj = class_constructor()
     ret = obj.mgr_locs
     type_pandas_core_internals_blocks_ExtensionBlock_mgr_locs = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.internals.blocks.ExtensionBlock.mgr_locs:",
-        type_pandas_core_internals_blocks_ExtensionBlock_mgr_locs)
+    )
+    print(
+        "✅ pandas.core.internals.blocks.ExtensionBlock.mgr_locs:",
+        type_pandas_core_internals_blocks_ExtensionBlock_mgr_locs,
+    )
 except Exception as e:
-    type_pandas_core_internals_blocks_ExtensionBlock_mgr_locs = '_syft_missing'
-    print('❌ pandas.core.internals.blocks.ExtensionBlock.mgr_locs: Return unavailable')
+    type_pandas_core_internals_blocks_ExtensionBlock_mgr_locs = "_syft_missing"
+    print("❌ pandas.core.internals.blocks.ExtensionBlock.mgr_locs: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[12]:
@@ -242,17 +270,21 @@ try:
     obj = class_constructor()
     ret = obj.set_inplace()
     type_pandas_core_internals_blocks_ExtensionBlock_set_inplace = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.internals.blocks.ExtensionBlock.set_inplace:",
-        type_pandas_core_internals_blocks_ExtensionBlock_set_inplace)
+    )
+    print(
+        "✅ pandas.core.internals.blocks.ExtensionBlock.set_inplace:",
+        type_pandas_core_internals_blocks_ExtensionBlock_set_inplace,
+    )
 except Exception as e:
-    type_pandas_core_internals_blocks_ExtensionBlock_set_inplace = '_syft_missing'
-    print('❌ pandas.core.internals.blocks.ExtensionBlock.set_inplace: Return unavailable')
+    type_pandas_core_internals_blocks_ExtensionBlock_set_inplace = "_syft_missing"
+    print(
+        "❌ pandas.core.internals.blocks.ExtensionBlock.set_inplace: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[13]:
@@ -263,17 +295,19 @@ try:
     obj = class_constructor()
     ret = obj.setitem()
     type_pandas_core_internals_blocks_ExtensionBlock_setitem = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.internals.blocks.ExtensionBlock.setitem:",
-        type_pandas_core_internals_blocks_ExtensionBlock_setitem)
+    )
+    print(
+        "✅ pandas.core.internals.blocks.ExtensionBlock.setitem:",
+        type_pandas_core_internals_blocks_ExtensionBlock_setitem,
+    )
 except Exception as e:
-    type_pandas_core_internals_blocks_ExtensionBlock_setitem = '_syft_missing'
-    print('❌ pandas.core.internals.blocks.ExtensionBlock.setitem: Return unavailable')
+    type_pandas_core_internals_blocks_ExtensionBlock_setitem = "_syft_missing"
+    print("❌ pandas.core.internals.blocks.ExtensionBlock.setitem: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[14]:
@@ -284,15 +318,18 @@ try:
     obj = class_constructor()
     ret = obj.to_native_types()
     type_pandas_core_internals_blocks_ExtensionBlock_to_native_types = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.internals.blocks.ExtensionBlock.to_native_types:",
-        type_pandas_core_internals_blocks_ExtensionBlock_to_native_types)
+    )
+    print(
+        "✅ pandas.core.internals.blocks.ExtensionBlock.to_native_types:",
+        type_pandas_core_internals_blocks_ExtensionBlock_to_native_types,
+    )
 except Exception as e:
-    type_pandas_core_internals_blocks_ExtensionBlock_to_native_types = '_syft_missing'
-    print('❌ pandas.core.internals.blocks.ExtensionBlock.to_native_types: Return unavailable')
+    type_pandas_core_internals_blocks_ExtensionBlock_to_native_types = "_syft_missing"
+    print(
+        "❌ pandas.core.internals.blocks.ExtensionBlock.to_native_types: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
-
+    print("   Error:", e)

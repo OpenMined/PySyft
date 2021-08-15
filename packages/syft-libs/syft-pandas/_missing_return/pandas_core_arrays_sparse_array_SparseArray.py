@@ -11,17 +11,19 @@ try:
     obj = class_constructor()
     ret = obj.T
     type_pandas_core_arrays_sparse_array_SparseArray_T = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.T:",
-        type_pandas_core_arrays_sparse_array_SparseArray_T)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.T:",
+        type_pandas_core_arrays_sparse_array_SparseArray_T,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray_T = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.T: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray_T = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.T: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[2]:
@@ -32,17 +34,19 @@ try:
     obj = class_constructor()
     ret = obj.__abs__()
     type_pandas_core_arrays_sparse_array_SparseArray___abs__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.__abs__:",
-        type_pandas_core_arrays_sparse_array_SparseArray___abs__)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.__abs__:",
+        type_pandas_core_arrays_sparse_array_SparseArray___abs__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray___abs__ = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.__abs__: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray___abs__ = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.__abs__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[3]:
@@ -53,17 +57,19 @@ try:
     obj = class_constructor()
     ret = obj.__add__()
     type_pandas_core_arrays_sparse_array_SparseArray___add__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.__add__:",
-        type_pandas_core_arrays_sparse_array_SparseArray___add__)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.__add__:",
+        type_pandas_core_arrays_sparse_array_SparseArray___add__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray___add__ = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.__add__: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray___add__ = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.__add__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[4]:
@@ -74,17 +80,19 @@ try:
     obj = class_constructor()
     ret = obj.__and__()
     type_pandas_core_arrays_sparse_array_SparseArray___and__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.__and__:",
-        type_pandas_core_arrays_sparse_array_SparseArray___and__)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.__and__:",
+        type_pandas_core_arrays_sparse_array_SparseArray___and__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray___and__ = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.__and__: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray___and__ = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.__and__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[5]:
@@ -95,17 +103,21 @@ try:
     obj = class_constructor()
     ret = obj.__array_ufunc__()
     type_pandas_core_arrays_sparse_array_SparseArray___array_ufunc__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.__array_ufunc__:",
-        type_pandas_core_arrays_sparse_array_SparseArray___array_ufunc__)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.__array_ufunc__:",
+        type_pandas_core_arrays_sparse_array_SparseArray___array_ufunc__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray___array_ufunc__ = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.__array_ufunc__: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray___array_ufunc__ = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.sparse.array.SparseArray.__array_ufunc__: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[6]:
@@ -116,17 +128,21 @@ try:
     obj = class_constructor()
     ret = obj.__divmod__()
     type_pandas_core_arrays_sparse_array_SparseArray___divmod__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.__divmod__:",
-        type_pandas_core_arrays_sparse_array_SparseArray___divmod__)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.__divmod__:",
+        type_pandas_core_arrays_sparse_array_SparseArray___divmod__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray___divmod__ = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.__divmod__: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray___divmod__ = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.sparse.array.SparseArray.__divmod__: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[7]:
@@ -137,17 +153,19 @@ try:
     obj = class_constructor()
     ret = obj.__eq__()
     type_pandas_core_arrays_sparse_array_SparseArray___eq__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.__eq__:",
-        type_pandas_core_arrays_sparse_array_SparseArray___eq__)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.__eq__:",
+        type_pandas_core_arrays_sparse_array_SparseArray___eq__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray___eq__ = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.__eq__: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray___eq__ = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.__eq__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[8]:
@@ -158,17 +176,21 @@ try:
     obj = class_constructor()
     ret = obj.__floordiv__()
     type_pandas_core_arrays_sparse_array_SparseArray___floordiv__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.__floordiv__:",
-        type_pandas_core_arrays_sparse_array_SparseArray___floordiv__)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.__floordiv__:",
+        type_pandas_core_arrays_sparse_array_SparseArray___floordiv__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray___floordiv__ = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.__floordiv__: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray___floordiv__ = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.sparse.array.SparseArray.__floordiv__: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[9]:
@@ -179,17 +201,19 @@ try:
     obj = class_constructor()
     ret = obj.__ge__()
     type_pandas_core_arrays_sparse_array_SparseArray___ge__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.__ge__:",
-        type_pandas_core_arrays_sparse_array_SparseArray___ge__)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.__ge__:",
+        type_pandas_core_arrays_sparse_array_SparseArray___ge__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray___ge__ = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.__ge__: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray___ge__ = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.__ge__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[10]:
@@ -200,17 +224,21 @@ try:
     obj = class_constructor()
     ret = obj.__getitem__()
     type_pandas_core_arrays_sparse_array_SparseArray___getitem__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.__getitem__:",
-        type_pandas_core_arrays_sparse_array_SparseArray___getitem__)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.__getitem__:",
+        type_pandas_core_arrays_sparse_array_SparseArray___getitem__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray___getitem__ = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.__getitem__: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray___getitem__ = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.sparse.array.SparseArray.__getitem__: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[11]:
@@ -221,17 +249,19 @@ try:
     obj = class_constructor()
     ret = obj.__gt__()
     type_pandas_core_arrays_sparse_array_SparseArray___gt__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.__gt__:",
-        type_pandas_core_arrays_sparse_array_SparseArray___gt__)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.__gt__:",
+        type_pandas_core_arrays_sparse_array_SparseArray___gt__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray___gt__ = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.__gt__: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray___gt__ = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.__gt__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[12]:
@@ -242,17 +272,19 @@ try:
     obj = class_constructor()
     ret = obj.__le__()
     type_pandas_core_arrays_sparse_array_SparseArray___le__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.__le__:",
-        type_pandas_core_arrays_sparse_array_SparseArray___le__)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.__le__:",
+        type_pandas_core_arrays_sparse_array_SparseArray___le__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray___le__ = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.__le__: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray___le__ = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.__le__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[13]:
@@ -263,17 +295,19 @@ try:
     obj = class_constructor()
     ret = obj.__lt__()
     type_pandas_core_arrays_sparse_array_SparseArray___lt__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.__lt__:",
-        type_pandas_core_arrays_sparse_array_SparseArray___lt__)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.__lt__:",
+        type_pandas_core_arrays_sparse_array_SparseArray___lt__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray___lt__ = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.__lt__: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray___lt__ = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.__lt__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[14]:
@@ -284,17 +318,19 @@ try:
     obj = class_constructor()
     ret = obj.__mod__()
     type_pandas_core_arrays_sparse_array_SparseArray___mod__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.__mod__:",
-        type_pandas_core_arrays_sparse_array_SparseArray___mod__)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.__mod__:",
+        type_pandas_core_arrays_sparse_array_SparseArray___mod__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray___mod__ = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.__mod__: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray___mod__ = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.__mod__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[15]:
@@ -305,17 +341,19 @@ try:
     obj = class_constructor()
     ret = obj.__mul__()
     type_pandas_core_arrays_sparse_array_SparseArray___mul__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.__mul__:",
-        type_pandas_core_arrays_sparse_array_SparseArray___mul__)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.__mul__:",
+        type_pandas_core_arrays_sparse_array_SparseArray___mul__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray___mul__ = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.__mul__: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray___mul__ = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.__mul__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[16]:
@@ -326,17 +364,19 @@ try:
     obj = class_constructor()
     ret = obj.__ne__()
     type_pandas_core_arrays_sparse_array_SparseArray___ne__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.__ne__:",
-        type_pandas_core_arrays_sparse_array_SparseArray___ne__)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.__ne__:",
+        type_pandas_core_arrays_sparse_array_SparseArray___ne__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray___ne__ = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.__ne__: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray___ne__ = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.__ne__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[17]:
@@ -347,17 +387,19 @@ try:
     obj = class_constructor()
     ret = obj.__or__()
     type_pandas_core_arrays_sparse_array_SparseArray___or__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.__or__:",
-        type_pandas_core_arrays_sparse_array_SparseArray___or__)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.__or__:",
+        type_pandas_core_arrays_sparse_array_SparseArray___or__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray___or__ = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.__or__: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray___or__ = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.__or__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[18]:
@@ -368,17 +410,19 @@ try:
     obj = class_constructor()
     ret = obj.__pow__()
     type_pandas_core_arrays_sparse_array_SparseArray___pow__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.__pow__:",
-        type_pandas_core_arrays_sparse_array_SparseArray___pow__)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.__pow__:",
+        type_pandas_core_arrays_sparse_array_SparseArray___pow__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray___pow__ = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.__pow__: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray___pow__ = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.__pow__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[19]:
@@ -389,17 +433,19 @@ try:
     obj = class_constructor()
     ret = obj.__radd__()
     type_pandas_core_arrays_sparse_array_SparseArray___radd__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.__radd__:",
-        type_pandas_core_arrays_sparse_array_SparseArray___radd__)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.__radd__:",
+        type_pandas_core_arrays_sparse_array_SparseArray___radd__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray___radd__ = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.__radd__: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray___radd__ = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.__radd__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[20]:
@@ -410,17 +456,19 @@ try:
     obj = class_constructor()
     ret = obj.__rand__()
     type_pandas_core_arrays_sparse_array_SparseArray___rand__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.__rand__:",
-        type_pandas_core_arrays_sparse_array_SparseArray___rand__)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.__rand__:",
+        type_pandas_core_arrays_sparse_array_SparseArray___rand__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray___rand__ = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.__rand__: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray___rand__ = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.__rand__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[21]:
@@ -431,17 +479,21 @@ try:
     obj = class_constructor()
     ret = obj.__rdivmod__()
     type_pandas_core_arrays_sparse_array_SparseArray___rdivmod__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.__rdivmod__:",
-        type_pandas_core_arrays_sparse_array_SparseArray___rdivmod__)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.__rdivmod__:",
+        type_pandas_core_arrays_sparse_array_SparseArray___rdivmod__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray___rdivmod__ = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.__rdivmod__: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray___rdivmod__ = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.sparse.array.SparseArray.__rdivmod__: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[22]:
@@ -452,17 +504,21 @@ try:
     obj = class_constructor()
     ret = obj.__rfloordiv__()
     type_pandas_core_arrays_sparse_array_SparseArray___rfloordiv__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.__rfloordiv__:",
-        type_pandas_core_arrays_sparse_array_SparseArray___rfloordiv__)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.__rfloordiv__:",
+        type_pandas_core_arrays_sparse_array_SparseArray___rfloordiv__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray___rfloordiv__ = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.__rfloordiv__: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray___rfloordiv__ = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.sparse.array.SparseArray.__rfloordiv__: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[23]:
@@ -473,17 +529,19 @@ try:
     obj = class_constructor()
     ret = obj.__rmod__()
     type_pandas_core_arrays_sparse_array_SparseArray___rmod__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.__rmod__:",
-        type_pandas_core_arrays_sparse_array_SparseArray___rmod__)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.__rmod__:",
+        type_pandas_core_arrays_sparse_array_SparseArray___rmod__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray___rmod__ = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.__rmod__: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray___rmod__ = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.__rmod__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[24]:
@@ -494,17 +552,19 @@ try:
     obj = class_constructor()
     ret = obj.__rmul__()
     type_pandas_core_arrays_sparse_array_SparseArray___rmul__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.__rmul__:",
-        type_pandas_core_arrays_sparse_array_SparseArray___rmul__)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.__rmul__:",
+        type_pandas_core_arrays_sparse_array_SparseArray___rmul__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray___rmul__ = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.__rmul__: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray___rmul__ = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.__rmul__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[25]:
@@ -515,17 +575,19 @@ try:
     obj = class_constructor()
     ret = obj.__ror__()
     type_pandas_core_arrays_sparse_array_SparseArray___ror__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.__ror__:",
-        type_pandas_core_arrays_sparse_array_SparseArray___ror__)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.__ror__:",
+        type_pandas_core_arrays_sparse_array_SparseArray___ror__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray___ror__ = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.__ror__: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray___ror__ = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.__ror__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[26]:
@@ -536,17 +598,19 @@ try:
     obj = class_constructor()
     ret = obj.__rpow__()
     type_pandas_core_arrays_sparse_array_SparseArray___rpow__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.__rpow__:",
-        type_pandas_core_arrays_sparse_array_SparseArray___rpow__)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.__rpow__:",
+        type_pandas_core_arrays_sparse_array_SparseArray___rpow__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray___rpow__ = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.__rpow__: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray___rpow__ = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.__rpow__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[27]:
@@ -557,17 +621,19 @@ try:
     obj = class_constructor()
     ret = obj.__rsub__()
     type_pandas_core_arrays_sparse_array_SparseArray___rsub__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.__rsub__:",
-        type_pandas_core_arrays_sparse_array_SparseArray___rsub__)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.__rsub__:",
+        type_pandas_core_arrays_sparse_array_SparseArray___rsub__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray___rsub__ = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.__rsub__: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray___rsub__ = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.__rsub__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[28]:
@@ -578,17 +644,21 @@ try:
     obj = class_constructor()
     ret = obj.__rtruediv__()
     type_pandas_core_arrays_sparse_array_SparseArray___rtruediv__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.__rtruediv__:",
-        type_pandas_core_arrays_sparse_array_SparseArray___rtruediv__)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.__rtruediv__:",
+        type_pandas_core_arrays_sparse_array_SparseArray___rtruediv__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray___rtruediv__ = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.__rtruediv__: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray___rtruediv__ = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.sparse.array.SparseArray.__rtruediv__: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[29]:
@@ -599,17 +669,19 @@ try:
     obj = class_constructor()
     ret = obj.__rxor__()
     type_pandas_core_arrays_sparse_array_SparseArray___rxor__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.__rxor__:",
-        type_pandas_core_arrays_sparse_array_SparseArray___rxor__)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.__rxor__:",
+        type_pandas_core_arrays_sparse_array_SparseArray___rxor__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray___rxor__ = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.__rxor__: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray___rxor__ = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.__rxor__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[30]:
@@ -620,17 +692,21 @@ try:
     obj = class_constructor()
     ret = obj.__setitem__()
     type_pandas_core_arrays_sparse_array_SparseArray___setitem__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.__setitem__:",
-        type_pandas_core_arrays_sparse_array_SparseArray___setitem__)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.__setitem__:",
+        type_pandas_core_arrays_sparse_array_SparseArray___setitem__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray___setitem__ = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.__setitem__: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray___setitem__ = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.sparse.array.SparseArray.__setitem__: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[31]:
@@ -641,17 +717,21 @@ try:
     obj = class_constructor()
     ret = obj.__setstate__()
     type_pandas_core_arrays_sparse_array_SparseArray___setstate__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.__setstate__:",
-        type_pandas_core_arrays_sparse_array_SparseArray___setstate__)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.__setstate__:",
+        type_pandas_core_arrays_sparse_array_SparseArray___setstate__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray___setstate__ = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.__setstate__: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray___setstate__ = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.sparse.array.SparseArray.__setstate__: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[32]:
@@ -662,17 +742,19 @@ try:
     obj = class_constructor()
     ret = obj.__sub__()
     type_pandas_core_arrays_sparse_array_SparseArray___sub__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.__sub__:",
-        type_pandas_core_arrays_sparse_array_SparseArray___sub__)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.__sub__:",
+        type_pandas_core_arrays_sparse_array_SparseArray___sub__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray___sub__ = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.__sub__: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray___sub__ = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.__sub__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[33]:
@@ -683,17 +765,21 @@ try:
     obj = class_constructor()
     ret = obj.__truediv__()
     type_pandas_core_arrays_sparse_array_SparseArray___truediv__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.__truediv__:",
-        type_pandas_core_arrays_sparse_array_SparseArray___truediv__)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.__truediv__:",
+        type_pandas_core_arrays_sparse_array_SparseArray___truediv__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray___truediv__ = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.__truediv__: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray___truediv__ = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.sparse.array.SparseArray.__truediv__: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[34]:
@@ -704,17 +790,19 @@ try:
     obj = class_constructor()
     ret = obj.__xor__()
     type_pandas_core_arrays_sparse_array_SparseArray___xor__ = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.__xor__:",
-        type_pandas_core_arrays_sparse_array_SparseArray___xor__)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.__xor__:",
+        type_pandas_core_arrays_sparse_array_SparseArray___xor__,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray___xor__ = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.__xor__: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray___xor__ = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.__xor__: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[35]:
@@ -725,17 +813,21 @@ try:
     obj = class_constructor()
     ret = obj._arith_method()
     type_pandas_core_arrays_sparse_array_SparseArray__arith_method = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray._arith_method:",
-        type_pandas_core_arrays_sparse_array_SparseArray__arith_method)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray._arith_method:",
+        type_pandas_core_arrays_sparse_array_SparseArray__arith_method,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray__arith_method = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray._arith_method: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray__arith_method = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.sparse.array.SparseArray._arith_method: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[36]:
@@ -746,17 +838,21 @@ try:
     obj = class_constructor()
     ret = obj._constructor
     type_pandas_core_arrays_sparse_array_SparseArray__constructor = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray._constructor:",
-        type_pandas_core_arrays_sparse_array_SparseArray__constructor)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray._constructor:",
+        type_pandas_core_arrays_sparse_array_SparseArray__constructor,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray__constructor = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray._constructor: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray__constructor = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.sparse.array.SparseArray._constructor: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[37]:
@@ -767,17 +863,19 @@ try:
     obj = class_constructor()
     ret = obj._empty()
     type_pandas_core_arrays_sparse_array_SparseArray__empty = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray._empty:",
-        type_pandas_core_arrays_sparse_array_SparseArray__empty)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray._empty:",
+        type_pandas_core_arrays_sparse_array_SparseArray__empty,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray__empty = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray._empty: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray__empty = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray._empty: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[38]:
@@ -788,17 +886,23 @@ try:
     obj = class_constructor()
     ret = obj._fill_value_matches()
     type_pandas_core_arrays_sparse_array_SparseArray__fill_value_matches = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray._fill_value_matches:",
-        type_pandas_core_arrays_sparse_array_SparseArray__fill_value_matches)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray._fill_value_matches:",
+        type_pandas_core_arrays_sparse_array_SparseArray__fill_value_matches,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray__fill_value_matches = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray._fill_value_matches: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray__fill_value_matches = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.arrays.sparse.array.SparseArray._fill_value_matches: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[39]:
@@ -809,17 +913,23 @@ try:
     obj = class_constructor()
     ret = obj._first_fill_value_loc()
     type_pandas_core_arrays_sparse_array_SparseArray__first_fill_value_loc = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray._first_fill_value_loc:",
-        type_pandas_core_arrays_sparse_array_SparseArray__first_fill_value_loc)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray._first_fill_value_loc:",
+        type_pandas_core_arrays_sparse_array_SparseArray__first_fill_value_loc,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray__first_fill_value_loc = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray._first_fill_value_loc: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray__first_fill_value_loc = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.arrays.sparse.array.SparseArray._first_fill_value_loc: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[40]:
@@ -830,17 +940,21 @@ try:
     obj = class_constructor()
     ret = obj._formatter()
     type_pandas_core_arrays_sparse_array_SparseArray__formatter = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray._formatter:",
-        type_pandas_core_arrays_sparse_array_SparseArray__formatter)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray._formatter:",
+        type_pandas_core_arrays_sparse_array_SparseArray__formatter,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray__formatter = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray._formatter: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray__formatter = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.sparse.array.SparseArray._formatter: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[41]:
@@ -851,17 +965,21 @@ try:
     obj = class_constructor()
     ret = obj._from_factorized()
     type_pandas_core_arrays_sparse_array_SparseArray__from_factorized = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray._from_factorized:",
-        type_pandas_core_arrays_sparse_array_SparseArray__from_factorized)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray._from_factorized:",
+        type_pandas_core_arrays_sparse_array_SparseArray__from_factorized,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray__from_factorized = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray._from_factorized: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray__from_factorized = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.sparse.array.SparseArray._from_factorized: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[42]:
@@ -872,17 +990,21 @@ try:
     obj = class_constructor()
     ret = obj._get_val_at()
     type_pandas_core_arrays_sparse_array_SparseArray__get_val_at = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray._get_val_at:",
-        type_pandas_core_arrays_sparse_array_SparseArray__get_val_at)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray._get_val_at:",
+        type_pandas_core_arrays_sparse_array_SparseArray__get_val_at,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray__get_val_at = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray._get_val_at: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray__get_val_at = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.sparse.array.SparseArray._get_val_at: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[43]:
@@ -893,17 +1015,19 @@ try:
     obj = class_constructor()
     ret = obj.to_dense()
     type_pandas_core_arrays_sparse_array_SparseArray_to_dense = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.to_dense:",
-        type_pandas_core_arrays_sparse_array_SparseArray_to_dense)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.to_dense:",
+        type_pandas_core_arrays_sparse_array_SparseArray_to_dense,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray_to_dense = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.to_dense: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray_to_dense = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.to_dense: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[44]:
@@ -914,17 +1038,21 @@ try:
     obj = class_constructor()
     ret = obj._null_fill_value
     type_pandas_core_arrays_sparse_array_SparseArray__null_fill_value = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray._null_fill_value:",
-        type_pandas_core_arrays_sparse_array_SparseArray__null_fill_value)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray._null_fill_value:",
+        type_pandas_core_arrays_sparse_array_SparseArray__null_fill_value,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray__null_fill_value = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray._null_fill_value: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray__null_fill_value = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.sparse.array.SparseArray._null_fill_value: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[45]:
@@ -935,17 +1063,19 @@ try:
     obj = class_constructor()
     ret = obj._reduce()
     type_pandas_core_arrays_sparse_array_SparseArray__reduce = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray._reduce:",
-        type_pandas_core_arrays_sparse_array_SparseArray__reduce)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray._reduce:",
+        type_pandas_core_arrays_sparse_array_SparseArray__reduce,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray__reduce = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray._reduce: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray__reduce = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray._reduce: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[46]:
@@ -956,17 +1086,21 @@ try:
     obj = class_constructor()
     ret = obj._valid_sp_values
     type_pandas_core_arrays_sparse_array_SparseArray__valid_sp_values = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray._valid_sp_values:",
-        type_pandas_core_arrays_sparse_array_SparseArray__valid_sp_values)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray._valid_sp_values:",
+        type_pandas_core_arrays_sparse_array_SparseArray__valid_sp_values,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray__valid_sp_values = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray._valid_sp_values: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray__valid_sp_values = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.sparse.array.SparseArray._valid_sp_values: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[47]:
@@ -977,17 +1111,23 @@ try:
     obj = class_constructor()
     ret = obj._values_for_factorize()
     type_pandas_core_arrays_sparse_array_SparseArray__values_for_factorize = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray._values_for_factorize:",
-        type_pandas_core_arrays_sparse_array_SparseArray__values_for_factorize)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray._values_for_factorize:",
+        type_pandas_core_arrays_sparse_array_SparseArray__values_for_factorize,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray__values_for_factorize = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray._values_for_factorize: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray__values_for_factorize = (
+        "_syft_missing"
+    )
+    print(
+        "❌ pandas.core.arrays.sparse.array.SparseArray._values_for_factorize: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[48]:
@@ -998,17 +1138,19 @@ try:
     obj = class_constructor()
     ret = obj.all()
     type_pandas_core_arrays_sparse_array_SparseArray_all = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.all:",
-        type_pandas_core_arrays_sparse_array_SparseArray_all)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.all:",
+        type_pandas_core_arrays_sparse_array_SparseArray_all,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray_all = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.all: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray_all = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.all: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[49]:
@@ -1019,17 +1161,19 @@ try:
     obj = class_constructor()
     ret = obj.any()
     type_pandas_core_arrays_sparse_array_SparseArray_any = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.any:",
-        type_pandas_core_arrays_sparse_array_SparseArray_any)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.any:",
+        type_pandas_core_arrays_sparse_array_SparseArray_any,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray_any = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.any: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray_any = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.any: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[50]:
@@ -1040,17 +1184,19 @@ try:
     obj = class_constructor()
     ret = obj.cumsum()
     type_pandas_core_arrays_sparse_array_SparseArray_cumsum = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.cumsum:",
-        type_pandas_core_arrays_sparse_array_SparseArray_cumsum)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.cumsum:",
+        type_pandas_core_arrays_sparse_array_SparseArray_cumsum,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray_cumsum = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.cumsum: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray_cumsum = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.cumsum: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[51]:
@@ -1061,17 +1207,19 @@ try:
     obj = class_constructor()
     ret = obj.density
     type_pandas_core_arrays_sparse_array_SparseArray_density = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.density:",
-        type_pandas_core_arrays_sparse_array_SparseArray_density)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.density:",
+        type_pandas_core_arrays_sparse_array_SparseArray_density,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray_density = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.density: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray_density = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.density: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[52]:
@@ -1082,17 +1230,19 @@ try:
     obj = class_constructor()
     ret = obj.dropna()
     type_pandas_core_arrays_sparse_array_SparseArray_dropna = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.dropna:",
-        type_pandas_core_arrays_sparse_array_SparseArray_dropna)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.dropna:",
+        type_pandas_core_arrays_sparse_array_SparseArray_dropna,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray_dropna = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.dropna: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray_dropna = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.dropna: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[53]:
@@ -1103,17 +1253,19 @@ try:
     obj = class_constructor()
     ret = obj.dtype
     type_pandas_core_arrays_sparse_array_SparseArray_dtype = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.dtype:",
-        type_pandas_core_arrays_sparse_array_SparseArray_dtype)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.dtype:",
+        type_pandas_core_arrays_sparse_array_SparseArray_dtype,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray_dtype = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.dtype: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray_dtype = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.dtype: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[54]:
@@ -1124,17 +1276,19 @@ try:
     obj = class_constructor()
     ret = obj.factorize()
     type_pandas_core_arrays_sparse_array_SparseArray_factorize = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.factorize:",
-        type_pandas_core_arrays_sparse_array_SparseArray_factorize)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.factorize:",
+        type_pandas_core_arrays_sparse_array_SparseArray_factorize,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray_factorize = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.factorize: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray_factorize = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.factorize: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[55]:
@@ -1145,17 +1299,21 @@ try:
     obj = class_constructor()
     ret = obj.fill_value
     type_pandas_core_arrays_sparse_array_SparseArray_fill_value = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.fill_value:",
-        type_pandas_core_arrays_sparse_array_SparseArray_fill_value)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.fill_value:",
+        type_pandas_core_arrays_sparse_array_SparseArray_fill_value,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray_fill_value = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.fill_value: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray_fill_value = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.sparse.array.SparseArray.fill_value: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[56]:
@@ -1166,17 +1324,19 @@ try:
     obj = class_constructor()
     ret = obj.fillna()
     type_pandas_core_arrays_sparse_array_SparseArray_fillna = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.fillna:",
-        type_pandas_core_arrays_sparse_array_SparseArray_fillna)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.fillna:",
+        type_pandas_core_arrays_sparse_array_SparseArray_fillna,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray_fillna = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.fillna: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray_fillna = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.fillna: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[57]:
@@ -1187,17 +1347,21 @@ try:
     obj = class_constructor()
     ret = obj.from_spmatrix()
     type_pandas_core_arrays_sparse_array_SparseArray_from_spmatrix = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.from_spmatrix:",
-        type_pandas_core_arrays_sparse_array_SparseArray_from_spmatrix)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.from_spmatrix:",
+        type_pandas_core_arrays_sparse_array_SparseArray_from_spmatrix,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray_from_spmatrix = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.from_spmatrix: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray_from_spmatrix = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.sparse.array.SparseArray.from_spmatrix: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[58]:
@@ -1208,17 +1372,19 @@ try:
     obj = class_constructor()
     ret = obj.isna()
     type_pandas_core_arrays_sparse_array_SparseArray_isna = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.isna:",
-        type_pandas_core_arrays_sparse_array_SparseArray_isna)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.isna:",
+        type_pandas_core_arrays_sparse_array_SparseArray_isna,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray_isna = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.isna: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray_isna = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.isna: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[59]:
@@ -1229,17 +1395,19 @@ try:
     obj = class_constructor()
     ret = obj.kind
     type_pandas_core_arrays_sparse_array_SparseArray_kind = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.kind:",
-        type_pandas_core_arrays_sparse_array_SparseArray_kind)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.kind:",
+        type_pandas_core_arrays_sparse_array_SparseArray_kind,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray_kind = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.kind: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray_kind = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.kind: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[60]:
@@ -1250,17 +1418,19 @@ try:
     obj = class_constructor()
     ret = obj.map()
     type_pandas_core_arrays_sparse_array_SparseArray_map = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.map:",
-        type_pandas_core_arrays_sparse_array_SparseArray_map)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.map:",
+        type_pandas_core_arrays_sparse_array_SparseArray_map,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray_map = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.map: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray_map = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.map: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[61]:
@@ -1271,17 +1441,19 @@ try:
     obj = class_constructor()
     ret = obj.max()
     type_pandas_core_arrays_sparse_array_SparseArray_max = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.max:",
-        type_pandas_core_arrays_sparse_array_SparseArray_max)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.max:",
+        type_pandas_core_arrays_sparse_array_SparseArray_max,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray_max = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.max: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray_max = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.max: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[62]:
@@ -1292,17 +1464,19 @@ try:
     obj = class_constructor()
     ret = obj.mean()
     type_pandas_core_arrays_sparse_array_SparseArray_mean = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.mean:",
-        type_pandas_core_arrays_sparse_array_SparseArray_mean)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.mean:",
+        type_pandas_core_arrays_sparse_array_SparseArray_mean,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray_mean = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.mean: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray_mean = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.mean: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[63]:
@@ -1313,17 +1487,19 @@ try:
     obj = class_constructor()
     ret = obj.min()
     type_pandas_core_arrays_sparse_array_SparseArray_min = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.min:",
-        type_pandas_core_arrays_sparse_array_SparseArray_min)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.min:",
+        type_pandas_core_arrays_sparse_array_SparseArray_min,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray_min = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.min: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray_min = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.min: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[64]:
@@ -1334,17 +1510,19 @@ try:
     obj = class_constructor()
     ret = obj.nbytes
     type_pandas_core_arrays_sparse_array_SparseArray_nbytes = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.nbytes:",
-        type_pandas_core_arrays_sparse_array_SparseArray_nbytes)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.nbytes:",
+        type_pandas_core_arrays_sparse_array_SparseArray_nbytes,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray_nbytes = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.nbytes: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray_nbytes = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.nbytes: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[65]:
@@ -1355,17 +1533,19 @@ try:
     obj = class_constructor()
     ret = obj.ndim
     type_pandas_core_arrays_sparse_array_SparseArray_ndim = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.ndim:",
-        type_pandas_core_arrays_sparse_array_SparseArray_ndim)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.ndim:",
+        type_pandas_core_arrays_sparse_array_SparseArray_ndim,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray_ndim = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.ndim: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray_ndim = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.ndim: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[66]:
@@ -1376,17 +1556,19 @@ try:
     obj = class_constructor()
     ret = obj.nonzero()
     type_pandas_core_arrays_sparse_array_SparseArray_nonzero = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.nonzero:",
-        type_pandas_core_arrays_sparse_array_SparseArray_nonzero)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.nonzero:",
+        type_pandas_core_arrays_sparse_array_SparseArray_nonzero,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray_nonzero = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.nonzero: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray_nonzero = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.nonzero: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[67]:
@@ -1397,17 +1579,19 @@ try:
     obj = class_constructor()
     ret = obj.npoints
     type_pandas_core_arrays_sparse_array_SparseArray_npoints = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.npoints:",
-        type_pandas_core_arrays_sparse_array_SparseArray_npoints)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.npoints:",
+        type_pandas_core_arrays_sparse_array_SparseArray_npoints,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray_npoints = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.npoints: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray_npoints = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.npoints: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[68]:
@@ -1418,17 +1602,21 @@ try:
     obj = class_constructor()
     ret = obj.searchsorted()
     type_pandas_core_arrays_sparse_array_SparseArray_searchsorted = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.searchsorted:",
-        type_pandas_core_arrays_sparse_array_SparseArray_searchsorted)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.searchsorted:",
+        type_pandas_core_arrays_sparse_array_SparseArray_searchsorted,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray_searchsorted = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.searchsorted: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray_searchsorted = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.sparse.array.SparseArray.searchsorted: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[69]:
@@ -1439,17 +1627,19 @@ try:
     obj = class_constructor()
     ret = obj.shape
     type_pandas_core_arrays_sparse_array_SparseArray_shape = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.shape:",
-        type_pandas_core_arrays_sparse_array_SparseArray_shape)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.shape:",
+        type_pandas_core_arrays_sparse_array_SparseArray_shape,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray_shape = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.shape: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray_shape = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.shape: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[70]:
@@ -1460,17 +1650,19 @@ try:
     obj = class_constructor()
     ret = obj.shift()
     type_pandas_core_arrays_sparse_array_SparseArray_shift = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.shift:",
-        type_pandas_core_arrays_sparse_array_SparseArray_shift)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.shift:",
+        type_pandas_core_arrays_sparse_array_SparseArray_shift,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray_shift = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.shift: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray_shift = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.shift: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[71]:
@@ -1481,17 +1673,19 @@ try:
     obj = class_constructor()
     ret = obj.size
     type_pandas_core_arrays_sparse_array_SparseArray_size = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.size:",
-        type_pandas_core_arrays_sparse_array_SparseArray_size)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.size:",
+        type_pandas_core_arrays_sparse_array_SparseArray_size,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray_size = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.size: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray_size = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.size: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[72]:
@@ -1502,17 +1696,19 @@ try:
     obj = class_constructor()
     ret = obj.sp_index
     type_pandas_core_arrays_sparse_array_SparseArray_sp_index = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.sp_index:",
-        type_pandas_core_arrays_sparse_array_SparseArray_sp_index)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.sp_index:",
+        type_pandas_core_arrays_sparse_array_SparseArray_sp_index,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray_sp_index = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.sp_index: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray_sp_index = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.sp_index: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[73]:
@@ -1523,17 +1719,19 @@ try:
     obj = class_constructor()
     ret = obj.sp_values
     type_pandas_core_arrays_sparse_array_SparseArray_sp_values = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.sp_values:",
-        type_pandas_core_arrays_sparse_array_SparseArray_sp_values)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.sp_values:",
+        type_pandas_core_arrays_sparse_array_SparseArray_sp_values,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray_sp_values = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.sp_values: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray_sp_values = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.sp_values: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[74]:
@@ -1544,17 +1742,19 @@ try:
     obj = class_constructor()
     ret = obj.to_dense()
     type_pandas_core_arrays_sparse_array_SparseArray_to_dense = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.to_dense:",
-        type_pandas_core_arrays_sparse_array_SparseArray_to_dense)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.to_dense:",
+        type_pandas_core_arrays_sparse_array_SparseArray_to_dense,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray_to_dense = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.to_dense: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray_to_dense = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.to_dense: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[75]:
@@ -1565,17 +1765,19 @@ try:
     obj = class_constructor()
     ret = obj.unique()
     type_pandas_core_arrays_sparse_array_SparseArray_unique = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.unique:",
-        type_pandas_core_arrays_sparse_array_SparseArray_unique)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.unique:",
+        type_pandas_core_arrays_sparse_array_SparseArray_unique,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray_unique = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.unique: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray_unique = "_syft_missing"
+    print("❌ pandas.core.arrays.sparse.array.SparseArray.unique: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[76]:
@@ -1586,15 +1788,18 @@ try:
     obj = class_constructor()
     ret = obj.value_counts()
     type_pandas_core_arrays_sparse_array_SparseArray_value_counts = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.arrays.sparse.array.SparseArray.value_counts:",
-        type_pandas_core_arrays_sparse_array_SparseArray_value_counts)
+    )
+    print(
+        "✅ pandas.core.arrays.sparse.array.SparseArray.value_counts:",
+        type_pandas_core_arrays_sparse_array_SparseArray_value_counts,
+    )
 except Exception as e:
-    type_pandas_core_arrays_sparse_array_SparseArray_value_counts = '_syft_missing'
-    print('❌ pandas.core.arrays.sparse.array.SparseArray.value_counts: Return unavailable')
+    type_pandas_core_arrays_sparse_array_SparseArray_value_counts = "_syft_missing"
+    print(
+        "❌ pandas.core.arrays.sparse.array.SparseArray.value_counts: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
-
+    print("   Error:", e)

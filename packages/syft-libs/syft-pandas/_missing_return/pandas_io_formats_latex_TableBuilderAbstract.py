@@ -11,17 +11,21 @@ try:
     obj = class_constructor()
     ret = obj.bottom_separator
     type_pandas_io_formats_latex_TableBuilderAbstract_bottom_separator = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.formats.latex.TableBuilderAbstract.bottom_separator:",
-        type_pandas_io_formats_latex_TableBuilderAbstract_bottom_separator)
+    )
+    print(
+        "✅ pandas.io.formats.latex.TableBuilderAbstract.bottom_separator:",
+        type_pandas_io_formats_latex_TableBuilderAbstract_bottom_separator,
+    )
 except Exception as e:
-    type_pandas_io_formats_latex_TableBuilderAbstract_bottom_separator = '_syft_missing'
-    print('❌ pandas.io.formats.latex.TableBuilderAbstract.bottom_separator: Return unavailable')
+    type_pandas_io_formats_latex_TableBuilderAbstract_bottom_separator = "_syft_missing"
+    print(
+        "❌ pandas.io.formats.latex.TableBuilderAbstract.bottom_separator: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[2]:
@@ -32,17 +36,21 @@ try:
     obj = class_constructor()
     ret = obj.env_begin
     type_pandas_io_formats_latex_TableBuilderAbstract_env_begin = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.formats.latex.TableBuilderAbstract.env_begin:",
-        type_pandas_io_formats_latex_TableBuilderAbstract_env_begin)
+    )
+    print(
+        "✅ pandas.io.formats.latex.TableBuilderAbstract.env_begin:",
+        type_pandas_io_formats_latex_TableBuilderAbstract_env_begin,
+    )
 except Exception as e:
-    type_pandas_io_formats_latex_TableBuilderAbstract_env_begin = '_syft_missing'
-    print('❌ pandas.io.formats.latex.TableBuilderAbstract.env_begin: Return unavailable')
+    type_pandas_io_formats_latex_TableBuilderAbstract_env_begin = "_syft_missing"
+    print(
+        "❌ pandas.io.formats.latex.TableBuilderAbstract.env_begin: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[3]:
@@ -53,17 +61,19 @@ try:
     obj = class_constructor()
     ret = obj.env_body
     type_pandas_io_formats_latex_TableBuilderAbstract_env_body = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.formats.latex.TableBuilderAbstract.env_body:",
-        type_pandas_io_formats_latex_TableBuilderAbstract_env_body)
+    )
+    print(
+        "✅ pandas.io.formats.latex.TableBuilderAbstract.env_body:",
+        type_pandas_io_formats_latex_TableBuilderAbstract_env_body,
+    )
 except Exception as e:
-    type_pandas_io_formats_latex_TableBuilderAbstract_env_body = '_syft_missing'
-    print('❌ pandas.io.formats.latex.TableBuilderAbstract.env_body: Return unavailable')
+    type_pandas_io_formats_latex_TableBuilderAbstract_env_body = "_syft_missing"
+    print("❌ pandas.io.formats.latex.TableBuilderAbstract.env_body: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[4]:
@@ -74,17 +84,19 @@ try:
     obj = class_constructor()
     ret = obj.env_end
     type_pandas_io_formats_latex_TableBuilderAbstract_env_end = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.formats.latex.TableBuilderAbstract.env_end:",
-        type_pandas_io_formats_latex_TableBuilderAbstract_env_end)
+    )
+    print(
+        "✅ pandas.io.formats.latex.TableBuilderAbstract.env_end:",
+        type_pandas_io_formats_latex_TableBuilderAbstract_env_end,
+    )
 except Exception as e:
-    type_pandas_io_formats_latex_TableBuilderAbstract_env_end = '_syft_missing'
-    print('❌ pandas.io.formats.latex.TableBuilderAbstract.env_end: Return unavailable')
+    type_pandas_io_formats_latex_TableBuilderAbstract_env_end = "_syft_missing"
+    print("❌ pandas.io.formats.latex.TableBuilderAbstract.env_end: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[5]:
@@ -95,17 +107,19 @@ try:
     obj = class_constructor()
     ret = obj.header
     type_pandas_io_formats_latex_TableBuilderAbstract_header = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.formats.latex.TableBuilderAbstract.header:",
-        type_pandas_io_formats_latex_TableBuilderAbstract_header)
+    )
+    print(
+        "✅ pandas.io.formats.latex.TableBuilderAbstract.header:",
+        type_pandas_io_formats_latex_TableBuilderAbstract_header,
+    )
 except Exception as e:
-    type_pandas_io_formats_latex_TableBuilderAbstract_header = '_syft_missing'
-    print('❌ pandas.io.formats.latex.TableBuilderAbstract.header: Return unavailable')
+    type_pandas_io_formats_latex_TableBuilderAbstract_header = "_syft_missing"
+    print("❌ pandas.io.formats.latex.TableBuilderAbstract.header: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[6]:
@@ -116,17 +130,21 @@ try:
     obj = class_constructor()
     ret = obj.middle_separator
     type_pandas_io_formats_latex_TableBuilderAbstract_middle_separator = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.formats.latex.TableBuilderAbstract.middle_separator:",
-        type_pandas_io_formats_latex_TableBuilderAbstract_middle_separator)
+    )
+    print(
+        "✅ pandas.io.formats.latex.TableBuilderAbstract.middle_separator:",
+        type_pandas_io_formats_latex_TableBuilderAbstract_middle_separator,
+    )
 except Exception as e:
-    type_pandas_io_formats_latex_TableBuilderAbstract_middle_separator = '_syft_missing'
-    print('❌ pandas.io.formats.latex.TableBuilderAbstract.middle_separator: Return unavailable')
+    type_pandas_io_formats_latex_TableBuilderAbstract_middle_separator = "_syft_missing"
+    print(
+        "❌ pandas.io.formats.latex.TableBuilderAbstract.middle_separator: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[7]:
@@ -137,15 +155,18 @@ try:
     obj = class_constructor()
     ret = obj.top_separator
     type_pandas_io_formats_latex_TableBuilderAbstract_top_separator = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.formats.latex.TableBuilderAbstract.top_separator:",
-        type_pandas_io_formats_latex_TableBuilderAbstract_top_separator)
+    )
+    print(
+        "✅ pandas.io.formats.latex.TableBuilderAbstract.top_separator:",
+        type_pandas_io_formats_latex_TableBuilderAbstract_top_separator,
+    )
 except Exception as e:
-    type_pandas_io_formats_latex_TableBuilderAbstract_top_separator = '_syft_missing'
-    print('❌ pandas.io.formats.latex.TableBuilderAbstract.top_separator: Return unavailable')
+    type_pandas_io_formats_latex_TableBuilderAbstract_top_separator = "_syft_missing"
+    print(
+        "❌ pandas.io.formats.latex.TableBuilderAbstract.top_separator: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
-
+    print("  Error:", e)

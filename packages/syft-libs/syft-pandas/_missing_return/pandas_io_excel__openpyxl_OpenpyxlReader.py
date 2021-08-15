@@ -11,17 +11,21 @@ try:
     obj = class_constructor()
     ret = obj._workbook_class
     type_pandas_io_excel__openpyxl_OpenpyxlReader__workbook_class = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.excel._openpyxl.OpenpyxlReader._workbook_class:",
-        type_pandas_io_excel__openpyxl_OpenpyxlReader__workbook_class)
+    )
+    print(
+        "✅ pandas.io.excel._openpyxl.OpenpyxlReader._workbook_class:",
+        type_pandas_io_excel__openpyxl_OpenpyxlReader__workbook_class,
+    )
 except Exception as e:
-    type_pandas_io_excel__openpyxl_OpenpyxlReader__workbook_class = '_syft_missing'
-    print('❌ pandas.io.excel._openpyxl.OpenpyxlReader._workbook_class: Return unavailable')
+    type_pandas_io_excel__openpyxl_OpenpyxlReader__workbook_class = "_syft_missing"
+    print(
+        "❌ pandas.io.excel._openpyxl.OpenpyxlReader._workbook_class: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[2]:
@@ -32,17 +36,19 @@ try:
     obj = class_constructor()
     ret = obj.close()
     type_pandas_io_excel__openpyxl_OpenpyxlReader_close = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.excel._openpyxl.OpenpyxlReader.close:",
-        type_pandas_io_excel__openpyxl_OpenpyxlReader_close)
+    )
+    print(
+        "✅ pandas.io.excel._openpyxl.OpenpyxlReader.close:",
+        type_pandas_io_excel__openpyxl_OpenpyxlReader_close,
+    )
 except Exception as e:
-    type_pandas_io_excel__openpyxl_OpenpyxlReader_close = '_syft_missing'
-    print('❌ pandas.io.excel._openpyxl.OpenpyxlReader.close: Return unavailable')
+    type_pandas_io_excel__openpyxl_OpenpyxlReader_close = "_syft_missing"
+    print("❌ pandas.io.excel._openpyxl.OpenpyxlReader.close: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[3]:
@@ -53,17 +59,21 @@ try:
     obj = class_constructor()
     ret = obj.get_sheet_by_index()
     type_pandas_io_excel__openpyxl_OpenpyxlReader_get_sheet_by_index = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.excel._openpyxl.OpenpyxlReader.get_sheet_by_index:",
-        type_pandas_io_excel__openpyxl_OpenpyxlReader_get_sheet_by_index)
+    )
+    print(
+        "✅ pandas.io.excel._openpyxl.OpenpyxlReader.get_sheet_by_index:",
+        type_pandas_io_excel__openpyxl_OpenpyxlReader_get_sheet_by_index,
+    )
 except Exception as e:
-    type_pandas_io_excel__openpyxl_OpenpyxlReader_get_sheet_by_index = '_syft_missing'
-    print('❌ pandas.io.excel._openpyxl.OpenpyxlReader.get_sheet_by_index: Return unavailable')
+    type_pandas_io_excel__openpyxl_OpenpyxlReader_get_sheet_by_index = "_syft_missing"
+    print(
+        "❌ pandas.io.excel._openpyxl.OpenpyxlReader.get_sheet_by_index: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[4]:
@@ -74,17 +84,21 @@ try:
     obj = class_constructor()
     ret = obj.get_sheet_by_name()
     type_pandas_io_excel__openpyxl_OpenpyxlReader_get_sheet_by_name = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.excel._openpyxl.OpenpyxlReader.get_sheet_by_name:",
-        type_pandas_io_excel__openpyxl_OpenpyxlReader_get_sheet_by_name)
+    )
+    print(
+        "✅ pandas.io.excel._openpyxl.OpenpyxlReader.get_sheet_by_name:",
+        type_pandas_io_excel__openpyxl_OpenpyxlReader_get_sheet_by_name,
+    )
 except Exception as e:
-    type_pandas_io_excel__openpyxl_OpenpyxlReader_get_sheet_by_name = '_syft_missing'
-    print('❌ pandas.io.excel._openpyxl.OpenpyxlReader.get_sheet_by_name: Return unavailable')
+    type_pandas_io_excel__openpyxl_OpenpyxlReader_get_sheet_by_name = "_syft_missing"
+    print(
+        "❌ pandas.io.excel._openpyxl.OpenpyxlReader.get_sheet_by_name: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('   Error:', e)
+    print("   Error:", e)
 
 
 # In[5]:
@@ -95,15 +109,16 @@ try:
     obj = class_constructor()
     ret = obj.sheet_names
     type_pandas_io_excel__openpyxl_OpenpyxlReader_sheet_names = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.io.excel._openpyxl.OpenpyxlReader.sheet_names:",
-        type_pandas_io_excel__openpyxl_OpenpyxlReader_sheet_names)
+    )
+    print(
+        "✅ pandas.io.excel._openpyxl.OpenpyxlReader.sheet_names:",
+        type_pandas_io_excel__openpyxl_OpenpyxlReader_sheet_names,
+    )
 except Exception as e:
-    type_pandas_io_excel__openpyxl_OpenpyxlReader_sheet_names = '_syft_missing'
-    print('❌ pandas.io.excel._openpyxl.OpenpyxlReader.sheet_names: Return unavailable')
+    type_pandas_io_excel__openpyxl_OpenpyxlReader_sheet_names = "_syft_missing"
+    print("❌ pandas.io.excel._openpyxl.OpenpyxlReader.sheet_names: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
-
+    print("  Error:", e)

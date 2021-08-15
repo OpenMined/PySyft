@@ -11,17 +11,21 @@ try:
     obj = class_constructor()
     ret = obj._can_hold_na
     type_pandas_core_dtypes_dtypes_DatetimeTZDtype__can_hold_na = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.dtypes.dtypes.DatetimeTZDtype._can_hold_na:",
-        type_pandas_core_dtypes_dtypes_DatetimeTZDtype__can_hold_na)
+    )
+    print(
+        "✅ pandas.core.dtypes.dtypes.DatetimeTZDtype._can_hold_na:",
+        type_pandas_core_dtypes_dtypes_DatetimeTZDtype__can_hold_na,
+    )
 except Exception as e:
-    type_pandas_core_dtypes_dtypes_DatetimeTZDtype__can_hold_na = '_syft_missing'
-    print('❌ pandas.core.dtypes.dtypes.DatetimeTZDtype._can_hold_na: Return unavailable')
+    type_pandas_core_dtypes_dtypes_DatetimeTZDtype__can_hold_na = "_syft_missing"
+    print(
+        "❌ pandas.core.dtypes.dtypes.DatetimeTZDtype._can_hold_na: Return unavailable"
+    )
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[2]:
@@ -32,17 +36,19 @@ try:
     obj = class_constructor()
     ret = obj._is_boolean
     type_pandas_core_dtypes_dtypes_DatetimeTZDtype__is_boolean = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.dtypes.dtypes.DatetimeTZDtype._is_boolean:",
-        type_pandas_core_dtypes_dtypes_DatetimeTZDtype__is_boolean)
+    )
+    print(
+        "✅ pandas.core.dtypes.dtypes.DatetimeTZDtype._is_boolean:",
+        type_pandas_core_dtypes_dtypes_DatetimeTZDtype__is_boolean,
+    )
 except Exception as e:
-    type_pandas_core_dtypes_dtypes_DatetimeTZDtype__is_boolean = '_syft_missing'
-    print('❌ pandas.core.dtypes.dtypes.DatetimeTZDtype._is_boolean: Return unavailable')
+    type_pandas_core_dtypes_dtypes_DatetimeTZDtype__is_boolean = "_syft_missing"
+    print("❌ pandas.core.dtypes.dtypes.DatetimeTZDtype._is_boolean: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[3]:
@@ -53,17 +59,19 @@ try:
     obj = class_constructor()
     ret = obj._is_numeric
     type_pandas_core_dtypes_dtypes_DatetimeTZDtype__is_numeric = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.dtypes.dtypes.DatetimeTZDtype._is_numeric:",
-        type_pandas_core_dtypes_dtypes_DatetimeTZDtype__is_numeric)
+    )
+    print(
+        "✅ pandas.core.dtypes.dtypes.DatetimeTZDtype._is_numeric:",
+        type_pandas_core_dtypes_dtypes_DatetimeTZDtype__is_numeric,
+    )
 except Exception as e:
-    type_pandas_core_dtypes_dtypes_DatetimeTZDtype__is_numeric = '_syft_missing'
-    print('❌ pandas.core.dtypes.dtypes.DatetimeTZDtype._is_numeric: Return unavailable')
+    type_pandas_core_dtypes_dtypes_DatetimeTZDtype__is_numeric = "_syft_missing"
+    print("❌ pandas.core.dtypes.dtypes.DatetimeTZDtype._is_numeric: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[4]:
@@ -74,17 +82,19 @@ try:
     obj = class_constructor()
     ret = obj.name
     type_pandas_core_dtypes_dtypes_DatetimeTZDtype_name = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.dtypes.dtypes.DatetimeTZDtype.name:",
-        type_pandas_core_dtypes_dtypes_DatetimeTZDtype_name)
+    )
+    print(
+        "✅ pandas.core.dtypes.dtypes.DatetimeTZDtype.name:",
+        type_pandas_core_dtypes_dtypes_DatetimeTZDtype_name,
+    )
 except Exception as e:
-    type_pandas_core_dtypes_dtypes_DatetimeTZDtype_name = '_syft_missing'
-    print('❌ pandas.core.dtypes.dtypes.DatetimeTZDtype.name: Return unavailable')
+    type_pandas_core_dtypes_dtypes_DatetimeTZDtype_name = "_syft_missing"
+    print("❌ pandas.core.dtypes.dtypes.DatetimeTZDtype.name: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[5]:
@@ -95,17 +105,19 @@ try:
     obj = class_constructor()
     ret = obj.names
     type_pandas_core_dtypes_dtypes_DatetimeTZDtype_names = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.dtypes.dtypes.DatetimeTZDtype.names:",
-        type_pandas_core_dtypes_dtypes_DatetimeTZDtype_names)
+    )
+    print(
+        "✅ pandas.core.dtypes.dtypes.DatetimeTZDtype.names:",
+        type_pandas_core_dtypes_dtypes_DatetimeTZDtype_names,
+    )
 except Exception as e:
-    type_pandas_core_dtypes_dtypes_DatetimeTZDtype_names = '_syft_missing'
-    print('❌ pandas.core.dtypes.dtypes.DatetimeTZDtype.names: Return unavailable')
+    type_pandas_core_dtypes_dtypes_DatetimeTZDtype_names = "_syft_missing"
+    print("❌ pandas.core.dtypes.dtypes.DatetimeTZDtype.names: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[6]:
@@ -116,17 +128,19 @@ try:
     obj = class_constructor()
     ret = obj.tz
     type_pandas_core_dtypes_dtypes_DatetimeTZDtype_tz = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.dtypes.dtypes.DatetimeTZDtype.tz:",
-        type_pandas_core_dtypes_dtypes_DatetimeTZDtype_tz)
+    )
+    print(
+        "✅ pandas.core.dtypes.dtypes.DatetimeTZDtype.tz:",
+        type_pandas_core_dtypes_dtypes_DatetimeTZDtype_tz,
+    )
 except Exception as e:
-    type_pandas_core_dtypes_dtypes_DatetimeTZDtype_tz = '_syft_missing'
-    print('❌ pandas.core.dtypes.dtypes.DatetimeTZDtype.tz: Return unavailable')
+    type_pandas_core_dtypes_dtypes_DatetimeTZDtype_tz = "_syft_missing"
+    print("❌ pandas.core.dtypes.dtypes.DatetimeTZDtype.tz: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[7]:
@@ -137,15 +151,16 @@ try:
     obj = class_constructor()
     ret = obj.unit
     type_pandas_core_dtypes_dtypes_DatetimeTZDtype_unit = (
-    getattr(ret, '__module__', None) + '.' + ret.__class__.__name__
-        if getattr(ret, '__module__', None)
+        getattr(ret, "__module__", None) + "." + ret.__class__.__name__
+        if getattr(ret, "__module__", None)
         else ret.__class__.__name__
-        )
-    print("✅ pandas.core.dtypes.dtypes.DatetimeTZDtype.unit:",
-        type_pandas_core_dtypes_dtypes_DatetimeTZDtype_unit)
+    )
+    print(
+        "✅ pandas.core.dtypes.dtypes.DatetimeTZDtype.unit:",
+        type_pandas_core_dtypes_dtypes_DatetimeTZDtype_unit,
+    )
 except Exception as e:
-    type_pandas_core_dtypes_dtypes_DatetimeTZDtype_unit = '_syft_missing'
-    print('❌ pandas.core.dtypes.dtypes.DatetimeTZDtype.unit: Return unavailable')
+    type_pandas_core_dtypes_dtypes_DatetimeTZDtype_unit = "_syft_missing"
+    print("❌ pandas.core.dtypes.dtypes.DatetimeTZDtype.unit: Return unavailable")
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
-
+    print("  Error:", e)
