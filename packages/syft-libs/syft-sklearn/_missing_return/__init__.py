@@ -1,5 +1,6 @@
 # relative
 # syft relative
+# relative
 from . import sklearn__loss_glm_distribution_DistributionBoundary  # noqa: F401
 from . import sklearn__loss_glm_distribution_ExponentialDispersionModel  # noqa: F401
 from . import sklearn__loss_glm_distribution_GammaDistribution  # noqa: F401
@@ -30,9 +31,6 @@ from . import sklearn_cluster__birch__CFNode  # noqa: F401
 from . import sklearn_cluster__birch__CFSubcluster  # noqa: F401
 from . import sklearn_cluster__birch_Birch  # noqa: F401
 from . import sklearn_cluster__dbscan_DBSCAN  # noqa: F401
-from . import (  # noqa: F401
-    sklearn_cluster__feature_agglomeration_AgglomerationTransform,
-)
 from . import sklearn_cluster__kmeans_KMeans  # noqa: F401
 from . import sklearn_cluster__kmeans_MiniBatchKMeans  # noqa: F401
 from . import sklearn_cluster__mean_shift_MeanShift  # noqa: F401
@@ -58,9 +56,6 @@ from . import sklearn_datasets__base_RemoteFileMetadata  # noqa: F401
 from . import sklearn_decomposition__base__BasePCA  # noqa: F401
 from . import sklearn_decomposition__dict_learning__BaseSparseCoding  # noqa: F401
 from . import sklearn_decomposition__dict_learning_DictionaryLearning  # noqa: F401
-from . import (  # noqa: F401
-    sklearn_decomposition__dict_learning_MiniBatchDictionaryLearning,
-)
 from . import sklearn_decomposition__dict_learning_SparseCoder  # noqa: F401
 from . import sklearn_decomposition__factor_analysis_FactorAnalysis  # noqa: F401
 from . import sklearn_decomposition__fastica_FastICA  # noqa: F401
@@ -104,32 +99,11 @@ from . import sklearn_ensemble__gb_losses_QuantileLossFunction  # noqa: F401
 from . import sklearn_ensemble__gb_losses_RegressionLossFunction  # noqa: F401
 from . import sklearn_ensemble__gb_VerboseReporter  # noqa: F401
 from . import sklearn_ensemble__hist_gradient_boosting_binning__BinMapper  # noqa: F401
-from . import (  # noqa: F401
-    sklearn_ensemble__hist_gradient_boosting_gradient_boosting_BaseHistGradientBoosting,
-)
-from . import (  # noqa: F401
-    sklearn_ensemble__hist_gradient_boosting_gradient_boosting_HistGradientBoostingClassifier,
-)
-from . import (  # noqa: F401
-    sklearn_ensemble__hist_gradient_boosting_gradient_boosting_HistGradientBoostingRegressor,
-)
 from . import sklearn_ensemble__hist_gradient_boosting_grower_TreeGrower  # noqa: F401
 from . import sklearn_ensemble__hist_gradient_boosting_grower_TreeNode  # noqa: F401
 from . import sklearn_ensemble__hist_gradient_boosting_loss_BaseLoss  # noqa: F401
-from . import (  # noqa: F401
-    sklearn_ensemble__hist_gradient_boosting_loss_BinaryCrossEntropy,
-)
-from . import (  # noqa: F401
-    sklearn_ensemble__hist_gradient_boosting_loss_CategoricalCrossEntropy,
-)
-from . import (  # noqa: F401
-    sklearn_ensemble__hist_gradient_boosting_loss_LeastAbsoluteDeviation,
-)
 from . import sklearn_ensemble__hist_gradient_boosting_loss_LeastSquares  # noqa: F401
 from . import sklearn_ensemble__hist_gradient_boosting_loss_Poisson  # noqa: F401
-from . import (  # noqa: F401
-    sklearn_ensemble__hist_gradient_boosting_predictor_TreePredictor,
-)
 from . import sklearn_ensemble__iforest_IsolationForest  # noqa: F401
 from . import sklearn_ensemble__stacking__BaseStacking  # noqa: F401
 from . import sklearn_ensemble__stacking_StackingClassifier  # noqa: F401
@@ -175,26 +149,11 @@ from . import sklearn_feature_selection__base_SelectorMixin  # noqa: F401
 from . import sklearn_feature_selection__from_model_SelectFromModel  # noqa: F401
 from . import sklearn_feature_selection__rfe_RFE  # noqa: F401
 from . import sklearn_feature_selection__rfe_RFECV  # noqa: F401
-from . import (  # noqa: F401
-    sklearn_feature_selection__sequential_SequentialFeatureSelector,
-)
 from . import sklearn_feature_selection__univariate_selection__BaseFilter  # noqa: F401
-from . import (  # noqa: F401
-    sklearn_feature_selection__univariate_selection_GenericUnivariateSelect,
-)
 from . import sklearn_feature_selection__univariate_selection_SelectFdr  # noqa: F401
 from . import sklearn_feature_selection__univariate_selection_SelectFpr  # noqa: F401
 from . import sklearn_feature_selection__univariate_selection_SelectFwe  # noqa: F401
 from . import sklearn_feature_selection__univariate_selection_SelectKBest  # noqa: F401
-from . import (  # noqa: F401
-    sklearn_feature_selection__univariate_selection_SelectPercentile,
-)
-from . import (  # noqa: F401
-    sklearn_feature_selection__variance_threshold_VarianceThreshold,
-)
-from . import (  # noqa: F401
-    sklearn_gaussian_process__gpc__BinaryGaussianProcessClassifierLaplace,
-)
 from . import sklearn_gaussian_process__gpc_GaussianProcessClassifier  # noqa: F401
 from . import sklearn_gaussian_process__gpr_GaussianProcessRegressor  # noqa: F401
 from . import sklearn_gaussian_process_kernels_CompoundKernel  # noqa: F401
@@ -221,9 +180,6 @@ from . import sklearn_impute__base_SimpleImputer  # noqa: F401
 from . import sklearn_impute__iterative__ImputerTriplet  # noqa: F401
 from . import sklearn_impute__iterative_IterativeImputer  # noqa: F401
 from . import sklearn_impute__knn_KNNImputer  # noqa: F401
-from . import (  # noqa: F401
-    sklearn_inspection__plot_partial_dependence_PartialDependenceDisplay,
-)
 from . import sklearn_isotonic_IsotonicRegression  # noqa: F401
 from . import sklearn_kernel_approximation_AdditiveChi2Sampler  # noqa: F401
 from . import sklearn_kernel_approximation_Nystroem  # noqa: F401
@@ -243,9 +199,6 @@ from . import sklearn_linear_model__coordinate_descent_Lasso  # noqa: F401
 from . import sklearn_linear_model__coordinate_descent_LassoCV  # noqa: F401
 from . import sklearn_linear_model__coordinate_descent_LinearModelCV  # noqa: F401
 from . import sklearn_linear_model__coordinate_descent_MultiTaskElasticNet  # noqa: F401
-from . import (  # noqa: F401
-    sklearn_linear_model__coordinate_descent_MultiTaskElasticNetCV,
-)
 from . import sklearn_linear_model__coordinate_descent_MultiTaskLasso  # noqa: F401
 from . import sklearn_linear_model__coordinate_descent_MultiTaskLassoCV  # noqa: F401
 from . import sklearn_linear_model__glm_glm_GammaRegressor  # noqa: F401
@@ -266,12 +219,6 @@ from . import sklearn_linear_model__logistic_LogisticRegression  # noqa: F401
 from . import sklearn_linear_model__logistic_LogisticRegressionCV  # noqa: F401
 from . import sklearn_linear_model__omp_OrthogonalMatchingPursuit  # noqa: F401
 from . import sklearn_linear_model__omp_OrthogonalMatchingPursuitCV  # noqa: F401
-from . import (  # noqa: F401
-    sklearn_linear_model__passive_aggressive_PassiveAggressiveClassifier,
-)
-from . import (  # noqa: F401
-    sklearn_linear_model__passive_aggressive_PassiveAggressiveRegressor,
-)
 from . import sklearn_linear_model__perceptron_Perceptron  # noqa: F401
 from . import sklearn_linear_model__ransac_RANSACRegressor  # noqa: F401
 from . import sklearn_linear_model__ridge__BaseRidge  # noqa: F401
@@ -285,9 +232,6 @@ from . import sklearn_linear_model__ridge_Ridge  # noqa: F401
 from . import sklearn_linear_model__ridge_RidgeClassifier  # noqa: F401
 from . import sklearn_linear_model__ridge_RidgeClassifierCV  # noqa: F401
 from . import sklearn_linear_model__ridge_RidgeCV  # noqa: F401
-from . import (  # noqa: F401
-    sklearn_linear_model__stochastic_gradient__ValidationScoreCallback,
-)
 from . import sklearn_linear_model__stochastic_gradient_BaseSGD  # noqa: F401
 from . import sklearn_linear_model__stochastic_gradient_BaseSGDClassifier  # noqa: F401
 from . import sklearn_linear_model__stochastic_gradient_BaseSGDRegressor  # noqa: F401
@@ -299,13 +243,7 @@ from . import sklearn_manifold__locally_linear_LocallyLinearEmbedding  # noqa: F
 from . import sklearn_manifold__mds_MDS  # noqa: F401
 from . import sklearn_manifold__spectral_embedding_SpectralEmbedding  # noqa: F401
 from . import sklearn_manifold__t_sne_TSNE  # noqa: F401
-from . import (  # noqa: F401
-    sklearn_metrics__plot_confusion_matrix_ConfusionMatrixDisplay,
-)
 from . import sklearn_metrics__plot_det_curve_DetCurveDisplay  # noqa: F401
-from . import (  # noqa: F401
-    sklearn_metrics__plot_precision_recall_curve_PrecisionRecallDisplay,
-)
 from . import sklearn_metrics__plot_roc_curve_RocCurveDisplay  # noqa: F401
 from . import sklearn_metrics__scorer__BaseScorer  # noqa: F401
 from . import sklearn_metrics__scorer__MultimetricScorer  # noqa: F401
@@ -320,18 +258,6 @@ from . import sklearn_model_selection__search_GridSearchCV  # noqa: F401
 from . import sklearn_model_selection__search_ParameterGrid  # noqa: F401
 from . import sklearn_model_selection__search_ParameterSampler  # noqa: F401
 from . import sklearn_model_selection__search_RandomizedSearchCV  # noqa: F401
-from . import (  # noqa: F401
-    sklearn_model_selection__search_successive_halving__SubsampleMetaSplitter,
-)
-from . import (  # noqa: F401
-    sklearn_model_selection__search_successive_halving_BaseSuccessiveHalving,
-)
-from . import (  # noqa: F401
-    sklearn_model_selection__search_successive_halving_HalvingGridSearchCV,
-)
-from . import (  # noqa: F401
-    sklearn_model_selection__search_successive_halving_HalvingRandomSearchCV,
-)
 from . import sklearn_model_selection__split__BaseKFold  # noqa: F401
 from . import sklearn_model_selection__split__CVIterableWrapper  # noqa: F401
 from . import sklearn_model_selection__split__RepeatedSplits  # noqa: F401
@@ -382,9 +308,6 @@ from . import sklearn_neighbors__nearest_centroid_NearestCentroid  # noqa: F401
 from . import sklearn_neighbors__regression_KNeighborsRegressor  # noqa: F401
 from . import sklearn_neighbors__regression_RadiusNeighborsRegressor  # noqa: F401
 from . import sklearn_neighbors__unsupervised_NearestNeighbors  # noqa: F401
-from . import (  # noqa: F401
-    sklearn_neural_network__multilayer_perceptron_BaseMultilayerPerceptron,
-)
 from . import sklearn_neural_network__multilayer_perceptron_MLPClassifier  # noqa: F401
 from . import sklearn_neural_network__multilayer_perceptron_MLPRegressor  # noqa: F401
 from . import sklearn_neural_network__rbm_BernoulliRBM  # noqa: F401
@@ -407,23 +330,14 @@ from . import sklearn_preprocessing__discretization_KBinsDiscretizer  # noqa: F4
 from . import sklearn_preprocessing__encoders__BaseEncoder  # noqa: F401
 from . import sklearn_preprocessing__encoders_OneHotEncoder  # noqa: F401
 from . import sklearn_preprocessing__encoders_OrdinalEncoder  # noqa: F401
-from . import (  # noqa: F401
-    sklearn_preprocessing__function_transformer_FunctionTransformer,
-)
 from . import sklearn_preprocessing__label_LabelBinarizer  # noqa: F401
 from . import sklearn_preprocessing__label_LabelEncoder  # noqa: F401
 from . import sklearn_preprocessing__label_MultiLabelBinarizer  # noqa: F401
 from . import sklearn_random_projection_BaseRandomProjection  # noqa: F401
 from . import sklearn_random_projection_GaussianRandomProjection  # noqa: F401
 from . import sklearn_random_projection_SparseRandomProjection  # noqa: F401
-from . import (  # noqa: F401
-    sklearn_semi_supervised__label_propagation_BaseLabelPropagation,
-)
 from . import sklearn_semi_supervised__label_propagation_LabelPropagation  # noqa: F401
 from . import sklearn_semi_supervised__label_propagation_LabelSpreading  # noqa: F401
-from . import (  # noqa: F401
-    sklearn_semi_supervised__self_training_SelfTrainingClassifier,
-)
 from . import sklearn_svm__base_BaseLibSVM  # noqa: F401
 from . import sklearn_svm__base_BaseSVC  # noqa: F401
 from . import sklearn_svm__classes_LinearSVC  # noqa: F401
@@ -460,3 +374,34 @@ from . import sklearn_utils_fixes__FuncWrapper  # noqa: F401
 from . import sklearn_utils_fixes_MaskedArray  # noqa: F401
 from . import sklearn_utils_metaestimators__BaseComposition  # noqa: F401
 from . import sklearn_utils_metaestimators__IffHasAttrDescriptor  # noqa: F401
+from . import (  # noqa: F401
+    sklearn_cluster__feature_agglomeration_AgglomerationTransform,
+    sklearn_decomposition__dict_learning_MiniBatchDictionaryLearning,
+    sklearn_ensemble__hist_gradient_boosting_gradient_boosting_BaseHistGradientBoosting,
+    sklearn_ensemble__hist_gradient_boosting_gradient_boosting_HistGradientBoostingClassifier,
+    sklearn_ensemble__hist_gradient_boosting_gradient_boosting_HistGradientBoostingRegressor,
+    sklearn_ensemble__hist_gradient_boosting_loss_BinaryCrossEntropy,
+    sklearn_ensemble__hist_gradient_boosting_loss_CategoricalCrossEntropy,
+    sklearn_ensemble__hist_gradient_boosting_loss_LeastAbsoluteDeviation,
+    sklearn_ensemble__hist_gradient_boosting_predictor_TreePredictor,
+    sklearn_feature_selection__sequential_SequentialFeatureSelector,
+    sklearn_feature_selection__univariate_selection_GenericUnivariateSelect,
+    sklearn_feature_selection__univariate_selection_SelectPercentile,
+    sklearn_feature_selection__variance_threshold_VarianceThreshold,
+    sklearn_gaussian_process__gpc__BinaryGaussianProcessClassifierLaplace,
+    sklearn_inspection__plot_partial_dependence_PartialDependenceDisplay,
+    sklearn_linear_model__coordinate_descent_MultiTaskElasticNetCV,
+    sklearn_linear_model__passive_aggressive_PassiveAggressiveClassifier,
+    sklearn_linear_model__passive_aggressive_PassiveAggressiveRegressor,
+    sklearn_linear_model__stochastic_gradient__ValidationScoreCallback,
+    sklearn_metrics__plot_confusion_matrix_ConfusionMatrixDisplay,
+    sklearn_metrics__plot_precision_recall_curve_PrecisionRecallDisplay,
+    sklearn_model_selection__search_successive_halving__SubsampleMetaSplitter,
+    sklearn_model_selection__search_successive_halving_BaseSuccessiveHalving,
+    sklearn_model_selection__search_successive_halving_HalvingGridSearchCV,
+    sklearn_model_selection__search_successive_halving_HalvingRandomSearchCV,
+    sklearn_neural_network__multilayer_perceptron_BaseMultilayerPerceptron,
+    sklearn_preprocessing__function_transformer_FunctionTransformer,
+    sklearn_semi_supervised__label_propagation_BaseLabelPropagation,
+    sklearn_semi_supervised__self_training_SelfTrainingClassifier,
+)

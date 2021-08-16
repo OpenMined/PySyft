@@ -14,17 +14,16 @@ from typing import Set as TypeSet
 from typing import Tuple as TypeTuple
 from typing import Union as TypeUnion
 
-# third party
 import wrapt
+
+# third party
 from cachetools import cached
 from cachetools.keys import hashkey
 from packaging import version
 
-# syft relative
 # relative
-from ..ast import add_classes
-from ..ast import add_methods
-from ..ast import add_modules
+# syft relative
+from ..ast import add_classes, add_methods, add_modules
 from ..ast.globals import Globals
 from ..core.node.abstract.node import AbstractNodeClient
 from ..core.tensor import create_tensor_ast
@@ -34,9 +33,7 @@ from ..lib.python import create_python_ast
 from ..lib.remote_dataloader import create_remote_dataloader_ast
 from ..lib.torch import create_torch_ast
 from ..lib.torchvision import create_torchvision_ast
-from ..logger import critical
-from ..logger import traceback_and_raise
-from ..logger import warning
+from ..logger import critical, traceback_and_raise, warning
 from .misc import create_union_ast
 from .misc.union import UnionGenerator
 from .util import generic_update_ast

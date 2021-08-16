@@ -16,6 +16,7 @@ from pyscaffold.extensions.no_skeleton import NoSkeleton
 from pyscaffold.operations import no_overwrite, skip_on_update
 from pyscaffold.structure import merge
 from pyscaffold.templates import add_pyscaffold, get_template
+
 from pyscaffoldext.markdown.extension import Markdown
 
 # relative
