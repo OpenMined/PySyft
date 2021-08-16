@@ -10,11 +10,26 @@ from ...lib.torch.tensor_util import tensor_serializer
 from ...logger import warning
 from ...proto.lib.torch.device_pb2 import Device as Device_PB
 from ...proto.lib.torch.tensor_pb2 import TensorProto as Tensor_PB
-
+from ...core.compression.compression_params import compression_params
+from ...core.compression.compressed_tensor import CompressedTensor
 torch_tensor_type = type(th.tensor([1, 2, 3]))
 
 
 def object2proto(obj: object) -> Tensor_PB:
+    if compression_params.tensor['compress']:
+        compressed = CompressedTensor(obj)
+
+        for compressor in compression_params.tensor['compress']:
+            if getattr(compressor, "grad_hist_store", False):
+                if not hasattr(obj, "compressor_objs"):
+                    obj.compressor_objs = dict()
+                if compressor not in obj.compressor_objs:
+                    obj.compressor_objs[compressor] = compressor()
+                compressed = obj.compressor_objs[compressor].compress(compressed)
+            else:
+                compressed = compressor.compress(compressed)
+
+        return compressed._object2proto()
     proto = Tensor_PB()
     proto.tensor = tensor_serializer(obj)
 

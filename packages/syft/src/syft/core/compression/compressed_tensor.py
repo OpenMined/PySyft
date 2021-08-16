@@ -27,6 +27,8 @@ class CompressedTensor(th.Tensor, Serializable):
     """
     @staticmethod
     def __new__(cls, child, compressors, *args, **kwargs):
+        if 'core.tensor' in str(type(child)):
+            child = th.Tensor(child.child)
         return super().__new__(cls, child, *args, **kwargs)
 
     def clone(self, *args, **kwargs):
@@ -41,6 +43,8 @@ class CompressedTensor(th.Tensor, Serializable):
         return(new_obj)
 
     def __init__(self, child: th.Tensor, compressors: List[SpecializedCompressor] = []):
+        if 'core.tensor' in str(type(child)):
+            child = th.Tensor(child.child)
         th.Tensor.__init__(child)
         self.child = child
         self.requires_grad = child.requires_grad
@@ -124,7 +128,7 @@ class CompressedTensor(th.Tensor, Serializable):
         )
 
     @staticmethod
-    def _proto2object(proto: Tensor_PB):
+    def _proto2object(proto: Tensor_PB, return_compressed=False):
         child = [deserialize(tensor) for tensor in proto.tensors]
         child = child[0]
 

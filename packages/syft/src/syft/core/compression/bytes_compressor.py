@@ -1,7 +1,7 @@
 import lzma
 import blosc
 
-from .compression_flags import compression_params
+from .compression_params import compression_params
 
 class BytesCompressor:
     """
