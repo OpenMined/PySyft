@@ -548,6 +548,8 @@ def create_launch_docker_cmd(
     cmd += " TRAEFIK_TAG=" + str(tag)
     cmd += ' DOMAIN_NAME="' + snake_name + '"'
     cmd += " NODE_TYPE=" + str(node_type.input)
+    cmd += " VERSION=`python VERSION`"
+    cmd += " VERSION_HASH=`python VERSION hash`"
     cmd += " docker compose -p " + snake_name
     cmd += " up"
 

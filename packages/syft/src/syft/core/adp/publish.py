@@ -56,7 +56,7 @@ def publish(
             for input_scalar in output_scalar.input_scalars:
                 input_scalars.add(input_scalar)
 
-        should_break = False
+        # should_break = False
 
         for input_scalar in input_scalars:
             if input_scalar.entity in overbudgeted_entities:

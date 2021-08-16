@@ -10,7 +10,6 @@ from sqlalchemy.orm import sessionmaker
 
 # relative
 from . import Base
-from ..node_table import Base
 from .groups import Group
 from .roles import Role
 from .user import SyftUser

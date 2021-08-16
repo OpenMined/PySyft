@@ -48,8 +48,10 @@ class Tensor(
         ):
             raise Exception("Data must be list or nd.array")
 
-        super().__init__(child=child)
+        kwargs = {"child": child}
+        super().__init__(**kwargs)
         self.tag_name: Optional[str] = None
 
-    def tag(self, name: str) -> None:
+    def tag(self, name: str) -> Tensor:
         self.tag_name = name
+        return self
