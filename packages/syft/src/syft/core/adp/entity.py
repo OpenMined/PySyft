@@ -23,7 +23,7 @@ from ...proto.core.adp.entity_pb2 import Entity as Entity_PB
 @bind_protobuf
 class Entity(Serializable):
     def __init__(
-        self, *, id: Optional[UID] = None, **attributes: TypeDict[str, Any]
+        self, id: Optional[UID] = None, **attributes: TypeDict[str, Any]
     ) -> None:
 
         # If someone doesn't provide a unique name - make one up!
@@ -49,7 +49,7 @@ class Entity(Serializable):
         return hash(self) != hash(other)
 
     def __repr__(self) -> str:
-        return "<Entity:" + self.attributes["name"] + ">"
+        return "<Entity:" + str(self.attributes["name"]) + ">"
 
     def _object2proto(self) -> Entity_PB:
         return Entity_PB(name=self.attributes["name"], id=self.id._object2proto())

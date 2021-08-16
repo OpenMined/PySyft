@@ -6,7 +6,7 @@ from numpy import ndarray
 
 # relative
 from .....core.common.serde.recursive import RecursiveSerde
-from ...passthrough import is_acceptable_simple_type
+from ...passthrough import is_acceptable_simple_type  # type: ignore
 from ..tensor import AutogradTensor
 from .op import Op
 

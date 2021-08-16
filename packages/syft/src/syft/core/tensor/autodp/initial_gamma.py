@@ -11,7 +11,7 @@ import numpy as np
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...common.serde.recursive import RecursiveSerde
 from ...common.uid import UID
-from ..passthrough import PassthroughTensor
+from ..passthrough import PassthroughTensor  # type: ignore
 from .intermediate_gamma import IntermediateGammaTensor
 
 

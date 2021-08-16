@@ -18,7 +18,7 @@ def test_autodp_phiscalar_can_publish() -> None:
     db_engine, _ = create_memory_db_engine()
     domain = Domain(name="Bob", db_engine=db_engine)
 
-    def encode_key(key) -> str:
+    def encode_key(key: SigningKey) -> str:
         return key.encode(encoder=HexEncoder).decode("utf-8")
 
     key = SigningKey.generate()
@@ -49,7 +49,7 @@ def test_autodp_phiscalar_cannot_publish() -> None:
     db_engine, _ = create_memory_db_engine()
     domain = Domain(name="Bob", db_engine=db_engine)
 
-    def encode_key(key) -> str:
+    def encode_key(key: SigningKey) -> str:
         return key.encode(encoder=HexEncoder).decode("utf-8")
 
     key = SigningKey.generate()
@@ -81,7 +81,7 @@ def test_autodp_phiscalar_substitute_publish() -> None:
     db_engine, _ = create_memory_db_engine()
     domain = Domain(name="Bob", db_engine=db_engine)
 
-    def encode_key(key) -> str:
+    def encode_key(key: SigningKey) -> str:
         return key.encode(encoder=HexEncoder).decode("utf-8")
 
     # create user with matching client key
@@ -101,10 +101,6 @@ def test_autodp_phiscalar_substitute_publish() -> None:
     # create data
 
     n = 10
-
-    data = list()
-    for i in range(n):
-        data.append(i + 1)
 
     # Load some sample data
     data_batch = np.array([13] * n)

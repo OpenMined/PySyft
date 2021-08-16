@@ -18,12 +18,12 @@ from ...adp.entity import Entity
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...common.serde.serializable import bind_protobuf
 from ..ancestors import AutogradTensorAncestor
-from ..passthrough import AcceptableSimpleType
-from ..passthrough import PassthroughTensor
-from ..passthrough import SupportedChainType
-from ..passthrough import implements
-from ..passthrough import inputs2child
-from ..passthrough import is_acceptable_simple_type
+from ..passthrough import AcceptableSimpleType  # type: ignore
+from ..passthrough import PassthroughTensor  # type: ignore
+from ..passthrough import SupportedChainType  # type: ignore
+from ..passthrough import implements  # type: ignore
+from ..passthrough import inputs2child  # type: ignore
+from ..passthrough import is_acceptable_simple_type  # type: ignore
 from .initial_gamma import InitialGammaTensor
 
 

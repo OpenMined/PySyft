@@ -183,9 +183,10 @@ class IntermediatePhiScalar(IntermediateScalar):
         self.entity = entity
 
     def max_lipschitz_wrt_entity(
-        self, *args: TypeTuple[Any, ...], **kwargs: Any
+        self,
+        entity: Entity,
     ) -> float:
-        return self.gamma.max_lipschitz_wrt_entity(*args, **kwargs)
+        return self.gamma.max_lipschitz_wrt_entity(entity=entity)
 
     @property
     def max_lipschitz(self) -> float:

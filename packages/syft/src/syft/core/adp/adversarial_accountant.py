@@ -8,7 +8,6 @@ from typing import Set as TypeSet
 # third party
 from autodp.autodp_core import Mechanism
 from autodp.transformer_zoo import Composition
-from nacl.encoding import HexEncoder
 from nacl.signing import VerifyKey
 from sqlalchemy.engine import Engine
 
@@ -176,5 +175,5 @@ class AdversarialAccountant:
 class AccountantReference(RecursiveSerde):
     __attr_allowlist__ = ["msg"]
 
-    def __init__(self, msg):
+    def __init__(self, msg) -> None:
         self.msg = msg

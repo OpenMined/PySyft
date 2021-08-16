@@ -66,9 +66,6 @@ class AutogradTensorAncestor(TensorChainManager):
     """Inherited by any class which might have or like to have AutogradTensor in its chain
     of .child objects"""
 
-    def __init__(self) -> None:
-        pass
-
     @property
     def grad(self):  # type: ignore
         child_gradient = self.child.grad
