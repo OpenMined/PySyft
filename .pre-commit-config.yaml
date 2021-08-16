@@ -32,7 +32,7 @@ repos:
       - id: requirements-txt-fixer
         always_run: true
   - repo: https://github.com/pycqa/isort
-    rev: 5.9.2
+    rev: 5.9.3
     hooks:
       - id: isort
         always_run: true
