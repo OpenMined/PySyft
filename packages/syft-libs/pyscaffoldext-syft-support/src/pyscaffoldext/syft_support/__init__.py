@@ -5,10 +5,12 @@ if sys.version_info[:2] >= (3, 8):
     # TODO: Import directly (no need for conditional)
     # when `python_requires = >= 3.8`
     # stdlib
-    from importlib.metadata import PackageNotFoundError, version
+    from importlib.metadata import PackageNotFoundError
+    from importlib.metadata import version
 else:
     # third party
-    from importlib_metadata import PackageNotFoundError, version
+    from importlib_metadata import PackageNotFoundError
+    from importlib_metadata import version
 
 try:
     # Change here if project is renamed and does not equal the package name

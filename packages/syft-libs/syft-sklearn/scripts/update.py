@@ -1,10 +1,10 @@
 # import argparse
 # stdlib
 import importlib
+from importlib.machinery import SourceFileLoader
 import inspect
 import json
 import os
-from importlib.machinery import SourceFileLoader
 from pathlib import Path
 from typing import Any as TypeAny
 

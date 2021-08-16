@@ -1,11 +1,13 @@
 # stdlib
-from typing import Any, Optional
+from typing import Any
+from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # relative
-from ... import deserialize, serialize
+from ... import deserialize
+from ... import serialize
 from ...core.common import UID
 from ...core.common.serde.serializable import bind_protobuf
 from ...logger import traceback_and_raise

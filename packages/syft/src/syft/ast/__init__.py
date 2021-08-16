@@ -65,9 +65,6 @@ from typing import List as TypeList
 from typing import Tuple as TypeTuple
 from typing import Union
 
-# syft relative
-from ..logger import warning
-
 # relative
 from . import attribute  # noqa: F401
 from . import callable  # noqa: F401
@@ -78,6 +75,7 @@ from . import klass  # noqa: F401
 from . import module  # noqa: F401
 from . import property  # noqa: F401
 from . import static_attr  # noqa: F401
+from ..logger import warning
 from .denylist import deny
 
 

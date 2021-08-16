@@ -10,7 +10,6 @@ from syft.generate_wrapper import GenerateWrapper
 from syft.lib.python.dict import Dict
 from syft.lib.python.primitive_factory import PrimitiveFactory
 
-# syft relative
 # relative
 from ..proto.logistic_model_pb2 import Logistic as Logistic_PB
 

@@ -1,12 +1,16 @@
 # stdlib
 from collections import UserString
-from typing import Any, Mapping, Optional, Union
+from typing import Any
+from typing import Mapping
+from typing import Optional
+from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # relative
-from ... import deserialize, serialize
+from ... import deserialize
+from ... import serialize
 from ...core.common import UID
 from ...core.common.serde.serializable import bind_protobuf
 from ...proto.lib.python.string_pb2 import String as String_PB
