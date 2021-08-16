@@ -11,7 +11,7 @@ from ....proto.util.data_message_pb2 import DataMessage
 from ....util import get_fully_qualified_name
 from ....util import validate_type
 from .serializable import Serializable
-
+from ...compression.bytes_compressor import BytesCompressor
 
 def _serialize(
     obj: object,
@@ -82,6 +82,7 @@ def _serialize(
             obj_type=get_fully_qualified_name(obj=is_serializable),
             content=serialized_data,
         )
+        blob = BytesCompressor.compress(blob)
         return validate_type(blob.SerializeToString(), bytes)
     elif to_proto:
         return validate_type(is_serializable._object2proto(), Message)

@@ -10,7 +10,7 @@ from google.protobuf.message import Message
 from ....logger import traceback_and_raise
 from ....proto.util.data_message_pb2 import DataMessage
 from ....util import index_syft_by_module_name
-
+from ...compression.bytes_compressor import BytesCompressor
 
 def _deserialize(
     blob: Union[str, dict, bytes, Message],
@@ -53,6 +53,7 @@ def _deserialize(
     )
 
     if from_bytes:
+        blob = BytesCompressor.decompress(blob)
         data_message = DataMessage()
         data_message.ParseFromString(blob)
         obj_type = index_syft_by_module_name(fully_qualified_name=data_message.obj_type)
