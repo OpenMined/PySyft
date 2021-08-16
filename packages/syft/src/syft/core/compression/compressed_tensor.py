@@ -17,6 +17,7 @@ from ..common.serde.deserialize import _deserialize as deserialize
 from ..common.serde.serializable import bind_protobuf
 from ..common.serde.serialize import _serialize as serialize
 from ...proto.core.tensor.tensor_pb2 import Tensor as Tensor_PB
+from ..tensor import Tensor
 
 @bind_protobuf
 class CompressedTensor(th.Tensor, Serializable):
@@ -43,8 +44,10 @@ class CompressedTensor(th.Tensor, Serializable):
         return(new_obj)
 
     def __init__(self, child: th.Tensor, compressors: List[SpecializedCompressor] = []):
+        self.use_tensors = True
         if 'core.tensor' in str(type(child)):
             child = th.Tensor(child.child)
+            self.use_tensors = False
         th.Tensor.__init__(child)
         self.child = child
         self.requires_grad = child.requires_grad
@@ -112,7 +115,7 @@ class CompressedTensor(th.Tensor, Serializable):
         )
 
     def _object2proto(self) -> Tensor_PB:
-        use_tensors = True
+        use_tensors = self.use_tensors
         arrays = [serialize(self.encode_compressors())]
 
         self.child.requires_grad = self.requires_grad
@@ -137,7 +140,12 @@ class CompressedTensor(th.Tensor, Serializable):
         encoded_compressors = [deserialize(array) for array in proto.arrays]
         res.decode_and_attach_compressors(encoded_compressors)
         res.refresh_super_tensor()
+        res.use_tensors = proto.use_tensors
 
+        if not return_compressed:
+            if res.use_tensors:
+                return th.Tensor(res)
+            return Tensor(res)
         return res
 
     @staticmethod
