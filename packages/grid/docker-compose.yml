@@ -148,6 +148,8 @@ services:
     env_file:
       - .env
     environment:
+      - VERSION=${VERSION}
+      - VERSION_HASH=${VERSION_HASH}
       - SERVER_NAME=${DOMAIN?Variable not set}
       - SERVER_HOST=https://${DOMAIN?Variable not set}
       # Allow explicit env var override for tests
@@ -173,6 +175,8 @@ services:
     env_file:
       - .env
     environment:
+      - VERSION=${VERSION}
+      - VERSION_HASH=${VERSION_HASH}
       - SERVER_NAME=${DOMAIN?Variable not set}
       - SERVER_HOST=https://${DOMAIN?Variable not set}
       # Allow explicit env var override for tests
@@ -200,6 +204,8 @@ services:
     env_file:
       - .env
     environment:
+      - VERSION=${VERSION}
+      - VERSION_HASH=${VERSION_HASH}
       - SERVER_NAME=${DOMAIN?Variable not set}
       - SERVER_HOST=https://${DOMAIN?Variable not set}
       # Allow explicit env var override for tests
@@ -219,6 +225,9 @@ services:
       args:
         FRONTEND_ENV: ${FRONTEND_ENV-development}
       target: "grid-ui-${FRONTEND_ENV-development}"
+    environment:
+      - VERSION=${VERSION}
+      - VERSION_HASH=${VERSION_HASH}
     volumes:
       - ./grid-ui/:/app
       - /app/node_modules
