@@ -2,3 +2,5 @@
 .mypy_cache
 docker-stack.yml
 data/*
+.docker/*
+output-*
