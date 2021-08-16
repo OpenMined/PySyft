@@ -14,7 +14,7 @@ repos:
         always_run: true
       - id: check-added-large-files
         always_run: true
-        exclude: ^(notebooks/trade_demo/datasets|packages/syft-libs/\S+/*.json)
+        exclude: ^(notebooks/trade_demo/datasets|packages/syft-libs/\S+.json)
       - id: check-yaml
         always_run: true
       - id: check-merge-conflict
@@ -32,7 +32,7 @@ repos:
       - id: requirements-txt-fixer
         always_run: true
   - repo: https://github.com/pycqa/isort
-    rev: 5.9.2
+    rev: 5.9.3
     hooks:
       - id: isort
         always_run: true
@@ -52,7 +52,7 @@ repos:
         #       additional_dependencies:
         #         - flake8-kwarger
         #         - darglint
-        exclude: ^(packages/syft/src/syft/proto|packages/syft/examples/duet|packages/grid/ansible/|packages/syft-libs/syft-sklearn/_missing_return)
+        exclude: ^(packages/syft/src/syft/proto|packages/syft/examples/duet|packages/grid/ansible/|packages/syft-libs/.*/proto|packages\/syft-libs\/.*\/_missing_return)
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v0.910
     hooks:
@@ -107,7 +107,7 @@ repos:
       - id: mypy
         name: mypy-syft
         files: ^packages/syft
-        exclude: ^(packages/syft/src/syft/core/tensor|packages/syft/src/syft/core/adp|packages/syft/src/syft/proto|packages/syft/tests/syft/lib/python|packages/syft/examples/duet|packages/syft-libs/syft-sklearn/_missing_return)
+        exclude: ^(packages/syft/src/syft/core/tensor|packages/syft/src/syft/core/adp|packages/syft/src/syft/proto|packages/syft/tests/syft/lib/python|packages/syft/examples/duet|packages/syft-libs\S+setup.py|packages/syft-libs\S+/tests|packages/syft-libs/\S+/proto|packages/syft-libs/.*/_missing_return)
         args: [
             "--ignore-missing-imports",
             "--scripts-are-modules",
