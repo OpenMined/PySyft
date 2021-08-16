@@ -302,6 +302,8 @@ def _map2syft_types(
         "slice": "syft.lib.python.Slice",
         "str": "syft.lib.python.String",
         "tuple": "syft.lib.python.Tuple",
+        # ndarray
+        "none.ndarray": "numpy.ndarray",
     }
     for i, (func, return_type) in enumerate(methods):
         if return_type.startswith("Union"):

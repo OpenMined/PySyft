@@ -153,7 +153,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
             args=tag_args,
             kwargs=tag_kwargs,
         )
-
+        print(f"function or constructor: result: {result}")
         node.store[self.id_at_location] = result
 
     def __repr__(self) -> str:
