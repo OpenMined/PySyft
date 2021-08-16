@@ -346,7 +346,7 @@ class WebRTCConnection(BidirectionalConnection):
 
                 # If self.producer_pool.get() returns a message
                 # send it as a binary using the RTCDataChannel.
-                data = serialize(msg, to_bytes=True)
+                data = serialize(msg, to_bytes=True, compression=True)
                 data_len = len(data)
 
                 if DC_CHUNKING_ENABLED and data_len > DC_MAX_CHUNK_SIZE:

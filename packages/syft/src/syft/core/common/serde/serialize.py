@@ -17,6 +17,7 @@ def _serialize(
     obj: object,
     to_proto: bool = True,
     to_bytes: bool = False,
+    compression: bool = False,
 ) -> Union[str, bytes, Message]:
     """Serialize the object according to the parameters.
 
@@ -82,8 +83,10 @@ def _serialize(
             obj_type=get_fully_qualified_name(obj=is_serializable),
             content=serialized_data,
         )
-        blob = BytesCompressor.compress(blob)
-        return validate_type(blob.SerializeToString(), bytes)
+        blob = blob.SerializeToString()
+        if compression:
+            blob = BytesCompressor.compress(blob)
+        return validate_type(blob, bytes)
     elif to_proto:
         return validate_type(is_serializable._object2proto(), Message)
     else:
