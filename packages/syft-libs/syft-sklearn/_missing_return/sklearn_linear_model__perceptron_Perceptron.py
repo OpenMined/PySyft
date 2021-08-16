@@ -6,7 +6,10 @@
 # In[ ]:
 
 
+# third party
 import sklearn
+
+
 def class_constructor(*args, **kwargs):
     obj = sklearn.linear_model._perceptron.Perceptron()
     return obj
@@ -17,15 +20,21 @@ def class_constructor(*args, **kwargs):
 
 # sklearn.linear_model._perceptron.Perceptron.__getstate__
 try:
-    obj = class_constructor() # noqa F821
+    obj = class_constructor()  # noqa F821
     ret = obj.__getstate__()
-    type_sklearn_linear_model__perceptron_Perceptron___getstate__ = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron.__getstate__: ', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron___getstate__ = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron.__getstate__: ", type(ret)
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron___getstate__ = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron.__getstate__: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron___getstate__ = "_syft_missing"
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron.__getstate__: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -33,15 +42,21 @@ except Exception as e:
 
 # sklearn.linear_model._perceptron.Perceptron.__repr__
 try:
-    obj = class_constructor() # noqa F821
+    obj = class_constructor()  # noqa F821
     ret = obj.__repr__()
-    type_sklearn_linear_model__perceptron_Perceptron___repr__ = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron.__repr__: ', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron___repr__ = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron.__repr__: ", type(ret)
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron___repr__ = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron.__repr__: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron___repr__ = "_syft_missing"
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron.__repr__: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -49,15 +64,21 @@ except Exception as e:
 
 # sklearn.linear_model._perceptron.Perceptron.__setstate__
 try:
-    obj = class_constructor() # noqa F821
+    obj = class_constructor()  # noqa F821
     ret = obj.__setstate__()
-    type_sklearn_linear_model__perceptron_Perceptron___setstate__ = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron.__setstate__: ', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron___setstate__ = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron.__setstate__: ", type(ret)
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron___setstate__ = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron.__setstate__: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron___setstate__ = "_syft_missing"
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron.__setstate__: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -65,15 +86,24 @@ except Exception as e:
 
 # sklearn.linear_model._perceptron.Perceptron._allocate_parameter_mem
 try:
-    obj = class_constructor() # noqa F821
+    obj = class_constructor()  # noqa F821
     ret = obj._allocate_parameter_mem()
-    type_sklearn_linear_model__perceptron_Perceptron__allocate_parameter_mem = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron._allocate_parameter_mem: ', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__allocate_parameter_mem = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron._allocate_parameter_mem: ",
+        type(ret),
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron__allocate_parameter_mem = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron._allocate_parameter_mem: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__allocate_parameter_mem = (
+        "_syft_missing"
+    )
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron._allocate_parameter_mem: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -81,15 +111,21 @@ except Exception as e:
 
 # sklearn.linear_model._perceptron.Perceptron._check_n_features
 try:
-    obj = class_constructor() # noqa F821
+    obj = class_constructor()  # noqa F821
     ret = obj._check_n_features()
-    type_sklearn_linear_model__perceptron_Perceptron__check_n_features = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron._check_n_features: ', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__check_n_features = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron._check_n_features: ", type(ret)
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron__check_n_features = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron._check_n_features: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__check_n_features = "_syft_missing"
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron._check_n_features: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -97,15 +133,21 @@ except Exception as e:
 
 # sklearn.linear_model._perceptron.Perceptron._fit
 try:
-    obj = class_constructor() # noqa F821
+    obj = class_constructor()  # noqa F821
     ret = obj._fit()
-    type_sklearn_linear_model__perceptron_Perceptron__fit = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron._fit: ', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__fit = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron._fit: ", type(ret)
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron__fit = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron._fit: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__fit = "_syft_missing"
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron._fit: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -113,15 +155,21 @@ except Exception as e:
 
 # sklearn.linear_model._perceptron.Perceptron._fit_binary
 try:
-    obj = class_constructor() # noqa F821
+    obj = class_constructor()  # noqa F821
     ret = obj._fit_binary()
-    type_sklearn_linear_model__perceptron_Perceptron__fit_binary = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron._fit_binary: ', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__fit_binary = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron._fit_binary: ", type(ret)
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron__fit_binary = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron._fit_binary: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__fit_binary = "_syft_missing"
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron._fit_binary: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -129,15 +177,21 @@ except Exception as e:
 
 # sklearn.linear_model._perceptron.Perceptron._fit_multiclass
 try:
-    obj = class_constructor() # noqa F821
+    obj = class_constructor()  # noqa F821
     ret = obj._fit_multiclass()
-    type_sklearn_linear_model__perceptron_Perceptron__fit_multiclass = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron._fit_multiclass: ', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__fit_multiclass = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron._fit_multiclass: ", type(ret)
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron__fit_multiclass = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron._fit_multiclass: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__fit_multiclass = "_syft_missing"
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron._fit_multiclass: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -145,15 +199,24 @@ except Exception as e:
 
 # sklearn.linear_model._perceptron.Perceptron._get_learning_rate_type
 try:
-    obj = class_constructor() # noqa F821
+    obj = class_constructor()  # noqa F821
     ret = obj._get_learning_rate_type()
-    type_sklearn_linear_model__perceptron_Perceptron__get_learning_rate_type = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron._get_learning_rate_type: ', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__get_learning_rate_type = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron._get_learning_rate_type: ",
+        type(ret),
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron__get_learning_rate_type = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron._get_learning_rate_type: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__get_learning_rate_type = (
+        "_syft_missing"
+    )
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron._get_learning_rate_type: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -161,15 +224,23 @@ except Exception as e:
 
 # sklearn.linear_model._perceptron.Perceptron._get_loss_function
 try:
-    obj = class_constructor() # noqa F821
+    obj = class_constructor()  # noqa F821
     ret = obj._get_loss_function()
-    type_sklearn_linear_model__perceptron_Perceptron__get_loss_function = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron._get_loss_function: ', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__get_loss_function = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron._get_loss_function: ", type(ret)
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron__get_loss_function = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron._get_loss_function: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__get_loss_function = (
+        "_syft_missing"
+    )
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron._get_loss_function: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -177,15 +248,21 @@ except Exception as e:
 
 # sklearn.linear_model._perceptron.Perceptron._get_param_names
 try:
-    obj = class_constructor() # noqa F821
+    obj = class_constructor()  # noqa F821
     ret = obj._get_param_names()
-    type_sklearn_linear_model__perceptron_Perceptron__get_param_names = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron._get_param_names: ', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__get_param_names = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron._get_param_names: ", type(ret)
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron__get_param_names = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron._get_param_names: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__get_param_names = "_syft_missing"
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron._get_param_names: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -193,15 +270,21 @@ except Exception as e:
 
 # sklearn.linear_model._perceptron.Perceptron._get_penalty_type
 try:
-    obj = class_constructor() # noqa F821
+    obj = class_constructor()  # noqa F821
     ret = obj._get_penalty_type()
-    type_sklearn_linear_model__perceptron_Perceptron__get_penalty_type = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron._get_penalty_type: ', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__get_penalty_type = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron._get_penalty_type: ", type(ret)
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron__get_penalty_type = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron._get_penalty_type: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__get_penalty_type = "_syft_missing"
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron._get_penalty_type: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -209,15 +292,21 @@ except Exception as e:
 
 # sklearn.linear_model._perceptron.Perceptron._get_tags
 try:
-    obj = class_constructor() # noqa F821
+    obj = class_constructor()  # noqa F821
     ret = obj._get_tags()
-    type_sklearn_linear_model__perceptron_Perceptron__get_tags = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron._get_tags: ', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__get_tags = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron._get_tags: ", type(ret)
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron__get_tags = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron._get_tags: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__get_tags = "_syft_missing"
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron._get_tags: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -225,15 +314,24 @@ except Exception as e:
 
 # sklearn.linear_model._perceptron.Perceptron._make_validation_score_cb
 try:
-    obj = class_constructor() # noqa F821
+    obj = class_constructor()  # noqa F821
     ret = obj._make_validation_score_cb()
-    type_sklearn_linear_model__perceptron_Perceptron__make_validation_score_cb = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron._make_validation_score_cb: ', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__make_validation_score_cb = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron._make_validation_score_cb: ",
+        type(ret),
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron__make_validation_score_cb = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron._make_validation_score_cb: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__make_validation_score_cb = (
+        "_syft_missing"
+    )
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron._make_validation_score_cb: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -241,15 +339,24 @@ except Exception as e:
 
 # sklearn.linear_model._perceptron.Perceptron._make_validation_split
 try:
-    obj = class_constructor() # noqa F821
+    obj = class_constructor()  # noqa F821
     ret = obj._make_validation_split()
-    type_sklearn_linear_model__perceptron_Perceptron__make_validation_split = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron._make_validation_split: ', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__make_validation_split = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron._make_validation_split: ",
+        type(ret),
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron__make_validation_split = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron._make_validation_split: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__make_validation_split = (
+        "_syft_missing"
+    )
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron._make_validation_split: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -257,15 +364,21 @@ except Exception as e:
 
 # sklearn.linear_model._perceptron.Perceptron._more_tags
 try:
-    obj = class_constructor() # noqa F821
+    obj = class_constructor()  # noqa F821
     ret = obj._more_tags()
-    type_sklearn_linear_model__perceptron_Perceptron__more_tags = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron._more_tags: ', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__more_tags = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron._more_tags: ", type(ret)
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron__more_tags = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron._more_tags: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__more_tags = "_syft_missing"
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron._more_tags: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -273,15 +386,21 @@ except Exception as e:
 
 # sklearn.linear_model._perceptron.Perceptron._partial_fit
 try:
-    obj = class_constructor() # noqa F821
+    obj = class_constructor()  # noqa F821
     ret = obj._partial_fit()
-    type_sklearn_linear_model__perceptron_Perceptron__partial_fit = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron._partial_fit: ', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__partial_fit = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron._partial_fit: ", type(ret)
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron__partial_fit = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron._partial_fit: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__partial_fit = "_syft_missing"
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron._partial_fit: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -289,15 +408,21 @@ except Exception as e:
 
 # sklearn.linear_model._perceptron.Perceptron._predict_proba_lr
 try:
-    obj = class_constructor() # noqa F821
+    obj = class_constructor()  # noqa F821
     ret = obj._predict_proba_lr()
-    type_sklearn_linear_model__perceptron_Perceptron__predict_proba_lr = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron._predict_proba_lr: ', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__predict_proba_lr = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron._predict_proba_lr: ", type(ret)
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron__predict_proba_lr = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron._predict_proba_lr: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__predict_proba_lr = "_syft_missing"
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron._predict_proba_lr: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -307,13 +432,19 @@ except Exception as e:
 try:
     obj = class_constructor()
     ret = obj._repr_html_
-    type_sklearn_linear_model__perceptron_Perceptron__repr_html_ = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron._repr_html_:', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__repr_html_ = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron._repr_html_:", type(ret)
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron__repr_html_ = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron._repr_html_: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__repr_html_ = "_syft_missing"
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron._repr_html_: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -321,15 +452,21 @@ except Exception as e:
 
 # sklearn.linear_model._perceptron.Perceptron._repr_html_inner
 try:
-    obj = class_constructor() # noqa F821
+    obj = class_constructor()  # noqa F821
     ret = obj._repr_html_inner()
-    type_sklearn_linear_model__perceptron_Perceptron__repr_html_inner = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron._repr_html_inner: ', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__repr_html_inner = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron._repr_html_inner: ", type(ret)
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron__repr_html_inner = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron._repr_html_inner: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__repr_html_inner = "_syft_missing"
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron._repr_html_inner: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -337,15 +474,21 @@ except Exception as e:
 
 # sklearn.linear_model._perceptron.Perceptron._repr_mimebundle_
 try:
-    obj = class_constructor() # noqa F821
+    obj = class_constructor()  # noqa F821
     ret = obj._repr_mimebundle_()
-    type_sklearn_linear_model__perceptron_Perceptron__repr_mimebundle_ = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron._repr_mimebundle_: ', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__repr_mimebundle_ = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron._repr_mimebundle_: ", type(ret)
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron__repr_mimebundle_ = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron._repr_mimebundle_: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__repr_mimebundle_ = "_syft_missing"
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron._repr_mimebundle_: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -353,15 +496,21 @@ except Exception as e:
 
 # sklearn.linear_model._perceptron.Perceptron._validate_data
 try:
-    obj = class_constructor() # noqa F821
+    obj = class_constructor()  # noqa F821
     ret = obj._validate_data()
-    type_sklearn_linear_model__perceptron_Perceptron__validate_data = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron._validate_data: ', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__validate_data = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron._validate_data: ", type(ret)
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron__validate_data = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron._validate_data: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__validate_data = "_syft_missing"
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron._validate_data: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -369,15 +518,21 @@ except Exception as e:
 
 # sklearn.linear_model._perceptron.Perceptron._validate_params
 try:
-    obj = class_constructor() # noqa F821
+    obj = class_constructor()  # noqa F821
     ret = obj._validate_params()
-    type_sklearn_linear_model__perceptron_Perceptron__validate_params = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron._validate_params: ', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__validate_params = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron._validate_params: ", type(ret)
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron__validate_params = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron._validate_params: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron__validate_params = "_syft_missing"
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron._validate_params: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -387,13 +542,19 @@ except Exception as e:
 try:
     obj = class_constructor()
     ret = obj.average_coef_
-    type_sklearn_linear_model__perceptron_Perceptron_average_coef_ = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron.average_coef_:', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron_average_coef_ = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron.average_coef_:", type(ret)
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron_average_coef_ = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron.average_coef_: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron_average_coef_ = "_syft_missing"
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron.average_coef_: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -403,13 +564,21 @@ except Exception as e:
 try:
     obj = class_constructor()
     ret = obj.average_intercept_
-    type_sklearn_linear_model__perceptron_Perceptron_average_intercept_ = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron.average_intercept_:', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron_average_intercept_ = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron.average_intercept_:", type(ret)
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron_average_intercept_ = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron.average_intercept_: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron_average_intercept_ = (
+        "_syft_missing"
+    )
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron.average_intercept_: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -417,15 +586,21 @@ except Exception as e:
 
 # sklearn.linear_model._perceptron.Perceptron.decision_function
 try:
-    obj = class_constructor() # noqa F821
+    obj = class_constructor()  # noqa F821
     ret = obj.decision_function()
-    type_sklearn_linear_model__perceptron_Perceptron_decision_function = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron.decision_function: ', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron_decision_function = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron.decision_function: ", type(ret)
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron_decision_function = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron.decision_function: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron_decision_function = "_syft_missing"
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron.decision_function: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -433,15 +608,21 @@ except Exception as e:
 
 # sklearn.linear_model._perceptron.Perceptron.densify
 try:
-    obj = class_constructor() # noqa F821
+    obj = class_constructor()  # noqa F821
     ret = obj.densify()
-    type_sklearn_linear_model__perceptron_Perceptron_densify = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron.densify: ', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron_densify = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron.densify: ", type(ret)
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron_densify = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron.densify: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron_densify = "_syft_missing"
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron.densify: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -449,15 +630,19 @@ except Exception as e:
 
 # sklearn.linear_model._perceptron.Perceptron.fit
 try:
-    obj = class_constructor() # noqa F821
+    obj = class_constructor()  # noqa F821
     ret = obj.fit()
-    type_sklearn_linear_model__perceptron_Perceptron_fit = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron.fit: ', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron_fit = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print("✅ sklearn.linear_model._perceptron.Perceptron.fit: ", type(ret))  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron_fit = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron.fit: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron_fit = "_syft_missing"
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron.fit: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -465,15 +650,21 @@ except Exception as e:
 
 # sklearn.linear_model._perceptron.Perceptron.get_params
 try:
-    obj = class_constructor() # noqa F821
+    obj = class_constructor()  # noqa F821
     ret = obj.get_params()
-    type_sklearn_linear_model__perceptron_Perceptron_get_params = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron.get_params: ', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron_get_params = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron.get_params: ", type(ret)
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron_get_params = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron.get_params: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron_get_params = "_syft_missing"
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron.get_params: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -481,15 +672,21 @@ except Exception as e:
 
 # sklearn.linear_model._perceptron.Perceptron.partial_fit
 try:
-    obj = class_constructor() # noqa F821
+    obj = class_constructor()  # noqa F821
     ret = obj.partial_fit()
-    type_sklearn_linear_model__perceptron_Perceptron_partial_fit = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron.partial_fit: ', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron_partial_fit = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron.partial_fit: ", type(ret)
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron_partial_fit = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron.partial_fit: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron_partial_fit = "_syft_missing"
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron.partial_fit: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -497,15 +694,21 @@ except Exception as e:
 
 # sklearn.linear_model._perceptron.Perceptron.predict
 try:
-    obj = class_constructor() # noqa F821
+    obj = class_constructor()  # noqa F821
     ret = obj.predict()
-    type_sklearn_linear_model__perceptron_Perceptron_predict = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron.predict: ', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron_predict = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron.predict: ", type(ret)
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron_predict = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron.predict: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron_predict = "_syft_missing"
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron.predict: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -513,15 +716,21 @@ except Exception as e:
 
 # sklearn.linear_model._perceptron.Perceptron.score
 try:
-    obj = class_constructor() # noqa F821
+    obj = class_constructor()  # noqa F821
     ret = obj.score()
-    type_sklearn_linear_model__perceptron_Perceptron_score = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron.score: ', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron_score = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron.score: ", type(ret)
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron_score = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron.score: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron_score = "_syft_missing"
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron.score: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -529,15 +738,21 @@ except Exception as e:
 
 # sklearn.linear_model._perceptron.Perceptron.set_params
 try:
-    obj = class_constructor() # noqa F821
+    obj = class_constructor()  # noqa F821
     ret = obj.set_params()
-    type_sklearn_linear_model__perceptron_Perceptron_set_params = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron.set_params: ', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron_set_params = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron.set_params: ", type(ret)
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron_set_params = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron.set_params: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron_set_params = "_syft_missing"
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron.set_params: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -545,15 +760,21 @@ except Exception as e:
 
 # sklearn.linear_model._perceptron.Perceptron.sparsify
 try:
-    obj = class_constructor() # noqa F821
+    obj = class_constructor()  # noqa F821
     ret = obj.sparsify()
-    type_sklearn_linear_model__perceptron_Perceptron_sparsify = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron.sparsify: ', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron_sparsify = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron.sparsify: ", type(ret)
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron_sparsify = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron.sparsify: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron_sparsify = "_syft_missing"
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron.sparsify: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -563,13 +784,19 @@ except Exception as e:
 try:
     obj = class_constructor()
     ret = obj.standard_coef_
-    type_sklearn_linear_model__perceptron_Perceptron_standard_coef_ = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron.standard_coef_:', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron_standard_coef_ = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron.standard_coef_:", type(ret)
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron_standard_coef_ = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron.standard_coef_: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron_standard_coef_ = "_syft_missing"
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron.standard_coef_: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
+    print("  Error:", e)
 
 
 # In[ ]:
@@ -579,11 +806,18 @@ except Exception as e:
 try:
     obj = class_constructor()
     ret = obj.standard_intercept_
-    type_sklearn_linear_model__perceptron_Perceptron_standard_intercept_ = getattr(ret, '__module__', 'none') + '.' + ret.__class__.__name__
-    print('✅ sklearn.linear_model._perceptron.Perceptron.standard_intercept_:', type(ret)) # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron_standard_intercept_ = (
+        getattr(ret, "__module__", "none") + "." + ret.__class__.__name__
+    )
+    print(
+        "✅ sklearn.linear_model._perceptron.Perceptron.standard_intercept_:", type(ret)
+    )  # noqa E501
 except Exception as e:
-    type_sklearn_linear_model__perceptron_Perceptron_standard_intercept_ = '_syft_missing'
-    print('❌ sklearn.linear_model._perceptron.Perceptron.standard_intercept_: Return unavailable') # noqa E501
+    type_sklearn_linear_model__perceptron_Perceptron_standard_intercept_ = (
+        "_syft_missing"
+    )
+    print(
+        "❌ sklearn.linear_model._perceptron.Perceptron.standard_intercept_: Return unavailable"
+    )  # noqa E501
     print("  Please fix this return type code until there is no exception")
-    print('  Error:', e)
-
+    print("  Error:", e)

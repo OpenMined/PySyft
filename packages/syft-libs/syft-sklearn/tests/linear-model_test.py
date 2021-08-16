@@ -3,8 +3,9 @@ import pytest
 
 # syft absolute
 import syft as sy
-import syft_sklearn
 from syft.experimental_flags import flags
+
+import syft_sklearn  # noqa F401 # isort:skip
 
 np = pytest.importorskip("numpy")
 linear_model = pytest.importorskip("sklearn.linear_model")

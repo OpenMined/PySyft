@@ -67,6 +67,8 @@ from typing import Union
 
 # syft relative
 from ..logger import warning
+
+# relative
 from . import attribute  # noqa: F401
 from . import callable  # noqa: F401
 from . import dynamic_object  # noqa: F401

@@ -1,13 +1,17 @@
+'''
+Currently Disabled
 """Serde method for LogisticRegression (currently)!"""
 
 # third party
 import sklearn  # noqa: 401
 
-# syft relative
+# syft absolute
 from syft.generate_wrapper import GenerateWrapper
 from syft.lib.python.dict import Dict
 from syft.lib.python.primitive_factory import PrimitiveFactory
 
+# syft relative
+# relative
 from ..proto.logistic_model_pb2 import Logistic as Logistic_PB
 
 
@@ -58,3 +62,4 @@ GenerateWrapper(
     type_object2proto=object2proto,
     type_proto2object=proto2object,
 )
+'''
