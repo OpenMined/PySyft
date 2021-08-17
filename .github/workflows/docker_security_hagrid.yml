@@ -8,12 +8,12 @@ on:
 jobs:
   build-secure-hagrid:
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
     - uses: actions/checkout@master
 
     - run: docker buildx build -t openmined/hagrid:${{ github.sha }} packages/hagrid
 
     - uses: Azure/container-scan@v0
+      continue-on-error: true
       with:
         image-name: openmined/hagrid:${{ github.sha }}
