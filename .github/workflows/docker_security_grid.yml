@@ -34,10 +34,13 @@ jobs:
           sudo apt-get install trivy
 
       - name: Check Grid Worker
+        continue-on-error: true
         run: trivy image openmined/grid-worker:${{ github.sha }}
 
       - name: Check Grid Frontend
+        continue-on-error: true
         run: trivy image openmined/grid-ui:${{ github.sha }}
 
       - name: Check Backend
+        continue-on-error: true
         run: trivy image openmined/grid-backend:${{ github.sha }}
