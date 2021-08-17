@@ -13,6 +13,7 @@ from typing import Union
 
 # third party
 import numpy as np
+import torch
 
 # relative
 from .util import implements
@@ -33,7 +34,7 @@ def inputs2child(
 
 
 def is_acceptable_simple_type(obj):
-    return isinstance(obj, (int, bool, float, np.ndarray))
+    return isinstance(obj, (int, bool, float, np.ndarray, torch.Tensor))
 
 
 class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
@@ -66,6 +67,9 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         return self.__class__(self.child + other.child)
 
     def __radd__(self, other) -> PassthroughTensor:
+        if is_acceptable_simple_type(other):
+            return self.__class__(other + self.child)
+
         return other.__class__(other.child + self.child)
 
     def __sub__(self, other) -> PassthroughTensor:
@@ -74,7 +78,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         return self.__class__(self.child - other.child)
 
     def __rsub__(self, other) -> PassthroughTensor:
-        return self.__class__(-((self - other).child))
+        return self.__class__(-(self - other).child)
 
     def __gt__(
         self,

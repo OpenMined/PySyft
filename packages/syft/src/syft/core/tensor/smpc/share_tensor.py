@@ -1,12 +1,15 @@
 # stdlib
 from functools import lru_cache
+import operator
 from typing import Any
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
+import torch
 
 # syft absolute
 from syft.core.common.serde.deserialize import _deserialize as deserialize
@@ -22,18 +25,22 @@ class ShareTensor(PassthroughTensor, Serializable):
     def __init__(
         self,
         rank: int,
+        nr_parties: int,
         ring_size: int = 2 ** 64,
         value: Optional[Any] = None,
     ) -> None:
         self.rank = rank
         self.ring_size = ring_size
+        self.nr_parties = nr_parties
         self.min_value, self.max_value = ShareTensor.compute_min_max_from_ring(
             self.ring_size
         )
         super().__init__(value)
 
     def copy_tensor(self):
-        return ShareTensor(rank=self.rank, ring_size=self.ring_size)
+        return ShareTensor(
+            rank=self.rank, nr_parties=self.nr_parties, ring_size=self.ring_size
+        )
 
     @staticmethod
     @lru_cache(32)
@@ -107,7 +114,7 @@ class ShareTensor(PassthroughTensor, Serializable):
 
         share = value.child
         if not isinstance(share, ShareTensor):
-            share = ShareTensor(value=share, rank=rank)
+            share = ShareTensor(value=share, rank=rank, nr_parties=nr_parties)
 
         shares = [
             generator_shares.integers(
@@ -118,39 +125,209 @@ class ShareTensor(PassthroughTensor, Serializable):
         share.child += shares[rank] - shares[(rank + 1) % nr_parties]
         return share
 
-    def __add__(self, other: Any) -> "ShareTensor":
-        if isinstance(other, ShareTensor):
-            return ShareTensor(value=self.child + other.child, rank=self.rank)
-        else:
-            raise ValueError("Expected other to be ShareTensor")
+    @staticmethod
+    def sanity_check(
+        share: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]
+    ) -> None:
+        """Check type for share
 
-    def __sub__(self, other: Any) -> "ShareTensor":
-        if isinstance(other, ShareTensor):
-            return ShareTensor(value=self.child - other.child, rank=self.rank)
-        else:
-            raise ValueError("Expected other to be ShareTensor")
+        Args:
+            share (Union[int, float, ShareTensor, np.ndarray, torch.Tensor]): value to check
 
-    def __mul__(self, other: Any) -> "ShareTensor":
-        if isinstance(other, ShareTensor):
-            raise ValueError("Private Multiplication not yet implemented")
+        Raises:
+            ValueError: if type is not supported
+        """
+        if isinstance(share, float):
+            raise ValueError("Type float not supported yet!")
+
+        if isinstance(share, np.ndarray) and not np.issubdtype(share.dtype, np.integer):
+            raise ValueError(f"NPArray should have type int, but found {share.dtype}")
+
+        if isinstance(share, torch.Tensor) and torch.is_floating_point(share):
+            raise ValueError("Torch tensor should have type int, but found float")
+
+    def apply_function(
+        self, y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"], op_str: str
+    ) -> "ShareTensor":
+        """Apply a given operation.
+
+        Args:
+            y (Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]): tensor to apply the operator.
+            op_str (str): Operator.
+
+        Returns:
+            ShareTensor: Result of the operation.
+        """
+
+        op = getattr(operator, op_str)
+        if isinstance(y, ShareTensor):
+            value = op(self.child, y.child)
         else:
-            return ShareTensor(value=self.child * other, rank=self.rank)
+            # TODO: Converting y to numpy because doing "numpy op torch tensor" raises exception
+            value = op(self.child, np.array(y, np.int64))
+
+        res = self.copy_tensor()
+        res.child = value
+        return res
+
+    def add(
+        self, y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]
+    ) -> "ShareTensor":
+        """Apply the "add" operation between "self" and "y".
+
+        Args:
+            y (Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]): self + y
+
+        Returns:
+            ShareTensor. Result of the operation.
+        """
+        ShareTensor.sanity_check(y)
+        new_share = self.apply_function(y, "add")
+        return new_share
+
+    def sub(
+        self, y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]
+    ) -> "ShareTensor":
+        """Apply the "sub" operation between "self" and "y".
+
+        Args:
+            y (Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]): self - y
+
+        Returns:
+            ShareTensor. Result of the operation.
+        """
+
+        ShareTensor.sanity_check(y)
+        new_share = self.apply_function(y, "sub")
+        return new_share
+
+    def rsub(
+        self, y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]
+    ) -> "ShareTensor":
+        """Apply the "rsub" operation between "self" and "y"
+
+        Args:
+            y (Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]): y - self
+
+        Returns:
+            ShareTensor. Result of the operation.
+        """
+
+        ShareTensor.sanity_check(y)
+        new_self = self.mul(-1)
+        new_share = new_self.apply_function(y, "add")
+        return new_share
+
+    def mul(
+        self, y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]
+    ) -> "ShareTensor":
+        """Apply the "mul" operation between "self" and "y".
+
+        Args:
+            y (Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]): self * y
+
+        Returns:
+            ShareTensor. Result of the operation.
+        """
+
+        if isinstance(y, ShareTensor):
+            raise ValueError("Private mul not supported yet")
+
+        ShareTensor.sanity_check(y)
+        new_share = self.apply_function(y, "mul")
+        return new_share
+
+    def matmul(
+        self, y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]
+    ) -> "ShareTensor":
+        """Apply the "matmul" operation between "self" and "y".
+
+        Args:
+            y (Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]): self @ y.
+
+        Returns:
+            ShareTensor: Result of the operation.
+        """
+        ShareTensor.sanity_checks(y)
+        new_share = self.apply_function(y, "matmul")
+        return new_share
+
+    def rmatmul(self, y: torch.Tensor) -> "ShareTensor":
+        """Apply the "rmatmul" operation between "y" and "self".
+
+        Args:
+            y (torch.Tensor): y @ self
+
+        Returns:
+            ShareTensor. Result of the operation.
+        """
+        ShareTensor.sanity_checks(y)
+        return y.matmul(self)
+
+    def div(
+        self, y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]
+    ) -> "ShareTensor":
+        """Apply the "div" operation between "self" and "y".
+
+        Args:
+            y (Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]): Denominator.
+
+        Returns:
+            ShareTensor: Result of the operation.
+
+        Raises:
+            ValueError: If y is not an integer or LongTensor.
+        """
+        if not isinstance(y, (int, torch.LongTensor)):
+            raise ValueError("Div works (for the moment) only with integers!")
+
+        res = ShareTensor(session_uuid=self.session_uuid, config=self.config)
+        # res = self.apply_function(y, "floordiv")
+        res.tensor = self.tensor // y
+        return res
 
     def _object2proto(self) -> ShareTensor_PB:
         if isinstance(self.child, np.ndarray):
-            return ShareTensor_PB(array=serialize(self.child), rank=self.rank)
+            return ShareTensor_PB(
+                array=serialize(self.child), rank=self.rank, nr_parties=self.nr_parties
+            )
+        elif isinstance(self.child, torch.Tensor):
+            return ShareTensor_PB(
+                array=serialize(np.array(self.child)),
+                rank=self.rank,
+                nr_parties=self.nr_parties,
+            )
         else:
-            return ShareTensor_PB(tensor=serialize(self.child), rank=self.rank)
+            return ShareTensor_PB(
+                tensor=serialize(self.child), rank=self.rank, nr_parties=self.nr_parties
+            )
 
     @staticmethod
     def _proto2object(proto: ShareTensor_PB) -> "ShareTensor":
         if proto.HasField("tensor"):
-            res = ShareTensor(rank=proto.rank, value=deserialize(proto.tensor))
+            res = ShareTensor(
+                rank=proto.rank,
+                nr_parties=proto.nr_parties,
+                value=deserialize(proto.tensor),
+            )
         else:
-            res = ShareTensor(rank=proto.rank, value=deserialize(proto.array))
+            res = ShareTensor(
+                rank=proto.rank,
+                nr_parties=proto.nr_parties,
+                value=deserialize(proto.array),
+            )
 
         return res
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return ShareTensor_PB
+
+    __add__ = add
+    __radd__ = add
+    __sub__ = sub
+    __rsub__ = rsub
+    __mul__ = mul
+    __rmul__ = mul
+    __matmul__ = matmul
+    __rmatmul__ = rmatmul
