@@ -72,11 +72,11 @@ class ValueCompressor(Compressor):
         if shape.numel() > 1000:
             sparse_tensor = vals, idxs, tensor.size()
             import time
-            torch.cuda.synchronize()
+            # torch.cuda.synchronize()
             start = time.time()
             vals, idxs, shape = self.val_compressor.compress(sparse_tensor, self.params)
             if self.params.get('micro-benchmark', False):
-                torch.cuda.synchronize()
+                # torch.cuda.synchronize()
                 # print(f'val_compression time:{time.time() - start}')
             ctx = shape
         return (vals, idxs), ctx
@@ -87,12 +87,12 @@ class ValueCompressor(Compressor):
 
         if shape.numel() > 1000:
             import time
-            torch.cuda.synchronize()
+            # torch.cuda.synchronize()
             start = time.time()
             fitted_sparse_tensor = vals, idxs, shape
             vals, idxs, shape = self.val_compressor.decompress(fitted_sparse_tensor, self.params)
             if self.params.get('micro-benchmark', False):
-                torch.cuda.synchronize()
+                # torch.cuda.synchronize()
                 # print(f'val_decompression time:{time.time() - start}')
                 dense_tensor_bits = shape.numel() * 32
                 # print(f'idx_relative_volume: {(tensor_bits([tensors[1]]) / dense_tensor_bits):.4f}')
@@ -121,13 +121,13 @@ class IndexCompressor(Compressor):
             self.params['dense_tensor'] = tensor
 
             import time
-            torch.cuda.synchronize()
+            # torch.cuda.synchronize()
             start = time.time()
 
             vals, idxs, shape = self.idx_compressor.compress(sparse_tensor, self.params)
 
             if self.params.get('micro-benchmark', False):
-                torch.cuda.synchronize()
+                # torch.cuda.synchronize()
                 # print(f'idx_compression time:{time.time() - start}')
 
             ctx = shape
@@ -141,13 +141,13 @@ class IndexCompressor(Compressor):
             bf_sparse_tensor = vals, idxs, shape
 
             import time
-            torch.cuda.synchronize()
+            # torch.cuda.synchronize()
             start = time.time()
 
             vals, idxs, shape = self.idx_compressor.decompress(bf_sparse_tensor, self.params)
 
             if self.params.get('micro-benchmark', False):
-                torch.cuda.synchronize()
+                # torch.cuda.synchronize()
                 # print(f'idx_decompression time:{time.time() - start}')
                 dense_tensor_bits = shape.numel() * 32
                 # print(f'idx_relative_volume: {(tensor_bits([tensors[1]]) / dense_tensor_bits):.4f}')
@@ -257,7 +257,7 @@ class DeepReduce(Compressor):
         shape = ctx
 
         import time
-        torch.cuda.synchronize()
+        # torch.cuda.synchronize()
         start = time.time()
 
         if shape.numel() > 1000:
@@ -270,16 +270,15 @@ class DeepReduce(Compressor):
             ctx = shape
             tensors = (vals, idxs, mapping)
 
-        if self.params.get('micro-benchmark', False):
-            torch.cuda.synchronize()
-            # print(f'_compression time:{time.time() - start}')
-        return tensors, ctx
+        return pack_grace(vals, idxs, ctx)
 
-    def decompress(self, tensors, ctx):
+    def decompress(self, packed):
+        tensors, ctx = unpack_grace(packed)
+        
         shape = ctx
 
         import time
-        torch.cuda.synchronize()
+        # torch.cuda.synchronize()
         start = time.time()
 
         if shape.numel() > 1000:
@@ -296,7 +295,7 @@ class DeepReduce(Compressor):
             vals, idxs = tensors
 
         if self.params.get('micro-benchmark', False):
-            torch.cuda.synchronize()
+            # torch.cuda.synchronize()
             # print(f'_decompression time:{time.time() - start}')
             dense_tensor_bits = shape.numel() * 32
             # print(f'idx_relative_volume: {(tensor_bits(tensors[1:]) / dense_tensor_bits):.4f}')
