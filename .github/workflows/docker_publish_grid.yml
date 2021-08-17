@@ -19,7 +19,7 @@ jobs:
 
     - run: |
       # hack until we have proper VERSION support
-      export VERSION={{ github.sha }}
+      export VERSION=${{ github.sha }}
       cd packages/grid
       docker compose build
 
