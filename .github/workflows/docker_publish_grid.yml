@@ -1,8 +1,15 @@
+name: Publish Grid Dockers
+
 on:
-  paths:
-    - "packages/grid/grid-ui/ui.dockerfile"
-    - "packages/grid/backend/backend.dockerfile"
-    - "packages/grid/backend/celeryworker.dockerfile"
+  push:
+    branches:
+      - dev
+      - main
+
+    paths:
+      - "packages/grid/grid-ui/ui.dockerfile"
+      - "packages/grid/backend/backend.dockerfile"
+      - "packages/grid/backend/celeryworker.dockerfile"
 
 jobs:
   publish-grid:

@@ -1,3 +1,5 @@
+name: Check Hagrid Docker
+
 on:
   pull_request:
     paths:

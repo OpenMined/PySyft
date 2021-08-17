@@ -1,8 +1,11 @@
+name: Check Grid Dockers
+
 on:
-  paths:
-    - "packages/grid/grid-ui/ui.dockerfile"
-    - "packages/grid/backend/backend.dockerfile"
-    - "packages/grid/backend/celeryworker.dockerfile"
+  pull_request:
+    paths:
+      - "packages/grid/grid-ui/ui.dockerfile"
+      - "packages/grid/backend/backend.dockerfile"
+      - "packages/grid/backend/celeryworker.dockerfile"
 
 
 jobs:
