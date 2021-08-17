@@ -54,13 +54,13 @@
 
 - name: Download Docker CLI
   get_url:
-    url: "https://github.com/docker/compose-cli/releases/download/v2.0.0-beta.6/docker-compose-linux-amd64"
+    url: "{{ docker_compose_url }}"
     dest: "{{ om_homedir }}/{{ docker_compose_plugin_dir }}/docker-compose"
   when: docker_cli_dir_present.stat.exists == False
 
 - name: Download Docker CLI root
   get_url:
-    url: "https://github.com/docker/compose-cli/releases/download/v2.0.0-beta.6/docker-compose-linux-amd64"
+    url: "{{ docker_compose_url }}"
     dest: "{{ root_homedir }}/{{ docker_compose_plugin_dir }}/docker-compose"
   become: yes
   when: docker_cli_dir_present.stat.exists == False
