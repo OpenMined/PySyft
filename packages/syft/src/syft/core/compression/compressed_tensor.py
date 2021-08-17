@@ -27,7 +27,7 @@ class CompressedTensor(th.Tensor, Serializable):
     HpDT TODO: Find better alternative for this.
     """
     @staticmethod
-    def __new__(cls, child, compressors, *args, **kwargs):
+    def __new__(cls, child, compressors=[], *args, **kwargs):
         if 'core.tensor' in str(type(child)):
             child = th.Tensor(child.child)
         return super().__new__(cls, child, *args, **kwargs)
@@ -58,19 +58,21 @@ class CompressedTensor(th.Tensor, Serializable):
         self.refresh_super_tensor()
 
     def compress_more(self, compressor):
-        if getattr(CompressedTensor, "grad_compessor", False):
+        if getattr(compressor, "grad_compessor", False):
             if compressor.is_eligible(self.compressed_grad):
                 self.compressed_grad = compressor.compress(self.compressed_grad)
-                self.compressors.append(compressor)
         else:
             if compressor.is_eligible(self.child):
                 self.child = compressor.compress(self.child)
-                self.compressors.append(compressor)
+        if type(compressor) != type:
+            compressor = type(compressor)
+        self.compressors.append(compressor)
 
     def decompress(self) -> th.Tensor:
         compressors = self.compressors.copy()
         decompressed = self.child
-        decompressed_grad = self.compressed_grad
+        if self.requires_grad:
+            decompressed_grad = self.compressed_grad
         while compressors:
             compressor = compressors.pop()
             if getattr(CompressedTensor, "grad_compessor", False):
@@ -78,7 +80,8 @@ class CompressedTensor(th.Tensor, Serializable):
             else:
                 decompressed = compressor.decompress(decompressed)
         decompressed.requires_grad = self.requires_grad
-        decompressed.grad = self.grad
+        if self.requires_grad:
+            decompressed.grad = self.grad
         return decompressed
 
     def encode_compressors(self) -> np.ndarray:
