@@ -10,25 +10,25 @@ from ...lib.torch.tensor_util import tensor_serializer
 from ...logger import warning
 from ...proto.lib.torch.device_pb2 import Device as Device_PB
 from ...proto.lib.torch.tensor_pb2 import TensorProto as Tensor_PB
+from ...proto.core.tensor.tensor_pb2 import Tensor as CoreTensor_PB
 from ...core.compression.compression_params import compression_params
 from ...core.compression.compressed_tensor import CompressedTensor
 torch_tensor_type = type(th.tensor([1, 2, 3]))
 
 
-def object2proto(obj: object, use_compression:bool = False) -> Tensor_PB:
-    # if use_compression and compression_params.tensor['compress']:
-    #     compressed = CompressedTensor(obj)
+def object2proto(obj: object, use_compression:bool = True) -> CoreTensor_PB:
+    compressed = CompressedTensor(obj, [])
+    if use_compression and compression_params.tensor['compress']:
+        for compressor in compression_params.tensor['compressors']:
+            if getattr(compressor, "grad_hist_store", False):
+                if not hasattr(obj, "compressor_objs"):
+                    obj.compressor_objs = dict()
+                if compressor not in obj.compressor_objs:
+                    obj.compressor_objs[compressor] = compressor()
+                compressor = obj.compressor_objs[compressor]
+            compressed.compress_more(compressor)
 
-    #     for compressor in compression_params.tensor['compressors']:
-    #         if getattr(compressor, "grad_hist_store", False):
-    #             if not hasattr(obj, "compressor_objs"):
-    #                 obj.compressor_objs = dict()
-    #             if compressor not in obj.compressor_objs:
-    #                 obj.compressor_objs[compressor] = compressor()
-    #             compressor = obj.compressor_objs[compressor]
-    #         compressed.compress_more(compressor)
-
-    #     return compressed._object2proto()
+    return compressed._object2proto()
     proto = Tensor_PB()
     proto.tensor = tensor_serializer(obj)
 
@@ -48,7 +48,8 @@ def object2proto(obj: object, use_compression:bool = False) -> Tensor_PB:
     return proto
 
 
-def proto2object(proto: Tensor_PB) -> th.Tensor:
+def proto2object(proto: CoreTensor_PB) -> th.Tensor:
+    return CompressedTensor._proto2object(proto)
     tensor = tensor_deserializer(proto.tensor)
     if proto.requires_grad:
         tensor.grad = tensor_deserializer(proto.grad)
@@ -75,7 +76,7 @@ def proto2object(proto: Tensor_PB) -> th.Tensor:
 GenerateWrapper(
     wrapped_type=torch_tensor_type,
     import_path="torch.Tensor",
-    protobuf_scheme=Tensor_PB,
+    protobuf_scheme=CoreTensor_PB,
     type_object2proto=object2proto,
     type_proto2object=proto2object,
 )

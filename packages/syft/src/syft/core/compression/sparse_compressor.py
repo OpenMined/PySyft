@@ -8,6 +8,7 @@ class SparseCompressor(SpecializedCompressor):
     """
     @staticmethod
     def is_eligible(tensor: th.Tensor):
+        return True
         return tensor.numel() > 10 and tensor.to_sparse().values().numel() * 2 < tensor.numel()
 
     @staticmethod

@@ -16,12 +16,14 @@ from ...lib.torch.tensor_util import tensor_deserializer
 from ...lib.torch.tensor_util import tensor_serializer
 from .specialized_compressor import SpecializedCompressor
 from .util import registered_compressors
+from ...logger import warning
 from ...core.common.serde.serializable import Serializable
 from ..common.serde.deserialize import _deserialize as deserialize
 from ..common.serde.serializable import bind_protobuf
 from ..common.serde.serialize import _serialize as serialize
 from ...proto.core.tensor.tensor_pb2 import Tensor as Tensor_PB
 from ..tensor import Tensor
+from ...util import get_fully_qualified_name
 
 @bind_protobuf
 class CompressedTensor(th.Tensor, Serializable):
@@ -65,16 +67,20 @@ class CompressedTensor(th.Tensor, Serializable):
         if getattr(compressor, "grad_compessor", False):
             if compressor.is_eligible(self.compressed_grad):
                 self.compressed_grad = compressor.compress(self.compressed_grad)
+                if type(compressor) != type:
+                    compressor = type(compressor)
+                self.compressors.append(compressor)
         else:
             if compressor.is_eligible(self.child):
                 self.child = compressor.compress(self.child)
-        if type(compressor) != type:
-            compressor = type(compressor)
-        self.compressors.append(compressor)
+                if type(compressor) != type:
+                    compressor = type(compressor)
+                self.compressors.append(compressor)
 
     def decompress(self) -> th.Tensor:
         compressors = self.compressors.copy()
         decompressed = self.child
+        print(self.child, self.compressors)
         if self.requires_grad:
             decompressed_grad = self.compressed_grad
         while compressors:
@@ -129,9 +135,9 @@ class CompressedTensor(th.Tensor, Serializable):
         if self.requires_grad:
             self.child.grad = self.compressed_grad
         tensors = [torchTensor_object2proto(self.child)]
-
+        print('converting to proto', arrays, tensors)
         return Tensor_PB(
-            obj_type='compressed',
+            obj_type=get_fully_qualified_name(obj=self),
             use_tensors=use_tensors,
             arrays=arrays,
             tensors=tensors,
@@ -140,7 +146,7 @@ class CompressedTensor(th.Tensor, Serializable):
 
     @staticmethod
     def _proto2object(proto: Tensor_PB, return_compressed=False):
-        child = [deserialize(tensor) for tensor in proto.tensors]
+        child = [torchTensor_proto2object(tensor) for tensor in proto.tensors]
         child = child[0]
 
         res = CompressedTensor(child, [])
@@ -178,3 +184,26 @@ def torchTensor_object2proto(obj: object) -> Tensor_PB:
             proto.grad = tensor_serializer(grad)
 
     return proto
+
+def torchTensor_proto2object(proto: Tensor_PB) -> th.Tensor:
+    tensor = tensor_deserializer(proto.tensor)
+    if proto.requires_grad:
+        tensor.grad = tensor_deserializer(proto.grad)
+
+    tensor.requires_grad_(proto.requires_grad)
+
+    if proto.device.type == "cuda" and th.cuda.is_available():
+        cuda_index = proto.device.index
+        if th.cuda.device_count() < (cuda_index + 1):
+            cuda_index = th.cuda.device_count() - 1
+            warning(
+                f"The requested CUDA index {proto.device.index} is invalid."
+                + f"Falling back to GPU index {cuda_index}.",
+                print=True,
+            )
+        return tensor.cuda(cuda_index)
+
+    if proto.device.type == "cuda" and not th.cuda.is_available():
+        warning("Cannot find any CUDA devices, falling back to CPU.", print=True)
+
+    return tensor
