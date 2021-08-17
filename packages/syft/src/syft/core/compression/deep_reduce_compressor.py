@@ -54,7 +54,7 @@ def deepreduce_from_params(params):
 
 class ValueCompressor(Compressor):
 
-    def __init__(self, sparsifier, params=None):
+    def __init__(self, sparsifier=sparsifier, params=None):
         super().__init__(tensors_size_are_same=sparsifier.tensors_size_are_same)
         self.sparsifier = sparsifier
         self.params = params
@@ -77,7 +77,7 @@ class ValueCompressor(Compressor):
             vals, idxs, shape = self.val_compressor.compress(sparse_tensor, self.params)
             if self.params.get('micro-benchmark', False):
                 torch.cuda.synchronize()
-                print(f'val_compression time:{time.time() - start}')
+                # print(f'val_compression time:{time.time() - start}')
             ctx = shape
         return (vals, idxs), ctx
 
@@ -93,17 +93,17 @@ class ValueCompressor(Compressor):
             vals, idxs, shape = self.val_compressor.decompress(fitted_sparse_tensor, self.params)
             if self.params.get('micro-benchmark', False):
                 torch.cuda.synchronize()
-                print(f'val_decompression time:{time.time() - start}')
+                # print(f'val_decompression time:{time.time() - start}')
                 dense_tensor_bits = shape.numel() * 32
-                print(f'idx_relative_volume: {(tensor_bits([tensors[1]]) / dense_tensor_bits):.4f}')
-                print(f'val_relative_volume: {(tensor_bits([tensors[0]]) / dense_tensor_bits):.4f}')
+                # print(f'idx_relative_volume: {(tensor_bits([tensors[1]]) / dense_tensor_bits):.4f}')
+                # print(f'val_relative_volume: {(tensor_bits([tensors[0]]) / dense_tensor_bits):.4f}')
         tensor_decompressed = self.sparsifier.decompress((vals, idxs), shape)
         return tensor_decompressed
 
 
 class IndexCompressor(Compressor):
 
-    def __init__(self, sparsifier, params=None):
+    def __init__(self, sparsifier=sparsifier, params=None):
         super().__init__(tensors_size_are_same=sparsifier.tensors_size_are_same)
         self.sparsifier = sparsifier
         self.params = params
@@ -128,7 +128,7 @@ class IndexCompressor(Compressor):
 
             if self.params.get('micro-benchmark', False):
                 torch.cuda.synchronize()
-                print(f'idx_compression time:{time.time() - start}')
+                # print(f'idx_compression time:{time.time() - start}')
 
             ctx = shape
         return (vals, idxs), ctx
@@ -148,10 +148,10 @@ class IndexCompressor(Compressor):
 
             if self.params.get('micro-benchmark', False):
                 torch.cuda.synchronize()
-                print(f'idx_decompression time:{time.time() - start}')
+                # print(f'idx_decompression time:{time.time() - start}')
                 dense_tensor_bits = shape.numel() * 32
-                print(f'idx_relative_volume: {(tensor_bits([tensors[1]]) / dense_tensor_bits):.4f}')
-                print(f'val_relative_volume: {(tensor_bits([tensors[0]]) / dense_tensor_bits):.4f}')
+                # print(f'idx_relative_volume: {(tensor_bits([tensors[1]]) / dense_tensor_bits):.4f}')
+                # print(f'val_relative_volume: {(tensor_bits([tensors[0]]) / dense_tensor_bits):.4f}')
 
         tensor_decompressed = self.sparsifier.decompress((vals, idxs), shape)
         return tensor_decompressed
@@ -159,7 +159,7 @@ class IndexCompressor(Compressor):
 
 class DeepReduce(Compressor):
     grad_compressor = True
-    def __init__(self, sparsifier, params=None):
+    def __init__(self, sparsifier=sparsifier, params=compression_params.getattr("deep_reduce", None)):
         super().__init__(tensors_size_are_same=sparsifier.tensors_size_are_same)
         self.sparsifier = sparsifier
         self.params = params
@@ -251,7 +251,7 @@ class DeepReduce(Compressor):
 
         return decode.long()
 
-    def compress(self, tensor, name):
+    def compress(self, tensor, name='default'):
         tensors, ctx = self.sparsifier.compress(tensor, name)
         vals, idxs = tensors
         shape = ctx
@@ -272,7 +272,7 @@ class DeepReduce(Compressor):
 
         if self.params.get('micro-benchmark', False):
             torch.cuda.synchronize()
-            print(f'_compression time:{time.time() - start}')
+            # print(f'_compression time:{time.time() - start}')
         return tensors, ctx
 
     def decompress(self, tensors, ctx):
@@ -297,10 +297,10 @@ class DeepReduce(Compressor):
 
         if self.params.get('micro-benchmark', False):
             torch.cuda.synchronize()
-            print(f'_decompression time:{time.time() - start}')
+            # print(f'_decompression time:{time.time() - start}')
             dense_tensor_bits = shape.numel() * 32
-            print(f'idx_relative_volume: {(tensor_bits(tensors[1:]) / dense_tensor_bits):.4f}')
-            print(f'val_relative_volume: {(tensor_bits([tensors[0]]) / dense_tensor_bits):.4f}')
+            # print(f'idx_relative_volume: {(tensor_bits(tensors[1:]) / dense_tensor_bits):.4f}')
+            # print(f'val_relative_volume: {(tensor_bits([tensors[0]]) / dense_tensor_bits):.4f}')
 
         tensor_decompressed = self.sparsifier.decompress((vals, idxs), shape)
         return tensor_decompressed
@@ -595,12 +595,12 @@ def fit_curve(curve, breaks, poly_degree=5):
     xx = [x[breaks[i - 1]:breaks[i]] for i in range(1, len(breaks))]
     coefficients = []
     # plt.plot(x, curve)
-    # print("==debug==", breaks, )
+    # # print("==debug==", breaks, )
     for i in range(len(xx)):
         x = xx[i]
         y = yy[i]
-        # print("==Debug==")
-        # print(x, "\n", y)
+        # # print("==Debug==")
+        # # print(x, "\n", y)
         z, _ = poly.polyfit(x, y, poly_degree, full=True)
         # set full=True to turn off the rank warning
         coefficients.append(z)
@@ -619,7 +619,7 @@ def restore_curve(coefficients, breaks):
         y_fit = list(poly.polyval(x, z))
         # plt.plot(x, y_fit)
         curve_fit += y_fit
-    #     print(coefficients)
+    #     # print(coefficients)
     return curve_fit
 
 
@@ -945,6 +945,7 @@ class TopKCompressor(Compressor):
 
 ################################################################
 
+sparsifier = TopKCompressor(compression_params.deep_reduce['compress_ratio'])
 
 compressor = {
     "bloom": Bloom,
