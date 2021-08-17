@@ -6,7 +6,9 @@ from .compressor import pack_grace
 from .compressor import unpack_grace
 
 class DgcCompressor(SpecializedCompressor):
-
+    """DGC Compressor
+    adapted from implementation by grace (sands-lab) https://github.com/sands-lab/grace
+    """
     def __init__(self):
         self.compress_ratio = compression_params.dgc_compressor['ratio']
 

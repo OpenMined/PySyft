@@ -4,6 +4,9 @@ class SpecializedCompressor:
     """
     [Experimental: high-performace duet channel] base class for specialized compression algorithms
     """
+    def __init__(*args, **kwargs):
+        pass
+
     @staticmethod
     def is_eligible(tensor: th.Tensor):
         raise NotImplementedError()
