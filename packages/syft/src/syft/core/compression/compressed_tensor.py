@@ -10,6 +10,10 @@ import numpy as np
 import torch as th
 
 # relative
+from ...proto.lib.torch.device_pb2 import Device as Device_PB
+from ...proto.lib.torch.tensor_pb2 import TensorProto as TorchTensor_PB
+from ...lib.torch.tensor_util import tensor_deserializer
+from ...lib.torch.tensor_util import tensor_serializer
 from .specialized_compressor import SpecializedCompressor
 from .util import registered_compressors
 from ...core.common.serde.serializable import Serializable
@@ -122,8 +126,9 @@ class CompressedTensor(th.Tensor, Serializable):
         arrays = [serialize(self.encode_compressors())]
 
         self.child.requires_grad = self.requires_grad
-        self.child.grad = self.compressed_grad
-        tensors = [serialize(self.child)]
+        if self.requires_grad:
+            self.child.grad = self.compressed_grad
+        tensors = [torchTensor_object2proto(self.child)]
 
         return Tensor_PB(
             obj_type='compressed',
@@ -141,7 +146,7 @@ class CompressedTensor(th.Tensor, Serializable):
         res = CompressedTensor(child, [])
 
         encoded_compressors = [deserialize(array) for array in proto.arrays]
-        res.decode_and_attach_compressors(encoded_compressors)
+        res.decode_and_attach_compressors(encoded_compressors[0])
         res.refresh_super_tensor()
         res.use_tensors = proto.use_tensors
 
@@ -154,3 +159,22 @@ class CompressedTensor(th.Tensor, Serializable):
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return Tensor_PB
+
+def torchTensor_object2proto(obj: object) -> Tensor_PB:
+    proto = TorchTensor_PB()
+    proto.tensor = tensor_serializer(obj)
+
+    proto.requires_grad = getattr(obj, "requires_grad", False)
+    proto.device.CopyFrom(
+        Device_PB(
+            type=obj.device.type,  # type: ignore
+            index=obj.device.index,  # type: ignore
+        )
+    )
+
+    if proto.requires_grad:
+        grad = getattr(obj, "grad", None)
+        if grad is not None:
+            proto.grad = tensor_serializer(grad)
+
+    return proto

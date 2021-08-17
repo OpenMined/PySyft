@@ -15,20 +15,20 @@ from ...core.compression.compressed_tensor import CompressedTensor
 torch_tensor_type = type(th.tensor([1, 2, 3]))
 
 
-def object2proto(obj: object) -> Tensor_PB:
-    if compression_params.tensor['compress']:
-        compressed = CompressedTensor(obj)
+def object2proto(obj: object, use_compression:bool = False) -> Tensor_PB:
+    # if use_compression and compression_params.tensor['compress']:
+    #     compressed = CompressedTensor(obj)
 
-        for compressor in compression_params.tensor['compressors']:
-            if getattr(compressor, "grad_hist_store", False):
-                if not hasattr(obj, "compressor_objs"):
-                    obj.compressor_objs = dict()
-                if compressor not in obj.compressor_objs:
-                    obj.compressor_objs[compressor] = compressor()
-                compressor = obj.compressor_objs[compressor]
-            compressed.compress_more(compressor)
+    #     for compressor in compression_params.tensor['compressors']:
+    #         if getattr(compressor, "grad_hist_store", False):
+    #             if not hasattr(obj, "compressor_objs"):
+    #                 obj.compressor_objs = dict()
+    #             if compressor not in obj.compressor_objs:
+    #                 obj.compressor_objs[compressor] = compressor()
+    #             compressor = obj.compressor_objs[compressor]
+    #         compressed.compress_more(compressor)
 
-        return compressed._object2proto()
+    #     return compressed._object2proto()
     proto = Tensor_PB()
     proto.tensor = tensor_serializer(obj)
 
