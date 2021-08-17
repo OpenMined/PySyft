@@ -210,6 +210,7 @@ def test_plan_batched_execution(client: sy.VirtualMachineClient) -> None:
         assert all(result_tensor_pointer3.get(delete_obj=False))
 
 
+@pytest.mark.xfail
 def test_make_plan(client: sy.VirtualMachineClient) -> None:
     @make_plan
     def add_plan(inp=th.zeros((3))) -> th.Tensor:  # type: ignore

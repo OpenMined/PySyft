@@ -347,6 +347,7 @@ class GetDatasetsResponse(ImmediateSyftMessageWithoutReply):
             the other public serialization methods if you wish to serialize an
             object.
         """
+
         msg = GetDatasetsResponse_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
@@ -354,10 +355,14 @@ class GetDatasetsResponse(ImmediateSyftMessageWithoutReply):
 
         metadata_container = GetDatasetsResponse_PB.metadata_container
 
-        _ = [
-            msg.metadatas.append(metadata_container(metadata=metadata))
-            for metadata in self.metadatas
-        ]
+        for _metadata in self.metadatas:
+            metadata = {}
+            for k, v in _metadata.items():
+                metadata[k] = serialize(v, to_bytes=True)
+
+            cm = metadata_container(metadata=metadata)
+            msg.metadatas.append(cm)
+
         return msg
 
     @staticmethod

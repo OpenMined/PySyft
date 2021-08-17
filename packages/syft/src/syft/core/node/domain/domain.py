@@ -84,7 +84,6 @@ class Domain(Node):
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
         root_key: Optional[VerifyKey] = None,
-        db_path: Optional[str] = None,
         db_engine: Any = None,
     ):
         super().__init__(
@@ -109,8 +108,6 @@ class Domain(Node):
         self.association_requests = AssociationRequestManager(db_engine)
         self.data_requests = RequestManager(db_engine)
         self.datasets = DatasetManager(db_engine)
-        # self.accountant =
-
         # self.immediate_services_without_reply.append(RequestReceiverService)
         # self.immediate_services_without_reply.append(AcceptOrDenyRequestService)
         # self.immediate_services_without_reply.append(UpdateRequestHandlerService)

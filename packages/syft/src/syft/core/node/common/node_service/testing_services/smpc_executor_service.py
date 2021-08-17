@@ -1,5 +1,6 @@
 # stdlib
 from typing import List
+from typing import Optional
 from typing import Type
 
 # third party
@@ -7,6 +8,7 @@ from nacl.signing import VerifyKey
 
 # relative
 from ...... import lib
+from ...... import logger
 from ......logger import traceback_and_raise
 from .....store.storeable_object import StorableObject
 from ....abstract.node import AbstractNode
@@ -22,7 +24,9 @@ class SMPCExecutorService(ImmediateNodeServiceWithoutReply):
 
     @staticmethod
     def process(
-        node: AbstractNode, msg: SMPCActionMessage, verify_key: VerifyKey
+        node: AbstractNode,
+        msg: SMPCActionMessage,
+        verify_key: Optional[VerifyKey] = None,
     ) -> None:
         """Given an SMPCAction, execute it (this action is sent to the node
         by the RabitMQ task)
@@ -50,6 +54,7 @@ class SMPCExecutorService(ImmediateNodeServiceWithoutReply):
             upcasted_args,
             upcasted_kwargs,
         ) = lib.python.util.upcast_args_and_kwargs(args, kwargs)
+        logger.warning(func)
         result = func(_self, *upcasted_args, **upcasted_kwargs)
 
         if lib.python.primitive_factory.isprimitive(value=result):

@@ -87,7 +87,7 @@ def cli() -> None:
     default=None,
     required=False,
     type=str,
-    help="Optional: tail logs on launch",
+    help="Optional: don't tail logs on launch",
 )
 @click.option(
     "--cmd",
@@ -274,7 +274,11 @@ def generate_key_at_path(key_path: str) -> str:
     return key_path
 
 
-def create_launch_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
+def create_launch_cmd(
+    verb: GrammarVerb,
+    kwargs: TypeDict[str, Any],
+    ignore_docker_version_check: Optional[bool] = False,
+) -> str:
     host_term = verb.get_named_term_hostgrammar(name="host")
     host = host_term.host
     auth: Optional[AuthCredentials] = None
@@ -284,7 +288,12 @@ def create_launch_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
         tail = False
 
     if host in ["docker"]:
-        version = check_docker_version()
+
+        if not ignore_docker_version_check:
+            version = check_docker_version()
+        else:
+            version = "n/a"
+
         if version:
             return create_launch_docker_cmd(
                 verb=verb, docker_version=version, tail=tail
@@ -506,7 +515,7 @@ def create_launch_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
 
 
 def create_launch_docker_cmd(
-    verb: GrammarVerb, docker_version: str, tail: bool = False
+    verb: GrammarVerb, docker_version: str, tail: bool = True
 ) -> str:
     host_term = verb.get_named_term_hostgrammar(name="host")
     node_name = verb.get_named_term_type(name="node_name")
@@ -531,6 +540,7 @@ def create_launch_docker_cmd(
     print("  - TAG: " + str(tag))
     print("  - PORT: " + str(host_term.free_port))
     print("  - DOCKER: " + docker_version)
+    print("  - TAIL: " + str(tail))
     print("\n")
 
     cmd = ""
@@ -538,10 +548,14 @@ def create_launch_docker_cmd(
     cmd += " TRAEFIK_TAG=" + str(tag)
     cmd += ' DOMAIN_NAME="' + snake_name + '"'
     cmd += " NODE_TYPE=" + str(node_type.input)
+    cmd += " VERSION=`python VERSION`"
+    cmd += " VERSION_HASH=`python VERSION hash`"
     cmd += " docker compose -p " + snake_name
     cmd += " up"
-    # if not tail:
-    #     cmd += " -d"
+
+    if not tail:
+        cmd += " -d"
+
     cmd += " --build"  # force rebuild
     cmd = "cd " + GRID_SRC_PATH + ";" + cmd
     return cmd
@@ -757,6 +771,10 @@ def create_launch_custom_cmd(
 def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
     host_term = verb.get_named_term_hostgrammar(name="host")
     host = host_term.host
+
+    if verb.get_named_term_grammar("node_name").input == "all":
+        # subprocess.call("docker rm `docker ps -aq` --force", shell=True)
+        return "docker rm `docker ps -aq` --force"
 
     if host in ["docker"]:
         version = check_docker_version()

@@ -11,6 +11,10 @@ import pytest
 from syft import deserialize
 from syft import serialize
 from syft.core.io.address import Address
+
+# from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
+#     GetDatasetsResponse,
+# )
 from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
     CreateDatasetMessage,
 )
@@ -25,9 +29,6 @@ from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages
 )
 from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
     GetDatasetsMessage,
-)
-from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
-    GetDatasetsResponse,
 )
 from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
     UpdateDatasetMessage,
@@ -62,14 +63,14 @@ test_suite = [
         {"address": Address(), "reply_to": Address()},
         ["address", "reply_to"],
     ),
-    (
-        GetDatasetsResponse,
-        {
-            "address": Address(),
-            "metadatas": [metadata, metadata, metadata],
-        },
-        ["address", "metadatas"],
-    ),
+    # (
+    #     GetDatasetsResponse,
+    #     {
+    #         "address": Address(),
+    #         "metadatas": [metadata, metadata, metadata],
+    #     },
+    #     ["address", "metadatas"],
+    # ),
     (
         UpdateDatasetMessage,
         {
