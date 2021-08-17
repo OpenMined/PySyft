@@ -34,13 +34,16 @@ jobs:
           sudo apt-get install trivy
 
       - uses: Azure/container-scan@v0
+        continue-on-error: true
         with:
           image-name: openmined/grid-worker:${{ github.sha }}
 
       - uses: Azure/container-scan@v0
+        continue-on-error: true
         with:
           image-name: openmined/grid-backend:${{ github.sha }}
 
       - uses: Azure/container-scan@v0
+        continue-on-error: true
         with:
           image-name: openmined/grid-ui:${{ github.sha }}
