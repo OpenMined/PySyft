@@ -18,6 +18,19 @@ class Compressor:
     def decompress():
         pass
 
+def pack_grace(values, indices, size):
+    res1 = th.cat((values, th.Tensor([0]*(len(size)-1) + [len(size)])))
+    res2 = th.cat((indices, th.Tensor(list(size))))
+    return th.cat((res1.reshape(1, -1), res2.reshape(1, -1)), dim=0)
+
+def unpack_grace(packed):
+    size_len = int(packed[0, -1])
+    size = th.Size(packed[1, -size_len:].int().tolist())
+    values = packed[0, :-size_len]
+    indices = packed[1, :-size_len]
+
+    return (values, indices), size
+
 def compress_all_possible(tensor: th.Tensor):
     compressed = CompressedTensor(tensor)
     for compressor in registered_compressors:

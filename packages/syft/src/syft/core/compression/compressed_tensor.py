@@ -86,9 +86,9 @@ class CompressedTensor(th.Tensor, Serializable):
         while compressors:
             compressor = compressors.pop()
             if getattr(CompressedTensor, "grad_compessor", False):
-                decompressed_grad = compressor.decompress(decompressed_grad)
+                decompressed_grad = compressor().decompress(decompressed_grad)
             else:
-                decompressed = compressor.decompress(decompressed)
+                decompressed = compressor().decompress(decompressed)
         decompressed.requires_grad = self.requires_grad
         if self.requires_grad:
             decompressed.grad = self.grad
