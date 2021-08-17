@@ -1,5 +1,4 @@
 from .sparse_compressor import SparseCompressor
-from .util import registered_compressors
 
 class CompressionParams:
     def __init__(self) -> None:
