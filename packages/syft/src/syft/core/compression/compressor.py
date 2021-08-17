@@ -19,7 +19,7 @@ def pack_grace(values, indices, size):
 def unpack_grace(packed):
     size_len = int(packed[0, -1])
     size = th.Size(packed[1, -size_len:].int().tolist())
+    indices = packed[1, :-size_len].long()
     values = packed[0, :-size_len]
-    indices = packed[1, :-size_len]
 
     return (values, indices), size

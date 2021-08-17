@@ -1,5 +1,3 @@
-from .sparse_compressor import SparseCompressor
-
 class CompressionParams:
     def __init__(self) -> None:
         self.bytes = {
@@ -9,7 +7,7 @@ class CompressionParams:
         }
         self.tensor = {
             'compress': True,
-            'compressors': ['SparseCompressor'],
+            'compressors': ['DgcCompressor'],
         }
         self.dgc_compressor = {
             'ratio': 0.8

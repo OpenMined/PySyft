@@ -16,6 +16,8 @@ from ...lib.torch.tensor_util import tensor_deserializer
 from ...lib.torch.tensor_util import tensor_serializer
 from .specialized_compressor import SpecializedCompressor
 from .util import registered_compressors
+from .util import named_compressors
+from .compression_params import compression_params
 from ...logger import warning
 from ...core.common.serde.serializable import Serializable
 from ..common.serde.deserialize import _deserialize as deserialize
@@ -206,3 +208,17 @@ def torchTensor_proto2object(proto: Tensor_PB) -> th.Tensor:
         warning("Cannot find any CUDA devices, falling back to CPU.", print=True)
 
     return tensor
+
+def compress_all_possible(tensor: th.Tensor):
+    compressed = CompressedTensor(tensor)
+    for compressor in registered_compressors:
+        compressed.compress_more(compressor)
+    return compressed
+
+def compress_configured_tensor(tensor: th.Tensor):
+    if compression_params.tensor['compress']:
+        compressed = CompressedTensor(tensor)
+        for compressor in compression_params.tensor['compressors']:
+            compressor = named_compressors[compressor]
+            compressed.compress_more(compressor)
+    return compressed

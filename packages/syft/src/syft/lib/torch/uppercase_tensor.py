@@ -21,6 +21,7 @@ def object2proto(obj: object, use_compression:bool = True) -> CoreTensor_PB:
     compressed = CompressedTensor(obj, [])
     if use_compression and compression_params.tensor['compress']:
         for compressor in compression_params.tensor['compressors']:
+            print(compressor)
             compressor = named_compressors[compressor]
             if getattr(compressor, "grad_hist_store", False):
                 if not hasattr(obj, "compressor_objs"):
