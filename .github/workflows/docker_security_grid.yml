@@ -36,14 +36,8 @@ jobs:
       - name: Check Grid Worker
         run: trivy image openmined/grid-worker:${{ github.sha }}
 
-      - uses: Azure/container-scan@v0
-        with:
-          image-name: openmined/grid-worker:${{ github.sha }}
+      - name: Check Frontend
+        run: trivy image openmined/grid-ui:${{ github.sha }}
 
-      - uses: Azure/container-scan@v0
-        with:
-          image-name: openmined/grid-frontend:${{ github.sha }}
-
-      - uses: Azure/container-scan@v0
-        with:
-          image-name: openmined/grid-backend:${{ github.sha }}
+      - name: Check Backend
+        run: trivy image openmined/grid-backend:${{ github.sha }}
