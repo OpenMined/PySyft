@@ -39,7 +39,7 @@ jobs:
 
       - name: Check Grid Frontend
         continue-on-error: true
-        run: trivy image openmined/grid-ui:${{ github.sha }}
+        run: trivy image openmined/grid-frontend:${{ github.sha }}
 
       - name: Check Backend
         continue-on-error: true
