@@ -2,6 +2,8 @@ import torch
 
 from .specialized_compressor import SpecializedCompressor
 from .compression_params import compression_params
+from .compressor import pack_grace
+from .compressor import unpack_grace
 
 class DgcCompressor(SpecializedCompressor):
 
@@ -41,13 +43,13 @@ class DgcCompressor(SpecializedCompressor):
         indices, = torch.where(mask)
         values = tensor[indices]
 
-        tensor_compressed = values, indices
-        ctx = shape, mask, numel
-        return tensor_compressed, ctx
+        return pack_grace(values, indices, shape)
 
-    def decompress(self, tensor_compressed, ctx):
-        values, indices = tensor_compressed
-        shape, _, numel = ctx
+    def decompress(self, packed):
+        (values, indices), shape = unpack_grace(packed)
+        numel = 1
+        for dim in shape:
+            numel *= dim
         tensor_decompressed = torch.zeros(numel, dtype=values.dtype, layout=values.layout, device=values.device)
         tensor_decompressed.scatter_(0, indices, values)
         return tensor_decompressed.view(shape)
