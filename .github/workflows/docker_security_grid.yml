@@ -34,7 +34,7 @@ jobs:
           sudo apt-get install trivy
 
       - name: Check Grid Worker
-        run: trivy image grid-worker:${{ github.sha }}
+        run: trivy image openmined/grid-worker:${{ github.sha }}
 
       - uses: Azure/container-scan@v0
         with:
