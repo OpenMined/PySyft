@@ -22,6 +22,7 @@ jobs:
           curl -sSL https://github.com/docker/compose-cli/releases/download/v2.0.0-beta.5/docker-compose-linux-amd64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
           cd packages/grid
+          export VERSION=${{ github.sha }}
           docker compose build
 
       - uses: Azure/container-scan@v0
