@@ -66,16 +66,16 @@ class CompressedTensor(th.Tensor, Serializable):
     def compress_more(self, compressor):
         if getattr(compressor, "grad_compessor", False):
             if compressor.is_eligible(self.compressed_grad):
+                if type(compressor) == type:
+                    compressor = compressor()
                 self.compressed_grad = compressor.compress(self.compressed_grad)
-                if type(compressor) != type:
-                    compressor = type(compressor)
-                self.compressors.append(compressor)
+                self.compressors.append(type(compressor))
         else:
             if compressor.is_eligible(self.child):
+                if type(compressor) == type:
+                    compressor = compressor()
                 self.child = compressor.compress(self.child)
-                if type(compressor) != type:
-                    compressor = type(compressor)
-                self.compressors.append(compressor)
+                self.compressors.append(type(compressor))
 
     def decompress(self) -> th.Tensor:
         compressors = self.compressors.copy()
@@ -113,7 +113,7 @@ class CompressedTensor(th.Tensor, Serializable):
     def refresh_child(self):
         compressed = self.data
         for compressor in self.compressors:
-            compressed = compressor.compress(compressed)
+            compressed = compressor().compress(compressed)
         self.child = compressed
 
     def refresh_super_tensor(self):

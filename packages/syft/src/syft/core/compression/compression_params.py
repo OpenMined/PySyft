@@ -10,10 +10,12 @@ class CompressionParams:
         }
         self.tensor = {
             'compress': True,
-            'compressors': [SparseCompressor],
+            'compressors': ['SparseCompressor'],
+        }
+        self.dgc_compressor = {
+            'ratio': 0.8
         }
         self.connection_tested = False
         self.connection_speed = 0.0
-        self.grad_compressors = []
 
 compression_params = CompressionParams()
