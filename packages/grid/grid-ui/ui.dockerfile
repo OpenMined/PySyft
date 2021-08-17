@@ -15,6 +15,7 @@ WORKDIR /app
 RUN yarn build
 RUN yarn export
 
+
 FROM nginx:1.15
 COPY --from=grid-ui-production /app/out /usr/share/nginx/html
 COPY ./docker/nginx.conf /etc/nginx/conf.d/default.conf
