@@ -18,7 +18,9 @@ jobs:
       - name: Build Grid Images
         run: |
           # hack until we have proper VERSION support
-          export VERSION=${{ github.sha }}
+          mkdir -p ~/.docker/cli-plugins/
+          curl -SL https://github.com/docker/compose-cli/releases/download/v2.0.0-rc.5/docker-compose-linux-amd64 -o ~/.docker/cli-plugins/docker-compose
+          chmod +x ~/.docker/cli-plugins/docker-compose
           cd packages/grid
           docker compose build
 
