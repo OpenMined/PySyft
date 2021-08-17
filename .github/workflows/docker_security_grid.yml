@@ -1,0 +1,33 @@
+on:
+  pull_request:
+    paths:
+      - "packages/grid/ui.Dockerfile"
+      - "packages/grid/backend.Dockerfile"
+      - "packages/grid/celeryworker.Dockerfile"
+
+
+jobs:
+  build-secure-grid:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+    - uses: actions/checkout@master
+
+
+    - run: |
+      # hack until we have proper VERSION support
+      export VERSION={{ github.sha }}
+      cd packages/grid
+      docker compose build
+
+    - uses: Azure/container-scan@v0
+      with:
+        image-name: openmined/grid-worker:${{ github.sha }}
+
+    - uses: Azure/container-scan@v0
+      with:
+        image-name: openmined/grid-frontend:${{ github.sha }}
+
+    - uses: Azure/container-scan@v0
+      with:
+        image-name: openmined/grid-backend:${{ github.sha }}
