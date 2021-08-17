@@ -1,0 +1,25 @@
+on:
+  paths:
+    - "packages/grid/ui.Dockerfile"
+    - "packages/grid/backend.Dockerfile"
+    - "packages/grid/celeryworker.Dockerfile"
+
+jobs:
+  publish-grid:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+
+    - run: |
+      # hack until we have proper VERSION support
+      export VERSION={{ github.sha }}
+      cd packages/grid
+      docker compose build
+
+
+    - name: Publish to docker hub
+      run: |
+        echo "${{ secrets.DOCKER_PASSWORD }}" |  docker login -u ${{ secrets.DOCKER_LOGIN }} --password-stdin
+        docker push openmined/grid-worker:${{ github.sha }}
+        docker push openmined/grid-frontend:${{ github.sha }}
+        docker push openmined/grid-backend:${{ github.sha }}
