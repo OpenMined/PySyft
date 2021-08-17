@@ -80,7 +80,7 @@ class CompressedTensor(th.Tensor, Serializable):
     def decompress(self) -> th.Tensor:
         compressors = self.compressors.copy()
         decompressed = self.child
-        print(self.child, self.compressors)
+        print('decompressing', self.child, self.compressors)
         if self.requires_grad:
             decompressed_grad = self.compressed_grad
         while compressors:
@@ -135,7 +135,6 @@ class CompressedTensor(th.Tensor, Serializable):
         if self.requires_grad:
             self.child.grad = self.compressed_grad
         tensors = [torchTensor_object2proto(self.child)]
-        print('converting to proto', arrays, tensors)
         return Tensor_PB(
             obj_type=get_fully_qualified_name(obj=self),
             use_tensors=use_tensors,
