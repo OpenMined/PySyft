@@ -6,6 +6,7 @@ import "proto/core/adp/entity.proto";
 // import "proto/core/common/common_object.proto";
 // import "proto/core/adp/entity.proto";
 import "proto/lib/numpy/array.proto";
+import "proto/lib/torch/tensor.proto";
 
 message Tensor {
   // syft.core.common.UID id = 1;
@@ -13,7 +14,7 @@ message Tensor {
   optional syft.core.adp.Entity entity = 3;
   bool use_tensors = 4;
   repeated syft.lib.numpy.NumpyProto arrays = 5;
-  repeated Tensor tensors = 6;
+  repeated syft.lib.torch.TensorProto tensors = 6;
   bool requires_grad = 7;
 }
 
