@@ -5,6 +5,7 @@ import torch as th
 from .compressed_tensor import CompressedTensor
 from .compression_params import compression_params
 from .util import registered_compressors
+from .util import named_compressors
 
 class Compressor:
     """
@@ -27,5 +28,6 @@ def compress_configured_tensor(tensor: th.Tensor):
     if compression_params.tensor['compress']:
         compressed = CompressedTensor(tensor)
         for compressor in compression_params.tensor['compressors']:
+            compressor = named_compressors[compressor]
             compressed.compress_more(compressor)
     return compressed

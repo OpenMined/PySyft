@@ -1,13 +1,18 @@
 import torch
 
 from .specialized_compressor import SpecializedCompressor
+from .compression_params import compression_params
 
 class DgcCompressor(SpecializedCompressor):
 
-    def __init__(self, compress_ratio):
-        self.compress_ratio = compress_ratio
+    def __init__(self):
+        self.compress_ratio = compression_params.dgc_compressor['ratio']
 
-    def compress(self, tensor, name):
+    @staticmethod
+    def is_eligible(tensor: torch.Tensor):
+        return tensor.numel() > 10 and tensor.to_sparse().values().numel() * 2 < tensor.numel()
+
+    def compress(self, tensor, name='default'):
         shape = tensor.size()
         tensor = tensor.flatten()
         numel = tensor.numel()
