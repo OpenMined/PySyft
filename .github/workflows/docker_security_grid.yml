@@ -1,9 +1,8 @@
 on:
-  pull_request:
-    paths:
-      - "packages/grid/ui.Dockerfile"
-      - "packages/grid/backend.Dockerfile"
-      - "packages/grid/celeryworker.Dockerfile"
+  paths:
+    - "packages/grid/grid-ui/ui.dockerfile"
+    - "packages/grid/backend/backend.dockerfile"
+    - "packages/grid/backend/celeryworker.dockerfile"
 
 
 jobs:
