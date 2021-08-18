@@ -11,8 +11,8 @@ from starlette.exceptions import HTTPException
 
 # grid absolute
 from app.api import deps
-from app.requests.models import Request
-from app.requests.models import RequestUpdate
+from app.grid_requests.models import Request
+from app.grid_requests.models import RequestUpdate
 from app.users.models import UserPrivate
 
 # relative

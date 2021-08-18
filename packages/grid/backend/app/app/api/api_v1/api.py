@@ -9,7 +9,7 @@ from app.api.api_v1.endpoints import roles
 from app.api.api_v1.endpoints import setup
 from app.api.api_v1.endpoints import status
 from app.api.api_v1.endpoints import syft
-from app.requests.routes import router as requests_router
+from app.grid_requests.routes import router as requests_router
 from app.users.routes import router as user_router
 
 api_router = APIRouter()

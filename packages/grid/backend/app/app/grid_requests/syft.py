@@ -13,7 +13,7 @@ from syft.core.node.common.node_service.object_request.object_request_service im
 )
 
 # grid absolute
-from app.requests.models import Request
+from app.grid_requests.models import Request
 from app.users.models import UserPrivate
 from app.utils import send_message_with_reply
 
