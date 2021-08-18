@@ -1,3 +1,9 @@
+# CLEANUP NOTES:
+# - remove unused comments
+# - add documentation for each method
+# - add comments inline explaining each piece
+# - add a unit test for each method (at least)
+
 # stdlib
 from typing import Dict as TypeDict
 from typing import KeysView as TypeKeysView
@@ -23,7 +29,12 @@ class AdversarialAccountant:
     def __init__(
         self, db_engine: Engine, max_budget: float = 10, delta: float = 1e-6
     ) -> None:
+
+        # this is a database-backed lookup table
         self.entity2ledger = LedgerManager(db_engine)
+
+        # this is a temporary lookup table for mechanisms we're not sure
+        # we're going to keep (See publish.py for how this is used)
         self.temp_entity2ledger = {}
         self.max_budget = max_budget
         self.delta = delta
