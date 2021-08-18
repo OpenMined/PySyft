@@ -1,21 +1,20 @@
 # stdlib
 from typing import Any
-from typing import Dict
-from typing import List
+from typing import Optional
 from typing import Union
 
 # third party
 import numpy as np
 
 # relative
-from .passthrough import implements  # type: ignore
-from .passthrough import inputs2child  # type: ignore
+from .passthrough import implements
+from .passthrough import inputs2child
 from .tensor import Tensor
 
 
 @implements(Tensor, np.mean)
 def mean(
-    array: Tensor, axis: Union[int, np.ndarray] = None, **kwargs: Dict[Any, Any]
+    array: np.typing.ArrayLike, axis: Optional[int] = None, **kwargs: Any
 ) -> Tensor:
     if axis is None:
         den = float(np.prod(array.shape))
@@ -26,30 +25,32 @@ def mean(
 
 
 @implements(Tensor, np.max)
-def npmax(*args: List[Any], **kwargs: Dict[Any, Any]) -> Tensor:
-    args, kwargs = inputs2child(*args, **kwargs)
+def npmax(*args: Any, **kwargs: Any) -> Tensor:
+    args, kwargs = inputs2child(*args, **kwargs)  # type: ignore
     return np.max(*args, **kwargs)
 
 
 @implements(Tensor, np.min)
-def npmin(*args: List[Any], **kwargs: Dict[Any, Any]) -> Tensor:
-    args, kwargs = inputs2child(*args, **kwargs)
+def npmin(*args: Any, **kwargs: Any) -> Tensor:
+    args, kwargs = inputs2child(*args, **kwargs)  # type: ignore
     return np.min(*args, **kwargs)
 
 
 @implements(Tensor, np.square)
-def square(x: Tensor) -> Tensor:
+def square(x: np.typing.ArrayLike) -> Tensor:
     return x * x
 
 
 @implements(Tensor, np.expand_dims)
-def expand_dims(*args: List[Any], **kwargs: Dict[Any, Any]) -> Tensor:
-    args, kwargs = inputs2child(*args, **kwargs)
+def expand_dims(*args: Any, **kwargs: Any) -> Tensor:
+    args, kwargs = inputs2child(*args, **kwargs)  # type: ignore
     return Tensor(np.expand_dims(*args, **kwargs))
 
 
 @implements(Tensor, np.multiply)
-def multiply(a: Tensor, b: Tensor) -> Tensor:
+def multiply(
+    a: Union[Tensor, np.typing.ArrayLike], b: Union[Tensor, np.typing.ArrayLike]
+) -> Tensor:
     if isinstance(a, Tensor):
         result = a.__mul__(b)
         if result is not NotImplementedError:
@@ -60,4 +61,4 @@ def multiply(a: Tensor, b: Tensor) -> Tensor:
         if result is not NotImplementedError:
             return result
 
-    raise TypeError(f"Can't multiply {type(a)} with {type(b)}")
+    return TypeError(f"Can't multiply {type(a)} with {type(b)}")  # type: ignore

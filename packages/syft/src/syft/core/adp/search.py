@@ -1,3 +1,9 @@
+# CLEANUP NOTES:
+# - remove unused comments
+# - add documentation for each method
+# - add comments inline explaining each piece
+# - add a unit test for each method (at least)
+
 # stdlib
 from functools import lru_cache
 from typing import Any
@@ -5,6 +11,7 @@ from typing import Callable
 from typing import Dict as TypeDict
 from typing import List as TypeList
 from typing import Optional
+from typing import Set
 from typing import Tuple as TypeTuple
 
 # third party
@@ -34,10 +41,10 @@ ssid2obj: TypeDict[str, Any] = {}  # TODO: Fix types in circular deps
 
 
 class GetSymbolsMapper(WalkMapper):
-    def __init__(self, *args, **kwargs):
-        self.free_symbols = set()
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self.free_symbols: Set[Any] = set()
 
-    def visit(self, *args, **kwargs):
+    def visit(self, *args: Any, **kwargs: Any) -> bool:
         for arg in args:
             if isinstance(arg, Variable):
                 self.free_symbols.add(arg)
@@ -56,7 +63,7 @@ def create_searchable_function_from_polynomial(
     """
     if "pymbolic" in str(type(poly)):
 
-        def _run_specific_args(tuple_of_args: tuple):
+        def _run_specific_args(tuple_of_args: tuple) -> EM:
             # kwargs = {sym: tuple_of_args[i] for sym, i in symbol2index.items()}
             # output = poly.subs(kwargs)
 
@@ -66,7 +73,9 @@ def create_searchable_function_from_polynomial(
 
     else:
 
-        def _run_specific_args(tuple_of_args: tuple):
+        def _run_specific_args(
+            tuple_of_args: tuple,
+        ) -> EM:
             kwargs = {sym: tuple_of_args[i] for sym, i in symbol2index.items()}
             output = poly.subs(kwargs)
 
@@ -78,7 +87,9 @@ def create_searchable_function_from_polynomial(
 
 
 @lru_cache(maxsize=None)
-def minimize_poly(poly: Basic, *rranges, force_all_searches: bool = False, **s2i):
+def minimize_poly(
+    poly: Basic, *rranges: TypeTuple, force_all_searches: bool = False, **s2i: TypeDict
+) -> TypeList[optimize.OptimizeResult]:
     """Minimizes a polynomial using types basic enough for lru_cache"""
 
     # convert polynomial to function object with API necessary for scipy optimizer
@@ -88,7 +99,9 @@ def minimize_poly(poly: Basic, *rranges, force_all_searches: bool = False, **s2i
     return minimize_function(f=search_fun, rranges=rranges, force_all_searches=False)
 
 
-def flatten_and_maximize_sympoly(poly, force_all_searches: bool = False):
+def flatten_and_maximize_sympoly(
+    poly: Basic, force_all_searches: bool = False
+) -> TypeList[optimize.OptimizeResult]:
 
     i2s = list(poly.free_symbols)
     s2i = {s: i for i, s in enumerate(i2s)}
@@ -111,7 +124,9 @@ def flatten_and_maximize_sympoly(poly, force_all_searches: bool = False):
     )
 
 
-def flatten_and_maximize_poly(poly, force_all_searches: bool = False):
+def flatten_and_maximize_poly(
+    poly: Any, force_all_searches: bool = False
+) -> TypeList[optimize.OptimizeResult]:
 
     mapper = GetSymbolsMapper()
     mapper(poly)
@@ -138,7 +153,7 @@ def flatten_and_maximize_poly(poly, force_all_searches: bool = False):
 
 
 def create_lookup_tables_for_symbol(
-    polynomial,
+    polynomial: Any,
 ) -> TypeTuple[TypeList[str], TypeDict[str, int]]:
 
     mapper = GetSymbolsMapper()
@@ -151,8 +166,8 @@ def create_lookup_tables_for_symbol(
 
 
 def minimize_function(
-    f,
-    rranges,
+    f: Any,
+    rranges: Any,
     constraints: TypeList[TypeDict[str, Any]] = [],
     force_all_searches: bool = False,
 ) -> TypeList[optimize.OptimizeResult]:
@@ -180,7 +195,7 @@ def minimize_function(
     return results
 
 
-def max_lipschitz_wrt_entity(scalars, entity: Entity):
+def max_lipschitz_wrt_entity(scalars: Any, entity: Entity) -> float:
     result = max_lipschitz_via_jacobian(scalars, input_entity=entity)[0][-1]
     if isinstance(result, float):
         return -result
@@ -194,7 +209,7 @@ def max_lipschitz_via_jacobian(
     data_dependent: bool = True,
     force_all_searches: bool = False,
     try_hessian_shortcut: bool = False,
-):
+) -> TypeTuple[TypeList[float], Any]:
     # scalars = R^d` representing the d' dimentional output of g
     # input_entity = the 'i'th entity for which we want to compute a lipschitz bound
 

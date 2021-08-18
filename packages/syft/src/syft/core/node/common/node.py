@@ -527,7 +527,6 @@ class Node(AbstractNode):
     def process_message(
         self, msg: SignedMessage, router: dict
     ) -> Union[SyftMessage, None]:
-        print(msg.message)
         self.message_counter += 1
 
         debug(f"> Processing 📨 {msg.pprint} @ {self.pprint} {msg.message}")
@@ -542,7 +541,6 @@ class Node(AbstractNode):
 
             try:  # we use try/except here because it's marginally faster in Python
                 service = router[type(msg.message)]
-                print(service)
             except KeyError as e:
                 log = (
                     f"The node {self.id} of type {type(self)} cannot process messages of type "

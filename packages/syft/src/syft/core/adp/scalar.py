@@ -1,3 +1,9 @@
+# CLEANUP NOTES (for ISHAN):
+# - remove unused comments
+# - add documentation for each method
+# - add comments inline explaining each piece
+# - add a unit test for each method (at least)
+
 # future
 from __future__ import annotations
 
@@ -11,6 +17,7 @@ from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from nacl.signing import VerifyKey
 import numpy as np
 from pymbolic import var
 from pymbolic.interop.sympy import PymbolicToSympyMapper
@@ -43,22 +50,24 @@ from .search import ssid2obj
 
 # the most generic class
 class Scalar(Serializable):
-    def publish(self, acc: Any, sigma: float = 1.5) -> float:
+    def publish(
+        self, acc: Any, user_key: VerifyKey, sigma: float = 1.5
+    ) -> TypeList[Any]:
         # relative
         from .publish import publish
 
-        return publish([self], acc=acc, sigma=sigma)
+        return publish([self], acc=acc, sigma=sigma, user_key=user_key)
 
     @property
-    def max_val(self) -> Optional[float]:
+    def max_val(self) -> Optional[np.float64]:
         raise NotImplementedError
 
     @property
-    def min_val(self) -> Optional[float]:
+    def min_val(self) -> Optional[np.float64]:
         raise NotImplementedError
 
     @property
-    def value(self) -> Optional[float]:
+    def value(self) -> Optional[np.float64]:
         raise NotImplementedError
 
     def __str__(self) -> str:
@@ -142,7 +151,7 @@ class IntermediateScalar(Scalar):
         return None
 
     @property
-    def value(self) -> Optional[float]:
+    def value(self) -> Optional[np.float64]:
         if self.poly is not None:
             result = EM(
                 context={obj.poly.name: obj.value for obj in self.input_scalars}
@@ -180,9 +189,10 @@ class IntermediatePhiScalar(IntermediateScalar):
         self.entity = entity
 
     def max_lipschitz_wrt_entity(
-        self, *args: TypeTuple[Any, ...], **kwargs: Any
+        self,
+        entity: Entity,
     ) -> float:
-        return self.gamma.max_lipschitz_wrt_entity(*args, **kwargs)
+        return self.gamma.max_lipschitz_wrt_entity(entity=entity)
 
     @property
     def max_lipschitz(self) -> float:
@@ -524,7 +534,7 @@ class IntermediateGammaScalar(IntermediateScalar):
         else:
             return -float(result.fun)
 
-    def max_lipschitz_wrt_entity(self, entity) -> float:
+    def max_lipschitz_wrt_entity(self, entity: Entity) -> float:
         result = self.max_lipschitz_via_jacobian(input_entity=entity)[0][-1]
         if isinstance(result, float):
             return -result

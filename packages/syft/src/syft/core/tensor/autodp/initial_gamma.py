@@ -1,28 +1,56 @@
 # stdlib
-from typing import List
+from typing import Any
+from typing import List as TypeList
 from typing import Optional
-import uuid
+from typing import Union
 
 # third party
 import numpy as np
 
 # relative
-from ...adp.entity import Entity
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
-from ..types import SupportedChainType
+from ...common.serde.recursive import RecursiveSerde
+from ...common.uid import UID
+from ..passthrough import PassthroughTensor  # type: ignore
 from .intermediate_gamma import IntermediateGammaTensor
 
 
-class InitialGammaTensor(IntermediateGammaTensor):
+def numpy2list(np_obj: np.ndarray) -> TypeList:
+    return [list(np_obj.flatten()), np_obj.shape]
+
+
+def list2numpy(l_shape: Any) -> np.ndarray:
+    list_length = l_shape[0]
+    shape = l_shape[1]
+    return np.array(list_length).reshape(shape)
+
+
+class InitialGammaTensor(IntermediateGammaTensor, RecursiveSerde):
+
+    __attr_allowlist__ = [
+        "uid",
+        "values",
+        "min_vals",
+        "max_vals",
+        "entities",
+        "scalar_manager",
+        "term_tensor",
+        "coeff_tensor",
+        "bias_tensor",
+        "child",
+    ]
+
+    __serde_overrides__ = {"entities": [numpy2list, list2numpy]}
+
     def __init__(
         self,
-        values: SupportedChainType,
+        values: Union[IntermediateGammaTensor, PassthroughTensor, np.ndarray],
         min_vals: np.ndarray,
         max_vals: np.ndarray,
-        entities: List[Entity],
+        entities: Any,  # List[Entity] gives flatten errors
         scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None,
     ) -> None:
-        self.uid = uuid.uuid4()
+        self.uid = UID()
         self.values = values  # child
         self.min_vals = min_vals
         self.max_vals = max_vals

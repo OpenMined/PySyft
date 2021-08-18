@@ -15,7 +15,8 @@ message CreateUserMessage {
   string password = 4;
   string role = 5;
   string name = 6;
-  syft.core.io.Address reply_to = 7;
+  double budget = 7;
+  syft.core.io.Address reply_to = 8;
 }
 
 // GET User
@@ -63,7 +64,8 @@ message UpdateUserMessage {
   string role = 6;
   string groups = 7;
   string name = 8;
-  syft.core.io.Address reply_to = 9;
+  double budget = 9;
+  syft.core.io.Address reply_to = 10;
 }
 
 // Search Users

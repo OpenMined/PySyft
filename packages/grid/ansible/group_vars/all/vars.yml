@@ -8,3 +8,4 @@ repo_branch: demo_strike_team_branch_4
 docker_compose_plugin_dir: ".docker/cli-plugins"
 node_name: node
 node_type: domain
+docker_compose_url: https://github.com/docker/compose-cli/releases/download/v2.0.0-rc.1/docker-compose-linux-amd64

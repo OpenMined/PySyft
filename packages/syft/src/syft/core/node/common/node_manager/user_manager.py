@@ -53,6 +53,7 @@ class UserManager(DatabaseManager):
         name: str,
         email: str,
         password: str,
+        budget: float,
         role: int,
         private_key: str,
         verify_key: str,
@@ -62,6 +63,7 @@ class UserManager(DatabaseManager):
             name=name,
             email=email,
             role=role,
+            budget=budget,
             private_key=private_key,
             verify_key=verify_key,
             hashed_password=hashed,
@@ -88,12 +90,13 @@ class UserManager(DatabaseManager):
         password: str = "",
         role: int = 0,
         name: str = "",
+        budget: float = 0.0,
     ) -> None:
         if not self.contain(id=user_id):
             raise UserNotFoundError
 
         key: str
-        value: Union[str, int]
+        value: Union[str, int, float]
 
         if email:
             key = "email"
@@ -108,6 +111,9 @@ class UserManager(DatabaseManager):
         elif name:
             key = "name"
             value = name
+        elif budget:
+            key = "budget"
+            value = budget
         else:
             raise Exception
 

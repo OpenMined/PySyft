@@ -12,6 +12,10 @@ from ....proto.util.data_message_pb2 import DataMessage
 from ....util import index_syft_by_module_name
 
 
+# WARNING: This code has more 🐉 Dragons than a game of D&D 🗡🧙🎲
+# you were warned...
+# enter at your own peril...
+# seriously, get some 🧪 HP Potions and 📜 TP Scrolls ready...
 def _deserialize(
     blob: Union[str, dict, bytes, Message],
     from_proto: bool = True,
@@ -82,7 +86,17 @@ def _deserialize(
         obj_type = index_syft_by_module_name(fully_qualified_name=obj_type)  # type: ignore
         obj_type = getattr(obj_type, "_sy_serializable_wrapper_type", obj_type)
     elif isinstance(obj_type, list):
-        if len(obj_type) == 1:
+        # circular imports
+        # relative
+        from .recursive import RecursiveSerde
+
+        if RecursiveSerde in obj_type and isinstance(
+            blob, RecursiveSerde.get_protobuf_schema()
+        ):
+            # this branch is for RecursiveSerde objects
+            obj_type = RecursiveSerde
+
+        elif len(obj_type) == 1:
             obj_type = obj_type[0]
         else:
             # this means we have multiple classes that use the same proto but use the

@@ -48,6 +48,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
+      # - name: Install Protoc
+      #   uses: arduino/setup-protoc@v1
+      #   with:
+      #     version: "3.x"
+
       - name: Build Protos
         run: |
           set -e
@@ -55,3 +60,4 @@ jobs:
           cd packages/syft && ./scripts/build_proto.sh
 
       - uses: pre-commit/action@v2.0.3
+        continue-on-error: true

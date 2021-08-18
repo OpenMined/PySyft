@@ -74,7 +74,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.0.0-beta.6
+          DOCKER_COMPOSE_VERSION=v2.0.0-rc.1
           curl -sSL https://github.com/docker/compose-cli/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-amd64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
           tox -e stack.test.integration

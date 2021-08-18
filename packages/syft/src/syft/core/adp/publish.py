@@ -1,28 +1,47 @@
+# CLEANUP NOTES:
+# - remove unused comments
+# - add documentation for each method
+# - add comments inline explaining each piece
+# - add a unit test for each method (at least)
+
 # stdlib
 from copy import deepcopy
 import random
 from typing import Any
+from typing import Dict as TypeDict
+from typing import List as TypeList
+from typing import Type
 
 # third party
+from nacl.signing import VerifyKey
 import numpy as np
 from pymbolic.mapper.substitutor import SubstitutionMapper
 from pymbolic.mapper.substitutor import make_subst_func
 
 # relative
+from .entity import Entity
 from .idp_gaussian_mechanism import iDPGaussianMechanism
 from .search import max_lipschitz_wrt_entity
 
 
-def publish(scalars, acc: Any, sigma: float = 1.5) -> float:
-
-    acc_original = acc
-
-    acc_temp = deepcopy(acc_original)
+def publish(
+    scalars: TypeList[Any], acc: Any, user_key: VerifyKey, sigma: float = 1.5
+) -> TypeList[Any]:
+    acc.temp_entity2ledger = {}
 
     ms = get_all_entity_mechanisms(scalars=scalars, sigma=sigma)
-    acc_temp.append(ms)
 
-    overbudgeted_entities = acc_temp.overbudgeted_entities
+    # add the user_key to all of the mechanisms
+    for _, mechs in ms.items():
+        for m in mechs:
+            m.user_key = user_key
+
+    acc.temp_append(ms)
+
+    overbudgeted_entities = acc.overbudgeted_entities(
+        temp_entities=acc.temp_entity2ledger, user_key=user_key
+    )
+
     # so that we don't modify the original polynomial
     # it might be fine to do so but just playing it safe
     if len(overbudgeted_entities) > 0:
@@ -30,6 +49,8 @@ def publish(scalars, acc: Any, sigma: float = 1.5) -> float:
 
     iterator = 0
     while len(overbudgeted_entities) > 0 and iterator < 3:
+        print("\n\n QUERY IS OVER BUDGET!!! \n\n")
+
         iterator += 1
 
         input_scalars = set()
@@ -41,7 +62,7 @@ def publish(scalars, acc: Any, sigma: float = 1.5) -> float:
             for input_scalar in output_scalar.input_scalars:
                 input_scalars.add(input_scalar)
 
-        should_break = False
+        # should_break = False
 
         for input_scalar in input_scalars:
             if input_scalar.entity in overbudgeted_entities:
@@ -53,26 +74,37 @@ def publish(scalars, acc: Any, sigma: float = 1.5) -> float:
                     output_scalar.poly = SubstitutionMapper(
                         make_subst_func({input_scalar.poly.name: 0})
                     )(output_scalar.poly)
+            #
+            # if should_break:
+            #     break
 
-            if should_break:
-                break
-
-        acc_temp = deepcopy(acc_original)
+        acc.temp_entity2ledger = {}
 
         # get mechanisms for new publish event
         ms = get_all_entity_mechanisms(scalars=scalars, sigma=sigma)
-        acc_temp.append(ms)
 
-        overbudgeted_entities = acc_temp.overbudgeted_entities
+        for _, mechs in ms.items():
+            for m in mechs:
+                m.user_key = user_key
+
+        # this is when we actually insert into the database
+        acc.temp_append(ms)
+
+        overbudgeted_entities = acc.overbudgeted_entities(
+            temp_entities=acc.temp_entity2ledger, user_key=user_key
+        )
 
     output = [s.value + random.gauss(0, sigma) for s in scalars]
 
-    acc_original.entity2ledger = deepcopy(acc_temp.entity2ledger)
+    acc.save_temp_ledger_to_longterm_ledger()
 
     return output
 
 
-def get_mechanism_for_entity(scalars, entity, sigma=1.5):
+def get_mechanism_for_entity(
+    scalars: TypeList[Any], entity: Entity, sigma: float = 1.5
+) -> Type[iDPGaussianMechanism]:
+
     m_id = "ms_"
     for s in scalars:
         m_id += str(s.id).split(" ")[1][:-1] + "_"
@@ -85,12 +117,14 @@ def get_mechanism_for_entity(scalars, entity, sigma=1.5):
         sigma=sigma,
         value=value,
         L=L,
-        entity=entity.name,
+        entity_name=entity.name,
         name=m_id,
     )
 
 
-def get_all_entity_mechanisms(scalars, sigma: float = 1.5):
+def get_all_entity_mechanisms(
+    scalars: TypeList[Any], sigma: float = 1.5
+) -> TypeDict[Entity, Any]:
     entities = set()
     for s in scalars:
         for i_s in s.input_scalars:

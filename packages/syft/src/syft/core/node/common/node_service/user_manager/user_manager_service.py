@@ -72,6 +72,7 @@ def create_user_msg(
                 name=msg.name,
                 email=msg.email,
                 password=msg.password,
+                budget=msg.budget,
                 role=node.roles.first(name=msg.role).id,
                 private_key=_private_key.encode(encoder=HexEncoder).decode("utf-8"),
                 verify_key=_private_key.verify_key.encode(encoder=HexEncoder).decode(
@@ -98,6 +99,7 @@ def create_user_msg(
             name=msg.name,
             email=msg.email,
             password=msg.password,
+            budget=msg.budget,
             role=node.roles.first(name="Data Scientist").id,
             private_key=encoded_pk,
             verify_key=encoded_vk,
@@ -122,7 +124,9 @@ def update_user_msg(
     node: AbstractNode,
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
-    _valid_parameters = msg.email or msg.password or msg.role or msg.groups or msg.name
+    _valid_parameters = (
+        msg.email or msg.password or msg.role or msg.groups or msg.name or msg.budget
+    )
     _same_user = int(node.users.get_user(verify_key).id) == msg.user_id
     _allowed = _same_user or node.users.can_create_users(verify_key=verify_key)
 
@@ -150,6 +154,10 @@ def update_user_msg(
     # Change Name Request
     elif msg.name:
         node.users.set(user_id=msg.user_id, name=msg.name)
+
+    # Change budget Request
+    elif msg.budget:
+        node.users.set(user_id=msg.user_id, budget=msg.budget)
 
     # Change Role Request
     elif msg.role:
@@ -216,6 +224,11 @@ def get_user_msg(
             for group in node.groups.get_groups(user_id=msg.user_id)
         ]
 
+        # Get budget spent
+        _msg["budget_spent"] = node.acc.user_budget(
+            user_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder)
+        )
+
     return GetUserResponse(
         address=msg.reply_to,
         content=SyftDict(_msg),
@@ -249,6 +262,10 @@ def get_all_users_msg(
                 node.groups.first(id=group).name
                 for group in node.groups.get_groups(user_id=user.id)
             ]
+
+            _user_json["budget_spent"] = node.acc.user_budget(
+                user_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder)
+            )
             _msg.append(_user_json)
 
     return GetUsersResponse(

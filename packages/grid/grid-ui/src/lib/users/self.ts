@@ -8,7 +8,9 @@ export function buildSelfWithRoles(me: UserMe, roles: Role[]): Me {
     id: me.id,
     email: me.email,
     permissions: selfPermissions,
-    role: {id: selfRoleId, name: selfRoleName}
+    role: {id: selfRoleId, name: selfRoleName},
+    budget: me.budget,
+    budget_spent: me.budget_spent
   }
 }
 

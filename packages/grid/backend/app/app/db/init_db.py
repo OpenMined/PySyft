@@ -31,6 +31,7 @@ def init_db(db: Session) -> None:
         email=settings.FIRST_SUPERUSER,
         password=settings.FIRST_SUPERUSER_PASSWORD,
         domain_name=settings.DOMAIN_NAME,
+        budget=55.55,
         reply_to=node.address,
     ).sign(signing_key=node.signing_key)
 
