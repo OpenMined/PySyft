@@ -17,7 +17,7 @@ class BaseRequest(BaseModel):
     status: Optional[str]  # Literal['pending', 'accepted', 'denied']
     request_type: Optional[str]
     object_type: Optional[str]
-    tags: List[Optional[str]]
+    tags: Optional[List[str]]
 
     class Config:
         orm_mode = True

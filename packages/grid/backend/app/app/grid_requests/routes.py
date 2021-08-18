@@ -52,7 +52,7 @@ async def get_all_requests_grid(
     status_code=status.HTTP_200_OK,
 )
 async def get_request_grid(
-    request_id: int, current_user: UserPrivate = Depends(deps.get_current_user)
+    request_id: str, current_user: UserPrivate = Depends(deps.get_current_user)
 ) -> Request:
     try:
         return syft_requests_messages.get_request(current_user, request_id)
@@ -67,7 +67,7 @@ async def get_request_grid(
     status_code=status.HTTP_204_NO_CONTENT,
 )
 async def update_user_grid(
-    request_id: int,
+    request_id: str,
     updated_request: RequestUpdate,
     current_user: UserPrivate = Depends(deps.get_current_user),
 ) -> None:
