@@ -560,7 +560,7 @@ class UpdateRequestResponse(ImmediateSyftMessageWithoutReply):
     ):
         super().__init__(address=address, msg_id=msg_id)
         self.status_code = status_code
-        self.status = status 
+        self.status = status
         self.request_id = request_id
 
     def _object2proto(self) -> UpdateRequestResponse_PB:
@@ -580,7 +580,7 @@ class UpdateRequestResponse(ImmediateSyftMessageWithoutReply):
             address=serialize(self.address),
             status_code=self.status_code,
             status=json.dumps(self.status),
-            request_id=json.dumps(self.request_id)
+            request_id=json.dumps(self.request_id),
         )
 
     @staticmethod

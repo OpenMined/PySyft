@@ -1,8 +1,7 @@
 # stdlib
+from datetime import datetime
 from typing import List
 from typing import Optional
-
-from datetime import datetime
 
 # third party
 from pydantic import BaseModel

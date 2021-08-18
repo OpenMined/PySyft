@@ -11,7 +11,8 @@ from starlette.exceptions import HTTPException
 
 # grid absolute
 from app.api import deps
-from app.requests.models import Request, RequestUpdate
+from app.requests.models import Request
+from app.requests.models import RequestUpdate
 from app.users.models import UserPrivate
 
 # relative
@@ -50,12 +51,15 @@ async def get_all_requests_grid(
     name="requests:read_one",
     status_code=status.HTTP_200_OK,
 )
-async def get_request_grid(request_id: int, current_user: UserPrivate = Depends(deps.get_current_user)) -> Request:
+async def get_request_grid(
+    request_id: int, current_user: UserPrivate = Depends(deps.get_current_user)
+) -> Request:
     try:
         return syft_requests_messages.get_request(current_user, request_id)
     except Exception as err:
         logger.error(err)
         raise_generic_private_error()
+
 
 @router.patch(
     "/{request_id}",
@@ -72,4 +76,3 @@ async def update_user_grid(
     except Exception as err:
         logger.error(err)
         raise_generic_private_error()
-

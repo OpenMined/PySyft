@@ -171,7 +171,7 @@ def get_all_request_msg(
     verify_key: VerifyKey,
 ) -> GetRequestsResponse:
     users = node.users
-    
+
     allowed = users.can_triage_requests(verify_key=verify_key)
 
     if allowed:
