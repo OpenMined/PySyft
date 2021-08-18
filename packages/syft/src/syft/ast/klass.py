@@ -40,7 +40,6 @@ from ..logger import warning
 from ..util import aggressive_set_attr
 from ..util import inherit_tags
 
-
 def _resolve_pointer_type(self: Pointer) -> Pointer:
     """Resolve pointer of the object.
 
@@ -107,67 +106,6 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
         internal `attr_path_and_name` variable.
     """
 
-    def run_class_method(
-        __self: Any,
-        *args: Tuple[Any, ...],
-        **kwargs: Any,
-    ) -> object:
-        """Run remote class method and get pointer to returned object.
-
-        Args:
-            *args: Args list of class method.
-            **kwargs: Keyword args of class method.
-
-        Returns:
-            Pointer to object returned by class method.
-        """
-        # we want to get the return type which matches the attr_path_and_name
-        # so we ask lib_ast for the return type name that matches out
-        # attr_path_and_name and then use that to get the actual pointer klass
-        # then set the result to that pointer klass
-        return_type_name = __self.client.lib_ast.query(
-            attr_path_and_name
-        ).return_type_name
-        resolved_pointer_type = __self.client.lib_ast.query(return_type_name)
-        result = resolved_pointer_type.pointer_type(client=__self.client)
-
-        # QUESTION can the id_at_location be None?
-        result_id_at_location = getattr(result, "id_at_location", None)
-        if result_id_at_location is not None:
-            # first downcast anything primitive which is not already PyPrimitive
-            (
-                downcast_args,
-                downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
-
-            # then we convert anything which isnt a pointer into a pointer
-            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
-                args=downcast_args,
-                kwargs=downcast_kwargs,
-                client=__self.client,
-                gc_enabled=False,
-            )
-
-            cmd = RunClassMethodAction(
-                path=attr_path_and_name,
-                _self=__self,
-                args=pointer_args,
-                kwargs=pointer_kwargs,
-                id_at_location=result_id_at_location,
-                address=__self.client.address,
-            )
-            __self.client.send_immediate_msg_without_reply(msg=cmd)
-
-        inherit_tags(
-            attr_path_and_name=attr_path_and_name,
-            result=result,
-            self_obj=__self,
-            args=args,
-            kwargs=kwargs,
-        )
-
-        return result
-
     def run_class_smpc_method(
         __self: Any,
         *args: Tuple[Any, ...],
@@ -232,6 +170,87 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
             address=__self.client.address,
         )
         __self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=__self,
+            args=args,
+            kwargs=kwargs,
+        )
+
+        return result
+
+
+    def run_class_method(
+        __self: Any,
+        *args: Tuple[Any, ...],
+        **kwargs: Any,
+    ) -> object:
+        """Run remote class method and get pointer to returned object.
+
+        Args:
+            *args: Args list of class method.
+            **kwargs: Keyword args of class method.
+
+        Returns:
+            Pointer to object returned by class method.
+        """
+        # TODO: Do it for kwargs
+        for arg in args:
+            client = getattr(arg, "client", None)
+            if client is not None and client != __self.client:
+                from ..core.tensor.smpc.mpc_tensor import MPCTensor
+                parties = [client, __self.client]
+                # TODO: Replace seed_shares with actual numbers
+                # TODO: Find way to retrieve dataset information regarding the shape
+                new_self = MPCTensor(secret=__self, parties=parties, shape=(4000, 3), seed_shares=42)
+                new_arg = MPCTensor(secret = arg, parties=parties, shape=(4000, 3), seed_shares=52)
+
+                op_str = attr_path_and_name.rsplit(".", 1)[-1]
+                method = getattr(new_self, op_str, None)
+                if method is None:
+                    raise ValueError(f"Did not found method {op_str} on MPCTensor")
+
+                return method(new_arg)
+
+
+        # we want to get the return type which matches the attr_path_and_name
+        # so we ask lib_ast for the return type name that matches out
+        # attr_path_and_name and then use that to get the actual pointer klass
+        # then set the result to that pointer klass
+        return_type_name = __self.client.lib_ast.query(
+            attr_path_and_name
+        ).return_type_name
+        resolved_pointer_type = __self.client.lib_ast.query(return_type_name)
+        result = resolved_pointer_type.pointer_type(client=__self.client)
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+
+           # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=__self.client,
+                gc_enabled=False,
+            )
+
+            cmd = RunClassMethodAction(
+                path=attr_path_and_name,
+                _self=__self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                id_at_location=result_id_at_location,
+                address=__self.client.address,
+            )
+            __self.client.send_immediate_msg_without_reply(msg=cmd)
 
         inherit_tags(
             attr_path_and_name=attr_path_and_name,

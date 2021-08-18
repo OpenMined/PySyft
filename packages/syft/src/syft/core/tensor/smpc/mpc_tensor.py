@@ -76,6 +76,7 @@ class MPCTensor(PassthroughTensor):
             raise ValueError("Shares should not be None at this step")
 
         res = MPCTensor._mpc_from_shares(shares, parties)
+        self.parties = parties
 
         self.mpc_shape = shape
 
@@ -128,7 +129,7 @@ class MPCTensor(PassthroughTensor):
     ) -> List[ShareTensor]:
         shares = []
         for i, party in enumerate(parties):
-            if party == secret.client:
+            if secret is not None and party == secret.client:
                 value = secret
             else:
                 value = None
@@ -174,7 +175,7 @@ class MPCTensor(PassthroughTensor):
         # TODO: It might be that the resulted shares (if we run any computation) might
         # not be available at this point
 
-        local_shares = [share.get_copy() for share in self.child]
+        local_shares = [share.get_copy(request_block=True) for share in self.child]
         is_share_tensor = isinstance(local_shares[0], ShareTensor)
 
         if is_share_tensor:
@@ -187,6 +188,8 @@ class MPCTensor(PassthroughTensor):
         # if not is_share_tensor:
         #    result = result.decode()
         return result
+
+    get = reconstruct
 
     @staticmethod
     @lru_cache(maxsize=128)
@@ -265,12 +268,37 @@ class MPCTensor(PassthroughTensor):
         Returns:
             MPCTensor. the operation "op_str" applied on "self" and "y"
         """
+        _self = self
+        if ispointer(y):
+            if y.client not in self.parties:
+                parties = self.parties + [y.client]
+            else:
+                parties = [party for party in self.parties]
+
+            # TODO: Extract info for y shape from somewhere
+            # We presume at the moment that it is the same shape
+            y = MPCTensor(secret=y, shape=self.mpc_shape, parties=parties)
+
+            seed_shares = secrets.randbits(32)
+            shares = MPCTensor._get_shares_from_remote_secret(
+                secret=None,
+                shape=self.mpc_shape,
+                parties=parties,
+                seed_shares=seed_shares,
+            )
+            op = getattr(operator, op_str)
+            new_shares = [
+                op(share1, share2) for share1, share2 in zip(self.child, shares)
+            ]
+            new_shares.append(shares[-1])
+            _self = MPCTensor(shares=new_shares, shape=self.mpc_shape, parties=parties)
+
         is_private = isinstance(y, MPCTensor)
 
         if is_private:
-            result = self.__apply_private_op(y, op_str)
+            result = _self.__apply_private_op(y, op_str)
         else:
-            result = self.__apply_public_op(y, op_str)
+            result = _self.__apply_public_op(y, op_str)
 
         if isinstance(y, (float, int)):
             y_shape = (1,)
@@ -280,7 +308,7 @@ class MPCTensor(PassthroughTensor):
             y_shape = y.shape
 
         shape = MPCTensor.__get_shape(op_str, self.mpc_shape, y_shape)
-        result = MPCTensor(shares=result, shape=shape)
+        result = MPCTensor(shares=result, shape=shape, parties=_self.parties)
         return result
 
     def add(
