@@ -1,6 +1,7 @@
 class CompressionParams:
     def __init__(self) -> None:
         self.bytes = {
+            'compress': False,
             'lib': 'lzma',
             'cname': 'zlib',
             'compression_lvl': 8,

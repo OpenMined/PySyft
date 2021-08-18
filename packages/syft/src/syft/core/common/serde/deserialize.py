@@ -108,6 +108,17 @@ def _deserialize(
                         # found it, lets overwrite obj_type and break
                         obj_type = possible_type
                         break
+            else:
+                last_resort_obj_types = [obj_type[0]]
+                last_resort_obj_types_names = [obj_type[0].__name__]
+                for possible_type in obj_type:
+                    if possible_type.__name__ not in last_resort_obj_types_names:
+                        last_resort_obj_types.append(possible_type)
+                        last_resort_obj_types_names.append(possible_type.__name__)
+                        break
+                if len(last_resort_obj_types) == 1:
+                    obj_type = obj_type[0]
+
 
     if not isinstance(obj_type, type):
         traceback_and_raise(f"{deserialization_error}. {type(blob)}")

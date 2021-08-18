@@ -17,14 +17,16 @@ class BytesCompressor:
 
     @staticmethod
     def compress(blob: bytes) -> bytes:
-        compression_lib = BytesCompressor.libmap[compression_params.bytes.get('lib', BytesCompressor.default_lib)]
-        header = str(compression_params.bytes.get('lib', BytesCompressor.default_lib)) + '|' + str(compression_params.bytes.get('cname', BytesCompressor.default_cname)) \
-            + '|' + str(compression_params.bytes.get('compression_lvl', BytesCompressor.default_compression_lvl)) + '|'
-        if compression_lib != blosc:
-            return header.encode('utf-8') + compression_lib.compress(blob)
+        if compression_params.bytes.get('compress', False):
+            compression_lib = BytesCompressor.libmap[compression_params.bytes.get('lib', BytesCompressor.default_lib)]
+            header = str(compression_params.bytes.get('lib', BytesCompressor.default_lib)) + '|' + str(compression_params.bytes.get('cname', BytesCompressor.default_cname)) \
+                + '|' + str(compression_params.bytes.get('compression_lvl', BytesCompressor.default_compression_lvl)) + '|'
+            if compression_lib != blosc:
+                return header.encode('utf-8') + compression_lib.compress(blob)
 
-        return header.encode('utf-8') + compression_lib.compress(blob, cname=compression_params.bytes.get('cname', BytesCompressor.default_cname), \
-            typesize=compression_params.bytes.get('compression_lvl', BytesCompressor.default_compression_lvl))
+            return header.encode('utf-8') + compression_lib.compress(blob, cname=compression_params.bytes.get('cname', BytesCompressor.default_cname), \
+                typesize=compression_params.bytes.get('compression_lvl', BytesCompressor.default_compression_lvl))
+        return blob
 
     @staticmethod
     def decompress(blob: bytes) -> bytes:
