@@ -310,6 +310,36 @@ vagrant up
 This system will start and automatically have the stack running and available on the local
 ip http://10.0.1.3/ you can also SSH into this box using the credentials in the Vagrantfile.
 
+## Azure Cloud Image
+
+az login
+az group create -n openmined-images -l westus
+az storage account create -n openminedimgs -g openmined-images -l westus --sku Standard_LRS
+
+# note openminedimgs needs to be globally unique so you will need to change it
+
+az ad sp create-for-rbac --name openmined-images > azure_vars.json
+
+```json
+{
+  "appId": "21b92977-8ad0-467c-ae3a-47c864418126",
+  "displayName": "openmined-images",
+  "name": "21b92977-8ad0-467c-ae3a-47c864418126",
+  "password": "TfApY1XnkNn04o~I~SR848bNCy3Pw5xwpR",
+  "tenant": "e3f9defa-1378-49b3-aed7-3dcacb468c41"
+}
+
+ packer build -var-file=azure_vars.json -var "subscription_id=767334bd-95eb-473a-a74c-d5b75b5b5198" azure.pkr.hcl
+```
+
+Go to "Images"
+add an image, pick the resource group and then select the -osDisk. file
+
+if you built with managed image this is already done
+
+create a shared image gallery
+pick the same resource group
+
 ## Join Slack
 
 Also, join the rapidly growing community of 12,000+ on [Slack](http://slack.openmined.org).
