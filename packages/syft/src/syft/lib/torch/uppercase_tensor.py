@@ -32,48 +32,10 @@ def object2proto(obj: object, use_compression:bool = True) -> CoreTensor_PB:
             compressed.compress_more(compressor)
 
     return compressed._object2proto()
-    proto = Tensor_PB()
-    proto.tensor = tensor_serializer(obj)
-
-    proto.requires_grad = getattr(obj, "requires_grad", False)
-    proto.device.CopyFrom(
-        Device_PB(
-            type=obj.device.type,  # type: ignore
-            index=obj.device.index,  # type: ignore
-        )
-    )
-
-    if proto.requires_grad:
-        grad = getattr(obj, "grad", None)
-        if grad is not None:
-            proto.grad = tensor_serializer(grad)
-
-    return proto
 
 
 def proto2object(proto: CoreTensor_PB) -> th.Tensor:
     return CompressedTensor._proto2object(proto)
-    tensor = tensor_deserializer(proto.tensor)
-    if proto.requires_grad:
-        tensor.grad = tensor_deserializer(proto.grad)
-
-    tensor.requires_grad_(proto.requires_grad)
-
-    if proto.device.type == "cuda" and th.cuda.is_available():
-        cuda_index = proto.device.index
-        if th.cuda.device_count() < (cuda_index + 1):
-            cuda_index = th.cuda.device_count() - 1
-            warning(
-                f"The requested CUDA index {proto.device.index} is invalid."
-                + f"Falling back to GPU index {cuda_index}.",
-                print=True,
-            )
-        return tensor.cuda(cuda_index)
-
-    if proto.device.type == "cuda" and not th.cuda.is_available():
-        warning("Cannot find any CUDA devices, falling back to CPU.", print=True)
-
-    return tensor
 
 
 GenerateWrapper(
