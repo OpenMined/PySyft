@@ -1,3 +1,6 @@
+# stdlib
+from typing import Union
+
 # third party
 import sympy as sp
 
@@ -5,7 +8,6 @@ import sympy as sp
 from ..common.serde.recursive import RecursiveSerde
 from .entity import Entity
 from .scalar import GammaScalar
-from .types import AcceptableSimpleType
 
 
 class PrimeFactory(RecursiveSerde):
@@ -38,9 +40,9 @@ class VirtualMachinePrivateScalarManager(RecursiveSerde):
 
     def get_symbol(
         self,
-        min_val: AcceptableSimpleType,
-        value: AcceptableSimpleType,
-        max_val: AcceptableSimpleType,
+        min_val: Union[bool, int, float],
+        value: Union[bool, int, float],
+        max_val: Union[bool, int, float],
         entity: Entity,
     ) -> int:
         gs = GammaScalar(min_val=min_val, value=value, max_val=max_val, entity=entity)
