@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package syft.core.node.domain.service;
+
+import "proto/core/common/common_object.proto";
+import "proto/core/io/address.proto";
+
+message CompressionBytesMessage {
+  bool compress = 1;
+  string lib = 2;
+  string cname = 3;
+  int32 compression_lvl = 4;
+}
+
+message CompressionTensorMessage {
+  bool compress = 1;
+  repeated string compressors = 2;
+}
+
+message CompressionDGCCompressorMessage {
+  float ratio = 1;
+}
+
+message CompressionDeepReduceMessage {
+  float compress_ratio = 1;
+  string deepreduce = 2;
+  string index = 3;
+}
+
+message CompressionConnectionMessage {
+  float speed = 1;
+  bool tested = 2;
+}
+
+message CompressionParamsMessage {
+  CompressionBytesMessage bytes = 1;
+  CompressionTensorMessage tensor = 2;
+  CompressionDGCCompressorMessage dgc_compressor = 3;
+  CompressionDeepReduceMessage deep_reduce = 4;
+  CompressionConnectionMessage connection = 5;
+  string status = 6;
+  syft.core.common.UID msg_id = 7;
+  syft.core.io.Address address = 8;
+  syft.core.io.Address reply_to = 9;
+  float time = 10;
+}

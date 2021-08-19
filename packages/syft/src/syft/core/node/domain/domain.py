@@ -41,6 +41,9 @@ from ..common.node_service.association_request.association_request_service impor
 from ..common.node_service.dataset_manager.dataset_manager_service import (
     DatasetManagerService,
 )
+from ..common.node_service.compression_manager.compression_manager_service import (
+    CompressionParamsService,
+)
 from ..common.node_service.group_manager.group_manager_service import (
     GroupManagerService,
 )
@@ -123,6 +126,7 @@ class Domain(Node):
         self.immediate_services_with_reply.append(RoleManagerService)
         self.immediate_services_with_reply.append(UserManagerService)
         self.immediate_services_with_reply.append(DatasetManagerService)
+        self.immediate_services_with_reply.append(CompressionParamsService)
         self.immediate_services_with_reply.append(GroupManagerService)
         # self.immediate_services_with_reply.append(TransferObjectService)
         self.immediate_services_with_reply.append(RequestService)

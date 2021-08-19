@@ -18,6 +18,7 @@ from ...core.node.common.client import Client
 from ...core.node.common.node_table import Base
 from ...core.node.common.node_table.utils import seed_db
 from ...core.node.domain.domain import Domain
+from ...core.compression.compression_params import compression_params
 from ...logger import error
 from ...logger import info
 from ...logger import traceback_and_raise
@@ -315,6 +316,9 @@ def join_duet(
         signaling_client=signaling_client,
         offer=False,
     )
+    
+    compression_params.client = duet
+
     info(print=True)
     info("♫♫♫ > " + bcolors.OKGREEN + "CONNECTED!" + bcolors.ENDC, print=True)
     # begin_duet_client_logger(duet.node)
