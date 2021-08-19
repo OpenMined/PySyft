@@ -20,5 +20,3 @@ async def authenticate_owner(app: FastAPI, client: AsyncClient) -> Dict[str, str
     return await authenticate_user(
         app, client, email="info@openmined.org", password="changethis"
     )
-
-
