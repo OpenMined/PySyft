@@ -116,4 +116,9 @@ def _deserialize(
         traceback_and_raise(deserialization_error)
 
     res = _proto2object(proto=blob)
+
+    # if its a temporary_box upcast
+    if getattr(res, "temporary_box", False) and hasattr(res, "upcast"):
+        return res.upcast()
+
     return res

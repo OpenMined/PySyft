@@ -84,7 +84,7 @@ def cli() -> None:
 )
 @click.option(
     "--tail",
-    default=None,
+    default="true",
     required=False,
     type=str,
     help="Optional: don't tail logs on launch",
@@ -548,6 +548,8 @@ def create_launch_docker_cmd(
     cmd += " TRAEFIK_TAG=" + str(tag)
     cmd += ' DOMAIN_NAME="' + snake_name + '"'
     cmd += " NODE_TYPE=" + str(node_type.input)
+    cmd += " VERSION=`python VERSION`"
+    cmd += " VERSION_HASH=`python VERSION hash`"
     cmd += " docker compose -p " + snake_name
     cmd += " up"
 
@@ -769,6 +771,10 @@ def create_launch_custom_cmd(
 def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
     host_term = verb.get_named_term_hostgrammar(name="host")
     host = host_term.host
+
+    if verb.get_named_term_grammar("node_name").input == "all":
+        # subprocess.call("docker rm `docker ps -aq` --force", shell=True)
+        return "docker rm `docker ps -aq` --force"
 
     if host in ["docker"]:
         version = check_docker_version()

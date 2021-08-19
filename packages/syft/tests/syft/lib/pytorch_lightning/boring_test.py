@@ -17,7 +17,7 @@ SyDataloaderProxyType = Any  # Union[torch.utils.data.DataLoader, DataLoaderPoin
 
 
 # MADHAVA: this needs fixing
-@pytest.mark.skip(
+@pytest.mark.xfail(
     reason="This was broken when we switched from using a Dictionary obj store to a SQL one which means"
     + "that there's missing serialization functionality. Please address when you can."
 )

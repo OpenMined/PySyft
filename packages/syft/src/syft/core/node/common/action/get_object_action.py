@@ -33,7 +33,7 @@ from .common import ImmediateActionWithReply
 @bind_protobuf
 class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
     """
-    GetObjectResponseMessages are the type of messages that are sent in reponse to a
+    GetObjectResponseMessages are the type of messages that are sent in response to a
     :class:`GetObjectAction`. They contain the object that was asked for.
 
     Attributes:
@@ -207,6 +207,7 @@ class GetObjectAction(ImmediateActionWithReply):
             return msg
         except Exception as e:
             traceback_and_raise(e)
+        raise Exception(f"Unable to execute action with {type(self)}")
 
     @property
     def pprint(self) -> str:

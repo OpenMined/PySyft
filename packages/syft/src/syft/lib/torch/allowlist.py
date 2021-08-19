@@ -1055,7 +1055,7 @@ allowlist["torch.Tensor.rfft"] = {
 # --------------------------------------------------------------------------------------
 allowlist["torch.Tensor.device"] = "torch.device"
 allowlist["torch.Tensor.detach_"] = "torch.Tensor"
-allowlist["torch.Tensor.grad"] = "torch.Tensor"  # need an example with grad
+allowlist["torch.Tensor.grad"] = "torch.Tensor"  # MADHAVA: this needs fixing
 
 # --------------------------------------------------------------------------------------
 # SECTION - Tensor methods with specific issues or require a special test combination
@@ -1067,7 +1067,7 @@ allowlist["torch.Size.__len__"] = "syft.lib.python.Int"
 allowlist["torch.Size.__iter__"] = "syft.lib.python.Iterator"
 allowlist["torch.Size.__getitem__"] = "syft.lib.python.Int"
 allowlist["torch.Tensor.size"] = UnionGenerator["torch.Size", "syft.lib.python.Int"]
-allowlist["torch.Tensor.shape"] = "torch.Size"  # requires torch.Size
+allowlist["torch.Tensor.shape"] = "torch.Size"  # MADHAVA: this needs fixing
 # allowlist["torch.Tensor.__iter__"] = "unknown"  # How to handle return iterator?
 # allowlist["torch.Tensor.imag"] = "torch.Tensor"  # requires dtype complex
 # allowlist["torch.Tensor.real"] = "torch.Tensor"  # requires dtype complex
