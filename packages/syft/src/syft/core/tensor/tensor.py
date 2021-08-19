@@ -9,17 +9,15 @@ from typing import Optional
 import numpy as np
 import torch as th
 
-# relative
-# syft relative
-from syft.core.common import UID
-from syft.core.pointer.pointer import Pointer
-
+from ..common.uid import UID
+from ..pointer.pointer import Pointer
+from .smpc.mpc_tensor import MPCTensor
 from ...core.common.serde.recursive import RecursiveSerde
 from ..common.serde.serializable import bind_protobuf
 from .ancestors import AutogradTensorAncestor
 from .ancestors import PhiTensorAncestor
 from .fixed_precision_tensor_ancestor import FixedPrecisionTensorAncestor
-from .passthrough import PassthroughTensor  # type: ignore
+from .passthrough import PassthroughTensor, SupportedChainType  # type: ignore
 
 # from .smpc.share_tensor import ShareTensor
 
@@ -42,6 +40,20 @@ class TensorPointer(Pointer):
                          object_type=object_type,
                          tags=tags,
                          description=description)
+
+    def __add__(self, other: Any) -> SupportedChainType:
+
+        if self.client != other.client:
+            parties = [self.client, other.client]
+
+            self_mpc = MPCTensor(secret=self, shape=(40000, 3), parties=parties)
+            other_mpc = MPCTensor(secret=other, shape=(40000, 3), parties=parties)
+
+            return self_mpc + other_mpc
+
+        return NotImplemented
+
+
 
 
 

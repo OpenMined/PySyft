@@ -196,29 +196,6 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
         Returns:
             Pointer to object returned by class method.
         """
-        # TODO: Do it for kwargs
-        for arg in args:
-            client = getattr(arg, "client", None)
-            if client is not None and client != __self.client:
-                # relative
-                from ..core.tensor.smpc.mpc_tensor import MPCTensor
-
-                parties = [__self.client, client]
-                # TODO: Replace seed_shares with actual numbers
-                # TODO: Find way to retrieve dataset information regarding the shape
-                new_self = MPCTensor(
-                    secret=__self, parties=parties, shape=(40000, 3)
-                )
-                new_arg = MPCTensor(
-                    secret=arg, parties=parties, shape=(40000, 3)
-                )
-
-                op_str = attr_path_and_name.rsplit(".", 1)[-1]
-                method = getattr(new_self, op_str, None)
-                if method is None:
-                    raise ValueError(f"Did not found method {op_str} on MPCTensor")
-
-                return method(new_arg)
 
         # we want to get the return type which matches the attr_path_and_name
         # so we ask lib_ast for the return type name that matches out

@@ -236,7 +236,7 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
                     #         object_type=obj.object_type,
                     #         tags=obj.tags,
                     #         description=obj.description)
-                    #
+
                     results.append(ptr)
         except Exception as e:
             error(f"Error searching store. {e}")
