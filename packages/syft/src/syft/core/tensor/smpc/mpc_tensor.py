@@ -171,11 +171,11 @@ class MPCTensor(PassthroughTensor):
 
         return shares
 
-    def reconstruct(self) -> Any:
+    def reconstruct(self):
         # TODO: It might be that the resulted shares (if we run any computation) might
         # not be available at this point
 
-        local_shares = [share.get_copy(request_block=True) for share in self.child]
+        local_shares = [share.get() for share in self.child]
         is_share_tensor = isinstance(local_shares[0], ShareTensor)
 
         if is_share_tensor:
