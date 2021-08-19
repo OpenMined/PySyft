@@ -84,7 +84,7 @@ def cli() -> None:
 )
 @click.option(
     "--tail",
-    default=None,
+    default="true",
     required=False,
     type=str,
     help="Optional: don't tail logs on launch",
