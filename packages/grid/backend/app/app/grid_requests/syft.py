@@ -44,4 +44,4 @@ def update_request(
         request_id=request_id,
         status=updated_request.status,
     )
-    return reply.resp_msg
+    return reply.status
