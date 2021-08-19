@@ -1,4 +1,9 @@
 ---
+- name: Display all variables/facts known for a host
+  ansible.builtin.debug:
+    var: hostvars[inventory_hostname]
+    verbosity: 1
+
 - name: Apply system changes
   import_tasks: system.yml
   when: deploy_only is not defined

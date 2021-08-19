@@ -1,9 +1,9 @@
 ---
-- name: Install security updates
-  shell: "sudo apt list --upgradable | grep security |cut -d\/ -f1|xargs sudo apt-get install -y --only-upgrade"
-  become: yes
-  args:
-    executable: /bin/bash
+# - name: Install security updates
+#   shell: "sudo apt list --upgradable | grep security |cut -d\/ -f1|xargs sudo apt-get install -y --only-upgrade"
+#   become: yes
+#   args:
+#     executable: /bin/bash
 
 - name: Allow sudo without password
   ansible.builtin.lineinfile:
@@ -57,12 +57,16 @@
     autoclean: yes
     update_cache: yes
   loop:
+    - acl
     - python3-pip
     - ntp
     - tmux
     - vim
     - ufw
     - git
+    - python-is-python3
+    - net-tools
+    - ifupdown
 
 - name: Upgrade pip and some packages
   pip:

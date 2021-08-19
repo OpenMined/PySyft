@@ -23,4 +23,3 @@
     chdir: "/home/om/PySyft/packages/grid"
     executable: /bin/bash
   become_user: "{{ om_user }}"
-  when: packer is not defined
