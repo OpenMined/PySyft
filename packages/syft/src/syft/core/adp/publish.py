@@ -27,8 +27,16 @@ from .search import max_lipschitz_wrt_entity
 def publish(
     scalars: TypeList[Any], acc: Any, user_key: VerifyKey, sigma: float = 1.5
 ) -> TypeList[Any]:
+    """
+    Method to compute and update the mechanism values of data entities managed by the Adversarial Accountant
+    class.
+    """
+
+    # Creates a temporary register (memory) to
+    # store entities and their respective mechanisms
     acc.temp_entity2ledger = {}
 
+    # Recover all entity mechanisms
     ms = get_all_entity_mechanisms(scalars=scalars, sigma=sigma)
 
     # add the user_key to all of the mechanisms
@@ -36,8 +44,13 @@ def publish(
         for m in mechs:
             m.user_key = user_key
 
+    # Register the mechanism / entities at the temporary data structure
+    # This data structure will be organized as a dictionary of
+    # lists, each list will contain a set of mechanisms related to an entity.
+    # Example: acc.temp_entity2ledger = {"patient_1": [<iDPGaussianMechanism>, <iDPGaussianMechanism>] }
     acc.temp_append(ms)
 
+    # Filter entities by searching for the overbudgeted ones.
     overbudgeted_entities = acc.overbudgeted_entities(
         temp_entities=acc.temp_entity2ledger, user_key=user_key
     )
@@ -47,9 +60,9 @@ def publish(
     if len(overbudgeted_entities) > 0:
         scalars = deepcopy(scalars)
 
+    # If some overbudgeted entity is found, run this.
     iterator = 0
     while len(overbudgeted_entities) > 0 and iterator < 3:
-        print("\n\n QUERY IS OVER BUDGET!!! \n\n")
 
         iterator += 1
 
@@ -62,8 +75,6 @@ def publish(
             for input_scalar in output_scalar.input_scalars:
                 input_scalars.add(input_scalar)
 
-        # should_break = False
-
         for input_scalar in input_scalars:
             if input_scalar.entity in overbudgeted_entities:
                 for output_scalar in scalars:
@@ -74,9 +85,6 @@ def publish(
                     output_scalar.poly = SubstitutionMapper(
                         make_subst_func({input_scalar.poly.name: 0})
                     )(output_scalar.poly)
-            #
-            # if should_break:
-            #     break
 
         acc.temp_entity2ledger = {}
 
@@ -94,8 +102,11 @@ def publish(
             temp_entities=acc.temp_entity2ledger, user_key=user_key
         )
 
+    # Add to each scalar a a gaussian noise in an interval between
+    # 0 to sigma value.
     output = [s.value + random.gauss(0, sigma) for s in scalars]
 
+    # Persist the temporary ledger into the database.
     acc.save_temp_ledger_to_longterm_ledger()
 
     return output
@@ -104,7 +115,9 @@ def publish(
 def get_mechanism_for_entity(
     scalars: TypeList[Any], entity: Entity, sigma: float = 1.5
 ) -> Type[iDPGaussianMechanism]:
-
+    """
+    Iterates over scalars computing its value and L attribute and builds its mechanism.
+    """
     m_id = "ms_"
     for s in scalars:
         m_id += str(s.id).split(" ")[1][:-1] + "_"
@@ -125,6 +138,7 @@ def get_mechanism_for_entity(
 def get_all_entity_mechanisms(
     scalars: TypeList[Any], sigma: float = 1.5
 ) -> TypeDict[Entity, Any]:
+    "Generates a list of entities by processing the given scalars list."
     entities = set()
     for s in scalars:
         for i_s in s.input_scalars:
