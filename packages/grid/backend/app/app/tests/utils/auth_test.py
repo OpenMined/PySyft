@@ -4,7 +4,6 @@ from typing import Dict
 # third party
 from fastapi import FastAPI
 from httpx import AsyncClient
-import pytest
 
 
 async def authenticate_user(
@@ -23,8 +22,3 @@ async def authenticate_owner(app: FastAPI, client: AsyncClient) -> Dict[str, str
     )
 
 
-@pytest.mark.asyncio
-async def test_authenticate_user(app: FastAPI, client: AsyncClient) -> None:
-    res = authenticate_owner(app=app, client=client)
-    print(res)
-    assert True is False
