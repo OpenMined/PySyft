@@ -181,8 +181,11 @@ class ShareTensor(PassthroughTensor, Serializable):
         Returns:
             ShareTensor. Result of the operation.
         """
+        print("share_tensor.A")
         ShareTensor.sanity_check(y)
+        print("share_tensor.B")
         new_share = self.apply_function(y, "add")
+        print("share_tensor.C")
         return new_share
 
     def sub(

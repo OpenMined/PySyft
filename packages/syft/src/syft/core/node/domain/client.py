@@ -429,7 +429,7 @@ class DomainClient(Client):
 
     def __repr__(self) -> str:
         no_dash = str(self.id).replace("-", "")
-        return f"<{type(self).__name__}: {no_dash}>"
+        return f"<{type(self).__name__} - {self.name}: {no_dash}>"
 
     def update_vars(self, state: dict) -> pd.DataFrame:
         for ptr in self.store.store:

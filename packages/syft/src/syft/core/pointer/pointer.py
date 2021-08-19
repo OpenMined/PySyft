@@ -158,6 +158,9 @@ class Pointer(AbstractPointer):
         # has already been made
         self._exhausted = False
 
+    def __repr__(self):
+        return f"<{self.__name__} -> {self.client.name}:{self.id_at_location.no_dash}>"
+
     def _get(self, delete_obj: bool = True, verbose: bool = False) -> StorableObject:
         """Method to download a remote object from a pointer object if you have the right
         permissions.

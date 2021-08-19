@@ -207,10 +207,10 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
                 # TODO: Replace seed_shares with actual numbers
                 # TODO: Find way to retrieve dataset information regarding the shape
                 new_self = MPCTensor(
-                    secret=__self, parties=parties, shape=(4000, 3), seed_shares=42
+                    secret=__self, parties=parties, shape=(40000, 3)
                 )
                 new_arg = MPCTensor(
-                    secret=arg, parties=parties, shape=(4000, 3), seed_shares=52
+                    secret=arg, parties=parties, shape=(40000, 3)
                 )
 
                 op_str = attr_path_and_name.rsplit(".", 1)[-1]
@@ -641,7 +641,21 @@ class Class(Callable):
         attrs["__name__"] = name
         attrs["__module__"] = ".".join(parts)
 
-        klass_pointer = type(self.pointer_name, (Pointer,), attrs)
+        # if the object already has a pointer class specified, use that instead of creating
+        # an empty subclass of Pointer
+        if hasattr(self.object_ref, "PointerClassOverride"):
+
+            klass_pointer = getattr(self.object_ref, "PointerClassOverride")
+            for key,val in attrs.items():
+
+                # NOTE: __name__ and __module__ can't be
+                # overridden here despite the fact that it tries
+                setattr(klass_pointer, key, val)
+
+        # no specific pointer class found, let's make an empty subclass of Pointer instead
+        else:
+            klass_pointer = type(self.pointer_name, (Pointer,), attrs)
+
         setattr(klass_pointer, "path_and_name", self.path_and_name)
         setattr(self, self.pointer_name, klass_pointer)
 

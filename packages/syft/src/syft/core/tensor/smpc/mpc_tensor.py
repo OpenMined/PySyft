@@ -82,6 +82,10 @@ class MPCTensor(PassthroughTensor):
 
         super().__init__(res)
 
+    @property
+    def shape(self):
+        return self.mpc_shape
+
     @staticmethod
     def _mpc_from_shares(
         shares: List[ShareTensor],
@@ -171,6 +175,18 @@ class MPCTensor(PassthroughTensor):
 
         return shares
 
+    def request(self,
+        reason: str = '',
+        block: bool = False,
+        timeout_secs: Optional[int] = None,
+        verbose: bool = False,
+    ):
+        for child in self.child:
+            child.request(reason=reason,
+                          block=block,
+                          timeout_secs=timeout_secs,
+                          verbose=verbose)
+
     def reconstruct(self):
         # TODO: It might be that the resulted shares (if we run any computation) might
         # not be available at this point
@@ -236,10 +252,16 @@ class MPCTensor(PassthroughTensor):
         return object.__getattribute__(self, attr_name)
 
     def __apply_private_op(self, other: "MPCTensor", op_str: str) -> List[ShareTensor]:
+        print("C.N.0")
         op = getattr(operator, op_str)
+        print("C.N.1")
         if isinstance(other, MPCTensor):
+            print("C.N.1.A")
+            print(op)
+            print(op_str)
             res_shares = [op(a, b) for a, b in zip(self.child, other.child)]
         else:
+            print("C.N.1.B")
             raise ValueError("Add works only for the MPCTensor at the moment!")
         return res_shares
 
@@ -268,47 +290,68 @@ class MPCTensor(PassthroughTensor):
         Returns:
             MPCTensor. the operation "op_str" applied on "self" and "y"
         """
+        print("A")
         _self = self
         if ispointer(y):
+            print("B.1")
             if y.client not in self.parties:
                 parties = self.parties + [y.client]
             else:
                 parties = [party for party in self.parties]
-
+            print("B.2")
             # TODO: Extract info for y shape from somewhere
             # We presume at the moment that it is the same shape
             y = MPCTensor(secret=y, shape=self.mpc_shape, parties=parties)
-
+            print("B.3")
             seed_shares = secrets.randbits(32)
+            print("B.4")
             shares = MPCTensor._get_shares_from_remote_secret(
                 secret=None,
                 shape=self.mpc_shape,
                 parties=parties,
                 seed_shares=seed_shares,
             )
+            print("B.5")
             op = getattr(operator, op_str)
+
+            print("B.6")
             new_shares = [
                 op(share1, share2) for share1, share2 in zip(self.child, shares)
             ]
+            print("B.7")
             new_shares.append(shares[-1])
+            print("B.8")
             _self = MPCTensor(shares=new_shares, shape=self.mpc_shape, parties=parties)
+            print("B.9")
 
-        is_private = isinstance(y, MPCTensor)
+        print("C")
 
-        if is_private:
+        if isinstance(y, MPCTensor):
+            print("C.1")
             result = _self.__apply_private_op(y, op_str)
         else:
+            print("C.2")
             result = _self.__apply_public_op(y, op_str)
 
+        print("D")
+
         if isinstance(y, (float, int)):
+            print("D.1")
             y_shape = (1,)
         elif isinstance(y, MPCTensor):
+            print("D.2")
             y_shape = y.mpc_shape
         else:
+            print("D.3")
             y_shape = y.shape
 
         shape = MPCTensor.__get_shape(op_str, self.mpc_shape, y_shape)
+        print("Shape seems to be:" + str(shape) + " of type " + str(type(shape)))
+        # shape = self.shape
+        # print("...when it should be " + str(self.shape) + " of type " + str(type(shape)))
+
         result = MPCTensor(shares=result, shape=shape, parties=_self.parties)
+
         return result
 
     def add(
@@ -324,6 +367,12 @@ class MPCTensor(PassthroughTensor):
         """
         res = self.__apply_op(y, "add")
         return res
+        # if isinstance(y, MPCTensor):
+        #     res_shares = [operator.add(a, b) for a, b in zip(self.child, y.child)]
+        #     mpc_tensor = MPCTensor(shares=res_shares, shape=self.shape, parties=self.parties)
+        #     return mpc_tensor
+        # else:
+        #     return NotImplemented
 
     def sub(self, y: "MPCTensor") -> "MPCTensor":
         res = self.__apply_op(y, "sub")
@@ -360,6 +409,17 @@ class MPCTensor(PassthroughTensor):
             res = f"{res}\n\t{share}"
 
         return res
+
+    def __repr__(self):
+
+        out = "MPCTensor"
+
+        out += ".shape=" + str(self.shape) + "\n"
+        for i, child in enumerate(self.child):
+            out += f"\t .child[{i}] = " + child.__repr__() + "\n"
+        out = out[:-1] + ""
+
+        return out
 
     __add__ = add
     __radd__ = add
