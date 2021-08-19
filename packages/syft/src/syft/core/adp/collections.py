@@ -1,3 +1,10 @@
+# CLEANUP NOTES:
+# - check if this exists elsewhere too - move out of ADP to somewhere generic (if we're going to keep it at all)
+# - remove unused comments
+# - add documentation for each method
+# - add comments inline explaining each piece
+# - add a unit test for each method (at least)
+
 # stdlib
 from collections import Counter
 from collections import defaultdict

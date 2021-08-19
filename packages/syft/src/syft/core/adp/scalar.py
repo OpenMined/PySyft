@@ -1,3 +1,9 @@
+# CLEANUP NOTES (for ISHAN):
+# - remove unused comments
+# - add documentation for each method
+# - add comments inline explaining each piece
+# - add a unit test for each method (at least)
+
 # future
 from __future__ import annotations
 
