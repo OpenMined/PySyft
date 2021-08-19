@@ -2,9 +2,9 @@
 from typing import Dict
 
 # third party
-import pytest
 from fastapi import FastAPI
 from httpx import AsyncClient
+import pytest
 
 
 async def authenticate_user(
