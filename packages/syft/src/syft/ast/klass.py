@@ -203,7 +203,7 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
                 # relative
                 from ..core.tensor.smpc.mpc_tensor import MPCTensor
 
-                parties = [client, __self.client]
+                parties = [__self.client, client]
                 # TODO: Replace seed_shares with actual numbers
                 # TODO: Find way to retrieve dataset information regarding the shape
                 new_self = MPCTensor(
