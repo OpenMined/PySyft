@@ -190,12 +190,11 @@ def update_request_msg(
     msg: UpdateRequestMessage,
     node: AbstractNode,
     verify_key: VerifyKey,
-) -> DeleteRequestResponse:
+) -> UpdateRequestResponse:
 
     # Get Payload Content
-    request_id = msg.request_id.get("request_id", None)
-    status = msg.status.get("status", None)
-    users = node.users
+    request_id = msg.request_id
+    status = msg.status
 
     # Check if status field is empty
     missing_paramaters = not status
@@ -208,7 +207,7 @@ def update_request_msg(
 
     if not _req:
         raise RequestError
-
+   
     if status not in ["accepted", "denied"]:
         raise InvalidParameterValueError(
             message='Request status should be either "accepted" or "denied"'
@@ -230,10 +229,11 @@ def update_request_msg(
     else:
         raise AuthorizationError("You're not allowed to update Request information!")
 
-    return DeleteRequestResponse(
+    return UpdateRequestResponse(
         address=msg.reply_to,
         status_code=200,
-        content={"msg": "Request Updated!"},
+        status=msg.status,
+        request_id=msg.request_id,
     )
 
 

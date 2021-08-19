@@ -72,12 +72,14 @@ message UpdateRequestMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
   string status = 3;
-  syft.core.io.Address reply_to = 4;
+  string request_id = 4;
+  syft.core.io.Address reply_to = 5;
 }
 
 message UpdateRequestResponse {
   syft.core.common.UID msg_id = 1;
   int32 status_code = 2;
   string status = 3;
-  syft.core.io.Address address = 4;
+  string request_id = 4;
+  syft.core.io.Address address = 5;
 }
