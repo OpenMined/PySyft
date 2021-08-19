@@ -285,7 +285,11 @@ def create_launch_cmd(
 
     tail = True
     if "tail" in kwargs:
-        tail = str_to_bool(kwargs["tail"])
+        if kwargs['tail'] is None:
+            ""
+            # tail = True
+        else:
+            tail = str_to_bool(kwargs["tail"])
 
     if host in ["docker"]:
 
