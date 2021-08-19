@@ -37,6 +37,9 @@ flake8 = "^3.7.9"
 pytest = "^5.4.1"
 sqlalchemy-stubs = "^0.3"
 pytest-cov = "^2.8.1"
+pytest-asyncio = "^0.15.1"
+asgi-lifespan = "^1.0.1"
+httpx = "^0.18.2"
 
 [tool.isort]
 multi_line_output = 3
