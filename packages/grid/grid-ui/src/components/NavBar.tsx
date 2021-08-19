@@ -11,7 +11,7 @@ import {useAuth} from '@/context/auth-context'
 const navigation = [
   {name: 'Datasets', href: '/datasets', disabled: true},
   {name: 'Models', href: '/models', disabled: true},
-  {name: 'Requests', href: '/requests', disabled: true},
+  {name: 'Requests', href: '/requests'},
   {name: 'Tensors', href: '/tensors', disabled: true},
   {name: 'Users', href: '/users'},
   {name: 'Roles & Permissions', href: '/permissions'},
