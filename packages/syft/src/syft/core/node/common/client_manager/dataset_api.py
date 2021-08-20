@@ -119,7 +119,7 @@ class Dataset:
     def pandas(self):
         return pd.DataFrame(self.raw)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: Any):
         for d in self.data:
             if d["name"] == key:
                 return self.client.store[d["id"].replace("-", "")]
