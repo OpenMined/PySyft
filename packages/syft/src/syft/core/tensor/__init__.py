@@ -11,7 +11,7 @@ from ...core.node.abstract.node import AbstractNodeClient
 from .fixed_precision_tensor import FixedPrecisionTensor
 from .smpc.share_tensor import ShareTensor
 from .tensor import Tensor
-from .tensor import TensorPointer
+from .tensor import TensorPointer  # noqa: 401
 
 
 def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:

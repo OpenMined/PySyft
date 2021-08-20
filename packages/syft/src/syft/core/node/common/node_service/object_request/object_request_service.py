@@ -245,10 +245,9 @@ def del_request_msg(
 
     request_id = msg.request_id.get("request_id", None)
 
-    current_user_id = users.first(
+    current_user_id = node.users.first(
         verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
     ).id
-    users = node.users
 
     requests = node.data_requests
     request = requests.first(id=request_id)
@@ -264,9 +263,6 @@ def del_request_msg(
         status_code=200,
         content={"msg": "Request deleted!"},
     )
-
-
-# PySyft Services
 
 
 def request_answer_msg(

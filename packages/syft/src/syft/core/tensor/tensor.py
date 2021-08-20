@@ -12,23 +12,21 @@ from typing import Union
 import numpy as np
 import torch as th
 
+# relative
 from ... import lib
-from ..node.abstract.node import AbstractNodeClient
 from ...ast.klass import pointerize_args_and_kwargs
 from ...core.common.serde.recursive import RecursiveSerde
 from ...util import inherit_tags
 from ..common.serde.serializable import bind_protobuf
 from ..common.uid import UID
+from ..node.abstract.node import AbstractNodeClient
 from ..node.common.action.run_class_method_action import RunClassMethodAction
 from ..pointer.pointer import Pointer
 from .ancestors import AutogradTensorAncestor
 from .ancestors import PhiTensorAncestor
 from .fixed_precision_tensor_ancestor import FixedPrecisionTensorAncestor
-from .passthrough import PassthroughTensor  # type: ignore
-from .passthrough import SupportedChainType
+from .passthrough import PassthroughTensor
 from .smpc.mpc_tensor import MPCTensor
-
-# from .smpc.share_tensor import ShareTensor
 
 
 class TensorPointer(Pointer):
@@ -58,7 +56,7 @@ class TensorPointer(Pointer):
 
         self.public_shape = public_shape
 
-    def share(self, *parties: Tuple[AbstractNodeClient,...]) -> MPCTensor:
+    def share(self, *parties: Tuple[AbstractNodeClient, ...]) -> MPCTensor:
 
         parties = list(parties) + [self.client]
 
@@ -67,7 +65,6 @@ class TensorPointer(Pointer):
         return self_mpc
 
     def simple_add(self, other: Any) -> TensorPointer:
-
         # we want to get the return type which matches the attr_path_and_name
         # so we ask lib_ast for the return type name that matches out
         # attr_path_and_name and then use that to get the actual pointer klass
@@ -143,7 +140,8 @@ class TensorPointer(Pointer):
         return self.simple_add(other=other)
 
 
-# TODO: Need to double check to see if smpc.ShareTensor operations are working correctly here since it's not inherited
+# TODO: Need to double check to see if smpc.ShareTensor operations are working correctly
+# here since it's not inherited
 @bind_protobuf
 class Tensor(
     PassthroughTensor,
