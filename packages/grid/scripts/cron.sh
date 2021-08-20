@@ -25,17 +25,21 @@ START_HASH=$(git rev-parse HEAD)
 CURRENT_REMOTE=$(git remote -v | head -n 1 | cut -d ' ' -f 1 | awk '{print $2}')
 CURRENT_BRANCH=$(git branch --show-current)
 echo "Running autoupdate CRON"
-if [ "$CURRENT_REMOTE" != "$2" ]; then
+if [ "$CURRENT_REMOTE" != "$2" ]
+then
     echo "Switching remotes to: ${2}"
     git remote rm origin || true
     git remote add origin https://github.com/$2
     git fetch origin
     echo "Checking out branch: ${3}"
+    git reset --hard
     git checkout $3 --force
     git pull origin $3 --rebase
     chown -R $4:$5 .
-    elif [ "$CURRENT_BRANCH" != "$3" ]; then
+elif [ "$CURRENT_BRANCH" != "$3" ]
+then
     echo "Checking out branch: ${3}"
+    git reset --hard
     git checkout $3 --force
     git pull origin $3 --rebase
     chown -R $4:$5 .
@@ -43,11 +47,12 @@ fi
 
 END_HASH=$(git rev-parse HEAD)
 
-if [ "$START_HASH" != "$END_HASH" ]; then
+if [ "$START_HASH" != "$END_HASH" ]
+then
     echo "Code has changed so redeploying with HAGrid"
     rm -rf ${8}
     cp -r ${1} ${8}
     chown -R $4:$5 ${8}
-    runuser -l ${4} -c 'hagrid launch ${7} ${6} to localhost --repo=${2} --branch=${3}'
+    runuser -l ${4} -c "hagrid launch ${7} ${6} to localhost --repo=${2} --branch=${3}"
 fi
 echo "Finished autoupdate CRON"
