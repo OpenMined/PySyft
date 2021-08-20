@@ -1,3 +1,9 @@
+# CLEANUP NOTES:
+# - remove unused comments
+# - add documentation for each method
+# - add comments inline explaining each piece
+# - add a unit test for each method (at least)
+
 # stdlib
 from functools import lru_cache
 from typing import Any
@@ -58,9 +64,6 @@ def create_searchable_function_from_polynomial(
     if "pymbolic" in str(type(poly)):
 
         def _run_specific_args(tuple_of_args: tuple) -> EM:
-            # kwargs = {sym: tuple_of_args[i] for sym, i in symbol2index.items()}
-            # output = poly.subs(kwargs)
-
             kwargs = {sym: tuple_of_args[i] for sym, i in symbol2index.items()}
             output = EM(context=kwargs)(poly)
             return output
@@ -73,8 +76,6 @@ def create_searchable_function_from_polynomial(
             kwargs = {sym: tuple_of_args[i] for sym, i in symbol2index.items()}
             output = poly.subs(kwargs)
 
-            # kwargs = {sym: tuple_of_args[i] for sym, i in symbol2index.items()}
-            # output = EM(context=kwargs)(poly)
             return output
 
     return _run_specific_args
@@ -176,8 +177,6 @@ def minimize_function(
     if not shgo_results.success or force_all_searches:
         # sometimes simplicial has trouble as a result of initialization
         # see: https://github.com/scipy/scipy/issues/10429 for details
-        #         if not force_all_searches:
-        #             print("Simplicial search didn't work... trying sobol")
         shgo_results = optimize.shgo(
             f, rranges, sampling_method="sobol", constraints=constraints
         )
@@ -207,7 +206,6 @@ def max_lipschitz_via_jacobian(
     # scalars = R^d` representing the d' dimentional output of g
     # input_entity = the 'i'th entity for which we want to compute a lipschitz bound
 
-    # polys = [x.poly for x in scalars]  # @Madhava: unused?
     input_scalars = set()
     for s in scalars:
         for i_s in s.input_scalars:

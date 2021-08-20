@@ -7,10 +7,12 @@ from typing import List
 from typing import Union
 
 # third party
+import pandas as pd
 from pandas import DataFrame
 
 # syft absolute
 from syft import deserialize
+from syft.core.common import UID
 from syft.core.node.abstract.node import AbstractNodeClient
 from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
     CreateDatasetMessage,
@@ -77,7 +79,7 @@ class DatasetRequestAPI(RequestAPI):
 
         if isinstance(key, int):
             a = self.all()
-            return Dataset(a[key : key + 1], self.client, **a[key])
+            return Dataset(a[key : key + 1], self.client, **a[key])  # noqa: E203
 
     def __delitem__(self, key: str) -> Any:
         self.delete(dataset_id=key)
@@ -101,12 +103,17 @@ class DatasetRequestAPI(RequestAPI):
         return Dataset(dataset_obj)
 
 
-# third party
-import pandas as pd
-
-
 class Dataset:
-    def __init__(self, raw, client, description, name, id, tags, data):
+    def __init__(
+        self,
+        raw: Any,
+        client: AbstractNodeClient,
+        description: str,
+        name: str,
+        id: UID,
+        data: Any,
+        tags: List[str] = [],
+    ) -> None:
         self.raw = raw
         self.description = description
         self.name = name
@@ -119,7 +126,7 @@ class Dataset:
     def pandas(self):
         return pd.DataFrame(self.raw)
 
-    def __getitem__(self, key: Any):
+    def __getitem__(self, key) -> Any:
         for d in self.data:
             if d["name"] == key:
                 return self.client.store[d["id"].replace("-", "")]

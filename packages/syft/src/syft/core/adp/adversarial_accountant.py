@@ -1,3 +1,9 @@
+# CLEANUP NOTES:
+# - remove unused comments
+# - add documentation for each method
+# - add comments inline explaining each piece
+# - add a unit test for each method (at least)
+
 # stdlib
 from typing import Dict as TypeDict
 from typing import KeysView as TypeKeysView
@@ -8,7 +14,6 @@ from typing import Set as TypeSet
 # third party
 from autodp.autodp_core import Mechanism
 from autodp.transformer_zoo import Composition
-from nacl.encoding import HexEncoder
 from nacl.signing import VerifyKey
 from sqlalchemy.engine import Engine
 
@@ -24,7 +29,12 @@ class AdversarialAccountant:
     def __init__(
         self, db_engine: Engine, max_budget: float = 10, delta: float = 1e-6
     ) -> None:
+
+        # this is a database-backed lookup table
         self.entity2ledger = LedgerManager(db_engine)
+
+        # this is a temporary lookup table for mechanisms we're not sure
+        # we're going to keep (See publish.py for how this is used)
         self.temp_entity2ledger = {}
         self.max_budget = max_budget
         self.delta = delta
@@ -68,8 +78,8 @@ class AdversarialAccountant:
 
             mechanisms = filtered_mechanisms
 
-        print("Num mechanisms before TEMP:" + str(len(mechanisms)))
-        print("self.temp_entity2ledger:" + str(self.temp_entity2ledger))
+        # print("Num mechanisms before TEMP:" + str(len(mechanisms)))
+        # print("self.temp_entity2ledger:" + str(self.temp_entity2ledger))
 
         if entity in self.temp_entity2ledger.keys():
             mechanisms = mechanisms + self.temp_entity2ledger[entity]
@@ -89,7 +99,7 @@ class AdversarialAccountant:
 
         #     mechanisms = filtered_mechanisms
 
-        print("Num mechanisms after TEMP:" + str(len(mechanisms)))
+        # print("Num mechanisms after TEMP:" + str(len(mechanisms)))
         # for m in mechanisms:
         # print("Filtered Mechanism Entity:" + str(m.entity_name))
 
@@ -115,7 +125,7 @@ class AdversarialAccountant:
         else:
             eps = 0
 
-        print("Epsilon" + str(eps))
+        # print("Epsilon" + str(eps))
         return float(eps)
 
         # # Query for eps given delta
@@ -128,13 +138,13 @@ class AdversarialAccountant:
 
     def has_budget(self, entity: Entity, user_key: VerifyKey) -> bool:
         spend = self.get_eps_for_entity(entity=entity, user_key=user_key)
-        print("SPEND:" + str(spend))
+        # print("SPEND:" + str(spend))
         user_budget = self.entity2ledger.get_user_budget(user_key=user_key)
-        print("USER BUDGET:" + str(user_budget))
+        # print("USER BUDGET:" + str(user_budget))
         # print("ACCOUNTANT MAX BUDGET", self.max_budget)
         # @Andrew can we use <= or does it have to be <
         has_budget = spend <= user_budget
-        print(f"has_budget = {spend} < {user_budget}")
+        # print(f"has_budget = {spend} < {user_budget}")
 
         return has_budget
 
@@ -176,5 +186,5 @@ class AdversarialAccountant:
 class AccountantReference(RecursiveSerde):
     __attr_allowlist__ = ["msg"]
 
-    def __init__(self, msg):
+    def __init__(self, msg) -> None:
         self.msg = msg

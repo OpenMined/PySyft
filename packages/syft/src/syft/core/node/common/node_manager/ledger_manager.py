@@ -65,7 +65,7 @@ class LedgerManager(DatabaseManager):
         self.entity_manager = EntityManager(database)
         self.mechanism_manager = MechanismManager(database)
 
-    def get_user_budget(self, user_key: VerifyKey):
+    def get_user_budget(self, user_key: VerifyKey) -> float:
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
         serialized_key = user_key.encode(encoder=HexEncoder).decode("utf-8")
         budget = (

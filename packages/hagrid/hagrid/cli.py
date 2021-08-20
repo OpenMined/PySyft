@@ -548,13 +548,15 @@ def create_launch_docker_cmd(
     cmd += " TRAEFIK_TAG=" + str(tag)
     cmd += ' DOMAIN_NAME="' + snake_name + '"'
     cmd += " NODE_TYPE=" + str(node_type.input)
+    cmd += " VERSION=`python VERSION`"
+    cmd += " VERSION_HASH=`python VERSION hash`"
     cmd += " docker compose -p " + snake_name
     cmd += " up"
 
     if not tail:
         cmd += " -d"
 
-    cmd += " --build"  # force rebuild
+    # cmd += " --build"  # force rebuild
     cmd = "cd " + GRID_SRC_PATH + ";" + cmd
     return cmd
 
