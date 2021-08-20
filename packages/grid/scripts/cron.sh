@@ -27,7 +27,7 @@ CURRENT_BRANCH=$(git branch --show-current)
 echo "Running autoupdate CRON"
 
 # does https://github.com/OpenMined/PySyft contain OpenMined/PySyft
-if [ "$CURRENT_REMOTE" == *"$2"* ]
+if [ "$CURRENT_REMOTE" != *"$2"* ]
 then
     echo "Switching remotes to: ${2}"
     git remote rm origin || true
@@ -41,11 +41,11 @@ then
 elif [ "$CURRENT_BRANCH" != "$3" ]
 then
     echo "Checking out branch: ${3}"
-    git reset --hard
-    git checkout $3 --force
-    git pull origin $3 --rebase
-    chown -R $4:$5 .
 fi
+git reset --hard
+git checkout $3 --force
+git pull origin $3 --rebase
+chown -R $4:$5 .
 
 END_HASH=$(git rev-parse HEAD)
 
