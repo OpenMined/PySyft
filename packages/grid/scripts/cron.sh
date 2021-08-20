@@ -25,7 +25,9 @@ START_HASH=$(git rev-parse HEAD)
 CURRENT_REMOTE=$(git remote -v | head -n 1 | cut -d ' ' -f 1 | awk '{print $2}')
 CURRENT_BRANCH=$(git branch --show-current)
 echo "Running autoupdate CRON"
-if [ "$CURRENT_REMOTE" != "$2" ]
+
+# does https://github.com/OpenMined/PySyft contain OpenMined/PySyft
+if [ "$CURRENT_REMOTE" == *"$2"* ]
 then
     echo "Switching remotes to: ${2}"
     git remote rm origin || true
