@@ -36,33 +36,41 @@ class Entity(Serializable):
             attributes["name"] = names.get_full_name().replace(" ", "_") + "_g"
 
         self.attributes = attributes
+        # a unique id for the entity
         self.id = id if id else UID()
 
     @property
     def name(self) -> str:
-        return self.attributes["name"]
+        return self.attributes["name"]  # type: ignore
 
+    # returns a hash value for the entity
     def __hash__(self) -> int:
         return hash(self.id)
 
+    # checks if the two entities are equal
     def __eq__(self, other: Any) -> bool:
         return hash(self) == hash(other)
 
+    # checks if the two entities are not equal
     def __ne__(self, other: Any) -> bool:
         # Not strictly necessary, but to avoid having both x==y and x!=y
         # True at the same time
         return hash(self) != hash(other)
 
+    # represents entity as a string
     def __repr__(self) -> str:
         return "<Entity:" + str(self.attributes["name"]) + ">"
 
+    # converts entity into a protobuf object
     def _object2proto(self) -> Entity_PB:
         return Entity_PB(name=self.attributes["name"], id=self.id._object2proto())
 
+    # converts a generated protobuf object into an entity
     @staticmethod
     def _proto2object(proto: Entity_PB) -> Entity:
         return Entity(name=proto.name, id=UID._proto2object(proto.id))
 
+    # returns the type of generated protobuf object
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return Entity_PB

@@ -7,6 +7,7 @@
 # stdlib
 from functools import lru_cache
 from typing import Dict
+from typing import List
 from typing import Optional
 
 # third party
@@ -22,15 +23,16 @@ from ..common.serde.recursive import RecursiveSerde
 
 # methods serialize/deserialize np.int64 number
 # syft.serde seems to not support np.int64 serialization/deserialization
-def numpy64tolist(value):
+def numpy64tolist(value: np.int64) -> List:
     list_version = value.tolist()
     return list_version
 
 
-def listtonumpy64(value):
+def listtonumpy64(value: List) -> np.int64:
     return np.int64(value)
 
 
+# returns the privacy budget spent by each entity
 @lru_cache(maxsize=None)
 def _individual_RDP_gaussian(
     sigma: float, value: float, L: float, alpha: float
@@ -42,6 +44,8 @@ def individual_RDP_gaussian(params: Dict, alpha: float) -> np.float64:
     """
     :param params:
         'sigma' --- is the normalized noise level: std divided by global L2 sensitivity
+        'value' --- is the output of query on a data point
+        'L' --- is the Lipschitz constant of query with respect to the output of query on a data point 
     :param alpha: The order of the Renyi Divergence
     :return: Evaluation of the RDP's epsilon
     """
