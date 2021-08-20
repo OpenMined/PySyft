@@ -27,7 +27,7 @@ CURRENT_BRANCH=$(git branch --show-current)
 echo "Running autoupdate CRON"
 
 # does https://github.com/OpenMined/PySyft contain OpenMined/PySyft
-if [ "$CURRENT_REMOTE" != *"$2"* ]
+if [[ ! "$CURRENT_REMOTE" == *"$2"* ]]
 then
     echo "Switching remotes to: ${2}"
     git remote rm origin || true
@@ -38,10 +38,13 @@ then
     git checkout $3 --force
     git pull origin $3 --rebase
     chown -R $4:$5 .
-elif [ "$CURRENT_BRANCH" != "$3" ]
+fi
+
+if [ "$CURRENT_BRANCH" != "$3" ]
 then
     echo "Checking out branch: ${3}"
 fi
+
 git reset --hard
 git checkout $3 --force
 git pull origin $3 --rebase
@@ -55,6 +58,6 @@ then
     rm -rf ${8}
     cp -r ${1} ${8}
     chown -R $4:$5 ${8}
-    runuser -l ${4} -c "hagrid launch ${7} ${6} to localhost --repo=${2} --branch=${3}"
+    /usr/sbin/runuser -l ${4} -c "hagrid launch ${7} ${6} to localhost --repo=${2} --branch=${3}"
 fi
 echo "Finished autoupdate CRON"
