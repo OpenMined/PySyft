@@ -28,6 +28,7 @@ from .scalar import PhiScalar
 
 class AdversarialAccountant:
     """Adversarial Accountant class that keeps track of budget and maintains a privacy ledger."""
+
     def __init__(
         self, db_engine: Engine, max_budget: float = 10, delta: float = 1e-6
     ) -> None:
@@ -146,7 +147,7 @@ class AdversarialAccountant:
         has_budget = spend < user_budget
 
         return has_budget
-    
+
     # returns maximum entity epsilon
     def user_budget(self, user_key: VerifyKey) -> float:
         max_spend: float = 0
