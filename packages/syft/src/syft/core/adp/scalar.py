@@ -53,11 +53,14 @@ class Scalar(Serializable):
     A Scalar is the most generic class, which keeps track of the current value, and a data-independent
     min-val and max-val.
     """
+
     def publish(
         self, acc: Any, user_key: VerifyKey, sigma: float = 1.5
     ) -> TypeList[Any]:
         """Adversarial accountant adds Gaussian noise and publishes the scalar's value"""
+        # relative
         from .publish import publish
+
         return publish([self], acc=acc, sigma=sigma, user_key=user_key)
 
     @property
@@ -92,6 +95,7 @@ class Scalar(Serializable):
 @bind_protobuf
 class IntermediateScalar(Scalar):
     """Serializable Scalar class that supports polynomial representations of data."""
+
     def __init__(self, poly: BasicSymbol, id: Optional[UID] = None) -> None:
         self.poly = poly
         self.id = id if id else UID()
@@ -156,7 +160,6 @@ class IntermediateScalar(Scalar):
                 return results[-1].fun
         return None
 
-
     @property
     def value(self) -> Optional[np.float64]:
         if self.poly is not None:
@@ -188,7 +191,12 @@ class IntermediateScalar(Scalar):
 
 @bind_protobuf
 class IntermediatePhiScalar(IntermediateScalar):
-    """Serializable superclass for PhiScalars (Scalars with data from one entity). This is where all the functionality of a PhiScalar is implemented, such as searching for the max Lipshitz value."""
+    """
+    Serializable superclass for PhiScalars (Scalars with data from one entity).
+    This is where all the functionality of a PhiScalar is implemented,
+    such as searching for the max Lipshitz value.
+    """
+
     def __init__(
         self, poly: BasicSymbol, entity: Entity, id: Optional[UID] = None
     ) -> None:
@@ -210,10 +218,14 @@ class IntermediatePhiScalar(IntermediateScalar):
 
     def __mul__(self, other: IntermediateScalar) -> IntermediateScalar:
 
-        if isinstance(other, IntermediateGammaScalar):  # PhiScalar * GammaScalar = GammaScalar
+        if isinstance(
+            other, IntermediateGammaScalar
+        ):  # PhiScalar * GammaScalar = GammaScalar
             return self.gamma * other
 
-        if not isinstance(other, IntermediatePhiScalar):  # PhiScalar * Int/Float/etc = PhiScalar
+        if not isinstance(
+            other, IntermediatePhiScalar
+        ):  # PhiScalar * Int/Float/etc = PhiScalar
             return IntermediatePhiScalar(poly=self.poly * other, entity=self.entity)
 
         # If the entities match, output is PhiScalar, otherwise it should be a GammaScalar
@@ -222,11 +234,15 @@ class IntermediatePhiScalar(IntermediateScalar):
                 poly=self.poly * other.poly, entity=self.entity
             )
 
-        return self.gamma * other.gamma  # Phi(E1) * Phi(E2) = Gamma(E1, E2) | E1,E2 = Entities
+        return (
+            self.gamma * other.gamma
+        )  # Phi(E1) * Phi(E2) = Gamma(E1, E2) | E1,E2 = Entities
 
     def __add__(self, other: IntermediateScalar) -> IntermediateScalar:
 
-        if isinstance(other, IntermediateGammaScalar):  # PhiScalar + GammaScalar = GammaScalar
+        if isinstance(
+            other, IntermediateGammaScalar
+        ):  # PhiScalar + GammaScalar = GammaScalar
             return self.gamma + other
 
         if not isinstance(other, IntermediatePhiScalar):  # PhiScalar + 5 = PhiScalar
@@ -237,7 +253,9 @@ class IntermediatePhiScalar(IntermediateScalar):
             return IntermediatePhiScalar(
                 poly=self.poly + other.poly, entity=self.entity
             )
-        return self.gamma + other.gamma # Phi(E1) * Phi(E2) = Gamma(E1, E2) | E1,E2 = Entities
+        return (
+            self.gamma + other.gamma
+        )  # Phi(E1) * Phi(E2) = Gamma(E1, E2) | E1,E2 = Entities
 
     def __sub__(self, other: IntermediateScalar) -> IntermediateScalar:
 
@@ -254,12 +272,13 @@ class IntermediatePhiScalar(IntermediateScalar):
                 poly=self.poly - other.poly, entity=self.entity
             )
 
-        return self.gamma - other.gamma # Phi(E1) * Phi(E2) = Gamma(E1, E2) | E1,E2 = Entities
-
+        return (
+            self.gamma - other.gamma
+        )  # Phi(E1) * Phi(E2) = Gamma(E1, E2) | E1,E2 = Entities
 
     @property
     def gamma(self) -> GammaScalar:
-        """ Turn the PhiScalaar into a GammaScalar, if another entity is involved""" 
+        """Turn the PhiScalaar into a GammaScalar, if another entity is involved"""
         if self._gamma is None:
             self._gamma = GammaScalar(
                 min_val=self.min_val,
@@ -295,10 +314,12 @@ class IntermediatePhiScalar(IntermediateScalar):
 
 @bind_protobuf
 class BaseScalar(Scalar):
-    """A scalar which stores the root polynomial values. When this is a superclass of
+    """
+    A scalar which stores the root polynomial values. When this is a superclass of
     PhiScalar it represents data that was loaded in by a data owner. When this is a
     superclass of GammaScalar this represents the NODE at which point data from multiple
-    entities was combined."""
+    entities was combined.
+    """
 
     def __init__(
         self,
@@ -355,7 +376,13 @@ class BaseScalar(Scalar):
 
 @bind_protobuf
 class PhiScalar(BaseScalar, IntermediatePhiScalar):
-    """Scalar with data from a single entity. Uses all the operations implemented in IntermediatePhiScalar to let the user perform operations on the data. Uses the BaseScalar class attributes are used to represent the data loaded in by a data owner. Builds on both of the above by adding SSIDs to allow the object to be referenced in string form and thus use the underlying polynomial libraries."""
+    """
+    Scalar with data from a single entity. Uses all the operations implemented in
+    IntermediatePhiScalar to let the user perform operations on the data. Uses the
+    BaseScalar class attributes are used to represent the data loaded in by a data owner.
+    Builds on both of the above by adding SSIDs to allow the object to be referenced in
+    string form and thus use the underlying polynomial libraries.
+    """
 
     def __init__(
         self,
@@ -411,7 +438,11 @@ class PhiScalar(BaseScalar, IntermediatePhiScalar):
 
 
 class IntermediateGammaScalar(IntermediateScalar):
-     """ A Superclass for Scalars with data from multiple entities (GammaScalars). Most importantly, this is where all of the operations (+/-/*/div) are implemented, as well as the various methods with which to perform the search for the max Lipschitz."""
+    """
+    A Superclass for Scalars with data from multiple entities (GammaScalars).
+    Most importantly, this is where all of the operations (+/-/*/div) are implemented,
+    as well as the various methods with which to perform the search for the max Lipschitz.
+    """
 
     # GammaScalar +/-/*/div other ---> GammaScalar
     def __add__(self, other) -> IntermediateGammaScalar:
@@ -556,7 +587,11 @@ class IntermediateGammaScalar(IntermediateScalar):
 
 @bind_protobuf
 class GammaScalar(BaseScalar, IntermediateGammaScalar):
-    `"""A scalar over data from multiple entities. Uses all the operators from IntermediateGammaScalar. Uses BaseScalar to represent the node at which point data from multiple entities was combined. Finally, adds SSIDs to allow the underlying polynomial libraries to work and run."""
+    """
+    A scalar over data from multiple entities. Uses all the operators from IntermediateGammaScalar.
+    Uses BaseScalar to represent the node at which point data from multiple entities was combined.
+    Finally, adds SSIDs to allow the underlying polynomial libraries to work and run.
+    """
 
     def __init__(
         self,
