@@ -1,4 +1,6 @@
 # stdlib
+from typing import Any
+from typing import Dict
 from typing import Union
 
 # third party
@@ -36,7 +38,7 @@ class VirtualMachinePrivateScalarManager(RecursiveSerde):
 
     def __init__(self) -> None:
         self.prime_factory = PrimeFactory()
-        self.prime2symbol = {}
+        self.prime2symbol: Dict[Any, Any] = {}
 
     def get_symbol(
         self,

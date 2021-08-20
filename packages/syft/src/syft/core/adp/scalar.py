@@ -12,6 +12,7 @@ from typing import List as TypeList
 from typing import Optional
 from typing import Set as TypeSet
 from typing import Tuple as TypeTuple
+from typing import Type
 from typing import Union
 
 # third party
@@ -281,9 +282,9 @@ class IntermediatePhiScalar(IntermediateScalar):
         """Turn the PhiScalaar into a GammaScalar, if another entity is involved"""
         if self._gamma is None:
             self._gamma = GammaScalar(
-                min_val=self.min_val,
-                value=self.value,
-                max_val=self.max_val,
+                min_val=self.min_val,  # type: ignore
+                value=self.value,  # type: ignore
+                max_val=self.max_val,  # type: ignore
                 entity=self.entity,
             )
         return self._gamma
@@ -445,21 +446,21 @@ class IntermediateGammaScalar(IntermediateScalar):
     """
 
     # GammaScalar +/-/*/div other ---> GammaScalar
-    def __add__(self, other) -> IntermediateGammaScalar:
+    def __add__(self, other: Any) -> IntermediateGammaScalar:
         if isinstance(other, Scalar):
             if isinstance(other, IntermediatePhiScalar):
                 other = other.gamma
             return IntermediateGammaScalar(poly=self.poly + other.poly)
         return IntermediateGammaScalar(poly=self.poly + other)
 
-    def __sub__(self, other) -> IntermediateGammaScalar:
+    def __sub__(self, other: Any) -> IntermediateGammaScalar:
         if isinstance(other, Scalar):
             if isinstance(other, IntermediatePhiScalar):
                 other = other.gamma
             return IntermediateGammaScalar(poly=self.poly - other.poly)
         return IntermediateGammaScalar(poly=self.poly - other)
 
-    def __mul__(self, other) -> IntermediateGammaScalar:
+    def __mul__(self, other: Any) -> IntermediateGammaScalar:
         if isinstance(other, Scalar):
             if isinstance(other, IntermediatePhiScalar):
                 other = other.gamma
@@ -474,7 +475,7 @@ class IntermediateGammaScalar(IntermediateScalar):
 
         r2_diffs = np.array(
             [
-                GammaScalar(x.min_val, x.value, x.max_val, entity=x.entity).poly
+                GammaScalar(x.min_val, x.value, x.max_val, entity=x.entity).poly  # type: ignore
                 for x in self.input_scalars
             ]
         )
@@ -567,7 +568,7 @@ class IntermediateGammaScalar(IntermediateScalar):
             data_dependent=data_dependent,
             force_all_searches=force_all_searches,
             try_hessian_shortcut=try_hessian_shortcut,
-        )
+        )  # type: ignore
 
     @property
     def max_lipschitz(self) -> float:
@@ -601,6 +602,7 @@ class GammaScalar(BaseScalar, IntermediateGammaScalar):
         entity: Optional[Entity] = None,
         id: Optional[UID] = None,
         ssid: Optional[str] = None,
+        prime: Optional[int] = None,  # this is for the VM_private_scalar_manager
     ) -> None:
         super().__init__(
             min_val=min_val, value=value, max_val=max_val, entity=entity, id=id

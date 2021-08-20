@@ -40,7 +40,7 @@ class Entity(Serializable):
 
     @property
     def name(self) -> str:
-        return self.attributes["name"]
+        return self.attributes["name"]  # type: ignore
 
     def __hash__(self) -> int:
         return hash(self.id)
