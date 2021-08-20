@@ -216,28 +216,21 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
                     or verify_key == node.root_verify_key
                     or contains_all_in_permissions
                 ):
-                    # if not hasattr(obj.data, 'init_pointer'):
+                    if hasattr(obj.data, "init_pointer"):
+                        ptr_constructor = obj.data.init_pointer
+                    else:
+                        ptr_constructor = obj2pointer_type(obj=obj.data)
 
-                    ptr_type = obj2pointer_type(obj=obj.data)
-                    id_obj = obj.id
-                    ptr = ptr_type(
+                    ptr = ptr_constructor(
                         client=node,
-                        id_at_location=id_obj,
+                        id_at_location=obj.id,
                         object_type=obj.object_type,
                         tags=obj.tags,
                         description=obj.description,
                     )
 
-                    # else:
-                    #
-                    #     ptr = obj.data.init_pointer(
-                    #         client=node,
-                    #         id_at_location=id_obj,
-                    #         object_type=obj.object_type,
-                    #         tags=obj.tags,
-                    #         description=obj.description)
-
                     results.append(ptr)
+
         except Exception as e:
             error(f"Error searching store. {e}")
 

@@ -48,6 +48,7 @@ class MPCTensor(PassthroughTensor):
         shape: Optional[Tuple[int]] = None,
         seed_shares: Optional[int] = None,
     ) -> None:
+
         if secret is None and shares is None:
             raise ValueError("Secret or shares should be populated!")
 
@@ -76,9 +77,19 @@ class MPCTensor(PassthroughTensor):
             raise ValueError("Shares should not be None at this step")
 
         res = MPCTensor._mpc_from_shares(shares, parties)
+
         self.parties = parties
 
         self.mpc_shape = shape
+
+        # we need to make sure that when we zip up clients from
+        # multiple MPC tensors that they are in corresponding order
+        # so we always sort all of them by the id of the domain
+        # TODO: store children as lists of dictionaries because eventually
+        # it's likely that we have multiple shares from the same client
+        # (For example, if you wanted a domain to have 90% share ownership
+        # you'd need to produce 10 shares and give 9 of them to the same domain)
+        res.sort(key=lambda share: share.client.name + share.client.id.no_dash)
 
         super().__init__(res)
 
@@ -175,17 +186,17 @@ class MPCTensor(PassthroughTensor):
 
         return shares
 
-    def request(self,
-        reason: str = '',
+    def request(
+        self,
+        reason: str = "",
         block: bool = False,
         timeout_secs: Optional[int] = None,
         verbose: bool = False,
     ):
         for child in self.child:
-            child.request(reason=reason,
-                          block=block,
-                          timeout_secs=timeout_secs,
-                          verbose=verbose)
+            child.request(
+                reason=reason, block=block, timeout_secs=timeout_secs, verbose=verbose
+            )
 
     def reconstruct(self):
         # TODO: It might be that the resulted shares (if we run any computation) might
@@ -290,63 +301,51 @@ class MPCTensor(PassthroughTensor):
         Returns:
             MPCTensor. the operation "op_str" applied on "self" and "y"
         """
-        print("A")
+
         _self = self
         if ispointer(y):
-            print("B.1")
+
             if y.client not in self.parties:
                 parties = self.parties + [y.client]
             else:
                 parties = [party for party in self.parties]
-            print("B.2")
+
             # TODO: Extract info for y shape from somewhere
             # We presume at the moment that it is the same shape
             y = MPCTensor(secret=y, shape=self.mpc_shape, parties=parties)
-            print("B.3")
+
             seed_shares = secrets.randbits(32)
-            print("B.4")
+
             shares = MPCTensor._get_shares_from_remote_secret(
                 secret=None,
                 shape=self.mpc_shape,
                 parties=parties,
                 seed_shares=seed_shares,
             )
-            print("B.5")
+
             op = getattr(operator, op_str)
 
-            print("B.6")
             new_shares = [
                 op(share1, share2) for share1, share2 in zip(self.child, shares)
             ]
-            print("B.7")
-            new_shares.append(shares[-1])
-            print("B.8")
-            _self = MPCTensor(shares=new_shares, shape=self.mpc_shape, parties=parties)
-            print("B.9")
 
-        print("C")
+            new_shares.append(shares[-1])
+
+            _self = MPCTensor(shares=new_shares, shape=self.mpc_shape, parties=parties)
 
         if isinstance(y, MPCTensor):
-            print("C.1")
             result = _self.__apply_private_op(y, op_str)
         else:
-            print("C.2")
             result = _self.__apply_public_op(y, op_str)
 
-        print("D")
-
         if isinstance(y, (float, int)):
-            print("D.1")
             y_shape = (1,)
         elif isinstance(y, MPCTensor):
-            print("D.2")
             y_shape = y.mpc_shape
         else:
-            print("D.3")
             y_shape = y.shape
 
         shape = MPCTensor.__get_shape(op_str, self.mpc_shape, y_shape)
-        print("Shape seems to be:" + str(shape) + " of type " + str(type(shape)))
         # shape = self.shape
         # print("...when it should be " + str(self.shape) + " of type " + str(type(shape)))
 

@@ -345,6 +345,7 @@ class Pointer(AbstractPointer):
             the other public serialization methods if you wish to serialize an
             object.
         """
+
         return Pointer_PB(
             points_to_object_with_path=self.path_and_name,
             pointer_name=type(self).__name__,
@@ -354,6 +355,9 @@ class Pointer(AbstractPointer):
             description=self.description,
             object_type=self.object_type,
             attribute_name=getattr(self, "attribute_name", ""),
+            public_shape=sy.serialize(
+                getattr(self, "public_shape", None), to_bytes=True
+            ),
         )
 
     @staticmethod
@@ -376,15 +380,20 @@ class Pointer(AbstractPointer):
 
         points_to_type = sy.lib_ast.query(proto.points_to_object_with_path)
         pointer_type = getattr(points_to_type, proto.pointer_name)
+
         # WARNING: This is sending a serialized Address back to the constructor
         # which currently depends on a Client for send_immediate_msg_with_reply
-        return pointer_type(
+        out = pointer_type(
             id_at_location=_deserialize(blob=proto.id_at_location),
             client=_deserialize(blob=proto.location),
             tags=proto.tags,
             description=proto.description,
             object_type=proto.object_type,
         )
+
+        out.public_shape = sy.deserialize(proto.public_shape, from_bytes=True)
+
+        return out
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:

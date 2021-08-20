@@ -20,8 +20,9 @@ NoneType = type(None)
 
 @bind_protobuf
 class _SyNone(PyPrimitive):
-    def __init__(self, id: Optional[UID] = None):
+    def __init__(self, id: Optional[UID] = None, temporary_box: bool = False):
         self._id: UID = id if id else UID()
+        self.temporary_box = temporary_box
 
     @property
     def id(self) -> UID:
@@ -54,6 +55,7 @@ class _SyNone(PyPrimitive):
     def _object2proto(self) -> None_PB:
         none_pb = None_PB()
         none_pb.id.CopyFrom(serialize(obj=self.id))
+        none_pb.temporary_box = self.temporary_box
         return none_pb
 
     @staticmethod
@@ -62,6 +64,7 @@ class _SyNone(PyPrimitive):
 
         de_none = _SyNone()
         de_none._id = none_id
+        de_none.temporary_box = proto.temporary_box
 
         return de_none
 

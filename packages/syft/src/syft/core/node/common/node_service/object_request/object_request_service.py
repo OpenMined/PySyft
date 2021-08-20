@@ -207,7 +207,7 @@ def update_request_msg(
 
     if not _req:
         raise RequestError
-   
+
     if status not in ["accepted", "denied"]:
         raise InvalidParameterValueError(
             message='Request status should be either "accepted" or "denied"'

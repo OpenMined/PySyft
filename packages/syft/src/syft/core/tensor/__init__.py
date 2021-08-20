@@ -13,6 +13,7 @@ from .smpc.share_tensor import ShareTensor
 from .tensor import Tensor
 from .tensor import TensorPointer
 
+
 def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
     ast = Globals(client)
 
@@ -43,7 +44,7 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         # # Tensor
         # ("syft.core.tensor.tensor.Tensor.T", "syft.core.tensor.tensor.Tensor"),
         # ("syft.core.tensor.tensor.Tensor.__abs__", "syft.core.tensor.tensor.Tensor"),
-        # ("syft.core.tensor.tensor.Tensor.__add__", "syft.core.tensor.tensor.Tensor"),
+        ("syft.core.tensor.tensor.Tensor.__add__", "syft.core.tensor.tensor.Tensor"),
         # ("syft.core.tensor.tensor.Tensor.__divmod__", "syft.core.tensor.tensor.Tensor"),
         # ("syft.core.tensor.tensor.Tensor.__eq__", "syft.core.tensor.tensor.Tensor"),
         # (

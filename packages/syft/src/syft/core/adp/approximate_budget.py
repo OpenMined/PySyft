@@ -1,6 +1,7 @@
 # CLEANUP NOTES:
 # - delete this file (check for it being imported)
 
+
 class ApproximateBudget:
     value: int = 0
 

@@ -623,11 +623,16 @@ class Class(Callable):
         if hasattr(self.object_ref, "PointerClassOverride"):
 
             klass_pointer = getattr(self.object_ref, "PointerClassOverride")
-            for key,val in attrs.items():
+            for key, val in attrs.items():
 
-                # NOTE: __name__ and __module__ can't be
-                # overridden here despite the fact that it tries
-                setattr(klass_pointer, key, val)
+                # only override functioanlity of AST attributes if they
+                # don't already exist on the PointerClassOverride class
+                # (the opposite of inheritance)
+                if not hasattr(klass_pointer, key):
+                    setattr(klass_pointer, key, val)
+                else:
+                    # TODO: cache attribute in backup_ location so that we can use them if we want
+                    pass
 
         # no specific pointer class found, let's make an empty subclass of Pointer instead
         else:
@@ -920,6 +925,7 @@ class Class(Callable):
         return super().__setattr__(key, value)
 
 
+# TODO: this should move out of AST into a util somewhere? or osmething related to Pointer
 def pointerize_args_and_kwargs(
     args: Union[List[Any], Tuple[Any, ...]],
     kwargs: Dict[Any, Any],

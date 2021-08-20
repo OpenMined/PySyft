@@ -19,7 +19,6 @@ import torch
 
 # relative
 from ..pointer.pointer import Pointer
-
 from .util import implements
 from .util import query_implementation
 
@@ -41,14 +40,11 @@ def is_acceptable_simple_type(obj):
     return isinstance(obj, (int, bool, float, np.ndarray, torch.Tensor))
 
 
-
 class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     """A simple tensor class which passes method/function calls to self.child"""
 
-    def __init__(self, child, client_shape=None) -> None:
+    def __init__(self, child) -> None:
         self.child = child
-        self.client_shape = client_shape
-        # self.PassthroughTensorPointer = PassthroughTensorPointer
 
     # TODO: Remove
     @property
@@ -63,38 +59,43 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
     @property
     def shape(self) -> Union[TypeTuple[Any, ...], List[Any]]:
-        """There are 3 options for where shape inforamtion can be sourced from:
+        return self.child.shape
 
-        - self.client_shape: which is a logical attempt on the client side to infer shape inforamtion
-        - self.child.client_shape: which just says that this layer of logical abstraction isn't responsible for tracking shape
-        and inhereits it from the child
-        - Pointer.shape: a special case of the other two wherein shape is called on a Pointer and it fetches that
-        information from a remote object
-
-        By default the prioritiy for where shape information should come from is:
-        - self.client_shape is first because this doesn't leverage private information.
-        - self.child.client_shape is second as a delegation of the first
-        - Pointer.shape is a last resort because it requires calling .request() and .get()
-
-        """
-        if self.client_shape is not None:
-            return self.client_shape
-
-        elif self.child is not None:
-
-            # note that this will attempt client_shape on the child before
-            # anything else because it too will call this method
-            shape = self.child.shape
-
-            if isinstance(shape, Pointer):
-                return shape.get(request_block=True)
-            else:
-                return shape
-
-        else:
-            raise Exception("Not sure how to find shape because self.client_shape and self.child are both none")
-
-        return tuple(self.child.shape)
+    # @property
+    # def shape(self) -> Union[TypeTuple[Any, ...], List[Any]]:
+    #     """There are 3 options for where shape information can be sourced from:
+    #
+    #     - self.client_shape: which is a logical attempt on the client side to infer shape information
+    #     - self.child.shape: which just says that this layer of logical abstraction isn't responsible for tracking shape
+    #     and inhereits it from the child
+    #     - Pointer.shape: a special case of the other two wherein shape is called on a Pointer and it fetches that
+    #     information from a remote object if Pointer.client_shape is not available (is None).
+    #
+    #     By default the prioritiy for where shape information should come from is:
+    #     - self.client_shape is first because this doesn't leverage private information.
+    #     - self.child.shape is second as a delegation of the first
+    #     - Pointer.client_shape as a special case of the previous
+    #     - Pointer.remote_shape is a last resort because it requires calling .request() and .get()
+    #
+    #     """
+    #     if self.client_shape is not None:
+    #         return self.client_shape
+    #
+    #     elif self.child is not None:
+    #
+    #         # note that this will attempt client_shape on the child before
+    #         # anything else because it too will call this method
+    #         shape = self.child.shape
+    #
+    #         if isinstance(shape, Pointer):
+    #             return shape.get(request_block=True)
+    #         else:
+    #             return shape
+    #
+    #     else:
+    #         raise Exception("Not sure how to find shape because self.client_shape and self.child are both none")
+    #
+    #     return tuple(self.child.shape)
 
     def logical_and(self, other):
         if is_acceptable_simple_type(other) or (self.child.shape == other.child.shape):

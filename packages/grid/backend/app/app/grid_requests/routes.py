@@ -72,7 +72,9 @@ async def update_user_grid(
     current_user: UserPrivate = Depends(deps.get_current_user),
 ) -> str:
     try:
-        return syft_requests_messages.update_request(current_user, request_id, updated_request)
+        return syft_requests_messages.update_request(
+            current_user, request_id, updated_request
+        )
     except Exception as err:
         logger.error(err)
         raise_generic_private_error()
