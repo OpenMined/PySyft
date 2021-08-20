@@ -1,7 +1,4 @@
 ---
 - name: Install HAGrid
-  shell: "sudo pip install -e ."
+  shell: "runuser -l {{ om_user }} -c 'pipx install {{ build_dir }}/packages/hagrid --editable --force'"
   become: yes
-  args:
-    chdir: "/home/om/PySyft/packages/hagrid"
-    executable: /bin/bash
