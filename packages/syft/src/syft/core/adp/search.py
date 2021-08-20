@@ -13,6 +13,7 @@ from typing import List as TypeList
 from typing import Optional
 from typing import Set
 from typing import Tuple as TypeTuple
+from typing import Union
 
 # third party
 import numpy as np
@@ -189,11 +190,18 @@ def minimize_function(
 
 
 def max_lipschitz_wrt_entity(scalars: Any, entity: Entity) -> float:
-    result = max_lipschitz_via_jacobian(scalars, input_entity=entity)[0][-1]
-    if isinstance(result, float):
-        return -result
-    else:
+    result: Union[float, optimize.OptimizeResult] = max_lipschitz_via_jacobian(
+        scalars, input_entity=entity
+    )[0][-1]
+    if not isinstance(result, float):
         return -float(result.fun)
+    else:
+        return -result
+
+    # if isinstance(result, float):
+    #     return -result
+    # else:
+    #     return -float(result.fun)
 
 
 def max_lipschitz_via_jacobian(

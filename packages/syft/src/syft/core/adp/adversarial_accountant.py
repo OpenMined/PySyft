@@ -5,6 +5,7 @@
 # - add a unit test for each method (at least)
 
 # stdlib
+from typing import Any
 from typing import Dict as TypeDict
 from typing import KeysView as TypeKeysView
 from typing import List as TypeList
@@ -37,7 +38,7 @@ class AdversarialAccountant:
 
         # this is a temporary lookup table for mechanisms we're not sure
         # we're going to keep (See publish.py for how this is used)
-        self.temp_entity2ledger = {}
+        self.temp_entity2ledger: TypeDict = {}
         self.max_budget = max_budget
         self.delta = delta
 
@@ -61,18 +62,18 @@ class AdversarialAccountant:
         self.entity2ledger.register_mechanisms(mechanisms)
 
     # save the temporary ledger into the database
-    def save_temp_ledger_to_longterm_ledger(self):
+    def save_temp_ledger_to_longterm_ledger(self) -> None:
         self.append(entity2mechanisms=self.temp_entity2ledger)
 
     # return epsilons for each entity
     def get_eps_for_entity(
         self, entity: Entity, user_key: Optional[VerifyKey] = None
-    ) -> PhiScalar:
+    ) -> float:
         # compose them with the transformation: compose
         compose = Composition()
 
         # fetch mechanisms from the database
-        table_mechanisms = self.entity2ledger.query(entity_name=entity.name)
+        table_mechanisms = self.entity2ledger.query(entity_name=entity.name)  # type: ignore
         mechanisms = [x.obj for x in table_mechanisms]
 
         # filter out mechanisms that weren't created by this data scientist user
@@ -141,17 +142,17 @@ class AdversarialAccountant:
     # checks if the entity has budget or not
     def has_budget(self, entity: Entity, user_key: VerifyKey) -> bool:
         spend = self.get_eps_for_entity(entity=entity, user_key=user_key)
-        user_budget = self.entity2ledger.get_user_budget(user_key=user_key)
+        user_budget: float = self.entity2ledger.get_user_budget(user_key=user_key)
         has_budget = spend < user_budget
 
         return has_budget
     
     # returns maximum entity epsilon
-    def user_budget(self, user_key: VerifyKey):
-        max_spend = 0
+    def user_budget(self, user_key: VerifyKey) -> float:
+        max_spend: float = 0
 
         for ent in self.entities:
-            spend = self.get_eps_for_entity(entity=ent, user_key=user_key)
+            spend: float = self.get_eps_for_entity(entity=ent, user_key=user_key)
             if spend > max_spend:
                 max_spend = spend
 
@@ -180,12 +181,12 @@ class AdversarialAccountant:
         for mechanism in self.entity2ledger.mechanism_manager.all():
             entity = self.entity2ledger.entity_manager.first(name=mechanism.entity_name)
             print(
-                str(mechanism.entity_name) + "\t" + str(self.get_eps_for_entity(entity))
+                str(mechanism.entity_name) + "\t" + str(self.get_eps_for_entity(entity))  # type: ignore
             )
 
 
 class AccountantReference(RecursiveSerde):
     __attr_allowlist__ = ["msg"]
 
-    def __init__(self, msg) -> None:
+    def __init__(self, msg: Any) -> None:
         self.msg = msg

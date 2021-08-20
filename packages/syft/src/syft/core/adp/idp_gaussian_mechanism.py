@@ -7,6 +7,7 @@
 # stdlib
 from functools import lru_cache
 from typing import Dict
+from typing import List
 from typing import Optional
 
 # third party
@@ -22,12 +23,12 @@ from ..common.serde.recursive import RecursiveSerde
 
 # methods serialize/deserialize np.int64 number
 # syft.serde seems to not support np.int64 serialization/deserialization
-def numpy64tolist(value):
+def numpy64tolist(value: np.int64) -> List:
     list_version = value.tolist()
     return list_version
 
 
-def listtonumpy64(value):
+def listtonumpy64(value: List) -> np.int64:
     return np.int64(value)
 
 

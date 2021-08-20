@@ -41,7 +41,7 @@ class Entity(Serializable):
 
     @property
     def name(self) -> str:
-        return self.attributes["name"]
+        return self.attributes["name"]  # type: ignore
 
     # returns a hash value for the entity
     def __hash__(self) -> int:
