@@ -5,8 +5,8 @@ from typing import Any
 from typing import Optional
 
 # relative
-from ..core.common.serde.recursive import RecursiveSerde
-from ..core.common.serde.serializable import bind_protobuf
+from ....core.common.serde.recursive import RecursiveSerde
+from ....core.common.serde.serializable import bind_protobuf
 
 
 @bind_protobuf
