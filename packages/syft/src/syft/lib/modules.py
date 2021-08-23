@@ -54,5 +54,5 @@ __builtins__.__import__ = syft_lib_import
 import xgboost
 
 print(xgboost)
-print(syft_xgboost)
+# print(syft_xgboost)
 # print(sys.path)

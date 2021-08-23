@@ -17,8 +17,8 @@ import warnings
 # third party
 from cachetools import cached
 from cachetools.keys import hashkey
-from packaging import version
 import packaging
+from packaging import version
 import wrapt
 
 # relative
