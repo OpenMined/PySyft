@@ -1,6 +1,12 @@
 ---
+# - name: Install security updates
+#   shell: "sudo apt list --upgradable | grep security |cut -d\/ -f1|xargs sudo apt-get install -y --only-upgrade"
+#   become: yes
+#   args:
+#     executable: /bin/bash
+
 - name: Allow sudo without password
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/sudoers
     state: present
     regexp: "^%sudo"
@@ -51,21 +57,21 @@
     autoclean: yes
     update_cache: yes
   loop:
+    - acl
     - python3-pip
     - ntp
     - tmux
     - vim
     - ufw
     - git
+    - python-is-python3
+    - net-tools
+    - ifupdown
 
 - name: Upgrade pip and some packages
   pip:
     name: pip
     extra_args: --upgrade
-
-- name: Install pip packages
-  shell: pip install ansible ansible-core paramiko --upgrade
-  become: yes
 
 - name: Check ctop exists
   stat:
@@ -77,11 +83,12 @@
   become: yes
   when: not ctop_exists.stat.exists
 
-- name: Ensuring ufw service is always running"
+- name: Ensuring ufw service is always running
   systemd:
     enabled: yes
     state: started
     name: ufw
+  when: wsl is not defined
 
 - name: Set timezone to UTC
   timezone:

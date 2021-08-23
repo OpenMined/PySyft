@@ -15,16 +15,10 @@
   become_user: "{{ om_user }}"
   ignore_errors: yes
 
-# STOP: STACK_NAME=grid-openmined-org TRAEFIK_PUBLIC_NETWORK=traefik-public docker compose -p "${TAG}" down
+  # STOP: STACK_NAME=grid-openmined-org TRAEFIK_PUBLIC_NETWORK=traefik-public docker compose -p "${TAG}" down
 - name: Start Docker Containers
   shell:
-    cmd: |
-      export TAG="{{ node_name }}"
-      export DOMAIN_PORT=80
-      export TRAEFIK_TAG="${TAG}"
-      export DOMAIN_NAME="${TAG}"
-      export NODE_TYPE="{{ node_type }}"
-      docker compose -p "${TAG}" up -d
+    cmd: sudo hagrid launch {{ node_name }} domain to docker:80 --tail=false
   args:
     chdir: "/home/om/PySyft/packages/grid"
     executable: /bin/bash

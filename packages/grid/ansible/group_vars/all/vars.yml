@@ -1,10 +1,13 @@
 ---
 om_user: om
 om_group: om
-om_homedir: "/home/{{om_user }}"
+om_homedir: "/home/{{ om_user }}"
 syft_dir: "/home/om/PySyft"
 github_repo: OpenMined/PySyft
-repo_branch: demo_strike_team_branch_4
+repo_branch: "0.6.0"
 docker_compose_plugin_dir: ".docker/cli-plugins"
 node_name: node
 node_type: domain
+root_user: root
+root_homedir: "/{{ root_user }}"
+docker_compose_url: https://github.com/docker/compose-cli/releases/download/v2.0.0-rc.1/docker-compose-linux-amd64
