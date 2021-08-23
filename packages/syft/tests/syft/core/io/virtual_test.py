@@ -6,7 +6,7 @@ from syft.core.io.virtual import VirtualClientConnection
 from syft.core.io.virtual import VirtualServerConnection
 from syft.core.io.virtual import create_virtual_connection
 
-# syft relative
+# relative
 from .utils_test import MockNode
 from .utils_test import construct_dummy_message
 

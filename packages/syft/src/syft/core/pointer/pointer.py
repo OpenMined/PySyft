@@ -98,11 +98,12 @@ from nacl.signing import VerifyKey
 # syft absolute
 import syft as sy
 
-# syft relative
+# relative
 from ...logger import debug
 from ...logger import error
 from ...logger import warning
 from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
+from ...util import obj2pointer_type
 from ..common.pointer import AbstractPointer
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import bind_protobuf
@@ -110,8 +111,8 @@ from ..common.uid import UID
 from ..io.address import Address
 from ..node.abstract.node import AbstractNode
 from ..node.common.action.get_object_action import GetObjectAction
-from ..node.common.service.get_repr_service import GetReprMessage
-from ..node.common.service.obj_search_permission_service import (
+from ..node.common.node_service.get_repr.get_repr_service import GetReprMessage
+from ..node.common.node_service.object_search_permission_update.obj_search_permission_messages import (
     ObjectSearchPermissionUpdateMessage,
 )
 from ..store.storeable_object import StorableObject
@@ -156,6 +157,9 @@ class Pointer(AbstractPointer):
         # when delete_obj is True and network call
         # has already been made
         self._exhausted = False
+
+    def __repr__(self):
+        return f"<{self.__name__} -> {self.client.name}:{self.id_at_location.no_dash}>"
 
     def _get(self, delete_obj: bool = True, verbose: bool = False) -> StorableObject:
         """Method to download a remote object from a pointer object if you have the right
@@ -218,8 +222,11 @@ class Pointer(AbstractPointer):
             if "You do not have permission to .get()" in str(
                 e
             ) or "UnknownPrivateException" in str(e):
-                # syft relative
-                from ..node.domain.service import RequestStatus
+
+                # relative
+                from ..node.common.node_service.request_receiver.request_receiver_messages import (
+                    RequestStatus,
+                )
 
                 response_status = self.request(
                     reason="Calling remote print",
@@ -243,6 +250,38 @@ class Pointer(AbstractPointer):
 
         return self
 
+    def publish(self, client: Any, sigma: float = 1.5) -> Any:
+        # syft relative
+        # relative
+        from ...lib.python import Float
+        from ..node.common.node_service.publish.publish_service import (
+            PublishScalarsAction,
+        )
+
+        print("a")
+        id_at_location = UID()
+        print("b")
+        obj_msg = PublishScalarsAction(
+            id_at_location=id_at_location,
+            address=self.client.address,
+            publish_ids_at_location=[self.id_at_location],
+            sigma=sigma,
+        )
+        print("c")
+        client.send_immediate_msg_without_reply(msg=obj_msg)
+        # create pointer which will point to float result
+        print("d")
+        afloat = Float(0.0)
+        ptr_type = obj2pointer_type(obj=afloat)
+        ptr = ptr_type(
+            client=client,
+            id_at_location=id_at_location,
+        )
+        ptr._pointable = True
+
+        # return pointer
+        return ptr
+
     def get(
         self,
         request_block: bool = False,
@@ -257,8 +296,11 @@ class Pointer(AbstractPointer):
         :return: returns the downloaded data
         :rtype: Optional[StorableObject]
         """
-        # syft relative
-        from ..node.domain.service import RequestStatus
+
+        # relative
+        from ..node.common.node_service.request_receiver.request_receiver_messages import (
+            RequestStatus,
+        )
 
         if self._exhausted:
             raise ReferenceError(
@@ -303,6 +345,7 @@ class Pointer(AbstractPointer):
             the other public serialization methods if you wish to serialize an
             object.
         """
+
         return Pointer_PB(
             points_to_object_with_path=self.path_and_name,
             pointer_name=type(self).__name__,
@@ -312,6 +355,9 @@ class Pointer(AbstractPointer):
             description=self.description,
             object_type=self.object_type,
             attribute_name=getattr(self, "attribute_name", ""),
+            public_shape=sy.serialize(
+                getattr(self, "public_shape", None), to_bytes=True
+            ),
         )
 
     @staticmethod
@@ -334,15 +380,20 @@ class Pointer(AbstractPointer):
 
         points_to_type = sy.lib_ast.query(proto.points_to_object_with_path)
         pointer_type = getattr(points_to_type, proto.pointer_name)
+
         # WARNING: This is sending a serialized Address back to the constructor
         # which currently depends on a Client for send_immediate_msg_with_reply
-        return pointer_type(
+        out = pointer_type(
             id_at_location=_deserialize(blob=proto.id_at_location),
             client=_deserialize(blob=proto.location),
             tags=proto.tags,
             description=proto.description,
             object_type=proto.object_type,
         )
+
+        out.public_shape = sy.deserialize(proto.public_shape, from_bytes=True)
+
+        return out
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
@@ -402,8 +453,11 @@ class Pointer(AbstractPointer):
             This method should be used when the remote data associated with the pointer wants to be
             downloaded locally (or use .get() on the pointer).
         """
-        # syft relative
-        from ..node.domain.service import RequestMessage
+
+        # relative
+        from ..node.common.node_service.request_receiver.request_receiver_messages import (
+            RequestMessage,
+        )
 
         # if you request non-blocking you don't need a timeout
         # if you request blocking you need a timeout, so lets set a default on here
@@ -434,9 +488,13 @@ class Pointer(AbstractPointer):
             if timeout_secs is None:
                 timeout_secs = 30  # default if not explicitly set
 
-            # syft relative
-            from ..node.domain.service import RequestAnswerMessage
-            from ..node.domain.service import RequestStatus
+            # relative
+            from ..node.common.node_service.request_answer.request_answer_service import (
+                RequestAnswerMessage,
+            )
+            from ..node.common.node_service.request_receiver.request_receiver_messages import (
+                RequestStatus,
+            )
 
             output_string = "> Waiting for Blocking Request: "
             output_string += f"  {self.id_at_location}"
@@ -567,7 +625,8 @@ class Pointer(AbstractPointer):
         :param request_id: The request on which you are querying the status.
         :type request_id: UID
         """
-        # syft relative
+
+        # relative
         from ..node.domain.service import RequestAnswerMessage
 
         msg = RequestAnswerMessage(

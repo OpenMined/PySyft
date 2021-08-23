@@ -8,7 +8,7 @@ from typing import Union
 from packaging import version
 import transformers
 
-# syft relative
+# relative
 from . import batchencoding  # noqa: 401
 from . import model_config  # noqa: 401
 from . import tokenizer  # noqa: 401

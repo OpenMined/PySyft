@@ -8,7 +8,7 @@ import sys
 import time
 import pytest
 
-# syft relative
+
 from ...syft.grid.duet.process_test import SyftTestProcess
 
 set_start_method("spawn", force=True)
@@ -41,7 +41,7 @@ def do(port) -> None:
 
     start = time.time()
 
-    # syft relative
+
     from . import (  # noqa: F401
         {{DO_SCRIPT}},
     )
@@ -63,7 +63,7 @@ def ds(port) -> None:
     sy.logger.add(sys.stderr, "ERROR")
     start = time.time()
 
-    # syft relative
+
     from . import (  # noqa: F401
         {{DS_SCRIPT}},
     )

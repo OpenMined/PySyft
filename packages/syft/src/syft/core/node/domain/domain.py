@@ -1,5 +1,6 @@
 # stdlib
 import asyncio
+import os
 import time
 from typing import Any
 from typing import Dict
@@ -9,15 +10,17 @@ from typing import Tuple
 from typing import Union
 
 # third party
+import ascii_magic
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
-# syft relative
+# relative
 from ....lib.python import String
 from ....logger import critical
 from ....logger import debug
 from ....logger import info
 from ....logger import traceback
+from ...adp.adversarial_accountant import AdversarialAccountant
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage
 from ...common.uid import UID
@@ -26,17 +29,43 @@ from ...io.location import SpecificLocation
 from ..common.action.get_object_action import GetObjectAction
 from ..common.client import Client
 from ..common.node import Node
+from ..common.node_manager.association_request_manager import AssociationRequestManager
+from ..common.node_manager.dataset_manager import DatasetManager
+from ..common.node_manager.environment_manager import EnvironmentManager
+from ..common.node_manager.group_manager import GroupManager
+from ..common.node_manager.request_manager import RequestManager
+from ..common.node_manager.role_manager import RoleManager
+from ..common.node_manager.user_manager import UserManager
+from ..common.node_service.association_request.association_request_service import (
+    AssociationRequestService,
+)
+from ..common.node_service.dataset_manager.dataset_manager_service import (
+    DatasetManagerService,
+)
+from ..common.node_service.group_manager.group_manager_service import (
+    GroupManagerService,
+)
+from ..common.node_service.node_setup.node_setup_service import NodeSetupService
+from ..common.node_service.object_request.object_request_service import (
+    ObjectRequestServiceWithoutReply,
+)
+from ..common.node_service.object_request.object_request_service import RequestService
+from ..common.node_service.publish.publish_service import PublishScalarsService
+from ..common.node_service.request_answer.request_answer_messages import RequestStatus
+from ..common.node_service.request_answer.request_answer_service import (
+    RequestAnswerService,
+)
+from ..common.node_service.request_receiver.request_receiver_messages import (
+    RequestMessage,
+)
+from ..common.node_service.role_manager.role_manager_service import RoleManagerService
+from ..common.node_service.tensor_manager.tensor_manager_service import (
+    TensorManagerService,
+)
+from ..common.node_service.user_manager.user_manager_service import UserManagerService
 from ..device import Device
 from ..device import DeviceClient
 from .client import DomainClient
-from .service import RequestAnswerMessageService
-from .service import RequestMessage
-from .service import RequestService
-from .service import RequestStatus
-from .service.accept_or_deny_request_service import AcceptOrDenyRequestService
-from .service.get_all_requests_service import GetAllRequestsService
-from .service.request_handler_service import GetAllRequestHandlersService
-from .service.request_handler_service import UpdateRequestHandlerService
 
 
 class Domain(Node):
@@ -57,7 +86,7 @@ class Domain(Node):
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
         root_key: Optional[VerifyKey] = None,
-        db_path: Optional[str] = None,
+        db_engine: Any = None,
     ):
         super().__init__(
             name=name,
@@ -67,19 +96,45 @@ class Domain(Node):
             vm=vm,
             signing_key=signing_key,
             verify_key=verify_key,
-            db_path=db_path,
+            db_engine=db_engine,
         )
         # specific location with name
         self.domain = SpecificLocation(name=self.name)
         self.root_key = root_key
 
-        self.immediate_services_without_reply.append(RequestService)
-        self.immediate_services_without_reply.append(AcceptOrDenyRequestService)
-        self.immediate_services_without_reply.append(UpdateRequestHandlerService)
+        # Database Management Instances
+        self.users = UserManager(db_engine)
+        self.roles = RoleManager(db_engine)
+        self.groups = GroupManager(db_engine)
+        self.environments = EnvironmentManager(db_engine)
+        self.association_requests = AssociationRequestManager(db_engine)
+        self.data_requests = RequestManager(db_engine)
+        self.datasets = DatasetManager(db_engine)
+        self.acc = AdversarialAccountant(db_engine=db_engine, max_budget=10000)
 
-        self.immediate_services_with_reply.append(RequestAnswerMessageService)
-        self.immediate_services_with_reply.append(GetAllRequestsService)
-        self.immediate_services_with_reply.append(GetAllRequestHandlersService)
+        # self.immediate_services_without_reply.append(RequestReceiverService)
+        # self.immediate_services_without_reply.append(AcceptOrDenyRequestService)
+        # self.immediate_services_without_reply.append(UpdateRequestHandlerService)
+        self.immediate_services_without_reply.append(PublishScalarsService)
+        self.immediate_services_with_reply.append(RequestAnswerService)
+        # self.immediate_services_with_reply.append(GetAllRequestHandlersService)
+
+        # Grid Domain Services
+        self.immediate_services_with_reply.append(AssociationRequestService)
+        # self.immediate_services_with_reply.append(DomainInfrastructureService)
+        self.immediate_services_with_reply.append(NodeSetupService)
+        self.immediate_services_with_reply.append(TensorManagerService)
+        self.immediate_services_with_reply.append(RoleManagerService)
+        self.immediate_services_with_reply.append(UserManagerService)
+        self.immediate_services_with_reply.append(DatasetManagerService)
+        self.immediate_services_with_reply.append(GroupManagerService)
+        # self.immediate_services_with_reply.append(TransferObjectService)
+        self.immediate_services_with_reply.append(RequestService)
+
+        self.immediate_services_without_reply.append(ObjectRequestServiceWithoutReply)
+
+        # TODO: @Madhava change to a map of accountants that are created on first
+        # use of the DS key
 
         self.requests: List[RequestMessage] = list()
         # available_device_types = set()
@@ -96,6 +151,28 @@ class Domain(Node):
 
         # run the handlers in an asyncio future
         asyncio.ensure_future(self.run_handlers())
+
+    def post_init(self) -> None:
+        super().post_init()
+        self.set_node_uid()
+
+    def loud_print(self) -> None:
+        install_path = os.path.abspath(
+            os.path.join(os.path.realpath(__file__), "../../../../img/")
+        )
+        ascii_magic.to_terminal(
+            ascii_magic.from_image_file(
+                img_path=install_path + "/pygrid.png", columns=83
+            )
+        )
+
+        print(
+            r"""
+                                                     __
+                                                    |  \  _   _   _  .  _
+                                                    |__/ (_) ||| (_| | | )
+"""
+        )
 
     @property
     def icon(self) -> str:

@@ -1,3 +1,0 @@
-spacy
-torch
-torchtext

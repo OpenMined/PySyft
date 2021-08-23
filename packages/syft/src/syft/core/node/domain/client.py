@@ -1,25 +1,54 @@
 # stdlib
+import logging
 import time
 from typing import Any
 from typing import Dict
+from typing import Dict as TypeDict
 from typing import List
 from typing import Optional
+from typing import Type
 from typing import Union
 
 # third party
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+import names
 import pandas as pd
+from pandas import DataFrame
 
-# syft relative
+# syft absolute
+from syft import deserialize
+
+# relative
+from ....core.common.serde.serialize import _serialize as serialize  # noqa: F401
+from ....core.io.location.specific import SpecificLocation
+from ....core.node.common.action.exception_action import ExceptionMessage
+from ....core.pointer.pointer import Pointer
 from ....logger import traceback_and_raise
 from ....util import validate_field
+from ...common.message import SyftMessage
 from ...common.uid import UID
+from ...io.address import Address
 from ...io.location import Location
-from ...io.location import SpecificLocation
 from ...io.route import Route
 from ..common.client import Client
-from .service import RequestMessage
+from ..common.client_manager.association_api import AssociationRequestAPI
+from ..common.client_manager.dataset_api import DatasetRequestAPI
+from ..common.client_manager.group_api import GroupRequestAPI
+from ..common.client_manager.role_api import RoleRequestAPI
+from ..common.client_manager.user_api import UserRequestAPI
+from ..common.node_service.network_search.network_search_messages import (
+    NetworkSearchMessage,
+)
+from ..common.node_service.node_setup.node_setup_messages import GetSetUpMessage
+from ..common.node_service.object_transfer.object_transfer_messages import (
+    LoadObjectMessage,
+)
+from ..common.node_service.request_receiver.request_receiver_messages import (
+    RequestMessage,
+)
+from .enums import PyGridClientEnums
+from .enums import RequestAPIFields
 
 
 class RequestQueueClient:
@@ -27,16 +56,26 @@ class RequestQueueClient:
         self.client = client
         self.handlers = RequestHandlerQueueClient(client=client)
 
+        self.groups = GroupRequestAPI(client=self)
+        self.users = UserRequestAPI(client=self)
+        self.roles = RoleRequestAPI(client=self)
+        self.association = AssociationRequestAPI(client=self)
+        self.datasets = DatasetRequestAPI(client=self)
+
     @property
     def requests(self) -> List[RequestMessage]:
+
         # syft absolute
-        from syft.core.node.domain.service.get_all_requests_service import (
+        from syft.core.node.common.node_service.get_all_requests.get_all_requests_messages import (
             GetAllRequestsMessage,
         )
 
         msg = GetAllRequestsMessage(
             address=self.client.address, reply_to=self.client.address
         )
+
+        blob = serialize(msg, to_bytes=True)
+        msg = deserialize(blob, from_bytes=True)
 
         requests = self.client.send_immediate_msg_with_reply(msg=msg).requests  # type: ignore
 
@@ -70,6 +109,9 @@ class RequestQueueClient:
 
     def __repr__(self) -> str:
         return repr(self.requests)
+
+    def _repr_html_(self) -> str:
+        return self.pandas._repr_html_()
 
     @property
     def pandas(self) -> pd.DataFrame:
@@ -149,7 +191,7 @@ class RequestQueueClient:
 
     def _update_handler(self, request_handler: Dict[str, Any], keep: bool) -> None:
         # syft absolute
-        from syft.core.node.domain.service.request_handler_service import (
+        from syft.core.node.common.node_service.request_handler import (
             UpdateRequestHandlerMessage,
         )
 
@@ -166,7 +208,7 @@ class RequestHandlerQueueClient:
     @property
     def handlers(self) -> List[Dict]:
         # syft absolute
-        from syft.core.node.domain.service.request_handler_service import (
+        from syft.core.node.common.node_service.request_handler import (
             GetAllRequestHandlersMessage,
         )
 
@@ -258,11 +300,90 @@ class DomainClient(Client):
         )
 
         self.requests = RequestQueueClient(client=self)
+
         self.post_init()
+
+        self.groups = GroupRequestAPI(client=self)
+        self.users = UserRequestAPI(client=self)
+        self.roles = RoleRequestAPI(client=self)
+        self.association = AssociationRequestAPI(client=self)
+        self.datasets = DatasetRequestAPI(client=self)
+
+    def load(
+        self, obj_ptr: Type[Pointer], address: Address, pointable: bool = False
+    ) -> None:
+        content = {
+            RequestAPIFields.ADDRESS: serialize(address)
+            .SerializeToString()  # type: ignore
+            .decode(PyGridClientEnums.ENCODING),
+            RequestAPIFields.UID: str(obj_ptr.id_at_location.value),
+            RequestAPIFields.POINTABLE: pointable,
+        }
+        self._perform_grid_request(grid_msg=LoadObjectMessage, content=content)
+
+    def setup(self, *, domain_name: Optional[str], **kwargs: Any) -> Any:
+
+        if domain_name is None:
+            domain_name = names.get_full_name() + "'s Domain"
+            logging.info(
+                "No Domain Name provided... picking randomly as: " + domain_name
+            )
+
+        kwargs["domain_name"] = domain_name
+
+        response = self.conn.setup(**kwargs)  # type: ignore
+        logging.info(response[RequestAPIFields.MESSAGE])
+
+    def get_setup(self, **kwargs: Any) -> Any:
+        return self._perform_grid_request(grid_msg=GetSetUpMessage, content=kwargs)
+
+    def search(self, query: List, pandas: bool = False) -> Any:
+        response = self._perform_grid_request(
+            grid_msg=NetworkSearchMessage, content={RequestAPIFields.QUERY: query}
+        )
+        if pandas:
+            response = DataFrame(response)
+
+        return response
+
+    def apply_to_network(
+        self, target: Client, route_index: int = 0, **metadata: str
+    ) -> None:
+        self.association.create(source=self, target=target, metadata=metadata)
+
+    def _perform_grid_request(
+        self, grid_msg: Any, content: Optional[Dict[Any, Any]] = None
+    ) -> SyftMessage:
+        if content is None:
+            content = {}
+        # Build Syft Message
+        content[RequestAPIFields.ADDRESS] = self.address
+        content[RequestAPIFields.REPLY_TO] = self.address
+        signed_msg = grid_msg(**content).sign(signing_key=self.signing_key)
+        # Send to the dest
+        response = self.send_immediate_msg_with_reply(msg=signed_msg)
+        if isinstance(response, ExceptionMessage):
+            raise response.exception_type
+        else:
+            return response
 
     @property
     def id(self) -> UID:
         return self.domain.id
+
+    # # TODO: @Madhava make work
+    # @property
+    # def accountant(self):
+    #     """Queries some service that returns a pointer to the ONLY real accountant for this
+    #     user that actually affects object permissions when used in a .publish() method. Other accountant
+    #     objects might exist in the object store but .publish() is just for simulation and won't change
+    #     the permissions on the object it's called on."""
+
+    # # TODO: @Madhava make work
+    # def create_simulated_accountant(self, init_with_budget_remaining=True):
+    #     """Creates an accountant in the remote store. If init_with_budget_remaining=True then the accountant
+    #     is a copy of an existing accountant. If init_with_budget_remaining=False then it is a fresh accountant
+    #     with the sam max budget."""
 
     @property
     def device(self) -> Optional[Location]:
@@ -308,7 +429,7 @@ class DomainClient(Client):
 
     def __repr__(self) -> str:
         no_dash = str(self.id).replace("-", "")
-        return f"<{type(self).__name__}: {no_dash}>"
+        return f"<{type(self).__name__} - {self.name}: {no_dash}>"
 
     def update_vars(self, state: dict) -> pd.DataFrame:
         for ptr in self.store.store:
@@ -317,3 +438,29 @@ class DomainClient(Client):
                 for tag in tags:
                     state[tag] = ptr
         return self.store.pandas
+
+    def load_dataset(
+        self,
+        assets: Any,
+        name: str,
+        description: str,
+        **metadata: TypeDict,
+    ) -> None:
+        # relative
+        from ....lib.python.util import downcast
+
+        metadata["name"] = bytes(name, "utf-8")  # type: ignore
+        metadata["description"] = bytes(description, "utf-8")  # type: ignore
+
+        for k, v in metadata.items():
+            if isinstance(v, str):  # type: ignore
+                metadata[k] = bytes(v, "utf-8")  # type: ignore
+
+        assets = downcast(assets)
+        metadata = downcast(metadata)
+
+        binary_dataset = serialize(assets, to_bytes=True)
+
+        self.datasets.create_syft(
+            dataset=binary_dataset, metadata=metadata, platform="syft"
+        )
