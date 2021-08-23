@@ -20,8 +20,8 @@ class Settings(BaseSettings):
     SECRET_KEY: str = secrets.token_urlsafe(32)
     # 60 minutes * 24 hours * 8 days = 8 days
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
-    SERVER_NAME: str
-    SERVER_HOST: AnyHttpUrl
+    SERVER_NAME: str = "unconfigured"
+    SERVER_HOST: AnyHttpUrl = "https://localhost"
     # BACKEND_CORS_ORIGINS is a JSON-formatted list of origins
     # e.g: '["http://localhost", "http://localhost:4200", "http://localhost:3000", \
     # "http://localhost:8080", "http://local.dockertoolbox.tiangolo.com"]'
@@ -35,19 +35,19 @@ class Settings(BaseSettings):
             return v
         raise ValueError(v)
 
-    PROJECT_NAME: str
+    PROJECT_NAME: str = "grid"
     SENTRY_DSN: Optional[HttpUrl] = None
 
     @validator("SENTRY_DSN", pre=True)
-    def sentry_dsn_can_be_blank(cls, v: str) -> Optional[str]:
-        if len(v) == 0:
+    def sentry_dsn_can_be_blank(cls, v: str) -> Optional[HttpUrl]:
+        if v is None or len(v) == 0:
             return None
         return v
 
-    POSTGRES_SERVER: str
-    POSTGRES_USER: str
-    POSTGRES_PASSWORD: str
-    POSTGRES_DB: str
+    POSTGRES_SERVER: str = "localhost"
+    POSTGRES_USER: str = "user"
+    POSTGRES_PASSWORD: str = "pwd"
+    POSTGRES_DB: str = "db"
     SQLALCHEMY_DATABASE_URI: Optional[PostgresDsn] = None
 
     @validator("SQLALCHEMY_DATABASE_URI", pre=True)
@@ -89,11 +89,11 @@ class Settings(BaseSettings):
         )
 
     EMAIL_TEST_USER: EmailStr = "test@example.com"
-    FIRST_SUPERUSER: EmailStr
-    FIRST_SUPERUSER_PASSWORD: str
+    FIRST_SUPERUSER: EmailStr = "info@openmined.org"
+    FIRST_SUPERUSER_PASSWORD: str = "changethis"
     USERS_OPEN_REGISTRATION: bool = False
 
-    DOMAIN_NAME: str
+    DOMAIN_NAME: str = "grid_domain"
     STREAM_QUEUE: bool = False
     NODE_TYPE: str = "Domain"
 
