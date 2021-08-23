@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "backend.fullname" . }}-config
+  labels:
+    {{- include "backend.labels" . | nindent 4 }}
+spec:
+  VERSION: {{ default "latest" .Values.env.VERSION }}
+  VERSION_HASH: {{ default "unknown" .Values.env.VERSION_HASH }}
+  SERVER_NAME: {{ default "localhost" .Values.env.DOMAIN }}
+  SERVER_HOST: {{ default "localhost" .Values.env.DOMAIN }}
+  # Allow explicit env var override for tests
+  SMTP_HOST: {{ default "" .Values.env.SMTP_HOST }}
+  selector:
+    {{- include "backend.selectorLabels" . | nindent 4 }}
