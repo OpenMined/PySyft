@@ -211,4 +211,4 @@ class PhiTensorAncestor(TensorChainManager):
                 "If you're passing in mulitple entities, please pass in one entity per row."
             )
 
-        return self
+        return self.child
