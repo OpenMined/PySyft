@@ -170,7 +170,7 @@ $ pip install "git+https://github.com/OpenMined/PySyft@demo_strike_team_branch_4
 ```
 
 ## Deploying HAGrid to a running Linux Machine (Ubuntu 20.x)
-  
+
 Log into your linux machine and run the following:
 ```
 pip install hagrid
@@ -192,9 +192,9 @@ PLAY RECAP *********************************************************************
 104.42.1.158               : ok=26   changed=21   unreachable=0    failed=1    skipped=1    rescued=0    ignored=0
 ```
 If you see this don't worry about it.
-  
+
 ### Post install checks.
-  
+
 Log into the openmined user.
 ```
 sudo su - om
