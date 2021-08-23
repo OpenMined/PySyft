@@ -82,6 +82,7 @@ from syft.lib import load_lib  # noqa: F401
 from syft.lib.torch.module import Module  # noqa: F401
 from syft.lib.torch.module import SyModule  # noqa: F401
 from syft.lib.torch.module import SySequential  # noqa: F401
+from syft.core.adp.entity import Entity
 
 # relative
 # Package Imports
