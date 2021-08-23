@@ -27,11 +27,14 @@ from .scalar import PhiScalar
 
 
 class AdversarialAccountant:
+    """Adversarial Accountant class that keeps track of budget and maintains a privacy ledger."""
+
     def __init__(
         self, db_engine: Engine, max_budget: float = 10, delta: float = 1e-6
     ) -> None:
 
         # this is a database-backed lookup table
+        # maps an entity to an actual budget
         self.entity2ledger = LedgerManager(db_engine)
 
         # this is a temporary lookup table for mechanisms we're not sure
@@ -43,6 +46,7 @@ class AdversarialAccountant:
     def temp_append(
         self, entity2mechanisms: TypeDict[Entity, TypeList[Mechanism]]
     ) -> None:
+        # add the mechanisms to all of the entities
         for key, ms in entity2mechanisms.items():
             if key not in self.temp_entity2ledger.keys():
                 self.temp_entity2ledger[key] = list()
@@ -51,15 +55,18 @@ class AdversarialAccountant:
 
     def append(self, entity2mechanisms: TypeDict[str, TypeList[Mechanism]]) -> None:
         mechanisms = list()
+        # add all the mechanisms
         for _, ms in entity2mechanisms.items():
             for m in ms:
                 mechanisms.append(m)
 
         self.entity2ledger.register_mechanisms(mechanisms)
 
+    # save the temporary ledger into the database
     def save_temp_ledger_to_longterm_ledger(self) -> None:
         self.append(entity2mechanisms=self.temp_entity2ledger)
 
+    # return epsilons for each entity
     def get_eps_for_entity(
         self, entity: Entity, user_key: Optional[VerifyKey] = None
     ) -> float:
@@ -78,9 +85,6 @@ class AdversarialAccountant:
                     filtered_mechanisms.append(mech)
 
             mechanisms = filtered_mechanisms
-
-        # print("Num mechanisms before TEMP:" + str(len(mechanisms)))
-        # print("self.temp_entity2ledger:" + str(self.temp_entity2ledger))
 
         if entity in self.temp_entity2ledger.keys():
             mechanisms = mechanisms + self.temp_entity2ledger[entity]
@@ -126,7 +130,6 @@ class AdversarialAccountant:
         else:
             eps = 0
 
-        # print("Epsilon" + str(eps))
         return float(eps)
 
         # # Query for eps given delta
@@ -137,18 +140,15 @@ class AdversarialAccountant:
         #     entity=entity,
         # )
 
+    # checks if the entity has budget or not
     def has_budget(self, entity: Entity, user_key: VerifyKey) -> bool:
         spend = self.get_eps_for_entity(entity=entity, user_key=user_key)
-        # print("SPEND:" + str(spend))
         user_budget: float = self.entity2ledger.get_user_budget(user_key=user_key)
-        # print("USER BUDGET:" + str(user_budget))
-        # print("ACCOUNTANT MAX BUDGET", self.max_budget)
-        # @Andrew can we use <= or does it have to be <
-        has_budget = spend <= user_budget
-        # print(f"has_budget = {spend} < {user_budget}")
+        has_budget = spend < user_budget
 
         return has_budget
 
+    # returns maximum entity epsilon
     def user_budget(self, user_key: VerifyKey) -> float:
         max_spend: float = 0
 
@@ -163,6 +163,7 @@ class AdversarialAccountant:
     def entities(self) -> TypeKeysView[Entity]:
         return self.entity2ledger.keys()
 
+    # returns a collection of entities having no budget
     def overbudgeted_entities(
         self,
         temp_entities: TypeDict[Entity, TypeList[iDPGaussianMechanism]],
@@ -176,6 +177,7 @@ class AdversarialAccountant:
 
         return entities
 
+    # prints entity and its epsilon value
     def print_ledger(self, delta: float = 1e-6) -> None:
         for mechanism in self.entity2ledger.mechanism_manager.all():
             entity = self.entity2ledger.entity_manager.first(name=mechanism.entity_name)
