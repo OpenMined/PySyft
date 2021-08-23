@@ -72,6 +72,7 @@ class PrimitiveFactory(ABC):
         value: Union[PrimitiveType, type(NotImplemented), PyPrimitive],  # type: ignore
         id: Optional[UID] = None,
         recurse: bool = False,
+        temporary_box: bool = False,
     ) -> Any:
         if isinstance(value, PyPrimitive):
             return value
@@ -115,7 +116,9 @@ class PrimitiveFactory(ABC):
                         if isprimitive(value=val):
                             new_list.append(
                                 PrimitiveFactory.generate_primitive(
-                                    value=val, recurse=recurse
+                                    value=val,
+                                    recurse=recurse,
+                                    temporary_box=temporary_box,
                                 )
                             )
                         else:
@@ -140,7 +143,9 @@ class PrimitiveFactory(ABC):
                         for k, val in items():
                             if isprimitive(value=val):
                                 new_dict[k] = PrimitiveFactory.generate_primitive(
-                                    value=val, recurse=recurse
+                                    value=val,
+                                    recurse=recurse,
+                                    temporary_box=temporary_box,
                                 )
                             else:
                                 new_dict[k] = val
@@ -150,7 +155,7 @@ class PrimitiveFactory(ABC):
             return new_dict
 
         if type(value) in [str, UserString]:
-            return python.String(value=value, id=id)
+            return python.String(value=value, id=id, temporary_box=temporary_box)
 
         if value is NotImplemented:
             return value

@@ -108,7 +108,6 @@ class Domain(Node):
         self.association_requests = AssociationRequestManager(db_engine)
         self.data_requests = RequestManager(db_engine)
         self.datasets = DatasetManager(db_engine)
-
         # self.immediate_services_without_reply.append(RequestReceiverService)
         # self.immediate_services_without_reply.append(AcceptOrDenyRequestService)
         # self.immediate_services_without_reply.append(UpdateRequestHandlerService)
@@ -129,6 +128,9 @@ class Domain(Node):
         self.immediate_services_with_reply.append(RequestService)
 
         self.immediate_services_without_reply.append(ObjectRequestServiceWithoutReply)
+
+        # TODO: @Madhava change to a map of accountants that are created on first
+        # use of the DS key
 
         self.requests: List[RequestMessage] = list()
         # available_device_types = set()
@@ -165,7 +167,6 @@ class Domain(Node):
                                                      __
                                                     |  \  _   _   _  .  _
                                                     |__/ (_) ||| (_| | | )
-
 """
         )
 

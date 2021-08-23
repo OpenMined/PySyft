@@ -80,7 +80,56 @@ jobs:
       - uses: satackey/action-docker-layer-caching@v0.0.11
         # Ignore the failure of a step and avoid terminating the job.
         continue-on-error: true
+        with:
+          key: hagrid-${{ hashFiles('packages/hagrid/Dockerfile') }}
+          restore-keys: |
+            hagrid-
 
       - name: Build the Docker image
         run: |
           ./build_docker.sh
+
+  hagrid-tests-latest-versions:
+    strategy:
+      max-parallel: 3
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: [3.9]
+        torch-version: [1.8.1]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
+
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - name: Install Dependencies
+        run: |
+          pip install packaging --default-timeout=60
+          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
+          pip install -e .
+          pip install pytest
+
+      - name: Run normal tests
+        run: |
+          pytest --durations=50

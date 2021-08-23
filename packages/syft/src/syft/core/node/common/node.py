@@ -85,6 +85,9 @@ from ..common.node_service.resolve_pointer_type.resolve_pointer_type_service imp
     ResolvePointerTypeService,
 )
 from ..common.node_service.testing_services.repr_service import ReprService
+from ..common.node_service.testing_services.smpc_executor_service import (
+    SMPCExecutorService,
+)
 from .action.exception_action import ExceptionMessage
 from .action.exception_action import UnknownPrivateException
 from .client import Client
@@ -213,7 +216,7 @@ class Node(AbstractNode):
 
         # for messages which don't lead to a reply, this uses
         # the type of the message to look up the service
-        # which addresses that message
+        # which addresses that message.
         self.immediate_msg_without_reply_router: Dict[
             Type[ImmediateSyftMessageWithoutReply], Any
         ] = {}
@@ -241,6 +244,8 @@ class Node(AbstractNode):
             ImmediateObjectSearchPermissionUpdateService
         )
 
+        self.immediate_services_without_reply.append(SMPCExecutorService)
+
         # TODO: Support ImmediateNodeServiceWithReply Parent Class
         # for services which run immediately and return a reply
         self.immediate_services_with_reply: List[Any] = []
@@ -248,6 +253,7 @@ class Node(AbstractNode):
         self.immediate_services_with_reply.append(ImmediateObjectSearchService)
         self.immediate_services_with_reply.append(GetReprService)
         self.immediate_services_with_reply.append(ResolvePointerTypeService)
+
         # for services which can run at a later time and do not return a reply
         self.eventual_services_without_reply = list()
         self.eventual_services_without_reply.append(

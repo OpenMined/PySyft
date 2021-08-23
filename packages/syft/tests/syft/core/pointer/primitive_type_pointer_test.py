@@ -401,6 +401,7 @@ for py_type in test_dict:
                 parameters_pointer_objectives.append([py_type, test_object, func])
 
 
+@pytest.mark.xfail
 @pytest.mark.slow
 @pytest.mark.parametrize("py_type,test_object,func", parameters_pointer_objectives)
 def test_pointer_objectives(

@@ -9,6 +9,7 @@ from typing import Dict as TypeDict
 from typing import List as TypeList
 from typing import Optional
 from typing import Tuple as TypeTuple
+from typing import cast
 
 # third party
 import click
@@ -83,14 +84,14 @@ def cli() -> None:
 )
 @click.option(
     "--tail",
-    default=None,
+    default="true",
     required=False,
     type=str,
-    help="Optional: tail logs on launch",
+    help="Optional: don't tail logs on launch",
 )
 @click.option(
     "--cmd",
-    default=None,
+    default="false",
     required=False,
     type=str,
     help="Optional: print the cmd without running it",
@@ -110,7 +111,7 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
         print(f"{e}")
         return
     print("Running: \n", cmd)
-    if "cmd" not in kwargs or str_to_bool(kwargs["cmd"]) is False:
+    if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
         subprocess.call(cmd, shell=True)
 
 
@@ -273,16 +274,26 @@ def generate_key_at_path(key_path: str) -> str:
     return key_path
 
 
-def create_launch_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
+def create_launch_cmd(
+    verb: GrammarVerb,
+    kwargs: TypeDict[str, Any],
+    ignore_docker_version_check: Optional[bool] = False,
+) -> str:
     host_term = verb.get_named_term_hostgrammar(name="host")
     host = host_term.host
+    auth: Optional[AuthCredentials] = None
 
-    tail = False
-    if "tail" in kwargs and str_to_bool(kwargs["tail"]):
-        tail = True
+    tail = True
+    if "tail" in kwargs and not str_to_bool(kwargs["tail"]):
+        tail = False
 
     if host in ["docker"]:
-        version = check_docker_version()
+
+        if not ignore_docker_version_check:
+            version = check_docker_version()
+        else:
+            version = "n/a"
+
         if version:
             return create_launch_docker_cmd(
                 verb=verb, docker_version=version, tail=tail
@@ -504,7 +515,7 @@ def create_launch_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
 
 
 def create_launch_docker_cmd(
-    verb: GrammarVerb, docker_version: str, tail: bool = False
+    verb: GrammarVerb, docker_version: str, tail: bool = True
 ) -> str:
     host_term = verb.get_named_term_hostgrammar(name="host")
     node_name = verb.get_named_term_type(name="node_name")
@@ -529,6 +540,7 @@ def create_launch_docker_cmd(
     print("  - TAG: " + str(tag))
     print("  - PORT: " + str(host_term.free_port))
     print("  - DOCKER: " + docker_version)
+    print("  - TAIL: " + str(tail))
     print("\n")
 
     cmd = ""
@@ -536,10 +548,14 @@ def create_launch_docker_cmd(
     cmd += " TRAEFIK_TAG=" + str(tag)
     cmd += ' DOMAIN_NAME="' + snake_name + '"'
     cmd += " NODE_TYPE=" + str(node_type.input)
+    cmd += " VERSION=`python VERSION`"
+    cmd += " VERSION_HASH=`python VERSION hash`"
     cmd += " docker compose -p " + snake_name
     cmd += " up"
+
     if not tail:
         cmd += " -d"
+
     cmd += " --build"  # force rebuild
     cmd = "cd " + GRID_SRC_PATH + ";" + cmd
     return cmd
@@ -722,6 +738,7 @@ def create_launch_custom_cmd(
 
     playbook_path = GRID_SRC_PATH + "/ansible/site.yml"
     ansible_cfg_path = GRID_SRC_PATH + "/ansible.cfg"
+    auth = cast(AuthCredentials, auth)
 
     if not os.path.exists(playbook_path):
         print(f"Can't find playbook site.yml at: {playbook_path}")
@@ -754,6 +771,10 @@ def create_launch_custom_cmd(
 def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
     host_term = verb.get_named_term_hostgrammar(name="host")
     host = host_term.host
+
+    if verb.get_named_term_grammar("node_name").input == "all":
+        # subprocess.call("docker rm `docker ps -aq` --force", shell=True)
+        return "docker rm `docker ps -aq` --force"
 
     if host in ["docker"]:
         version = check_docker_version()

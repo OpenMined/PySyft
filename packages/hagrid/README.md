@@ -59,9 +59,9 @@ choco install docker-desktop -y
 ```
 
 You will likely need to restart after installing Docker Desktop for the first time. Also occasionally Powershell looks like its taking for ever but if you hit <enter> then it'll show that the command is actually done.
-  
+
 ### Restart the computer and start Docker Desktop
-  
+
 After you've rebooted your Windows machine, launch the application "Docker Desktop" and continue.
 
 ### Docker Backend
@@ -79,7 +79,7 @@ choco install wsl2 -y
 ```
 
 If you needed to install wsl2, restart docker by clicking the little whale in the bottom right corner, clicking "Stop" and then starting Docker Desktop application again.
-  
+
 ### Enable Docker Compose v2
 
 Inside Docker Desktop click on the settings wheel in the top right.
@@ -170,18 +170,18 @@ $ pip install "git+https://github.com/OpenMined/PySyft@demo_strike_team_branch_4
 ```
 
 ## Deploying HAGrid to a running Linux Machine (Ubuntu 20.x)
-  
+
 Log into your linux machine and run the following:
-  
 ```
 pip install hagrid
 ```
 
 Often on a remote linux box hagrid will not by default show up in the path. Re-login via SSH terminal and hagrid should appear.
- 
+
 ```
 hagrid launch <node name> domain to localhost
 ```
+
 Then folllow the instructions in the prompt. Note that occasionally you'll see a harmless (but red and scary looking) error at the very end of the deploy which looks something like:
 
 ```
@@ -192,9 +192,9 @@ PLAY RECAP *********************************************************************
 104.42.1.158               : ok=26   changed=21   unreachable=0    failed=1    skipped=1    rescued=0    ignored=0
 ```
 If you see this don't worry about it.
-  
+
 ### Post install checks.
-  
+
 Log into the openmined user.
 ```
 sudo su - om
@@ -208,6 +208,5 @@ Should return something like
 #Ansible: Update PySyft Repo
 * * * * * /home/om/PySyft/packages/grid/scripts/cron.sh /home/om/PySyft The-PET-Lab-at-the-UN-PPTTT/PySyft ungp_pet_lab om om domain slytherin
 ```
-  
-  
+
 **Super Cool Code Images** by [Carbon](https://carbon.now.sh/)

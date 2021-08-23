@@ -23,7 +23,7 @@ https://www.rockyourcode.com/how-to-install-docker-compose-v2-on-linux-2021/
 At the time of writing this, if you are on linux you need to run the following:
 
 mkdir -p ~/.docker/cli-plugins
-curl -sSL https://github.com/docker/compose-cli/releases/download/v2.0.0-beta.5/docker-compose-linux-amd64 \
+curl -sSL https://github.com/docker/compose-cli/releases/download/v2.0.0-rc.1/docker-compose-linux-amd64 \
 -o ~/.docker/cli-plugins/docker-compose
 chmod +x ~/.docker/cli-plugins/docker-compose
 

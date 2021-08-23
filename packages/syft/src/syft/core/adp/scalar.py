@@ -19,7 +19,6 @@ from scipy import optimize
 from sympy.core.basic import Basic as BasicSymbol
 
 # relative
-# syft relative
 from ... import deserialize
 from ... import serialize
 from ...core.common import UID
@@ -45,7 +44,6 @@ from .search import ssid2obj
 # the most generic class
 class Scalar(Serializable):
     def publish(self, acc: Any, sigma: float = 1.5) -> float:
-        # syft relative
         # relative
         from .publish import publish
 

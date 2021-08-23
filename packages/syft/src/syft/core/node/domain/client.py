@@ -3,6 +3,7 @@ import logging
 import time
 from typing import Any
 from typing import Dict
+from typing import Dict as TypeDict
 from typing import List
 from typing import Optional
 from typing import Type
@@ -187,7 +188,7 @@ class RequestQueueClient:
 
     def _update_handler(self, request_handler: Dict[str, Any], keep: bool) -> None:
         # syft absolute
-        from syft.core.node.domain.service.request_handler_service import (
+        from syft.core.node.common.node_service.request_handler import (
             UpdateRequestHandlerMessage,
         )
 
@@ -204,7 +205,7 @@ class RequestHandlerQueueClient:
     @property
     def handlers(self) -> List[Dict]:
         # syft absolute
-        from syft.core.node.domain.service.request_handler_service import (
+        from syft.core.node.common.node_service.request_handler import (
             GetAllRequestHandlersMessage,
         )
 
@@ -296,6 +297,7 @@ class DomainClient(Client):
         )
 
         self.requests = RequestQueueClient(client=self)
+
         self.post_init()
 
         self.groups = GroupRequestAPI(client=self)
@@ -366,6 +368,20 @@ class DomainClient(Client):
     def id(self) -> UID:
         return self.domain.id
 
+    # # TODO: @Madhava make work
+    # @property
+    # def accountant(self):
+    #     """Queries some service that returns a pointer to the ONLY real accountant for this
+    #     user that actually affects object permissions when used in a .publish() method. Other accountant
+    #     objects might exist in the object store but .publish() is just for simulation and won't change
+    #     the permissions on the object it's called on."""
+
+    # # TODO: @Madhava make work
+    # def create_simulated_accountant(self, init_with_budget_remaining=True):
+    #     """Creates an accountant in the remote store. If init_with_budget_remaining=True then the accountant
+    #     is a copy of an existing accountant. If init_with_budget_remaining=False then it is a fresh accountant
+    #     with the sam max budget."""
+
     @property
     def device(self) -> Optional[Location]:
         """This client points to a node, if that node lives within a device
@@ -420,9 +436,22 @@ class DomainClient(Client):
                     state[tag] = ptr
         return self.store.pandas
 
-    def load_dataset(self, assets: Any, **metadata: str) -> None:
+    def load_dataset(
+        self,
+        assets: Any,
+        name: str,
+        description: str,
+        **metadata: TypeDict,
+    ) -> None:
         # relative
         from ....lib.python.util import downcast
+
+        metadata["name"] = bytes(name, "utf-8")  # type: ignore
+        metadata["description"] = bytes(description, "utf-8")  # type: ignore
+
+        for k, v in metadata.items():
+            if isinstance(v, str):  # type: ignore
+                metadata[k] = bytes(v, "utf-8")  # type: ignore
 
         assets = downcast(assets)
         metadata = downcast(metadata)

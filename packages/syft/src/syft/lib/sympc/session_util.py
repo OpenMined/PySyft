@@ -24,10 +24,10 @@ def protobuf_session_serializer(session: Session) -> MPCSession_PB:
     length_rs = session.ring_size.bit_length()
     rs_bytes = session.ring_size.to_bytes((length_rs + 7) // 8, byteorder="big")
 
-    length_nr_parties = session.ring_size.bit_length()
-    nr_parties_bytes = session.nr_parties.to_bytes(
-        (length_nr_parties + 7) // 8, byteorder="big"
-    )
+    # length_nr_parties = session.nr_parties.bit_length()
+    # nr_parties_bytes = session.nr_parties.to_bytes(
+    #     (length_nr_parties + 7) // 8, byteorder="big"
+    # )
 
     uuid = str(session.uuid)
 
@@ -35,8 +35,8 @@ def protobuf_session_serializer(session: Session) -> MPCSession_PB:
         uuid=uuid,
         config=conf_proto,
         ring_size=rs_bytes,
-        nr_parties=nr_parties_bytes,
         rank=session.rank,
+        nr_parties=session.nr_parties,
     )
 
     session_pb.protocol.name = type(session.protocol).__name__
@@ -60,7 +60,7 @@ def protobuf_session_deserializer(proto: MPCSession_PB) -> Session:
     _conf_dict = {key: value for key, value in conf_dict.items()}
     conf = Config(**_conf_dict)
     ring_size = int.from_bytes(proto.ring_size, "big")
-    nr_parties = int.from_bytes(proto.nr_parties, "big")
+    nr_parties = proto.nr_parties
     protocol_deserialized = Protocol.registered_protocols[proto.protocol.name]()
     protocol_deserialized.security_type = proto.protocol.security_type
 
