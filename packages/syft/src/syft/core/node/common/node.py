@@ -155,7 +155,6 @@ class Node(AbstractNode):
             # If a DB engine isn't provided then
             if db_engine is None:
                 db_engine = create_engine("sqlite://", echo=False)
-                Base.metadata.create_all(db_engine)
 
             db = sessionmaker(bind=db_engine)()
 
@@ -306,6 +305,10 @@ class Node(AbstractNode):
 
         # For logging the number of messages received
         self.message_counter = 0
+
+    def post_init(self) -> None:
+        Base.metadata.create_all(self.db_engine)
+        debug(f"> Creating {self.pprint}")
 
     def set_node_uid(self) -> None:
         try:
