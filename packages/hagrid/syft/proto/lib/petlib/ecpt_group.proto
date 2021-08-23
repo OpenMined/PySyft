@@ -1,0 +1,5 @@
+syntax = "proto3";
+
+package syft.lib.petlib;
+
+message EcPtGroup { uint64 group_nid = 1; }

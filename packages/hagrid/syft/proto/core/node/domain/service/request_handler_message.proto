@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package syft.core.node.domain.service;
+
+import "proto/core/common/common_object.proto";
+import "proto/core/io/address.proto";
+import "proto/lib/python/dict.proto";
+
+message UpdateRequestHandlerMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  syft.lib.python.Dict handler = 3;
+  bool keep = 4;
+}
+
+message GetAllRequestHandlersMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  syft.core.io.Address reply_to = 3;
+}
+
+message GetAllRequestHandlersResponseMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  repeated syft.lib.python.Dict handlers = 3;
+}

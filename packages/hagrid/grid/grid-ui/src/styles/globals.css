@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply min-h-screen overflow-y-scroll;
+  }
+
+  body {
+    @apply antialiased text-gray-800 font-rubik;
+  }
+
+  a {
+    @apply cursor-pointer;
+  }
+
+  h1 {
+    @apply text-4xl font-medium text-gray-700 leading-12 md:text-6xl;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 text-sm font-bold text-center text-white uppercase bg-indigo-500 leading-6 rounded-md shadow-sm whitespace-nowrap;
+  }
+
+  .btn:hover {
+    @apply bg-indigo-600 shadow-sm;
+  }
+
+  .btn:focus {
+    @apply outline-none ring;
+  }
+
+  .btn:active {
+    @apply bg-indigo-800;
+  }
+
+  .btn:disabled {
+    @apply bg-gray-300 cursor-not-allowed;
+  }
+
+  .btn[variant='ghost'] {
+    @apply bg-transparent shadow-none;
+  }
+
+  .btn[variant='ghost']:hover {
+    @apply bg-gray-50;
+  }
+
+  .tag {
+    @apply inline-flex items-center shadow-sm mt-1 px-2.5 py-0.5 border border-gray-300 leading-5 font-medium rounded-full text-gray-700 text-xs;
+  }
+
+  .subtitle {
+    @apply mt-4 font-light text-gray-400 sm:text-xl;
+  }
+
+  .base-input {
+    @apply block w-full mt-1 text-gray-800 border-gray-300 rounded-md shadow-sm;
+  }
+
+  .base-input:focus {
+    @apply border-indigo-300 ring ring-indigo-200 ring-opacity-50;
+  }
+
+  .base-input::placeholder {
+    @apply text-sm text-gray-500;
+  }
+
+  .toggle-dot {
+    @apply transition duration-300 ease-in-out;
+  }
+
+  input:checked ~ .toggle-dot {
+    @apply bg-white;
+    transform: translateX(100%);
+  }
+}

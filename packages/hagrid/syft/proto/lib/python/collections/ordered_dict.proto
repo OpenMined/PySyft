@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package syft.lib.python.collections;
+import "proto/core/common/common_object.proto";
+
+message OrderedDict {
+  repeated bytes keys = 1;
+  repeated bytes values = 2;
+  syft.core.common.UID id = 3;
+}

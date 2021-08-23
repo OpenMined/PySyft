@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package syft.lib.torch;
+
+message Device {
+  string type = 1;
+  int32 index = 2;
+}

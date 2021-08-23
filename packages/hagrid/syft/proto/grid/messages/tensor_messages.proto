@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+package syft.grid.messages;
+
+import "proto/core/common/common_object.proto";
+import "proto/core/io/address.proto";
+
+
+// CREATE GROUP
+message CreateTensorMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+message CreateTensorResponse {
+  syft.core.common.UID msg_id = 1;
+  int32 status_code = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}
+
+// GET Group
+message GetTensorMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+
+message GetTensorResponse {
+  syft.core.common.UID msg_id = 1;
+  int32 status_code = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}
+
+// GET ALL Groups
+message GetTensorsMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+message GetTensorsResponse {
+  syft.core.common.UID msg_id = 1;
+  int32 status_code = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}
+
+// Delete Group
+message DeleteTensorMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+message DeleteTensorResponse {
+  syft.core.common.UID msg_id = 1;
+  int32 status_code = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}
+
+// UPDATE Group
+message UpdateTensorMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string content = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+message UpdateTensorResponse {
+  syft.core.common.UID msg_id = 1;
+  int32 status_code = 2;
+  string content = 3;
+  syft.core.io.Address address = 4;
+}

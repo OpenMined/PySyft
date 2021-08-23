@@ -1,0 +1,7 @@
+syntax = "proto3";
+package syft.util;
+
+message DataMessage {
+  string obj_type = 1;
+  bytes content = 2;
+}

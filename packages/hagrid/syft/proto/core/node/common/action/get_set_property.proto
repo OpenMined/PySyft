@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package syft.core.node.common.action;
+
+import "proto/core/common/common_object.proto";
+import "proto/core/io/address.proto";
+import "proto/core/pointer/pointer.proto";
+
+message GetOrSetPropertyAction {
+  string path = 1;
+  syft.core.pointer.Pointer _self = 2;
+  repeated syft.core.pointer.Pointer args = 3;
+  map<string, syft.core.pointer.Pointer> kwargs = 4;
+  syft.core.common.UID id_at_location = 5;
+  syft.core.io.Address address = 6;
+  syft.core.pointer.Pointer set_arg = 7;
+  syft.core.common.UID msg_id = 8;
+  int32 action = 9;
+  bool map_to_dyn = 10;
+}

@@ -1,0 +1,12 @@
+{
+  "replace_lines": [
+    {
+      "match": "^expected_accuracy.*",
+      "replace": "expected_accuracy = 10.0"
+    },
+    {
+      "match": "^limit_train_batches.*",
+      "replace": "limit_train_batches = 0.01"
+    }
+  ]
+}

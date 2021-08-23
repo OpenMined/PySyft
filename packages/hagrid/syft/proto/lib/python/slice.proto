@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package syft.lib.python;
+import "proto/core/common/common_object.proto";
+
+message Slice {
+  int64 start = 1;
+  int64 stop = 2;
+  int64 step = 3;
+  bool has_start = 4;
+  bool has_stop = 5;
+  bool has_step = 6;
+  syft.core.common.UID id = 7;
+}

@@ -1,0 +1,8 @@
+{
+  "replace_lines": [
+    {
+      "match": "^iteration = 1.*",
+      "replace": "iteration = 1"
+    }
+  ]
+}

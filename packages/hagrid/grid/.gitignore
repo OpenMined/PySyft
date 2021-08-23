@@ -1,0 +1,4 @@
+.vscode
+.mypy_cache
+docker-stack.yml
+data/*

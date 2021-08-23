@@ -1,0 +1,3 @@
+[console_scripts]
+hagrid = hagrid.cli:cli
+

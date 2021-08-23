@@ -1,0 +1,3 @@
+[tox]
+run_command = tox_run_command
+

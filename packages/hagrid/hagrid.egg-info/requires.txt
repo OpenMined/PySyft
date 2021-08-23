@@ -1,0 +1,8 @@
+click
+names
+requests
+setuptools
+ansible
+ansible-core
+paramiko
+ascii_magic

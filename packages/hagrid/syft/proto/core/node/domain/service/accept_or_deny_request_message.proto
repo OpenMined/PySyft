@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package syft.core.node.domain.service;
+
+import "proto/core/common/common_object.proto";
+import "proto/core/io/address.proto";
+
+message AcceptOrDenyRequestMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  syft.core.common.UID request_id = 3;
+  bool accept = 4;
+}

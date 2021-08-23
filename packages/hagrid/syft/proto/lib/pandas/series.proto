@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package syft.lib.pandas;
+
+
+message PandasSeries {
+  bytes series = 1;
+  uint64 decompressed_size = 2;
+}

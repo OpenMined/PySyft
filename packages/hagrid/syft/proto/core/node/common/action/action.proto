@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package syft.core.node.common.action;
+
+import "proto/core/node/common/action/get_object.proto";
+import "proto/core/node/common/action/run_function_or_constructor.proto";
+import "proto/core/node/common/action/run_class_method.proto";
+import "proto/core/node/common/action/garbage_collect_object.proto";
+import "proto/core/node/common/action/get_enum_attribute.proto";
+import "proto/core/node/common/action/get_set_property.proto";
+import "proto/core/node/common/action/get_set_static_attribute.proto";
+import "proto/core/node/common/action/save_object.proto";
+
+message Action {
+    string obj_type = 1;
+    oneof action {
+        syft.core.node.common.action.GetObjectAction get_object_action = 2;
+        syft.core.node.common.action.RunFunctionOrConstructorAction run_function_or_constructor_action = 3;
+        syft.core.node.common.action.RunClassMethodAction run_class_method_action = 4;
+        syft.core.node.common.action.GarbageCollectObjectAction garbage_collect_object_action = 6;
+        syft.core.node.common.action.GetEnumAttributeAction enum_attribute_action = 7;
+        syft.core.node.common.action.GetOrSetPropertyAction get_or_set_property_action = 8;
+        syft.core.node.common.action.GetSetStaticAttributeAction get_set_static_attribute_action = 9;
+        syft.core.node.common.action.SaveObjectAction save_object_action = 10;
+    }
+}

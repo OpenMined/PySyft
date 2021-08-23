@@ -1,0 +1,3 @@
+[tox]
+pyenv = tox_pyenv
+

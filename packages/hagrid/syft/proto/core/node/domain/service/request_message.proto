@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package syft.core.node.domain.service;
+
+import "proto/core/common/common_object.proto";
+import "proto/core/io/address.proto";
+
+message RequestMessage {
+  syft.core.common.UID request_id = 1;
+  syft.core.common.UID object_id = 2;
+  repeated string object_tags = 3;
+  string request_description = 4;
+  syft.core.io.Address target_address = 5;
+  syft.core.io.Address owner_address = 6;
+  bytes requester_verify_key = 7;
+  int32 timeout_secs = 8;
+  string object_type = 9;
+}

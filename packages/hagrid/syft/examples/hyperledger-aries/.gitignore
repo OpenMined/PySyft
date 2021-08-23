@@ -1,0 +1,12 @@
+.idea
+
+.env
+
+.code
+dist
+*.egg-info
+build
+.ipynb_checkpoints/
+__pycache__/
+
+.vscode/

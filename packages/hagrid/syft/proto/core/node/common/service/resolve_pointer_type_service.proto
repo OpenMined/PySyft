@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package syft.core.node.common.action;
+
+import "proto/core/common/common_object.proto";
+import "proto/core/io/address.proto";
+
+message ResolvePointerTypeMessage {
+  syft.core.common.UID id_at_location = 1;
+  syft.core.io.Address address = 2;
+  syft.core.io.Address reply_to = 3;
+  syft.core.common.UID msg_id = 4;
+}
+
+message ResolvePointerTypeAnswerMessage {
+  string type_path = 1;
+  syft.core.io.Address address = 2;
+  syft.core.common.UID msg_id = 3;
+}
