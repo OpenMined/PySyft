@@ -13,6 +13,7 @@ from typing import Union
 import ascii_magic
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+from sqlalchemy import create_engine
 
 # relative
 from ....lib.python import String
@@ -66,6 +67,7 @@ from ..common.node_service.user_manager.user_manager_service import UserManagerS
 from ..device import Device
 from ..device import DeviceClient
 from .client import DomainClient
+from ..common.node_table import Base
 
 
 class Domain(Node):
@@ -98,6 +100,10 @@ class Domain(Node):
             verify_key=verify_key,
             db_engine=db_engine,
         )
+
+        if db_engine is None:
+            db_engine = create_engine('sqlite://',echo=False)
+
         # specific location with name
         self.domain = SpecificLocation(name=self.name)
         self.root_key = root_key
@@ -148,6 +154,8 @@ class Domain(Node):
         self.handled_requests: Dict[Any, float] = {}
 
         self.post_init()
+
+        Base.metadata.create_all(db_engine)
 
         # run the handlers in an asyncio future
         asyncio.ensure_future(self.run_handlers())
