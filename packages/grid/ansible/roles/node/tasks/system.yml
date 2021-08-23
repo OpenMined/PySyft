@@ -67,10 +67,16 @@
     - python-is-python3
     - net-tools
     - ifupdown
+    - python3-venv
 
 - name: Upgrade pip and some packages
   pip:
     name: pip
+    extra_args: --upgrade
+
+- name: Install pipx
+  pip:
+    name: pipx
     extra_args: --upgrade
 
 - name: Check ctop exists

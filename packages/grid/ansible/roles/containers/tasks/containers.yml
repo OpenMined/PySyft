@@ -7,7 +7,7 @@
 - name: Build Docker Images
   shell: "docker compose build"
   args:
-    chdir: "/home/om/PySyft/packages/grid"
+    chdir: "{{ build_dir }}/packages/grid"
   become_user: "{{ om_user }}"
 
 - name: Remove old Docker Images
@@ -15,11 +15,7 @@
   become_user: "{{ om_user }}"
   ignore_errors: yes
 
-  # STOP: STACK_NAME=grid-openmined-org TRAEFIK_PUBLIC_NETWORK=traefik-public docker compose -p "${TAG}" down
 - name: Start Docker Containers
   shell:
-    cmd: sudo hagrid launch {{ node_name }} domain to docker:80 --tail=false
-  args:
-    chdir: "/home/om/PySyft/packages/grid"
-    executable: /bin/bash
-  become_user: "{{ om_user }}"
+    cmd: runuser -l {{ om_user }} -c 'hagrid launch {{ node_name }} domain to docker:80 --tail=false'
+  become: yes
