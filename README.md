@@ -237,7 +237,7 @@ $ vagrant ssh
 
 ### Azure 1-click Quickstart Template
 
-[![Deploy To Azure](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fmadhavajay%2FPySyft%2Fmadhava%2Fazure_image%2Fpackages%2Fgrid%2Fpacker%2Fquickstart%2Fazuredeploy.json)
+[![Deploy To Azure](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fmadhavajay%2FPySyft%2Fmadhava%2Fazure_image%2Fpackages%2Fgrid%2Fquickstart%2Fazuredeploy.json)
 
 ### HAGrid Deployment
 
