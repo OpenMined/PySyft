@@ -110,12 +110,14 @@ def get_mechanism_for_entity(
         m_id += str(s.id).split(" ")[1][:-1] + "_"
 
     value = np.sqrt(np.sum(np.square(np.array([float(s.value) for s in scalars]))))
+    value_upper_bound = value = np.sqrt(np.sum(np.square(np.array([(float(s.max_val) - float(s.min_val)) for s in scalars]))))
 
     L = float(max_lipschitz_wrt_entity(scalars, entity=entity))
 
     return iDPGaussianMechanism(
         sigma=sigma,
-        value=value,
+        squared_l2_norm=value,
+        squared_l2_norm_upper_bound=value_upper_bound,
         L=L,
         entity_name=entity.name,
         name=m_id,
