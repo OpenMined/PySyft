@@ -26,6 +26,8 @@ from .ancestors import AutogradTensorAncestor
 from .ancestors import PhiTensorAncestor
 from .fixed_precision_tensor_ancestor import FixedPrecisionTensorAncestor
 from .passthrough import PassthroughTensor
+from .autodp.single_entity_phi import SingleEntityPhiTensor
+from .autodp.single_entity_phi import SingleEntityPhiTensorPointer
 from .smpc.mpc_tensor import MPCTensor
 
 
@@ -190,12 +192,19 @@ class Tensor(
         tags: Optional[List[str]] = None,
         description: str = "",
     ):
-
-        return TensorPointer(
-            client=client,
-            id_at_location=id_at_location,
-            object_type=object_type,
-            tags=tags,
-            description=description,
-            public_shape=getattr(self, "public_shape", None),
-        )
+        if isinstance(self.child, SingleEntityPhiTensor):
+            return SingleEntityPhiTensorPointer(
+                client=client,
+                id_at_location=id_at_location,
+                object_type=object_type,
+                tags=tags,
+                description=description)
+        else:
+            return TensorPointer(
+                client=client,
+                id_at_location=id_at_location,
+                object_type=object_type,
+                tags=tags,
+                description=description,
+                public_shape=getattr(self, "public_shape", None),
+            )
