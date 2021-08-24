@@ -198,7 +198,9 @@ class Tensor(
                 id_at_location=id_at_location,
                 object_type=object_type,
                 tags=tags,
-                description=description)
+                description=description,
+                min_val=self.child.min_val,
+                max_Val=self.child.max_val)
         else:
             return TensorPointer(
                 client=client,

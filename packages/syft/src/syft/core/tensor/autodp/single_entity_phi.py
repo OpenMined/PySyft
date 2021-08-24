@@ -33,7 +33,6 @@ from .initial_gamma import InitialGammaTensor
 from ...pointer.pointer import Pointer
 from ..smpc.mpc_tensor import MPCTensor
 
-
 class SingleEntityPhiTensorPointer(Pointer):
 
     __name__ = "SingleEntityPhiTensorPointer"
@@ -58,85 +57,6 @@ class SingleEntityPhiTensorPointer(Pointer):
         )
 
         # self.public_shape = self.public_shape
-
-    def share(self, *parties: TupleType[AbstractNodeClient, ...]) -> MPCTensor:
-
-        parties = list(parties) + [self.client]
-
-        self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=parties)
-
-        return self_mpc
-
-    def simple_add(self, other: Any) -> SingleEntityPhiTensorPointer:
-
-        attr_path_and_name = "syft.core.tensor.tensor.Tensor.__add__"
-
-        result = SingleEntityPhiTensorPointer(client=self.client)
-
-        # QUESTION can the id_at_location be None?
-        result_id_at_location = getattr(result, "id_at_location", None)
-
-        if result_id_at_location is not None:
-            # first downcast anything primitive which is not already PyPrimitive
-            (
-                downcast_args,
-                downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=[other], kwargs={})
-
-            # then we convert anything which isnt a pointer into a pointer
-            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
-                args=downcast_args,
-                kwargs=downcast_kwargs,
-                client=self.client,
-                gc_enabled=False,
-            )
-
-            cmd = RunClassMethodAction(
-                path=attr_path_and_name,
-                _self=self,
-                args=pointer_args,
-                kwargs=pointer_kwargs,
-                id_at_location=result_id_at_location,
-                address=self.client.address,
-            )
-            self.client.send_immediate_msg_without_reply(msg=cmd)
-
-        inherit_tags(
-            attr_path_and_name=attr_path_and_name,
-            result=result,
-            self_obj=self,
-            args=[other],
-            kwargs={},
-        )
-
-        result_public_shape = None
-
-        if self.public_shape is not None and other.public_shape is not None:
-            result_public_shape = (
-                np.empty(self.public_shape) + np.empty(other.public_shape)
-            ).shape
-
-        result.public_shape = result_public_shape
-
-        return result
-
-    def __add__(self, other: Any):
-
-        if self.client != other.client:
-
-            parties = [self.client, other.client]
-
-            self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=parties)
-            other_mpc = MPCTensor(
-                secret=other, shape=other.public_shape, parties=parties
-            )
-
-            print(self_mpc.__repr__())
-            print(other_mpc.__repr__())
-
-            return self_mpc + other_mpc
-
-        return self.simple_add(other=other)
 
 
 
