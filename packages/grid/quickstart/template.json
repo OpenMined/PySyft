@@ -232,8 +232,8 @@
                 "osProfile": {
                     "computerName": "[parameters('virtualMachineComputerName')]",
                     "adminUsername": "[parameters('adminUsername')]",
+                    "adminPassword": "[parameters('adminPassword')]",
                     "linuxConfiguration": {
-                        "adminPassword": "[parameters('adminPassword')]",
                         "disablePasswordAuthentication": false
                     }
                 },
