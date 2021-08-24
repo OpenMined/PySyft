@@ -4,7 +4,7 @@
   "parameters": {
         "location": {
             "type": "string",
-            "defaultValue": "westus"
+            "defaultValue": "West US"
         },
         "networkInterfaceName": {
             "type": "string",
@@ -101,6 +101,9 @@
         "adminUsername": {
             "type": "string",
             "defaultValue": "azureuser"
+        },
+        "adminPassword": {
+            "type": "securestring"
         }
     },
   "variables": {
@@ -205,9 +208,6 @@
                 "[concat('Microsoft.Network/networkInterfaces/', parameters('networkInterfaceName'))]"
             ],
             "properties": {
-                "location": {
-                    "value": "[parameters('location')]"
-                },
                 "hardwareProfile": {
                     "vmSize": "[parameters('virtualMachineSize')]"
                 },
@@ -233,7 +233,8 @@
                     "computerName": "[parameters('virtualMachineComputerName')]",
                     "adminUsername": "[parameters('adminUsername')]",
                     "linuxConfiguration": {
-                        "disablePasswordAuthentication": true
+                        "adminPassword": "[parameters('adminPassword')]",
+                        "disablePasswordAuthentication": false
                     }
                 },
                 "diagnosticsProfile": {
