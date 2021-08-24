@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package syft.core.tensor;
+
+import "proto/core/adp/entity.proto";
+import "proto/core/tensor/tensor.proto";
+import "proto/lib/numpy/array.proto";
+
+message SingleEntityPhiTensor {
+    Tensor child = 1;
+    syft.core.adp.Entity entity = 2;
+    syft.lib.numpy.NumpyProto min_vals = 3;
+    syft.lib.numpy.NumpyProto max_vals = 4;
+    client = 5;
+    scalar_manager = 6;
+    syft.core.common.UID id_at_location = 7;
+    string object_type = 8;
+    repeated string tags = 9;
+    bool use_tensors = 10;
+}
