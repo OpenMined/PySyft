@@ -81,7 +81,8 @@ class iDPGaussianMechanism(Mechanism, RecursiveSerde):
     def __init__(
         self,
         sigma: float,
-        value: float,
+        squared_l2_norm: float,
+        squared_l2_norm_upper_bound: float,
         L: np.float,
         entity_name: str,
         name: str = "Gaussian",
@@ -101,7 +102,8 @@ class iDPGaussianMechanism(Mechanism, RecursiveSerde):
         self.name = name  # When composing
         self.params = {
             "sigma": float(sigma),
-            "value": float(value),
+            "private_value": float(squared_l2_norm),
+            "public_value": float(squared_l2_norm_upper_bound),
             "L": float(L),
         }  # This will be useful for the Calibrator
         self.entity_name = entity_name

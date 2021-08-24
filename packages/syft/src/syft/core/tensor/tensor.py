@@ -174,6 +174,7 @@ class Tensor(
 
         kwargs = {"child": child}
         super().__init__(**kwargs)
+
         self.tag_name: Optional[str] = None
         self.public_shape = public_shape
 

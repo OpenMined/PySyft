@@ -39,6 +39,7 @@ def init_db(db: Session) -> None:
     _ = node.recv_immediate_msg_with_reply(msg=msg).message
 
     user = crud.user.get_by_email(db, email=settings.FIRST_SUPERUSER)
+
     if not user:
         user_in = schemas.UserCreate(
             email=settings.FIRST_SUPERUSER,

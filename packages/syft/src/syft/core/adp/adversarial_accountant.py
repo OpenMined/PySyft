@@ -60,7 +60,7 @@ class AdversarialAccountant:
         self.append(entity2mechanisms=self.temp_entity2ledger)
 
     def get_eps_for_entity(
-        self, entity: Entity, user_key: Optional[VerifyKey] = None
+        self, entity: Entity, user_key: Optional[VerifyKey] = None, returned_epsilon_is_private: bool=True
     ) -> PhiScalar:
         # compose them with the transformation: compose
         compose = Composition()
@@ -109,6 +109,13 @@ class AdversarialAccountant:
         # how do we ensure that no data scientist
         # exceeds the budget of any entity?
 
+        if returned_epsilon_is_private:
+            for mech in mechanisms:
+                mech.params['value'] = mech.params['private_value']
+        else:
+            for mech in mechanisms:
+                mech.params['value'] = mech.params['public_value']
+
         # map dataset
         if len(mechanisms) > 0:
             composed_mech = compose(mechanisms, [1] * len(mechanisms))
@@ -136,10 +143,10 @@ class AdversarialAccountant:
         #     entity=entity,
         # )
 
-    def has_budget(self, entity: Entity, user_key: VerifyKey) -> bool:
-        spend = self.get_eps_for_entity(entity=entity, user_key=user_key)
+    def has_budget(self, entity: Entity, user_key: VerifyKey, returned_epsilon_is_private:bool = True) -> bool:
+        spend = self.get_eps_for_entity(entity=entity, user_key=user_key, returned_epsilon_is_private=returned_epsilon_is_private)
         # print("SPEND:" + str(spend))
-        user_budget = self.entity2ledger.get_user_budget(user_key=user_key)
+        user_budget = self.entity2ledger.get_user_budget(user_key=user_key, returned_epsilon_is_private=returned_epsilon_is_private)
         # print("USER BUDGET:" + str(user_budget))
         # print("ACCOUNTANT MAX BUDGET", self.max_budget)
         # @Andrew can we use <= or does it have to be <
@@ -148,11 +155,11 @@ class AdversarialAccountant:
 
         return has_budget
 
-    def user_budget(self, user_key: VerifyKey):
+    def user_budget(self, user_key: VerifyKey, returned_epsilon_is_private:bool = True):
         max_spend = 0
 
         for ent in self.entities:
-            spend = self.get_eps_for_entity(entity=ent, user_key=user_key)
+            spend = self.get_eps_for_entity(entity=ent, user_key=user_key, returned_epsilon_is_private=returned_epsilon_is_private)
             if spend > max_spend:
                 max_spend = spend
 
@@ -166,20 +173,21 @@ class AdversarialAccountant:
         self,
         temp_entities: TypeDict[Entity, TypeList[iDPGaussianMechanism]],
         user_key: VerifyKey,
+        returned_epsilon_is_private:bool = True
     ) -> TypeSet[Entity]:
         entities = set()
 
         for entity, _ in temp_entities.items():
-            if not self.has_budget(entity, user_key=user_key):
+            if not self.has_budget(entity, user_key=user_key, returned_epsilon_is_private=returned_epsilon_is_private):
                 entities.add(entity)
 
         return entities
 
-    def print_ledger(self, delta: float = 1e-6) -> None:
+    def print_ledger(self, delta: float = 1e-6, returned_epsilon_is_private:bool =True) -> None:
         for mechanism in self.entity2ledger.mechanism_manager.all():
             entity = self.entity2ledger.entity_manager.first(name=mechanism.entity_name)
             print(
-                str(mechanism.entity_name) + "\t" + str(self.get_eps_for_entity(entity))
+                str(mechanism.entity_name) + "\t" + str(self.get_eps_for_entity(entity, returned_epsilon_is_private=returned_epsilon_is_private))
             )
 
 
