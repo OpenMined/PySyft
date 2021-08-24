@@ -8,7 +8,7 @@ from nacl.signing import SigningKey
 from syft import Domain  # type: ignore
 from syft import Network  # type: ignore
 from syft.core.node.common.client import Client
-from syft.core.node.common.node_table import Base
+# from syft.core.node.common.node_table import Base
 from syft.core.node.common.node_table.utils import seed_db
 
 # grid absolute
@@ -29,7 +29,9 @@ else:
     )
 
 node.loud_print()
-Base.metadata.create_all(engine)
+
+# Moving this to get called WITHIN Domain and Network so that they can operate in standalone mode
+# Base.metadata.create_all(engine)
 
 if len(node.setup):  # Check if setup was defined previously
     node.name = node.setup.node_name
