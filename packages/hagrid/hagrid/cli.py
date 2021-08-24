@@ -13,6 +13,7 @@ from typing import cast
 
 # third party
 import click
+import time
 
 # relative
 from .art import hagrid
@@ -36,6 +37,21 @@ from .style import RichGroup
 @click.group(cls=RichGroup)
 def cli() -> None:
     pass
+
+
+@click.command(help="Restore some part of the hagrid installation or deployment to its initial/starting state.")
+@click.argument("location", type=str, nargs=1)
+def clean(location):
+
+    if location == "library" or location == "volumes":
+        print("Deleting all Docker volumes in 3 secs (Ctrl-C to stop)")
+        time.sleep(3)
+        subprocess.call("docker volume rm $(docker volume ls -q)", shell=True)
+
+    if location == "containers" or location == "pantry":
+        print("Deleting all Docker containers in 5 secs (Ctrl-C to stop)")
+        time.sleep(5)
+        subprocess.call("docker rm -f $(docker ps -a -q)", shell=True)
 
 
 @click.command(help="Start a new PyGrid domain/network node!")
@@ -830,3 +846,4 @@ def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
 
 cli.add_command(launch)
 cli.add_command(land)
+cli.add_command(clean)
