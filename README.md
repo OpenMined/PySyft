@@ -235,6 +235,12 @@ $ vagrant ssh
 
 ## Deploy to Cloud
 
+### Azure 1-click Quickstart Template
+
+[![Deploy To Azure](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FOpenMined%2FPySyft%2Fdev%2Fpackages%2Fgrid%2Fquickstart%2Ftemplate.json)
+
+### HAGrid Deployment
+
 Create a VM on your cloud provider with Ubuntu 20.04 with at least:
 
 - 2x CPU
@@ -291,7 +297,7 @@ cd packages/grid/packer
 Run:
 
 ```
-./build_images.sh
+./build_vagrant.sh
 ```
 
 What this does is first build the base image, by downloading a Ubuntu .iso and automating
@@ -312,33 +318,61 @@ ip http://10.0.1.3/ you can also SSH into this box using the credentials in the 
 
 ## Azure Cloud Image
 
-az login
-az group create -n openmined-images -l westus
-az storage account create -n openminedimgs -g openmined-images -l westus --sku Standard_LRS
+To create the azure cloud image you need to have the `az` cli tool and make sure you are authenticated.
 
-# note openminedimgs needs to be globally unique so you will need to change it
+Install the CLI tool:
 
-az ad sp create-for-rbac --name openmined-images > azure_vars.json
+```
+$ pip install az
+```
+
+Authenticate your CLI tool:
+
+```
+$ az login
+```
+
+You will need to use a resource group and create a storage account within that resource group.
+
+Create a resource group called: `openmined-images`
+
+```
+$ az group create -n openmined-images -l westus
+```
+
+Create an app to use within the packer file:
+
+```
+$ az ad sp create-for-rbac --name openmined-images > azure_vars.json
+```
+
+This will create a file called `azure_vars.json` which will look something like this:
 
 ```json
 {
   "appId": "21b92977-8ad0-467c-ae3a-47c864418126",
   "displayName": "openmined-images",
   "name": "21b92977-8ad0-467c-ae3a-47c864418126",
-  "password": "TfApY1XnkNn04o~I~SR848bNCy3Pw5xwpR",
+  "password": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
   "tenant": "e3f9defa-1378-49b3-aed7-3dcacb468c41"
 }
-
- packer build -var-file=azure_vars.json -var "subscription_id=767334bd-95eb-473a-a74c-d5b75b5b5198" azure.pkr.hcl
 ```
 
-Go to "Images"
-add an image, pick the resource group and then select the -osDisk. file
+You need to know your `subscription_id`:
 
-if you built with managed image this is already done
+```bash
+$ SUBSCRIPTION_ID=$(az account show --query id | tr -d '"')
+```
 
-create a shared image gallery
-pick the same resource group
+You can now build the image:
+
+```bash
+$ ./build_azure.sh ${SUBSCRIPTION_ID}
+```
+
+### Create a Shared Image Gallery
+
+Create a Shared image gallery within Azure.
 
 ## Join Slack
 
@@ -365,3 +399,7 @@ We are very grateful for contributions to Syft and Grid from the following organ
 ## License
 
 [Apache License 2.0](https://github.com/OpenMined/PySyft/blob/main/packages/syft/LICENSE)
+
+```
+
+```
