@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 from typing import Optional
 from typing import Tuple as TypeTuple
+from typing import List
 from typing import Union
 
 # third party
@@ -14,9 +15,13 @@ import numpy.typing as npt
 
 # relative
 from ....core.common.serde.recursive import RecursiveSerde
+from ....ast.klass import pointerize_args_and_kwargs
+from ....util import inherit_tags
 from ...adp.entity import Entity
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
+from ...node.common.action.run_class_method_action import RunClassMethodAction
 from ...common.serde.serializable import bind_protobuf
+from ...common.uid import UID
 from ..ancestors import AutogradTensorAncestor
 from ..passthrough import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
@@ -25,6 +30,114 @@ from ..passthrough import implements  # type: ignore
 from ..passthrough import inputs2child  # type: ignore
 from ..passthrough import is_acceptable_simple_type  # type: ignore
 from .initial_gamma import InitialGammaTensor
+from ...pointer.pointer import Pointer
+from ..smpc.mpc_tensor import MPCTensor
+
+
+class SingleEntityPhiTensorPointer(Pointer):
+
+    __name__ = "SingleEntityPhiTensorPointer"
+    __module__ = "syft.proxy.syft.core.tensor.tensor"
+
+    def __init__(
+            self,
+            client: Any,
+            id_at_location: Optional[UID] = None,
+            object_type: str = "",
+            tags: Optional[List[str]] = None,
+            description: str = "",
+            public_shape=None,
+    ):
+
+        super().__init__(
+            client=self.client,
+            id_at_location=self.id_at_location,
+            object_type=self.object_type,
+            tags=self.tags,
+            description=self.description,
+        )
+
+        # self.public_shape = self.public_shape
+
+    def share(self, *parties: TupleType[AbstractNodeClient, ...]) -> MPCTensor:
+
+        parties = list(parties) + [self.client]
+
+        self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=parties)
+
+        return self_mpc
+
+    def simple_add(self, other: Any) -> SingleEntityPhiTensorPointer:
+
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor.__add__"
+
+        result = SingleEntityPhiTensorPointer(client=self.client)
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=[other], kwargs={})
+
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
+            )
+
+            cmd = RunClassMethodAction(
+                path=attr_path_and_name,
+                _self=self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                id_at_location=result_id_at_location,
+                address=self.client.address,
+            )
+            self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=self,
+            args=[other],
+            kwargs={},
+        )
+
+        result_public_shape = None
+
+        if self.public_shape is not None and other.public_shape is not None:
+            result_public_shape = (
+                np.empty(self.public_shape) + np.empty(other.public_shape)
+            ).shape
+
+        result.public_shape = result_public_shape
+
+        return result
+
+    def __add__(self, other: Any):
+
+        if self.client != other.client:
+
+            parties = [self.client, other.client]
+
+            self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=parties)
+            other_mpc = MPCTensor(
+                secret=other, shape=other.public_shape, parties=parties
+            )
+
+            print(self_mpc.__repr__())
+            print(other_mpc.__repr__())
+
+            return self_mpc + other_mpc
+
+        return self.simple_add(other=other)
+
 
 
 @bind_protobuf
@@ -57,6 +170,24 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             self.scalar_manager = VirtualMachinePrivateScalarManager()
         else:
             self.scalar_manager = scalar_manager
+
+    def init_pointer(
+        self,
+        client: Any,
+        id_at_location: Optional[UID] = None,
+        object_type: str = "",
+        tags: Optional[List[str]] = None,
+        description: str = "",
+    ):
+        return SingleEntityPhiTensorPointer(
+            client=client,
+            id_at_location=id_at_location,
+            object_type=object_type,
+            tags=tags,
+            description=description,
+            public_shape=getattr(self, "public_shape", None),
+        )
+
 
     @property
     def gamma(self) -> InitialGammaTensor:
