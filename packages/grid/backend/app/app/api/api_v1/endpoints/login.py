@@ -14,7 +14,6 @@ from syft import serialize  # type: ignore
 from syft.core.node.common.exceptions import InvalidCredentialsError
 
 # grid absolute
-from app import schemas
 from app.api import deps
 from app.core import security
 from app.core.config import settings
@@ -57,9 +56,3 @@ def login_access_token(
     }
 
 
-@router.post("/login/test-token", response_model=schemas.User)
-def test_token(current_user: Any = Depends(deps.get_current_user)) -> Any:
-    """
-    Test access token
-    """
-    return current_user
