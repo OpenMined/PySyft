@@ -39,7 +39,7 @@ class GetRemainingBudgetMessage(ImmediateSyftMessageWithReply):
 
     def _object2proto(self) -> GetRemainingBudgetMessage_PB:
         return GetRemainingBudgetMessage_PB(
-            budget=serialize(self.budget),
+            budget=self.budget,
             # id_at_location=serialize(self.id_at_location),
             msg_id=serialize(self.id),
             address=serialize(self.address),
@@ -51,7 +51,7 @@ class GetRemainingBudgetMessage(ImmediateSyftMessageWithReply):
         proto: GetRemainingBudgetMessage_PB,
     ) -> "GetRemainingBudgetMessage":
         return GetRemainingBudgetMessage(
-            budget=_deserialize(blob=proto.budget),
+            budget=proto.budget,
             # id_at_location=_deserialize(blob=proto.id_at_location),
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
