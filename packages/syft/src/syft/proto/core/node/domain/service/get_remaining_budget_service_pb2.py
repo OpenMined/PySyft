@@ -21,11 +21,11 @@ from syft.proto.core.io import address_pb2 as proto_dot_core_dot_io_dot_address_
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/core/node/domain/service/get_remaining_budget_service.proto",
-    package="syft.core.node.domain.service",
+    package="syft.core.node.common.service",
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\nAproto/core/node/domain/service/get_remaining_budget_service.proto\x12\x1dsyft.core.node.domain.service\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"y\n\x18GetRemainingBudgetAction\x12\x0e\n\x06\x62udget\x18\x01 \x01(\x02\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12%\n\x06msg_id\x18\x03 \x01(\x0b\x32\x15.syft.core.common.UIDb\x06proto3',
+    serialized_pb=b"\nAproto/core/node/domain/service/get_remaining_budget_service.proto\x12\x1dsyft.core.node.common.service\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto\"\xc2\x01\n\x19GetRemainingBudgetMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12'\n\x08reply_to\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\x12-\n\x0eid_at_location\x18\x04 \x01(\x0b\x32\x15.syft.core.common.UIDb\x06proto3",
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
@@ -33,24 +33,24 @@ DESCRIPTOR = _descriptor.FileDescriptor(
 )
 
 
-_GETREMAININGBUDGETACTION = _descriptor.Descriptor(
-    name="GetRemainingBudgetAction",
-    full_name="syft.core.node.domain.service.GetRemainingBudgetAction",
+_GETREMAININGBUDGETMESSAGE = _descriptor.Descriptor(
+    name="GetRemainingBudgetMessage",
+    full_name="syft.core.node.common.service.GetRemainingBudgetMessage",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
     create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
-            name="budget",
-            full_name="syft.core.node.domain.service.GetRemainingBudgetAction.budget",
+            name="msg_id",
+            full_name="syft.core.node.common.service.GetRemainingBudgetMessage.msg_id",
             index=0,
             number=1,
-            type=2,
-            cpp_type=6,
+            type=11,
+            cpp_type=10,
             label=1,
             has_default_value=False,
-            default_value=float(0),
+            default_value=None,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -62,7 +62,7 @@ _GETREMAININGBUDGETACTION = _descriptor.Descriptor(
         ),
         _descriptor.FieldDescriptor(
             name="address",
-            full_name="syft.core.node.domain.service.GetRemainingBudgetAction.address",
+            full_name="syft.core.node.common.service.GetRemainingBudgetMessage.address",
             index=1,
             number=2,
             type=11,
@@ -80,10 +80,29 @@ _GETREMAININGBUDGETACTION = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="msg_id",
-            full_name="syft.core.node.domain.service.GetRemainingBudgetAction.msg_id",
+            name="reply_to",
+            full_name="syft.core.node.common.service.GetRemainingBudgetMessage.reply_to",
             index=2,
             number=3,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="id_at_location",
+            full_name="syft.core.node.common.service.GetRemainingBudgetMessage.id_at_location",
+            index=3,
+            number=4,
             type=11,
             cpp_type=10,
             label=1,
@@ -107,29 +126,37 @@ _GETREMAININGBUDGETACTION = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=168,
-    serialized_end=289,
+    serialized_start=169,
+    serialized_end=363,
 )
 
-_GETREMAININGBUDGETACTION.fields_by_name[
-    "address"
-].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETREMAININGBUDGETACTION.fields_by_name[
+_GETREMAININGBUDGETMESSAGE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
-DESCRIPTOR.message_types_by_name["GetRemainingBudgetAction"] = _GETREMAININGBUDGETACTION
+_GETREMAININGBUDGETMESSAGE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
+_GETREMAININGBUDGETMESSAGE.fields_by_name[
+    "reply_to"
+].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
+_GETREMAININGBUDGETMESSAGE.fields_by_name[
+    "id_at_location"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+DESCRIPTOR.message_types_by_name[
+    "GetRemainingBudgetMessage"
+] = _GETREMAININGBUDGETMESSAGE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-GetRemainingBudgetAction = _reflection.GeneratedProtocolMessageType(
-    "GetRemainingBudgetAction",
+GetRemainingBudgetMessage = _reflection.GeneratedProtocolMessageType(
+    "GetRemainingBudgetMessage",
     (_message.Message,),
     {
-        "DESCRIPTOR": _GETREMAININGBUDGETACTION,
+        "DESCRIPTOR": _GETREMAININGBUDGETMESSAGE,
         "__module__": "proto.core.node.domain.service.get_remaining_budget_service_pb2"
-        # @@protoc_insertion_point(class_scope:syft.core.node.domain.service.GetRemainingBudgetAction)
+        # @@protoc_insertion_point(class_scope:syft.core.node.common.service.GetRemainingBudgetMessage)
     },
 )
-_sym_db.RegisterMessage(GetRemainingBudgetAction)
+_sym_db.RegisterMessage(GetRemainingBudgetMessage)
 
 
 # @@protoc_insertion_point(module_scope)

@@ -14,7 +14,6 @@ from .....adp.publish import get_remaining_budget  # type: ignore
 from ....abstract.node import AbstractNode
 from ..auth import service_auth
 from ..node_service import ImmediateNodeServiceWithReply
-from .get_remaining_budget_messages import GetRemainingBudgetAction  # type: ignore
 from .get_remaining_budget_messages import GetRemainingBudgetMessage
 
 
@@ -25,7 +24,7 @@ class GetRemainingBudgetService(ImmediateNodeServiceWithReply):
         node: AbstractNode,
         msg: GetRemainingBudgetMessage,
         verify_key: Optional[VerifyKey] = None,
-    ) -> GetRemainingBudgetAction:
+    ) -> GetRemainingBudgetMessage:
 
         if verify_key is None:
             traceback_and_raise(
@@ -34,7 +33,7 @@ class GetRemainingBudgetService(ImmediateNodeServiceWithReply):
 
         try:
             result = get_remaining_budget(node.acc, verify_key)
-            return GetRemainingBudgetAction(budget=result, address=msg.reply_to)
+            return GetRemainingBudgetMessage(budget=result, address=msg.reply_to)
         except Exception as e:
             log = (
                 f"Unable to get remaining budget for {verify_key}. "

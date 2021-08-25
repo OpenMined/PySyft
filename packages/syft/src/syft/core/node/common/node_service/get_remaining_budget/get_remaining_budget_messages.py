@@ -1,5 +1,4 @@
 # stdlib
-from typing import List as TypeList
 from typing import Optional
 
 # third party
@@ -7,18 +6,14 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import final
 
 # relative
-# syft relative
-from ......proto.core.node.domain.service.get_remaining_budget_service_pb2 import (
-    GetRemainingBudgetAction as GetRemainingBudgetAction_PB,
-)  # type: ignore
-from .....common.message import ImmediateSyftMessageWithReply  # type: ignore
-from .....common.message import ImmediateSyftMessageWithoutReply  # type: ignore
-from .....common.serde.deserialize import _deserialize  # type: ignore
-from .....common.serde.serializable import bind_protobuf  # type: ignore
-from .....common.serde.serialize import _serialize as serialize  # type: ignore
-from .....common.uid import UID  # type: ignore
-from .....io.address import Address  # type: ignore
-print("I got imported\n")
+from ...... import serialize
+from ......core.common.serde.serializable import bind_protobuf
+from ......proto.core.node.domain.service.get_remaining_budget_service_pb2 import GetRemainingBudgetMessage as GetRemainingBudgetMessage_PB
+from .....common.message import ImmediateSyftMessageWithReply
+from .....common.serde.deserialize import _deserialize
+from .....common.uid import UID
+from .....io.address import Address
+
 
 @bind_protobuf
 @final
@@ -27,20 +22,24 @@ class GetRemainingBudgetMessage(ImmediateSyftMessageWithReply):
         self,
         address: Address,
         reply_to: Address,
+        id_at_location: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
+        self.id_at_location = id_at_location
 
-    def _object2proto(self) -> GetRemainingBudgetAction_PB:
-        return GetRemainingBudgetAction_PB(
+    def _object2proto(self) -> GetRemainingBudgetMessage_PB:
+        return GetRemainingBudgetMessage_PB(
+            id_at_location=serialize(self.id_at_location),
             msg_id=serialize(self.id),
             address=serialize(self.address),
             reply_to=serialize(self.reply_to),
         )
 
     @staticmethod
-    def _proto2object(proto: GetRemainingBudgetAction_PB) -> "GetRemainingBudgetAction":
-        return GetRemainingBudgetAction(
+    def _proto2object(proto: GetRemainingBudgetMessage_PB) -> "GetRemainingBudgetMessage":
+        return GetRemainingBudgetMessage(
+            id_at_location=_deserialize(blob=proto.id_at_location),
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             reply_to=_deserialize(blob=proto.reply_to),
@@ -48,36 +47,4 @@ class GetRemainingBudgetMessage(ImmediateSyftMessageWithReply):
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return GetRemainingBudgetAction_PB
-
-
-@bind_protobuf
-@final
-class GetRemainingBudgetAction(ImmediateSyftMessageWithoutReply):
-    def __init__(
-        self,
-        budget: float,
-        address: Address,
-        msg_id: Optional[UID] = None,
-    ):
-        super().__init__(address=address, msg_id=msg_id)
-        self.budget = budget
-
-    def _object2proto(self) -> GetRemainingBudgetAction_PB:
-        return GetRemainingBudgetAction_PB(
-            budget=self.budget,
-            msg_id=serialize(self.id),
-            address=serialize(self.address),
-        )
-
-    @staticmethod
-    def _proto2object(proto: GetRemainingBudgetAction_PB) -> "GetRemainingBudgetAction":
-        return GetRemainingBudgetAction(
-            budget=proto.budget,
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
-        )
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return GetRemainingBudgetAction_PB
+        return GetRemainingBudgetMessage_PB

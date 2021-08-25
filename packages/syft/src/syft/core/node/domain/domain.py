@@ -37,14 +37,14 @@ from ..common.node_manager.group_manager import GroupManager
 from ..common.node_manager.request_manager import RequestManager
 from ..common.node_manager.role_manager import RoleManager
 from ..common.node_manager.user_manager import UserManager
-
-from ..common.node_service.get_remaining_budget.get_remaining_budget_service import GetRemainingBudgetService
-
 from ..common.node_service.association_request.association_request_service import (
     AssociationRequestService,
 )
 from ..common.node_service.dataset_manager.dataset_manager_service import (
     DatasetManagerService,
+)
+from ..common.node_service.get_remaining_budget.get_remaining_budget_service import (
+    GetRemainingBudgetService,
 )
 from ..common.node_service.group_manager.group_manager_service import (
     GroupManagerService,
@@ -92,7 +92,7 @@ class Domain(Node):
         verify_key: Optional[VerifyKey] = None,
         root_key: Optional[VerifyKey] = None,
         db_engine: Any = None,
-        db: Any = None
+        db: Any = None,
     ):
         super().__init__(
             name=name,
