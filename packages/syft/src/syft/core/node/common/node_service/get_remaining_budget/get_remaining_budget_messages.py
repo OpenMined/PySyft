@@ -18,7 +18,7 @@ from .....common.serde.serializable import bind_protobuf  # type: ignore
 from .....common.serde.serialize import _serialize as serialize  # type: ignore
 from .....common.uid import UID  # type: ignore
 from .....io.address import Address  # type: ignore
-
+print("I got imported\n")
 
 @bind_protobuf
 @final
