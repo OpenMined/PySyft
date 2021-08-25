@@ -93,7 +93,6 @@ from .action.exception_action import UnknownPrivateException
 from .client import Client
 from .metadata import Metadata
 from .node_manager.bin_obj_manager import BinObjectManager
-from .node_table.utils import seed_db
 
 # this generic type for Client bound by Client
 ClientT = TypeVar("ClientT", bound=Client)
@@ -151,17 +150,19 @@ class Node(AbstractNode):
 
         # If not provided a session connecting us to the database, let's just
         # initialize a database in memory
-        if db_engine is None:
-            db_engine = create_engine("sqlite://", echo=False)
-
         if db is None:
-            session = sessionmaker(bind=db_engine)()
+
+            # If a DB engine isn't provided then
+            if db_engine is None:
+                db_engine = create_engine("sqlite://", echo=False)
+                Base.metadata.create_all(db_engine)
+
+            db = sessionmaker(bind=db_engine)()
 
         # cache these variables on self
         self.TableBase = TableBase
         self.db_engine = db_engine
-        self.db = session
-        self.session = session
+        self.db = db
 
         # launch the tables in the database
         # Tudor: experimental
@@ -306,12 +307,6 @@ class Node(AbstractNode):
         # For logging the number of messages received
         self.message_counter = 0
 
-    def post_init(self) -> None:
-        print("Seeding DB with roles!")
-        Base.metadata.create_all(self.db_engine)
-        seed_db(self.db)
-        debug(f"> Creating {self.pprint}")
-
     def set_node_uid(self) -> None:
         try:
             setup = self.setup.first()
@@ -338,11 +333,7 @@ class Node(AbstractNode):
     def icon(self) -> str:
         return "📍"
 
-    def get_client(
-        self,
-        routes: Optional[List[Route]] = None,
-        signing_key: Optional[SigningKey] = None,
-    ) -> ClientT:
+    def get_client(self, routes: Optional[List[Route]] = None) -> ClientT:
         if not routes:
             conn_client = create_virtual_connection(node=self)
             solo = SoloRoute(destination=self.target_id, connection=conn_client)
@@ -357,7 +348,7 @@ class Node(AbstractNode):
             domain=self.domain,
             device=self.device,
             vm=self.vm,
-            signing_key=signing_key,  # If no signing_key is passed, the client generates one.
+            signing_key=None,  # DO NOT PASS IN A SIGNING KEY!!! The client generates one.
             verify_key=None,  # DO NOT PASS IN A VERIFY KEY!!! The client generates one.
         )
 
@@ -417,13 +408,16 @@ class Node(AbstractNode):
     def recv_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
+
         # exceptions can be easily triggered which break any WebRTC loops
         # so we need to catch them here and respond with a special exception
         # message reply
         try:
+
             debug(
                 f"> Received with Reply {msg.message.pprint} {msg.message.id} @ {self.pprint}"
             )
+
             # try to process message
             response = self.process_message(
                 msg=msg, router=self.immediate_msg_with_reply_router
@@ -532,6 +526,7 @@ class Node(AbstractNode):
     def process_message(
         self, msg: SignedMessage, router: dict
     ) -> Union[SyftMessage, None]:
+
         self.message_counter += 1
 
         debug(f"> Processing 📨 {msg.pprint} @ {self.pprint} {msg.message}")
@@ -546,6 +541,7 @@ class Node(AbstractNode):
 
             try:  # we use try/except here because it's marginally faster in Python
                 service = router[type(msg.message)]
+
             except KeyError as e:
                 log = (
                     f"The node {self.id} of type {type(self)} cannot process messages of type "
@@ -561,6 +557,7 @@ class Node(AbstractNode):
                 msg=msg.message,
                 verify_key=msg.verify_key,
             )
+
             return result
 
         else:

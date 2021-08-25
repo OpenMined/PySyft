@@ -112,7 +112,7 @@ finally:
 
 sys.path.append(str(Path(__file__)))
 
-logger.add(sink=sys.stderr, level="CRITICAL")
+logger.add(sink=sys.stderr, level="INFO")
 
 
 # TODO: remove this requirement in pytorch lightning

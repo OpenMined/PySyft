@@ -1,5 +1,5 @@
 # stdlib
-from typing import List as TypeList
+from typing import List
 from typing import Optional
 from typing import Type
 
@@ -7,24 +7,24 @@ from typing import Type
 from nacl.signing import VerifyKey
 
 # relative
-from ......logger import traceback_and_raise  # type: ignore
-
-# syft relative
-from .....adp.publish import get_remaining_budget  # type: ignore
+from ......util import traceback_and_raise
+from .....common.group import VERIFYALL
 from ....abstract.node import AbstractNode
 from ..auth import service_auth
 from ..node_service import ImmediateNodeServiceWithReply
 from .get_remaining_budget_messages import GetRemainingBudgetMessage
+from .get_remaining_budget_messages import GetRemainingBudgetReplyMessage
 
 
 class GetRemainingBudgetService(ImmediateNodeServiceWithReply):
+
     @staticmethod
-    @service_auth(root_only=False)
+    @service_auth(guests_welcome=True)
     def process(
-        node: AbstractNode,
-        msg: GetRemainingBudgetMessage,
-        verify_key: Optional[VerifyKey] = None,
-    ) -> GetRemainingBudgetMessage:
+            node: AbstractNode,
+            msg: GetRemainingBudgetMessage,
+            verify_key: Optional[VerifyKey] = None,
+    ) -> GetRemainingBudgetReplyMessage:
 
         if verify_key is None:
             traceback_and_raise(
@@ -32,17 +32,19 @@ class GetRemainingBudgetService(ImmediateNodeServiceWithReply):
             )
 
         try:
-            result = get_remaining_budget(node.acc, verify_key)
-            return GetRemainingBudgetMessage(
-                budget=result, address=msg.address, reply_to=msg.reply_to
+
+            result = node.acc.get_remaining_budget(user_key=verify_key, returned_epsilon_is_private=False)
+
+            return GetRemainingBudgetReplyMessage(
+                budget=result, address=msg.address
             )
         except Exception as e:
             log = (
-                f"Unable to get remaining budget for {verify_key}. "
-                + f"Possible dangling Pointer. {e}"
+                    f"Unable to get remaining budget for {verify_key}. "
+                    + f"Possible dangling Pointer. {e}"
             )
             traceback_and_raise(Exception(log))
 
     @staticmethod
-    def message_handler_types() -> TypeList[Type[GetRemainingBudgetMessage]]:
+    def message_handler_types() -> List[Type[GetRemainingBudgetMessage]]:
         return [GetRemainingBudgetMessage]

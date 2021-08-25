@@ -159,7 +159,7 @@ class AdversarialAccountant:
         )
         # print("SPEND:" + str(spend))
         user_budget = self.entity2ledger.get_user_budget(
-            user_key=user_key, returned_epsilon_is_private=returned_epsilon_is_private
+            user_key=user_key
         )
         # print("USER BUDGET:" + str(user_budget))
         # print("ACCOUNTANT MAX BUDGET", self.max_budget)
@@ -191,6 +191,7 @@ class AdversarialAccountant:
 
         max_spend = 0
         for ent in self.entities:
+
             spend = self.get_eps_for_entity(
                 entity=ent,
                 user_key=user_key,
@@ -200,8 +201,9 @@ class AdversarialAccountant:
                 max_spend = spend
 
         user_budget = self.entity2ledger.get_user_budget(
-            user_key=user_key, returned_epsilon_is_private=returned_epsilon_is_private
+            user_key=user_key
         )
+
         return user_budget - max_spend
 
     @property

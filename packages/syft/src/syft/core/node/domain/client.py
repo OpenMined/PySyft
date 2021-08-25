@@ -49,7 +49,7 @@ from ..common.node_service.request_receiver.request_receiver_messages import (
 )
 from .enums import PyGridClientEnums
 from .enums import RequestAPIFields
-
+from ..common.node_service.get_remaining_budget.get_remaining_budget_messages import GetRemainingBudgetMessage
 
 class RequestQueueClient:
     def __init__(self, client: Client) -> None:
@@ -308,6 +308,11 @@ class DomainClient(Client):
         self.roles = RoleRequestAPI(client=self)
         self.association = AssociationRequestAPI(client=self)
         self.datasets = DatasetRequestAPI(client=self)
+
+    @property
+    def privacy_budget(self):
+        msg = GetRemainingBudgetMessage(address=self.address, reply_to=self.address)
+        return self.send_immediate_msg_with_reply(msg).budget
 
     def load(
         self, obj_ptr: Type[Pointer], address: Address, pointable: bool = False

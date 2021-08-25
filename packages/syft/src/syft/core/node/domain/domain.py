@@ -71,6 +71,7 @@ from ..common.node_table import Base
 from ..device import Device
 from ..device import DeviceClient
 from .client import DomainClient
+from ..common.node_service.get_remaining_budget.get_remaining_budget_service import GetRemainingBudgetService
 
 
 class Domain(Node):
@@ -106,9 +107,6 @@ class Domain(Node):
             db=db,
         )
 
-        if db_engine is None:
-            db_engine = create_engine("sqlite://", echo=False)
-
         # specific location with name
         self.domain = SpecificLocation(name=self.name)
         self.root_key = root_key
@@ -133,6 +131,7 @@ class Domain(Node):
         # Grid Domain Services
         self.immediate_services_with_reply.append(AssociationRequestService)
         # self.immediate_services_with_reply.append(DomainInfrastructureService)
+        self.immediate_services_with_reply.append(GetRemainingBudgetService)
         self.immediate_services_with_reply.append(NodeSetupService)
         self.immediate_services_with_reply.append(TensorManagerService)
         self.immediate_services_with_reply.append(RoleManagerService)

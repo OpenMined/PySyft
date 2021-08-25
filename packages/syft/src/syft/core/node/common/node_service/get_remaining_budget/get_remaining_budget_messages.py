@@ -27,19 +27,15 @@ from .....io.address import Address
 class GetRemainingBudgetMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
-        budget: float,
         address: Address,
         reply_to: Address,
-        # id_at_location: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
-        self.budget = budget
-        # self.id_at_location = id_at_location
 
     def _object2proto(self) -> GetRemainingBudgetMessage_PB:
         return GetRemainingBudgetMessage_PB(
-            budget=self.budget,
+            # budget=self.budget,
             # id_at_location=serialize(self.id_at_location),
             msg_id=serialize(self.id),
             address=serialize(self.address),
@@ -51,7 +47,7 @@ class GetRemainingBudgetMessage(ImmediateSyftMessageWithReply):
         proto: GetRemainingBudgetMessage_PB,
     ) -> "GetRemainingBudgetMessage":
         return GetRemainingBudgetMessage(
-            budget=proto.budget,
+            # budget=proto.budget,
             # id_at_location=_deserialize(blob=proto.id_at_location),
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
