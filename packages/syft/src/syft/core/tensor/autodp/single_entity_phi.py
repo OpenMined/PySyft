@@ -25,7 +25,6 @@ from ...common.serde.serialize import Serializable
 from ...common.serde.serialize import _serialize as serialize
 from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.uid import UID
-from ..tensor import Tensor
 from ..ancestors import AutogradTensorAncestor
 from ..passthrough import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
@@ -81,12 +80,11 @@ class SingleEntityPhiTensorPointer(Pointer, Serializable):
             description=description,
         )
 
-        self.child = Tensor(child)
+        self.child = child
         self.min_vals = min_vals
         self.max_vals = max_vals
         self.entity = entity
         self.scalar_manager = scalar_manager
-        # self.public_shape = self.public_shape
 
     def _object2proto(self) -> "SingleEntityPhiTensorPointer_PB":
 
@@ -96,26 +94,25 @@ class SingleEntityPhiTensorPointer(Pointer, Serializable):
     syft.core.adp.Entity entity = 2;
     syft.lib.numpy.NumpyProto min_vals = 3;
     syft.lib.numpy.NumpyProto max_vals = 4;
-    client = 5;
-    scalar_manager = 6;
+    location = 5;
+    bytes scalar_manager = 6;
     syft.core.common.UID id_at_location = 7;
     string object_type = 8;
     repeated string tags = 9;
 
         :return:
         """
-        return SingleEntityPhiTensorPointer_PB(
-            child=serialize(self.child),
-            entity=serialize(self.entity),
-            min_vals=serialize(self.min_vals),
-            max_vals=serialize(self.max_vals),
-            client=serialize(self.client),
-            scalar_manager=serialize(self.scalar_manager),
-            id_at_location=serialize(self.id_at_location),
-            object_type=serialize(self.object_type),
-            tags=serialize(self.tags)
-        )
-
+        # return SingleEntityPhiTensorPointer_PB(
+        #     child=serialize(self.child),
+        #     entity=serialize(self.entity),
+        #     min_vals=serialize(self.min_vals),
+        #     max_vals=serialize(self.max_vals),
+        #     client=serialize(self.client),
+        #     scalar_manager=serialize(self.scalar_manager),
+        #     id_at_location=serialize(self.id_at_location),
+        #     object_type=serialize(self.object_type),
+        #     tags=serialize(self.tags)
+        # )
 
         if isinstance(self.child, np.ndarray):
             use_tensors = False
@@ -126,8 +123,8 @@ class SingleEntityPhiTensorPointer(Pointer, Serializable):
             entity=serialize(self.entity),
             min_vals=serialize(self.min_vals),
             max_vals=serialize(self.max_vals),
-            client=serialize(self.client),
-            scalar_manager=serialize(self.scalar_manager),
+            location=serialize(self.client.address),
+            scalar_manager=serialize(self.scalar_manager),  # This uses RecursiveSerde to convert VMPSM to bytes
             id_at_location=serialize(self.id_at_location),
             object_type=serialize(self.object_type),
             tags=serialize(self.tags)
@@ -259,6 +256,14 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
         description: str = "",
     ):
         return SingleEntityPhiTensorPointer(
+            # Arguments specifically for SEPhiTensor
+            child=self.child,
+            entity=self.entity,
+            min_vals=self._min_vals,
+            max_vals=self._max_vals,
+            scalar_manager=self.scalar_manager,
+
+            # Arguments required for a Pointer to work
             client=client,
             id_at_location=id_at_location,
             object_type=object_type,

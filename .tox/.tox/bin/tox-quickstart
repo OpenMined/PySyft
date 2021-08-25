@@ -1,4 +1,4 @@
-#!/home/kritika/PySyft/.tox/.tox/bin/python
+#!/Users/ishanmishra/PycharmProjects/PySyft/.tox/.tox/bin/python
 # -*- coding: utf-8 -*-
 import re
 import sys
