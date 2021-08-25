@@ -6,14 +6,16 @@ import "proto/core/common/common_object.proto";
 import "proto/core/io/address.proto";
 
 message GetRemainingBudgetMessage {
-  syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  syft.core.io.Address reply_to = 3;
-  syft.core.common.UID id_at_location = 4;
+  float budget = 1;
+  syft.core.common.UID msg_id = 2;
+  syft.core.io.Address address = 3;
+  syft.core.io.Address reply_to = 4;
+  // syft.core.common.UID id_at_location = 4;
 }
 
 message GetRemainingBudgetReplyMessage {
-  syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  string repr = 3;
+
+  float budget = 1;
+  syft.core.common.UID msg_id = 2;
+  syft.core.io.Address address = 3;
 }

@@ -25,7 +25,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\nAproto/core/node/domain/service/get_remaining_budget_service.proto\x12\x1dsyft.core.node.common.service\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\xc2\x01\n\x19GetRemainingBudgetMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\x12-\n\x0eid_at_location\x18\x04 \x01(\x0b\x32\x15.syft.core.common.UID"}\n\x1eGetRemainingBudgetReplyMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0c\n\x04repr\x18\x03 \x01(\tb\x06proto3',
+    serialized_pb=b'\nAproto/core/node/domain/service/get_remaining_budget_service.proto\x12\x1dsyft.core.node.common.service\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\xa3\x01\n\x19GetRemainingBudgetMessage\x12\x0e\n\x06\x62udget\x18\x01 \x01(\x02\x12%\n\x06msg_id\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x7f\n\x1eGetRemainingBudgetReplyMessage\x12\x0e\n\x06\x62udget\x18\x01 \x01(\x02\x12%\n\x06msg_id\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
@@ -42,15 +42,15 @@ _GETREMAININGBUDGETMESSAGE = _descriptor.Descriptor(
     create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
-            name="msg_id",
-            full_name="syft.core.node.common.service.GetRemainingBudgetMessage.msg_id",
+            name="budget",
+            full_name="syft.core.node.common.service.GetRemainingBudgetMessage.budget",
             index=0,
             number=1,
-            type=11,
-            cpp_type=10,
+            type=2,
+            cpp_type=6,
             label=1,
             has_default_value=False,
-            default_value=None,
+            default_value=float(0),
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -61,8 +61,8 @@ _GETREMAININGBUDGETMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.core.node.common.service.GetRemainingBudgetMessage.address",
+            name="msg_id",
+            full_name="syft.core.node.common.service.GetRemainingBudgetMessage.msg_id",
             index=1,
             number=2,
             type=11,
@@ -80,8 +80,8 @@ _GETREMAININGBUDGETMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="reply_to",
-            full_name="syft.core.node.common.service.GetRemainingBudgetMessage.reply_to",
+            name="address",
+            full_name="syft.core.node.common.service.GetRemainingBudgetMessage.address",
             index=2,
             number=3,
             type=11,
@@ -99,8 +99,8 @@ _GETREMAININGBUDGETMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="id_at_location",
-            full_name="syft.core.node.common.service.GetRemainingBudgetMessage.id_at_location",
+            name="reply_to",
+            full_name="syft.core.node.common.service.GetRemainingBudgetMessage.reply_to",
             index=3,
             number=4,
             type=11,
@@ -127,7 +127,7 @@ _GETREMAININGBUDGETMESSAGE = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=169,
-    serialized_end=363,
+    serialized_end=332,
 )
 
 
@@ -140,15 +140,15 @@ _GETREMAININGBUDGETREPLYMESSAGE = _descriptor.Descriptor(
     create_key=_descriptor._internal_create_key,
     fields=[
         _descriptor.FieldDescriptor(
-            name="msg_id",
-            full_name="syft.core.node.common.service.GetRemainingBudgetReplyMessage.msg_id",
+            name="budget",
+            full_name="syft.core.node.common.service.GetRemainingBudgetReplyMessage.budget",
             index=0,
             number=1,
-            type=11,
-            cpp_type=10,
+            type=2,
+            cpp_type=6,
             label=1,
             has_default_value=False,
-            default_value=None,
+            default_value=float(0),
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -159,8 +159,8 @@ _GETREMAININGBUDGETREPLYMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="address",
-            full_name="syft.core.node.common.service.GetRemainingBudgetReplyMessage.address",
+            name="msg_id",
+            full_name="syft.core.node.common.service.GetRemainingBudgetReplyMessage.msg_id",
             index=1,
             number=2,
             type=11,
@@ -178,15 +178,15 @@ _GETREMAININGBUDGETREPLYMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="repr",
-            full_name="syft.core.node.common.service.GetRemainingBudgetReplyMessage.repr",
+            name="address",
+            full_name="syft.core.node.common.service.GetRemainingBudgetReplyMessage.address",
             index=2,
             number=3,
-            type=9,
-            cpp_type=9,
+            type=11,
+            cpp_type=10,
             label=1,
             has_default_value=False,
-            default_value=b"".decode("utf-8"),
+            default_value=None,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -205,8 +205,8 @@ _GETREMAININGBUDGETREPLYMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=365,
-    serialized_end=490,
+    serialized_start=334,
+    serialized_end=461,
 )
 
 _GETREMAININGBUDGETMESSAGE.fields_by_name[
@@ -218,9 +218,6 @@ _GETREMAININGBUDGETMESSAGE.fields_by_name[
 _GETREMAININGBUDGETMESSAGE.fields_by_name[
     "reply_to"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_GETREMAININGBUDGETMESSAGE.fields_by_name[
-    "id_at_location"
-].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
 _GETREMAININGBUDGETREPLYMESSAGE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID

@@ -1,4 +1,5 @@
 # stdlib
+from typing import Any
 from typing import Optional
 
 # third party
@@ -26,17 +27,20 @@ from .....io.address import Address
 class GetRemainingBudgetMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
+        budget: float,
         address: Address,
         reply_to: Address,
-        id_at_location: UID,
+        # id_at_location: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
-        self.id_at_location = id_at_location
+        self.budget = budget
+        # self.id_at_location = id_at_location
 
     def _object2proto(self) -> GetRemainingBudgetMessage_PB:
         return GetRemainingBudgetMessage_PB(
-            id_at_location=serialize(self.id_at_location),
+            budget=serialize(self.budget),
+            # id_at_location=serialize(self.id_at_location),
             msg_id=serialize(self.id),
             address=serialize(self.address),
             reply_to=serialize(self.reply_to),
@@ -47,7 +51,8 @@ class GetRemainingBudgetMessage(ImmediateSyftMessageWithReply):
         proto: GetRemainingBudgetMessage_PB,
     ) -> "GetRemainingBudgetMessage":
         return GetRemainingBudgetMessage(
-            id_at_location=_deserialize(blob=proto.id_at_location),
+            budget=_deserialize(blob=proto.budget),
+            # id_at_location=_deserialize(blob=proto.id_at_location),
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             reply_to=_deserialize(blob=proto.reply_to),
@@ -62,16 +67,16 @@ class GetRemainingBudgetMessage(ImmediateSyftMessageWithReply):
 class GetRemainingBudgetReplyMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
-        repr: str,
+        budget: float,
         address: Address,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
-        self.repr = repr
+        self.budget = budget
 
     def _object2proto(self) -> GetRemainingBudgetReplyMessage_PB:
         return GetRemainingBudgetReplyMessage_PB(
-            repr=self.repr,
+            budget=self.budget,
             msg_id=serialize(self.id),
             address=serialize(self.address),
         )
@@ -81,7 +86,7 @@ class GetRemainingBudgetReplyMessage(ImmediateSyftMessageWithoutReply):
         proto: GetRemainingBudgetReplyMessage_PB,
     ) -> "GetRemainingBudgetReplyMessage":
         return GetRemainingBudgetReplyMessage(
-            repr=proto.repr,
+            budget=proto.budget,
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
         )

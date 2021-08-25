@@ -33,7 +33,9 @@ class GetRemainingBudgetService(ImmediateNodeServiceWithReply):
 
         try:
             result = get_remaining_budget(node.acc, verify_key)
-            return GetRemainingBudgetMessage(budget=result, address=msg.reply_to)
+            return GetRemainingBudgetMessage(
+                budget=result, address=msg.address, reply_to=msg.reply_to
+            )
         except Exception as e:
             log = (
                 f"Unable to get remaining budget for {verify_key}. "
