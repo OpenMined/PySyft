@@ -12,8 +12,8 @@ message GetRemainingBudgetMessage {
   syft.core.common.UID id_at_location = 4;
 }
 
-//message GetReprReplyMessage {
-//  syft.core.common.UID msg_id = 1;
-//  syft.core.io.Address address = 2;
-//  string repr = 3;
-//}
+message GetRemainingBudgetReplyMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string repr = 3;
+}

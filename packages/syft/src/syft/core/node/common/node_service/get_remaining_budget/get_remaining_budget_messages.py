@@ -8,8 +8,14 @@ from typing_extensions import final
 # relative
 from ...... import serialize
 from ......core.common.serde.serializable import bind_protobuf
-from ......proto.core.node.domain.service.get_remaining_budget_service_pb2 import GetRemainingBudgetMessage as GetRemainingBudgetMessage_PB
+from ......proto.core.node.domain.service.get_remaining_budget_service_pb2 import (
+    GetRemainingBudgetMessage as GetRemainingBudgetMessage_PB,
+)
+from ......proto.core.node.domain.service.get_remaining_budget_service_pb2 import (
+    GetRemainingBudgetReplyMessage as GetRemainingBudgetReplyMessage_PB,
+)
 from .....common.message import ImmediateSyftMessageWithReply
+from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.serde.deserialize import _deserialize
 from .....common.uid import UID
 from .....io.address import Address
@@ -37,7 +43,9 @@ class GetRemainingBudgetMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(proto: GetRemainingBudgetMessage_PB) -> "GetRemainingBudgetMessage":
+    def _proto2object(
+        proto: GetRemainingBudgetMessage_PB,
+    ) -> "GetRemainingBudgetMessage":
         return GetRemainingBudgetMessage(
             id_at_location=_deserialize(blob=proto.id_at_location),
             msg_id=_deserialize(blob=proto.msg_id),
@@ -48,3 +56,36 @@ class GetRemainingBudgetMessage(ImmediateSyftMessageWithReply):
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return GetRemainingBudgetMessage_PB
+
+
+@bind_protobuf
+class GetRemainingBudgetReplyMessage(ImmediateSyftMessageWithoutReply):
+    def __init__(
+        self,
+        repr: str,
+        address: Address,
+        msg_id: Optional[UID] = None,
+    ):
+        super().__init__(address=address, msg_id=msg_id)
+        self.repr = repr
+
+    def _object2proto(self) -> GetRemainingBudgetReplyMessage_PB:
+        return GetRemainingBudgetReplyMessage_PB(
+            repr=self.repr,
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
+        )
+
+    @staticmethod
+    def _proto2object(
+        proto: GetRemainingBudgetReplyMessage_PB,
+    ) -> "GetRemainingBudgetReplyMessage":
+        return GetRemainingBudgetReplyMessage(
+            repr=proto.repr,
+            msg_id=_deserialize(blob=proto.msg_id),
+            address=_deserialize(blob=proto.address),
+        )
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return GetRemainingBudgetReplyMessage_PB
