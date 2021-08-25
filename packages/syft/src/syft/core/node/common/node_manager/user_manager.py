@@ -11,11 +11,10 @@ from bcrypt import gensalt
 from bcrypt import hashpw
 from nacl.encoding import HexEncoder
 from nacl.signing import VerifyKey
-from sqlalchemy.engine import Engine
-from sqlalchemy.orm import Query
 from pydantic import BaseModel
 from pydantic import EmailStr
-
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import Query
 
 # syft absolute
 from syft.core.node.common.node_table.roles import Role

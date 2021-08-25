@@ -28,7 +28,7 @@ def _deactivate(args):
 _deactivate(["nondestructive"])
 aliases["deactivate"] = _deactivate
 
-$VIRTUAL_ENV = r"/home/kritika/PySyft/.tox/.tox"
+$VIRTUAL_ENV = r"/Users/ishanmishra/PycharmProjects/PySyft/.tox/.tox"
 
 $_OLD_VIRTUAL_PATH = $PATH
 $PATH = $PATH[:]

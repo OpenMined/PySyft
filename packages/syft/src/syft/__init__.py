@@ -39,6 +39,9 @@ from pkg_resources import get_distribution  # noqa: F401
 # syft absolute
 # ASTRACT OBJECT IMPORTS
 from syft.core import common  # noqa: F401
+
+# from syft.core.adp.adversarial_accountant import AdversarialAccountant
+# from syft.core.adp.entity import Entity
 from syft.core.common import event_loop  # noqa: F401
 
 # Convenience Methods
@@ -82,8 +85,6 @@ from syft.lib import load_lib  # noqa: F401
 from syft.lib.torch.module import Module  # noqa: F401
 from syft.lib.torch.module import SyModule  # noqa: F401
 from syft.lib.torch.module import SySequential  # noqa: F401
-from syft.core.adp.entity import Entity
-from syft.core.adp.adversarial_accountant import AdversarialAccountant
 
 # relative
 # Package Imports

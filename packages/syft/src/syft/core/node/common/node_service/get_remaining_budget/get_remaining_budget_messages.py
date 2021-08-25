@@ -8,17 +8,17 @@ from typing_extensions import final
 
 # relative
 # syft relative
-from ......proto.core.node.domain.service.publish_scalars_service_pb2 import (
+from ......proto.core.node.domain.service.get_remaining_budget_service_pb2 import (
     GetRemainingBudgetAction as GetRemainingBudgetAction_PB,
 )  # type: ignore
 from .....common.message import ImmediateSyftMessageWithReply  # type: ignore
 from .....common.message import ImmediateSyftMessageWithoutReply  # type: ignore
-from .....common.serde.deserialize import _deserialize # type: ignore
+from .....common.serde.deserialize import _deserialize  # type: ignore
 from .....common.serde.serializable import bind_protobuf  # type: ignore
 from .....common.serde.serialize import _serialize as serialize  # type: ignore
 from .....common.uid import UID  # type: ignore
 from .....io.address import Address  # type: ignore
-
+print("I got imported\n")
 
 @bind_protobuf
 @final
@@ -65,7 +65,7 @@ class GetRemainingBudgetAction(ImmediateSyftMessageWithoutReply):
 
     def _object2proto(self) -> GetRemainingBudgetAction_PB:
         return GetRemainingBudgetAction_PB(
-            budget = self.budget,
+            budget=self.budget,
             msg_id=serialize(self.id),
             address=serialize(self.address),
         )
@@ -73,7 +73,7 @@ class GetRemainingBudgetAction(ImmediateSyftMessageWithoutReply):
     @staticmethod
     def _proto2object(proto: GetRemainingBudgetAction_PB) -> "GetRemainingBudgetAction":
         return GetRemainingBudgetAction(
-            budget = proto.budget,
+            budget=proto.budget,
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
         )
