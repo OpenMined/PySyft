@@ -8,7 +8,7 @@ from typing_extensions import final
 
 # relative
 # syft relative
-from ......proto.core.node.domain.service.publish_scalars_service_pb2 import (
+from ......proto.core.node.domain.service.get_remaining_budget_service_pb2 import (
     GetRemainingBudgetAction as GetRemainingBudgetAction_PB,
 )  # type: ignore
 from .....common.message import ImmediateSyftMessageWithReply  # type: ignore

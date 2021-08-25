@@ -6,8 +6,7 @@ import "proto/core/common/common_object.proto";
 import "proto/core/io/address.proto";
 
 message GetRemainingBudgetAction {
-  syft.core.common.UID id_at_location = 1;
+  float budget = 1;
   syft.core.io.Address address = 2;
-  repeated syft.core.common.UID publish_ids_at_location = 3;
-  float sigma = 4;
+  syft.core.common.UID msg_id = 3;
 }
