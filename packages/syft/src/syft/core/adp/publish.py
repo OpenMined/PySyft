@@ -135,3 +135,8 @@ def get_all_entity_mechanisms(
         e: [get_mechanism_for_entity(scalars=scalars, entity=e, sigma=sigma)]
         for e in entities
     }
+
+def get_remaining_budget(acc: Any, user_key: VerifyKey)-> Any:
+    budget = acc.get_remaining_budget(user_key=user_key, 
+                    returned_epsilon_is_private=False)
+    return budget
