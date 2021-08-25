@@ -64,10 +64,10 @@ from ..common.node_service.tensor_manager.tensor_manager_service import (
     TensorManagerService,
 )
 from ..common.node_service.user_manager.user_manager_service import UserManagerService
+from ..common.node_table import Base
 from ..device import Device
 from ..device import DeviceClient
 from .client import DomainClient
-from ..common.node_table import Base
 
 
 class Domain(Node):
@@ -102,7 +102,7 @@ class Domain(Node):
         )
 
         if db_engine is None:
-            db_engine = create_engine('sqlite://',echo=False)
+            db_engine = create_engine("sqlite://", echo=False)
 
         # specific location with name
         self.domain = SpecificLocation(name=self.name)

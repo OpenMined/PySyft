@@ -13,7 +13,7 @@ from ......proto.core.node.domain.service.publish_scalars_service_pb2 import (
 )  # type: ignore
 from .....common.message import ImmediateSyftMessageWithReply  # type: ignore
 from .....common.message import ImmediateSyftMessageWithoutReply  # type: ignore
-from .....common.serde.deserialize import _deserialize # type: ignore
+from .....common.serde.deserialize import _deserialize  # type: ignore
 from .....common.serde.serializable import bind_protobuf  # type: ignore
 from .....common.serde.serialize import _serialize as serialize  # type: ignore
 from .....common.uid import UID  # type: ignore
@@ -65,7 +65,7 @@ class GetRemainingBudgetAction(ImmediateSyftMessageWithoutReply):
 
     def _object2proto(self) -> GetRemainingBudgetAction_PB:
         return GetRemainingBudgetAction_PB(
-            budget = self.budget,
+            budget=self.budget,
             msg_id=serialize(self.id),
             address=serialize(self.address),
         )
@@ -73,7 +73,7 @@ class GetRemainingBudgetAction(ImmediateSyftMessageWithoutReply):
     @staticmethod
     def _proto2object(proto: GetRemainingBudgetAction_PB) -> "GetRemainingBudgetAction":
         return GetRemainingBudgetAction(
-            budget = proto.budget,
+            budget=proto.budget,
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
         )

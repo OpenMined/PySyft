@@ -3,9 +3,9 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
+from typing import List
 from typing import Optional
 from typing import Tuple as TypeTuple
-from typing import List
 from typing import Union
 
 # third party
@@ -14,18 +14,18 @@ import numpy as np
 import numpy.typing as npt
 
 # relative
-from ....core.common.serde.recursive import RecursiveSerde
 from ....ast.klass import pointerize_args_and_kwargs
+from ....core.common.serde.recursive import RecursiveSerde
 from ....util import inherit_tags
 from ...adp.entity import Entity
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
-from ...node.common.action.run_class_method_action import RunClassMethodAction
+from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import bind_protobuf
 from ...common.serde.serialize import Serializable
 from ...common.serde.serialize import _serialize as serialize
-from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.uid import UID
-from ..tensor import Tensor
+from ...node.common.action.run_class_method_action import RunClassMethodAction
+from ...pointer.pointer import Pointer
 from ..ancestors import AutogradTensorAncestor
 from ..passthrough import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
@@ -33,9 +33,9 @@ from ..passthrough import SupportedChainType  # type: ignore
 from ..passthrough import implements  # type: ignore
 from ..passthrough import inputs2child  # type: ignore
 from ..passthrough import is_acceptable_simple_type  # type: ignore
-from .initial_gamma import InitialGammaTensor
-from ...pointer.pointer import Pointer
 from ..smpc.mpc_tensor import MPCTensor
+from ..tensor import Tensor
+from .initial_gamma import InitialGammaTensor
 
 
 class SingleEntityPhiTensorPointer(Pointer, Serializable):
@@ -60,17 +60,17 @@ class SingleEntityPhiTensorPointer(Pointer, Serializable):
     """
 
     def __init__(
-            self,
-            child: SupportedChainType,
-            entity: Entity,
-            min_vals: np.ArrayLike,
-            max_vals: np.ArrayLike,
-            client: Any,
-            scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None,
-            id_at_location: Optional[UID] = None,
-            object_type: str = "",
-            tags: Optional[List[str]] = None,
-            description: str = "",
+        self,
+        child: SupportedChainType,
+        entity: Entity,
+        min_vals: np.ArrayLike,
+        max_vals: np.ArrayLike,
+        client: Any,
+        scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None,
+        id_at_location: Optional[UID] = None,
+        object_type: str = "",
+        tags: Optional[List[str]] = None,
+        description: str = "",
     ):
 
         super().__init__(
@@ -90,19 +90,19 @@ class SingleEntityPhiTensorPointer(Pointer, Serializable):
 
     def _object2proto(self) -> "SingleEntityPhiTensorPointer_PB":
 
-        """ .proto file:
-        message SingleEntityPhiTensor {
-    Tensor child = 1;
-    syft.core.adp.Entity entity = 2;
-    syft.lib.numpy.NumpyProto min_vals = 3;
-    syft.lib.numpy.NumpyProto max_vals = 4;
-    client = 5;
-    scalar_manager = 6;
-    syft.core.common.UID id_at_location = 7;
-    string object_type = 8;
-    repeated string tags = 9;
+        """.proto file:
+            message SingleEntityPhiTensor {
+        Tensor child = 1;
+        syft.core.adp.Entity entity = 2;
+        syft.lib.numpy.NumpyProto min_vals = 3;
+        syft.lib.numpy.NumpyProto max_vals = 4;
+        client = 5;
+        scalar_manager = 6;
+        syft.core.common.UID id_at_location = 7;
+        string object_type = 8;
+        repeated string tags = 9;
 
-        :return:
+            :return:
         """
         return SingleEntityPhiTensorPointer_PB(
             child=serialize(self.child),
@@ -113,9 +113,8 @@ class SingleEntityPhiTensorPointer(Pointer, Serializable):
             scalar_manager=serialize(self.scalar_manager),
             id_at_location=serialize(self.id_at_location),
             object_type=serialize(self.object_type),
-            tags=serialize(self.tags)
+            tags=serialize(self.tags),
         )
-
 
         if isinstance(self.child, np.ndarray):
             use_tensors = False
@@ -130,38 +129,40 @@ class SingleEntityPhiTensorPointer(Pointer, Serializable):
             scalar_manager=serialize(self.scalar_manager),
             id_at_location=serialize(self.id_at_location),
             object_type=serialize(self.object_type),
-            tags=serialize(self.tags)
+            tags=serialize(self.tags),
         )
 
     # def _object2proto(self) -> Tensor_PB:
 
-        # arrays = []
-        # tensors = []
-        # if isinstance(self.child, np.ndarray):
-        #     use_tensors = False
-        #     arrays = [
-        #         serialize(self.child),
-        #         serialize(self.min_vals),
-        #         serialize(self.max_vals),
-        #     ]
-        # else:
-        #     use_tensors = True
-        #     tensors = [
-        #         serialize(self.child),
-        #         serialize(self.min_vals),
-        #         serialize(self.max_vals),
-        #     ]
-        #
-        # return Tensor_PB(
-        #     obj_type=full_name_with_name(klass=type(self)),
-        #     use_tensors=use_tensors,
-        #     arrays=arrays,
-        #     tensors=tensors,
-        #     entity=serialize(self.entity),
-        # )
+    # arrays = []
+    # tensors = []
+    # if isinstance(self.child, np.ndarray):
+    #     use_tensors = False
+    #     arrays = [
+    #         serialize(self.child),
+    #         serialize(self.min_vals),
+    #         serialize(self.max_vals),
+    #     ]
+    # else:
+    #     use_tensors = True
+    #     tensors = [
+    #         serialize(self.child),
+    #         serialize(self.min_vals),
+    #         serialize(self.max_vals),
+    #     ]
+    #
+    # return Tensor_PB(
+    #     obj_type=full_name_with_name(klass=type(self)),
+    #     use_tensors=use_tensors,
+    #     arrays=arrays,
+    #     tensors=tensors,
+    #     entity=serialize(self.entity),
+    # )
 
     @staticmethod
-    def _proto2object(proto: SingleEntityPhiTensorPointer_PB) -> "SingleEntityPhiTensorPointer":
+    def _proto2object(
+        proto: SingleEntityPhiTensorPointer_PB,
+    ) -> "SingleEntityPhiTensorPointer":
         """
         SingleEntityPhiTensorPointer_PB(
             child=serialize(self.child),
@@ -195,28 +196,28 @@ class SingleEntityPhiTensorPointer(Pointer, Serializable):
             scalar_manager=scalar_manager,
             id_at_location=id_at_location,
             object_type=object_type,
-            tags=tags
+            tags=tags,
         )
 
     # @staticmethod
     # def _proto2object(proto: Tensor_PB) -> SingleEntityPhiTensor:
 
-        # use_tensors = proto.use_tensors
-        # children = []
-        # if use_tensors:
-        #     children = [deserialize(tensor) for tensor in proto.tensors]
-        # else:
-        #     children = [deserialize(array) for array in proto.arrays]
-        #
-        # child = children.pop(0)
-        # min_vals = children.pop(0)
-        # max_vals = children.pop(0)
-        #
-        # entity = deserialize(blob=proto.entity)
-        #
-        # return SingleEntityPhiTensor(
-        #     child=child, entity=entity, min_vals=min_vals, max_vals=max_vals
-        # )
+    # use_tensors = proto.use_tensors
+    # children = []
+    # if use_tensors:
+    #     children = [deserialize(tensor) for tensor in proto.tensors]
+    # else:
+    #     children = [deserialize(array) for array in proto.arrays]
+    #
+    # child = children.pop(0)
+    # min_vals = children.pop(0)
+    # max_vals = children.pop(0)
+    #
+    # entity = deserialize(blob=proto.entity)
+    #
+    # return SingleEntityPhiTensor(
+    #     child=child, entity=entity, min_vals=min_vals, max_vals=max_vals
+    # )
 
 
 @bind_protobuf
@@ -265,7 +266,6 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             tags=tags,
             description=description,
         )
-
 
     @property
     def gamma(self) -> InitialGammaTensor:

@@ -110,7 +110,13 @@ def get_mechanism_for_entity(
         m_id += str(s.id).split(" ")[1][:-1] + "_"
 
     value = np.sqrt(np.sum(np.square(np.array([float(s.value) for s in scalars]))))
-    value_upper_bound = value = np.sqrt(np.sum(np.square(np.array([(float(s.max_val) - float(s.min_val)) for s in scalars]))))
+    value_upper_bound = value = np.sqrt(
+        np.sum(
+            np.square(
+                np.array([(float(s.max_val) - float(s.min_val)) for s in scalars])
+            )
+        )
+    )
 
     L = float(max_lipschitz_wrt_entity(scalars, entity=entity))
 
@@ -136,7 +142,9 @@ def get_all_entity_mechanisms(
         for e in entities
     }
 
-def get_remaining_budget(acc: Any, user_key: VerifyKey)-> Any:
-    budget = acc.get_remaining_budget(user_key=user_key, 
-                    returned_epsilon_is_private=False)
+
+def get_remaining_budget(acc: Any, user_key: VerifyKey) -> Any:
+    budget = acc.get_remaining_budget(
+        user_key=user_key, returned_epsilon_is_private=False
+    )
     return budget

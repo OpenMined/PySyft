@@ -8,11 +8,11 @@ from nacl.signing import VerifyKey
 
 # relative
 from ......logger import traceback_and_raise  # type: ignore
-from ..auth import service_auth
 
 # syft relative
 from .....adp.publish import get_remaining_budget  # type: ignore
 from ....abstract.node import AbstractNode
+from ..auth import service_auth
 from ..node_service import ImmediateNodeServiceWithReply
 from .get_remaining_budget_messages import GetRemainingBudgetAction  # type: ignore
 from .get_remaining_budget_messages import GetRemainingBudgetMessage
@@ -22,8 +22,8 @@ class GetRemainingBudgetService(ImmediateNodeServiceWithReply):
     @staticmethod
     @service_auth(root_only=False)
     def process(
-        node: AbstractNode, 
-        msg: GetRemainingBudgetMessage, 
+        node: AbstractNode,
+        msg: GetRemainingBudgetMessage,
         verify_key: Optional[VerifyKey] = None,
     ) -> GetRemainingBudgetAction:
 
@@ -37,7 +37,8 @@ class GetRemainingBudgetService(ImmediateNodeServiceWithReply):
             return GetRemainingBudgetAction(budget=result, address=msg.reply_to)
         except Exception as e:
             log = (
-                f"Unable to get remaining budget for {verify_key}. " + f"Possible dangling Pointer. {e}"
+                f"Unable to get remaining budget for {verify_key}. "
+                + f"Possible dangling Pointer. {e}"
             )
             traceback_and_raise(Exception(log))
 
