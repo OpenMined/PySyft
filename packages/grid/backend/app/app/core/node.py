@@ -17,9 +17,9 @@ from app.db.session import SessionLocal
 from app.db.session import engine
 
 if settings.NODE_TYPE.lower() == "domain":
-    node = Domain("Domain", db_engine=engine)
+    node = Domain("Domain", db_engine=engine, db=SessionLocal)
 elif settings.NODE_TYPE.lower() == "network":
-    node = Network("Network", db_engine=engine)
+    node = Network("Network", db_engine=engine, db=SessionLocal)
 else:
     raise Exception(
         "Don't know NODE_TYPE "
@@ -36,9 +36,9 @@ node.loud_print()
 if len(node.setup):  # Check if setup was defined previously
     node.name = node.setup.node_name
 
-
-if not len(node.roles):  # Check if roles were registered previously
-    seed_db(SessionLocal())
+# Moving this to get called WITHIN Domain and Network so that they can operate in standalone mode
+# if not len(node.roles):  # Check if roles were registered previously
+#     seed_db(SessionLocal())
 
 
 def get_client(signing_key: Optional[SigningKey] = None) -> Client:

@@ -93,6 +93,7 @@ from .action.exception_action import UnknownPrivateException
 from .client import Client
 from .metadata import Metadata
 from .node_manager.bin_obj_manager import BinObjectManager
+from .node_table.utils import seed_db
 
 # this generic type for Client bound by Client
 ClientT = TypeVar("ClientT", bound=Client)
@@ -150,18 +151,17 @@ class Node(AbstractNode):
 
         # If not provided a session connecting us to the database, let's just
         # initialize a database in memory
+        if db_engine is None:
+            db_engine = create_engine("sqlite://", echo=False)
+
         if db is None:
-
-            # If a DB engine isn't provided then
-            if db_engine is None:
-                db_engine = create_engine("sqlite://", echo=False)
-
-            db = sessionmaker(bind=db_engine)()
+            session = sessionmaker(bind=db_engine)()
 
         # cache these variables on self
         self.TableBase = TableBase
         self.db_engine = db_engine
-        self.db = db
+        self.db = session
+        self.session = session
 
         # launch the tables in the database
         # Tudor: experimental
@@ -307,7 +307,9 @@ class Node(AbstractNode):
         self.message_counter = 0
 
     def post_init(self) -> None:
+        print("Seeding DB with roles!")
         Base.metadata.create_all(self.db_engine)
+        seed_db(self.db)
         debug(f"> Creating {self.pprint}")
 
     def set_node_uid(self) -> None:
