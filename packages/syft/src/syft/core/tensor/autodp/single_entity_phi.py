@@ -34,7 +34,6 @@ from ..passthrough import implements  # type: ignore
 from ..passthrough import inputs2child  # type: ignore
 from ..passthrough import is_acceptable_simple_type  # type: ignore
 from ..smpc.mpc_tensor import MPCTensor
-from ..tensor import Tensor
 from .initial_gamma import InitialGammaTensor
 
 
@@ -95,8 +94,8 @@ class SingleEntityPhiTensorPointer(Pointer, Serializable):
         syft.core.adp.Entity entity = 2;
         syft.lib.numpy.NumpyProto min_vals = 3;
         syft.lib.numpy.NumpyProto max_vals = 4;
-        client = 5;
-        scalar_manager = 6;
+        location = 5;
+        bytes scalar_manager = 6;
         syft.core.common.UID id_at_location = 7;
         string object_type = 8;
         repeated string tags = 9;
@@ -126,8 +125,10 @@ class SingleEntityPhiTensorPointer(Pointer, Serializable):
             max_vals=serialize(self.max_vals),
             location=serialize(self.client.address),
             scalar_manager=serialize(
-                self.scalar_manager
-            ),  # This uses RecursiveSerde to convert VMPSM to bytes
+                self.scalar_manager, to_bytes=True
+            ),  # This uses RecursiveSerde to convert VMPSM
+            # to
+            # bytes
             id_at_location=serialize(self.id_at_location),
             object_type=serialize(self.object_type),
             tags=serialize(self.tags),
