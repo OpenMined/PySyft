@@ -46,7 +46,8 @@ class GetReprService(ImmediateNodeServiceWithReply):
             # return so that we can print once and display a nice list of data and ops
             # issue: https://github.com/OpenMined/PySyft/issues/5167
             result = repr(obj.data)
-            return GetReprReplyMessage(repr=result, address=msg.reply_to)
+            return GetReprReplyMessage(repr=result, 
+                            address=msg.reply_to)
 
     @staticmethod
     def message_handler_types() -> List[Type[GetReprMessage]]:
