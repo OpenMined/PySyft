@@ -24,12 +24,8 @@ from ...common.serde.serializable import bind_protobuf
 from ...common.serde.serialize import Serializable
 from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
-
-# relative
 from ...node.common.action.run_class_method_action import RunClassMethodAction
 from ...pointer.pointer import Pointer
-
-# relative
 from ..ancestors import AutogradTensorAncestor
 from ..passthrough import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
@@ -129,7 +125,9 @@ class SingleEntityPhiTensorPointer(Pointer, Serializable):
             min_vals=serialize(self.min_vals),
             max_vals=serialize(self.max_vals),
             location=serialize(self.client.address),
-            scalar_manager=serialize(self.scalar_manager),  # This uses RecursiveSerde to convert VMPSM to bytes
+            scalar_manager=serialize(
+                self.scalar_manager
+            ),  # This uses RecursiveSerde to convert VMPSM to bytes
             id_at_location=serialize(self.id_at_location),
             object_type=serialize(self.object_type),
             tags=serialize(self.tags),
@@ -269,7 +267,6 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             min_vals=self._min_vals,
             max_vals=self._max_vals,
             scalar_manager=self.scalar_manager,
-
             # Arguments required for a Pointer to work
             client=client,
             id_at_location=id_at_location,
