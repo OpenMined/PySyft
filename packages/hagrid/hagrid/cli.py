@@ -4,6 +4,7 @@ import os
 import re
 import stat
 import subprocess
+import time
 from typing import Any
 from typing import Dict as TypeDict
 from typing import List as TypeList
@@ -13,7 +14,6 @@ from typing import cast
 
 # third party
 import click
-import time
 
 # relative
 from .art import hagrid
@@ -39,7 +39,9 @@ def cli() -> None:
     pass
 
 
-@click.command(help="Restore some part of the hagrid installation or deployment to its initial/starting state.")
+@click.command(
+    help="Restore some part of the hagrid installation or deployment to its initial/starting state."
+)
 @click.argument("location", type=str, nargs=1)
 def clean(location):
 

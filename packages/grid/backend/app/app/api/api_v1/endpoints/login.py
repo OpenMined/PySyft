@@ -54,5 +54,3 @@ def login_access_token(
         "metadata": metadata,
         "key": user.private_key,
     }
-
-
