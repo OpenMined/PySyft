@@ -60,7 +60,7 @@ class AdversarialAccountant:
         self.append(entity2mechanisms=self.temp_entity2ledger)
 
     def get_eps_for_entity(
-        self, entity: Entity, user_key: Optional[VerifyKey] = None, returned_epsilon_is_private: bool=True
+        self, entity: Entity, user_key: Optional[VerifyKey] = None, returned_epsilon_is_private: bool=False
     ) -> PhiScalar:
         # compose them with the transformation: compose
         compose = Composition()
@@ -143,7 +143,7 @@ class AdversarialAccountant:
         #     entity=entity,
         # )
 
-    def has_budget(self, entity: Entity, user_key: VerifyKey, returned_epsilon_is_private:bool = True) -> bool:
+    def has_budget(self, entity: Entity, user_key: VerifyKey, returned_epsilon_is_private:bool = False) -> bool:
         spend = self.get_eps_for_entity(entity=entity, user_key=user_key, returned_epsilon_is_private=returned_epsilon_is_private)
         # print("SPEND:" + str(spend))
         user_budget = self.entity2ledger.get_user_budget(user_key=user_key, returned_epsilon_is_private=returned_epsilon_is_private)
@@ -155,7 +155,7 @@ class AdversarialAccountant:
 
         return has_budget
 
-    def user_budget(self, user_key: VerifyKey, returned_epsilon_is_private:bool = True):
+    def user_budget(self, user_key: VerifyKey, returned_epsilon_is_private:bool = False):
         max_spend = 0
 
         for ent in self.entities:
@@ -165,6 +165,18 @@ class AdversarialAccountant:
 
         return max_spend
 
+    def get_remaining_budget(self, user_key: VerifyKey, returned_epsilon_is_private:bool = False):
+        
+        max_spend = 0
+        for ent in self.entities:
+            spend = self.get_eps_for_entity(entity=ent, user_key=user_key, returned_epsilon_is_private=returned_epsilon_is_private)
+            if spend > max_spend:
+                max_spend = spend
+
+        user_budget = self.entity2ledger.get_user_budget(user_key=user_key, returned_epsilon_is_private=returned_epsilon_is_private)
+        return user_budget - max_spend
+        
+
     @property
     def entities(self) -> TypeKeysView[Entity]:
         return self.entity2ledger.keys()
@@ -173,7 +185,7 @@ class AdversarialAccountant:
         self,
         temp_entities: TypeDict[Entity, TypeList[iDPGaussianMechanism]],
         user_key: VerifyKey,
-        returned_epsilon_is_private:bool = True
+        returned_epsilon_is_private:bool = False
     ) -> TypeSet[Entity]:
         entities = set()
 
@@ -183,7 +195,7 @@ class AdversarialAccountant:
 
         return entities
 
-    def print_ledger(self, delta: float = 1e-6, returned_epsilon_is_private:bool =True) -> None:
+    def print_ledger(self, delta: float = 1e-6, returned_epsilon_is_private:bool =False) -> None:
         for mechanism in self.entity2ledger.mechanism_manager.all():
             entity = self.entity2ledger.entity_manager.first(name=mechanism.entity_name)
             print(
