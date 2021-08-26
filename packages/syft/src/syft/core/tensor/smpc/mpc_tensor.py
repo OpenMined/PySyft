@@ -202,9 +202,23 @@ class MPCTensor(PassthroughTensor):
         # TODO: It might be that the resulted shares (if we run any computation) might
         # not be available at this point
 
-        local_shares = [share.get() for share in self.child]
-        is_share_tensor = isinstance(local_shares[0], ShareTensor)
+        local_shares = []
+        try:
+            for share in self.child:
+                local_share = share.get()
+                local_shares.append(local_share)
+        except Exception as e:
+            i = 0
+            for i in range(len(local_shares)):
+                local_share = local_shares[i]
+                party = self.parties[i]
+                self.child[i] = local_share.send(party)
+            print(
+                f"An acception occured when trying to get the share from party [{self.parties[i].name}]"
+            )
+            return
 
+        is_share_tensor = isinstance(local_shares[0], ShareTensor)
         if is_share_tensor:
             local_shares = [share.child for share in local_shares]
 
