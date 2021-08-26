@@ -14,12 +14,10 @@ import numpy as np
 import numpy.typing as npt
 
 # relative
-from ....ast.klass import pointerize_args_and_kwargs
 from ....core.common.serde.recursive import RecursiveSerde
 from ....proto.core.tensor.single_entity_phi_tensor_pb2 import (
     SingleEntityPhiTensorPointer as SingleEntityPhiTensorPointer_PB,
 )
-from ....util import inherit_tags
 from ...adp.entity import Entity
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...common.serde.deserialize import _deserialize as deserialize
@@ -27,7 +25,6 @@ from ...common.serde.serializable import bind_protobuf
 from ...common.serde.serialize import Serializable
 from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
-from ...node.common.action.run_class_method_action import RunClassMethodAction
 from ...pointer.pointer import Pointer
 from ..ancestors import AutogradTensorAncestor
 from ..passthrough import AcceptableSimpleType  # type: ignore
@@ -36,7 +33,6 @@ from ..passthrough import SupportedChainType  # type: ignore
 from ..passthrough import implements  # type: ignore
 from ..passthrough import inputs2child  # type: ignore
 from ..passthrough import is_acceptable_simple_type  # type: ignore
-from ..smpc.mpc_tensor import MPCTensor
 from .initial_gamma import InitialGammaTensor
 
 
@@ -52,13 +48,13 @@ class SingleEntityPhiTensorPointer(Pointer, Serializable):
         min_vals: np.ndarray,
         max_vals: np.ndarray,
         scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None,
-    
+
     And the others are for initializing a Pointer object:
         client=self.client,
         id_at_location=self.id_at_location,
         object_type=self.object_type,
         tags=self.tags,
-        description=self.description, 
+        description=self.description,
     """
 
     def __init__(

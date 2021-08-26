@@ -1,5 +1,4 @@
 # stdlib
-from typing import Any
 from typing import Optional
 
 # third party

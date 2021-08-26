@@ -19,7 +19,6 @@ from nacl.signing import VerifyKey
 from sqlalchemy.engine import Engine
 
 # relative
-from ..common.serde.recursive import RecursiveSerde
 from ..node.common.node_manager.ledger_manager import LedgerManager
 from .entity import Entity
 from .idp_gaussian_mechanism import iDPGaussianMechanism

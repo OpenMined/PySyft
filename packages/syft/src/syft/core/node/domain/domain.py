@@ -13,7 +13,6 @@ from typing import Union
 import ascii_magic
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
-from sqlalchemy import create_engine
 
 # relative
 from ....lib.python import String

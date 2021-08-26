@@ -8,7 +8,6 @@ from nacl.signing import VerifyKey
 
 # relative
 from ......util import traceback_and_raise
-from .....common.group import VERIFYALL
 from ....abstract.node import AbstractNode
 from ..auth import service_auth
 from ..node_service import ImmediateNodeServiceWithReply
