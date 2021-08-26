@@ -424,6 +424,7 @@ class Node(AbstractNode):
             )
 
         except Exception as e:
+            print(type(e), e)
             error(e)
             public_exception: Exception
             if isinstance(e, AuthorizationException):
