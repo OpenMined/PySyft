@@ -71,7 +71,7 @@ class SingleEntityPhiTensorPointer(Pointer, Serializable):
         scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None,
         id_at_location: Optional[UID] = None,
         object_type: str = "",
-        tags: Optional[List[str]] = None,
+        tags: str = "",
         description: str = "",
     ):
 
@@ -105,34 +105,21 @@ class SingleEntityPhiTensorPointer(Pointer, Serializable):
 
             :return:
         """
-        # return SingleEntityPhiTensorPointer_PB(
-        #         #     child=serialize(self.child),
-        #         #     entity=serialize(self.entity),
-        #         #     min_vals=serialize(self.min_vals),
-        #         #     max_vals=serialize(self.max_vals),
-        #         #     client=serialize(self.client.address),
-        #         #     scalar_manager=serialize(self.scalar_manager, to_bytes=True),
-        #         #     id_at_location=serialize(self.id_at_location),
-        #         #     object_type=serialize(self.object_type),
-        #         #     tags=serialize(self.tags),
-        #         # )
 
-        if isinstance(self.child, np.ndarray):
-            use_tensors = False
-        else:
-            use_tensors = True
         return SingleEntityPhiTensorPointer_PB(
             child=serialize(self.child),
-            entity=serialize(self.entity),
+            entity=serialize(self.entity, to_proto=True),
             min_vals=serialize(self.min_vals),
             max_vals=serialize(self.max_vals),
-            location=serialize(self.client.address),
+            location=serialize(
+                self.client.address
+            ),  # Location is how the client info is passed on
             scalar_manager=serialize(
                 self.scalar_manager, to_bytes=True
-            ),  # This uses RecursiveSerde to convert VMPSM to bytes
-            id_at_location=serialize(self.id_at_location),
-            object_type=serialize(self.object_type),
-            tags=serialize(self.tags),
+            ),  # RecursiveSerde converted VMPSM -> bytes
+            id_at_location=serialize(self.id_at_location, to_proto=True),
+            object_type=serialize(self.object_type, to_bytes=True),
+            tags=serialize(self.tags, to_bytes=True),
         )
 
     # def _object2proto(self) -> Tensor_PB:
@@ -165,7 +152,7 @@ class SingleEntityPhiTensorPointer(Pointer, Serializable):
     @staticmethod
     def _proto2object(
         proto: SingleEntityPhiTensorPointer_PB,
-    ) -> "SingleEntityPhiTensorPointer":
+    ) -> SingleEntityPhiTensorPointer:
         """
         SingleEntityPhiTensorPointer_PB(
             child=serialize(self.child),
@@ -180,15 +167,15 @@ class SingleEntityPhiTensorPointer(Pointer, Serializable):
         )
         """
 
-        entity = deserialize(blob=proto.entity)
+        entity = deserialize(blob=proto.entity, from_proto=True)
         child = deserialize(blob=proto.child)
         min_vals = deserialize(blob=proto.min_vals)
         max_vals = deserialize(blob=proto.max_vals)
-        client = deserialize(blob=proto.client)
-        scalar_manager = deserialize(blob=proto.scalar_manager)
-        id_at_location = deserialize(blob=proto.id_at_location)
-        object_type = deserialize(blob=proto.object_type)
-        tags = deserialize(blob=proto.tags)
+        client = deserialize(blob=proto.location)
+        scalar_manager = deserialize(blob=proto.scalar_manager, from_bytes=True)
+        id_at_location = deserialize(blob=proto.id_at_location, from_proto=True)
+        object_type = deserialize(blob=proto.object_type, from_bytes=True)
+        tags = deserialize(blob=proto.tags, from_bytes=True)
 
         return SingleEntityPhiTensorPointer(
             child=child,
@@ -259,7 +246,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
         client: Any,
         id_at_location: Optional[UID] = None,
         object_type: str = "",
-        tags: Optional[List[str]] = None,
+        tags: Optional[List[str]] = "",
         description: str = "",
     ):
         return SingleEntityPhiTensorPointer(

@@ -11,12 +11,11 @@ import "proto/core/common/common_object.proto";
 message SingleEntityPhiTensorPointer {
     syft.lib.numpy.NumpyProto child = 1;
     syft.core.adp.Entity entity = 2;
-    Tensor min_vals = 3;
-    Tensor max_vals = 4;
+    syft.lib.numpy.NumpyProto min_vals = 3;
+    syft.lib.numpy.NumpyProto max_vals = 4;
     syft.core.io.Address location = 5;  // this is to pass the client information on
     bytes scalar_manager = 6;  // this is because the VMPSM is serialized using RecursiveSerde
     syft.core.common.UID id_at_location = 7;
-    string object_type = 8;
-    repeated string tags = 9;
-    bool use_tensors = 10;
+    bytes object_type = 8;
+    bytes tags = 9;
 }
