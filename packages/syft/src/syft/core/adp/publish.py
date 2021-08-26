@@ -39,7 +39,9 @@ def publish(
     acc.temp_append(ms)
 
     overbudgeted_entities = acc.overbudgeted_entities(
-        temp_entities=acc.temp_entity2ledger, user_key=user_key, returned_epsilon_is_private=True
+        temp_entities=acc.temp_entity2ledger,
+        user_key=user_key,
+        returned_epsilon_is_private=True,
     )
 
     # so that we don't modify the original polynomial
@@ -91,7 +93,9 @@ def publish(
         acc.temp_append(ms)
 
         overbudgeted_entities = acc.overbudgeted_entities(
-            temp_entities=acc.temp_entity2ledger, user_key=user_key, returned_epsilon_is_private=True,
+            temp_entities=acc.temp_entity2ledger,
+            user_key=user_key,
+            returned_epsilon_is_private=True,
         )
 
     output = [s.value + random.gauss(0, sigma) for s in scalars]

@@ -200,13 +200,15 @@ class Tensor(
 
         if isinstance(self.child, SingleEntityPhiTensor):
             return SingleEntityPhiTensorPointer(
+                entity=self.child.entity,
                 client=client,
                 id_at_location=id_at_location,
                 object_type=object_type,
                 tags=tags,
                 description=description,
-                min_val=self.child.min_val,
-                max_Val=self.child.max_val,
+                min_vals=self.child.min_vals,
+                max_vals=self.child.max_vals,
+                scalar_manager=self.child.scalar_manager,
             )
         else:
             return TensorPointer(

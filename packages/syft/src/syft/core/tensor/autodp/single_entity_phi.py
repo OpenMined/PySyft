@@ -16,6 +16,9 @@ import numpy.typing as npt
 # relative
 from ....ast.klass import pointerize_args_and_kwargs
 from ....core.common.serde.recursive import RecursiveSerde
+from ....proto.core.tensor.single_entity_phi_tensor_pb2 import (
+    SingleEntityPhiTensorPointer as SingleEntityPhiTensorPointer_PB,
+)
 from ....util import inherit_tags
 from ...adp.entity import Entity
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
@@ -36,8 +39,8 @@ from ..passthrough import is_acceptable_simple_type  # type: ignore
 from ..smpc.mpc_tensor import MPCTensor
 from .initial_gamma import InitialGammaTensor
 
-
-class SingleEntityPhiTensorPointer(Pointer, Serializable):
+@bind_protobuf
+class SingleEntityPhiTensorPointer(Pointer):
 
     __name__ = "SingleEntityPhiTensorPointer"
     __module__ = "syft.proxy.syft.core.tensor.tensor"
@@ -60,7 +63,6 @@ class SingleEntityPhiTensorPointer(Pointer, Serializable):
 
     def __init__(
         self,
-        child: SupportedChainType,
         entity: Entity,
         min_vals: np.ArrayLike,
         max_vals: np.ArrayLike,
@@ -80,7 +82,6 @@ class SingleEntityPhiTensorPointer(Pointer, Serializable):
             description=description,
         )
 
-        self.child = child
         self.min_vals = min_vals
         self.max_vals = max_vals
         self.entity = entity
@@ -102,95 +103,44 @@ class SingleEntityPhiTensorPointer(Pointer, Serializable):
 
             :return:
         """
+
+        _entity = serialize(self.entity)
+        _min_vals = serialize(self.min_vals)
+        _max_vals = serialize(self.max_vals)
+        _location = serialize(self.client.address)
+        _scalar_manager = serialize(self.scalar_manager, to_bytes=True)
+        _id_at_location = serialize(self.id_at_location)
+        _object_type = self.object_type
+        _tags = self.tags
+
         return SingleEntityPhiTensorPointer_PB(
-            child=serialize(self.child),
-            entity=serialize(self.entity),
-            min_vals=serialize(self.min_vals),
-            max_vals=serialize(self.max_vals),
-            client=serialize(self.client),
-            scalar_manager=serialize(self.scalar_manager),
-            id_at_location=serialize(self.id_at_location),
-            object_type=serialize(self.object_type),
-            tags=serialize(self.tags),
+            entity=_entity,
+            min_vals=_min_vals,
+            max_vals=_max_vals,
+            location=_location,
+            scalar_manager=_scalar_manager,
+            id_at_location=_id_at_location,
+            object_type=_object_type,
+            tags=_tags,
         )
 
-        if isinstance(self.child, np.ndarray):
-            use_tensors = False
-        else:
-            use_tensors = True
-        return SingleEntityPhiTensorPointer_PB(
-            child=serialize(self.child),
-            entity=serialize(self.entity),
-            min_vals=serialize(self.min_vals),
-            max_vals=serialize(self.max_vals),
-            location=serialize(self.client.address),
-            scalar_manager=serialize(
-                self.scalar_manager, to_bytes=True
-            ),  # This uses RecursiveSerde to convert VMPSM
-            # to
-            # bytes
-            id_at_location=serialize(self.id_at_location),
-            object_type=serialize(self.object_type),
-            tags=serialize(self.tags),
-        )
-
-    # def _object2proto(self) -> Tensor_PB:
-
-    # arrays = []
-    # tensors = []
-    # if isinstance(self.child, np.ndarray):
-    #     use_tensors = False
-    #     arrays = [
-    #         serialize(self.child),
-    #         serialize(self.min_vals),
-    #         serialize(self.max_vals),
-    #     ]
-    # else:
-    #     use_tensors = True
-    #     tensors = [
-    #         serialize(self.child),
-    #         serialize(self.min_vals),
-    #         serialize(self.max_vals),
-    #     ]
-    #
-    # return Tensor_PB(
-    #     obj_type=full_name_with_name(klass=type(self)),
-    #     use_tensors=use_tensors,
-    #     arrays=arrays,
-    #     tensors=tensors,
-    #     entity=serialize(self.entity),
-    # )
 
     @staticmethod
     def _proto2object(
         proto: SingleEntityPhiTensorPointer_PB,
     ) -> "SingleEntityPhiTensorPointer":
-        """
-        SingleEntityPhiTensorPointer_PB(
-            child=serialize(self.child),
-            entity=serialize(self.entity),
-            min_vals=serialize(self.min_vals),
-            max_vals=serialize(self.max_vals),
-            client=serialize(self.client),
-            scalar_manager=serialize(self.scalar_manager),
-            id_at_location=serialize(self.id_at_location),
-            object_type=serialize(self.object_type),
-            tags=serialize(self.tags)
-        )
-        """
+
 
         entity = deserialize(blob=proto.entity)
-        child = deserialize(blob=proto.child)
         min_vals = deserialize(blob=proto.min_vals)
         max_vals = deserialize(blob=proto.max_vals)
-        client = deserialize(blob=proto.client)
-        scalar_manager = deserialize(blob=proto.scalar_manager)
+        client = deserialize(blob=proto.location)
+        scalar_manager = deserialize(blob=proto.scalar_manager, from_bytes=True)
         id_at_location = deserialize(blob=proto.id_at_location)
-        object_type = deserialize(blob=proto.object_type)
-        tags = deserialize(blob=proto.tags)
+        object_type = proto.object_type
+        tags = proto.tags
 
         return SingleEntityPhiTensorPointer(
-            child=child,
             entity=entity,
             min_vals=min_vals,
             max_vals=max_vals,
@@ -201,25 +151,26 @@ class SingleEntityPhiTensorPointer(Pointer, Serializable):
             tags=tags,
         )
 
-    # @staticmethod
-    # def _proto2object(proto: Tensor_PB) -> SingleEntityPhiTensor:
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        """Return the type of protobuf object which stores a class of this type
 
-    # use_tensors = proto.use_tensors
-    # children = []
-    # if use_tensors:
-    #     children = [deserialize(tensor) for tensor in proto.tensors]
-    # else:
-    #     children = [deserialize(array) for array in proto.arrays]
-    #
-    # child = children.pop(0)
-    # min_vals = children.pop(0)
-    # max_vals = children.pop(0)
-    #
-    # entity = deserialize(blob=proto.entity)
-    #
-    # return SingleEntityPhiTensor(
-    #     child=child, entity=entity, min_vals=min_vals, max_vals=max_vals
-    # )
+        As a part of serialization and deserialization, we need the ability to
+        lookup the protobuf object type directly from the object type. This
+        static method allows us to do this.
+
+        Importantly, this method is also used to create the reverse lookup ability within
+        the metaclass of Serializable. In the metaclass, it calls this method and then
+        it takes whatever type is returned from this method and adds an attribute to it
+        with the type of this class attached to it. See the MetaSerializable class for details.
+
+        :return: the type of protobuf object which corresponds to this class.
+        :rtype: GeneratedProtocolMessageType
+
+        """
+
+        return SingleEntityPhiTensorPointer_PB
+
 
 
 @bind_protobuf
