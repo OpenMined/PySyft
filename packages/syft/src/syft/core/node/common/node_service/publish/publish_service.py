@@ -36,7 +36,7 @@ class PublishScalarsService(ImmediateNodeServiceWithoutReply):
         # get scalar objects from store
         results = List()
         for publish_id in msg.publish_ids_at_location:
-
+            print(publish_id)
             try:
                 publish_object = node.store[publish_id]
 

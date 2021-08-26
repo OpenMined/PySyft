@@ -157,16 +157,18 @@ class AdversarialAccountant:
             user_key=user_key,
             returned_epsilon_is_private=returned_epsilon_is_private,
         )
-        # print("SPEND:" + str(spend))
+
         user_budget = self.entity2ledger.get_user_budget(
             user_key=user_key
         )
-        # print("USER BUDGET:" + str(user_budget))
+
         # print("ACCOUNTANT MAX BUDGET", self.max_budget)
         # @Andrew can we use <= or does it have to be <
         has_budget = spend <= user_budget
         # print(f"has_budget = {spend} < {user_budget}")
-
+        print("\n\nHas Budget:"+ str(has_budget))
+        print("SPEND:" + str(spend))
+        print("USER BUDGET:" + str(user_budget))
         return has_budget
 
     def user_budget(
@@ -229,7 +231,7 @@ class AdversarialAccountant:
         return entities
 
     def print_ledger(
-        self, delta: float = 1e-6, returned_epsilon_is_private: bool = False
+        self, returned_epsilon_is_private: bool = False
     ) -> None:
         for mechanism in self.entity2ledger.mechanism_manager.all():
             entity = self.entity2ledger.entity_manager.first(name=mechanism.entity_name)
@@ -243,9 +245,3 @@ class AdversarialAccountant:
                 )
             )
 
-
-class AccountantReference(RecursiveSerde):
-    __attr_allowlist__ = ["msg"]
-
-    def __init__(self, msg) -> None:
-        self.msg = msg

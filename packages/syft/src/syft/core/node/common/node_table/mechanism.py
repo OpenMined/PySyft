@@ -40,11 +40,12 @@ class Mechanism(Base):
         # autodp internal methods created in execution time (e.g. RenyiDP)
         # if len(obj_list):
         iDPGaussianMechanism.__init__(
-            _obj,
-            _obj.params["sigma"],
-            _obj.params["value"],
-            _obj.params["L"],
-            _obj.entity_name,
+            self=_obj,
+            sigma=_obj.params["sigma"],
+            squared_l2_norm=_obj.params["private_value"],
+            squared_l2_norm_upper_bound=_obj.params["public_value"],
+            L=_obj.params["L"],
+            entity_name=_obj.entity_name,
             user_key=_obj.user_key,
         )
 

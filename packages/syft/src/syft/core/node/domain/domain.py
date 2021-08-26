@@ -72,7 +72,7 @@ from ..device import Device
 from ..device import DeviceClient
 from .client import DomainClient
 from ..common.node_service.get_remaining_budget.get_remaining_budget_service import GetRemainingBudgetService
-
+from ..common.node_table.utils import create_memory_db_engine
 
 class Domain(Node):
     domain: SpecificLocation
@@ -95,6 +95,10 @@ class Domain(Node):
         db_engine: Any = None,
         db: Any = None,
     ):
+
+        if db_engine is None:
+            db_engine, _ = create_memory_db_engine()
+
         super().__init__(
             name=name,
             network=network,
