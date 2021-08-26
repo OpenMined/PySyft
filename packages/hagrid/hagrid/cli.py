@@ -43,7 +43,7 @@ def cli() -> None:
     help="Restore some part of the hagrid installation or deployment to its initial/starting state."
 )
 @click.argument("location", type=str, nargs=1)
-def clean(location):
+def clean(location: str) -> None:
 
     if location == "library" or location == "volumes":
         print("Deleting all Docker volumes in 3 secs (Ctrl-C to stop)")
