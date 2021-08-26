@@ -148,6 +148,16 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ),
         # ("syft.core.tensor.tensor.Tensor.share", "syft.core.tensor.tensor.Tensor"),
         # Share Tensor Operations
+        # TODO: This should be done better - for the moment this is put here to allow
+        # forwarding publish method on a ShareTensorPointer - even though we will not
+        # reach to call the publish from ShareTensor, but from the ADP Tensor Entity
+        # MPC -> ADP -> ShareTensor
+        # But MPC considers MPC -> ShareTensor (it might be a good idea to keep the obfuscation here)
+        # Another way to do it, is that MPCTensor has as child a Union between ADPTensor and ShareTensor
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.publish",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
         (
             "syft.core.tensor.smpc.share_tensor.ShareTensor.__add__",
             "syft.core.tensor.smpc.share_tensor.ShareTensor",

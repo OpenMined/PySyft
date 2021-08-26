@@ -36,6 +36,8 @@ METHODS_FORWARD_ALL_SHARES = {
     "narrow",
     "dim",
     "transpose",
+    # DP
+    "publish",
 }
 
 

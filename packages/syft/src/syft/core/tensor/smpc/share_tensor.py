@@ -2,6 +2,8 @@
 from functools import lru_cache
 import operator
 from typing import Any
+from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
@@ -288,6 +290,12 @@ class ShareTensor(PassthroughTensor, Serializable):
         # res = self.apply_function(y, "floordiv")
         res.tensor = self.tensor // y
         return res
+
+    def publish(self, *args: List[Any], **kwargs: Dict[Any, Any]) -> None:
+        raise NotImplementedError(
+            """It should not reach here. """
+            """somewhere on the chain it should have been an ADP Tensor"""
+        )
 
     def _object2proto(self) -> ShareTensor_PB:
         if isinstance(self.child, np.ndarray):
