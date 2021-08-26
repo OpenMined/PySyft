@@ -716,8 +716,13 @@ class Class(Callable):
 
             id_at_location = UID()
 
+            if hasattr(self, 'init_pointer'):
+                constructor = self.init_pointer
+            else:
+                constructor = getattr(outer_self, outer_self.pointer_name)
+
             # Step 1: create pointer which will point to result
-            ptr = getattr(outer_self, outer_self.pointer_name)(
+            ptr = constructor(
                 client=client,
                 id_at_location=id_at_location,
                 tags=tags,

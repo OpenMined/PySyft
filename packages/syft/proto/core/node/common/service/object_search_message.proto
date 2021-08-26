@@ -15,5 +15,5 @@ message ObjectSearchMessage {
 message ObjectSearchReplyMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-  repeated syft.core.pointer.Pointer results = 3;
+  repeated bytes results = 3;
 }

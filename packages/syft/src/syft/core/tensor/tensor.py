@@ -37,7 +37,7 @@ class TensorPointer(Pointer):
     # Must set these at class init time despite
     # the fact that klass.Class tries to override them (unsuccessfully)
     __name__ = "TensorPointer"
-    __module__ = "syft.proxy.syft.core.tensor.tensor"
+    __module__ = "syft.core.tensor.tensor"
 
     def __init__(
         self,
@@ -196,10 +196,10 @@ class Tensor(
 
         # relative
         from .autodp.single_entity_phi import SingleEntityPhiTensor
-        from .autodp.single_entity_phi import SingleEntityPhiTensorPointer
+        from .autodp.single_entity_phi import TensorWrappedSingleEntityPhiTensorPointer
 
-        if isinstance(self.child, SingleEntityPhiTensor):
-            return SingleEntityPhiTensorPointer(
+        if isinstance(self.child, SingleEntityPhiTensor) and False:
+            return TensorWrappedSingleEntityPhiTensorPointer(
                 entity=self.child.entity,
                 client=client,
                 id_at_location=id_at_location,
@@ -209,6 +209,7 @@ class Tensor(
                 min_vals=self.child.min_vals,
                 max_vals=self.child.max_vals,
                 scalar_manager=self.child.scalar_manager,
+                public_shape=getattr(self, "public_shape", None),
             )
         else:
             return TensorPointer(

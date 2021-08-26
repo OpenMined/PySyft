@@ -144,7 +144,7 @@ class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
         return ObjectSearchReplyMessage_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            results=list(map(lambda x: serialize(x), self.results)),
+            results=list(map(lambda x: serialize(x, to_bytes=True), self.results)),
         )
 
     @staticmethod
@@ -165,7 +165,7 @@ class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
         return ObjectSearchReplyMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            results=[_deserialize(blob=x) for x in proto.results],
+            results=[_deserialize(blob=x, from_bytes=True) for x in proto.results],
         )
 
     @staticmethod

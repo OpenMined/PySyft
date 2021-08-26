@@ -8,7 +8,7 @@ import "proto/lib/numpy/array.proto";
 import "proto/core/io/address.proto";
 import "proto/core/common/common_object.proto";
 
-message SingleEntityPhiTensorPointer {
+message TensorWrappedSingleEntityPhiTensorPointer {
     syft.core.adp.Entity entity = 1;
     syft.lib.numpy.NumpyProto min_vals = 2;
     syft.lib.numpy.NumpyProto max_vals = 3;
@@ -17,4 +17,6 @@ message SingleEntityPhiTensorPointer {
     syft.core.common.UID id_at_location = 6;
     string object_type = 7;
     repeated string tags = 8;
+    string description = 9;
+    optional bytes public_shape = 10;
 }

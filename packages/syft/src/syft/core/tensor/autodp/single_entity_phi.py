@@ -17,7 +17,7 @@ import numpy.typing as npt
 from ....ast.klass import pointerize_args_and_kwargs
 from ....core.common.serde.recursive import RecursiveSerde
 from ....proto.core.tensor.single_entity_phi_tensor_pb2 import (
-    SingleEntityPhiTensorPointer as SingleEntityPhiTensorPointer_PB,
+    TensorWrappedSingleEntityPhiTensorPointer as TensorWrappedSingleEntityPhiTensorPointer_PB,
 )
 from ....util import inherit_tags
 from ...adp.entity import Entity
@@ -39,27 +39,32 @@ from ..passthrough import is_acceptable_simple_type  # type: ignore
 from ..smpc.mpc_tensor import MPCTensor
 from .initial_gamma import InitialGammaTensor
 
+
 @bind_protobuf
-class SingleEntityPhiTensorPointer(Pointer):
-
-    __name__ = "SingleEntityPhiTensorPointer"
-    __module__ = "syft.proxy.syft.core.tensor.tensor"
-
+class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
     """
-    This class has two kinds of attributes: one set are the attributes for SingeEntityPhiTensor:
+    This tensor represents a pointer to a very specific tensor chain. Eventually we'll have some sort
+    of more intelligent/general representation for pointers to chains of objects, but for now this is
+    what we're going with. This pointer represents all the arguments of the objects in the chain as its
+    attributes.
+
+    Thus, this class has two groups of attributes: one set are the attributes for SingeEntityPhiTensor:
         child: SupportedChainType,
         entity: Entity,
         min_vals: np.ndarray,
         max_vals: np.ndarray,
         scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None,
-    
+
     And the others are for initializing a Pointer object:
         client=self.client,
         id_at_location=self.id_at_location,
         object_type=self.object_type,
         tags=self.tags,
-        description=self.description, 
+        description=self.description,
     """
+
+    __name__ = "TensorWrappedSingleEntityPhiTensorPointer"
+    __module__ = "syft.core.tensor.autodp.single_entity_phi"
 
     def __init__(
         self,
@@ -72,6 +77,7 @@ class SingleEntityPhiTensorPointer(Pointer):
         object_type: str = "",
         tags: Optional[List[str]] = None,
         description: str = "",
+        public_shape: Optional[TypeTuple[int, ...]] = None,
     ):
 
         super().__init__(
@@ -86,23 +92,9 @@ class SingleEntityPhiTensorPointer(Pointer):
         self.max_vals = max_vals
         self.entity = entity
         self.scalar_manager = scalar_manager
+        self.public_shape = public_shape
 
-    def _object2proto(self) -> "SingleEntityPhiTensorPointer_PB":
-
-        """.proto file:
-            message SingleEntityPhiTensor {
-        Tensor child = 1;
-        syft.core.adp.Entity entity = 2;
-        syft.lib.numpy.NumpyProto min_vals = 3;
-        syft.lib.numpy.NumpyProto max_vals = 4;
-        location = 5;
-        bytes scalar_manager = 6;
-        syft.core.common.UID id_at_location = 7;
-        string object_type = 8;
-        repeated string tags = 9;
-
-            :return:
-        """
+    def _object2proto(self) -> "TensorWrappedSingleEntityPhiTensorPointer_PB":
 
         _entity = serialize(self.entity)
         _min_vals = serialize(self.min_vals)
@@ -112,8 +104,10 @@ class SingleEntityPhiTensorPointer(Pointer):
         _id_at_location = serialize(self.id_at_location)
         _object_type = self.object_type
         _tags = self.tags
+        _description = self.description
+        _public_shape = serialize(getattr(self, "public_shape", None), to_bytes=True)
 
-        return SingleEntityPhiTensorPointer_PB(
+        return TensorWrappedSingleEntityPhiTensorPointer_PB(
             entity=_entity,
             min_vals=_min_vals,
             max_vals=_max_vals,
@@ -122,14 +116,14 @@ class SingleEntityPhiTensorPointer(Pointer):
             id_at_location=_id_at_location,
             object_type=_object_type,
             tags=_tags,
+            description=_description,
+            public_shape=_public_shape,
         )
-
 
     @staticmethod
     def _proto2object(
-        proto: SingleEntityPhiTensorPointer_PB,
-    ) -> "SingleEntityPhiTensorPointer":
-
+        proto: TensorWrappedSingleEntityPhiTensorPointer_PB,
+    ) -> "TensorWrappedSingleEntityPhiTensorPointer":
 
         entity = deserialize(blob=proto.entity)
         min_vals = deserialize(blob=proto.min_vals)
@@ -139,8 +133,10 @@ class SingleEntityPhiTensorPointer(Pointer):
         id_at_location = deserialize(blob=proto.id_at_location)
         object_type = proto.object_type
         tags = proto.tags
+        public_shape = deserialize(blob=proto.public_shape, from_bytes=True)
+        description = proto.description
 
-        return SingleEntityPhiTensorPointer(
+        return TensorWrappedSingleEntityPhiTensorPointer(
             entity=entity,
             min_vals=min_vals,
             max_vals=max_vals,
@@ -149,6 +145,8 @@ class SingleEntityPhiTensorPointer(Pointer):
             id_at_location=id_at_location,
             object_type=object_type,
             tags=tags,
+            public_shape=public_shape,
+            description=description,
         )
 
     @staticmethod
@@ -169,8 +167,7 @@ class SingleEntityPhiTensorPointer(Pointer):
 
         """
 
-        return SingleEntityPhiTensorPointer_PB
-
+        return TensorWrappedSingleEntityPhiTensorPointer_PB
 
 
 @bind_protobuf
@@ -212,7 +209,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
         tags: Optional[List[str]] = None,
         description: str = "",
     ):
-        return SingleEntityPhiTensorPointer(
+        return TensorWrappedSingleEntityPhiTensorPointer(
             # Arguments specifically for SEPhiTensor
             child=self.child,
             entity=self.entity,
