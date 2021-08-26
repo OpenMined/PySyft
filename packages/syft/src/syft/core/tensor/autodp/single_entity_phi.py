@@ -167,15 +167,15 @@ class SingleEntityPhiTensorPointer(Pointer, Serializable):
         )
         """
 
-        entity = deserialize(blob=proto.entity, from_proto=True)
-        child = deserialize(blob=proto.child)
-        min_vals = deserialize(blob=proto.min_vals)
-        max_vals = deserialize(blob=proto.max_vals)
-        client = deserialize(blob=proto.location)
-        scalar_manager = deserialize(blob=proto.scalar_manager, from_bytes=True)
-        id_at_location = deserialize(blob=proto.id_at_location, from_proto=True)
-        object_type = deserialize(blob=proto.object_type, from_bytes=True)
-        tags = deserialize(blob=proto.tags, from_bytes=True)
+        entity = deserialize(proto.entity, from_proto=True)
+        child = deserialize(proto.child)
+        min_vals = deserialize(proto.min_vals)
+        max_vals = deserialize(proto.max_vals)
+        client = deserialize(proto.location)
+        scalar_manager = deserialize(proto.scalar_manager, from_bytes=True)
+        id_at_location = deserialize(proto.id_at_location, from_proto=True)
+        object_type = deserialize(proto.object_type, from_bytes=True)
+        tags = deserialize(proto.tags, from_bytes=True)
 
         return SingleEntityPhiTensorPointer(
             child=child,
