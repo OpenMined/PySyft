@@ -16,6 +16,9 @@ import numpy.typing as npt
 # relative
 from ....ast.klass import pointerize_args_and_kwargs
 from ....core.common.serde.recursive import RecursiveSerde
+from ....proto.core.tensor.single_entity_phi_tensor_pb2 import (
+    SingleEntityPhiTensorPointer as SingleEntityPhiTensorPointer_PB,
+)
 from ....util import inherit_tags
 from ...adp.entity import Entity
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
@@ -86,7 +89,7 @@ class SingleEntityPhiTensorPointer(Pointer, Serializable):
         self.entity = entity
         self.scalar_manager = scalar_manager
 
-    def _object2proto(self) -> "SingleEntityPhiTensorPointer_PB":
+    def _object2proto(self) -> SingleEntityPhiTensorPointer_PB:
 
         """.proto file:
             message SingleEntityPhiTensor {
@@ -102,17 +105,17 @@ class SingleEntityPhiTensorPointer(Pointer, Serializable):
 
             :return:
         """
-        return SingleEntityPhiTensorPointer_PB(
-            child=serialize(self.child),
-            entity=serialize(self.entity),
-            min_vals=serialize(self.min_vals),
-            max_vals=serialize(self.max_vals),
-            client=serialize(self.client),
-            scalar_manager=serialize(self.scalar_manager),
-            id_at_location=serialize(self.id_at_location),
-            object_type=serialize(self.object_type),
-            tags=serialize(self.tags),
-        )
+        # return SingleEntityPhiTensorPointer_PB(
+        #         #     child=serialize(self.child),
+        #         #     entity=serialize(self.entity),
+        #         #     min_vals=serialize(self.min_vals),
+        #         #     max_vals=serialize(self.max_vals),
+        #         #     client=serialize(self.client.address),
+        #         #     scalar_manager=serialize(self.scalar_manager, to_bytes=True),
+        #         #     id_at_location=serialize(self.id_at_location),
+        #         #     object_type=serialize(self.object_type),
+        #         #     tags=serialize(self.tags),
+        #         # )
 
         if isinstance(self.child, np.ndarray):
             use_tensors = False
@@ -126,9 +129,7 @@ class SingleEntityPhiTensorPointer(Pointer, Serializable):
             location=serialize(self.client.address),
             scalar_manager=serialize(
                 self.scalar_manager, to_bytes=True
-            ),  # This uses RecursiveSerde to convert VMPSM
-            # to
-            # bytes
+            ),  # This uses RecursiveSerde to convert VMPSM to bytes
             id_at_location=serialize(self.id_at_location),
             object_type=serialize(self.object_type),
             tags=serialize(self.tags),

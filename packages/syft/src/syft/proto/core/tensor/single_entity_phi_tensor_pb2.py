@@ -30,7 +30,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b"\n0proto/core/tensor/single_entity_phi_tensor.proto\x12\x10syft.core.tensor\x1a\x1bproto/core/adp/entity.proto\x1a\x1eproto/core/tensor/tensor.proto\x1a\x1bproto/lib/numpy/array.proto\x1a\x1bproto/core/io/address.proto\x1a%proto/core/common/common_object.proto\"\xf2\x02\n\x1cSingleEntityPhiTensorPointer\x12'\n\x05\x63hild\x18\x01 \x01(\x0b\x32\x18.syft.core.tensor.Tensor\x12%\n\x06\x65ntity\x18\x02 \x01(\x0b\x32\x15.syft.core.adp.Entity\x12,\n\x08min_vals\x18\x03 \x01(\x0b\x32\x1a.syft.lib.numpy.NumpyProto\x12,\n\x08max_vals\x18\x04 \x01(\x0b\x32\x1a.syft.lib.numpy.NumpyProto\x12'\n\x08location\x18\x05 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x16\n\x0escalar_manager\x18\x06 \x01(\x0c\x12-\n\x0eid_at_location\x18\x07 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bobject_type\x18\x08 \x01(\t\x12\x0c\n\x04tags\x18\t \x03(\t\x12\x13\n\x0buse_tensors\x18\n \x01(\x08\x62\x06proto3",
+    serialized_pb=b"\n0proto/core/tensor/single_entity_phi_tensor.proto\x12\x10syft.core.tensor\x1a\x1bproto/core/adp/entity.proto\x1a\x1eproto/core/tensor/tensor.proto\x1a\x1bproto/lib/numpy/array.proto\x1a\x1bproto/core/io/address.proto\x1a%proto/core/common/common_object.proto\"\xf0\x02\n\x1cSingleEntityPhiTensorPointer\x12)\n\x05\x63hild\x18\x01 \x01(\x0b\x32\x1a.syft.lib.numpy.NumpyProto\x12%\n\x06\x65ntity\x18\x02 \x01(\x0b\x32\x15.syft.core.adp.Entity\x12*\n\x08min_vals\x18\x03 \x01(\x0b\x32\x18.syft.core.tensor.Tensor\x12*\n\x08max_vals\x18\x04 \x01(\x0b\x32\x18.syft.core.tensor.Tensor\x12'\n\x08location\x18\x05 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x16\n\x0escalar_manager\x18\x06 \x01(\x0c\x12-\n\x0eid_at_location\x18\x07 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bobject_type\x18\x08 \x01(\t\x12\x0c\n\x04tags\x18\t \x03(\t\x12\x13\n\x0buse_tensors\x18\n \x01(\x08\x62\x06proto3",
     dependencies=[
         proto_dot_core_dot_adp_dot_entity__pb2.DESCRIPTOR,
         proto_dot_core_dot_tensor_dot_tensor__pb2.DESCRIPTOR,
@@ -249,21 +249,21 @@ _SINGLEENTITYPHITENSORPOINTER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=229,
-    serialized_end=599,
+    serialized_end=597,
 )
 
 _SINGLEENTITYPHITENSORPOINTER.fields_by_name[
     "child"
-].message_type = proto_dot_core_dot_tensor_dot_tensor__pb2._TENSOR
+].message_type = proto_dot_lib_dot_numpy_dot_array__pb2._NUMPYPROTO
 _SINGLEENTITYPHITENSORPOINTER.fields_by_name[
     "entity"
 ].message_type = proto_dot_core_dot_adp_dot_entity__pb2._ENTITY
 _SINGLEENTITYPHITENSORPOINTER.fields_by_name[
     "min_vals"
-].message_type = proto_dot_lib_dot_numpy_dot_array__pb2._NUMPYPROTO
+].message_type = proto_dot_core_dot_tensor_dot_tensor__pb2._TENSOR
 _SINGLEENTITYPHITENSORPOINTER.fields_by_name[
     "max_vals"
-].message_type = proto_dot_lib_dot_numpy_dot_array__pb2._NUMPYPROTO
+].message_type = proto_dot_core_dot_tensor_dot_tensor__pb2._TENSOR
 _SINGLEENTITYPHITENSORPOINTER.fields_by_name[
     "location"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
