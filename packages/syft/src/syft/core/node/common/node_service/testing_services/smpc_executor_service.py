@@ -82,7 +82,7 @@ class SMPCExecutorService(ImmediateNodeServiceWithoutReply):
             result = StorableObject(
                 id=msg.id_at_location,
                 data=result,
-                read_permissions=store_object_self.read_permissions,
+                read_permissions={},
             )
 
         node.store[msg.id_at_location] = result

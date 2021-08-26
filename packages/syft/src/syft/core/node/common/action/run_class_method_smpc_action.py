@@ -1,4 +1,5 @@
 # stdlib
+import time
 from typing import Any
 from typing import Dict
 from typing import List
@@ -14,6 +15,7 @@ from syft import serialize
 # relative
 from ..... import deserialize
 from ..... import lib
+from ..... import logger
 from .....logger import critical
 from .....proto.core.node.common.action.run_class_method_smpc_pb2 import (
     RunClassMethodSMPCAction as RunClassMethodSMPCAction_PB,
@@ -96,7 +98,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
             return
         result_read_permissions = resolved_self.read_permissions
 
-        resolved_args = list()
+        resolved_args = []
         tag_args = []
         for arg in self.args:
             r_arg = node.store[arg.id_at_location]

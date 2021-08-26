@@ -263,16 +263,10 @@ class MPCTensor(PassthroughTensor):
         return object.__getattribute__(self, attr_name)
 
     def __apply_private_op(self, other: "MPCTensor", op_str: str) -> List[ShareTensor]:
-        print("C.N.0")
         op = getattr(operator, op_str)
-        print("C.N.1")
         if isinstance(other, MPCTensor):
-            print("C.N.1.A")
-            print(op)
-            print(op_str)
             res_shares = [op(a, b) for a, b in zip(self.child, other.child)]
         else:
-            print("C.N.1.B")
             raise ValueError("Add works only for the MPCTensor at the moment!")
         return res_shares
 
@@ -304,7 +298,6 @@ class MPCTensor(PassthroughTensor):
 
         _self = self
         if ispointer(y):
-
             if y.client not in self.parties:
                 parties = self.parties + [y.client]
             else:
@@ -366,12 +359,6 @@ class MPCTensor(PassthroughTensor):
         """
         res = self.__apply_op(y, "add")
         return res
-        # if isinstance(y, MPCTensor):
-        #     res_shares = [operator.add(a, b) for a, b in zip(self.child, y.child)]
-        #     mpc_tensor = MPCTensor(shares=res_shares, shape=self.shape, parties=self.parties)
-        #     return mpc_tensor
-        # else:
-        #     return NotImplemented
 
     def sub(self, y: "MPCTensor") -> "MPCTensor":
         res = self.__apply_op(y, "sub")
