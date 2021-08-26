@@ -264,7 +264,8 @@ def get_all_users_msg(
             ]
 
             _user_json["budget_spent"] = node.acc.user_budget(
-                user_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder), returned_epsilon_is_private=True
+                user_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder),
+                returned_epsilon_is_private=True,
             )
             print("We've spent:" + str(_user_json["budget_spent"]))
             _msg.append(_user_json)

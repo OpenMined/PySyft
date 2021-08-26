@@ -24,17 +24,19 @@ scalar_object_tests = [
 
 @pytest.mark.parametrize("scalar", scalar_object_tests)
 def test_serde_scalar(scalar: BaseScalar) -> None:
-    protobuf_obj = serialize(scalar)
-
+    protobuf_obj = serialize(scalar, to_proto=True)
     deserialized = deserialize(protobuf_obj, from_proto=True)
 
     for field in [
         "id",
+        "max_val",
+        "value",
+        "min_val",
         "_gamma",
         "name",
-        "max_value",
-        "min_value",
-        "value",
+        "entity",
+        "ssid",
+        "poly",
     ]:  # add poly support it
         if hasattr(scalar, field):
             assert getattr(scalar, field) == getattr(deserialized, field)

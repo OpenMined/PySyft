@@ -37,6 +37,9 @@ from ..common.client_manager.dataset_api import DatasetRequestAPI
 from ..common.client_manager.group_api import GroupRequestAPI
 from ..common.client_manager.role_api import RoleRequestAPI
 from ..common.client_manager.user_api import UserRequestAPI
+from ..common.node_service.get_remaining_budget.get_remaining_budget_messages import (
+    GetRemainingBudgetMessage,
+)
 from ..common.node_service.network_search.network_search_messages import (
     NetworkSearchMessage,
 )
@@ -49,7 +52,7 @@ from ..common.node_service.request_receiver.request_receiver_messages import (
 )
 from .enums import PyGridClientEnums
 from .enums import RequestAPIFields
-from ..common.node_service.get_remaining_budget.get_remaining_budget_messages import GetRemainingBudgetMessage
+
 
 class RequestQueueClient:
     def __init__(self, client: Client) -> None:

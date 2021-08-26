@@ -25,7 +25,7 @@ def create_adp_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.core.adp.IntermediatePhiScalar",
             "syft.core.adp.IntermediatePhiScalar",
             IntermediatePhiScalar,
-        )
+        ),
     ]
 
     methods = [

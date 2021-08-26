@@ -269,11 +269,11 @@ class IntermediatePhiScalar(IntermediateScalar):
     @staticmethod
     def _proto2object(proto: IntermediatePhiScalar_PB) -> "IntermediatePhiScalar":
         intermediate_phi_scalar = IntermediatePhiScalar(
+            id=deserialize(proto.id, from_proto=True),
             entity=deserialize(blob=proto.entity, from_proto=True),
             poly=None
             # poly=deserialize(proto.poly)
         )
-        intermediate_phi_scalar.id = deserialize(proto.id, from_proto=True)
         # intermediate_phi_scalar._gamma = deserialize(proto.gamma)
         return intermediate_phi_scalar
 
@@ -322,10 +322,10 @@ class BaseScalar(Scalar):
         }
 
         for field in ["max_val", "min_val", "value"]:
-            if getattr(self, field):
+            if getattr(self, field) is not None:
                 kwargs[field] = getattr(self, field)
-
-        return BaseScalar_PB(**kwargs)
+        pb = BaseScalar_PB(**kwargs)
+        return pb
 
     @staticmethod
     def _proto2object(proto: BaseScalar_PB) -> BaseScalar:
@@ -367,7 +367,7 @@ class PhiScalar(BaseScalar, IntermediatePhiScalar):
         self.ssid = ssid
 
         IntermediatePhiScalar.__init__(
-            self, poly=var(self.ssid), entity=self.entity, id=id
+            self, poly=var(self.ssid), entity=self.entity, id=self.id
         )
 
         ssid2obj[self.ssid] = self
@@ -379,7 +379,7 @@ class PhiScalar(BaseScalar, IntermediatePhiScalar):
         }
 
         for field in ["max_val", "min_val", "value"]:
-            if getattr(self, field):
+            if getattr(self, field) is not None:
                 kwargs[field] = getattr(self, field)
 
         return PhiScalar_PB(**kwargs)
@@ -564,10 +564,9 @@ class GammaScalar(BaseScalar, IntermediateGammaScalar):
         # doesn't know how to process things that aren't strings
         if ssid is None:
             ssid = "_" + self.id.no_dash + "_" + self.entity.id.no_dash
-
         self.ssid = ssid
 
-        IntermediateGammaScalar.__init__(self, poly=var(self.ssid), id=id)
+        IntermediateGammaScalar.__init__(self, poly=var(self.ssid), id=self.id)
 
         ssid2obj[self.ssid] = self
 
@@ -578,20 +577,20 @@ class GammaScalar(BaseScalar, IntermediateGammaScalar):
         }
 
         for field in ["max_val", "min_val", "value"]:
-            if getattr(self, field):
+            if getattr(self, field) is not None:
                 kwargs[field] = getattr(self, field)
+
         return GammaScalar_PB(**kwargs)
 
     @staticmethod
     def _proto2object(proto: GammaScalar_PB) -> GammaScalar:
-        scalar = GammaScalar(
+        return GammaScalar(
+            id=deserialize(proto.id, from_proto=True),
             min_val=proto.min_val if proto.HasField("min_val") else None,
             max_val=proto.max_val if proto.HasField("max_val") else None,
             value=proto.value if proto.HasField("value") else None,
             entity=deserialize(proto.entity),
         )
-        scalar.id = deserialize(proto.id, from_proto=True)
-        return scalar
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
