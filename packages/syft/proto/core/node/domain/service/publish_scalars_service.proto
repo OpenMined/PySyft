@@ -9,5 +9,5 @@ message PublishScalarsAction {
   syft.core.common.UID id_at_location = 1;
   syft.core.io.Address address = 2;
   repeated syft.core.common.UID publish_ids_at_location = 3;
-  float sigma = 4;
+  double sigma = 4;
 }

@@ -13,7 +13,7 @@ message GetRemainingBudgetMessage {
 }
 
 message GetRemainingBudgetReplyMessage {
-  float budget = 1;
+  double budget = 1;
   syft.core.common.UID msg_id = 2;
   syft.core.io.Address address = 3;
 }

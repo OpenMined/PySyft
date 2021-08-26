@@ -5,6 +5,7 @@
 # - add a unit test for each method (at least)
 
 # stdlib
+import math
 from typing import Dict as TypeDict
 from typing import KeysView as TypeKeysView
 from typing import List as TypeList
@@ -158,22 +159,20 @@ class AdversarialAccountant:
             returned_epsilon_is_private=returned_epsilon_is_private,
         )
 
-        user_budget = self.entity2ledger.get_user_budget(
-            user_key=user_key
-        )
+        user_budget = self.entity2ledger.get_user_budget(user_key=user_key)
 
         # print("ACCOUNTANT MAX BUDGET", self.max_budget)
         # @Andrew can we use <= or does it have to be <
         has_budget = spend <= user_budget
         # print(f"has_budget = {spend} < {user_budget}")
-        print("\n\nHas Budget:"+ str(has_budget))
+        print("\n\nHas Budget:" + str(has_budget))
         print("SPEND:" + str(spend))
         print("USER BUDGET:" + str(user_budget))
         return has_budget
 
     def user_budget(
         self, user_key: VerifyKey, returned_epsilon_is_private: bool = False
-    ):
+    ) -> float:
         max_spend = 0
 
         for ent in self.entities:
@@ -182,6 +181,8 @@ class AdversarialAccountant:
                 user_key=user_key,
                 returned_epsilon_is_private=returned_epsilon_is_private,
             )
+            if math.isnan(spend) or math.isinf(spend):
+                print(f"Warning: Spend is {spend}")
             if spend > max_spend:
                 max_spend = spend
 
@@ -190,21 +191,14 @@ class AdversarialAccountant:
     def get_remaining_budget(
         self, user_key: VerifyKey, returned_epsilon_is_private: bool = False
     ):
-
-        max_spend = 0
-        for ent in self.entities:
-
-            spend = self.get_eps_for_entity(
-                entity=ent,
-                user_key=user_key,
-                returned_epsilon_is_private=returned_epsilon_is_private,
-            )
-            if spend > max_spend:
-                max_spend = spend
-
-        user_budget = self.entity2ledger.get_user_budget(
-            user_key=user_key
+        max_spend = self.user_budget(
+            user_key=user_key, returned_epsilon_is_private=returned_epsilon_is_private
         )
+
+        if math.isnan(max_spend) or math.isinf(max_spend):
+            print(f"Warning: Remaining budget not valid with max_spend {max_spend}")
+
+        user_budget = self.entity2ledger.get_user_budget(user_key=user_key)
 
         return user_budget - max_spend
 
@@ -230,9 +224,7 @@ class AdversarialAccountant:
 
         return entities
 
-    def print_ledger(
-        self, returned_epsilon_is_private: bool = False
-    ) -> None:
+    def print_ledger(self, returned_epsilon_is_private: bool = False) -> None:
         for mechanism in self.entity2ledger.mechanism_manager.all():
             entity = self.entity2ledger.entity_manager.first(name=mechanism.entity_name)
             print(
@@ -244,4 +236,3 @@ class AdversarialAccountant:
                     )
                 )
             )
-

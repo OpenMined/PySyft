@@ -4,7 +4,7 @@ package syft.lib.python;
 import "proto/core/common/common_object.proto";
 
 message Complex {
-  float real = 1;
-  float imag = 2;
+  double real = 1;
+  double imag = 2;
   syft.core.common.UID id = 3;
 }
