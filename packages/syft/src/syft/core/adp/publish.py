@@ -110,7 +110,7 @@ def get_mechanism_for_entity(
         m_id += str(s.id).split(" ")[1][:-1] + "_"
 
     value = np.sqrt(np.sum(np.square(np.array([float(s.value) for s in scalars]))))
-    value_upper_bound = value = np.sqrt(
+    value_upper_bound = np.sqrt(
         np.sum(
             np.square(
                 np.array([(float(s.max_val) - float(s.min_val)) for s in scalars])
