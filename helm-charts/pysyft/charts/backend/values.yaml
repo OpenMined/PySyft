@@ -5,7 +5,7 @@
 replicaCount: 1
 
 image:
-  repository: openmined/grid-backend
+  repository: grid-backend
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: "latest"
@@ -88,3 +88,4 @@ env:
   SERVER_NAME: ""
   SERVER_HOST: ""
   SMTP_HOST: ""
+  DOMAIN: ""

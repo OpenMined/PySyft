@@ -1,0 +1,19 @@
+{{- if .Values.persistence.enabled }}
+{{- if not .Values.persistence.existingClaim -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  {{- if .Values.persistence.annotations }}
+  annotations:
+{{ toYaml .Values.persistence.annotations | indent 4 }}
+  {{- end }}
+  name: {{ include "frontend.fullname" .}}-pvc
+spec:
+  accessModes:
+  - {{ toYaml .Values.persistence.accessModes }}
+  storageClassName: "{{ .Values.persistence.storageClass }}"
+  resources:
+    requests:
+      storage: "{{ .Values.persistence.size }}"
+{{- end -}}
+{{- end }}

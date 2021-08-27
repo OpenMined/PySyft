@@ -36,6 +36,9 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "frontend.fullname" . }}-config
+          volumeMounts:
+            - name: "frontend-vol"
+              mountPath: "/app"
           ports:
             - name: http
               containerPort: 80
@@ -62,3 +65,15 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      volumes:
+        - name: "frontend-vol"
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            {{- if .Values.persistence.existingClaim }}
+            claimName: {{ .Values.persistence.existingClaim }}
+            {{- else }}
+            claimName: {{ include "frontend.fullname" . }}-pvc
+            {{- end }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}

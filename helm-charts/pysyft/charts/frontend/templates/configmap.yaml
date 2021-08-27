@@ -4,8 +4,6 @@ metadata:
   name: {{ include "frontend.fullname" . }}-config
   labels:
     {{- include "frontend.labels" . | nindent 4 }}
-spec:
+data:
   VERSION: {{ default "latest" .Values.env.VERSION }}
   VERSION_HASH: {{ default "unknown" .Values.env.VERSION_HASH }}
-  selector:
-    {{- include "frontend.selectorLabels" . | nindent 4 }}

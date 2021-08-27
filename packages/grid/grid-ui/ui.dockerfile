@@ -18,5 +18,5 @@ RUN yarn export
 FROM nginx:1.15
 COPY --from=grid-ui-production /app/out /usr/share/nginx/html
 COPY ./docker/nginx.conf /etc/nginx/conf.d/default.conf
-COPY .docker/nginx-backend-nof-found.conf /etc/nginx/extra-conf.d/backend-not-found
+COPY ./docker/nginx-backend-not-found.conf /etc/nginx/extra-conf.d/backend-not-found
 

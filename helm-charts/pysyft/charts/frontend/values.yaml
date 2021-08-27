@@ -5,7 +5,7 @@
 replicaCount: 1
 
 image:
-  repository: openmined/grid-frontend
+  repository: grid-frontend
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: "latest"
@@ -74,6 +74,16 @@ autoscaling:
   maxReplicas: 100
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
+
+persistence:
+  enabled: true
+  existingClaim: ""
+  annotations: {}
+    # helm.sh/resource-policy: "keep"
+  size: 10Gi
+  accessModes: ReadWriteMany
+  # Provide the storage class name based on the target cluster you are deploying to
+  storageClass: ""
 
 nodeSelector: {}
 

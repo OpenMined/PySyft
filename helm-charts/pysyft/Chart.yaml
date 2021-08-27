@@ -14,16 +14,16 @@ type: application
 
 # A list of the chart requirements
 dependencies:
-  - name: bitnami/postgresql
+  - name: postgresql
     version: 10.9.3
     repository: https://charts.bitnami.com/bitnami
     alias: db
     condition: db.enabled, global.db.enabled
     tags:
       - db
-  - name: bitnami/rabbitmq
+  - name: rabbitmq
     version: 8.20.1
-    repository: hhttps://charts.bitnami.com/bitnami
+    repository: https://charts.bitnami.com/bitnami
     alias: queue
     condition: queue.enabled, global.queue.enabled
     tags:
