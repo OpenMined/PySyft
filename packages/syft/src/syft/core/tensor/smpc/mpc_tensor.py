@@ -57,6 +57,8 @@ class MPCTensor(PassthroughTensor):
             # ^This is unsecure and should be used with cautioness
             seed_shares = secrets.randbits(32)
 
+        self.seed_shares = seed_shares
+
         # TODO: We can get this from the the secret if the secret is local
         if shape is None:
             raise ValueError("Shape of the secret should be known")
@@ -92,6 +94,15 @@ class MPCTensor(PassthroughTensor):
         res.sort(key=lambda share: share.client.name + share.client.id.no_dash)
 
         super().__init__(res)
+
+    def publish(self, sigma:float):
+
+        new_shares = list()
+        for share in self.child:
+            new_share = share.publish(client=share.client, sigma=sigma)
+            new_shares.append(new_share)
+
+        return MPCTensor(parties=self.parties, shares=new_shares, shape=self.mpc_shape, seed_shares=self.seed_shares)
 
     @property
     def shape(self):
@@ -149,15 +160,35 @@ class MPCTensor(PassthroughTensor):
             else:
                 value = None
 
-            remote_share = (
-                party.syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs(
+            # syft absolute
+            from syft.core.tensor.autodp.single_entity_phi import (
+                TensorWrappedSingleEntityPhiTensorPointer,
+            )
+
+            if isinstance(secret, TensorWrappedSingleEntityPhiTensorPointer):
+
+                share_wrapper = secret.to_local_object_without_private_data_child()
+                share_wrapper_pointer = share_wrapper.send(party)
+
+                remote_share = party.syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs_on_dp_tensor(
                     rank=i,
                     nr_parties=len(parties),
                     value=value,
                     shape=shape,
                     seed_shares=seed_shares,
+                    share_wrapper=share_wrapper_pointer,
                 )
-            )
+
+            else:
+                remote_share = (
+                    party.syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs(
+                        rank=i,
+                        nr_parties=len(parties),
+                        value=value,
+                        shape=shape,
+                        seed_shares=seed_shares,
+                    )
+                )
 
             shares.append(remote_share)
 

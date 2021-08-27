@@ -53,9 +53,21 @@ class IntermediateGammaTensor(PassthroughTensor, RecursiveSerde):
         return self.term_tensor.shape
 
     def publish(self, acc: Any, sigma: float, user_key: VerifyKey) -> np.ndarray:
-        return np.array(
-            publish(scalars=self.flat_scalars, acc=acc, sigma=sigma, user_key=user_key)
+        print("IntermediateGamma.publish")
+        print(type(self))
+        print(type(self.flat_scalars))
+
+        result = np.array(
+            publish(scalars=self.flat_scalars, acc=acc, sigma=sigma, user_key=user_key, public_only=True)
         ).reshape(self.shape)
+
+        if self.sharetensor_values is not None:
+            from syft.core.tensor.smpc.share_tensor import ShareTensor
+            result = ShareTensor(rank=self.sharetensor_values.rank,
+                                 nr_parties=self.sharetensor_values.nr_parties,
+                                 ring_size=self.sharetensor_values.ring_size,
+                                 value=result)
+        return result
 
     @property
     def flat_scalars(self) -> List[Any]:
@@ -78,8 +90,8 @@ class IntermediateGammaTensor(PassthroughTensor, RecursiveSerde):
 
                 for prime, n_times in factorint(term).items():
                     input_scalar = self.scalar_manager.prime2symbol[prime]
-
-                    scalar = scalar + (input_scalar * n_times * coeff)
+                    right = (input_scalar * n_times * coeff)
+                    scalar = scalar + right
 
             scalars.append(scalar)
 

@@ -27,6 +27,7 @@ from ...common.serde.serializable import bind_protobuf
 from ...common.serde.serialize import Serializable
 from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
+from ...node.abstract.node import AbstractNodeClient
 from ...node.common.action.run_class_method_action import RunClassMethodAction
 from ...pointer.pointer import Pointer
 from ..ancestors import AutogradTensorAncestor
@@ -37,8 +38,9 @@ from ..passthrough import implements  # type: ignore
 from ..passthrough import inputs2child  # type: ignore
 from ..passthrough import is_acceptable_simple_type  # type: ignore
 from ..smpc.mpc_tensor import MPCTensor
-from .initial_gamma import InitialGammaTensor
 from ..tensor import Tensor
+from .initial_gamma import InitialGammaTensor
+
 
 @bind_protobuf
 class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
@@ -94,17 +96,27 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
         self.scalar_manager = scalar_manager
         self.public_shape = public_shape
 
+    def share(self, *parties: TypeTuple[AbstractNodeClient, ...]) -> MPCTensor:
+
+        parties = list(parties) + [self.client]
+
+        self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=parties)
+
+        return self_mpc
+
     def to_local_object_without_private_data_child(self) -> SingleEntityPhiTensor:
         """Convert this pointer into a partial version of the SingleEntityPhiTensor but without
         any of the private data therein."""
 
-        return Tensor(SingleEntityPhiTensor(
-            child=None,
-            entity=self.entity,
-            min_vals=self.min_vals,
-            max_vals=self.max_vals,
-            scalar_manager=self.scalar_manager,
-        ))
+        return Tensor(
+            SingleEntityPhiTensor(
+                child=None,
+                entity=self.entity,
+                min_vals=self.min_vals,
+                max_vals=self.max_vals,
+                scalar_manager=self.scalar_manager,
+            )
+        )
 
     def _object2proto(self) -> "TensorWrappedSingleEntityPhiTensorPointer_PB":
 

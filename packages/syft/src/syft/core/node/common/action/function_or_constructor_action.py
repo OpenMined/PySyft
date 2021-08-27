@@ -179,8 +179,8 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         """
         return RunFunctionOrConstructorAction_PB(
             path=self.path,
-            args=[serialize(x) for x in self.args],
-            kwargs={k: serialize(v) for k, v in self.kwargs.items()},
+            args=[serialize(x, to_bytes=True) for x in self.args],
+            kwargs={k: serialize(v, to_bytes=True) for k, v in self.kwargs.items()},
             id_at_location=serialize(self.id_at_location),
             address=serialize(self.address),
             msg_id=serialize(self.id),
@@ -205,8 +205,11 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
 
         return RunFunctionOrConstructorAction(
             path=proto.path,
-            args=tuple(_deserialize(blob=x) for x in proto.args),
-            kwargs={k: _deserialize(blob=v) for k, v in proto.kwargs.items()},
+            args=tuple(_deserialize(blob=x, from_bytes=True) for x in proto.args),
+            kwargs={
+                k: _deserialize(blob=v, from_bytes=True)
+                for k, v in proto.kwargs.items()
+            },
             id_at_location=_deserialize(blob=proto.id_at_location),
             address=_deserialize(blob=proto.address),
             msg_id=_deserialize(blob=proto.msg_id),

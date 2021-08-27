@@ -51,7 +51,16 @@ class InitialGammaTensor(IntermediateGammaTensor, RecursiveSerde):
         scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None,
     ) -> None:
         self.uid = UID()
-        self.values = values  # child
+
+        from syft.core.tensor.smpc.share_tensor import ShareTensor
+
+        if isinstance(values, ShareTensor):
+            self.sharetensor_values = values
+            self.values = values.child
+        else:
+            self.sharetensor_values = None
+            self.values = values
+
         self.min_vals = min_vals
         self.max_vals = max_vals
         self.entities = entities

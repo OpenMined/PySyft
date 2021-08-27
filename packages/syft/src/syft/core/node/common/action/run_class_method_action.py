@@ -193,7 +193,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
                 result = method(*upcasted_args, **upcasted_kwargs)
 
-        # when a method ends with teh string "_syft_inplace" then
+        # when a method ends with teh string "_syft_inplace" then
         # we assume that the object mutates itself and thus should be
         # checked back into the database.
         if self.path.endswith("_syft_inplace"):

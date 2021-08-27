@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # stdlib
 from functools import lru_cache
 import operator
@@ -19,7 +21,6 @@ from syft.core.common.serde.serialize import _serialize as serialize
 from syft.core.tensor.passthrough import PassthroughTensor
 from syft.proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB
 
-
 @bind_protobuf
 class ShareTensor(PassthroughTensor, Serializable):
     def __init__(
@@ -36,6 +37,24 @@ class ShareTensor(PassthroughTensor, Serializable):
             self.ring_size
         )
         super().__init__(value)
+
+    def flatten(self) -> ShareTensor:
+        return ShareTensor(rank=self.rank,
+                           nr_parties=self.nr_parties,
+                           ring_size=self.ring_size,
+                           value=self.child.flatten())
+
+    def __getitem__(self, item):
+        return ShareTensor(rank=self.rank,
+                           nr_parties=self.nr_parties,
+                           ring_size=self.ring_size,
+                           value=self.child[item])
+
+    def reshape(self, *args, **kwargs):
+        return ShareTensor(rank=self.rank,
+                           nr_parties=self.nr_parties,
+                           ring_size=self.ring_size,
+                           value=self.child.reshape(*args, **kwargs))
 
     def copy_tensor(self):
         return ShareTensor(
@@ -99,6 +118,7 @@ class ShareTensor(PassthroughTensor, Serializable):
         nr_parties: int,
         seed_shares: int,
     ) -> "ShareTensor":
+
         # syft absolute
         from syft.core.tensor.tensor import Tensor
 
@@ -123,7 +143,39 @@ class ShareTensor(PassthroughTensor, Serializable):
             for _ in range(nr_parties)
         ]
         share.child += shares[rank] - shares[(rank + 1) % nr_parties]
+
         return share
+
+    @staticmethod
+    def generate_przs_on_dp_tensor(
+        value: Optional[Any],
+        shape: Tuple[int],
+        rank: int,
+        nr_parties: int,
+        seed_shares: int,
+        share_wrapper: Any,
+    ) -> "Tensor":
+
+        if value is not None:
+            share = ShareTensor.generate_przs(
+                value=value.child,
+                shape=shape,
+                rank=rank,
+                nr_parties=nr_parties,
+                seed_shares=seed_shares,
+            )
+        else:
+            share = ShareTensor.generate_przs(
+                value=value,
+                shape=shape,
+                rank=rank,
+                nr_parties=nr_parties,
+                seed_shares=seed_shares,
+            )
+
+        share_wrapper.child.child = share
+
+        return share_wrapper
 
     @staticmethod
     def sanity_check(

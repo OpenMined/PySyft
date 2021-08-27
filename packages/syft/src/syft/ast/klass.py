@@ -5,6 +5,7 @@ from enum import Enum
 from enum import EnumMeta
 import inspect
 import secrets
+import sys
 from types import ModuleType
 from typing import Any
 from typing import Callable as CallableT
@@ -40,7 +41,6 @@ from ..logger import warning
 from ..util import aggressive_set_attr
 from ..util import inherit_tags
 
-import sys
 
 def _resolve_pointer_type(self: Pointer) -> Pointer:
     """Resolve pointer of the object.
@@ -644,6 +644,7 @@ class Class(Callable):
 
         module_type = type(sys)
 
+        # syft absolute
         import syft
 
         parent = syft
