@@ -40,6 +40,7 @@ from ..logger import warning
 from ..util import aggressive_set_attr
 from ..util import inherit_tags
 
+import sys
 
 def _resolve_pointer_type(self: Pointer) -> Pointer:
     """Resolve pointer of the object.
@@ -641,6 +642,17 @@ class Class(Callable):
         setattr(klass_pointer, "path_and_name", self.path_and_name)
         setattr(self, self.pointer_name, klass_pointer)
 
+        module_type = type(sys)
+
+        import syft
+
+        parent = syft
+        for part in parts[1:]:
+            if part not in parent.__dict__:
+                parent.__dict__[part] = module_type(name=part)
+            parent = parent.__dict__[part]
+        parent.__dict__[name] = klass_pointer
+
     def store_init_args(outer_self: Any) -> None:
         """
         Stores args and kwargs of outer_self init by wrapping the init method.
@@ -716,7 +728,7 @@ class Class(Callable):
 
             id_at_location = UID()
 
-            if hasattr(self, 'init_pointer'):
+            if hasattr(self, "init_pointer"):
                 constructor = self.init_pointer
             else:
                 constructor = getattr(outer_self, outer_self.pointer_name)

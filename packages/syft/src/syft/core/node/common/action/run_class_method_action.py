@@ -193,6 +193,13 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
                 result = method(*upcasted_args, **upcasted_kwargs)
 
+        # when a method ends with teh string "_syft_inplace" then
+        # we assume that the object mutates itself and thus should be
+        # checked back into the database.
+        if self.path.endswith("_syft_inplace"):
+            result = resolved_self
+            mutating_internal = True
+
         # TODO: add numpy support https://github.com/OpenMined/PySyft/issues/5164
         if "numpy." in str(type(result)):
             if "float" in type(result).__name__:
@@ -241,7 +248,10 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             kwargs=tag_kwargs,
         )
 
-        node.store[self.id_at_location] = result
+        if self.path.endswith("_syft_inplace"):
+            node.store[self._self.id_at_location] = result
+        else:
+            node.store[self.id_at_location] = result
 
     def _object2proto(self) -> RunClassMethodAction_PB:
         """Returns a protobuf serialization of self.
@@ -261,9 +271,9 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
         return RunClassMethodAction_PB(
             path=self.path,
-            _self=serialize(self._self),
-            args=list(map(lambda x: serialize(x), self.args)),
-            kwargs={k: serialize(v) for k, v in self.kwargs.items()},
+            _self=serialize(self._self, to_bytes=True),
+            args=list(map(lambda x: serialize(x, to_bytes=True), self.args)),
+            kwargs={k: serialize(v, to_bytes=True) for k, v in self.kwargs.items()},
             id_at_location=serialize(self.id_at_location),
             address=serialize(self.address),
             msg_id=serialize(self.id),
@@ -286,9 +296,12 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
         return RunClassMethodAction(
             path=proto.path,
-            _self=_deserialize(blob=proto._self),
-            args=list(map(lambda x: _deserialize(blob=x), proto.args)),
-            kwargs={k: _deserialize(blob=v) for k, v in proto.kwargs.items()},
+            _self=_deserialize(blob=proto._self, from_bytes=True),
+            args=list(map(lambda x: _deserialize(blob=x, from_bytes=True), proto.args)),
+            kwargs={
+                k: _deserialize(blob=v, from_bytes=True)
+                for k, v in proto.kwargs.items()
+            },
             id_at_location=_deserialize(blob=proto.id_at_location),
             address=_deserialize(blob=proto.address),
             msg_id=_deserialize(blob=proto.msg_id),

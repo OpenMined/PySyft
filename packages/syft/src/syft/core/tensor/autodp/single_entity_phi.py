@@ -38,7 +38,7 @@ from ..passthrough import inputs2child  # type: ignore
 from ..passthrough import is_acceptable_simple_type  # type: ignore
 from ..smpc.mpc_tensor import MPCTensor
 from .initial_gamma import InitialGammaTensor
-
+from ..tensor import Tensor
 
 @bind_protobuf
 class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
@@ -93,6 +93,18 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
         self.entity = entity
         self.scalar_manager = scalar_manager
         self.public_shape = public_shape
+
+    def to_local_object_without_private_data_child(self) -> SingleEntityPhiTensor:
+        """Convert this pointer into a partial version of the SingleEntityPhiTensor but without
+        any of the private data therein."""
+
+        return Tensor(SingleEntityPhiTensor(
+            child=None,
+            entity=self.entity,
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
+            scalar_manager=self.scalar_manager,
+        ))
 
     def _object2proto(self) -> "TensorWrappedSingleEntityPhiTensorPointer_PB":
 
@@ -173,6 +185,8 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
 @bind_protobuf
 class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, RecursiveSerde):
 
+    PointerClassOverride = TensorWrappedSingleEntityPhiTensorPointer
+
     __attr_allowlist__ = ["child", "_min_vals", "_max_vals", "entity", "scalar_manager"]
 
     def __init__(
@@ -200,6 +214,17 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             self.scalar_manager = VirtualMachinePrivateScalarManager()
         else:
             self.scalar_manager = scalar_manager
+
+    def wrap_object_as_grandchild_syft_inplace(self, obj) -> None:
+        # TODO: this is redundant with tensor.py in a way that's a bit clugey. Eliminate either tensor.Tensor version
+        # of this method or eliminate this one as a part of a more sophisticated Pointer system (or create a superclass,
+        # etc.) for tensor chain management.
+        if self.child.child is None:
+            self.child.child = obj
+        else:
+            raise Exception(
+                "Cannot wrap remote object, probably because another object is already wrapped."
+            )
 
     def init_pointer(
         self,

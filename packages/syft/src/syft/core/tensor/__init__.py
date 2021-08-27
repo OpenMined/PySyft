@@ -8,6 +8,7 @@ from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
 from ...core.node.abstract.node import AbstractNodeClient
+from .autodp.single_entity_phi import SingleEntityPhiTensor
 from .fixed_precision_tensor import FixedPrecisionTensor
 from .smpc.share_tensor import ShareTensor
 from .tensor import Tensor
@@ -25,9 +26,16 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         "syft.core.tensor.smpc",
         "syft.core.tensor.fixed_precision_tensor",
         "syft.core.tensor.smpc.share_tensor",
+        "syft.core.tensor.autodp",
+        "syft.core.tensor.autodp.single_entity_phi",
     ]
     classes = [
         ("syft.core.tensor.tensor.Tensor", "syft.core.tensor.tensor.Tensor", Tensor),
+        (
+            "syft.core.tensor.autodp.single_entity_phi.SingleEntityPhiTensor",
+            "syft.core.tensor.autodp.single_entity_phi.SingleEntityPhiTensor",
+            SingleEntityPhiTensor,
+        ),
         (
             "syft.core.tensor.smpc.share_tensor.ShareTensor",
             "syft.core.tensor.smpc.share_tensor.ShareTensor",
@@ -138,6 +146,15 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.core.tensor.tensor.Tensor.take", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.tag", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.transpose", "syft.core.tensor.tensor.Tensor"),
+        (
+            "syft.core.tensor.tensor.Tensor.wrap_object_as_grandchild_syft_inplace",
+            "syft.lib.python._SyNone",
+        ),
+        # # DP
+        (
+            "syft.core.tensor.autodp.single_entity_phi.SingleEntityPhiTensor.wrap_object_as_grandchild_syft_inplace",
+            "syft.lib.python._SyNone",
+        ),
         # # SMPC
         # (
         #     "syft.core.tensor.tensor.Tensor.fix_precision",
