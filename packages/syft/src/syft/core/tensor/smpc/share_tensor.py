@@ -1,3 +1,4 @@
+# future
 from __future__ import annotations
 
 # stdlib
@@ -21,6 +22,7 @@ from syft.core.common.serde.serialize import _serialize as serialize
 from syft.core.tensor.passthrough import PassthroughTensor
 from syft.proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB
 
+
 @bind_protobuf
 class ShareTensor(PassthroughTensor, Serializable):
     def __init__(
@@ -39,22 +41,28 @@ class ShareTensor(PassthroughTensor, Serializable):
         super().__init__(value)
 
     def flatten(self) -> ShareTensor:
-        return ShareTensor(rank=self.rank,
-                           nr_parties=self.nr_parties,
-                           ring_size=self.ring_size,
-                           value=self.child.flatten())
+        return ShareTensor(
+            rank=self.rank,
+            nr_parties=self.nr_parties,
+            ring_size=self.ring_size,
+            value=self.child.flatten(),
+        )
 
     def __getitem__(self, item):
-        return ShareTensor(rank=self.rank,
-                           nr_parties=self.nr_parties,
-                           ring_size=self.ring_size,
-                           value=self.child[item])
+        return ShareTensor(
+            rank=self.rank,
+            nr_parties=self.nr_parties,
+            ring_size=self.ring_size,
+            value=self.child[item],
+        )
 
     def reshape(self, *args, **kwargs):
-        return ShareTensor(rank=self.rank,
-                           nr_parties=self.nr_parties,
-                           ring_size=self.ring_size,
-                           value=self.child.reshape(*args, **kwargs))
+        return ShareTensor(
+            rank=self.rank,
+            nr_parties=self.nr_parties,
+            ring_size=self.ring_size,
+            value=self.child.reshape(*args, **kwargs),
+        )
 
     def copy_tensor(self):
         return ShareTensor(

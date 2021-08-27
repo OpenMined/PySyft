@@ -14,7 +14,6 @@ import numpy as np
 import numpy.typing as npt
 
 # relative
-from ....ast.klass import pointerize_args_and_kwargs
 from ....core.common.serde.recursive import RecursiveSerde
 from ....proto.core.tensor.single_entity_phi_tensor_pb2 import (
     TensorWrappedSingleEntityPhiTensorPointer as TensorWrappedSingleEntityPhiTensorPointer_PB,
@@ -77,7 +76,7 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
         scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None,
         id_at_location: Optional[UID] = None,
         object_type: str = "",
-        tags: Optional[List[str]] = None,
+        tags: str = "",
         description: str = "",
         public_shape: Optional[TypeTuple[int, ...]] = None,
     ):
@@ -243,7 +242,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
         client: Any,
         id_at_location: Optional[UID] = None,
         object_type: str = "",
-        tags: Optional[List[str]] = None,
+        tags: Optional[List[str]] = "",
         description: str = "",
     ):
         return TensorWrappedSingleEntityPhiTensorPointer(

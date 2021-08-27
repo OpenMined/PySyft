@@ -5,7 +5,6 @@ from typing import Any
 # third party
 from fastapi import APIRouter
 from fastapi import Body
-from fastapi import Depends
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 
@@ -14,7 +13,6 @@ from syft import serialize  # type: ignore
 from syft.core.node.common.exceptions import InvalidCredentialsError
 
 # grid absolute
-from app.api import deps
 from app.core import security
 from app.core.config import settings
 from app.core.node import node

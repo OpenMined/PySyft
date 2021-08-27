@@ -95,14 +95,19 @@ class MPCTensor(PassthroughTensor):
 
         super().__init__(res)
 
-    def publish(self, sigma:float):
+    def publish(self, sigma: float):
 
         new_shares = list()
         for share in self.child:
             new_share = share.publish(client=share.client, sigma=sigma)
             new_shares.append(new_share)
 
-        return MPCTensor(parties=self.parties, shares=new_shares, shape=self.mpc_shape, seed_shares=self.seed_shares)
+        return MPCTensor(
+            parties=self.parties,
+            shares=new_shares,
+            shape=self.mpc_shape,
+            seed_shares=self.seed_shares,
+        )
 
     @property
     def shape(self):

@@ -25,11 +25,17 @@ from .search import max_lipschitz_wrt_entity
 
 
 def publish(
-    scalars: TypeList[Any], acc: Any, user_key: VerifyKey, sigma: float = 1.5, public_only:bool = False
+    scalars: TypeList[Any],
+    acc: Any,
+    user_key: VerifyKey,
+    sigma: float = 1.5,
+    public_only: bool = False,
 ) -> TypeList[Any]:
     acc.temp_entity2ledger = {}
 
-    ms = get_all_entity_mechanisms(scalars=scalars, sigma=sigma, public_only=public_only)
+    ms = get_all_entity_mechanisms(
+        scalars=scalars, sigma=sigma, public_only=public_only
+    )
 
     # add the user_key to all of the mechanisms
     for _, mechs in ms.items():
@@ -83,7 +89,9 @@ def publish(
         acc.temp_entity2ledger = {}
 
         # get mechanisms for new publish event
-        ms = get_all_entity_mechanisms(scalars=scalars, sigma=sigma, public_only=public_only)
+        ms = get_all_entity_mechanisms(
+            scalars=scalars, sigma=sigma, public_only=public_only
+        )
 
         for _, mechs in ms.items():
             for m in mechs:
@@ -106,13 +114,15 @@ def publish(
 
 
 def get_mechanism_for_entity(
-    scalars: TypeList[Any], entity: Entity, sigma: float = 1.5, public_only:bool=False
+    scalars: TypeList[Any],
+    entity: Entity,
+    sigma: float = 1.5,
+    public_only: bool = False,
 ) -> Type[iDPGaussianMechanism]:
 
     m_id = "ms_"
     for s in scalars:
         m_id += str(s.id).split(" ")[1][:-1] + "_"
-
 
     value_upper_bound = np.sqrt(
         np.sum(
@@ -140,14 +150,18 @@ def get_mechanism_for_entity(
 
 
 def get_all_entity_mechanisms(
-    scalars: TypeList[Any], sigma: float = 1.5, public_only:bool=False
+    scalars: TypeList[Any], sigma: float = 1.5, public_only: bool = False
 ) -> TypeDict[Entity, Any]:
     entities = set()
     for s in scalars:
         for i_s in s.input_scalars:
             entities.add(i_s.entity)
     return {
-        e: [get_mechanism_for_entity(scalars=scalars, entity=e, sigma=sigma, public_only=public_only)]
+        e: [
+            get_mechanism_for_entity(
+                scalars=scalars, entity=e, sigma=sigma, public_only=public_only
+            )
+        ]
         for e in entities
     }
 

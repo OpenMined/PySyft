@@ -8,7 +8,6 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
-from typing import Dict as TypeDict
 from typing import Optional
 
 # third party
