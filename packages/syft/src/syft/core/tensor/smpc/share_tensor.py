@@ -131,7 +131,7 @@ class ShareTensor(PassthroughTensor, Serializable):
         from syft.core.tensor.tensor import Tensor
 
         if value is None:
-            value = Tensor(np.zeros(shape, dtype=np.int64))
+            value = Tensor(np.zeros(shape, dtype=np.int32))  # TODO: change to np.int64
 
         # TODO: Sending the seed and having each party generate the shares is not safe
         # Since the parties would know some of the other parties shares (this might not impose a risk
@@ -224,7 +224,7 @@ class ShareTensor(PassthroughTensor, Serializable):
             value = op(self.child, y.child)
         else:
             # TODO: Converting y to numpy because doing "numpy op torch tensor" raises exception
-            value = op(self.child, np.array(y, np.int64))
+            value = op(self.child, np.array(y, np.int32))  # TODO: change to np.int64
 
         res = self.copy_tensor()
         res.child = value

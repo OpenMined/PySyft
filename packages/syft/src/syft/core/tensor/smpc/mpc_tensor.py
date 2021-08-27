@@ -238,7 +238,23 @@ class MPCTensor(PassthroughTensor):
         # TODO: It might be that the resulted shares (if we run any computation) might
         # not be available at this point
 
-        local_shares = [share.get() for share in self.child]
+        # for now we need to convert the values coming back to int32
+        # sometimes they are floats coming from DP
+        def convert_child_numpy_type(tensor: Any, np_type: type) -> Any:
+            if isinstance(tensor, np.ndarray):
+                return np.array(tensor, np_type)
+            if hasattr(tensor, "child"):
+                tensor.child = convert_child_numpy_type(
+                    tensor=tensor.child, np_type=np_type
+                )
+            return tensor
+
+        local_shares = []
+        for share in self.child:
+            res = share.get()
+            res = convert_child_numpy_type(res, np.int32)  # TODO: change to np.int64
+            local_shares.append(res)
+        # local_shares = [np.array(share.get(), np.int32) for share in self.child]
         is_share_tensor = isinstance(local_shares[0], ShareTensor)
 
         if is_share_tensor:
