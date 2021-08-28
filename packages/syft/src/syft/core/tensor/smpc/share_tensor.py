@@ -162,7 +162,7 @@ class ShareTensor(PassthroughTensor, Serializable):
         nr_parties: int,
         seed_shares: int,
         share_wrapper: Any,
-    ) -> "..tensor.Tensor":
+    ) -> PassthroughTensor:
 
         if value is not None:
             share = ShareTensor.generate_przs(
