@@ -87,7 +87,7 @@ class RowEntityPhiTensor(PassthroughTensor, RecursiveSerde):
     def shape(self) -> Tuple[Any, ...]:
         return [len(self.child)] + list(self.child[0].shape)  # type: ignore
 
-    def __eq__(self, other) -> RowEntityPhiTensor:
+    def __eq__(self, other: Any) -> RowEntityPhiTensor:
 
         if is_acceptable_simple_type(other) or len(self.child) == len(other.child):  # type: ignore
             new_list = list()

@@ -1,10 +1,7 @@
-# CLEANUP NOTES:
-# - remove unused comments
-# - add documentation for each method
-# - add comments inline explaining each piece
-# - add a unit test for each method (at least)
-# - Sort out joins between PrimeFactory objects
-# - (after previous bullet is done) every tensor has its own prime factory
+# stdlib
+from typing import Any
+from typing import Dict
+from typing import Union
 
 # third party
 import sympy as sp
@@ -13,7 +10,6 @@ import sympy as sp
 from ..common.serde.recursive import RecursiveSerde
 from .entity import Entity
 from .scalar import GammaScalar
-from .types import AcceptableSimpleType
 
 
 class PrimeFactory(RecursiveSerde):
@@ -42,13 +38,13 @@ class VirtualMachinePrivateScalarManager(RecursiveSerde):
 
     def __init__(self) -> None:
         self.prime_factory = PrimeFactory()
-        self.prime2symbol = {}
+        self.prime2symbol: Dict[Any, Any] = {}
 
     def get_symbol(
         self,
-        min_val: AcceptableSimpleType,
-        value: AcceptableSimpleType,
-        max_val: AcceptableSimpleType,
+        min_val: Union[bool, int, float],
+        value: Union[bool, int, float],
+        max_val: Union[bool, int, float],
         entity: Entity,
     ) -> int:
         gs = GammaScalar(min_val=min_val, value=value, max_val=max_val, entity=entity)

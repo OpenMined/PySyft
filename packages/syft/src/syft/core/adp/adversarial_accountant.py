@@ -26,22 +26,26 @@ from .scalar import PhiScalar
 
 
 class AdversarialAccountant:
+    """Adversarial Accountant class that keeps track of budget and maintains a privacy ledger."""
+
     def __init__(
         self, db_engine: Engine, max_budget: float = 10, delta: float = 1e-6
     ) -> None:
 
         # this is a database-backed lookup table
+        # maps an entity to an actual budget
         self.entity2ledger = LedgerManager(db_engine)
 
         # this is a temporary lookup table for mechanisms we're not sure
         # we're going to keep (See publish.py for how this is used)
-        self.temp_entity2ledger = {}
+        self.temp_entity2ledger: TypeDict = {}
         self.max_budget = max_budget
         self.delta = delta
 
     def temp_append(
         self, entity2mechanisms: TypeDict[Entity, TypeList[Mechanism]]
     ) -> None:
+        # add the mechanisms to all of the entities
         for key, ms in entity2mechanisms.items():
             if key not in self.temp_entity2ledger.keys():
                 self.temp_entity2ledger[key] = list()
@@ -50,26 +54,30 @@ class AdversarialAccountant:
 
     def append(self, entity2mechanisms: TypeDict[str, TypeList[Mechanism]]) -> None:
         mechanisms = list()
+        # add all the mechanisms
         for _, ms in entity2mechanisms.items():
             for m in ms:
                 mechanisms.append(m)
 
         self.entity2ledger.register_mechanisms(mechanisms)
 
-    def save_temp_ledger_to_longterm_ledger(self):
+    # save the temporary ledger into the database
+    def save_temp_ledger_to_longterm_ledger(self) -> None:
         self.append(entity2mechanisms=self.temp_entity2ledger)
 
+    # return epsilons for each entity
     def get_eps_for_entity(
         self,
         entity: Entity,
         user_key: Optional[VerifyKey] = None,
         returned_epsilon_is_private: bool = False,
     ) -> PhiScalar:
+
         # compose them with the transformation: compose
         compose = Composition()
 
         # fetch mechanisms from the database
-        table_mechanisms = self.entity2ledger.query(entity_name=entity.name)
+        table_mechanisms = self.entity2ledger.query(entity_name=entity.name)  # type: ignore
         mechanisms = [x.obj for x in table_mechanisms]
 
         # filter out mechanisms that weren't created by this data scientist user
@@ -80,9 +88,6 @@ class AdversarialAccountant:
                     filtered_mechanisms.append(mech)
 
             mechanisms = filtered_mechanisms
-
-        # print("Num mechanisms before TEMP:" + str(len(mechanisms)))
-        # print("self.temp_entity2ledger:" + str(self.temp_entity2ledger))
 
         if entity in self.temp_entity2ledger.keys():
             mechanisms = mechanisms + self.temp_entity2ledger[entity]
@@ -135,7 +140,6 @@ class AdversarialAccountant:
         else:
             eps = 0
 
-        # print("Epsilon" + str(eps))
         return float(eps)
 
         # # Query for eps given delta
@@ -146,6 +150,7 @@ class AdversarialAccountant:
         #     entity=entity,
         # )
 
+    # checks if the entity has budget or not
     def has_budget(
         self,
         entity: Entity,
@@ -169,6 +174,7 @@ class AdversarialAccountant:
         print("USER BUDGET:" + str(user_budget))
         return has_budget
 
+    # returns maximum entity epsilon
     def user_budget(
         self, user_key: VerifyKey, returned_epsilon_is_private: bool = False
     ) -> float:
@@ -182,6 +188,7 @@ class AdversarialAccountant:
             )
             if math.isnan(spend) or math.isinf(spend):
                 print(f"Warning: Spend is {spend}")
+
             if spend > max_spend:
                 max_spend = spend
 
@@ -205,6 +212,7 @@ class AdversarialAccountant:
     def entities(self) -> TypeKeysView[Entity]:
         return self.entity2ledger.keys()
 
+    # returns a collection of entities having no budget
     def overbudgeted_entities(
         self,
         temp_entities: TypeDict[Entity, TypeList[iDPGaussianMechanism]],
@@ -223,6 +231,7 @@ class AdversarialAccountant:
 
         return entities
 
+    # prints entity and its epsilon value
     def print_ledger(self, returned_epsilon_is_private: bool = False) -> None:
         for mechanism in self.entity2ledger.mechanism_manager.all():
             entity = self.entity2ledger.entity_manager.first(name=mechanism.entity_name)
@@ -235,3 +244,4 @@ class AdversarialAccountant:
                     )
                 )
             )
+
