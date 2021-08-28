@@ -250,7 +250,8 @@ class Pointer(AbstractPointer):
 
         return self
 
-    def publish(self, client: Any, sigma: float = 1.5) -> Any:
+    def publish(self, sigma: float = 1.5) -> Any:
+
         # syft relative
         # relative
         from ...lib.python import Float
@@ -267,13 +268,13 @@ class Pointer(AbstractPointer):
             sigma=sigma,
         )
 
-        client.send_immediate_msg_without_reply(msg=obj_msg)
+        self.client.send_immediate_msg_without_reply(msg=obj_msg)
         # create pointer which will point to float result
 
         afloat = Float(0.0)
         ptr_type = obj2pointer_type(obj=afloat)
         ptr = ptr_type(
-            client=client,
+            client=self.client,
             id_at_location=id_at_location,
         )
         ptr._pointable = True
