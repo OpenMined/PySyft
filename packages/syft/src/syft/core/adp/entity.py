@@ -7,7 +7,8 @@
 from __future__ import annotations
 
 # stdlib
-from typing import Any, Dict
+from typing import Any
+from typing import Dict
 from typing import Optional
 
 # third party

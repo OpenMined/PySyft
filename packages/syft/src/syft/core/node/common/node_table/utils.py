@@ -102,7 +102,7 @@ def seed_db(db: Engine) -> None:
 
 def create_memory_db_engine() -> TypeTuple[Engine, sessionmaker]:
     db_engine = create_engine("sqlite://", echo=False)
-    Base.metadata.create_all(db_engine) # type: ignore
+    Base.metadata.create_all(db_engine)  # type: ignore
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=db_engine)
     seed_db(SessionLocal())
     return db_engine, SessionLocal

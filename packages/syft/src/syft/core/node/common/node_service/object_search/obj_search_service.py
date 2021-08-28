@@ -217,7 +217,7 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
                     or contains_all_in_permissions
                 ):
                     if hasattr(obj.data, "init_pointer"):
-                        ptr_constructor = obj.data.init_pointer #type: ignore
+                        ptr_constructor = obj.data.init_pointer  # type: ignore
                     else:
                         ptr_constructor = obj2pointer_type(obj=obj.data)
 

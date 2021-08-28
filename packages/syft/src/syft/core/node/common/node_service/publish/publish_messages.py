@@ -7,7 +7,7 @@ from typing_extensions import final
 
 # relative
 # syft relative
-from ......proto.core.node.domain.service.publish_scalars_service_pb2 import ( # type: ignore
+from ......proto.core.node.domain.service.publish_scalars_service_pb2 import (
     PublishScalarsAction as PublishScalarsAction_PB,
 )  # type: ignore
 from .....common.message import ImmediateSyftMessageWithoutReply  # type: ignore

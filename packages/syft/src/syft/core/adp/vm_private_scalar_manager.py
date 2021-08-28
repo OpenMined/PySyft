@@ -47,6 +47,12 @@ class VirtualMachinePrivateScalarManager(RecursiveSerde):
         max_val: Union[bool, int, float],
         entity: Entity,
     ) -> int:
-        gs = GammaScalar(min_val=min_val, value=value, max_val=max_val, entity=entity, prime=self.prime_factory.next())
+        gs = GammaScalar(
+            min_val=min_val,
+            value=value,
+            max_val=max_val,
+            entity=entity,
+            prime=self.prime_factory.next(),
+        )
         self.prime2symbol[gs.prime] = gs
         return gs.prime
