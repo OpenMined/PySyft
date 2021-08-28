@@ -13,8 +13,8 @@ from ......logger import traceback_and_raise  # type: ignore
 
 # syft relative
 from .....adp.publish import publish  # type: ignore
-from .....common.uid import UID
-from .....store.storeable_object import StorableObject
+from .....common.uid import UID  # type: ignore
+from .....store.storeable_object import StorableObject  # type: ignore
 from .....tensor.tensor import PassthroughTensor  # type: ignore
 from ....abstract.node import AbstractNode
 from ..node_service import ImmediateNodeServiceWithoutReply

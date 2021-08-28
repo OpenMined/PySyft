@@ -9,7 +9,6 @@ from sqlalchemy.orm import Session
 # grid absolute
 # from app import crud
 from app.core.config import settings
-from app.schemas.user import UserCreate
 from app.tests.utils.utils import random_email
 from app.tests.utils.utils import random_lower_string
 
@@ -59,8 +58,9 @@ def test_create_user_new_email(
 def test_get_existing_user(
     client: TestClient, superuser_token_headers: dict, db: Session
 ) -> None:
-    username = random_email()
-    password = random_lower_string()
+    pass
+    # username = random_email()
+    # password = random_lower_string()
     # user_in = UserCreate(email=username, password=password)
     # user = crud.user.create(db, obj_in=user_in)
     # user_id = user.id
