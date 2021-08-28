@@ -149,7 +149,7 @@ def should_provision_remote(
 
 
 def name_tag(name: str) -> str:
-    return hashlib.md5(name.encode("utf8")).hexdigest()
+    return hashlib.sha256(name.encode("utf8")).hexdigest()
 
 
 def find_available_port(host: str, port: int, search: bool = False) -> int:
