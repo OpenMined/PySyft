@@ -30,12 +30,12 @@ from ...pointer.pointer import Pointer
 from ..ancestors import AutogradTensorAncestor
 from ..passthrough import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
-from ..passthrough import SupportedChainType  # type: ignore
 from ..passthrough import implements  # type: ignore
 from ..passthrough import inputs2child  # type: ignore
 from ..passthrough import is_acceptable_simple_type  # type: ignore
 from ..smpc.mpc_tensor import MPCTensor
 from ..tensor import Tensor
+from ..types import SupportedChainType  # type: ignore
 from .initial_gamma import InitialGammaTensor
 
 

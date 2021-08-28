@@ -45,7 +45,7 @@ class Entity(Serializable):
 
     # checks if the two entities are equal
     def __eq__(self, other: Any) -> bool:
-        return hash(self) == hash(other)
+        return hash(self.name) == hash(other.name)
 
     # checks if the two entities are not equal
     def __ne__(self, other: Any) -> bool:
