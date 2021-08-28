@@ -158,7 +158,7 @@ class Pointer(AbstractPointer):
         # has already been made
         self._exhausted = False
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{self.__name__} -> {self.client.name}:{self.id_at_location.no_dash}>"
 
     def _get(self, delete_obj: bool = True, verbose: bool = False) -> StorableObject:

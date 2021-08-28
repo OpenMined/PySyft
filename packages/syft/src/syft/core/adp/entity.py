@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 # stdlib
-from typing import Any
+from typing import Any, Dict
 from typing import Optional
 
 # third party
@@ -26,17 +26,17 @@ from ...proto.core.adp.entity_pb2 import Entity as Entity_PB
 
 @bind_protobuf
 class Entity(Serializable):
-    def __init__(self, name: str = None, id: Optional[UID] = None) -> None:
+    def __init__(self, name: str = "", id: Optional[UID] = None) -> None:
 
         # If someone doesn't provide a unique name - make one up!
-        if name is None:
+        if name == "":
             name = names.get_full_name().replace(" ", "_") + "_g"
 
         self.name = name
         self.id = id if id else UID()
 
     @property
-    def attributes(self):
+    def attributes(self) -> Dict[str, str]:
         return {"name": self.name}
 
     # returns a hash value for the entity

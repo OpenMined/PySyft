@@ -607,6 +607,8 @@ class GammaScalar(BaseScalar, IntermediateGammaScalar):
             min_val=min_val, value=value, max_val=max_val, entity=entity, id=id
         )
 
+        self.prime = prime
+
         # The scalar string identifier (SSID) - because we're using polynomial libraries
         # we need to be able to reference this object in string form. The library
         # doesn't know how to process things that aren't strings
