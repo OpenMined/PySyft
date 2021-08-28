@@ -22,9 +22,6 @@ from syft.core.common.serde.serialize import _serialize as serialize
 from syft.core.tensor.passthrough import PassthroughTensor
 from syft.proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB
 
-# relative
-from ..tensor import Tensor
-
 
 @bind_protobuf
 class ShareTensor(PassthroughTensor, Serializable):
@@ -165,7 +162,7 @@ class ShareTensor(PassthroughTensor, Serializable):
         nr_parties: int,
         seed_shares: int,
         share_wrapper: Any,
-    ) -> "Tensor":
+    ) -> "..tensor.Tensor":
 
         if value is not None:
             share = ShareTensor.generate_przs(

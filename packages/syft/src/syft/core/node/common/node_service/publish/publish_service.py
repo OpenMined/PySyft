@@ -16,8 +16,8 @@ from .....adp.publish import publish  # type: ignore
 from .....common.uid import UID  # type: ignore
 from .....store.storeable_object import StorableObject  # type: ignore
 from .....tensor.tensor import PassthroughTensor  # type: ignore
-from ....abstract.node import AbstractNode
-from ..node_service import ImmediateNodeServiceWithoutReply
+from ....abstract.node import AbstractNode  # type: ignore
+from ..node_service import ImmediateNodeServiceWithoutReply  # type: ignore
 from .publish_messages import PublishScalarsAction  # type: ignore
 
 
