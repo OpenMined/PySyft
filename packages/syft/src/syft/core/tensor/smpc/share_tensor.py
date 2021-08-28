@@ -22,6 +22,9 @@ from syft.core.common.serde.serialize import _serialize as serialize
 from syft.core.tensor.passthrough import PassthroughTensor
 from syft.proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB
 
+# relative
+from ..tensor import Tensor
+
 
 @bind_protobuf
 class ShareTensor(PassthroughTensor, Serializable):
