@@ -27,12 +27,6 @@ class PublishScalarsService(ImmediateNodeServiceWithoutReply):
         node: AbstractNode, msg: PublishScalarsAction, verify_key: VerifyKey
     ) -> None:
 
-        print("\n\nPROCESSING PUBLISH SCALAR ACTION!!!\n\n")
-        print("Verify Key:" + str(type(verify_key)))
-        # print("Deser Verify Key:" + str(_deserialize(verify_key, from_bytes=True)))
-        print(node.acc.entity2ledger)
-        print(node.acc)
-
         # get scalar objects from store
         results = List()
         for publish_id in msg.publish_ids_at_location:
