@@ -40,12 +40,10 @@ def publish(
     # store entities and their respective mechanisms
     acc.temp_entity2ledger = {}
 
-
     # Recover all entity mechanisms
     ms = get_all_entity_mechanisms(
         scalars=scalars, sigma=sigma, public_only=public_only
     )
-
 
     # add the user_key to all of the mechanisms
     for _, mechs in ms.items():

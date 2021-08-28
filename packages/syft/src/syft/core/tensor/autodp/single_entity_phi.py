@@ -160,7 +160,9 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
     #
     #     return result
 
-    def __add__(self, other: Any) -> Union[TensorWrappedSingleEntityPhiTensorPointer, MPCTensor]:
+    def __add__(
+        self, other: Any
+    ) -> Union[TensorWrappedSingleEntityPhiTensorPointer, MPCTensor]:
 
         if self.client != other.client:
 

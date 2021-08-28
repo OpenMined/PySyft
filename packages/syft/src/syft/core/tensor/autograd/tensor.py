@@ -18,9 +18,9 @@ import numpy as np
 
 # relative
 from .. import autograd
+from ....core.common.serde.recursive import RecursiveSerde
 from ....lib.python.collections.collections import DefaultDict
 from ....lib.python.collections.collections import SerializableCounter
-from ....core.common.serde.recursive import RecursiveSerde
 from ...common.serde.serializable import bind_protobuf
 from ..ancestors import AutogradTensorAncestor
 from ..ancestors import PhiTensorAncestor

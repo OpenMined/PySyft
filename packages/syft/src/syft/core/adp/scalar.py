@@ -12,7 +12,6 @@ from typing import List as TypeList
 from typing import Optional
 from typing import Set as TypeSet
 from typing import Tuple as TypeTuple
-from typing import Type
 from typing import Union
 
 # third party

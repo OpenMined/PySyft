@@ -36,8 +36,6 @@ METHODS_FORWARD_ALL_SHARES = {
     "narrow",
     "dim",
     "transpose",
-    # For ADP
-    "publish",
 }
 
 
@@ -96,6 +94,23 @@ class MPCTensor(PassthroughTensor):
         res.sort(key=lambda share: share.client.name + share.client.id.no_dash)
 
         super().__init__(res)
+
+    def publish(self, sigma: float):
+        """Note: @George has proposed that we could just add .publish() to the
+        METHODS_FORWARD_ALL_SHARES but this doesn't seem to work at present so I'm adding
+        this back."""
+
+        new_shares = list()
+        for share in self.child:
+            new_share = share.publish(sigma=sigma)
+            new_shares.append(new_share)
+
+        return MPCTensor(
+            parties=self.parties,
+            shares=new_shares,
+            shape=self.mpc_shape,
+            seed_shares=self.seed_shares,
+        )
 
     @property
     def shape(self):
