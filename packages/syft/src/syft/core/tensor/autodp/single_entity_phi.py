@@ -9,6 +9,7 @@ from typing import Tuple as TypeTuple
 from typing import Union
 
 # third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 import numpy as np
 import numpy.typing as npt
