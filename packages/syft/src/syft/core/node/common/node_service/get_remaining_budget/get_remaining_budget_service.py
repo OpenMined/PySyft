@@ -31,7 +31,7 @@ class GetRemainingBudgetService(ImmediateNodeServiceWithReply):
 
         try:
 
-            result = node.acc.get_remaining_budget(
+            result = node.acc.get_remaining_budget(  # type: ignore
                 user_key=verify_key, returned_epsilon_is_private=False
             )
 

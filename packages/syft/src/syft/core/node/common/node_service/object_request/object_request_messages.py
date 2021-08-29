@@ -1,5 +1,6 @@
 # stdlib
 import json
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -269,7 +270,7 @@ class GetRequestResponse(ImmediateSyftMessageWithoutReply):
         self,
         address: Address,
         status_code: int,
-        request_id: str,
+        request_id: Dict[str, Any],
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)

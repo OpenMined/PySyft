@@ -315,7 +315,7 @@ class DomainClient(Client):
     @property
     def privacy_budget(self) -> float:
         msg = GetRemainingBudgetMessage(address=self.address, reply_to=self.address)
-        return self.send_immediate_msg_with_reply(msg).budget
+        return self.send_immediate_msg_with_reply(msg).budget  # type: ignore
 
     def load(
         self, obj_ptr: Type[Pointer], address: Address, pointable: bool = False

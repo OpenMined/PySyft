@@ -1,5 +1,4 @@
 # stdlib
-import ast
 import logging
 from typing import Any
 from typing import Dict
@@ -8,7 +7,6 @@ from typing import Union
 
 # third party
 import pandas as pd
-from pandas import DataFrame
 
 # syft absolute
 from syft import deserialize
@@ -84,23 +82,23 @@ class DatasetRequestAPI(RequestAPI):
     def __delitem__(self, key: str) -> Any:
         self.delete(dataset_id=key)
 
-    def to_obj(self, result: Any) -> Any:
-        dataset_obj = super().to_obj(result)
-        dataset_obj.pandas = DataFrame(dataset_obj.data)
-        datasets = []
-
-        pointers = self.client.store
-        for data in dataset_obj.data:
-            _class_name = ResponseObjectEnum.DATA.capitalize()
-            data_obj = type(_class_name, (object,), data)()
-            data_obj.shape = ast.literal_eval(data_obj.shape)
-            data_obj.pointer = pointers[data_obj.id.replace("-", "")]
-            datasets.append(data_obj)
-
-        dataset_obj.files = datasets
-        type(dataset_obj).__getitem__ = lambda x, i: x.data[i]
-        dataset_obj.node = self.client
-        return Dataset(dataset_obj)
+    # def to_obj(self, result: Any) -> Any:
+    #     dataset_obj = super().to_obj(result)
+    #     dataset_obj.pandas = DataFrame(dataset_obj.data)
+    #     datasets = []
+    #
+    #     pointers = self.client.store
+    #     for data in dataset_obj.data:
+    #         _class_name = ResponseObjectEnum.DATA.capitalize()
+    #         data_obj = type(_class_name, (object,), data)()
+    #         data_obj.shape = ast.literal_eval(data_obj.shape)
+    #         data_obj.pointer = pointers[data_obj.id.replace("-", "")]
+    #         datasets.append(data_obj)
+    #
+    #     dataset_obj.files = datasets
+    #     type(dataset_obj).__getitem__ = lambda x, i: x.data[i]
+    #     dataset_obj.node = self.client
+    #     return Dataset(dataset_obj)
 
 
 class Dataset:
@@ -123,10 +121,10 @@ class Dataset:
         self.client = client
 
     @property
-    def pandas(self):
+    def pandas(self) -> pd.DataFrame:
         return pd.DataFrame(self.raw)
 
-    def __getitem__(self, key) -> Any:
+    def __getitem__(self, key: str) -> Any:
         for d in self.data:
             if d["name"] == key:
                 return self.client.store[d["id"].replace("-", "")]

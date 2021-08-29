@@ -177,7 +177,7 @@ class AdversarialAccountant:
     def user_budget(
         self, user_key: VerifyKey, returned_epsilon_is_private: bool = False
     ) -> float:
-        max_spend = 0
+        max_spend = 0.0
 
         for ent in self.entities:
             spend = self.get_eps_for_entity(
@@ -189,13 +189,13 @@ class AdversarialAccountant:
                 print(f"Warning: Spend is {spend}")
 
             if spend > max_spend:
-                max_spend = spend
+                max_spend = float(spend)
 
-        return max_spend
+        return float(max_spend)
 
     def get_remaining_budget(
         self, user_key: VerifyKey, returned_epsilon_is_private: bool = False
-    ):
+    ) -> float:
         max_spend = self.user_budget(
             user_key=user_key, returned_epsilon_is_private=returned_epsilon_is_private
         )
@@ -205,7 +205,7 @@ class AdversarialAccountant:
 
         user_budget = self.entity2ledger.get_user_budget(user_key=user_key)
 
-        return user_budget - max_spend
+        return float(user_budget - max_spend)
 
     @property
     def entities(self) -> TypeKeysView[Entity]:
@@ -234,12 +234,14 @@ class AdversarialAccountant:
     def print_ledger(self, returned_epsilon_is_private: bool = False) -> None:
         for mechanism in self.entity2ledger.mechanism_manager.all():
             entity = self.entity2ledger.entity_manager.first(name=mechanism.entity_name)
-            print(
-                str(mechanism.entity_name)
-                + "\t"
-                + str(
-                    self.get_eps_for_entity(
-                        entity, returned_epsilon_is_private=returned_epsilon_is_private
+            if entity is not None:
+                print(
+                    str(mechanism.entity_name)
+                    + "\t"
+                    + str(
+                        self.get_eps_for_entity(
+                            entity=entity,
+                            returned_epsilon_is_private=returned_epsilon_is_private,
+                        )
                     )
                 )
-            )

@@ -478,12 +478,9 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
 
     def __add__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
 
-        print("TYPE SELF:" + str(self))
-        print("TYPE OTHER:" + str(other))
-
         # if the tensor being added is also private
         if isinstance(other, SingleEntityPhiTensor):
-            print("A")
+
             if self.entity.name != other.entity.name:
                 # this should return a GammaTensor
                 return NotImplemented
@@ -503,7 +500,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
 
         # if the tensor being added is a public tensor / int / float / etc.
         elif is_acceptable_simple_type(other):
-            print("B")
+
             data = self.child + other
             min_vals = self.min_vals + other
             max_vals = self.max_vals + other
@@ -518,7 +515,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             )
 
         else:
-            print("C")
+
             return NotImplemented
 
     def __neg__(self) -> SingleEntityPhiTensor:

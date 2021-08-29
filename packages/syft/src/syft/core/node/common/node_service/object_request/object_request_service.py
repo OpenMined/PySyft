@@ -161,7 +161,8 @@ def get_request_msg(
     return GetRequestResponse(
         address=msg.reply_to,
         status_code=200,
-        content=request_json,
+        # request_id=request_id
+        request_id=request_json,
     )
 
 
@@ -243,7 +244,7 @@ def del_request_msg(
     verify_key: VerifyKey,
 ) -> DeleteRequestResponse:
 
-    request_id = msg.request_id.get("request_id", None)
+    request_id = msg.request_id.get("request_id", None)  # type: ignore
 
     current_user_id = node.users.first(
         verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
@@ -261,7 +262,8 @@ def del_request_msg(
     return DeleteRequestResponse(
         address=msg.reply_to,
         status_code=200,
-        content={"msg": "Request deleted!"},
+        request_id=request_id
+        # content={"msg": "Request deleted!"},
     )
 
 
