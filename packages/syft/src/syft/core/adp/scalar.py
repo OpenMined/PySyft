@@ -598,10 +598,10 @@ class GammaScalar(BaseScalar, IntermediateGammaScalar):
         min_val: float,
         value: float,
         max_val: float,
+        prime: Optional[int],
         entity: Optional[Entity] = None,
         id: Optional[UID] = None,
         ssid: Optional[str] = None,
-        prime: Optional[int] = None,  # this is for the VM_private_scalar_manager
     ) -> None:
         super().__init__(
             min_val=min_val, value=value, max_val=max_val, entity=entity, id=id
@@ -624,6 +624,7 @@ class GammaScalar(BaseScalar, IntermediateGammaScalar):
         kwargs = {
             "id": serialize(self.id, to_proto=True),
             "entity": serialize(self.entity, to_proto=True),
+            "prime": self.prime,
         }
 
         for field in ["max_val", "min_val", "value"]:
@@ -640,6 +641,7 @@ class GammaScalar(BaseScalar, IntermediateGammaScalar):
             max_val=proto.max_val if proto.HasField("max_val") else None,
             value=proto.value if proto.HasField("value") else None,
             entity=deserialize(proto.entity),
+            prime=deserialize(proto.prime),
         )
 
     @staticmethod

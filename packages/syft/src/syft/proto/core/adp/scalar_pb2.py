@@ -25,7 +25,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x1bproto/core/adp/scalar.proto\x12\rsyft.core.adp\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/adp/entity.proto"7\n\x12IntermediateScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID"\xb8\x01\n\nBaseScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x14\n\x07min_val\x18\x02 \x01(\x01H\x00\x88\x01\x01\x12\x12\n\x05value\x18\x03 \x01(\x01H\x01\x88\x01\x01\x12\x14\n\x07max_val\x18\x04 \x01(\x01H\x02\x88\x01\x01\x12%\n\x06\x65ntity\x18\x05 \x01(\x0b\x32\x15.syft.core.adp.EntityB\n\n\x08_min_valB\x08\n\x06_valueB\n\n\x08_max_val"<\n\x17IntermediateGammaScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID"\xb9\x01\n\x0bGammaScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x14\n\x07min_val\x18\x02 \x01(\x01H\x00\x88\x01\x01\x12\x12\n\x05value\x18\x03 \x01(\x01H\x01\x88\x01\x01\x12\x14\n\x07max_val\x18\x04 \x01(\x01H\x02\x88\x01\x01\x12%\n\x06\x65ntity\x18\x05 \x01(\x0b\x32\x15.syft.core.adp.EntityB\n\n\x08_min_valB\x08\n\x06_valueB\n\n\x08_max_val"\x9b\x01\n\x15IntermediatePhiScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12%\n\x06\x65ntity\x18\x02 \x01(\x0b\x32\x15.syft.core.adp.Entity\x12.\n\x05gamma\x18\x03 \x01(\x0b\x32\x1a.syft.core.adp.GammaScalarH\x00\x88\x01\x01\x42\x08\n\x06_gamma"\xf1\x01\n\tPhiScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x14\n\x07min_val\x18\x02 \x01(\x01H\x00\x88\x01\x01\x12\x12\n\x05value\x18\x03 \x01(\x01H\x01\x88\x01\x01\x12\x14\n\x07max_val\x18\x04 \x01(\x01H\x02\x88\x01\x01\x12%\n\x06\x65ntity\x18\x05 \x01(\x0b\x32\x15.syft.core.adp.Entity\x12.\n\x05gamma\x18\x06 \x01(\x0b\x32\x1a.syft.core.adp.GammaScalarH\x03\x88\x01\x01\x42\n\n\x08_min_valB\x08\n\x06_valueB\n\n\x08_max_valB\x08\n\x06_gammab\x06proto3',
+    serialized_pb=b'\n\x1bproto/core/adp/scalar.proto\x12\rsyft.core.adp\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/adp/entity.proto"7\n\x12IntermediateScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID"\xb8\x01\n\nBaseScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x14\n\x07min_val\x18\x02 \x01(\x01H\x00\x88\x01\x01\x12\x12\n\x05value\x18\x03 \x01(\x01H\x01\x88\x01\x01\x12\x14\n\x07max_val\x18\x04 \x01(\x01H\x02\x88\x01\x01\x12%\n\x06\x65ntity\x18\x05 \x01(\x0b\x32\x15.syft.core.adp.EntityB\n\n\x08_min_valB\x08\n\x06_valueB\n\n\x08_max_val"<\n\x17IntermediateGammaScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID"\xc8\x01\n\x0bGammaScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x14\n\x07min_val\x18\x02 \x01(\x01H\x00\x88\x01\x01\x12\x12\n\x05value\x18\x03 \x01(\x01H\x01\x88\x01\x01\x12\x14\n\x07max_val\x18\x04 \x01(\x01H\x02\x88\x01\x01\x12%\n\x06\x65ntity\x18\x05 \x01(\x0b\x32\x15.syft.core.adp.Entity\x12\r\n\x05prime\x18\x06 \x01(\x03\x42\n\n\x08_min_valB\x08\n\x06_valueB\n\n\x08_max_val"\x9b\x01\n\x15IntermediatePhiScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12%\n\x06\x65ntity\x18\x02 \x01(\x0b\x32\x15.syft.core.adp.Entity\x12.\n\x05gamma\x18\x03 \x01(\x0b\x32\x1a.syft.core.adp.GammaScalarH\x00\x88\x01\x01\x42\x08\n\x06_gamma"\xf1\x01\n\tPhiScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x14\n\x07min_val\x18\x02 \x01(\x01H\x00\x88\x01\x01\x12\x12\n\x05value\x18\x03 \x01(\x01H\x01\x88\x01\x01\x12\x14\n\x07max_val\x18\x04 \x01(\x01H\x02\x88\x01\x01\x12%\n\x06\x65ntity\x18\x05 \x01(\x0b\x32\x15.syft.core.adp.Entity\x12.\n\x05gamma\x18\x06 \x01(\x0b\x32\x1a.syft.core.adp.GammaScalarH\x03\x88\x01\x01\x42\n\n\x08_min_valB\x08\n\x06_valueB\n\n\x08_max_valB\x08\n\x06_gammab\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_adp_dot_entity__pb2.DESCRIPTOR,
@@ -360,6 +360,25 @@ _GAMMASCALAR = _descriptor.Descriptor(
             file=DESCRIPTOR,
             create_key=_descriptor._internal_create_key,
         ),
+        _descriptor.FieldDescriptor(
+            name="prime",
+            full_name="syft.core.adp.GammaScalar.prime",
+            index=5,
+            number=6,
+            type=3,
+            cpp_type=2,
+            label=1,
+            has_default_value=False,
+            default_value=0,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -395,7 +414,7 @@ _GAMMASCALAR = _descriptor.Descriptor(
         ),
     ],
     serialized_start=421,
-    serialized_end=606,
+    serialized_end=621,
 )
 
 
@@ -482,8 +501,8 @@ _INTERMEDIATEPHISCALAR = _descriptor.Descriptor(
             fields=[],
         ),
     ],
-    serialized_start=609,
-    serialized_end=764,
+    serialized_start=624,
+    serialized_end=779,
 )
 
 
@@ -651,8 +670,8 @@ _PHISCALAR = _descriptor.Descriptor(
             fields=[],
         ),
     ],
-    serialized_start=767,
-    serialized_end=1008,
+    serialized_start=782,
+    serialized_end=1023,
 )
 
 _INTERMEDIATESCALAR.fields_by_name[

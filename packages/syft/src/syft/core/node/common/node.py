@@ -310,7 +310,6 @@ class Node(AbstractNode):
         self.message_counter = 0
 
     def post_init(self) -> None:
-        print("Seeding DB with roles!")
         Base.metadata.create_all(self.db_engine)
         seed_db(self.db)
         debug(f"> Creating {self.pprint}")

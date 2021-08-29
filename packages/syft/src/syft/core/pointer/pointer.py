@@ -137,6 +137,7 @@ class Pointer(AbstractPointer):
 
     path_and_name: str
     _pointable: bool = False
+    __name__ = "DefaultPointerDunderNamePleaseChangeMe"
 
     def __init__(
         self,
