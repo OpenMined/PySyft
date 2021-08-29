@@ -1,7 +1,8 @@
 # stdlib
-from typing import Any, List, Dict
+from typing import Any
+from typing import Dict
+from typing import List
 from typing import Optional
-from typing import Union
 
 # third party
 import numpy as np
@@ -26,13 +27,13 @@ def mean(
 
 @implements(Tensor, np.max)
 def npmax(*args: List[Any], **kwargs: Dict[Any, Any]) -> Tensor:
-    args, kwargs = inputs2child(*args, **kwargs)
+    args, kwargs = inputs2child(*args, **kwargs)  # type: ignore
     return np.max(*args, **kwargs)
 
 
 @implements(Tensor, np.min)
 def npmin(*args: List[Any], **kwargs: Dict[Any, Any]) -> Tensor:
-    args, kwargs = inputs2child(*args, **kwargs)
+    args, kwargs = inputs2child(*args, **kwargs)  # type: ignore
     return np.min(*args, **kwargs)
 
 
@@ -43,7 +44,7 @@ def square(x: Tensor) -> Tensor:
 
 @implements(Tensor, np.expand_dims)
 def expand_dims(*args: List[Any], **kwargs: Dict[Any, Any]) -> Tensor:
-    args, kwargs = inputs2child(*args, **kwargs)
+    args, kwargs = inputs2child(*args, **kwargs)  # type: ignore
     return Tensor(np.expand_dims(*args, **kwargs))
 
 
