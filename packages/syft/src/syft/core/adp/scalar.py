@@ -598,7 +598,7 @@ class GammaScalar(BaseScalar, IntermediateGammaScalar):
         min_val: float,
         value: float,
         max_val: float,
-        prime: Optional[int],
+        prime: int,
         entity: Optional[Entity] = None,
         id: Optional[UID] = None,
         ssid: Optional[str] = None,

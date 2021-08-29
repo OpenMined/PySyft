@@ -25,7 +25,7 @@ from ..pointer.pointer import Pointer
 from .ancestors import AutogradTensorAncestor
 from .ancestors import PhiTensorAncestor
 from .fixed_precision_tensor_ancestor import FixedPrecisionTensorAncestor
-from .passthrough import PassthroughTensor
+from .passthrough import PassthroughTensor  # type: ignore
 
 # from .autodp.single_entity_phi import SingleEntityPhiTensor
 # from .autodp.single_entity_phi import SingleEntityPhiTensorPointer
@@ -61,7 +61,7 @@ class TensorPointer(Pointer):
 
     def share(self, *parties: Tuple[AbstractNodeClient, ...]) -> MPCTensor:
 
-        parties = list(parties) + [self.client]
+        parties = tuple(list(parties) + [self.client])
 
         self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=parties)
 

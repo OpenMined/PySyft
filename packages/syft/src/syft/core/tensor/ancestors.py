@@ -17,8 +17,8 @@ from numpy.typing import ArrayLike
 # syft relative
 from ..adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from .manager import TensorChainManager
-from .passthrough import PassthroughTensor
-from .passthrough import is_acceptable_simple_type
+from .passthrough import PassthroughTensor  # type: ignore
+from .passthrough import is_acceptable_simple_type  # type: ignore
 
 _SingleEntityPhiTensorRef = None
 
@@ -109,8 +109,12 @@ class PhiTensorAncestor(TensorChainManager):
     """Inherited by any class which might have or like to have SingleEntityPhiTensor in its chain
     of .child objects"""
 
-    def __init__(self) -> None:
-        pass
+    def __init__(self, child: Any) -> None:
+        self.child = child
+
+    @property
+    def shape(self):
+        return self.child.shape
 
     @property
     def min_vals(self):  # type: ignore
