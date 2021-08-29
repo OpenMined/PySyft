@@ -185,12 +185,6 @@ class Tensor(
         self.tag_name = name
         return self
 
-    def wrap_object_as_grandchild_syft_inplace(self, obj) -> None:
-        """Because we end the method with "_syft_inplace" it knows
-        that this method is an inline object that updates an existing
-        object instead of returning a new one."""
-        self.child.child = obj
-
     def init_pointer(
         self,
         client: Any,

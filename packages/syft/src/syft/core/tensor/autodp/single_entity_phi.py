@@ -298,17 +298,6 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
         else:
             self.scalar_manager = scalar_manager
 
-    def wrap_object_as_grandchild_syft_inplace(self, obj) -> None:
-        # TODO: this is redundant with tensor.py in a way that's a bit clugey. Eliminate either tensor.Tensor version
-        # of this method or eliminate this one as a part of a more sophisticated Pointer system (or create a superclass,
-        # etc.) for tensor chain management.
-        if self.child.child is None:
-            self.child.child = obj
-        else:
-            raise Exception(
-                "Cannot wrap remote object, probably because another object is already wrapped."
-            )
-
     def init_pointer(
         self,
         client: Any,

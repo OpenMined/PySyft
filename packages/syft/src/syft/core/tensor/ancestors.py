@@ -113,7 +113,7 @@ class PhiTensorAncestor(TensorChainManager):
         self.child = child
 
     @property
-    def shape(self):
+    def shape(self) -> List[int]:
         return self.child.shape
 
     @property

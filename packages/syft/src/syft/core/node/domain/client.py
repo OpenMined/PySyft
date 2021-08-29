@@ -313,7 +313,7 @@ class DomainClient(Client):
         self.datasets = DatasetRequestAPI(client=self)
 
     @property
-    def privacy_budget(self):
+    def privacy_budget(self) -> float:
         msg = GetRemainingBudgetMessage(address=self.address, reply_to=self.address)
         return self.send_immediate_msg_with_reply(msg).budget
 

@@ -3,6 +3,9 @@ from typing import Any
 from typing import Dict
 from typing import List
 
+# relative
+from .types import SupportedChainType
+
 
 class ScalarChainManagerTensor:
     """Supports convenience methods for scalar chains of abstraction"""
@@ -17,14 +20,14 @@ class ScalarChainManagerTensor:
 
 
 class TensorChainManager:
-    def __init__(self) -> None:
-        pass
+    def __init__(self, child: SupportedChainType) -> None:
+        self.child = child
 
     def push_abstraction_top(
         self, tensor_type: Any, *args: List[Any], **kwargs: Dict[str, Any]
     ) -> None:
         """ """
-        self.child: Any = tensor_type(self.child, *args, **kwargs)
+        self.child = tensor_type(self.child, *args, **kwargs)
 
     def replace_abstraction_top(
         self, tensor_type: Any, *args: List[Any], **kwargs: Dict[str, Any]

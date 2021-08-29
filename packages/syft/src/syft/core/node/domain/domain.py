@@ -162,7 +162,7 @@ class Domain(Node):
 
         self.post_init()
 
-        Base.metadata.create_all(db_engine)
+        Base.metadata.create_all(db_engine) # type: ignore
 
         # run the handlers in an asyncio future
         asyncio.ensure_future(self.run_handlers())

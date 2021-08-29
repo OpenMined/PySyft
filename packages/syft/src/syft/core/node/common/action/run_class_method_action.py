@@ -193,13 +193,6 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
                 result = method(*upcasted_args, **upcasted_kwargs)
 
-        # when a method ends with teh string "_syft_inplace" then
-        # we assume that the object mutates itself and thus should be
-        # checked back into the database.
-        if self.path.endswith("_syft_inplace"):
-            result = resolved_self
-            mutating_internal = True
-
         # TODO: add numpy support https://github.com/OpenMined/PySyft/issues/5164
         if "numpy." in str(type(result)):
             if "float" in type(result).__name__:
@@ -248,10 +241,8 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             kwargs=tag_kwargs,
         )
 
-        if self.path.endswith("_syft_inplace"):
-            node.store[self._self.id_at_location] = result
-        else:
-            node.store[self.id_at_location] = result
+
+        node.store[self.id_at_location] = result
 
     def _object2proto(self) -> RunClassMethodAction_PB:
         """Returns a protobuf serialization of self.

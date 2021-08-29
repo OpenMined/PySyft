@@ -146,15 +146,6 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.core.tensor.tensor.Tensor.take", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.tag", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.transpose", "syft.core.tensor.tensor.Tensor"),
-        (
-            "syft.core.tensor.tensor.Tensor.wrap_object_as_grandchild_syft_inplace",
-            "syft.lib.python._SyNone",
-        ),
-        # # DP
-        (
-            "syft.core.tensor.autodp.single_entity_phi.SingleEntityPhiTensor.wrap_object_as_grandchild_syft_inplace",
-            "syft.lib.python._SyNone",
-        ),
         # # SMPC
         # (
         #     "syft.core.tensor.tensor.Tensor.fix_precision",
