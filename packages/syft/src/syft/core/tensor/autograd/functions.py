@@ -2,8 +2,8 @@
 import numpy as np
 
 # relative
-from ..passthrough import inputs2child
 from ..util import implements
+from ..util import inputs2child
 from .tensor import AutogradTensor
 
 

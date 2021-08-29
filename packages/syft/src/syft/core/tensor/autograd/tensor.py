@@ -2,9 +2,6 @@
 from __future__ import annotations
 
 # stdlib
-# from typing import DefaultDict as TypeDefaultDict
-# from collections import Counter
-# from collections import defaultdict
 from typing import Any
 from typing import Dict as TypeDict
 from typing import List
@@ -24,9 +21,9 @@ from ....lib.python.collections.collections import SerializableCounter
 from ...common.serde.serializable import bind_protobuf
 from ..ancestors import AutogradTensorAncestor
 from ..ancestors import PhiTensorAncestor
-from ..passthrough import AcceptableSimpleType
-from ..passthrough import PassthroughTensor
-from ..passthrough import is_acceptable_simple_type
+from ..passthrough import AcceptableSimpleType  # type: ignore
+from ..passthrough import PassthroughTensor  # type: ignore
+from ..passthrough import is_acceptable_simple_type  # type: ignore
 
 
 @bind_protobuf

@@ -31,11 +31,11 @@ from ..ancestors import AutogradTensorAncestor
 from ..passthrough import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import implements  # type: ignore
-from ..passthrough import inputs2child  # type: ignore
 from ..passthrough import is_acceptable_simple_type  # type: ignore
 from ..smpc.mpc_tensor import MPCTensor
 from ..tensor import Tensor
 from ..types import SupportedChainType  # type: ignore
+from ..util import inputs2child  # type: ignore
 from .initial_gamma import InitialGammaTensor
 
 
@@ -74,7 +74,7 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
         scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None,
         id_at_location: Optional[UID] = None,
         object_type: str = "",
-        tags: str = "",
+        tags: Optional[List[str]] = [],
         description: str = "",
         public_shape: Optional[TypeTuple[int, ...]] = None,
     ):
@@ -95,12 +95,13 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
 
     def share(self, *parties: TypeTuple[AbstractNodeClient, ...]) -> MPCTensor:
 
-        parties = list(parties) + [self.client]
+        parties = tuple(list(parties) + [self.client])
 
         self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=parties)
 
         return self_mpc
 
+    # TODO: uncomment and fix (this came from tensor.py and just needs some quick fixes)
     # def simple_add(self, other: Any) -> TensorPointer:
     #     # we want to get the return type which matches the attr_path_and_name
     #     # so we ask lib_ast for the return type name that matches out
@@ -158,9 +159,7 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
     #
     #     return result
 
-    def __add__(
-        self, other: Any
-    ) -> Union[TensorWrappedSingleEntityPhiTensorPointer, MPCTensor]:
+    def __add__(self, other: Any) -> MPCTensor:
 
         if self.client != other.client:
 
@@ -172,6 +171,8 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
             )
 
             return self_mpc + other_mpc
+        else:
+            return NotImplemented
 
         # return self.simple_add(other=other)
 

@@ -241,7 +241,6 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             kwargs=tag_kwargs,
         )
 
-
         node.store[self.id_at_location] = result
 
     def _object2proto(self) -> RunClassMethodAction_PB:

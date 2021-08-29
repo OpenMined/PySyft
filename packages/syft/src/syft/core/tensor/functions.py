@@ -7,9 +7,9 @@ from typing import Union
 import numpy as np
 
 # relative
-from .passthrough import implements
-from .passthrough import inputs2child
 from .tensor import Tensor
+from .util import implements
+from .util import inputs2child
 
 
 @implements(Tensor, np.mean)

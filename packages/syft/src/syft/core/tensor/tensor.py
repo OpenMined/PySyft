@@ -192,7 +192,7 @@ class Tensor(
         object_type: str = "",
         tags: Optional[List[str]] = None,
         description: str = "",
-    ):
+    ) -> Pointer:
 
         # relative
         from .autodp.single_entity_phi import SingleEntityPhiTensor

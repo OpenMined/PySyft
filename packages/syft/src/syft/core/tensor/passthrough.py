@@ -24,17 +24,6 @@ from .util import query_implementation
 AcceptableSimpleType = Union[int, bool, float, np.ndarray]
 
 
-def inputs2child(
-    *args: List[Any], **kwargs: Dict[Any, Any]
-) -> TypeTuple[List[Any], Dict[Any, Any]]:
-    args = [x.child if isinstance(x, PassthroughTensor) else x for x in args]
-    kwargs = {
-        x[0]: x[1].child if isinstance(x[1], PassthroughTensor) else x[1]
-        for x in kwargs.items()
-    }
-    return args, kwargs
-
-
 def is_acceptable_simple_type(obj):
     return isinstance(obj, (int, bool, float, np.ndarray, torch.Tensor))
 
