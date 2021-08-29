@@ -1,5 +1,6 @@
 # stdlib
 from collections.abc import KeysView
+from typing import Optional
 
 # third party
 from nacl.encoding import HexEncoder
@@ -78,9 +79,9 @@ class LedgerManager(DatabaseManager):
         return budget
 
     def keys(self) -> KeysView:
-        return KeysView(self.entity_manager.all())
+        return KeysView(self.entity_manager.all())  # type: ignore
 
-    def register_mechanisms(self, mechanisms: list):
+    def register_mechanisms(self, mechanisms: list) -> None:
 
         for m in mechanisms:
             # if entity doesnt exist:
@@ -89,7 +90,7 @@ class LedgerManager(DatabaseManager):
                 self.entity_manager.register(name=m.entity_name)
             self.mechanism_manager.register(m)
 
-    def query(self, entity_name=None, user_key=None):
+    def query(self, entity_name: Optional[str] = None, user_key: Optional[str] = None):
         if entity_name is not None and user_key is not None:
             return self.mechanism_manager.query(
                 entity_name=entity_name, user_key=user_key

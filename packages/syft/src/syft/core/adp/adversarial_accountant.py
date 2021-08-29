@@ -22,7 +22,6 @@ from sqlalchemy.engine import Engine
 from ..node.common.node_manager.ledger_manager import LedgerManager
 from .entity import Entity
 from .idp_gaussian_mechanism import iDPGaussianMechanism
-from .scalar import PhiScalar
 
 
 class AdversarialAccountant:
@@ -71,7 +70,7 @@ class AdversarialAccountant:
         entity: Entity,
         user_key: Optional[VerifyKey] = None,
         returned_epsilon_is_private: bool = False,
-    ) -> PhiScalar:
+    ) -> float:
 
         # compose them with the transformation: compose
         compose = Composition()

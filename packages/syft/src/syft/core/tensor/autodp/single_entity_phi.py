@@ -74,7 +74,7 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
         scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None,
         id_at_location: Optional[UID] = None,
         object_type: str = "",
-        tags: Optional[List[str]] = [],
+        tags: Optional[List[str]] = None,
         description: str = "",
         public_shape: Optional[TypeTuple[int, ...]] = None,
     ):
@@ -304,12 +304,11 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
         client: Any,
         id_at_location: Optional[UID] = None,
         object_type: str = "",
-        tags: Optional[List[str]] = "",
+        tags: Optional[List[str]] = None,
         description: str = "",
-    ):
+    ) -> TensorWrappedSingleEntityPhiTensorPointer:
         return TensorWrappedSingleEntityPhiTensorPointer(
             # Arguments specifically for SEPhiTensor
-            child=self.child,
             entity=self.entity,
             min_vals=self._min_vals,
             max_vals=self._max_vals,
