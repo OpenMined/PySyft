@@ -270,7 +270,7 @@ class MPCTensor(PassthroughTensor):
         # if not is_share_tensor:
         #    result = result.decode()
 
-        if isinstance(result.child, ShareTensor):
+        if hasattr(result, 'child') and isinstance(result.child, ShareTensor):
             return result.child.child
 
         return result
