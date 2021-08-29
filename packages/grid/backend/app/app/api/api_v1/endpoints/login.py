@@ -7,6 +7,7 @@ from fastapi import APIRouter
 from fastapi import Body
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
+from loguru import logger
 
 # syft absolute
 from syft import serialize  # type: ignore
@@ -20,7 +21,7 @@ from app.core.node import node
 router = APIRouter()
 
 
-@router.post("/login", status_code=200, response_class=JSONResponse)
+@router.post("/login", name="login", status_code=200, response_class=JSONResponse)
 def login_access_token(
     email: str = Body(..., example="info@openmined.org"),
     password: str = Body(..., example="changethis"),
@@ -31,7 +32,8 @@ def login_access_token(
     """
     try:
         node.users.login(email=email, password=password)
-    except InvalidCredentialsError:
+    except InvalidCredentialsError as err:
+        logger.bind(payload={"email": email}).error(err)
         raise HTTPException(status_code=401, detail="Incorrect email or password")
 
     user = node.users.first(email=email)

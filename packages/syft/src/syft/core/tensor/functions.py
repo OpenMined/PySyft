@@ -1,5 +1,5 @@
 # stdlib
-from typing import Any
+from typing import Any, List, Dict
 from typing import Optional
 from typing import Union
 
@@ -25,32 +25,30 @@ def mean(
 
 
 @implements(Tensor, np.max)
-def npmax(*args: Any, **kwargs: Any) -> Tensor:
-    args, kwargs = inputs2child(*args, **kwargs)  # type: ignore
+def npmax(*args: List[Any], **kwargs: Dict[Any, Any]) -> Tensor:
+    args, kwargs = inputs2child(*args, **kwargs)
     return np.max(*args, **kwargs)
 
 
 @implements(Tensor, np.min)
-def npmin(*args: Any, **kwargs: Any) -> Tensor:
-    args, kwargs = inputs2child(*args, **kwargs)  # type: ignore
+def npmin(*args: List[Any], **kwargs: Dict[Any, Any]) -> Tensor:
+    args, kwargs = inputs2child(*args, **kwargs)
     return np.min(*args, **kwargs)
 
 
 @implements(Tensor, np.square)
-def square(x: np.typing.ArrayLike) -> Tensor:
+def square(x: Tensor) -> Tensor:
     return x * x
 
 
 @implements(Tensor, np.expand_dims)
-def expand_dims(*args: Any, **kwargs: Any) -> Tensor:
-    args, kwargs = inputs2child(*args, **kwargs)  # type: ignore
+def expand_dims(*args: List[Any], **kwargs: Dict[Any, Any]) -> Tensor:
+    args, kwargs = inputs2child(*args, **kwargs)
     return Tensor(np.expand_dims(*args, **kwargs))
 
 
 @implements(Tensor, np.multiply)
-def multiply(
-    a: Union[Tensor, np.typing.ArrayLike], b: Union[Tensor, np.typing.ArrayLike]
-) -> Tensor:
+def multiply(a: Tensor, b: Tensor) -> Tensor:
     if isinstance(a, Tensor):
         result = a.__mul__(b)
         if result is not NotImplementedError:
@@ -61,4 +59,4 @@ def multiply(
         if result is not NotImplementedError:
             return result
 
-    return TypeError(f"Can't multiply {type(a)} with {type(b)}")  # type: ignore
+    raise TypeError(f"Can't multiply {type(a)} with {type(b)}")

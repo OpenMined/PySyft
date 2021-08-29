@@ -85,6 +85,7 @@ def login(
     verbose: bool = True,
 ) -> Client:
 
+
     if email is None and password is None:
         email = "info@openmined.org"
         password = "changethis"

@@ -109,7 +109,7 @@ def clean(location: str) -> None:
 )
 @click.option(
     "--cmd",
-    default=None,
+    default="false",
     required=False,
     type=str,
     help="Optional: print the cmd without running it",
@@ -537,7 +537,7 @@ def create_launch_cmd(
 
 
 def create_launch_docker_cmd(
-    verb: GrammarVerb, docker_version: str, tail: bool = False
+    verb: GrammarVerb, docker_version: str, tail: bool = True
 ) -> str:
     host_term = verb.get_named_term_hostgrammar(name="host")
     node_name = verb.get_named_term_type(name="node_name")
@@ -579,6 +579,7 @@ def create_launch_docker_cmd(
         cmd += " -d"
 
     # cmd += " --build"  # force rebuild
+
     cmd = "cd " + GRID_SRC_PATH + ";" + cmd
     return cmd
 

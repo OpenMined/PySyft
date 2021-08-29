@@ -21,7 +21,11 @@ from ...logger import traceback_and_raise
 from .union import lazy_pairing
 
 
-@cached(cache={}, key=lambda path, lib_ast: hashkey(path))
+def get_cache() -> Dict:
+    return dict()
+
+
+@cached(cache=get_cache(), key=lambda path, lib_ast: hashkey(path))
 def solve_ast_type_functions(path: str, lib_ast: globals.Globals) -> KeysView:
     root = lib_ast
     for path_element in path.split("."):

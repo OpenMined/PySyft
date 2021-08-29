@@ -312,10 +312,7 @@ def launch_shorthand_support(args: TypeTuple) -> TypeTuple:
             name += _args[i] + " "
         name = name[:-1]
         pmin1 = preposition_position - 1
-        print(preposition_position)
-        print(_args)
         _args = [name] + _args[pmin1:]
-        print(_args)
 
     # if there wasn't a name provided - make sure we don't have an empty place in the list
     # so that later logic will generate a name
@@ -340,6 +337,7 @@ def parse_grammar(args: TypeTuple, verb: GrammarVerb) -> TypeList[GrammarTerm]:
         terms = []
         abbreviation = verb.abbreviations[arg_count]
         for i, term_type in enumerate(abbreviation):
+
             if term_type is None:
                 arg = None  # use None so we get the default
             else:

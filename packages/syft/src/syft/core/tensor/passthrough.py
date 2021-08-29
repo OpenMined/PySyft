@@ -122,10 +122,8 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
             return self.__class__(self.child - other)
         return self.__class__(self.child - other.child)
 
-    def __rsub__(
-        self, other: Union[Type[PassthroughTensor], AcceptableSimpleType]
-    ) -> PassthroughTensor:
-        return self.__class__(-((self - other).child))
+    def __rsub__(self, other) -> PassthroughTensor:
+        return self.__class__(-(self - other).child)
 
     def __gt__(
         self,

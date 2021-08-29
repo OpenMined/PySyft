@@ -13,7 +13,9 @@ from .utils import ispointer
 class MPCTensorAncestor(TensorChainManager):
     def share(self, *parties: List[Any]) -> MPCTensor:
         # syft absolute
+
         from syft.core.tensor.smpc.mpc_tensor import MPCTensor
+
 
         if ispointer(self.child):
             raise ValueError(

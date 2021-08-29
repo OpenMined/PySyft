@@ -169,8 +169,9 @@ Sometimes you need to install HAGrid directly from source while developing and t
 $ pip install "git+https://github.com/OpenMined/PySyft@demo_strike_team_branch_4#subdirectory=packages/hagrid"
 ```
 
-## Using Hagrid to Deploy to An Existing Cloud Node (by logging into that cloud node)
+## Deploying HAGrid to a running Linux Machine (Ubuntu 20.x)
 
+Log into your linux machine and run the following:
 ```
 pip install hagrid
 ```
@@ -180,6 +181,32 @@ Often on a remote linux box hagrid will not by default show up in the path. Re-l
 ```
 hagrid launch <node name> domain to localhost
 ```
-Then folllow the instructions in the prompt.
+
+Then folllow the instructions in the prompt. Note that occasionally you'll see a harmless (but red and scary looking) error at the very end of the deploy which looks something like:
+
+```
+ner slytherin_docker-host_1  Created", "Container slytherin_flower_1  Starting", "Container slytherin_db_1  Starting", "Container slytherin_proxy_1  Starting", "Container slytherin_queue_1  Starting", "Container slytherin_queue_1  Started", "Container slytherin_db_1  Started", "Container slytherin_backend_1  Starting", "Container slytherin_celeryworker_1  Starting", "Container slytherin_pgadmin_1  Starting", "Container slytherin_proxy_1  Started", "Container slytherin_flower_1  Started", "Container slytherin_backend_1  Started", "Container slytherin_celeryworker_1  Started", "Container slytherin_pgadmin_1  Started", "Container slytherin_backend_stream_1  Starting", "Container slytherin_frontend_1  Starting", "Container slytherin_frontend_1  Started", "Container slytherin_backend_stream_1  Started", "Container slytherin_docker-host_1  Starting", "Error response from daemon: cannot start a stopped process: unknown"], "stdout": "", "stdout_lines": []}
+: cannot start a stopped process: unknown"], "stdout": "", "stdout_lines": []}
+
+PLAY RECAP ***************************************************************************************************************************
+104.42.1.158               : ok=26   changed=21   unreachable=0    failed=1    skipped=1    rescued=0    ignored=0
+```
+If you see this don't worry about it.
+
+### Post install checks.
+
+Log into the openmined user.
+```
+sudo su - om
+```
+Check that the autoupdater is running correctly and pointed to the branch you specified.
+```
+sudo crontab -l
+```
+Should return something like
+```
+#Ansible: Update PySyft Repo
+* * * * * /home/om/PySyft/packages/grid/scripts/cron.sh /home/om/PySyft The-PET-Lab-at-the-UN-PPTTT/PySyft ungp_pet_lab om om domain slytherin
+```
 
 **Super Cool Code Images** by [Carbon](https://carbon.now.sh/)

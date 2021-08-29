@@ -122,7 +122,11 @@ def _regenerate_unions(*, lib_ast: Globals, client: TypeAny = None) -> None:
         lib_ast.syft.lib.add_attr(attr_name="misc", attr=union_misc_ast.attrs["misc"])
 
 
-@cached({}, lambda *, lib, options=None: hashkey(lib))
+def get_cache() -> TypeDict:
+    return dict()
+
+
+@cached(get_cache(), lambda *, lib, options=None: hashkey(lib))
 def _load_lib(*, lib: str, options: Optional[TypeDict[str, TypeAny]] = None) -> None:
     """
     Load and Update Node with given library module
