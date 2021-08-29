@@ -1,21 +1,26 @@
-FROM tiangolo/uvicorn-gunicorn-fastapi:python3.7
+FROM python:3.9.6-slim as backend
+
+RUN \
+  apt-get update && \
+  apt-get upgrade -y && \
+  apt-get clean && \
+  apt-get install -y --no-install-recommends curl wget
+
+# start scripts and gunicorn conf (from tiangolo)
+COPY ./docker-scripts/start.sh /start.sh
+COPY ./docker-scripts/gunicorn_conf.py /gunicorn_conf.py
+COPY ./docker-scripts/start-reload.sh /start-reload.sh
+RUN chmod +x /start.sh
+RUN chmod +x /start-reload.sh
+
+COPY ./ /app/
 
 WORKDIR /app/
 
-# Install Poetry
-RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | POETRY_HOME=/opt/poetry python && \
-    cd /usr/local/bin && \
-    ln -s /opt/poetry/bin/poetry && \
-    poetry config virtualenvs.create false
-
-# Copy poetry.lock* in case it doesn't exist in the repo
-COPY ./app/pyproject.toml ./app/poetry.lock* ./app/requirements.txt /app/
-
 # Allow installing dev dependencies to run tests
 ARG INSTALL_DEV=false
-# RUN poetry export -f requirements.txt --output requirements.txt --without-hashes --dev
-RUN pip install -r requirements.txt
-# RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install --no-root ; else poetry install --no-root --no-dev ; fi"
+RUN python -m pip install "uvicorn[standard]" gunicorn
+RUN python -m pip install -r requirements.txt --no-cache-dir
 
 # For development, Jupyter remote kernel, Hydrogen
 # Using inside the container:
@@ -28,5 +33,13 @@ ENV WAITFORIT_VERSION="v2.4.1"
 RUN curl -o /usr/local/bin/waitforit -sSL https://github.com/maxcnunes/waitforit/releases/download/$WAITFORIT_VERSION/waitforit-linux_amd64 && \
     chmod +x /usr/local/bin/waitforit
 
-COPY ./app /app
 ENV PYTHONPATH=/app
+
+FROM backend as celery-worker
+
+ENV C_FORCE_ROOT=1
+RUN python -m pip install watchdog pyyaml argh
+
+COPY ./worker-start.sh /worker-start.sh
+RUN chmod +x /worker-start.sh
+CMD ["bash", "/worker-start.sh"]
