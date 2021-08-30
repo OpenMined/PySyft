@@ -43,10 +43,26 @@
     group: "{{ om_user }}"
   become: yes
 
+- name: Create Docker Compose Plugin Dir root
+  file:
+    path: "{{ root_homedir }}/{{ docker_compose_plugin_dir }}"
+    state: directory
+    mode: "0770"
+    owner: "{{ root_user }}"
+    group: "{{ root_user }}"
+  become: yes
+
 - name: Download Docker CLI
   get_url:
-    url: "https://github.com/docker/compose-cli/releases/download/v2.0.0-beta.5/docker-compose-linux-amd64"
+    url: "{{ docker_compose_url }}"
     dest: "{{ om_homedir }}/{{ docker_compose_plugin_dir }}/docker-compose"
+  when: docker_cli_dir_present.stat.exists == False
+
+- name: Download Docker CLI root
+  get_url:
+    url: "{{ docker_compose_url }}"
+    dest: "{{ root_homedir }}/{{ docker_compose_plugin_dir }}/docker-compose"
+  become: yes
   when: docker_cli_dir_present.stat.exists == False
 
 - name: Change permissions
@@ -56,6 +72,15 @@
     mode: a+x
     owner: "{{ om_user }}"
     group: "{{ om_user }}"
+  become: yes
+
+- name: Change permissions for root
+  file:
+    path: "{{ root_homedir }}/{{ docker_compose_plugin_dir }}/docker-compose"
+    state: touch
+    mode: a+x
+    owner: "{{ root_user }}"
+    group: "{{ root_user }}"
   become: yes
 
 - name: Ensuring docker service is always running

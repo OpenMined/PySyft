@@ -349,6 +349,7 @@ right_name = [
     "mironov",
     "ng",
     "norvig",
+    "olah",
     "pearl",
     "pesenti",
     "russell",
