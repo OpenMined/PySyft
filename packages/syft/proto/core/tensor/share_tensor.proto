@@ -6,11 +6,11 @@ import "proto/core/tensor/tensor.proto";
 import "proto/lib/numpy/array.proto";
 
 message ShareTensor {
-    oneof data {
-        Tensor tensor = 1;
-        syft.lib.numpy.NumpyProto array = 2;
-    };
+  oneof data {
+    Tensor tensor = 1;
+    syft.lib.numpy.NumpyProto array = 2;
+  };
 
-   uint32 rank = 3;
-   uint32 nr_parties = 4;
+  uint32 rank = 3;
+  uint32 nr_parties = 4;
 }

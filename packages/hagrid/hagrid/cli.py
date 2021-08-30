@@ -91,7 +91,7 @@ def cli() -> None:
 )
 @click.option(
     "--cmd",
-    default=None,
+    default="false",
     required=False,
     type=str,
     help="Optional: print the cmd without running it",

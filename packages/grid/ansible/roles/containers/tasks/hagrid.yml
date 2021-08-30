@@ -1,7 +1,10 @@
-# ---
-# - name: Install hagrid
-#   shell: "pip install -e ."
-#   become_user: "{{ om_user }}"
-#   args:
-#     chdir: "/home/om/PySyft/packages/hagrid"
-#     executable: /bin/bash
+---
+- name: Install HAGrid
+  shell: "runuser -l {{ om_user }} -c 'pipx install {{ build_dir }}/packages/hagrid --editable --force'"
+  become: yes
+  when: vagrant is not defined
+
+- name: Install HAGrid
+  shell: "runuser -l {{ om_user }} -c 'pipx install {{ syft_dir }}/packages/hagrid --editable --force'"
+  become: yes
+  when: vagrant is defined
