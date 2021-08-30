@@ -14,7 +14,6 @@ from nacl.signing import VerifyKey
 from numpy.typing import ArrayLike
 
 # relative
-# syft relative
 from ..adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from .manager import TensorChainManager
 from .passthrough import PassthroughTensor  # type: ignore
@@ -26,7 +25,7 @@ _SingleEntityPhiTensorRef = None
 def _SingleEntityPhiTensor() -> Type[PassthroughTensor]:
     global _SingleEntityPhiTensorRef
     if _SingleEntityPhiTensorRef is None:
-        # syft relative
+        # relative
         # relative
         from .autodp.single_entity_phi import SingleEntityPhiTensor
 
@@ -40,7 +39,7 @@ _RowEntityPhiTensorRef = None
 def _RowEntityPhiTensor() -> Type[PassthroughTensor]:
     global _RowEntityPhiTensorRef
     if _RowEntityPhiTensorRef is None:
-        # syft relative
+        # relative
         # relative
         from .autodp.row_entity_phi import RowEntityPhiTensor
 
@@ -54,7 +53,7 @@ _AutogradTensorRef = None
 def _AutogradTensor() -> Type[PassthroughTensor]:
     global _AutogradTensorRef
     if _AutogradTensorRef is None:
-        # syft relative
+        # relative
         # relative
         from .autograd.tensor import AutogradTensor
 

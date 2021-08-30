@@ -55,4 +55,3 @@ jobs:
           cd packages/syft && ./scripts/build_proto.sh
 
       - uses: pre-commit/action@v2.0.3
-#        continue-on-error: true

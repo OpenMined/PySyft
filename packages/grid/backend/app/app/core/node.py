@@ -8,8 +8,6 @@ from nacl.signing import SigningKey
 from syft import Domain  # type: ignore
 from syft import Network  # type: ignore
 from syft.core.node.common.client import Client
-
-# from syft.core.node.common.node_table import Base
 from syft.core.node.common.node_table.utils import seed_db
 
 # grid absolute

@@ -6,7 +6,6 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import final
 
 # relative
-# syft relative
 from ......proto.core.node.domain.service.pss_pb2 import PSA  # type: ignore
 from .....common.message import ImmediateSyftMessageWithoutReply  # type: ignore
 from .....common.serde.deserialize import _deserialize as deserialize  # type: ignore

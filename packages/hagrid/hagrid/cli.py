@@ -302,12 +302,8 @@ def create_launch_cmd(
     auth: Optional[AuthCredentials] = None
 
     tail = True
-    if "tail" in kwargs:
-        if kwargs["tail"] is None:
-            """"""
-            # tail = True
-        else:
-            tail = str_to_bool(kwargs["tail"])
+    if "tail" in kwargs and not str_to_bool(kwargs["tail"]):
+        tail = False
 
     if host in ["docker"]:
 
@@ -578,7 +574,7 @@ def create_launch_docker_cmd(
     if not tail:
         cmd += " -d"
 
-    # cmd += " --build"  # force rebuild
+    cmd += " --build"  # force rebuild
 
     cmd = "cd " + GRID_SRC_PATH + ";" + cmd
     return cmd

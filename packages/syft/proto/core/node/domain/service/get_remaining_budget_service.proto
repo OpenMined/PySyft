@@ -9,7 +9,6 @@ message GetRemainingBudgetMessage {
   syft.core.common.UID msg_id = 2;
   syft.core.io.Address address = 3;
   syft.core.io.Address reply_to = 4;
-  // syft.core.common.UID id_at_location = 4;
 }
 
 message GetRemainingBudgetReplyMessage {

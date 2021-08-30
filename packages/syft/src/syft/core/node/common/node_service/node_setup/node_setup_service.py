@@ -63,25 +63,23 @@ def create_initial_setup(
         set_node_uid(node=node)  # make sure the node always has the same UID
         raise OwnerAlreadyExistsError
 
-    print("A")
-
     # 2 - Check if email/password/node_name fields are empty
     _mandatory_request_fields = msg.email and msg.password and msg.domain_name
     if not _mandatory_request_fields:
         raise MissingRequestKeyError(
             message="Invalid request payload, empty fields (email/password/domain_name)!"
         )
-    print("B")
+
     # 3 - Change Node Name
     node.name = msg.domain_name
-    print("C")
+
     # 4 - Create Admin User
     _node_private_key = node.signing_key.encode(encoder=HexEncoder).decode("utf-8")
-    print("D")
+
     _verify_key = node.signing_key.verify_key.encode(encoder=HexEncoder).decode("utf-8")
-    print("E")
+
     _admin_role = node.roles.owner_role
-    print("F")
+
     _ = node.users.signup(
         name=msg.name,
         email=msg.email,
@@ -91,16 +89,13 @@ def create_initial_setup(
         private_key=_node_private_key,
         verify_key=_verify_key,
     )
-    print("G")
+
     # 5 - Save Node SetUp Configs
     try:
         node_id = node.target_id.id
         node.setup.register(domain_name=msg.domain_name, node_id=node_id.no_dash)
-        print("H.1")
     except Exception as e:
-        print("H.2")
         print("Failed to save setup to database", e)
-    print("I")
 
     return SuccessResponseMessage(
         address=msg.reply_to,

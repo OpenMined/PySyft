@@ -11,8 +11,6 @@ from loguru import logger
 import pytest
 
 # grid absolute
-# from app.main import app
-# from app.tests.utils.utils import get_superuser_token_headers
 from app.core.config import settings
 from app.db.session import SessionLocal
 from app.logger.handler import get_log_handler

@@ -64,7 +64,7 @@ def create_searchable_function_from_polynomial(
     """
     if "pymbolic" in str(type(poly)):
 
-        def _run_specific_args(tuple_of_args: tuple) -> EM:
+        def _run_specific_args(tuple_of_args: TypeTuple) -> EM:
             kwargs = {sym: tuple_of_args[i] for sym, i in symbol2index.items()}
             output = EM(context=kwargs)(poly)
             return output
@@ -72,7 +72,7 @@ def create_searchable_function_from_polynomial(
     else:
 
         def _run_specific_args(
-            tuple_of_args: tuple,
+            tuple_of_args: TypeTuple,
         ) -> EM:
             kwargs = {sym: tuple_of_args[i] for sym, i in symbol2index.items()}
             output = poly.subs(kwargs)
@@ -211,7 +211,7 @@ def max_lipschitz_via_jacobian(
     force_all_searches: bool = False,
     try_hessian_shortcut: bool = False,
 ) -> TypeTuple[TypeList[float], Any]:
-    # scalars = R^d` representing the d' dimentional output of g
+    # scalars = R^d` representing the d' dimensional output of g
     # input_entity = the 'i'th entity for which we want to compute a lipschitz bound
 
     input_scalars = set()
@@ -219,7 +219,7 @@ def max_lipschitz_via_jacobian(
         for i_s in s.input_scalars:
             input_scalars.add(i_s)
 
-    # R^d` representing the d' dimentional output of g
+    # R^d` representing the d' dimensional output of g
     # the numberator of the partial derivative
     out = sym.Matrix([x.sympoly for x in scalars])
 

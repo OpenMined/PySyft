@@ -10,8 +10,6 @@ from nacl.signing import VerifyKey
 # relative
 from ......lib.python import List  # type: ignore
 from ......logger import traceback_and_raise  # type: ignore
-
-# syft relative
 from .....adp.publish import publish  # type: ignore
 from .....common.uid import UID  # type: ignore
 from .....store.storeable_object import StorableObject  # type: ignore
