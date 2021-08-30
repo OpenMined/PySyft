@@ -10,7 +10,7 @@ from alembic import context  # type: ignore
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
-# syft absolute
+# grid absolute
 from app.db.base import Base
 
 # this is the Alembic Config object, which provides

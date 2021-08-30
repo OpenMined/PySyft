@@ -3,13 +3,13 @@
 Initial Alembic migration with all syft tables
 
 Revision ID: 0cda31d54345
-Revises: 
+Revises:
 Create Date: 2021-08-29 20:11:00.622963
 
 """
+# third party
 from alembic import op
 import sqlalchemy as sa
-
 
 # revision identifiers, used by Alembic.
 revision = "0cda31d54345"
@@ -108,12 +108,8 @@ def upgrade() -> None:
         sa.Column("dataset", sa.String(length=256), nullable=True),
         sa.Column("dtype", sa.String(length=256), nullable=True),
         sa.Column("shape", sa.String(length=256), nullable=True),
-        sa.ForeignKeyConstraint(
-            ["dataset"], ["dataset.id"], ondelete="CASCADE"
-        ),
-        sa.ForeignKeyConstraint(
-            ["obj"], ["bin_object.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["dataset"], ["dataset.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["obj"], ["bin_object.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
@@ -125,9 +121,7 @@ def upgrade() -> None:
         sa.Column("name", sa.String(), nullable=True),
         sa.Column("read_permissions", sa.JSON(), nullable=True),
         sa.Column("search_permissions", sa.JSON(), nullable=True),
-        sa.ForeignKeyConstraint(
-            ["obj"], ["bin_object.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["obj"], ["bin_object.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
@@ -140,7 +134,10 @@ def upgrade() -> None:
         sa.Column("private_key", sa.String(length=2048), nullable=True),
         sa.Column("verify_key", sa.String(length=2048), nullable=True),
         sa.Column("role", sa.Integer(), nullable=True),
-        sa.ForeignKeyConstraint(["role"], ["role.id"],),
+        sa.ForeignKeyConstraint(
+            ["role"],
+            ["role.id"],
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
@@ -156,7 +153,10 @@ def upgrade() -> None:
         sa.Column("verify_key", sa.String(length=255), nullable=True),
         sa.Column("object_type", sa.String(length=255), nullable=True),
         sa.Column("tags", sa.JSON(), nullable=True),
-        sa.ForeignKeyConstraint(["user_id"], ["syft_user.id"],),
+        sa.ForeignKeyConstraint(
+            ["user_id"],
+            ["syft_user.id"],
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
@@ -164,8 +164,14 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column("user", sa.Integer(), nullable=True),
         sa.Column("environment", sa.Integer(), nullable=True),
-        sa.ForeignKeyConstraint(["environment"], ["environment.id"],),
-        sa.ForeignKeyConstraint(["user"], ["syft_user.id"],),
+        sa.ForeignKeyConstraint(
+            ["environment"],
+            ["environment.id"],
+        ),
+        sa.ForeignKeyConstraint(
+            ["user"],
+            ["syft_user.id"],
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
@@ -173,8 +179,14 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column("user", sa.Integer(), nullable=True),
         sa.Column("group", sa.Integer(), nullable=True),
-        sa.ForeignKeyConstraint(["group"], ["group.id"],),
-        sa.ForeignKeyConstraint(["user"], ["syft_user.id"],),
+        sa.ForeignKeyConstraint(
+            ["group"],
+            ["group.id"],
+        ),
+        sa.ForeignKeyConstraint(
+            ["user"],
+            ["syft_user.id"],
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
     # ### end Alembic commands ###
@@ -197,4 +209,3 @@ def downgrade() -> None:
     op.drop_table("association_request")
     op.drop_table("association")
     # ### end Alembic commands ###
-
