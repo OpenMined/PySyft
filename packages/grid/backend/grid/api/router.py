@@ -3,11 +3,11 @@ from fastapi import APIRouter
 
 # grid absolute
 from grid.api.association_requests import association_requests
-from grid.api.datasets import datasets
 from grid.api.auth import login
+from grid.api.datasets import datasets
+from grid.api.meta import status
 from grid.api.roles import roles
 from grid.api.setup import setup
-from grid.api.meta import status
 from grid.api.syft import syft
 from grid.api.users.routes import router as user_router
 

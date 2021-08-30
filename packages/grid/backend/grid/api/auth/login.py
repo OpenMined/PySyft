@@ -7,14 +7,16 @@ from fastapi import APIRouter
 from fastapi import Body
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
-from grid.core import security
-from grid.core.config import settings
-from grid.core.node import node
 from loguru import logger
 
 # syft absolute
 from syft import serialize  # type: ignore
 from syft.core.node.common.exceptions import InvalidCredentialsError
+
+# grid absolute
+from grid.core import security
+from grid.core.config import settings
+from grid.core.node import node
 
 router = APIRouter()
 

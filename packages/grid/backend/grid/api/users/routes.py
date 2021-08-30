@@ -10,7 +10,7 @@ from starlette import status
 from starlette.exceptions import HTTPException
 
 # grid absolute
-from grid.api.dependencies.current_user import get_current_user 
+from grid.api.dependencies.current_user import get_current_user
 from grid.api.users.models import User
 from grid.api.users.models import UserCreate
 from grid.api.users.models import UserPrivate

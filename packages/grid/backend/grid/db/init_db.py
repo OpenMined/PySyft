@@ -34,4 +34,3 @@ def init_db(db: Session) -> None:
 
     # Process syft message
     _ = node.recv_immediate_msg_with_reply(msg=msg).message
-

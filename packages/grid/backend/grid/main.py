@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
 # grid absolute
-from grid.api.router import api_router 
+from grid.api.router import api_router
 from grid.core.config import settings
 from grid.logger.handler import get_log_handler
 

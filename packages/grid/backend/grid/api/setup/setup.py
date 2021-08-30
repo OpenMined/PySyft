@@ -22,7 +22,7 @@ from syft.core.node.common.node_service.node_setup.node_setup_service import (
 )
 
 # grid absolute
-from grid.api.dependencies.current_user import get_current_user 
+from grid.api.dependencies.current_user import get_current_user
 from grid.core.node import node
 
 router = APIRouter()
@@ -62,9 +62,7 @@ def create_setup(
 
 
 @router.get("", status_code=200, response_class=JSONResponse)
-def get_setup(
-    request: Request, current_user: Any = Depends(get_current_user)
-) -> Any:
+def get_setup(request: Request, current_user: Any = Depends(get_current_user)) -> Any:
     user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
 
     msg = GetSetUpMessage(address=node.address, reply_to=node.address).sign(

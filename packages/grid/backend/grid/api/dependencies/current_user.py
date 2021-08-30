@@ -10,11 +10,11 @@ from jose import jwt
 
 # grid absolute
 from grid.api.token import TokenPayload
+from grid.api.users.models import UserPrivate
 from grid.core import security
 from grid.core.config import settings
 from grid.core.node import node
 from grid.db.session import SessionLocal
-from grid.api.users.models import UserPrivate
 
 reusable_oauth2 = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/login")
 
