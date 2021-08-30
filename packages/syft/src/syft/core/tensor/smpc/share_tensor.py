@@ -48,7 +48,7 @@ class ShareTensor(PassthroughTensor, Serializable):
             value=self.child.flatten(),
         )
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: Union[str, int, slice]) -> ShareTensor:
         return ShareTensor(
             rank=self.rank,
             nr_parties=self.nr_parties,
@@ -56,7 +56,7 @@ class ShareTensor(PassthroughTensor, Serializable):
             value=self.child[item],
         )
 
-    def reshape(self, *args, **kwargs):
+    def reshape(self, *args: Tuple[Any, ...], **kwargs: Any) -> ShareTensor:
         return ShareTensor(
             rank=self.rank,
             nr_parties=self.nr_parties,
@@ -64,7 +64,7 @@ class ShareTensor(PassthroughTensor, Serializable):
             value=self.child.reshape(*args, **kwargs),
         )
 
-    def copy_tensor(self):
+    def copy_tensor(self) -> ShareTensor:
         return ShareTensor(
             rank=self.rank, nr_parties=self.nr_parties, ring_size=self.ring_size
         )

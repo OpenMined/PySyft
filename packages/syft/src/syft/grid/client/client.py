@@ -87,7 +87,7 @@ def login(
 
     if email is None and password is None:
         email = "info@openmined.org"
-        password = "changethis"
+        password = "changethis"  # nosec
 
         print("No email/password specified. Logging in with default...")
         print("Don't forget to re-configure your admin email and password!!!")

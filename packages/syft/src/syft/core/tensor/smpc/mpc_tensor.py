@@ -1,3 +1,6 @@
+# future
+from __future__ import annotations
+
 # stdlib
 import functools
 from functools import lru_cache
@@ -10,6 +13,7 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
+from typing import cast
 
 # third party
 import numpy as np
@@ -17,6 +21,7 @@ import torch
 
 # syft absolute
 from syft.core.tensor.passthrough import PassthroughTensor
+from syft.core.tensor.passthrough import SupportedChainType
 from syft.core.tensor.smpc.share_tensor import ShareTensor
 
 # relative
@@ -95,7 +100,7 @@ class MPCTensor(PassthroughTensor):
 
         super().__init__(res)
 
-    def publish(self, sigma: float):
+    def publish(self, sigma: float) -> MPCTensor:
         """Note: @George has proposed that we could just add .publish() to the
         METHODS_FORWARD_ALL_SHARES but this doesn't seem to work at present so I'm adding
         this back."""
@@ -113,7 +118,7 @@ class MPCTensor(PassthroughTensor):
         )
 
     @property
-    def shape(self):
+    def shape(self) -> Optional[Tuple[int]]:
         return self.mpc_shape
 
     @staticmethod
@@ -231,7 +236,7 @@ class MPCTensor(PassthroughTensor):
         block: bool = False,
         timeout_secs: Optional[int] = None,
         verbose: bool = False,
-    ):
+    ) -> None:
         for child in self.child:
             child.request(
                 reason=reason, block=block, timeout_secs=timeout_secs, verbose=verbose
@@ -270,7 +275,7 @@ class MPCTensor(PassthroughTensor):
         # if not is_share_tensor:
         #    result = result.decode()
 
-        if hasattr(result, 'child') and isinstance(result.child, ShareTensor):
+        if hasattr(result, "child") and isinstance(result.child, ShareTensor):
             return result.child.child
 
         return result
@@ -296,13 +301,14 @@ class MPCTensor(PassthroughTensor):
         """
         op = getattr(operator, op_str)
         res = op(np.empty(x_shape), np.empty(y_shape)).shape
-        return tuple(res)
+        cast(Tuple[int], res)
+        return tuple(res)  # type: ignore
 
     def __getattribute__(self, attr_name: str) -> Any:
         if attr_name in METHODS_FORWARD_ALL_SHARES:
 
             def method_all_shares(
-                _self: "MPCTensor", *args: List[Any], **kwargs: Dict[Any, Any]
+                _self: MPCTensor, *args: List[Any], **kwargs: Dict[Any, Any]
             ) -> Any:
                 shares = []
 
@@ -321,18 +327,15 @@ class MPCTensor(PassthroughTensor):
             return functools.partial(method_all_shares, self)
         return object.__getattribute__(self, attr_name)
 
-    def __apply_private_op(self, other: "MPCTensor", op_str: str) -> List[ShareTensor]:
-
+    def __apply_private_op(self, other: MPCTensor, op_str: str) -> List[ShareTensor]:
         op = getattr(operator, op_str)
-
         if isinstance(other, MPCTensor):
-
             res_shares = [op(a, b) for a, b in zip(self.child, other.child)]
         else:
             raise ValueError("Add works only for the MPCTensor at the moment!")
         return res_shares
 
-    def __apply_public_op(self, y: "MPCTensor", op_str: str) -> List[ShareTensor]:
+    def __apply_public_op(self, y: MPCTensor, op_str: str) -> List[ShareTensor]:
         op = getattr(operator, op_str)
         if op_str in {"mul", "matmul", "add", "sub"}:
             res_shares = [op(share, y) for share in self.child]
@@ -343,15 +346,15 @@ class MPCTensor(PassthroughTensor):
 
     def __apply_op(
         self,
-        y: Union[int, float, torch.Tensor, np.ndarray, "MPCTensor"],
+        y: Union[int, float, torch.Tensor, np.ndarray, MPCTensor],
         op_str: str,
-    ) -> "MPCTensor":
+    ) -> MPCTensor:
         """Apply an operation on "self" which is a MPCTensor "y".
 
          This function checks if "y" is private or public value.
 
         Args:
-            y (Union[int, float, torch.Tensor, np.ndarray, "MPCTensor"]: tensor to apply the operation.
+            y (Union[int, float, torch.Tensor, np.ndarray, MPCTensor]: tensor to apply the operation.
             op_str (str): the operation.
 
         Returns:
@@ -360,9 +363,11 @@ class MPCTensor(PassthroughTensor):
 
         _self = self
         if ispointer(y):
-
-            if y.client not in self.parties:
-                parties = self.parties + [y.client]
+            client = getattr(y, "client", None)
+            if self.parties is None:
+                raise Exception("")
+            if client is not None and client not in self.parties:
+                parties = self.parties + [client]
             else:
                 parties = [party for party in self.parties]
 
@@ -410,12 +415,12 @@ class MPCTensor(PassthroughTensor):
         return result
 
     def add(
-        self, y: Union[int, float, np.ndarray, torch.tensor, "MPCTensor"]
-    ) -> "MPCTensor":
+        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
+    ) -> MPCTensor:
         """Apply the "add" operation between "self" and "y".
 
         Args:
-            y (Union["MPCTensor", torch.Tensor, float, int]): self + y
+            y (Union[MPCTensor, torch.Tensor, float, int]): self + y
 
         Returns:
             MPCTensor. Result of the operation.
@@ -429,18 +434,18 @@ class MPCTensor(PassthroughTensor):
         # else:
         #     return NotImplemented
 
-    def sub(self, y: "MPCTensor") -> "MPCTensor":
+    def sub(self, y: MPCTensor) -> MPCTensor:
         res = self.__apply_op(y, "sub")
         return res
 
-    def rsub(self, y: "MPCTensor") -> "MPCTensor":
+    def rsub(self, y: MPCTensor) -> MPCTensor:
         new_self = self * (-1)
         res = new_self.__apply_op(y, "add")
         return res
 
     def mul(
-        self, y: Union[int, float, np.ndarray, torch.tensor, "MPCTensor"]
-    ) -> "MPCTensor":
+        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
+    ) -> MPCTensor:
         if isinstance(y, MPCTensor):
             raise ValueError("Private multiplication not yet implemented!")
         else:
@@ -448,27 +453,21 @@ class MPCTensor(PassthroughTensor):
                 operator.mul(a, b) for a, b in zip(self.child, itertools.repeat(y))
             ]
 
-        if isinstance(y, (float, int)):
-            y_shape = (1,)
-        else:
-            y_shape = y.shape
-
+        y_shape = getattr(y, "shape", (1,))
         new_shape = MPCTensor.__get_shape("mul", self.mpc_shape, y_shape)
         res = MPCTensor(shares=res_shares, shape=new_shape)
 
         return res
 
-    def __str__(self):
+    def __str__(self) -> str:
         res = "MPCTensor"
         for share in self.child:
             res = f"{res}\n\t{share}"
 
         return res
 
-    def __repr__(self):
-
+    def __repr__(self) -> str:
         out = "MPCTensor"
-
         out += ".shape=" + str(self.shape) + "\n"
         for i, child in enumerate(self.child):
             out += f"\t .child[{i}] = " + child.__repr__() + "\n"
@@ -485,15 +484,15 @@ class MPCTensor(PassthroughTensor):
 
 
 @implements(MPCTensor, np.add)
-def add(x: np.ndarray, y: MPCTensor):
+def add(x: np.ndarray, y: MPCTensor) -> SupportedChainType:
     return y.add(x)
 
 
 @implements(MPCTensor, np.subtract)
-def sub(x: np.ndarray, y: MPCTensor):
+def sub(x: np.ndarray, y: MPCTensor) -> SupportedChainType:
     return y.rsub(x)
 
 
 @implements(MPCTensor, np.multiply)
-def mul(x: np.ndarray, y: MPCTensor):
+def mul(x: np.ndarray, y: MPCTensor) -> SupportedChainType:
     return y.mul(x)

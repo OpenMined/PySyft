@@ -64,15 +64,15 @@ class Scalar(Serializable):
         return publish([self], acc=acc, sigma=sigma, user_key=user_key)
 
     @property
-    def max_val(self) -> Optional[np.float64]:
+    def max_val(self) -> Optional[float]:
         raise NotImplementedError
 
     @property
-    def min_val(self) -> Optional[np.float64]:
+    def min_val(self) -> Optional[float]:
         raise NotImplementedError
 
     @property
-    def value(self) -> Optional[np.float64]:
+    def value(self) -> Optional[float]:
         raise NotImplementedError
 
     def __str__(self) -> str:
@@ -145,23 +145,23 @@ class IntermediateScalar(Scalar):
         return mapper.free_symbols
 
     @property
-    def max_val(self) -> Optional[np.float64]:
+    def max_val(self) -> Optional[float]:
         if self.poly is not None:
             results = flatten_and_maximize_poly(-self.poly)
             if len(results) >= 1:
-                return -results[-1].fun
+                return float(-results[-1].fun)
         return None
 
     @property
-    def min_val(self) -> Optional[np.float64]:
+    def min_val(self) -> Optional[float]:
         if self.poly is not None:
             results = flatten_and_maximize_poly(self.poly)
             if len(results) >= 1:
-                return results[-1].fun
+                return float(results[-1].fun)
         return None
 
     @property
-    def value(self) -> Optional[np.float64]:
+    def value(self) -> Optional[float]:
         if self.poly is not None:
             result = EM(
                 context={obj.poly.name: obj.value for obj in self.input_scalars}
@@ -278,14 +278,22 @@ class IntermediatePhiScalar(IntermediateScalar):
 
     @property
     def gamma(self) -> GammaScalar:
-        """Turn the PhiScalaar into a GammaScalar, if another entity is involved"""
+        """Turn the PhiScalar into a GammaScalar, if another entity is involved"""
         if self._gamma is None:
-            self._gamma = GammaScalar(
-                min_val=self.min_val,  # type: ignore
-                value=self.value,  # type: ignore
-                max_val=self.max_val,  # type: ignore
-                entity=self.entity,
-            )
+            if (
+                self.min_val is not None
+                and self.value is not None
+                and self.max_val is not None
+            ):
+                # TODO: Add prime to GammaScalar init
+                self._gamma = GammaScalar(
+                    min_val=self.min_val,
+                    value=self.value,
+                    max_val=self.max_val,
+                    entity=self.entity,
+                )
+            else:
+                raise Exception("GammaScalar requires min_val, value and max_val")
         return self._gamma
 
     def _object2proto(self) -> IntermediatePhiScalar_PB:
@@ -641,7 +649,7 @@ class GammaScalar(BaseScalar, IntermediateGammaScalar):
             max_val=proto.max_val if proto.HasField("max_val") else None,
             value=proto.value if proto.HasField("value") else None,
             entity=deserialize(proto.entity),
-            prime=deserialize(proto.prime),
+            prime=proto.prime,
         )
 
     @staticmethod

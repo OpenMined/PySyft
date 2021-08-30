@@ -118,7 +118,7 @@ def test_autodp_phiscalar_substitute_publish() -> None:
     # do calculation
     s_ptr = data_ptr.sum(0) / 10
 
-    out = s_ptr.publish(client=client, sigma=1)
+    out = s_ptr.publish(sigma=1)
     result = out.get()
 
     result_float = result.child.item() - 13
