@@ -5,20 +5,16 @@ from typing import Any
 # third party
 from fastapi import APIRouter
 from fastapi import Body
-from fastapi import Depends
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
+from grid.core import security
+from grid.core.config import settings
+from grid.core.node import node
 from loguru import logger
 
 # syft absolute
 from syft import serialize  # type: ignore
 from syft.core.node.common.exceptions import InvalidCredentialsError
-
-# grid absolute
-from grid.api.dependencies.current_user import get_current_user
-from grid.core import security
-from grid.core.config import settings
-from grid.core.node import node
 
 router = APIRouter()
 
@@ -56,4 +52,3 @@ def login_access_token(
         "metadata": metadata,
         "key": user.private_key,
     }
-
