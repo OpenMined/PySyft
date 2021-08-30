@@ -46,16 +46,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v1
-        with:
-          version: "3.x"
+      # - name: Install Protoc
+      #   uses: arduino/setup-protoc@v1
+      #   with:
+      #     version: "3.x"
 
-      - name: Build Protos
-        run: |
-          set -e
-          pip install black isort --default-timeout=60
-          find . -name "build_proto.sh" -execdir bash -c 'cd .. && sh scripts/build_proto.sh'  \;
+      # - name: Build Protos
+      #   run: |
+      #     set -e
+      #     pip install black isort --default-timeout=60
+      #     find . -name "build_proto.sh" -execdir bash -c 'cd .. && sh scripts/build_proto.sh'  \;
 
       - uses: pre-commit/action@v2.0.3
 
