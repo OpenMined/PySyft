@@ -3,14 +3,14 @@ import logging
 
 # grid absolute
 from grid.db.init_db import init_db
-from grid.db.session import SessionLocal
+from grid.db.session import get_db_session
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
 def init() -> None:
-    db = SessionLocal()
+    db = get_db_session()
     init_db(db)
 
 

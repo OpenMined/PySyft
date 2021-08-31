@@ -14,14 +14,14 @@ from grid.api.users.models import UserPrivate
 from grid.core import security
 from grid.core.config import settings
 from grid.core.node import node
-from grid.db.session import SessionLocal
+from grid.db.session import get_db_session 
 
 reusable_oauth2 = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/login")
 
 
 def get_db() -> Generator:
     try:
-        db = SessionLocal()
+        db = get_db_session()
         yield db
     finally:
         db.close()

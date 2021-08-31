@@ -12,7 +12,8 @@ import pytest
 
 # grid absolute
 from grid.core.config import settings
-from grid.db.session import SessionLocal
+from grid.initial_data import init_db
+from grid.db.session import get_db_session
 from grid.logger.handler import get_log_handler
 
 log_handler = get_log_handler()
@@ -20,11 +21,14 @@ log_handler = get_log_handler()
 
 @pytest.fixture(scope="session")
 def db() -> Generator:
-    yield SessionLocal()
+    yield get_db_session()
 
 
 @pytest.fixture
 async def app() -> FastAPI:
+    session = get_db_session()
+    init_db(db=session)
+
     # grid absolute
     from grid.main import app
 
