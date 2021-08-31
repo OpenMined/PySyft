@@ -66,3 +66,6 @@ log_data = {
     "port": port,
 }
 print(json.dumps(log_data))
+
+
+## fetched from https://github.com/tiangolo/uvicorn-gunicorn-docker/blob/master/docker-images/gunicorn_conf.py

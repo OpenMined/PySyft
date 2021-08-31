@@ -28,4 +28,4 @@ fi
 # Start Uvicorn with live reload
 exec uvicorn --reload --host $HOST --port $PORT --log-level $LOG_LEVEL "$APP_MODULE"
 
-## This code comes from https://github.com/tiangolo/uvicorn-gunicorn-docker/blob/master/docker-images/start_reload.sh
+## fetched from https://github.com/tiangolo/uvicorn-gunicorn-docker/blob/master/docker-images/start.sh

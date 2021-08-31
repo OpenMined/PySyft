@@ -33,4 +33,4 @@ fi
 # Start Gunicorn
 exec gunicorn -k "$WORKER_CLASS" -c "$GUNICORN_CONF" "$APP_MODULE"
 
-## This code comes from https://github.com/tiangolo/uvicorn-gunicorn-docker/blob/master/docker-images/start.sh
+## fetched from https://github.com/tiangolo/uvicorn-gunicorn-docker/blob/master/docker-images/start.sh
