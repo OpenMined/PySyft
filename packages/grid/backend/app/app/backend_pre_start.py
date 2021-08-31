@@ -10,7 +10,7 @@ from tenacity import stop_after_attempt
 from tenacity import wait_fixed
 
 # grid absolute
-from app.db.session import SessionLocal
+from app.db.session import get_db_session
 
 max_tries = 60 * 5  # 5 minutes
 wait_seconds = 1
@@ -24,7 +24,7 @@ wait_seconds = 1
 )
 def init() -> None:
     try:
-        db = SessionLocal()
+        db = get_db_session()
         # Try to create session to check if DB is awake
         db.execute("SELECT 1")
     except Exception as e:

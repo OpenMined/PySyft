@@ -80,6 +80,15 @@ jobs:
         run: |
           pytest -m 'fast or slow' --cov syft --cov-fail-under 70 -n auto --durations=50
 
+      - name: Install tox
+        run: |
+          pip install tox --upgrade
+
+      - name: Run Backend API tests
+        shell: bash
+        run: |
+          tox -e grid.test.backend
+
       - name: Run supported library tests
         run: |
           pytest -m libs --co --durations=50
