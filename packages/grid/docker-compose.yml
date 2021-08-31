@@ -232,10 +232,6 @@ services:
     environment:
       - VERSION=${VERSION}
       - VERSION_HASH=${VERSION_HASH}
-    volumes:
-      - ./frontend/:/app
-      - /app/node_modules
-      - /app/.next
     deploy:
       labels:
         - traefik.enable=true
