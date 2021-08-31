@@ -9,9 +9,9 @@ import os
 import pytest
 
 # relative
-from .test_helpers import find_package_bin
-from .test_helpers import rmpath
-from .test_helpers import uniqstr
+from .helpers_test import find_package_bin
+from .helpers_test import rmpath
+from .helpers_test import uniqstr
 
 
 @pytest.fixture

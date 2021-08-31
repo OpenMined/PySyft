@@ -18,25 +18,25 @@ _sym_db = _symbol_database.Default()
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/env.proto",
-    package="syft.lib.gym",
+    package="gym",
     syntax="proto3",
     serialized_options=None,
     serialized_pb=_b(
-        '\n\x0fproto/env.proto\x12\x0csyft.lib.gym"\x11\n\x03\x45nv\x12\n\n\x02id\x18\x01 \x01(\tb\x06proto3'
+        '\n\x0fproto/env.proto\x12\x03gym"\x11\n\x03\x45nv\x12\n\n\x02id\x18\x01 \x01(\tb\x06proto3'
     ),
 )
 
 
 _ENV = _descriptor.Descriptor(
     name="Env",
-    full_name="syft.lib.gym.Env",
+    full_name="gym.Env",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
     fields=[
         _descriptor.FieldDescriptor(
             name="id",
-            full_name="syft.lib.gym.Env.id",
+            full_name="gym.Env.id",
             index=0,
             number=1,
             type=9,
@@ -61,8 +61,8 @@ _ENV = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=33,
-    serialized_end=50,
+    serialized_start=24,
+    serialized_end=41,
 )
 
 DESCRIPTOR.message_types_by_name["Env"] = _ENV
@@ -74,7 +74,7 @@ Env = _reflection.GeneratedProtocolMessageType(
     dict(
         DESCRIPTOR=_ENV,
         __module__="proto.env_pb2"
-        # @@protoc_insertion_point(class_scope:syft.lib.gym.Env)
+        # @@protoc_insertion_point(class_scope:gym.Env)
     ),
 )
 _sym_db.RegisterMessage(Env)

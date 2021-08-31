@@ -74,6 +74,92 @@
     "gym.envs.classic_control.rendering.SimpleImageViewer",
     "gym.envs.classic_control.rendering.Transform",
     "gym.envs.classic_control.rendering.Viewer",
+    "gym.envs.mujoco.AntEnv",
+    "gym.envs.mujoco.HalfCheetahEnv",
+    "gym.envs.mujoco.HopperEnv",
+    "gym.envs.mujoco.HumanoidEnv",
+    "gym.envs.mujoco.HumanoidStandupEnv",
+    "gym.envs.mujoco.InvertedDoublePendulumEnv",
+    "gym.envs.mujoco.InvertedPendulumEnv",
+    "gym.envs.mujoco.MujocoEnv",
+    "gym.envs.mujoco.PusherEnv",
+    "gym.envs.mujoco.ReacherEnv",
+    "gym.envs.mujoco.StrikerEnv",
+    "gym.envs.mujoco.SwimmerEnv",
+    "gym.envs.mujoco.ThrowerEnv",
+    "gym.envs.mujoco.Walker2dEnv",
+    "gym.envs.mujoco.ant.AntEnv",
+    "gym.envs.mujoco.ant_v3.AntEnv",
+    "gym.envs.mujoco.half_cheetah.HalfCheetahEnv",
+    "gym.envs.mujoco.half_cheetah_v3.HalfCheetahEnv",
+    "gym.envs.mujoco.hopper.HopperEnv",
+    "gym.envs.mujoco.hopper_v3.HopperEnv",
+    "gym.envs.mujoco.humanoid.HumanoidEnv",
+    "gym.envs.mujoco.humanoid_v3.HumanoidEnv",
+    "gym.envs.mujoco.humanoidstandup.HumanoidStandupEnv",
+    "gym.envs.mujoco.inverted_double_pendulum.InvertedDoublePendulumEnv",
+    "gym.envs.mujoco.inverted_pendulum.InvertedPendulumEnv",
+    "gym.envs.mujoco.mujoco_env.MujocoEnv",
+    "gym.envs.mujoco.pusher.PusherEnv",
+    "gym.envs.mujoco.reacher.ReacherEnv",
+    "gym.envs.mujoco.striker.StrikerEnv",
+    "gym.envs.mujoco.swimmer.SwimmerEnv",
+    "gym.envs.mujoco.swimmer_v3.SwimmerEnv",
+    "gym.envs.mujoco.thrower.ThrowerEnv",
+    "gym.envs.mujoco.walker2d.Walker2dEnv",
+    "gym.envs.mujoco.walker2d_v3.Walker2dEnv",
+    "gym.envs.registration.EnvRegistry",
+    "gym.envs.registration.EnvSpec",
+    "gym.envs.robotics.FetchEnv",
+    "gym.envs.robotics.FetchPickAndPlaceEnv",
+    "gym.envs.robotics.FetchPushEnv",
+    "gym.envs.robotics.FetchReachEnv",
+    "gym.envs.robotics.FetchSlideEnv",
+    "gym.envs.robotics.HandBlockEnv",
+    "gym.envs.robotics.HandBlockTouchSensorsEnv",
+    "gym.envs.robotics.HandEggEnv",
+    "gym.envs.robotics.HandEggTouchSensorsEnv",
+    "gym.envs.robotics.HandPenEnv",
+    "gym.envs.robotics.HandPenTouchSensorsEnv",
+    "gym.envs.robotics.HandReachEnv",
+    "gym.envs.robotics.fetch.pick_and_place.FetchPickAndPlaceEnv",
+    "gym.envs.robotics.fetch.push.FetchPushEnv",
+    "gym.envs.robotics.fetch.reach.FetchReachEnv",
+    "gym.envs.robotics.fetch.slide.FetchSlideEnv",
+    "gym.envs.robotics.fetch_env.FetchEnv",
+    "gym.envs.robotics.hand.manipulate.HandBlockEnv",
+    "gym.envs.robotics.hand.manipulate.HandEggEnv",
+    "gym.envs.robotics.hand.manipulate.HandPenEnv",
+    "gym.envs.robotics.hand.manipulate.ManipulateEnv",
+    "gym.envs.robotics.hand.manipulate_touch_sensors.HandBlockTouchSensorsEnv",
+    "gym.envs.robotics.hand.manipulate_touch_sensors.HandEggTouchSensorsEnv",
+    "gym.envs.robotics.hand.manipulate_touch_sensors.HandPenTouchSensorsEnv",
+    "gym.envs.robotics.hand.manipulate_touch_sensors.ManipulateTouchSensorsEnv",
+    "gym.envs.robotics.hand.reach.HandReachEnv",
+    "gym.envs.robotics.hand_env.HandEnv",
+    "gym.envs.robotics.robot_env.RobotEnv",
+    "gym.envs.toy_text.BlackjackEnv",
+    "gym.envs.toy_text.CliffWalkingEnv",
+    "gym.envs.toy_text.FrozenLakeEnv",
+    "gym.envs.toy_text.GuessingGame",
+    "gym.envs.toy_text.HotterColder",
+    "gym.envs.toy_text.KellyCoinflipEnv",
+    "gym.envs.toy_text.KellyCoinflipGeneralizedEnv",
+    "gym.envs.toy_text.NChainEnv",
+    "gym.envs.toy_text.RouletteEnv",
+    "gym.envs.toy_text.TaxiEnv",
+    "gym.envs.toy_text.blackjack.BlackjackEnv",
+    "gym.envs.toy_text.cliffwalking.CliffWalkingEnv",
+    "gym.envs.toy_text.discrete.DiscreteEnv",
+    "gym.envs.toy_text.discrete.Env",
+    "gym.envs.toy_text.frozen_lake.FrozenLakeEnv",
+    "gym.envs.toy_text.guessing_game.GuessingGame",
+    "gym.envs.toy_text.hotter_colder.HotterColder",
+    "gym.envs.toy_text.kellycoinflip.KellyCoinflipEnv",
+    "gym.envs.toy_text.kellycoinflip.KellyCoinflipGeneralizedEnv",
+    "gym.envs.toy_text.nchain.NChainEnv",
+    "gym.envs.toy_text.roulette.RouletteEnv",
+    "gym.envs.toy_text.taxi.TaxiEnv",
     "gym.error.APIConnectionError",
     "gym.error.APIError",
     "gym.error.AlreadyPendingCallError",
@@ -241,6 +327,53 @@
     "gym.envs.classic_control.pendulum",
     "gym.envs.classic_control.rendering",
     "gym.envs.mujoco",
+    "gym.envs.mujoco.ant",
+    "gym.envs.mujoco.ant_v3",
+    "gym.envs.mujoco.half_cheetah",
+    "gym.envs.mujoco.half_cheetah_v3",
+    "gym.envs.mujoco.hopper",
+    "gym.envs.mujoco.hopper_v3",
+    "gym.envs.mujoco.humanoid",
+    "gym.envs.mujoco.humanoid_v3",
+    "gym.envs.mujoco.humanoidstandup",
+    "gym.envs.mujoco.inverted_double_pendulum",
+    "gym.envs.mujoco.inverted_pendulum",
+    "gym.envs.mujoco.mujoco_env",
+    "gym.envs.mujoco.pusher",
+    "gym.envs.mujoco.reacher",
+    "gym.envs.mujoco.striker",
+    "gym.envs.mujoco.swimmer",
+    "gym.envs.mujoco.swimmer_v3",
+    "gym.envs.mujoco.thrower",
+    "gym.envs.mujoco.walker2d",
+    "gym.envs.mujoco.walker2d_v3",
+    "gym.envs.registration",
+    "gym.envs.robotics",
+    "gym.envs.robotics.fetch",
+    "gym.envs.robotics.fetch.pick_and_place",
+    "gym.envs.robotics.fetch.push",
+    "gym.envs.robotics.fetch.reach",
+    "gym.envs.robotics.fetch.slide",
+    "gym.envs.robotics.fetch_env",
+    "gym.envs.robotics.hand",
+    "gym.envs.robotics.hand.manipulate",
+    "gym.envs.robotics.hand.manipulate_touch_sensors",
+    "gym.envs.robotics.hand.reach",
+    "gym.envs.robotics.hand_env",
+    "gym.envs.robotics.robot_env",
+    "gym.envs.robotics.rotations",
+    "gym.envs.robotics.utils",
+    "gym.envs.toy_text",
+    "gym.envs.toy_text.blackjack",
+    "gym.envs.toy_text.cliffwalking",
+    "gym.envs.toy_text.discrete",
+    "gym.envs.toy_text.frozen_lake",
+    "gym.envs.toy_text.guessing_game",
+    "gym.envs.toy_text.hotter_colder",
+    "gym.envs.toy_text.kellycoinflip",
+    "gym.envs.toy_text.nchain",
+    "gym.envs.toy_text.roulette",
+    "gym.envs.toy_text.taxi",
     "gym.error",
     "gym.logger",
     "gym.spaces",
@@ -256,6 +389,7 @@
     "gym.utils.atomic_write",
     "gym.utils.closer",
     "gym.utils.colorize",
+    "gym.utils.env_checker",
     "gym.utils.ezpickle",
     "gym.utils.json_utils",
     "gym.utils.play",
@@ -435,6 +569,7 @@
     ["gym.core.Wrapper.reset", "_syft_missing"],
     ["gym.core.Wrapper.seed", "_syft_missing"],
     ["gym.core.Wrapper.step", "_syft_missing"],
+    ["gym.core.abstractmethod", "_syft_missing"],
     ["gym.envs._merge", "_syft_missing"],
     ["gym.envs.algorithmic.CopyEnv.__enter__", "_syft_missing"],
     ["gym.envs.algorithmic.CopyEnv.__exit__", "_syft_missing"],
@@ -1642,8 +1777,2585 @@
     ["gym.envs.classic_control.rendering.make_polygon", "_syft_missing"],
     ["gym.envs.classic_control.rendering.make_polyline", "_syft_missing"],
     ["gym.envs.make", "_syft_missing"],
+    ["gym.envs.mujoco.AntEnv.__enter__", "_syft_missing"],
+    ["gym.envs.mujoco.AntEnv.__exit__", "_syft_missing"],
+    ["gym.envs.mujoco.AntEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.mujoco.AntEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.mujoco.AntEnv.__str__", "_syft_missing"],
+    ["gym.envs.mujoco.AntEnv._get_obs", "_syft_missing"],
+    ["gym.envs.mujoco.AntEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.mujoco.AntEnv._set_action_space", "_syft_missing"],
+    ["gym.envs.mujoco.AntEnv._set_observation_space", "_syft_missing"],
+    ["gym.envs.mujoco.AntEnv.close", "_syft_missing"],
+    ["gym.envs.mujoco.AntEnv.do_simulation", "_syft_missing"],
+    ["gym.envs.mujoco.AntEnv.get_body_com", "_syft_missing"],
+    ["gym.envs.mujoco.AntEnv.render", "_syft_missing"],
+    ["gym.envs.mujoco.AntEnv.reset", "_syft_missing"],
+    ["gym.envs.mujoco.AntEnv.reset_model", "_syft_missing"],
+    ["gym.envs.mujoco.AntEnv.seed", "_syft_missing"],
+    ["gym.envs.mujoco.AntEnv.set_state", "_syft_missing"],
+    ["gym.envs.mujoco.AntEnv.state_vector", "_syft_missing"],
+    ["gym.envs.mujoco.AntEnv.step", "_syft_missing"],
+    ["gym.envs.mujoco.AntEnv.viewer_setup", "_syft_missing"],
+    ["gym.envs.mujoco.HalfCheetahEnv.__enter__", "_syft_missing"],
+    ["gym.envs.mujoco.HalfCheetahEnv.__exit__", "_syft_missing"],
+    ["gym.envs.mujoco.HalfCheetahEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.mujoco.HalfCheetahEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.mujoco.HalfCheetahEnv.__str__", "_syft_missing"],
+    ["gym.envs.mujoco.HalfCheetahEnv._get_obs", "_syft_missing"],
+    ["gym.envs.mujoco.HalfCheetahEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.mujoco.HalfCheetahEnv._set_action_space", "_syft_missing"],
+    ["gym.envs.mujoco.HalfCheetahEnv._set_observation_space", "_syft_missing"],
+    ["gym.envs.mujoco.HalfCheetahEnv.close", "_syft_missing"],
+    ["gym.envs.mujoco.HalfCheetahEnv.do_simulation", "_syft_missing"],
+    ["gym.envs.mujoco.HalfCheetahEnv.get_body_com", "_syft_missing"],
+    ["gym.envs.mujoco.HalfCheetahEnv.render", "_syft_missing"],
+    ["gym.envs.mujoco.HalfCheetahEnv.reset", "_syft_missing"],
+    ["gym.envs.mujoco.HalfCheetahEnv.reset_model", "_syft_missing"],
+    ["gym.envs.mujoco.HalfCheetahEnv.seed", "_syft_missing"],
+    ["gym.envs.mujoco.HalfCheetahEnv.set_state", "_syft_missing"],
+    ["gym.envs.mujoco.HalfCheetahEnv.state_vector", "_syft_missing"],
+    ["gym.envs.mujoco.HalfCheetahEnv.step", "_syft_missing"],
+    ["gym.envs.mujoco.HalfCheetahEnv.viewer_setup", "_syft_missing"],
+    ["gym.envs.mujoco.HopperEnv.__enter__", "_syft_missing"],
+    ["gym.envs.mujoco.HopperEnv.__exit__", "_syft_missing"],
+    ["gym.envs.mujoco.HopperEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.mujoco.HopperEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.mujoco.HopperEnv.__str__", "_syft_missing"],
+    ["gym.envs.mujoco.HopperEnv._get_obs", "_syft_missing"],
+    ["gym.envs.mujoco.HopperEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.mujoco.HopperEnv._set_action_space", "_syft_missing"],
+    ["gym.envs.mujoco.HopperEnv._set_observation_space", "_syft_missing"],
+    ["gym.envs.mujoco.HopperEnv.close", "_syft_missing"],
+    ["gym.envs.mujoco.HopperEnv.do_simulation", "_syft_missing"],
+    ["gym.envs.mujoco.HopperEnv.get_body_com", "_syft_missing"],
+    ["gym.envs.mujoco.HopperEnv.render", "_syft_missing"],
+    ["gym.envs.mujoco.HopperEnv.reset", "_syft_missing"],
+    ["gym.envs.mujoco.HopperEnv.reset_model", "_syft_missing"],
+    ["gym.envs.mujoco.HopperEnv.seed", "_syft_missing"],
+    ["gym.envs.mujoco.HopperEnv.set_state", "_syft_missing"],
+    ["gym.envs.mujoco.HopperEnv.state_vector", "_syft_missing"],
+    ["gym.envs.mujoco.HopperEnv.step", "_syft_missing"],
+    ["gym.envs.mujoco.HopperEnv.viewer_setup", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidEnv.__enter__", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidEnv.__exit__", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidEnv.__str__", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidEnv._get_obs", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidEnv._set_action_space", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidEnv._set_observation_space", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidEnv.close", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidEnv.do_simulation", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidEnv.get_body_com", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidEnv.render", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidEnv.reset", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidEnv.reset_model", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidEnv.seed", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidEnv.set_state", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidEnv.state_vector", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidEnv.step", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidEnv.viewer_setup", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidStandupEnv.__enter__", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidStandupEnv.__exit__", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidStandupEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidStandupEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidStandupEnv.__str__", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidStandupEnv._get_obs", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidStandupEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidStandupEnv._set_action_space", "_syft_missing"],
+    [
+      "gym.envs.mujoco.HumanoidStandupEnv._set_observation_space",
+      "_syft_missing"
+    ],
+    ["gym.envs.mujoco.HumanoidStandupEnv.close", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidStandupEnv.do_simulation", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidStandupEnv.get_body_com", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidStandupEnv.render", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidStandupEnv.reset", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidStandupEnv.reset_model", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidStandupEnv.seed", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidStandupEnv.set_state", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidStandupEnv.state_vector", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidStandupEnv.step", "_syft_missing"],
+    ["gym.envs.mujoco.HumanoidStandupEnv.viewer_setup", "_syft_missing"],
+    ["gym.envs.mujoco.InvertedDoublePendulumEnv.__enter__", "_syft_missing"],
+    ["gym.envs.mujoco.InvertedDoublePendulumEnv.__exit__", "_syft_missing"],
+    ["gym.envs.mujoco.InvertedDoublePendulumEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.mujoco.InvertedDoublePendulumEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.mujoco.InvertedDoublePendulumEnv.__str__", "_syft_missing"],
+    ["gym.envs.mujoco.InvertedDoublePendulumEnv._get_obs", "_syft_missing"],
+    ["gym.envs.mujoco.InvertedDoublePendulumEnv._get_viewer", "_syft_missing"],
+    [
+      "gym.envs.mujoco.InvertedDoublePendulumEnv._set_action_space",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.InvertedDoublePendulumEnv._set_observation_space",
+      "_syft_missing"
+    ],
+    ["gym.envs.mujoco.InvertedDoublePendulumEnv.close", "_syft_missing"],
+    [
+      "gym.envs.mujoco.InvertedDoublePendulumEnv.do_simulation",
+      "_syft_missing"
+    ],
+    ["gym.envs.mujoco.InvertedDoublePendulumEnv.get_body_com", "_syft_missing"],
+    ["gym.envs.mujoco.InvertedDoublePendulumEnv.render", "_syft_missing"],
+    ["gym.envs.mujoco.InvertedDoublePendulumEnv.reset", "_syft_missing"],
+    ["gym.envs.mujoco.InvertedDoublePendulumEnv.reset_model", "_syft_missing"],
+    ["gym.envs.mujoco.InvertedDoublePendulumEnv.seed", "_syft_missing"],
+    ["gym.envs.mujoco.InvertedDoublePendulumEnv.set_state", "_syft_missing"],
+    ["gym.envs.mujoco.InvertedDoublePendulumEnv.state_vector", "_syft_missing"],
+    ["gym.envs.mujoco.InvertedDoublePendulumEnv.step", "_syft_missing"],
+    ["gym.envs.mujoco.InvertedDoublePendulumEnv.viewer_setup", "_syft_missing"],
+    ["gym.envs.mujoco.InvertedPendulumEnv.__enter__", "_syft_missing"],
+    ["gym.envs.mujoco.InvertedPendulumEnv.__exit__", "_syft_missing"],
+    ["gym.envs.mujoco.InvertedPendulumEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.mujoco.InvertedPendulumEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.mujoco.InvertedPendulumEnv.__str__", "_syft_missing"],
+    ["gym.envs.mujoco.InvertedPendulumEnv._get_obs", "_syft_missing"],
+    ["gym.envs.mujoco.InvertedPendulumEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.mujoco.InvertedPendulumEnv._set_action_space", "_syft_missing"],
+    [
+      "gym.envs.mujoco.InvertedPendulumEnv._set_observation_space",
+      "_syft_missing"
+    ],
+    ["gym.envs.mujoco.InvertedPendulumEnv.close", "_syft_missing"],
+    ["gym.envs.mujoco.InvertedPendulumEnv.do_simulation", "_syft_missing"],
+    ["gym.envs.mujoco.InvertedPendulumEnv.get_body_com", "_syft_missing"],
+    ["gym.envs.mujoco.InvertedPendulumEnv.render", "_syft_missing"],
+    ["gym.envs.mujoco.InvertedPendulumEnv.reset", "_syft_missing"],
+    ["gym.envs.mujoco.InvertedPendulumEnv.reset_model", "_syft_missing"],
+    ["gym.envs.mujoco.InvertedPendulumEnv.seed", "_syft_missing"],
+    ["gym.envs.mujoco.InvertedPendulumEnv.set_state", "_syft_missing"],
+    ["gym.envs.mujoco.InvertedPendulumEnv.state_vector", "_syft_missing"],
+    ["gym.envs.mujoco.InvertedPendulumEnv.step", "_syft_missing"],
+    ["gym.envs.mujoco.InvertedPendulumEnv.viewer_setup", "_syft_missing"],
+    ["gym.envs.mujoco.MujocoEnv.__enter__", "_syft_missing"],
+    ["gym.envs.mujoco.MujocoEnv.__exit__", "_syft_missing"],
+    ["gym.envs.mujoco.MujocoEnv.__str__", "_syft_missing"],
+    ["gym.envs.mujoco.MujocoEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.mujoco.MujocoEnv._set_action_space", "_syft_missing"],
+    ["gym.envs.mujoco.MujocoEnv._set_observation_space", "_syft_missing"],
+    ["gym.envs.mujoco.MujocoEnv.close", "_syft_missing"],
+    ["gym.envs.mujoco.MujocoEnv.do_simulation", "_syft_missing"],
+    ["gym.envs.mujoco.MujocoEnv.get_body_com", "_syft_missing"],
+    ["gym.envs.mujoco.MujocoEnv.render", "_syft_missing"],
+    ["gym.envs.mujoco.MujocoEnv.reset", "_syft_missing"],
+    ["gym.envs.mujoco.MujocoEnv.reset_model", "_syft_missing"],
+    ["gym.envs.mujoco.MujocoEnv.seed", "_syft_missing"],
+    ["gym.envs.mujoco.MujocoEnv.set_state", "_syft_missing"],
+    ["gym.envs.mujoco.MujocoEnv.state_vector", "_syft_missing"],
+    ["gym.envs.mujoco.MujocoEnv.step", "_syft_missing"],
+    ["gym.envs.mujoco.MujocoEnv.viewer_setup", "_syft_missing"],
+    ["gym.envs.mujoco.PusherEnv.__enter__", "_syft_missing"],
+    ["gym.envs.mujoco.PusherEnv.__exit__", "_syft_missing"],
+    ["gym.envs.mujoco.PusherEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.mujoco.PusherEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.mujoco.PusherEnv.__str__", "_syft_missing"],
+    ["gym.envs.mujoco.PusherEnv._get_obs", "_syft_missing"],
+    ["gym.envs.mujoco.PusherEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.mujoco.PusherEnv._set_action_space", "_syft_missing"],
+    ["gym.envs.mujoco.PusherEnv._set_observation_space", "_syft_missing"],
+    ["gym.envs.mujoco.PusherEnv.close", "_syft_missing"],
+    ["gym.envs.mujoco.PusherEnv.do_simulation", "_syft_missing"],
+    ["gym.envs.mujoco.PusherEnv.get_body_com", "_syft_missing"],
+    ["gym.envs.mujoco.PusherEnv.render", "_syft_missing"],
+    ["gym.envs.mujoco.PusherEnv.reset", "_syft_missing"],
+    ["gym.envs.mujoco.PusherEnv.reset_model", "_syft_missing"],
+    ["gym.envs.mujoco.PusherEnv.seed", "_syft_missing"],
+    ["gym.envs.mujoco.PusherEnv.set_state", "_syft_missing"],
+    ["gym.envs.mujoco.PusherEnv.state_vector", "_syft_missing"],
+    ["gym.envs.mujoco.PusherEnv.step", "_syft_missing"],
+    ["gym.envs.mujoco.PusherEnv.viewer_setup", "_syft_missing"],
+    ["gym.envs.mujoco.ReacherEnv.__enter__", "_syft_missing"],
+    ["gym.envs.mujoco.ReacherEnv.__exit__", "_syft_missing"],
+    ["gym.envs.mujoco.ReacherEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.mujoco.ReacherEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.mujoco.ReacherEnv.__str__", "_syft_missing"],
+    ["gym.envs.mujoco.ReacherEnv._get_obs", "_syft_missing"],
+    ["gym.envs.mujoco.ReacherEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.mujoco.ReacherEnv._set_action_space", "_syft_missing"],
+    ["gym.envs.mujoco.ReacherEnv._set_observation_space", "_syft_missing"],
+    ["gym.envs.mujoco.ReacherEnv.close", "_syft_missing"],
+    ["gym.envs.mujoco.ReacherEnv.do_simulation", "_syft_missing"],
+    ["gym.envs.mujoco.ReacherEnv.get_body_com", "_syft_missing"],
+    ["gym.envs.mujoco.ReacherEnv.render", "_syft_missing"],
+    ["gym.envs.mujoco.ReacherEnv.reset", "_syft_missing"],
+    ["gym.envs.mujoco.ReacherEnv.reset_model", "_syft_missing"],
+    ["gym.envs.mujoco.ReacherEnv.seed", "_syft_missing"],
+    ["gym.envs.mujoco.ReacherEnv.set_state", "_syft_missing"],
+    ["gym.envs.mujoco.ReacherEnv.state_vector", "_syft_missing"],
+    ["gym.envs.mujoco.ReacherEnv.step", "_syft_missing"],
+    ["gym.envs.mujoco.ReacherEnv.viewer_setup", "_syft_missing"],
+    ["gym.envs.mujoco.StrikerEnv.__enter__", "_syft_missing"],
+    ["gym.envs.mujoco.StrikerEnv.__exit__", "_syft_missing"],
+    ["gym.envs.mujoco.StrikerEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.mujoco.StrikerEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.mujoco.StrikerEnv.__str__", "_syft_missing"],
+    ["gym.envs.mujoco.StrikerEnv._get_obs", "_syft_missing"],
+    ["gym.envs.mujoco.StrikerEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.mujoco.StrikerEnv._set_action_space", "_syft_missing"],
+    ["gym.envs.mujoco.StrikerEnv._set_observation_space", "_syft_missing"],
+    ["gym.envs.mujoco.StrikerEnv.close", "_syft_missing"],
+    ["gym.envs.mujoco.StrikerEnv.do_simulation", "_syft_missing"],
+    ["gym.envs.mujoco.StrikerEnv.get_body_com", "_syft_missing"],
+    ["gym.envs.mujoco.StrikerEnv.render", "_syft_missing"],
+    ["gym.envs.mujoco.StrikerEnv.reset", "_syft_missing"],
+    ["gym.envs.mujoco.StrikerEnv.reset_model", "_syft_missing"],
+    ["gym.envs.mujoco.StrikerEnv.seed", "_syft_missing"],
+    ["gym.envs.mujoco.StrikerEnv.set_state", "_syft_missing"],
+    ["gym.envs.mujoco.StrikerEnv.state_vector", "_syft_missing"],
+    ["gym.envs.mujoco.StrikerEnv.step", "_syft_missing"],
+    ["gym.envs.mujoco.StrikerEnv.viewer_setup", "_syft_missing"],
+    ["gym.envs.mujoco.SwimmerEnv.__enter__", "_syft_missing"],
+    ["gym.envs.mujoco.SwimmerEnv.__exit__", "_syft_missing"],
+    ["gym.envs.mujoco.SwimmerEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.mujoco.SwimmerEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.mujoco.SwimmerEnv.__str__", "_syft_missing"],
+    ["gym.envs.mujoco.SwimmerEnv._get_obs", "_syft_missing"],
+    ["gym.envs.mujoco.SwimmerEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.mujoco.SwimmerEnv._set_action_space", "_syft_missing"],
+    ["gym.envs.mujoco.SwimmerEnv._set_observation_space", "_syft_missing"],
+    ["gym.envs.mujoco.SwimmerEnv.close", "_syft_missing"],
+    ["gym.envs.mujoco.SwimmerEnv.do_simulation", "_syft_missing"],
+    ["gym.envs.mujoco.SwimmerEnv.get_body_com", "_syft_missing"],
+    ["gym.envs.mujoco.SwimmerEnv.render", "_syft_missing"],
+    ["gym.envs.mujoco.SwimmerEnv.reset", "_syft_missing"],
+    ["gym.envs.mujoco.SwimmerEnv.reset_model", "_syft_missing"],
+    ["gym.envs.mujoco.SwimmerEnv.seed", "_syft_missing"],
+    ["gym.envs.mujoco.SwimmerEnv.set_state", "_syft_missing"],
+    ["gym.envs.mujoco.SwimmerEnv.state_vector", "_syft_missing"],
+    ["gym.envs.mujoco.SwimmerEnv.step", "_syft_missing"],
+    ["gym.envs.mujoco.SwimmerEnv.viewer_setup", "_syft_missing"],
+    ["gym.envs.mujoco.ThrowerEnv.__enter__", "_syft_missing"],
+    ["gym.envs.mujoco.ThrowerEnv.__exit__", "_syft_missing"],
+    ["gym.envs.mujoco.ThrowerEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.mujoco.ThrowerEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.mujoco.ThrowerEnv.__str__", "_syft_missing"],
+    ["gym.envs.mujoco.ThrowerEnv._get_obs", "_syft_missing"],
+    ["gym.envs.mujoco.ThrowerEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.mujoco.ThrowerEnv._set_action_space", "_syft_missing"],
+    ["gym.envs.mujoco.ThrowerEnv._set_observation_space", "_syft_missing"],
+    ["gym.envs.mujoco.ThrowerEnv.close", "_syft_missing"],
+    ["gym.envs.mujoco.ThrowerEnv.do_simulation", "_syft_missing"],
+    ["gym.envs.mujoco.ThrowerEnv.get_body_com", "_syft_missing"],
+    ["gym.envs.mujoco.ThrowerEnv.render", "_syft_missing"],
+    ["gym.envs.mujoco.ThrowerEnv.reset", "_syft_missing"],
+    ["gym.envs.mujoco.ThrowerEnv.reset_model", "_syft_missing"],
+    ["gym.envs.mujoco.ThrowerEnv.seed", "_syft_missing"],
+    ["gym.envs.mujoco.ThrowerEnv.set_state", "_syft_missing"],
+    ["gym.envs.mujoco.ThrowerEnv.state_vector", "_syft_missing"],
+    ["gym.envs.mujoco.ThrowerEnv.step", "_syft_missing"],
+    ["gym.envs.mujoco.ThrowerEnv.viewer_setup", "_syft_missing"],
+    ["gym.envs.mujoco.Walker2dEnv.__enter__", "_syft_missing"],
+    ["gym.envs.mujoco.Walker2dEnv.__exit__", "_syft_missing"],
+    ["gym.envs.mujoco.Walker2dEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.mujoco.Walker2dEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.mujoco.Walker2dEnv.__str__", "_syft_missing"],
+    ["gym.envs.mujoco.Walker2dEnv._get_obs", "_syft_missing"],
+    ["gym.envs.mujoco.Walker2dEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.mujoco.Walker2dEnv._set_action_space", "_syft_missing"],
+    ["gym.envs.mujoco.Walker2dEnv._set_observation_space", "_syft_missing"],
+    ["gym.envs.mujoco.Walker2dEnv.close", "_syft_missing"],
+    ["gym.envs.mujoco.Walker2dEnv.do_simulation", "_syft_missing"],
+    ["gym.envs.mujoco.Walker2dEnv.get_body_com", "_syft_missing"],
+    ["gym.envs.mujoco.Walker2dEnv.render", "_syft_missing"],
+    ["gym.envs.mujoco.Walker2dEnv.reset", "_syft_missing"],
+    ["gym.envs.mujoco.Walker2dEnv.reset_model", "_syft_missing"],
+    ["gym.envs.mujoco.Walker2dEnv.seed", "_syft_missing"],
+    ["gym.envs.mujoco.Walker2dEnv.set_state", "_syft_missing"],
+    ["gym.envs.mujoco.Walker2dEnv.state_vector", "_syft_missing"],
+    ["gym.envs.mujoco.Walker2dEnv.step", "_syft_missing"],
+    ["gym.envs.mujoco.Walker2dEnv.viewer_setup", "_syft_missing"],
+    ["gym.envs.mujoco.ant.AntEnv.__enter__", "_syft_missing"],
+    ["gym.envs.mujoco.ant.AntEnv.__exit__", "_syft_missing"],
+    ["gym.envs.mujoco.ant.AntEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.mujoco.ant.AntEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.mujoco.ant.AntEnv.__str__", "_syft_missing"],
+    ["gym.envs.mujoco.ant.AntEnv._get_obs", "_syft_missing"],
+    ["gym.envs.mujoco.ant.AntEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.mujoco.ant.AntEnv._set_action_space", "_syft_missing"],
+    ["gym.envs.mujoco.ant.AntEnv._set_observation_space", "_syft_missing"],
+    ["gym.envs.mujoco.ant.AntEnv.close", "_syft_missing"],
+    ["gym.envs.mujoco.ant.AntEnv.do_simulation", "_syft_missing"],
+    ["gym.envs.mujoco.ant.AntEnv.get_body_com", "_syft_missing"],
+    ["gym.envs.mujoco.ant.AntEnv.render", "_syft_missing"],
+    ["gym.envs.mujoco.ant.AntEnv.reset", "_syft_missing"],
+    ["gym.envs.mujoco.ant.AntEnv.reset_model", "_syft_missing"],
+    ["gym.envs.mujoco.ant.AntEnv.seed", "_syft_missing"],
+    ["gym.envs.mujoco.ant.AntEnv.set_state", "_syft_missing"],
+    ["gym.envs.mujoco.ant.AntEnv.state_vector", "_syft_missing"],
+    ["gym.envs.mujoco.ant.AntEnv.step", "_syft_missing"],
+    ["gym.envs.mujoco.ant.AntEnv.viewer_setup", "_syft_missing"],
+    ["gym.envs.mujoco.ant_v3.AntEnv.__enter__", "_syft_missing"],
+    ["gym.envs.mujoco.ant_v3.AntEnv.__exit__", "_syft_missing"],
+    ["gym.envs.mujoco.ant_v3.AntEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.mujoco.ant_v3.AntEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.mujoco.ant_v3.AntEnv.__str__", "_syft_missing"],
+    ["gym.envs.mujoco.ant_v3.AntEnv._get_obs", "_syft_missing"],
+    ["gym.envs.mujoco.ant_v3.AntEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.mujoco.ant_v3.AntEnv._set_action_space", "_syft_missing"],
+    ["gym.envs.mujoco.ant_v3.AntEnv._set_observation_space", "_syft_missing"],
+    ["gym.envs.mujoco.ant_v3.AntEnv.close", "_syft_missing"],
+    ["gym.envs.mujoco.ant_v3.AntEnv.control_cost", "_syft_missing"],
+    ["gym.envs.mujoco.ant_v3.AntEnv.do_simulation", "_syft_missing"],
+    ["gym.envs.mujoco.ant_v3.AntEnv.get_body_com", "_syft_missing"],
+    ["gym.envs.mujoco.ant_v3.AntEnv.render", "_syft_missing"],
+    ["gym.envs.mujoco.ant_v3.AntEnv.reset", "_syft_missing"],
+    ["gym.envs.mujoco.ant_v3.AntEnv.reset_model", "_syft_missing"],
+    ["gym.envs.mujoco.ant_v3.AntEnv.seed", "_syft_missing"],
+    ["gym.envs.mujoco.ant_v3.AntEnv.set_state", "_syft_missing"],
+    ["gym.envs.mujoco.ant_v3.AntEnv.state_vector", "_syft_missing"],
+    ["gym.envs.mujoco.ant_v3.AntEnv.step", "_syft_missing"],
+    ["gym.envs.mujoco.ant_v3.AntEnv.viewer_setup", "_syft_missing"],
+    ["gym.envs.mujoco.half_cheetah.HalfCheetahEnv.__enter__", "_syft_missing"],
+    ["gym.envs.mujoco.half_cheetah.HalfCheetahEnv.__exit__", "_syft_missing"],
+    [
+      "gym.envs.mujoco.half_cheetah.HalfCheetahEnv.__getstate__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.half_cheetah.HalfCheetahEnv.__setstate__",
+      "_syft_missing"
+    ],
+    ["gym.envs.mujoco.half_cheetah.HalfCheetahEnv.__str__", "_syft_missing"],
+    ["gym.envs.mujoco.half_cheetah.HalfCheetahEnv._get_obs", "_syft_missing"],
+    [
+      "gym.envs.mujoco.half_cheetah.HalfCheetahEnv._get_viewer",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.half_cheetah.HalfCheetahEnv._set_action_space",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.half_cheetah.HalfCheetahEnv._set_observation_space",
+      "_syft_missing"
+    ],
+    ["gym.envs.mujoco.half_cheetah.HalfCheetahEnv.close", "_syft_missing"],
+    [
+      "gym.envs.mujoco.half_cheetah.HalfCheetahEnv.do_simulation",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.half_cheetah.HalfCheetahEnv.get_body_com",
+      "_syft_missing"
+    ],
+    ["gym.envs.mujoco.half_cheetah.HalfCheetahEnv.render", "_syft_missing"],
+    ["gym.envs.mujoco.half_cheetah.HalfCheetahEnv.reset", "_syft_missing"],
+    [
+      "gym.envs.mujoco.half_cheetah.HalfCheetahEnv.reset_model",
+      "_syft_missing"
+    ],
+    ["gym.envs.mujoco.half_cheetah.HalfCheetahEnv.seed", "_syft_missing"],
+    ["gym.envs.mujoco.half_cheetah.HalfCheetahEnv.set_state", "_syft_missing"],
+    [
+      "gym.envs.mujoco.half_cheetah.HalfCheetahEnv.state_vector",
+      "_syft_missing"
+    ],
+    ["gym.envs.mujoco.half_cheetah.HalfCheetahEnv.step", "_syft_missing"],
+    [
+      "gym.envs.mujoco.half_cheetah.HalfCheetahEnv.viewer_setup",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.half_cheetah_v3.HalfCheetahEnv.__enter__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.half_cheetah_v3.HalfCheetahEnv.__exit__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.half_cheetah_v3.HalfCheetahEnv.__getstate__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.half_cheetah_v3.HalfCheetahEnv.__setstate__",
+      "_syft_missing"
+    ],
+    ["gym.envs.mujoco.half_cheetah_v3.HalfCheetahEnv.__str__", "_syft_missing"],
+    [
+      "gym.envs.mujoco.half_cheetah_v3.HalfCheetahEnv._get_obs",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.half_cheetah_v3.HalfCheetahEnv._get_viewer",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.half_cheetah_v3.HalfCheetahEnv._set_action_space",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.half_cheetah_v3.HalfCheetahEnv._set_observation_space",
+      "_syft_missing"
+    ],
+    ["gym.envs.mujoco.half_cheetah_v3.HalfCheetahEnv.close", "_syft_missing"],
+    [
+      "gym.envs.mujoco.half_cheetah_v3.HalfCheetahEnv.control_cost",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.half_cheetah_v3.HalfCheetahEnv.do_simulation",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.half_cheetah_v3.HalfCheetahEnv.get_body_com",
+      "_syft_missing"
+    ],
+    ["gym.envs.mujoco.half_cheetah_v3.HalfCheetahEnv.render", "_syft_missing"],
+    ["gym.envs.mujoco.half_cheetah_v3.HalfCheetahEnv.reset", "_syft_missing"],
+    [
+      "gym.envs.mujoco.half_cheetah_v3.HalfCheetahEnv.reset_model",
+      "_syft_missing"
+    ],
+    ["gym.envs.mujoco.half_cheetah_v3.HalfCheetahEnv.seed", "_syft_missing"],
+    [
+      "gym.envs.mujoco.half_cheetah_v3.HalfCheetahEnv.set_state",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.half_cheetah_v3.HalfCheetahEnv.state_vector",
+      "_syft_missing"
+    ],
+    ["gym.envs.mujoco.half_cheetah_v3.HalfCheetahEnv.step", "_syft_missing"],
+    [
+      "gym.envs.mujoco.half_cheetah_v3.HalfCheetahEnv.viewer_setup",
+      "_syft_missing"
+    ],
+    ["gym.envs.mujoco.hopper.HopperEnv.__enter__", "_syft_missing"],
+    ["gym.envs.mujoco.hopper.HopperEnv.__exit__", "_syft_missing"],
+    ["gym.envs.mujoco.hopper.HopperEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.mujoco.hopper.HopperEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.mujoco.hopper.HopperEnv.__str__", "_syft_missing"],
+    ["gym.envs.mujoco.hopper.HopperEnv._get_obs", "_syft_missing"],
+    ["gym.envs.mujoco.hopper.HopperEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.mujoco.hopper.HopperEnv._set_action_space", "_syft_missing"],
+    [
+      "gym.envs.mujoco.hopper.HopperEnv._set_observation_space",
+      "_syft_missing"
+    ],
+    ["gym.envs.mujoco.hopper.HopperEnv.close", "_syft_missing"],
+    ["gym.envs.mujoco.hopper.HopperEnv.do_simulation", "_syft_missing"],
+    ["gym.envs.mujoco.hopper.HopperEnv.get_body_com", "_syft_missing"],
+    ["gym.envs.mujoco.hopper.HopperEnv.render", "_syft_missing"],
+    ["gym.envs.mujoco.hopper.HopperEnv.reset", "_syft_missing"],
+    ["gym.envs.mujoco.hopper.HopperEnv.reset_model", "_syft_missing"],
+    ["gym.envs.mujoco.hopper.HopperEnv.seed", "_syft_missing"],
+    ["gym.envs.mujoco.hopper.HopperEnv.set_state", "_syft_missing"],
+    ["gym.envs.mujoco.hopper.HopperEnv.state_vector", "_syft_missing"],
+    ["gym.envs.mujoco.hopper.HopperEnv.step", "_syft_missing"],
+    ["gym.envs.mujoco.hopper.HopperEnv.viewer_setup", "_syft_missing"],
+    ["gym.envs.mujoco.hopper_v3.HopperEnv.__enter__", "_syft_missing"],
+    ["gym.envs.mujoco.hopper_v3.HopperEnv.__exit__", "_syft_missing"],
+    ["gym.envs.mujoco.hopper_v3.HopperEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.mujoco.hopper_v3.HopperEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.mujoco.hopper_v3.HopperEnv.__str__", "_syft_missing"],
+    ["gym.envs.mujoco.hopper_v3.HopperEnv._get_obs", "_syft_missing"],
+    ["gym.envs.mujoco.hopper_v3.HopperEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.mujoco.hopper_v3.HopperEnv._set_action_space", "_syft_missing"],
+    [
+      "gym.envs.mujoco.hopper_v3.HopperEnv._set_observation_space",
+      "_syft_missing"
+    ],
+    ["gym.envs.mujoco.hopper_v3.HopperEnv.close", "_syft_missing"],
+    ["gym.envs.mujoco.hopper_v3.HopperEnv.control_cost", "_syft_missing"],
+    ["gym.envs.mujoco.hopper_v3.HopperEnv.do_simulation", "_syft_missing"],
+    ["gym.envs.mujoco.hopper_v3.HopperEnv.get_body_com", "_syft_missing"],
+    ["gym.envs.mujoco.hopper_v3.HopperEnv.render", "_syft_missing"],
+    ["gym.envs.mujoco.hopper_v3.HopperEnv.reset", "_syft_missing"],
+    ["gym.envs.mujoco.hopper_v3.HopperEnv.reset_model", "_syft_missing"],
+    ["gym.envs.mujoco.hopper_v3.HopperEnv.seed", "_syft_missing"],
+    ["gym.envs.mujoco.hopper_v3.HopperEnv.set_state", "_syft_missing"],
+    ["gym.envs.mujoco.hopper_v3.HopperEnv.state_vector", "_syft_missing"],
+    ["gym.envs.mujoco.hopper_v3.HopperEnv.step", "_syft_missing"],
+    ["gym.envs.mujoco.hopper_v3.HopperEnv.viewer_setup", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid.HumanoidEnv.__enter__", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid.HumanoidEnv.__exit__", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid.HumanoidEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid.HumanoidEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid.HumanoidEnv.__str__", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid.HumanoidEnv._get_obs", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid.HumanoidEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid.HumanoidEnv._set_action_space", "_syft_missing"],
+    [
+      "gym.envs.mujoco.humanoid.HumanoidEnv._set_observation_space",
+      "_syft_missing"
+    ],
+    ["gym.envs.mujoco.humanoid.HumanoidEnv.close", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid.HumanoidEnv.do_simulation", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid.HumanoidEnv.get_body_com", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid.HumanoidEnv.render", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid.HumanoidEnv.reset", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid.HumanoidEnv.reset_model", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid.HumanoidEnv.seed", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid.HumanoidEnv.set_state", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid.HumanoidEnv.state_vector", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid.HumanoidEnv.step", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid.HumanoidEnv.viewer_setup", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid.mass_center", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid_v3.HumanoidEnv.__enter__", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid_v3.HumanoidEnv.__exit__", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid_v3.HumanoidEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid_v3.HumanoidEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid_v3.HumanoidEnv.__str__", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid_v3.HumanoidEnv._get_obs", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid_v3.HumanoidEnv._get_viewer", "_syft_missing"],
+    [
+      "gym.envs.mujoco.humanoid_v3.HumanoidEnv._set_action_space",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.humanoid_v3.HumanoidEnv._set_observation_space",
+      "_syft_missing"
+    ],
+    ["gym.envs.mujoco.humanoid_v3.HumanoidEnv.close", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid_v3.HumanoidEnv.control_cost", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid_v3.HumanoidEnv.do_simulation", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid_v3.HumanoidEnv.get_body_com", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid_v3.HumanoidEnv.render", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid_v3.HumanoidEnv.reset", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid_v3.HumanoidEnv.reset_model", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid_v3.HumanoidEnv.seed", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid_v3.HumanoidEnv.set_state", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid_v3.HumanoidEnv.state_vector", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid_v3.HumanoidEnv.step", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid_v3.HumanoidEnv.viewer_setup", "_syft_missing"],
+    ["gym.envs.mujoco.humanoid_v3.mass_center", "_syft_missing"],
+    [
+      "gym.envs.mujoco.humanoidstandup.HumanoidStandupEnv.__enter__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.humanoidstandup.HumanoidStandupEnv.__exit__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.humanoidstandup.HumanoidStandupEnv.__getstate__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.humanoidstandup.HumanoidStandupEnv.__setstate__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.humanoidstandup.HumanoidStandupEnv.__str__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.humanoidstandup.HumanoidStandupEnv._get_obs",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.humanoidstandup.HumanoidStandupEnv._get_viewer",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.humanoidstandup.HumanoidStandupEnv._set_action_space",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.humanoidstandup.HumanoidStandupEnv._set_observation_space",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.humanoidstandup.HumanoidStandupEnv.close",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.humanoidstandup.HumanoidStandupEnv.do_simulation",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.humanoidstandup.HumanoidStandupEnv.get_body_com",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.humanoidstandup.HumanoidStandupEnv.render",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.humanoidstandup.HumanoidStandupEnv.reset",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.humanoidstandup.HumanoidStandupEnv.reset_model",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.humanoidstandup.HumanoidStandupEnv.seed",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.humanoidstandup.HumanoidStandupEnv.set_state",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.humanoidstandup.HumanoidStandupEnv.state_vector",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.humanoidstandup.HumanoidStandupEnv.step",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.humanoidstandup.HumanoidStandupEnv.viewer_setup",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_double_pendulum.InvertedDoublePendulumEnv.__enter__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_double_pendulum.InvertedDoublePendulumEnv.__exit__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_double_pendulum.InvertedDoublePendulumEnv.__getstate__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_double_pendulum.InvertedDoublePendulumEnv.__setstate__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_double_pendulum.InvertedDoublePendulumEnv.__str__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_double_pendulum.InvertedDoublePendulumEnv._get_obs",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_double_pendulum.InvertedDoublePendulumEnv._get_viewer",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_double_pendulum.InvertedDoublePendulumEnv._set_action_space",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_double_pendulum.InvertedDoublePendulumEnv._set_observation_space",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_double_pendulum.InvertedDoublePendulumEnv.close",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_double_pendulum.InvertedDoublePendulumEnv.do_simulation",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_double_pendulum.InvertedDoublePendulumEnv.get_body_com",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_double_pendulum.InvertedDoublePendulumEnv.render",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_double_pendulum.InvertedDoublePendulumEnv.reset",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_double_pendulum.InvertedDoublePendulumEnv.reset_model",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_double_pendulum.InvertedDoublePendulumEnv.seed",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_double_pendulum.InvertedDoublePendulumEnv.set_state",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_double_pendulum.InvertedDoublePendulumEnv.state_vector",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_double_pendulum.InvertedDoublePendulumEnv.step",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_double_pendulum.InvertedDoublePendulumEnv.viewer_setup",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_pendulum.InvertedPendulumEnv.__enter__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_pendulum.InvertedPendulumEnv.__exit__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_pendulum.InvertedPendulumEnv.__getstate__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_pendulum.InvertedPendulumEnv.__setstate__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_pendulum.InvertedPendulumEnv.__str__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_pendulum.InvertedPendulumEnv._get_obs",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_pendulum.InvertedPendulumEnv._get_viewer",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_pendulum.InvertedPendulumEnv._set_action_space",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_pendulum.InvertedPendulumEnv._set_observation_space",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_pendulum.InvertedPendulumEnv.close",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_pendulum.InvertedPendulumEnv.do_simulation",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_pendulum.InvertedPendulumEnv.get_body_com",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_pendulum.InvertedPendulumEnv.render",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_pendulum.InvertedPendulumEnv.reset",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_pendulum.InvertedPendulumEnv.reset_model",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_pendulum.InvertedPendulumEnv.seed",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_pendulum.InvertedPendulumEnv.set_state",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_pendulum.InvertedPendulumEnv.state_vector",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_pendulum.InvertedPendulumEnv.step",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.inverted_pendulum.InvertedPendulumEnv.viewer_setup",
+      "_syft_missing"
+    ],
+    ["gym.envs.mujoco.mujoco_env.MujocoEnv.__enter__", "_syft_missing"],
+    ["gym.envs.mujoco.mujoco_env.MujocoEnv.__exit__", "_syft_missing"],
+    ["gym.envs.mujoco.mujoco_env.MujocoEnv.__str__", "_syft_missing"],
+    ["gym.envs.mujoco.mujoco_env.MujocoEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.mujoco.mujoco_env.MujocoEnv._set_action_space", "_syft_missing"],
+    [
+      "gym.envs.mujoco.mujoco_env.MujocoEnv._set_observation_space",
+      "_syft_missing"
+    ],
+    ["gym.envs.mujoco.mujoco_env.MujocoEnv.close", "_syft_missing"],
+    ["gym.envs.mujoco.mujoco_env.MujocoEnv.do_simulation", "_syft_missing"],
+    ["gym.envs.mujoco.mujoco_env.MujocoEnv.get_body_com", "_syft_missing"],
+    ["gym.envs.mujoco.mujoco_env.MujocoEnv.render", "_syft_missing"],
+    ["gym.envs.mujoco.mujoco_env.MujocoEnv.reset", "_syft_missing"],
+    ["gym.envs.mujoco.mujoco_env.MujocoEnv.reset_model", "_syft_missing"],
+    ["gym.envs.mujoco.mujoco_env.MujocoEnv.seed", "_syft_missing"],
+    ["gym.envs.mujoco.mujoco_env.MujocoEnv.set_state", "_syft_missing"],
+    ["gym.envs.mujoco.mujoco_env.MujocoEnv.state_vector", "_syft_missing"],
+    ["gym.envs.mujoco.mujoco_env.MujocoEnv.step", "_syft_missing"],
+    ["gym.envs.mujoco.mujoco_env.MujocoEnv.viewer_setup", "_syft_missing"],
+    [
+      "gym.envs.mujoco.mujoco_env.convert_observation_to_space",
+      "_syft_missing"
+    ],
+    ["gym.envs.mujoco.pusher.PusherEnv.__enter__", "_syft_missing"],
+    ["gym.envs.mujoco.pusher.PusherEnv.__exit__", "_syft_missing"],
+    ["gym.envs.mujoco.pusher.PusherEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.mujoco.pusher.PusherEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.mujoco.pusher.PusherEnv.__str__", "_syft_missing"],
+    ["gym.envs.mujoco.pusher.PusherEnv._get_obs", "_syft_missing"],
+    ["gym.envs.mujoco.pusher.PusherEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.mujoco.pusher.PusherEnv._set_action_space", "_syft_missing"],
+    [
+      "gym.envs.mujoco.pusher.PusherEnv._set_observation_space",
+      "_syft_missing"
+    ],
+    ["gym.envs.mujoco.pusher.PusherEnv.close", "_syft_missing"],
+    ["gym.envs.mujoco.pusher.PusherEnv.do_simulation", "_syft_missing"],
+    ["gym.envs.mujoco.pusher.PusherEnv.get_body_com", "_syft_missing"],
+    ["gym.envs.mujoco.pusher.PusherEnv.render", "_syft_missing"],
+    ["gym.envs.mujoco.pusher.PusherEnv.reset", "_syft_missing"],
+    ["gym.envs.mujoco.pusher.PusherEnv.reset_model", "_syft_missing"],
+    ["gym.envs.mujoco.pusher.PusherEnv.seed", "_syft_missing"],
+    ["gym.envs.mujoco.pusher.PusherEnv.set_state", "_syft_missing"],
+    ["gym.envs.mujoco.pusher.PusherEnv.state_vector", "_syft_missing"],
+    ["gym.envs.mujoco.pusher.PusherEnv.step", "_syft_missing"],
+    ["gym.envs.mujoco.pusher.PusherEnv.viewer_setup", "_syft_missing"],
+    ["gym.envs.mujoco.reacher.ReacherEnv.__enter__", "_syft_missing"],
+    ["gym.envs.mujoco.reacher.ReacherEnv.__exit__", "_syft_missing"],
+    ["gym.envs.mujoco.reacher.ReacherEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.mujoco.reacher.ReacherEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.mujoco.reacher.ReacherEnv.__str__", "_syft_missing"],
+    ["gym.envs.mujoco.reacher.ReacherEnv._get_obs", "_syft_missing"],
+    ["gym.envs.mujoco.reacher.ReacherEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.mujoco.reacher.ReacherEnv._set_action_space", "_syft_missing"],
+    [
+      "gym.envs.mujoco.reacher.ReacherEnv._set_observation_space",
+      "_syft_missing"
+    ],
+    ["gym.envs.mujoco.reacher.ReacherEnv.close", "_syft_missing"],
+    ["gym.envs.mujoco.reacher.ReacherEnv.do_simulation", "_syft_missing"],
+    ["gym.envs.mujoco.reacher.ReacherEnv.get_body_com", "_syft_missing"],
+    ["gym.envs.mujoco.reacher.ReacherEnv.render", "_syft_missing"],
+    ["gym.envs.mujoco.reacher.ReacherEnv.reset", "_syft_missing"],
+    ["gym.envs.mujoco.reacher.ReacherEnv.reset_model", "_syft_missing"],
+    ["gym.envs.mujoco.reacher.ReacherEnv.seed", "_syft_missing"],
+    ["gym.envs.mujoco.reacher.ReacherEnv.set_state", "_syft_missing"],
+    ["gym.envs.mujoco.reacher.ReacherEnv.state_vector", "_syft_missing"],
+    ["gym.envs.mujoco.reacher.ReacherEnv.step", "_syft_missing"],
+    ["gym.envs.mujoco.reacher.ReacherEnv.viewer_setup", "_syft_missing"],
+    ["gym.envs.mujoco.striker.StrikerEnv.__enter__", "_syft_missing"],
+    ["gym.envs.mujoco.striker.StrikerEnv.__exit__", "_syft_missing"],
+    ["gym.envs.mujoco.striker.StrikerEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.mujoco.striker.StrikerEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.mujoco.striker.StrikerEnv.__str__", "_syft_missing"],
+    ["gym.envs.mujoco.striker.StrikerEnv._get_obs", "_syft_missing"],
+    ["gym.envs.mujoco.striker.StrikerEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.mujoco.striker.StrikerEnv._set_action_space", "_syft_missing"],
+    [
+      "gym.envs.mujoco.striker.StrikerEnv._set_observation_space",
+      "_syft_missing"
+    ],
+    ["gym.envs.mujoco.striker.StrikerEnv.close", "_syft_missing"],
+    ["gym.envs.mujoco.striker.StrikerEnv.do_simulation", "_syft_missing"],
+    ["gym.envs.mujoco.striker.StrikerEnv.get_body_com", "_syft_missing"],
+    ["gym.envs.mujoco.striker.StrikerEnv.render", "_syft_missing"],
+    ["gym.envs.mujoco.striker.StrikerEnv.reset", "_syft_missing"],
+    ["gym.envs.mujoco.striker.StrikerEnv.reset_model", "_syft_missing"],
+    ["gym.envs.mujoco.striker.StrikerEnv.seed", "_syft_missing"],
+    ["gym.envs.mujoco.striker.StrikerEnv.set_state", "_syft_missing"],
+    ["gym.envs.mujoco.striker.StrikerEnv.state_vector", "_syft_missing"],
+    ["gym.envs.mujoco.striker.StrikerEnv.step", "_syft_missing"],
+    ["gym.envs.mujoco.striker.StrikerEnv.viewer_setup", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer.SwimmerEnv.__enter__", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer.SwimmerEnv.__exit__", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer.SwimmerEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer.SwimmerEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer.SwimmerEnv.__str__", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer.SwimmerEnv._get_obs", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer.SwimmerEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer.SwimmerEnv._set_action_space", "_syft_missing"],
+    [
+      "gym.envs.mujoco.swimmer.SwimmerEnv._set_observation_space",
+      "_syft_missing"
+    ],
+    ["gym.envs.mujoco.swimmer.SwimmerEnv.close", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer.SwimmerEnv.do_simulation", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer.SwimmerEnv.get_body_com", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer.SwimmerEnv.render", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer.SwimmerEnv.reset", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer.SwimmerEnv.reset_model", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer.SwimmerEnv.seed", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer.SwimmerEnv.set_state", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer.SwimmerEnv.state_vector", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer.SwimmerEnv.step", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer.SwimmerEnv.viewer_setup", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer_v3.SwimmerEnv.__enter__", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer_v3.SwimmerEnv.__exit__", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer_v3.SwimmerEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer_v3.SwimmerEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer_v3.SwimmerEnv.__str__", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer_v3.SwimmerEnv._get_obs", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer_v3.SwimmerEnv._get_viewer", "_syft_missing"],
+    [
+      "gym.envs.mujoco.swimmer_v3.SwimmerEnv._set_action_space",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.swimmer_v3.SwimmerEnv._set_observation_space",
+      "_syft_missing"
+    ],
+    ["gym.envs.mujoco.swimmer_v3.SwimmerEnv.close", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer_v3.SwimmerEnv.control_cost", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer_v3.SwimmerEnv.do_simulation", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer_v3.SwimmerEnv.get_body_com", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer_v3.SwimmerEnv.render", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer_v3.SwimmerEnv.reset", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer_v3.SwimmerEnv.reset_model", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer_v3.SwimmerEnv.seed", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer_v3.SwimmerEnv.set_state", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer_v3.SwimmerEnv.state_vector", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer_v3.SwimmerEnv.step", "_syft_missing"],
+    ["gym.envs.mujoco.swimmer_v3.SwimmerEnv.viewer_setup", "_syft_missing"],
+    ["gym.envs.mujoco.thrower.ThrowerEnv.__enter__", "_syft_missing"],
+    ["gym.envs.mujoco.thrower.ThrowerEnv.__exit__", "_syft_missing"],
+    ["gym.envs.mujoco.thrower.ThrowerEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.mujoco.thrower.ThrowerEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.mujoco.thrower.ThrowerEnv.__str__", "_syft_missing"],
+    ["gym.envs.mujoco.thrower.ThrowerEnv._get_obs", "_syft_missing"],
+    ["gym.envs.mujoco.thrower.ThrowerEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.mujoco.thrower.ThrowerEnv._set_action_space", "_syft_missing"],
+    [
+      "gym.envs.mujoco.thrower.ThrowerEnv._set_observation_space",
+      "_syft_missing"
+    ],
+    ["gym.envs.mujoco.thrower.ThrowerEnv.close", "_syft_missing"],
+    ["gym.envs.mujoco.thrower.ThrowerEnv.do_simulation", "_syft_missing"],
+    ["gym.envs.mujoco.thrower.ThrowerEnv.get_body_com", "_syft_missing"],
+    ["gym.envs.mujoco.thrower.ThrowerEnv.render", "_syft_missing"],
+    ["gym.envs.mujoco.thrower.ThrowerEnv.reset", "_syft_missing"],
+    ["gym.envs.mujoco.thrower.ThrowerEnv.reset_model", "_syft_missing"],
+    ["gym.envs.mujoco.thrower.ThrowerEnv.seed", "_syft_missing"],
+    ["gym.envs.mujoco.thrower.ThrowerEnv.set_state", "_syft_missing"],
+    ["gym.envs.mujoco.thrower.ThrowerEnv.state_vector", "_syft_missing"],
+    ["gym.envs.mujoco.thrower.ThrowerEnv.step", "_syft_missing"],
+    ["gym.envs.mujoco.thrower.ThrowerEnv.viewer_setup", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d.Walker2dEnv.__enter__", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d.Walker2dEnv.__exit__", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d.Walker2dEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d.Walker2dEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d.Walker2dEnv.__str__", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d.Walker2dEnv._get_obs", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d.Walker2dEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d.Walker2dEnv._set_action_space", "_syft_missing"],
+    [
+      "gym.envs.mujoco.walker2d.Walker2dEnv._set_observation_space",
+      "_syft_missing"
+    ],
+    ["gym.envs.mujoco.walker2d.Walker2dEnv.close", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d.Walker2dEnv.do_simulation", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d.Walker2dEnv.get_body_com", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d.Walker2dEnv.render", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d.Walker2dEnv.reset", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d.Walker2dEnv.reset_model", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d.Walker2dEnv.seed", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d.Walker2dEnv.set_state", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d.Walker2dEnv.state_vector", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d.Walker2dEnv.step", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d.Walker2dEnv.viewer_setup", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d_v3.Walker2dEnv.__enter__", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d_v3.Walker2dEnv.__exit__", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d_v3.Walker2dEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d_v3.Walker2dEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d_v3.Walker2dEnv.__str__", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d_v3.Walker2dEnv._get_obs", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d_v3.Walker2dEnv._get_viewer", "_syft_missing"],
+    [
+      "gym.envs.mujoco.walker2d_v3.Walker2dEnv._set_action_space",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.mujoco.walker2d_v3.Walker2dEnv._set_observation_space",
+      "_syft_missing"
+    ],
+    ["gym.envs.mujoco.walker2d_v3.Walker2dEnv.close", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d_v3.Walker2dEnv.control_cost", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d_v3.Walker2dEnv.do_simulation", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d_v3.Walker2dEnv.get_body_com", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d_v3.Walker2dEnv.render", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d_v3.Walker2dEnv.reset", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d_v3.Walker2dEnv.reset_model", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d_v3.Walker2dEnv.seed", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d_v3.Walker2dEnv.set_state", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d_v3.Walker2dEnv.state_vector", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d_v3.Walker2dEnv.step", "_syft_missing"],
+    ["gym.envs.mujoco.walker2d_v3.Walker2dEnv.viewer_setup", "_syft_missing"],
     ["gym.envs.register", "_syft_missing"],
+    ["gym.envs.registration.EnvRegistry.all", "_syft_missing"],
+    ["gym.envs.registration.EnvRegistry.make", "_syft_missing"],
+    ["gym.envs.registration.EnvRegistry.register", "_syft_missing"],
+    ["gym.envs.registration.EnvRegistry.spec", "_syft_missing"],
+    ["gym.envs.registration.EnvSpec.__repr__", "_syft_missing"],
+    ["gym.envs.registration.EnvSpec.make", "_syft_missing"],
+    ["gym.envs.registration.load", "_syft_missing"],
+    ["gym.envs.registration.make", "_syft_missing"],
+    ["gym.envs.registration.patch_deprecated_methods", "_syft_missing"],
+    ["gym.envs.registration.register", "_syft_missing"],
+    ["gym.envs.registration.spec", "_syft_missing"],
+    ["gym.envs.robotics.FetchEnv.__enter__", "_syft_missing"],
+    ["gym.envs.robotics.FetchEnv.__exit__", "_syft_missing"],
+    ["gym.envs.robotics.FetchEnv.__str__", "_syft_missing"],
+    ["gym.envs.robotics.FetchEnv._env_setup", "_syft_missing"],
+    ["gym.envs.robotics.FetchEnv._get_obs", "_syft_missing"],
+    ["gym.envs.robotics.FetchEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.robotics.FetchEnv._is_success", "_syft_missing"],
+    ["gym.envs.robotics.FetchEnv._render_callback", "_syft_missing"],
+    ["gym.envs.robotics.FetchEnv._reset_sim", "_syft_missing"],
+    ["gym.envs.robotics.FetchEnv._sample_goal", "_syft_missing"],
+    ["gym.envs.robotics.FetchEnv._set_action", "_syft_missing"],
+    ["gym.envs.robotics.FetchEnv._step_callback", "_syft_missing"],
+    ["gym.envs.robotics.FetchEnv._viewer_setup", "_syft_missing"],
+    ["gym.envs.robotics.FetchEnv.close", "_syft_missing"],
+    ["gym.envs.robotics.FetchEnv.compute_reward", "_syft_missing"],
+    ["gym.envs.robotics.FetchEnv.render", "_syft_missing"],
+    ["gym.envs.robotics.FetchEnv.reset", "_syft_missing"],
+    ["gym.envs.robotics.FetchEnv.seed", "_syft_missing"],
+    ["gym.envs.robotics.FetchEnv.step", "_syft_missing"],
+    ["gym.envs.robotics.FetchPickAndPlaceEnv.__enter__", "_syft_missing"],
+    ["gym.envs.robotics.FetchPickAndPlaceEnv.__exit__", "_syft_missing"],
+    ["gym.envs.robotics.FetchPickAndPlaceEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.robotics.FetchPickAndPlaceEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.robotics.FetchPickAndPlaceEnv.__str__", "_syft_missing"],
+    ["gym.envs.robotics.FetchPickAndPlaceEnv._env_setup", "_syft_missing"],
+    ["gym.envs.robotics.FetchPickAndPlaceEnv._get_obs", "_syft_missing"],
+    ["gym.envs.robotics.FetchPickAndPlaceEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.robotics.FetchPickAndPlaceEnv._is_success", "_syft_missing"],
+    [
+      "gym.envs.robotics.FetchPickAndPlaceEnv._render_callback",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.FetchPickAndPlaceEnv._reset_sim", "_syft_missing"],
+    ["gym.envs.robotics.FetchPickAndPlaceEnv._sample_goal", "_syft_missing"],
+    ["gym.envs.robotics.FetchPickAndPlaceEnv._set_action", "_syft_missing"],
+    ["gym.envs.robotics.FetchPickAndPlaceEnv._step_callback", "_syft_missing"],
+    ["gym.envs.robotics.FetchPickAndPlaceEnv._viewer_setup", "_syft_missing"],
+    ["gym.envs.robotics.FetchPickAndPlaceEnv.close", "_syft_missing"],
+    ["gym.envs.robotics.FetchPickAndPlaceEnv.compute_reward", "_syft_missing"],
+    ["gym.envs.robotics.FetchPickAndPlaceEnv.render", "_syft_missing"],
+    ["gym.envs.robotics.FetchPickAndPlaceEnv.reset", "_syft_missing"],
+    ["gym.envs.robotics.FetchPickAndPlaceEnv.seed", "_syft_missing"],
+    ["gym.envs.robotics.FetchPickAndPlaceEnv.step", "_syft_missing"],
+    ["gym.envs.robotics.FetchPushEnv.__enter__", "_syft_missing"],
+    ["gym.envs.robotics.FetchPushEnv.__exit__", "_syft_missing"],
+    ["gym.envs.robotics.FetchPushEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.robotics.FetchPushEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.robotics.FetchPushEnv.__str__", "_syft_missing"],
+    ["gym.envs.robotics.FetchPushEnv._env_setup", "_syft_missing"],
+    ["gym.envs.robotics.FetchPushEnv._get_obs", "_syft_missing"],
+    ["gym.envs.robotics.FetchPushEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.robotics.FetchPushEnv._is_success", "_syft_missing"],
+    ["gym.envs.robotics.FetchPushEnv._render_callback", "_syft_missing"],
+    ["gym.envs.robotics.FetchPushEnv._reset_sim", "_syft_missing"],
+    ["gym.envs.robotics.FetchPushEnv._sample_goal", "_syft_missing"],
+    ["gym.envs.robotics.FetchPushEnv._set_action", "_syft_missing"],
+    ["gym.envs.robotics.FetchPushEnv._step_callback", "_syft_missing"],
+    ["gym.envs.robotics.FetchPushEnv._viewer_setup", "_syft_missing"],
+    ["gym.envs.robotics.FetchPushEnv.close", "_syft_missing"],
+    ["gym.envs.robotics.FetchPushEnv.compute_reward", "_syft_missing"],
+    ["gym.envs.robotics.FetchPushEnv.render", "_syft_missing"],
+    ["gym.envs.robotics.FetchPushEnv.reset", "_syft_missing"],
+    ["gym.envs.robotics.FetchPushEnv.seed", "_syft_missing"],
+    ["gym.envs.robotics.FetchPushEnv.step", "_syft_missing"],
+    ["gym.envs.robotics.FetchReachEnv.__enter__", "_syft_missing"],
+    ["gym.envs.robotics.FetchReachEnv.__exit__", "_syft_missing"],
+    ["gym.envs.robotics.FetchReachEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.robotics.FetchReachEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.robotics.FetchReachEnv.__str__", "_syft_missing"],
+    ["gym.envs.robotics.FetchReachEnv._env_setup", "_syft_missing"],
+    ["gym.envs.robotics.FetchReachEnv._get_obs", "_syft_missing"],
+    ["gym.envs.robotics.FetchReachEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.robotics.FetchReachEnv._is_success", "_syft_missing"],
+    ["gym.envs.robotics.FetchReachEnv._render_callback", "_syft_missing"],
+    ["gym.envs.robotics.FetchReachEnv._reset_sim", "_syft_missing"],
+    ["gym.envs.robotics.FetchReachEnv._sample_goal", "_syft_missing"],
+    ["gym.envs.robotics.FetchReachEnv._set_action", "_syft_missing"],
+    ["gym.envs.robotics.FetchReachEnv._step_callback", "_syft_missing"],
+    ["gym.envs.robotics.FetchReachEnv._viewer_setup", "_syft_missing"],
+    ["gym.envs.robotics.FetchReachEnv.close", "_syft_missing"],
+    ["gym.envs.robotics.FetchReachEnv.compute_reward", "_syft_missing"],
+    ["gym.envs.robotics.FetchReachEnv.render", "_syft_missing"],
+    ["gym.envs.robotics.FetchReachEnv.reset", "_syft_missing"],
+    ["gym.envs.robotics.FetchReachEnv.seed", "_syft_missing"],
+    ["gym.envs.robotics.FetchReachEnv.step", "_syft_missing"],
+    ["gym.envs.robotics.FetchSlideEnv.__enter__", "_syft_missing"],
+    ["gym.envs.robotics.FetchSlideEnv.__exit__", "_syft_missing"],
+    ["gym.envs.robotics.FetchSlideEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.robotics.FetchSlideEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.robotics.FetchSlideEnv.__str__", "_syft_missing"],
+    ["gym.envs.robotics.FetchSlideEnv._env_setup", "_syft_missing"],
+    ["gym.envs.robotics.FetchSlideEnv._get_obs", "_syft_missing"],
+    ["gym.envs.robotics.FetchSlideEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.robotics.FetchSlideEnv._is_success", "_syft_missing"],
+    ["gym.envs.robotics.FetchSlideEnv._render_callback", "_syft_missing"],
+    ["gym.envs.robotics.FetchSlideEnv._reset_sim", "_syft_missing"],
+    ["gym.envs.robotics.FetchSlideEnv._sample_goal", "_syft_missing"],
+    ["gym.envs.robotics.FetchSlideEnv._set_action", "_syft_missing"],
+    ["gym.envs.robotics.FetchSlideEnv._step_callback", "_syft_missing"],
+    ["gym.envs.robotics.FetchSlideEnv._viewer_setup", "_syft_missing"],
+    ["gym.envs.robotics.FetchSlideEnv.close", "_syft_missing"],
+    ["gym.envs.robotics.FetchSlideEnv.compute_reward", "_syft_missing"],
+    ["gym.envs.robotics.FetchSlideEnv.render", "_syft_missing"],
+    ["gym.envs.robotics.FetchSlideEnv.reset", "_syft_missing"],
+    ["gym.envs.robotics.FetchSlideEnv.seed", "_syft_missing"],
+    ["gym.envs.robotics.FetchSlideEnv.step", "_syft_missing"],
+    ["gym.envs.robotics.HandBlockEnv.__enter__", "_syft_missing"],
+    ["gym.envs.robotics.HandBlockEnv.__exit__", "_syft_missing"],
+    ["gym.envs.robotics.HandBlockEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.robotics.HandBlockEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.robotics.HandBlockEnv.__str__", "_syft_missing"],
+    ["gym.envs.robotics.HandBlockEnv._env_setup", "_syft_missing"],
+    ["gym.envs.robotics.HandBlockEnv._get_achieved_goal", "_syft_missing"],
+    ["gym.envs.robotics.HandBlockEnv._get_obs", "_syft_missing"],
+    ["gym.envs.robotics.HandBlockEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.robotics.HandBlockEnv._goal_distance", "_syft_missing"],
+    ["gym.envs.robotics.HandBlockEnv._is_success", "_syft_missing"],
+    ["gym.envs.robotics.HandBlockEnv._render_callback", "_syft_missing"],
+    ["gym.envs.robotics.HandBlockEnv._reset_sim", "_syft_missing"],
+    ["gym.envs.robotics.HandBlockEnv._sample_goal", "_syft_missing"],
+    ["gym.envs.robotics.HandBlockEnv._set_action", "_syft_missing"],
+    ["gym.envs.robotics.HandBlockEnv._step_callback", "_syft_missing"],
+    ["gym.envs.robotics.HandBlockEnv._viewer_setup", "_syft_missing"],
+    ["gym.envs.robotics.HandBlockEnv.close", "_syft_missing"],
+    ["gym.envs.robotics.HandBlockEnv.compute_reward", "_syft_missing"],
+    ["gym.envs.robotics.HandBlockEnv.render", "_syft_missing"],
+    ["gym.envs.robotics.HandBlockEnv.reset", "_syft_missing"],
+    ["gym.envs.robotics.HandBlockEnv.seed", "_syft_missing"],
+    ["gym.envs.robotics.HandBlockEnv.step", "_syft_missing"],
+    ["gym.envs.robotics.HandBlockTouchSensorsEnv.__enter__", "_syft_missing"],
+    ["gym.envs.robotics.HandBlockTouchSensorsEnv.__exit__", "_syft_missing"],
+    [
+      "gym.envs.robotics.HandBlockTouchSensorsEnv.__getstate__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.HandBlockTouchSensorsEnv.__setstate__",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.HandBlockTouchSensorsEnv.__str__", "_syft_missing"],
+    ["gym.envs.robotics.HandBlockTouchSensorsEnv._env_setup", "_syft_missing"],
+    [
+      "gym.envs.robotics.HandBlockTouchSensorsEnv._get_achieved_goal",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.HandBlockTouchSensorsEnv._get_obs", "_syft_missing"],
+    ["gym.envs.robotics.HandBlockTouchSensorsEnv._get_viewer", "_syft_missing"],
+    [
+      "gym.envs.robotics.HandBlockTouchSensorsEnv._goal_distance",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.HandBlockTouchSensorsEnv._is_success", "_syft_missing"],
+    [
+      "gym.envs.robotics.HandBlockTouchSensorsEnv._render_callback",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.HandBlockTouchSensorsEnv._reset_sim", "_syft_missing"],
+    [
+      "gym.envs.robotics.HandBlockTouchSensorsEnv._sample_goal",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.HandBlockTouchSensorsEnv._set_action", "_syft_missing"],
+    [
+      "gym.envs.robotics.HandBlockTouchSensorsEnv._step_callback",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.HandBlockTouchSensorsEnv._viewer_setup",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.HandBlockTouchSensorsEnv.close", "_syft_missing"],
+    [
+      "gym.envs.robotics.HandBlockTouchSensorsEnv.compute_reward",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.HandBlockTouchSensorsEnv.render", "_syft_missing"],
+    ["gym.envs.robotics.HandBlockTouchSensorsEnv.reset", "_syft_missing"],
+    ["gym.envs.robotics.HandBlockTouchSensorsEnv.seed", "_syft_missing"],
+    ["gym.envs.robotics.HandBlockTouchSensorsEnv.step", "_syft_missing"],
+    ["gym.envs.robotics.HandEggEnv.__enter__", "_syft_missing"],
+    ["gym.envs.robotics.HandEggEnv.__exit__", "_syft_missing"],
+    ["gym.envs.robotics.HandEggEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.robotics.HandEggEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.robotics.HandEggEnv.__str__", "_syft_missing"],
+    ["gym.envs.robotics.HandEggEnv._env_setup", "_syft_missing"],
+    ["gym.envs.robotics.HandEggEnv._get_achieved_goal", "_syft_missing"],
+    ["gym.envs.robotics.HandEggEnv._get_obs", "_syft_missing"],
+    ["gym.envs.robotics.HandEggEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.robotics.HandEggEnv._goal_distance", "_syft_missing"],
+    ["gym.envs.robotics.HandEggEnv._is_success", "_syft_missing"],
+    ["gym.envs.robotics.HandEggEnv._render_callback", "_syft_missing"],
+    ["gym.envs.robotics.HandEggEnv._reset_sim", "_syft_missing"],
+    ["gym.envs.robotics.HandEggEnv._sample_goal", "_syft_missing"],
+    ["gym.envs.robotics.HandEggEnv._set_action", "_syft_missing"],
+    ["gym.envs.robotics.HandEggEnv._step_callback", "_syft_missing"],
+    ["gym.envs.robotics.HandEggEnv._viewer_setup", "_syft_missing"],
+    ["gym.envs.robotics.HandEggEnv.close", "_syft_missing"],
+    ["gym.envs.robotics.HandEggEnv.compute_reward", "_syft_missing"],
+    ["gym.envs.robotics.HandEggEnv.render", "_syft_missing"],
+    ["gym.envs.robotics.HandEggEnv.reset", "_syft_missing"],
+    ["gym.envs.robotics.HandEggEnv.seed", "_syft_missing"],
+    ["gym.envs.robotics.HandEggEnv.step", "_syft_missing"],
+    ["gym.envs.robotics.HandEggTouchSensorsEnv.__enter__", "_syft_missing"],
+    ["gym.envs.robotics.HandEggTouchSensorsEnv.__exit__", "_syft_missing"],
+    ["gym.envs.robotics.HandEggTouchSensorsEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.robotics.HandEggTouchSensorsEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.robotics.HandEggTouchSensorsEnv.__str__", "_syft_missing"],
+    ["gym.envs.robotics.HandEggTouchSensorsEnv._env_setup", "_syft_missing"],
+    [
+      "gym.envs.robotics.HandEggTouchSensorsEnv._get_achieved_goal",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.HandEggTouchSensorsEnv._get_obs", "_syft_missing"],
+    ["gym.envs.robotics.HandEggTouchSensorsEnv._get_viewer", "_syft_missing"],
+    [
+      "gym.envs.robotics.HandEggTouchSensorsEnv._goal_distance",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.HandEggTouchSensorsEnv._is_success", "_syft_missing"],
+    [
+      "gym.envs.robotics.HandEggTouchSensorsEnv._render_callback",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.HandEggTouchSensorsEnv._reset_sim", "_syft_missing"],
+    ["gym.envs.robotics.HandEggTouchSensorsEnv._sample_goal", "_syft_missing"],
+    ["gym.envs.robotics.HandEggTouchSensorsEnv._set_action", "_syft_missing"],
+    [
+      "gym.envs.robotics.HandEggTouchSensorsEnv._step_callback",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.HandEggTouchSensorsEnv._viewer_setup", "_syft_missing"],
+    ["gym.envs.robotics.HandEggTouchSensorsEnv.close", "_syft_missing"],
+    [
+      "gym.envs.robotics.HandEggTouchSensorsEnv.compute_reward",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.HandEggTouchSensorsEnv.render", "_syft_missing"],
+    ["gym.envs.robotics.HandEggTouchSensorsEnv.reset", "_syft_missing"],
+    ["gym.envs.robotics.HandEggTouchSensorsEnv.seed", "_syft_missing"],
+    ["gym.envs.robotics.HandEggTouchSensorsEnv.step", "_syft_missing"],
+    ["gym.envs.robotics.HandPenEnv.__enter__", "_syft_missing"],
+    ["gym.envs.robotics.HandPenEnv.__exit__", "_syft_missing"],
+    ["gym.envs.robotics.HandPenEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.robotics.HandPenEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.robotics.HandPenEnv.__str__", "_syft_missing"],
+    ["gym.envs.robotics.HandPenEnv._env_setup", "_syft_missing"],
+    ["gym.envs.robotics.HandPenEnv._get_achieved_goal", "_syft_missing"],
+    ["gym.envs.robotics.HandPenEnv._get_obs", "_syft_missing"],
+    ["gym.envs.robotics.HandPenEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.robotics.HandPenEnv._goal_distance", "_syft_missing"],
+    ["gym.envs.robotics.HandPenEnv._is_success", "_syft_missing"],
+    ["gym.envs.robotics.HandPenEnv._render_callback", "_syft_missing"],
+    ["gym.envs.robotics.HandPenEnv._reset_sim", "_syft_missing"],
+    ["gym.envs.robotics.HandPenEnv._sample_goal", "_syft_missing"],
+    ["gym.envs.robotics.HandPenEnv._set_action", "_syft_missing"],
+    ["gym.envs.robotics.HandPenEnv._step_callback", "_syft_missing"],
+    ["gym.envs.robotics.HandPenEnv._viewer_setup", "_syft_missing"],
+    ["gym.envs.robotics.HandPenEnv.close", "_syft_missing"],
+    ["gym.envs.robotics.HandPenEnv.compute_reward", "_syft_missing"],
+    ["gym.envs.robotics.HandPenEnv.render", "_syft_missing"],
+    ["gym.envs.robotics.HandPenEnv.reset", "_syft_missing"],
+    ["gym.envs.robotics.HandPenEnv.seed", "_syft_missing"],
+    ["gym.envs.robotics.HandPenEnv.step", "_syft_missing"],
+    ["gym.envs.robotics.HandPenTouchSensorsEnv.__enter__", "_syft_missing"],
+    ["gym.envs.robotics.HandPenTouchSensorsEnv.__exit__", "_syft_missing"],
+    ["gym.envs.robotics.HandPenTouchSensorsEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.robotics.HandPenTouchSensorsEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.robotics.HandPenTouchSensorsEnv.__str__", "_syft_missing"],
+    ["gym.envs.robotics.HandPenTouchSensorsEnv._env_setup", "_syft_missing"],
+    [
+      "gym.envs.robotics.HandPenTouchSensorsEnv._get_achieved_goal",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.HandPenTouchSensorsEnv._get_obs", "_syft_missing"],
+    ["gym.envs.robotics.HandPenTouchSensorsEnv._get_viewer", "_syft_missing"],
+    [
+      "gym.envs.robotics.HandPenTouchSensorsEnv._goal_distance",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.HandPenTouchSensorsEnv._is_success", "_syft_missing"],
+    [
+      "gym.envs.robotics.HandPenTouchSensorsEnv._render_callback",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.HandPenTouchSensorsEnv._reset_sim", "_syft_missing"],
+    ["gym.envs.robotics.HandPenTouchSensorsEnv._sample_goal", "_syft_missing"],
+    ["gym.envs.robotics.HandPenTouchSensorsEnv._set_action", "_syft_missing"],
+    [
+      "gym.envs.robotics.HandPenTouchSensorsEnv._step_callback",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.HandPenTouchSensorsEnv._viewer_setup", "_syft_missing"],
+    ["gym.envs.robotics.HandPenTouchSensorsEnv.close", "_syft_missing"],
+    [
+      "gym.envs.robotics.HandPenTouchSensorsEnv.compute_reward",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.HandPenTouchSensorsEnv.render", "_syft_missing"],
+    ["gym.envs.robotics.HandPenTouchSensorsEnv.reset", "_syft_missing"],
+    ["gym.envs.robotics.HandPenTouchSensorsEnv.seed", "_syft_missing"],
+    ["gym.envs.robotics.HandPenTouchSensorsEnv.step", "_syft_missing"],
+    ["gym.envs.robotics.HandReachEnv.__enter__", "_syft_missing"],
+    ["gym.envs.robotics.HandReachEnv.__exit__", "_syft_missing"],
+    ["gym.envs.robotics.HandReachEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.robotics.HandReachEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.robotics.HandReachEnv.__str__", "_syft_missing"],
+    ["gym.envs.robotics.HandReachEnv._env_setup", "_syft_missing"],
+    ["gym.envs.robotics.HandReachEnv._get_achieved_goal", "_syft_missing"],
+    ["gym.envs.robotics.HandReachEnv._get_obs", "_syft_missing"],
+    ["gym.envs.robotics.HandReachEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.robotics.HandReachEnv._is_success", "_syft_missing"],
+    ["gym.envs.robotics.HandReachEnv._render_callback", "_syft_missing"],
+    ["gym.envs.robotics.HandReachEnv._reset_sim", "_syft_missing"],
+    ["gym.envs.robotics.HandReachEnv._sample_goal", "_syft_missing"],
+    ["gym.envs.robotics.HandReachEnv._set_action", "_syft_missing"],
+    ["gym.envs.robotics.HandReachEnv._step_callback", "_syft_missing"],
+    ["gym.envs.robotics.HandReachEnv._viewer_setup", "_syft_missing"],
+    ["gym.envs.robotics.HandReachEnv.close", "_syft_missing"],
+    ["gym.envs.robotics.HandReachEnv.compute_reward", "_syft_missing"],
+    ["gym.envs.robotics.HandReachEnv.render", "_syft_missing"],
+    ["gym.envs.robotics.HandReachEnv.reset", "_syft_missing"],
+    ["gym.envs.robotics.HandReachEnv.seed", "_syft_missing"],
+    ["gym.envs.robotics.HandReachEnv.step", "_syft_missing"],
+    [
+      "gym.envs.robotics.fetch.pick_and_place.FetchPickAndPlaceEnv.__enter__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.fetch.pick_and_place.FetchPickAndPlaceEnv.__exit__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.fetch.pick_and_place.FetchPickAndPlaceEnv.__getstate__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.fetch.pick_and_place.FetchPickAndPlaceEnv.__setstate__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.fetch.pick_and_place.FetchPickAndPlaceEnv.__str__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.fetch.pick_and_place.FetchPickAndPlaceEnv._env_setup",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.fetch.pick_and_place.FetchPickAndPlaceEnv._get_obs",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.fetch.pick_and_place.FetchPickAndPlaceEnv._get_viewer",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.fetch.pick_and_place.FetchPickAndPlaceEnv._is_success",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.fetch.pick_and_place.FetchPickAndPlaceEnv._render_callback",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.fetch.pick_and_place.FetchPickAndPlaceEnv._reset_sim",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.fetch.pick_and_place.FetchPickAndPlaceEnv._sample_goal",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.fetch.pick_and_place.FetchPickAndPlaceEnv._set_action",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.fetch.pick_and_place.FetchPickAndPlaceEnv._step_callback",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.fetch.pick_and_place.FetchPickAndPlaceEnv._viewer_setup",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.fetch.pick_and_place.FetchPickAndPlaceEnv.close",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.fetch.pick_and_place.FetchPickAndPlaceEnv.compute_reward",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.fetch.pick_and_place.FetchPickAndPlaceEnv.render",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.fetch.pick_and_place.FetchPickAndPlaceEnv.reset",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.fetch.pick_and_place.FetchPickAndPlaceEnv.seed",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.fetch.pick_and_place.FetchPickAndPlaceEnv.step",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.fetch.push.FetchPushEnv.__enter__", "_syft_missing"],
+    ["gym.envs.robotics.fetch.push.FetchPushEnv.__exit__", "_syft_missing"],
+    ["gym.envs.robotics.fetch.push.FetchPushEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.robotics.fetch.push.FetchPushEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.robotics.fetch.push.FetchPushEnv.__str__", "_syft_missing"],
+    ["gym.envs.robotics.fetch.push.FetchPushEnv._env_setup", "_syft_missing"],
+    ["gym.envs.robotics.fetch.push.FetchPushEnv._get_obs", "_syft_missing"],
+    ["gym.envs.robotics.fetch.push.FetchPushEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.robotics.fetch.push.FetchPushEnv._is_success", "_syft_missing"],
+    [
+      "gym.envs.robotics.fetch.push.FetchPushEnv._render_callback",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.fetch.push.FetchPushEnv._reset_sim", "_syft_missing"],
+    ["gym.envs.robotics.fetch.push.FetchPushEnv._sample_goal", "_syft_missing"],
+    ["gym.envs.robotics.fetch.push.FetchPushEnv._set_action", "_syft_missing"],
+    [
+      "gym.envs.robotics.fetch.push.FetchPushEnv._step_callback",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.fetch.push.FetchPushEnv._viewer_setup",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.fetch.push.FetchPushEnv.close", "_syft_missing"],
+    [
+      "gym.envs.robotics.fetch.push.FetchPushEnv.compute_reward",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.fetch.push.FetchPushEnv.render", "_syft_missing"],
+    ["gym.envs.robotics.fetch.push.FetchPushEnv.reset", "_syft_missing"],
+    ["gym.envs.robotics.fetch.push.FetchPushEnv.seed", "_syft_missing"],
+    ["gym.envs.robotics.fetch.push.FetchPushEnv.step", "_syft_missing"],
+    ["gym.envs.robotics.fetch.reach.FetchReachEnv.__enter__", "_syft_missing"],
+    ["gym.envs.robotics.fetch.reach.FetchReachEnv.__exit__", "_syft_missing"],
+    [
+      "gym.envs.robotics.fetch.reach.FetchReachEnv.__getstate__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.fetch.reach.FetchReachEnv.__setstate__",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.fetch.reach.FetchReachEnv.__str__", "_syft_missing"],
+    ["gym.envs.robotics.fetch.reach.FetchReachEnv._env_setup", "_syft_missing"],
+    ["gym.envs.robotics.fetch.reach.FetchReachEnv._get_obs", "_syft_missing"],
+    [
+      "gym.envs.robotics.fetch.reach.FetchReachEnv._get_viewer",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.fetch.reach.FetchReachEnv._is_success",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.fetch.reach.FetchReachEnv._render_callback",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.fetch.reach.FetchReachEnv._reset_sim", "_syft_missing"],
+    [
+      "gym.envs.robotics.fetch.reach.FetchReachEnv._sample_goal",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.fetch.reach.FetchReachEnv._set_action",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.fetch.reach.FetchReachEnv._step_callback",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.fetch.reach.FetchReachEnv._viewer_setup",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.fetch.reach.FetchReachEnv.close", "_syft_missing"],
+    [
+      "gym.envs.robotics.fetch.reach.FetchReachEnv.compute_reward",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.fetch.reach.FetchReachEnv.render", "_syft_missing"],
+    ["gym.envs.robotics.fetch.reach.FetchReachEnv.reset", "_syft_missing"],
+    ["gym.envs.robotics.fetch.reach.FetchReachEnv.seed", "_syft_missing"],
+    ["gym.envs.robotics.fetch.reach.FetchReachEnv.step", "_syft_missing"],
+    ["gym.envs.robotics.fetch.slide.FetchSlideEnv.__enter__", "_syft_missing"],
+    ["gym.envs.robotics.fetch.slide.FetchSlideEnv.__exit__", "_syft_missing"],
+    [
+      "gym.envs.robotics.fetch.slide.FetchSlideEnv.__getstate__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.fetch.slide.FetchSlideEnv.__setstate__",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.fetch.slide.FetchSlideEnv.__str__", "_syft_missing"],
+    ["gym.envs.robotics.fetch.slide.FetchSlideEnv._env_setup", "_syft_missing"],
+    ["gym.envs.robotics.fetch.slide.FetchSlideEnv._get_obs", "_syft_missing"],
+    [
+      "gym.envs.robotics.fetch.slide.FetchSlideEnv._get_viewer",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.fetch.slide.FetchSlideEnv._is_success",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.fetch.slide.FetchSlideEnv._render_callback",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.fetch.slide.FetchSlideEnv._reset_sim", "_syft_missing"],
+    [
+      "gym.envs.robotics.fetch.slide.FetchSlideEnv._sample_goal",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.fetch.slide.FetchSlideEnv._set_action",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.fetch.slide.FetchSlideEnv._step_callback",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.fetch.slide.FetchSlideEnv._viewer_setup",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.fetch.slide.FetchSlideEnv.close", "_syft_missing"],
+    [
+      "gym.envs.robotics.fetch.slide.FetchSlideEnv.compute_reward",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.fetch.slide.FetchSlideEnv.render", "_syft_missing"],
+    ["gym.envs.robotics.fetch.slide.FetchSlideEnv.reset", "_syft_missing"],
+    ["gym.envs.robotics.fetch.slide.FetchSlideEnv.seed", "_syft_missing"],
+    ["gym.envs.robotics.fetch.slide.FetchSlideEnv.step", "_syft_missing"],
+    ["gym.envs.robotics.fetch_env.FetchEnv.__enter__", "_syft_missing"],
+    ["gym.envs.robotics.fetch_env.FetchEnv.__exit__", "_syft_missing"],
+    ["gym.envs.robotics.fetch_env.FetchEnv.__str__", "_syft_missing"],
+    ["gym.envs.robotics.fetch_env.FetchEnv._env_setup", "_syft_missing"],
+    ["gym.envs.robotics.fetch_env.FetchEnv._get_obs", "_syft_missing"],
+    ["gym.envs.robotics.fetch_env.FetchEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.robotics.fetch_env.FetchEnv._is_success", "_syft_missing"],
+    ["gym.envs.robotics.fetch_env.FetchEnv._render_callback", "_syft_missing"],
+    ["gym.envs.robotics.fetch_env.FetchEnv._reset_sim", "_syft_missing"],
+    ["gym.envs.robotics.fetch_env.FetchEnv._sample_goal", "_syft_missing"],
+    ["gym.envs.robotics.fetch_env.FetchEnv._set_action", "_syft_missing"],
+    ["gym.envs.robotics.fetch_env.FetchEnv._step_callback", "_syft_missing"],
+    ["gym.envs.robotics.fetch_env.FetchEnv._viewer_setup", "_syft_missing"],
+    ["gym.envs.robotics.fetch_env.FetchEnv.close", "_syft_missing"],
+    ["gym.envs.robotics.fetch_env.FetchEnv.compute_reward", "_syft_missing"],
+    ["gym.envs.robotics.fetch_env.FetchEnv.render", "_syft_missing"],
+    ["gym.envs.robotics.fetch_env.FetchEnv.reset", "_syft_missing"],
+    ["gym.envs.robotics.fetch_env.FetchEnv.seed", "_syft_missing"],
+    ["gym.envs.robotics.fetch_env.FetchEnv.step", "_syft_missing"],
+    ["gym.envs.robotics.fetch_env.goal_distance", "_syft_missing"],
+    [
+      "gym.envs.robotics.hand.manipulate.HandBlockEnv.__enter__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandBlockEnv.__exit__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandBlockEnv.__getstate__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandBlockEnv.__setstate__",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.hand.manipulate.HandBlockEnv.__str__", "_syft_missing"],
+    [
+      "gym.envs.robotics.hand.manipulate.HandBlockEnv._env_setup",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandBlockEnv._get_achieved_goal",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandBlockEnv._get_obs",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandBlockEnv._get_viewer",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandBlockEnv._goal_distance",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandBlockEnv._is_success",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandBlockEnv._render_callback",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandBlockEnv._reset_sim",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandBlockEnv._sample_goal",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandBlockEnv._set_action",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandBlockEnv._step_callback",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandBlockEnv._viewer_setup",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.hand.manipulate.HandBlockEnv.close", "_syft_missing"],
+    [
+      "gym.envs.robotics.hand.manipulate.HandBlockEnv.compute_reward",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.hand.manipulate.HandBlockEnv.render", "_syft_missing"],
+    ["gym.envs.robotics.hand.manipulate.HandBlockEnv.reset", "_syft_missing"],
+    ["gym.envs.robotics.hand.manipulate.HandBlockEnv.seed", "_syft_missing"],
+    ["gym.envs.robotics.hand.manipulate.HandBlockEnv.step", "_syft_missing"],
+    ["gym.envs.robotics.hand.manipulate.HandEggEnv.__enter__", "_syft_missing"],
+    ["gym.envs.robotics.hand.manipulate.HandEggEnv.__exit__", "_syft_missing"],
+    [
+      "gym.envs.robotics.hand.manipulate.HandEggEnv.__getstate__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandEggEnv.__setstate__",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.hand.manipulate.HandEggEnv.__str__", "_syft_missing"],
+    [
+      "gym.envs.robotics.hand.manipulate.HandEggEnv._env_setup",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandEggEnv._get_achieved_goal",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.hand.manipulate.HandEggEnv._get_obs", "_syft_missing"],
+    [
+      "gym.envs.robotics.hand.manipulate.HandEggEnv._get_viewer",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandEggEnv._goal_distance",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandEggEnv._is_success",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandEggEnv._render_callback",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandEggEnv._reset_sim",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandEggEnv._sample_goal",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandEggEnv._set_action",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandEggEnv._step_callback",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandEggEnv._viewer_setup",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.hand.manipulate.HandEggEnv.close", "_syft_missing"],
+    [
+      "gym.envs.robotics.hand.manipulate.HandEggEnv.compute_reward",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.hand.manipulate.HandEggEnv.render", "_syft_missing"],
+    ["gym.envs.robotics.hand.manipulate.HandEggEnv.reset", "_syft_missing"],
+    ["gym.envs.robotics.hand.manipulate.HandEggEnv.seed", "_syft_missing"],
+    ["gym.envs.robotics.hand.manipulate.HandEggEnv.step", "_syft_missing"],
+    ["gym.envs.robotics.hand.manipulate.HandPenEnv.__enter__", "_syft_missing"],
+    ["gym.envs.robotics.hand.manipulate.HandPenEnv.__exit__", "_syft_missing"],
+    [
+      "gym.envs.robotics.hand.manipulate.HandPenEnv.__getstate__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandPenEnv.__setstate__",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.hand.manipulate.HandPenEnv.__str__", "_syft_missing"],
+    [
+      "gym.envs.robotics.hand.manipulate.HandPenEnv._env_setup",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandPenEnv._get_achieved_goal",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.hand.manipulate.HandPenEnv._get_obs", "_syft_missing"],
+    [
+      "gym.envs.robotics.hand.manipulate.HandPenEnv._get_viewer",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandPenEnv._goal_distance",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandPenEnv._is_success",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandPenEnv._render_callback",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandPenEnv._reset_sim",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandPenEnv._sample_goal",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandPenEnv._set_action",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandPenEnv._step_callback",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.HandPenEnv._viewer_setup",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.hand.manipulate.HandPenEnv.close", "_syft_missing"],
+    [
+      "gym.envs.robotics.hand.manipulate.HandPenEnv.compute_reward",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.hand.manipulate.HandPenEnv.render", "_syft_missing"],
+    ["gym.envs.robotics.hand.manipulate.HandPenEnv.reset", "_syft_missing"],
+    ["gym.envs.robotics.hand.manipulate.HandPenEnv.seed", "_syft_missing"],
+    ["gym.envs.robotics.hand.manipulate.HandPenEnv.step", "_syft_missing"],
+    [
+      "gym.envs.robotics.hand.manipulate.ManipulateEnv.__enter__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.ManipulateEnv.__exit__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.ManipulateEnv.__str__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.ManipulateEnv._env_setup",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.ManipulateEnv._get_achieved_goal",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.ManipulateEnv._get_obs",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.ManipulateEnv._get_viewer",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.ManipulateEnv._goal_distance",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.ManipulateEnv._is_success",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.ManipulateEnv._render_callback",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.ManipulateEnv._reset_sim",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.ManipulateEnv._sample_goal",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.ManipulateEnv._set_action",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.ManipulateEnv._step_callback",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate.ManipulateEnv._viewer_setup",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.hand.manipulate.ManipulateEnv.close", "_syft_missing"],
+    [
+      "gym.envs.robotics.hand.manipulate.ManipulateEnv.compute_reward",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.hand.manipulate.ManipulateEnv.render", "_syft_missing"],
+    ["gym.envs.robotics.hand.manipulate.ManipulateEnv.reset", "_syft_missing"],
+    ["gym.envs.robotics.hand.manipulate.ManipulateEnv.seed", "_syft_missing"],
+    ["gym.envs.robotics.hand.manipulate.ManipulateEnv.step", "_syft_missing"],
+    [
+      "gym.envs.robotics.hand.manipulate.quat_from_angle_and_axis",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.hand.manipulate.robot_get_obs", "_syft_missing"],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandBlockTouchSensorsEnv.__enter__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandBlockTouchSensorsEnv.__exit__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandBlockTouchSensorsEnv.__getstate__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandBlockTouchSensorsEnv.__setstate__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandBlockTouchSensorsEnv.__str__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandBlockTouchSensorsEnv._env_setup",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandBlockTouchSensorsEnv._get_achieved_goal",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandBlockTouchSensorsEnv._get_obs",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandBlockTouchSensorsEnv._get_viewer",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandBlockTouchSensorsEnv._goal_distance",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandBlockTouchSensorsEnv._is_success",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandBlockTouchSensorsEnv._render_callback",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandBlockTouchSensorsEnv._reset_sim",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandBlockTouchSensorsEnv._sample_goal",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandBlockTouchSensorsEnv._set_action",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandBlockTouchSensorsEnv._step_callback",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandBlockTouchSensorsEnv._viewer_setup",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandBlockTouchSensorsEnv.close",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandBlockTouchSensorsEnv.compute_reward",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandBlockTouchSensorsEnv.render",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandBlockTouchSensorsEnv.reset",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandBlockTouchSensorsEnv.seed",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandBlockTouchSensorsEnv.step",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandEggTouchSensorsEnv.__enter__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandEggTouchSensorsEnv.__exit__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandEggTouchSensorsEnv.__getstate__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandEggTouchSensorsEnv.__setstate__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandEggTouchSensorsEnv.__str__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandEggTouchSensorsEnv._env_setup",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandEggTouchSensorsEnv._get_achieved_goal",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandEggTouchSensorsEnv._get_obs",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandEggTouchSensorsEnv._get_viewer",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandEggTouchSensorsEnv._goal_distance",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandEggTouchSensorsEnv._is_success",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandEggTouchSensorsEnv._render_callback",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandEggTouchSensorsEnv._reset_sim",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandEggTouchSensorsEnv._sample_goal",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandEggTouchSensorsEnv._set_action",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandEggTouchSensorsEnv._step_callback",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandEggTouchSensorsEnv._viewer_setup",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandEggTouchSensorsEnv.close",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandEggTouchSensorsEnv.compute_reward",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandEggTouchSensorsEnv.render",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandEggTouchSensorsEnv.reset",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandEggTouchSensorsEnv.seed",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandEggTouchSensorsEnv.step",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandPenTouchSensorsEnv.__enter__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandPenTouchSensorsEnv.__exit__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandPenTouchSensorsEnv.__getstate__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandPenTouchSensorsEnv.__setstate__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandPenTouchSensorsEnv.__str__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandPenTouchSensorsEnv._env_setup",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandPenTouchSensorsEnv._get_achieved_goal",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandPenTouchSensorsEnv._get_obs",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandPenTouchSensorsEnv._get_viewer",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandPenTouchSensorsEnv._goal_distance",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandPenTouchSensorsEnv._is_success",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandPenTouchSensorsEnv._render_callback",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandPenTouchSensorsEnv._reset_sim",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandPenTouchSensorsEnv._sample_goal",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandPenTouchSensorsEnv._set_action",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandPenTouchSensorsEnv._step_callback",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandPenTouchSensorsEnv._viewer_setup",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandPenTouchSensorsEnv.close",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandPenTouchSensorsEnv.compute_reward",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandPenTouchSensorsEnv.render",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandPenTouchSensorsEnv.reset",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandPenTouchSensorsEnv.seed",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.HandPenTouchSensorsEnv.step",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.ManipulateTouchSensorsEnv.__enter__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.ManipulateTouchSensorsEnv.__exit__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.ManipulateTouchSensorsEnv.__str__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.ManipulateTouchSensorsEnv._env_setup",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.ManipulateTouchSensorsEnv._get_achieved_goal",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.ManipulateTouchSensorsEnv._get_obs",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.ManipulateTouchSensorsEnv._get_viewer",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.ManipulateTouchSensorsEnv._goal_distance",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.ManipulateTouchSensorsEnv._is_success",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.ManipulateTouchSensorsEnv._render_callback",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.ManipulateTouchSensorsEnv._reset_sim",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.ManipulateTouchSensorsEnv._sample_goal",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.ManipulateTouchSensorsEnv._set_action",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.ManipulateTouchSensorsEnv._step_callback",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.ManipulateTouchSensorsEnv._viewer_setup",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.ManipulateTouchSensorsEnv.close",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.ManipulateTouchSensorsEnv.compute_reward",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.ManipulateTouchSensorsEnv.render",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.ManipulateTouchSensorsEnv.reset",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.ManipulateTouchSensorsEnv.seed",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.manipulate_touch_sensors.ManipulateTouchSensorsEnv.step",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.hand.reach.HandReachEnv.__enter__", "_syft_missing"],
+    ["gym.envs.robotics.hand.reach.HandReachEnv.__exit__", "_syft_missing"],
+    ["gym.envs.robotics.hand.reach.HandReachEnv.__getstate__", "_syft_missing"],
+    ["gym.envs.robotics.hand.reach.HandReachEnv.__setstate__", "_syft_missing"],
+    ["gym.envs.robotics.hand.reach.HandReachEnv.__str__", "_syft_missing"],
+    ["gym.envs.robotics.hand.reach.HandReachEnv._env_setup", "_syft_missing"],
+    [
+      "gym.envs.robotics.hand.reach.HandReachEnv._get_achieved_goal",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.hand.reach.HandReachEnv._get_obs", "_syft_missing"],
+    ["gym.envs.robotics.hand.reach.HandReachEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.robotics.hand.reach.HandReachEnv._is_success", "_syft_missing"],
+    [
+      "gym.envs.robotics.hand.reach.HandReachEnv._render_callback",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.hand.reach.HandReachEnv._reset_sim", "_syft_missing"],
+    ["gym.envs.robotics.hand.reach.HandReachEnv._sample_goal", "_syft_missing"],
+    ["gym.envs.robotics.hand.reach.HandReachEnv._set_action", "_syft_missing"],
+    [
+      "gym.envs.robotics.hand.reach.HandReachEnv._step_callback",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.robotics.hand.reach.HandReachEnv._viewer_setup",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.hand.reach.HandReachEnv.close", "_syft_missing"],
+    [
+      "gym.envs.robotics.hand.reach.HandReachEnv.compute_reward",
+      "_syft_missing"
+    ],
+    ["gym.envs.robotics.hand.reach.HandReachEnv.render", "_syft_missing"],
+    ["gym.envs.robotics.hand.reach.HandReachEnv.reset", "_syft_missing"],
+    ["gym.envs.robotics.hand.reach.HandReachEnv.seed", "_syft_missing"],
+    ["gym.envs.robotics.hand.reach.HandReachEnv.step", "_syft_missing"],
+    ["gym.envs.robotics.hand.reach.goal_distance", "_syft_missing"],
+    ["gym.envs.robotics.hand.reach.robot_get_obs", "_syft_missing"],
+    ["gym.envs.robotics.hand_env.HandEnv.__enter__", "_syft_missing"],
+    ["gym.envs.robotics.hand_env.HandEnv.__exit__", "_syft_missing"],
+    ["gym.envs.robotics.hand_env.HandEnv.__str__", "_syft_missing"],
+    ["gym.envs.robotics.hand_env.HandEnv._env_setup", "_syft_missing"],
+    ["gym.envs.robotics.hand_env.HandEnv._get_obs", "_syft_missing"],
+    ["gym.envs.robotics.hand_env.HandEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.robotics.hand_env.HandEnv._is_success", "_syft_missing"],
+    ["gym.envs.robotics.hand_env.HandEnv._render_callback", "_syft_missing"],
+    ["gym.envs.robotics.hand_env.HandEnv._reset_sim", "_syft_missing"],
+    ["gym.envs.robotics.hand_env.HandEnv._sample_goal", "_syft_missing"],
+    ["gym.envs.robotics.hand_env.HandEnv._set_action", "_syft_missing"],
+    ["gym.envs.robotics.hand_env.HandEnv._step_callback", "_syft_missing"],
+    ["gym.envs.robotics.hand_env.HandEnv._viewer_setup", "_syft_missing"],
+    ["gym.envs.robotics.hand_env.HandEnv.close", "_syft_missing"],
+    ["gym.envs.robotics.hand_env.HandEnv.compute_reward", "_syft_missing"],
+    ["gym.envs.robotics.hand_env.HandEnv.render", "_syft_missing"],
+    ["gym.envs.robotics.hand_env.HandEnv.reset", "_syft_missing"],
+    ["gym.envs.robotics.hand_env.HandEnv.seed", "_syft_missing"],
+    ["gym.envs.robotics.hand_env.HandEnv.step", "_syft_missing"],
+    ["gym.envs.robotics.robot_env.RobotEnv.__enter__", "_syft_missing"],
+    ["gym.envs.robotics.robot_env.RobotEnv.__exit__", "_syft_missing"],
+    ["gym.envs.robotics.robot_env.RobotEnv.__str__", "_syft_missing"],
+    ["gym.envs.robotics.robot_env.RobotEnv._env_setup", "_syft_missing"],
+    ["gym.envs.robotics.robot_env.RobotEnv._get_obs", "_syft_missing"],
+    ["gym.envs.robotics.robot_env.RobotEnv._get_viewer", "_syft_missing"],
+    ["gym.envs.robotics.robot_env.RobotEnv._is_success", "_syft_missing"],
+    ["gym.envs.robotics.robot_env.RobotEnv._render_callback", "_syft_missing"],
+    ["gym.envs.robotics.robot_env.RobotEnv._reset_sim", "_syft_missing"],
+    ["gym.envs.robotics.robot_env.RobotEnv._sample_goal", "_syft_missing"],
+    ["gym.envs.robotics.robot_env.RobotEnv._set_action", "_syft_missing"],
+    ["gym.envs.robotics.robot_env.RobotEnv._step_callback", "_syft_missing"],
+    ["gym.envs.robotics.robot_env.RobotEnv._viewer_setup", "_syft_missing"],
+    ["gym.envs.robotics.robot_env.RobotEnv.close", "_syft_missing"],
+    ["gym.envs.robotics.robot_env.RobotEnv.compute_reward", "_syft_missing"],
+    ["gym.envs.robotics.robot_env.RobotEnv.render", "_syft_missing"],
+    ["gym.envs.robotics.robot_env.RobotEnv.reset", "_syft_missing"],
+    ["gym.envs.robotics.robot_env.RobotEnv.seed", "_syft_missing"],
+    ["gym.envs.robotics.robot_env.RobotEnv.step", "_syft_missing"],
+    ["gym.envs.robotics.rotations.euler2mat", "_syft_missing"],
+    ["gym.envs.robotics.rotations.euler2point_euler", "_syft_missing"],
+    ["gym.envs.robotics.rotations.euler2quat", "_syft_missing"],
+    ["gym.envs.robotics.rotations.get_parallel_rotations", "_syft_missing"],
+    ["gym.envs.robotics.rotations.mat2euler", "_syft_missing"],
+    ["gym.envs.robotics.rotations.mat2quat", "_syft_missing"],
+    ["gym.envs.robotics.rotations.normalize_angles", "_syft_missing"],
+    ["gym.envs.robotics.rotations.point_euler2euler", "_syft_missing"],
+    ["gym.envs.robotics.rotations.point_quat2quat", "_syft_missing"],
+    ["gym.envs.robotics.rotations.quat2axisangle", "_syft_missing"],
+    ["gym.envs.robotics.rotations.quat2euler", "_syft_missing"],
+    ["gym.envs.robotics.rotations.quat2mat", "_syft_missing"],
+    ["gym.envs.robotics.rotations.quat2point_quat", "_syft_missing"],
+    ["gym.envs.robotics.rotations.quat_conjugate", "_syft_missing"],
+    ["gym.envs.robotics.rotations.quat_identity", "_syft_missing"],
+    ["gym.envs.robotics.rotations.quat_mul", "_syft_missing"],
+    ["gym.envs.robotics.rotations.quat_rot_vec", "_syft_missing"],
+    ["gym.envs.robotics.rotations.round_to_straight_angles", "_syft_missing"],
+    ["gym.envs.robotics.rotations.subtract_euler", "_syft_missing"],
+    ["gym.envs.robotics.utils.ctrl_set_action", "_syft_missing"],
+    ["gym.envs.robotics.utils.mocap_set_action", "_syft_missing"],
+    ["gym.envs.robotics.utils.reset_mocap2body_xpos", "_syft_missing"],
+    ["gym.envs.robotics.utils.reset_mocap_welds", "_syft_missing"],
+    ["gym.envs.robotics.utils.robot_get_obs", "_syft_missing"],
     ["gym.envs.spec", "_syft_missing"],
+    ["gym.envs.toy_text.BlackjackEnv.__enter__", "_syft_missing"],
+    ["gym.envs.toy_text.BlackjackEnv.__exit__", "_syft_missing"],
+    ["gym.envs.toy_text.BlackjackEnv.__str__", "_syft_missing"],
+    ["gym.envs.toy_text.BlackjackEnv._get_obs", "_syft_missing"],
+    ["gym.envs.toy_text.BlackjackEnv.close", "_syft_missing"],
+    ["gym.envs.toy_text.BlackjackEnv.render", "_syft_missing"],
+    ["gym.envs.toy_text.BlackjackEnv.reset", "_syft_missing"],
+    ["gym.envs.toy_text.BlackjackEnv.seed", "_syft_missing"],
+    ["gym.envs.toy_text.BlackjackEnv.step", "_syft_missing"],
+    ["gym.envs.toy_text.CliffWalkingEnv.__enter__", "_syft_missing"],
+    ["gym.envs.toy_text.CliffWalkingEnv.__exit__", "_syft_missing"],
+    ["gym.envs.toy_text.CliffWalkingEnv.__str__", "_syft_missing"],
+    [
+      "gym.envs.toy_text.CliffWalkingEnv._calculate_transition_prob",
+      "_syft_missing"
+    ],
+    ["gym.envs.toy_text.CliffWalkingEnv._limit_coordinates", "_syft_missing"],
+    ["gym.envs.toy_text.CliffWalkingEnv.close", "_syft_missing"],
+    ["gym.envs.toy_text.CliffWalkingEnv.render", "_syft_missing"],
+    ["gym.envs.toy_text.CliffWalkingEnv.reset", "_syft_missing"],
+    ["gym.envs.toy_text.CliffWalkingEnv.seed", "_syft_missing"],
+    ["gym.envs.toy_text.CliffWalkingEnv.step", "_syft_missing"],
+    ["gym.envs.toy_text.FrozenLakeEnv.__enter__", "_syft_missing"],
+    ["gym.envs.toy_text.FrozenLakeEnv.__exit__", "_syft_missing"],
+    ["gym.envs.toy_text.FrozenLakeEnv.__str__", "_syft_missing"],
+    ["gym.envs.toy_text.FrozenLakeEnv.close", "_syft_missing"],
+    ["gym.envs.toy_text.FrozenLakeEnv.render", "_syft_missing"],
+    ["gym.envs.toy_text.FrozenLakeEnv.reset", "_syft_missing"],
+    ["gym.envs.toy_text.FrozenLakeEnv.seed", "_syft_missing"],
+    ["gym.envs.toy_text.FrozenLakeEnv.step", "_syft_missing"],
+    ["gym.envs.toy_text.GuessingGame.__enter__", "_syft_missing"],
+    ["gym.envs.toy_text.GuessingGame.__exit__", "_syft_missing"],
+    ["gym.envs.toy_text.GuessingGame.__str__", "_syft_missing"],
+    ["gym.envs.toy_text.GuessingGame.close", "_syft_missing"],
+    ["gym.envs.toy_text.GuessingGame.render", "_syft_missing"],
+    ["gym.envs.toy_text.GuessingGame.reset", "_syft_missing"],
+    ["gym.envs.toy_text.GuessingGame.seed", "_syft_missing"],
+    ["gym.envs.toy_text.GuessingGame.step", "_syft_missing"],
+    ["gym.envs.toy_text.HotterColder.__enter__", "_syft_missing"],
+    ["gym.envs.toy_text.HotterColder.__exit__", "_syft_missing"],
+    ["gym.envs.toy_text.HotterColder.__str__", "_syft_missing"],
+    ["gym.envs.toy_text.HotterColder.close", "_syft_missing"],
+    ["gym.envs.toy_text.HotterColder.render", "_syft_missing"],
+    ["gym.envs.toy_text.HotterColder.reset", "_syft_missing"],
+    ["gym.envs.toy_text.HotterColder.seed", "_syft_missing"],
+    ["gym.envs.toy_text.HotterColder.step", "_syft_missing"],
+    ["gym.envs.toy_text.KellyCoinflipEnv.__enter__", "_syft_missing"],
+    ["gym.envs.toy_text.KellyCoinflipEnv.__exit__", "_syft_missing"],
+    ["gym.envs.toy_text.KellyCoinflipEnv.__str__", "_syft_missing"],
+    ["gym.envs.toy_text.KellyCoinflipEnv._get_obs", "_syft_missing"],
+    ["gym.envs.toy_text.KellyCoinflipEnv.close", "_syft_missing"],
+    ["gym.envs.toy_text.KellyCoinflipEnv.render", "_syft_missing"],
+    ["gym.envs.toy_text.KellyCoinflipEnv.reset", "_syft_missing"],
+    ["gym.envs.toy_text.KellyCoinflipEnv.seed", "_syft_missing"],
+    ["gym.envs.toy_text.KellyCoinflipEnv.step", "_syft_missing"],
+    [
+      "gym.envs.toy_text.KellyCoinflipGeneralizedEnv.__enter__",
+      "_syft_missing"
+    ],
+    ["gym.envs.toy_text.KellyCoinflipGeneralizedEnv.__exit__", "_syft_missing"],
+    ["gym.envs.toy_text.KellyCoinflipGeneralizedEnv.__str__", "_syft_missing"],
+    ["gym.envs.toy_text.KellyCoinflipGeneralizedEnv._get_obs", "_syft_missing"],
+    ["gym.envs.toy_text.KellyCoinflipGeneralizedEnv.close", "_syft_missing"],
+    ["gym.envs.toy_text.KellyCoinflipGeneralizedEnv.render", "_syft_missing"],
+    ["gym.envs.toy_text.KellyCoinflipGeneralizedEnv.reset", "_syft_missing"],
+    ["gym.envs.toy_text.KellyCoinflipGeneralizedEnv.seed", "_syft_missing"],
+    ["gym.envs.toy_text.KellyCoinflipGeneralizedEnv.step", "_syft_missing"],
+    ["gym.envs.toy_text.NChainEnv.__enter__", "_syft_missing"],
+    ["gym.envs.toy_text.NChainEnv.__exit__", "_syft_missing"],
+    ["gym.envs.toy_text.NChainEnv.__str__", "_syft_missing"],
+    ["gym.envs.toy_text.NChainEnv.close", "_syft_missing"],
+    ["gym.envs.toy_text.NChainEnv.render", "_syft_missing"],
+    ["gym.envs.toy_text.NChainEnv.reset", "_syft_missing"],
+    ["gym.envs.toy_text.NChainEnv.seed", "_syft_missing"],
+    ["gym.envs.toy_text.NChainEnv.step", "_syft_missing"],
+    ["gym.envs.toy_text.RouletteEnv.__enter__", "_syft_missing"],
+    ["gym.envs.toy_text.RouletteEnv.__exit__", "_syft_missing"],
+    ["gym.envs.toy_text.RouletteEnv.__str__", "_syft_missing"],
+    ["gym.envs.toy_text.RouletteEnv.close", "_syft_missing"],
+    ["gym.envs.toy_text.RouletteEnv.render", "_syft_missing"],
+    ["gym.envs.toy_text.RouletteEnv.reset", "_syft_missing"],
+    ["gym.envs.toy_text.RouletteEnv.seed", "_syft_missing"],
+    ["gym.envs.toy_text.RouletteEnv.step", "_syft_missing"],
+    ["gym.envs.toy_text.TaxiEnv.__enter__", "_syft_missing"],
+    ["gym.envs.toy_text.TaxiEnv.__exit__", "_syft_missing"],
+    ["gym.envs.toy_text.TaxiEnv.__str__", "_syft_missing"],
+    ["gym.envs.toy_text.TaxiEnv.close", "_syft_missing"],
+    ["gym.envs.toy_text.TaxiEnv.decode", "_syft_missing"],
+    ["gym.envs.toy_text.TaxiEnv.encode", "_syft_missing"],
+    ["gym.envs.toy_text.TaxiEnv.render", "_syft_missing"],
+    ["gym.envs.toy_text.TaxiEnv.reset", "_syft_missing"],
+    ["gym.envs.toy_text.TaxiEnv.seed", "_syft_missing"],
+    ["gym.envs.toy_text.TaxiEnv.step", "_syft_missing"],
+    ["gym.envs.toy_text.blackjack.BlackjackEnv.__enter__", "_syft_missing"],
+    ["gym.envs.toy_text.blackjack.BlackjackEnv.__exit__", "_syft_missing"],
+    ["gym.envs.toy_text.blackjack.BlackjackEnv.__str__", "_syft_missing"],
+    ["gym.envs.toy_text.blackjack.BlackjackEnv._get_obs", "_syft_missing"],
+    ["gym.envs.toy_text.blackjack.BlackjackEnv.close", "_syft_missing"],
+    ["gym.envs.toy_text.blackjack.BlackjackEnv.render", "_syft_missing"],
+    ["gym.envs.toy_text.blackjack.BlackjackEnv.reset", "_syft_missing"],
+    ["gym.envs.toy_text.blackjack.BlackjackEnv.seed", "_syft_missing"],
+    ["gym.envs.toy_text.blackjack.BlackjackEnv.step", "_syft_missing"],
+    ["gym.envs.toy_text.blackjack.cmp", "_syft_missing"],
+    ["gym.envs.toy_text.blackjack.draw_card", "_syft_missing"],
+    ["gym.envs.toy_text.blackjack.draw_hand", "_syft_missing"],
+    ["gym.envs.toy_text.blackjack.is_bust", "_syft_missing"],
+    ["gym.envs.toy_text.blackjack.is_natural", "_syft_missing"],
+    ["gym.envs.toy_text.blackjack.score", "_syft_missing"],
+    ["gym.envs.toy_text.blackjack.sum_hand", "_syft_missing"],
+    ["gym.envs.toy_text.blackjack.usable_ace", "_syft_missing"],
+    [
+      "gym.envs.toy_text.cliffwalking.CliffWalkingEnv.__enter__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.toy_text.cliffwalking.CliffWalkingEnv.__exit__",
+      "_syft_missing"
+    ],
+    ["gym.envs.toy_text.cliffwalking.CliffWalkingEnv.__str__", "_syft_missing"],
+    [
+      "gym.envs.toy_text.cliffwalking.CliffWalkingEnv._calculate_transition_prob",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.toy_text.cliffwalking.CliffWalkingEnv._limit_coordinates",
+      "_syft_missing"
+    ],
+    ["gym.envs.toy_text.cliffwalking.CliffWalkingEnv.close", "_syft_missing"],
+    ["gym.envs.toy_text.cliffwalking.CliffWalkingEnv.render", "_syft_missing"],
+    ["gym.envs.toy_text.cliffwalking.CliffWalkingEnv.reset", "_syft_missing"],
+    ["gym.envs.toy_text.cliffwalking.CliffWalkingEnv.seed", "_syft_missing"],
+    ["gym.envs.toy_text.cliffwalking.CliffWalkingEnv.step", "_syft_missing"],
+    ["gym.envs.toy_text.discrete.DiscreteEnv.__enter__", "_syft_missing"],
+    ["gym.envs.toy_text.discrete.DiscreteEnv.__exit__", "_syft_missing"],
+    ["gym.envs.toy_text.discrete.DiscreteEnv.__str__", "_syft_missing"],
+    ["gym.envs.toy_text.discrete.DiscreteEnv.close", "_syft_missing"],
+    ["gym.envs.toy_text.discrete.DiscreteEnv.render", "_syft_missing"],
+    ["gym.envs.toy_text.discrete.DiscreteEnv.reset", "_syft_missing"],
+    ["gym.envs.toy_text.discrete.DiscreteEnv.seed", "_syft_missing"],
+    ["gym.envs.toy_text.discrete.DiscreteEnv.step", "_syft_missing"],
+    ["gym.envs.toy_text.discrete.Env.__enter__", "_syft_missing"],
+    ["gym.envs.toy_text.discrete.Env.__exit__", "_syft_missing"],
+    ["gym.envs.toy_text.discrete.Env.__str__", "_syft_missing"],
+    ["gym.envs.toy_text.discrete.Env.close", "_syft_missing"],
+    ["gym.envs.toy_text.discrete.Env.render", "_syft_missing"],
+    ["gym.envs.toy_text.discrete.Env.reset", "_syft_missing"],
+    ["gym.envs.toy_text.discrete.Env.seed", "_syft_missing"],
+    ["gym.envs.toy_text.discrete.Env.step", "_syft_missing"],
+    ["gym.envs.toy_text.discrete.categorical_sample", "_syft_missing"],
+    ["gym.envs.toy_text.frozen_lake.FrozenLakeEnv.__enter__", "_syft_missing"],
+    ["gym.envs.toy_text.frozen_lake.FrozenLakeEnv.__exit__", "_syft_missing"],
+    ["gym.envs.toy_text.frozen_lake.FrozenLakeEnv.__str__", "_syft_missing"],
+    ["gym.envs.toy_text.frozen_lake.FrozenLakeEnv.close", "_syft_missing"],
+    ["gym.envs.toy_text.frozen_lake.FrozenLakeEnv.render", "_syft_missing"],
+    ["gym.envs.toy_text.frozen_lake.FrozenLakeEnv.reset", "_syft_missing"],
+    ["gym.envs.toy_text.frozen_lake.FrozenLakeEnv.seed", "_syft_missing"],
+    ["gym.envs.toy_text.frozen_lake.FrozenLakeEnv.step", "_syft_missing"],
+    ["gym.envs.toy_text.frozen_lake.generate_random_map", "_syft_missing"],
+    ["gym.envs.toy_text.guessing_game.GuessingGame.__enter__", "_syft_missing"],
+    ["gym.envs.toy_text.guessing_game.GuessingGame.__exit__", "_syft_missing"],
+    ["gym.envs.toy_text.guessing_game.GuessingGame.__str__", "_syft_missing"],
+    ["gym.envs.toy_text.guessing_game.GuessingGame.close", "_syft_missing"],
+    ["gym.envs.toy_text.guessing_game.GuessingGame.render", "_syft_missing"],
+    ["gym.envs.toy_text.guessing_game.GuessingGame.reset", "_syft_missing"],
+    ["gym.envs.toy_text.guessing_game.GuessingGame.seed", "_syft_missing"],
+    ["gym.envs.toy_text.guessing_game.GuessingGame.step", "_syft_missing"],
+    ["gym.envs.toy_text.hotter_colder.HotterColder.__enter__", "_syft_missing"],
+    ["gym.envs.toy_text.hotter_colder.HotterColder.__exit__", "_syft_missing"],
+    ["gym.envs.toy_text.hotter_colder.HotterColder.__str__", "_syft_missing"],
+    ["gym.envs.toy_text.hotter_colder.HotterColder.close", "_syft_missing"],
+    ["gym.envs.toy_text.hotter_colder.HotterColder.render", "_syft_missing"],
+    ["gym.envs.toy_text.hotter_colder.HotterColder.reset", "_syft_missing"],
+    ["gym.envs.toy_text.hotter_colder.HotterColder.seed", "_syft_missing"],
+    ["gym.envs.toy_text.hotter_colder.HotterColder.step", "_syft_missing"],
+    [
+      "gym.envs.toy_text.kellycoinflip.KellyCoinflipEnv.__enter__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.toy_text.kellycoinflip.KellyCoinflipEnv.__exit__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.toy_text.kellycoinflip.KellyCoinflipEnv.__str__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.toy_text.kellycoinflip.KellyCoinflipEnv._get_obs",
+      "_syft_missing"
+    ],
+    ["gym.envs.toy_text.kellycoinflip.KellyCoinflipEnv.close", "_syft_missing"],
+    [
+      "gym.envs.toy_text.kellycoinflip.KellyCoinflipEnv.render",
+      "_syft_missing"
+    ],
+    ["gym.envs.toy_text.kellycoinflip.KellyCoinflipEnv.reset", "_syft_missing"],
+    ["gym.envs.toy_text.kellycoinflip.KellyCoinflipEnv.seed", "_syft_missing"],
+    ["gym.envs.toy_text.kellycoinflip.KellyCoinflipEnv.step", "_syft_missing"],
+    [
+      "gym.envs.toy_text.kellycoinflip.KellyCoinflipGeneralizedEnv.__enter__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.toy_text.kellycoinflip.KellyCoinflipGeneralizedEnv.__exit__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.toy_text.kellycoinflip.KellyCoinflipGeneralizedEnv.__str__",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.toy_text.kellycoinflip.KellyCoinflipGeneralizedEnv._get_obs",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.toy_text.kellycoinflip.KellyCoinflipGeneralizedEnv.close",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.toy_text.kellycoinflip.KellyCoinflipGeneralizedEnv.render",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.toy_text.kellycoinflip.KellyCoinflipGeneralizedEnv.reset",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.toy_text.kellycoinflip.KellyCoinflipGeneralizedEnv.seed",
+      "_syft_missing"
+    ],
+    [
+      "gym.envs.toy_text.kellycoinflip.KellyCoinflipGeneralizedEnv.step",
+      "_syft_missing"
+    ],
+    ["gym.envs.toy_text.kellycoinflip.flip", "_syft_missing"],
+    ["gym.envs.toy_text.nchain.NChainEnv.__enter__", "_syft_missing"],
+    ["gym.envs.toy_text.nchain.NChainEnv.__exit__", "_syft_missing"],
+    ["gym.envs.toy_text.nchain.NChainEnv.__str__", "_syft_missing"],
+    ["gym.envs.toy_text.nchain.NChainEnv.close", "_syft_missing"],
+    ["gym.envs.toy_text.nchain.NChainEnv.render", "_syft_missing"],
+    ["gym.envs.toy_text.nchain.NChainEnv.reset", "_syft_missing"],
+    ["gym.envs.toy_text.nchain.NChainEnv.seed", "_syft_missing"],
+    ["gym.envs.toy_text.nchain.NChainEnv.step", "_syft_missing"],
+    ["gym.envs.toy_text.roulette.RouletteEnv.__enter__", "_syft_missing"],
+    ["gym.envs.toy_text.roulette.RouletteEnv.__exit__", "_syft_missing"],
+    ["gym.envs.toy_text.roulette.RouletteEnv.__str__", "_syft_missing"],
+    ["gym.envs.toy_text.roulette.RouletteEnv.close", "_syft_missing"],
+    ["gym.envs.toy_text.roulette.RouletteEnv.render", "_syft_missing"],
+    ["gym.envs.toy_text.roulette.RouletteEnv.reset", "_syft_missing"],
+    ["gym.envs.toy_text.roulette.RouletteEnv.seed", "_syft_missing"],
+    ["gym.envs.toy_text.roulette.RouletteEnv.step", "_syft_missing"],
+    ["gym.envs.toy_text.taxi.TaxiEnv.__enter__", "_syft_missing"],
+    ["gym.envs.toy_text.taxi.TaxiEnv.__exit__", "_syft_missing"],
+    ["gym.envs.toy_text.taxi.TaxiEnv.__str__", "_syft_missing"],
+    ["gym.envs.toy_text.taxi.TaxiEnv.close", "_syft_missing"],
+    ["gym.envs.toy_text.taxi.TaxiEnv.decode", "_syft_missing"],
+    ["gym.envs.toy_text.taxi.TaxiEnv.encode", "_syft_missing"],
+    ["gym.envs.toy_text.taxi.TaxiEnv.render", "_syft_missing"],
+    ["gym.envs.toy_text.taxi.TaxiEnv.reset", "_syft_missing"],
+    ["gym.envs.toy_text.taxi.TaxiEnv.seed", "_syft_missing"],
+    ["gym.envs.toy_text.taxi.TaxiEnv.step", "_syft_missing"],
     ["gym.error.APIConnectionError.__str__", "_syft_missing"],
     ["gym.error.APIConnectionError.__unicode__", "_syft_missing"],
     ["gym.error.APIError.__str__", "_syft_missing"],
@@ -1661,7 +4373,7 @@
     ["gym.logger.set_level", "_syft_missing"],
     ["gym.logger.set_level", "_syft_missing"],
     ["gym.logger.warn", "_syft_missing"],
-    ["gym.make", "_syft_missing"],
+    ["gym.make", "gym.wrappers.time_limit.TimeLimit"],
     ["gym.register", "_syft_missing"],
     ["gym.spaces.Box.__contains__", "_syft_missing"],
     ["gym.spaces.Box.__eq__", "_syft_missing"],
@@ -1676,6 +4388,7 @@
     ["gym.spaces.Dict.__eq__", "_syft_missing"],
     ["gym.spaces.Dict.__getitem__", "_syft_missing"],
     ["gym.spaces.Dict.__iter__", "_syft_missing"],
+    ["gym.spaces.Dict.__len__", "_syft_missing"],
     ["gym.spaces.Dict.__repr__", "_syft_missing"],
     ["gym.spaces.Dict.contains", "_syft_missing"],
     ["gym.spaces.Dict.from_jsonable", "_syft_missing"],
@@ -1741,6 +4454,7 @@
     ["gym.spaces.dict.Dict.__eq__", "_syft_missing"],
     ["gym.spaces.dict.Dict.__getitem__", "_syft_missing"],
     ["gym.spaces.dict.Dict.__iter__", "_syft_missing"],
+    ["gym.spaces.dict.Dict.__len__", "_syft_missing"],
     ["gym.spaces.dict.Dict.__repr__", "_syft_missing"],
     ["gym.spaces.dict.Dict.contains", "_syft_missing"],
     ["gym.spaces.dict.Dict.from_jsonable", "_syft_missing"],
@@ -1834,6 +4548,7 @@
     ["gym.spaces.utils.Dict.__eq__", "_syft_missing"],
     ["gym.spaces.utils.Dict.__getitem__", "_syft_missing"],
     ["gym.spaces.utils.Dict.__iter__", "_syft_missing"],
+    ["gym.spaces.utils.Dict.__len__", "_syft_missing"],
     ["gym.spaces.utils.Dict.__repr__", "_syft_missing"],
     ["gym.spaces.utils.Dict.contains", "_syft_missing"],
     ["gym.spaces.utils.Dict.from_jsonable", "_syft_missing"],
@@ -1889,6 +4604,17 @@
     ["gym.utils.closer.Closer.unregister", "_syft_missing"],
     ["gym.utils.colorize", "_syft_missing"],
     ["gym.utils.colorize.colorize", "_syft_missing"],
+    ["gym.utils.env_checker._check_box_action", "_syft_return_absent"],
+    ["gym.utils.env_checker._check_box_obs", "NoneType"],
+    ["gym.utils.env_checker._check_image_input", "NoneType"],
+    ["gym.utils.env_checker._check_nan", "NoneType"],
+    ["gym.utils.env_checker._check_normalized_action", "_syft_return_absent"],
+    ["gym.utils.env_checker._check_obs", "NoneType"],
+    ["gym.utils.env_checker._check_render", "NoneType"],
+    ["gym.utils.env_checker._check_returned_values", "NoneType"],
+    ["gym.utils.env_checker._check_spaces", "NoneType"],
+    ["gym.utils.env_checker._is_numpy_array_space", "bool"],
+    ["gym.utils.env_checker.check_env", "NoneType"],
     ["gym.utils.ezpickle.EzPickle.__getstate__", "_syft_missing"],
     ["gym.utils.ezpickle.EzPickle.__setstate__", "_syft_missing"],
     ["gym.utils.json_utils.json_encode_np", "_syft_missing"],
@@ -2088,6 +4814,7 @@
     ["gym.vector.utils.numpy_utils.Dict.__eq__", "_syft_missing"],
     ["gym.vector.utils.numpy_utils.Dict.__getitem__", "_syft_missing"],
     ["gym.vector.utils.numpy_utils.Dict.__iter__", "_syft_missing"],
+    ["gym.vector.utils.numpy_utils.Dict.__len__", "_syft_missing"],
     ["gym.vector.utils.numpy_utils.Dict.__repr__", "_syft_missing"],
     ["gym.vector.utils.numpy_utils.Dict.contains", "_syft_missing"],
     ["gym.vector.utils.numpy_utils.Dict.from_jsonable", "_syft_missing"],
@@ -2125,6 +4852,7 @@
     ["gym.vector.utils.shared_memory.Dict.__eq__", "_syft_missing"],
     ["gym.vector.utils.shared_memory.Dict.__getitem__", "_syft_missing"],
     ["gym.vector.utils.shared_memory.Dict.__iter__", "_syft_missing"],
+    ["gym.vector.utils.shared_memory.Dict.__len__", "_syft_missing"],
     ["gym.vector.utils.shared_memory.Dict.__repr__", "_syft_missing"],
     ["gym.vector.utils.shared_memory.Dict.contains", "_syft_missing"],
     ["gym.vector.utils.shared_memory.Dict.from_jsonable", "_syft_missing"],
@@ -2193,6 +4921,7 @@
     ["gym.vector.utils.spaces.Dict.__eq__", "_syft_missing"],
     ["gym.vector.utils.spaces.Dict.__getitem__", "_syft_missing"],
     ["gym.vector.utils.spaces.Dict.__iter__", "_syft_missing"],
+    ["gym.vector.utils.spaces.Dict.__len__", "_syft_missing"],
     ["gym.vector.utils.spaces.Dict.__repr__", "_syft_missing"],
     ["gym.vector.utils.spaces.Dict.contains", "_syft_missing"],
     ["gym.vector.utils.spaces.Dict.from_jsonable", "_syft_missing"],

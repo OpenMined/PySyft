@@ -13,6 +13,9 @@ from typing import Tuple as TypeTuple
 # syft absolute
 import syft as sy
 
+# relative
+from . import serde
+
 
 def read_package_support() -> TypeDict[str, TypeList[TypeTuple[TypeAny, ...]]]:
     with open(
@@ -61,15 +64,15 @@ def get_serde() -> TypeList[TypeDict[str, TypeAny]]:
                 module_path = f"{f.parent.parent.stem}.serde.{f.stem}"
                 serde_module = import_module(module_path)
                 try:
-                    serde = getattr(serde_module, "serde")
+                    serde_obj = getattr(serde_module, "serde")
                 except AttributeError:
                     print(f"WARN: No serde found in {module_path}")
                     pass
 
-                if isinstance(serde, Iterable) and not isinstance(serde, dict):
-                    serde_objs.extend(serde)
+                if isinstance(serde_obj, Iterable) and not isinstance(serde_obj, dict):
+                    serde_objs.extend(serde_obj)
                 else:
-                    serde_objs.append(serde)
+                    serde_objs.append(serde_obj)
 
     return serde_objs
 

@@ -273,7 +273,7 @@ def register_library(lib: str) -> None:
     # bind_library(lib)
 
 
-@wrapt.when_imported("gym")
+# @wrapt.when_imported("gym")
 @wrapt.when_imported("opacus")
 @wrapt.when_imported("numpy")
 @wrapt.when_imported("sklearn")

@@ -5,7 +5,7 @@ import gym
 from syft.generate_wrapper import GenerateWrapper
 
 # relative
-from ..proto.gym.env_pb2 import Env as Env_PB
+from ..proto.env_pb2 import Env as Env_PB
 
 gym_env_type = type(gym.Env())
 
