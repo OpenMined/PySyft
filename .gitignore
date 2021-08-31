@@ -33,6 +33,3 @@ packages/hagrid/grid
 # vagrant
 .vagrant
 
-*syft.egg-info*
-
-
