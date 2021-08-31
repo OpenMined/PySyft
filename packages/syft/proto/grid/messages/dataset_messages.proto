@@ -15,7 +15,6 @@ message CreateDatasetMessage {
   string platform = 6;
 }
 
-
 // GET Dataset
 message GetDatasetMessage {
   syft.core.common.UID msg_id = 1;
@@ -23,7 +22,6 @@ message GetDatasetMessage {
   int64 dataset_id = 3;
   syft.core.io.Address reply_to = 4;
 }
-
 
 message GetDatasetResponse {
   syft.core.common.UID msg_id = 1;
@@ -39,9 +37,7 @@ message GetDatasetsMessage {
 }
 
 message GetDatasetsResponse {
-  message metadata_container {
-    map<string, bytes> metadata = 1;
-  }
+  message metadata_container { map<string, bytes> metadata = 1; }
   syft.core.common.UID msg_id = 1;
   repeated metadata_container metadatas = 2;
   syft.core.io.Address address = 3;

@@ -1,0 +1,23 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+  config.ssh.username = "ubuntu"
+  config.ssh.password = "ubuntu"
+
+  config.vm.define "domain" do |node|
+    node.vm.box = "output-domain/openmined.domain.ubuntu2004.box"
+    node.vm.box_check_update = false
+
+    node.vm.hostname = "node.openmined.grid"
+    node.vm.network :private_network, ip: "10.0.1.3"
+
+    node.vm.provider "virtualbox" do |vb|
+      vb.memory = "4096"
+      vb.name = "domain"
+    end
+  end
+end
