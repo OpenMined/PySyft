@@ -132,9 +132,6 @@ services:
     command: "waitforit -address=http://backend:80/api/v1/syft/metadata -status=200 -timeout=600 -- /worker-start.sh"
 
   frontend:
-    depends_on:
-      - db
-      - backend
     build:
       context: ./frontend
       dockerfile: ui.dockerfile
