@@ -1,0 +1,58 @@
+# Grid Backend Tests
+name: Syft + Grid Backend Tests
+
+on:
+  pull_request:
+    branches:
+      - dev
+      - main
+      - "0.6.0"
+    paths:
+      - ".github/workflows/grid-*.yml"
+      - "packages/grid/**.py"
+      - "packages/grid/**.txt"
+      - "packages/grid/**.toml"
+
+jobs:
+  grid-backend-tests:
+    strategy:
+      max-parallel: 3
+      matrix:
+        os: [ubuntu-latest]
+        python-version: [3.7]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
+
+      - name: Install tox
+        run: |
+          pip install tox --upgrade
+
+      - name: Run Backend API tests
+        shell: bash
+        run: |
+          tox -e grid.test.backend
