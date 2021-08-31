@@ -68,4 +68,4 @@ log_data = {
 print(json.dumps(log_data))
 
 
-## fetched from https://github.com/tiangolo/uvicorn-gunicorn-docker/blob/master/docker-images/gunicorn_conf.py
+# fetched from https://github.com/tiangolo/uvicorn-gunicorn-docker/blob/master/docker-images/gunicorn_conf.py
