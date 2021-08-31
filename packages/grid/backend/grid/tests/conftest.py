@@ -12,8 +12,8 @@ import pytest
 
 # grid absolute
 from grid.core.config import settings
-from grid.initial_data import init_db
 from grid.db.session import get_db_session
+from grid.initial_data import init_db
 from grid.logger.handler import get_log_handler
 
 log_handler = get_log_handler()

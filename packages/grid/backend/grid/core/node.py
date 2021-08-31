@@ -4,16 +4,17 @@ from typing import Optional
 # third party
 from nacl.signing import SigningKey
 
-# grid absolute
-from grid.core.config import settings
-from grid.db.session import get_db_engine, get_db_session
-
 # syft absolute
 from syft import Domain  # type: ignore
 from syft import Network  # type: ignore
 from syft.core.node.common.client import Client
 from syft.core.node.common.node_table import Base
 from syft.core.node.common.node_table.utils import seed_db
+
+# grid absolute
+from grid.core.config import settings
+from grid.db.session import get_db_engine
+from grid.db.session import get_db_session
 
 if settings.NODE_TYPE.lower() == "domain":
     node = Domain("Domain", db_engine=get_db_engine())

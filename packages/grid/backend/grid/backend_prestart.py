@@ -10,7 +10,7 @@ from tenacity import stop_after_attempt
 from tenacity import wait_fixed
 
 # grid absolute
-from grid.db.session import get_db_session 
+from grid.db.session import get_db_session
 
 max_tries = 60 * 5  # 5 minutes
 wait_seconds = 1

@@ -14,7 +14,7 @@ from grid.api.users.models import UserPrivate
 from grid.core import security
 from grid.core.config import settings
 from grid.core.node import node
-from grid.db.session import get_db_session 
+from grid.db.session import get_db_session
 
 reusable_oauth2 = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/login")
 
