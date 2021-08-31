@@ -225,7 +225,7 @@ services:
     image: "${DOCKER_IMAGE_FRONTEND?Variable not set}:${VERSION-latest}"
     build:
       context: ./frontend
-      dockerfile: ui.dockerfile
+      dockerfile: frontend.dockerfile
       args:
         FRONTEND_ENV: ${FRONTEND_ENV-development}
       target: "grid-ui-${FRONTEND_ENV-development}"
