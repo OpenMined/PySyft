@@ -5,7 +5,6 @@ import numpy as np
 import pytest
 
 # syft absolute
-import syft as sy
 from syft import Domain
 from syft.core.adp.adversarial_accountant import AdversarialAccountant
 from syft.core.adp.entity import Entity
