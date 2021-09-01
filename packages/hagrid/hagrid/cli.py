@@ -411,6 +411,7 @@ def create_launch_cmd(
                     kwargs=kwargs,
                 )
             except QuestionInputPathError as e:
+                print(e)
                 key_path = str(e).split("is not a valid path")[0].strip()
 
                 create_key_question = Question(
