@@ -30,7 +30,12 @@ from ....io.address import Address
 from ....tensor.smpc.share_tensor import ShareTensor
 
 # How many intermediary ids we generate in each smpc function
-MAP_FUNC_TO_NR_GENERATOR_INVOKES = {"__add__": 0, "__mul__": 0, "__sub__": 0}
+MAP_FUNC_TO_NR_GENERATOR_INVOKES = {
+    "__add__": 0,
+    "__mul__": 0,
+    "__sub__": 0,
+    "__gt__": 0,
+}
 
 
 @serializable()
@@ -269,6 +274,44 @@ def smpc_mul(
     return actions
 
 
+def bit_decomposition(*args, **kwargs):
+    ...
+
+
+def smpc_gt(
+    nr_parties: int, self_id: UID, other_id: UID, seed_id_locations: int, node: Any
+) -> List[SMPCActionMessage]:
+    """Generator for the smpc_gt with a private value"""
+    generator = np.random.default_rng(seed_id_locations)
+
+    for _ in range(MAP_FUNC_TO_NR_GENERATOR_INVOKES["__gt__"]):
+        generator.bytes(16)
+
+    result_id = UID(UUID(bytes=generator.bytes(16)))
+    other = node.store[other_id].data
+
+    actions = []
+    if not isinstance(other, ShareTensor):
+        raise ValueError("Greater than not yet implement for public values")
+    else:
+        actions.append(
+            SMPCActionMessage(
+                "mpc_bit_decomposition",
+                self_id=self_id,
+                args_id=[other_id],
+                kwargs_id={},
+                ranks_to_run_actions=list(range(nr_parties)),
+                result_id=result_id,
+                address=node.address,
+            )
+        )
+    return actions
+
+
+def bit_decomposition(*args, **kwargs):
+    print("Helllo")
+
+
 # Given an SMPC Action map it to an action constructor
 MAP_FUNC_TO_ACTION: Dict[
     str, Callable[[int, UID, UID, int, Any], List[SMPCActionMessage]]
@@ -276,6 +319,7 @@ MAP_FUNC_TO_ACTION: Dict[
     "__add__": functools.partial(smpc_basic_op, "add"),
     "__sub__": functools.partial(smpc_basic_op, "sub"),
     "__mul__": smpc_mul,
+    "__gt__": smpc_gt,
 }
 
 
@@ -284,5 +328,6 @@ _MAP_ACTION_TO_FUNCTION: Dict[str, Callable[..., Any]] = {
     "mpc_add": operator.add,
     "mpc_sub": operator.sub,
     "mpc_mul": operator.mul,
+    "mpc_bit_decomposition": bit_decomposition,
     "mpc_noop": deepcopy,
 }

@@ -479,6 +479,20 @@ class MPCTensor(PassthroughTensor):
 
         return res
 
+    def gt(
+        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
+    ) -> MPCTensor:
+        if not isinstance(y, MPCTensor):
+            raise ValueError("Greater than for public-secret not yet implemented!")
+        else:
+            res_shares = [operator.gt(a, b) for a, b in zip(self.child, y.child)]
+
+        y_shape = getattr(y, "shape", (1,))
+        new_shape = MPCTensor.__get_shape("gt", self.mpc_shape, y_shape)
+        res = MPCTensor(shares=res_shares, shape=new_shape)
+
+        return res
+
     def __str__(self) -> str:
         res = "MPCTensor"
         for share in self.child:
@@ -501,6 +515,7 @@ class MPCTensor(PassthroughTensor):
     __rsub__ = rsub
     __mul__ = mul
     __rmul__ = mul
+    __gt__ = gt
 
 
 @implements(MPCTensor, np.add)
