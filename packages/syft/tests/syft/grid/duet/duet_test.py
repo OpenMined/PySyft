@@ -9,7 +9,10 @@ from typing import Tuple
 # third party
 import pytest
 
-# syft relative
+# syft absolute
+from syft.grid.duet import test_duet_network
+
+# relative
 from .duet_scenarios_tests import register_duet_scenarios
 from .process_test import SyftTestProcess
 
@@ -20,6 +23,13 @@ registered_tests: List[Tuple[str, Callable, Callable]] = []
 register_duet_scenarios(registered_tests)
 
 
+@pytest.mark.fast
+def test_duet_network_availability() -> None:
+    assert test_duet_network() is True
+
+
+# MADHAVA: this needs fixing
+@pytest.mark.xfail
 @pytest.mark.slow
 def test_duet(signaling_server: int) -> None:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:

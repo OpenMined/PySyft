@@ -19,9 +19,10 @@ from cachetools.keys import hashkey
 from packaging import version
 import wrapt
 
-# syft relative
+# relative
 from ..ast.globals import Globals
 from ..core.node.abstract.node import AbstractNodeClient
+from ..core.tensor import create_tensor_ast
 from ..lib.plan import create_plan_ast
 from ..lib.python import create_python_ast
 from ..lib.remote_dataloader import create_remote_dataloader_ast
@@ -120,7 +121,11 @@ def _regenerate_unions(*, lib_ast: Globals, client: TypeAny = None) -> None:
         lib_ast.syft.lib.add_attr(attr_name="misc", attr=union_misc_ast.attrs["misc"])
 
 
-@cached({}, lambda *, lib, options=None: hashkey(lib))
+def get_cache() -> TypeDict:
+    return dict()
+
+
+@cached(get_cache(), lambda *, lib, options=None: hashkey(lib))
 def _load_lib(*, lib: str, options: Optional[TypeDict[str, TypeAny]] = None) -> None:
     """
     Load and Update Node with given library module
@@ -229,12 +234,14 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
     # numpy_ast = create_numpy_ast()
     plan_ast = create_plan_ast(client=client)
     remote_dataloader_ast = create_remote_dataloader_ast(client=client)
+    tensor_ast = create_tensor_ast(client=client)
 
     lib_ast = Globals(client=client)
     lib_ast.add_attr(attr_name="syft", attr=python_ast.attrs["syft"])
     lib_ast.add_attr(attr_name="torch", attr=torch_ast.attrs["torch"])
     lib_ast.add_attr(attr_name="torchvision", attr=torchvision_ast.attrs["torchvision"])
     lib_ast.syft.add_attr("core", attr=plan_ast.syft.core)
+    lib_ast.syft.core.add_attr("tensor", attr=tensor_ast.syft.core.tensor)
     lib_ast.syft.core.add_attr(
         "remote_dataloader", remote_dataloader_ast.syft.core.remote_dataloader
     )

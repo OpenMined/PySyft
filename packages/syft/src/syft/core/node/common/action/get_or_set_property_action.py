@@ -12,7 +12,7 @@ from typing import Union
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
-# syft relative
+# relative
 from ..... import lib
 from ..... import serialize
 from .....proto.core.node.common.action.get_set_property_pb2 import (
@@ -66,8 +66,11 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
         return RunClassMethodAction.intersect_keys(left, right)
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
+
         ast_node = node.lib_ast.query(self.path)
         method = ast_node.object_ref
+
+        # storable object raw from object store
         resolved_self = node.store[self._self.id_at_location]
         result_read_permissions = resolved_self.read_permissions
 
@@ -105,6 +108,8 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
             if self.action == PropertyActions.SET:
                 setattr(data, ast_node.name, *upcasted_args)
                 result = None
+                # since we may have changed resolve_self.data we need to check it back in
+                node.store[self._self.id_at_location] = resolved_self
             elif self.action == PropertyActions.GET:
                 result = getattr(data, ast_node.name)
             elif self.action == PropertyActions.DEL:
@@ -112,10 +117,17 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
         else:
             if self.action == PropertyActions.SET:
                 result = method.__set__(data, *upcasted_args, **upcasted_kwargs)
+
+                # since we may have changed resolve_self.data we need to check it back in
+                node.store[self._self.id_at_location] = resolved_self
+
             elif self.action == PropertyActions.GET:
                 result = method.__get__(data, *upcasted_args, **upcasted_kwargs)
             elif self.action == PropertyActions.DEL:
                 result = method.__del__(data, *upcasted_args, **upcasted_kwargs)
+
+                # since we may have changed resolve_self.data we need to check it back in
+                node.store[self._self.id_at_location] = resolved_self
             else:
                 raise ValueError(f"{self.action} not a valid action!")
 

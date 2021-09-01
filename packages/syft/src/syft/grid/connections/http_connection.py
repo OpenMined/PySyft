@@ -4,7 +4,7 @@ import json
 # third party
 import requests
 
-# syft relative
+# relative
 from ...core.common.message import SignedEventualSyftMessageWithoutReply
 from ...core.common.message import SignedImmediateSyftMessageWithReply
 from ...core.common.message import SignedImmediateSyftMessageWithoutReply
@@ -12,9 +12,9 @@ from ...core.common.message import SyftMessage
 from ...core.common.serde.deserialize import _deserialize
 from ...core.common.serde.serialize import _serialize
 from ...core.io.connection import ClientConnection
+from ...core.node.domain.enums import RequestAPIFields
+from ...core.node.domain.exceptions import RequestAPIException
 from ...proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
-from ..client.enums import RequestAPIFields
-from ..client.exceptions import RequestAPIException
 
 
 class HTTPConnection(ClientConnection):

@@ -7,7 +7,7 @@ from typing import Tuple as TypeTuple
 # third party
 import numpy as np
 
-# syft relative
+# relative
 from . import array  # noqa: 401
 from ...ast import add_classes
 from ...ast import add_methods

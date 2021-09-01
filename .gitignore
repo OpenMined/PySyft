@@ -7,6 +7,7 @@
 .mypy_cache
 .python-version
 .vscode/
+.tox/
 
 # python stuff
 *__pycache__*
@@ -21,3 +22,13 @@
 **/*.log
 **/*.sqlite
 **/*.sqlite-journal
+
+# docker compose volumes
+docker/data/*
+
+# hagrid temps
+packages/hagrid/syft
+packages/hagrid/grid
+
+# vagrant
+.vagrant

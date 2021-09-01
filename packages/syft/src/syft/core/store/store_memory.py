@@ -8,7 +8,7 @@ from typing import ValuesView
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft relative
+# relative
 from . import ObjectStore
 from ...logger import critical
 from ...logger import traceback_and_raise

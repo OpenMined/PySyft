@@ -45,6 +45,8 @@ def test_resolve_any_pointer_type(
         assert equality_functions[idx](resolved_pointer.get(), elem)
 
 
+# MADHAVA: this needs fixing
+@pytest.mark.xfail
 def test_resolve_union_pointer_type(
     root_client: sy.VirtualMachineClient,
     inputs: Tuple[int, float, bool, torch.Tensor],

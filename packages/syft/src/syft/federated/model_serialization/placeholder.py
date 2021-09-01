@@ -9,7 +9,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from syft_proto.execution.v1.placeholder_pb2 import Placeholder as PlaceholderPB
 import torch as th
 
-# syft relative
+# relative
 from ...core.common.object import Serializable
 from .common import get_protobuf_id
 from .common import set_protobuf_id

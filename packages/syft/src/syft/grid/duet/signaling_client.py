@@ -6,7 +6,7 @@ from typing import Union
 # third party
 from nacl.signing import SigningKey
 
-# syft relative
+# relative
 from ...core.common.message import ImmediateSyftMessageWithReply
 from ...core.common.message import ImmediateSyftMessageWithoutReply
 from ...core.common.message import SignedImmediateSyftMessageWithReply

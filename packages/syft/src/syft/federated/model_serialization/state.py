@@ -6,7 +6,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from syft_proto.execution.v1.state_pb2 import State as StatePB
 from syft_proto.execution.v1.state_tensor_pb2 import StateTensor as StateTensorPB
 
-# syft relative
+# relative
 from ...core.common.object import Serializable
 from ...core.common.serde.serialize import _serialize as serialize
 from .common import deserialize_tensor

@@ -2,7 +2,7 @@
 from typing import List as TypeList
 from typing import Union
 
-# syft relative
+# relative
 from ...lib.python.list import List
 from .placeholder import PlaceHolder
 from .state import State

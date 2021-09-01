@@ -2,7 +2,7 @@
 import pyarrow as pa
 import torch as th
 
-# syft relative
+# relative
 from ...experimental_flags import flags
 from ...proto.lib.torch.tensor_pb2 import ProtobufContent
 from ...proto.lib.torch.tensor_pb2 import TensorData

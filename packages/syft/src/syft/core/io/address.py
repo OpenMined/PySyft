@@ -8,7 +8,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
-# syft relative
+# relative
 from ...logger import debug
 from ...logger import traceback_and_raise
 from ...proto.core.io.address_pb2 import Address as Address_PB
