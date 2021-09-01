@@ -20,6 +20,8 @@
 # git branch -D $3 || true
 # git checkout $3 --force
 
+pidof -o %PPID -x $0 >/dev/null && echo "ERROR: Script $0 already running" && exit 1
+
 cd $1
 START_HASH=$(git rev-parse HEAD)
 CURRENT_REMOTE=$(git remote -v | head -n 1 | cut -d ' ' -f 1 | awk '{print $2}')
