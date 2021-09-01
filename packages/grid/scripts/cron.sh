@@ -51,7 +51,7 @@ git pull origin $3 --rebase
 chown -R $4:$5 .
 
 END_HASH=$(git rev-parse HEAD)
-CONTAINER_HASH=$(docker exec $(docker ps --format "{{.Names}}" | grep frontend) env | grep VERSION_HASH | sed 's/VERSION_HASH=//')
+CONTAINER_HASH=$(docker exec $(docker ps --format "{{.Names}}" | grep backend_1) env | grep VERSION_HASH | sed 's/VERSION_HASH=//')
 
 SCRIPT_PATH="$(dirname \"$0\")"
 
