@@ -17,6 +17,7 @@
     repo: "https://github.com/{{ github_repo }}"
     dest: "{{ syft_dir }}"
     version: "{{ repo_branch }}"
+    force: yes
   become_user: "{{ om_user }}"
   ignore_errors: yes
   when: vagrant is not defined
