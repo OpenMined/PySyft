@@ -58,10 +58,10 @@ SCRIPT_PATH="$(dirname \"$0\")"
 if [ "$START_HASH" != "$END_HASH" ]
 then
     echo "Git hashes dont match, redeploying"
-    bash $SCRIPT_PATH/redeploy.sh $1 $2 $3 $4 $5 $6 $7 $8
+    bash /home/om/PySyft/packages/grid/scripts/redeploy.sh $1 $2 $3 $4 $5 $6 $7 $8
 elif [[ ! "$END_HASH" == *"$CONTAINER_HASH"* ]]
 then
     echo "Container hash doesnt match code, redeploying"
-    bash $SCRIPT_PATH/redeploy.sh $1 $2 $3 $4 $5 $6 $7 $8
+    bash /home/om/PySyft/packages/grid/scripts/redeploy.sh $1 $2 $3 $4 $5 $6 $7 $8
 fi
 echo "Finished autoupdate CRON"
