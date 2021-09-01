@@ -63,6 +63,10 @@ def is_editable_mode() -> bool:
             break
         except Exception:
             pass
+
+    if os.path.exists(Path(current_package_root) / "hagrid.egg-info"):
+        installed_as_editable = True
+
     return installed_as_editable
 
 
@@ -149,7 +153,7 @@ def should_provision_remote(
 
 
 def name_tag(name: str) -> str:
-    return hashlib.md5(name.encode("utf8")).hexdigest()
+    return hashlib.sha256(name.encode("utf8")).hexdigest()
 
 
 def find_available_port(host: str, port: int, search: bool = False) -> int:

@@ -17,6 +17,7 @@
     repo: "https://github.com/{{ github_repo }}"
     dest: "{{ syft_dir }}"
     version: "{{ repo_branch }}"
+    force: yes
   become_user: "{{ om_user }}"
   ignore_errors: yes
   when: vagrant is not defined
@@ -45,5 +46,14 @@
   ansible.builtin.cron:
     name: "Update PySyft Repo"
     job: "{{ syft_dir }}/packages/grid/scripts/cron.sh {{ syft_dir }} {{ github_repo }} {{ repo_branch }} {{ om_user }} {{ om_group }} {{ node_type }} {{ node_name }} {{ build_dir }} 2>&1 | logger -t cron"
+  become: yes
+  when: vagrant is not defined
+
+- name: Archive Logs
+  ansible.builtin.cron:
+    minute: "0"
+    hour: "0"
+    name: "Archive Logs"
+    job: "{{ syft_dir }}/packages/grid/scripts/rotate_logs.sh 2>&1 | logger -t cron"
   become: yes
   when: vagrant is not defined

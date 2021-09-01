@@ -9,11 +9,25 @@
   args:
     chdir: "{{ build_dir }}/packages/grid"
   become_user: "{{ om_user }}"
+  when: vagrant is not defined
+
+- name: Build Docker Images
+  shell: "docker compose build"
+  args:
+    chdir: "{{ syft_dir }}/packages/grid"
+  become_user: "{{ om_user }}"
+  when: vagrant is defined
 
 - name: Remove old Docker Images
   shell: "docker rmi $(docker images -qa -f 'dangling=true') || true"
   become_user: "{{ om_user }}"
   ignore_errors: yes
+
+- name: Remove Docker Volumes
+  shell: "docker volume prune -f"
+  become_user: "{{ om_user }}"
+  ignore_errors: yes
+  when: docker_volume_destroy is defined
 
 - name: Start Docker Containers
   shell:
