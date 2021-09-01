@@ -51,13 +51,17 @@ git pull origin $3 --rebase
 chown -R $4:$5 .
 
 END_HASH=$(git rev-parse HEAD)
+CONTAINER_HASH=$(docker exec $(docker ps --format "{{.Names}}" | grep frontend) env | grep VERSION_HASH | sed 's/VERSION_HASH=//')
+
+SCRIPT_PATH="$(dirname \"$0\")"
 
 if [ "$START_HASH" != "$END_HASH" ]
 then
-    echo "Code has changed so redeploying with HAGrid"
-    rm -rf ${8}
-    cp -r ${1} ${8}
-    chown -R $4:$5 ${8}
-    /usr/sbin/runuser -l ${4} -c "hagrid launch ${7} ${6} to localhost --repo=${2} --branch=${3}"
+    echo "Git hashes dont match, redeploying"
+    bash /home/om/PySyft/packages/grid/scripts/redeploy.sh $1 $2 $3 $4 $5 $6 $7 $8
+elif [[ ! "$END_HASH" == *"$CONTAINER_HASH"* ]]
+then
+    echo "Container hash doesnt match code, redeploying"
+    bash /home/om/PySyft/packages/grid/scripts/redeploy.sh $1 $2 $3 $4 $5 $6 $7 $8
 fi
 echo "Finished autoupdate CRON"

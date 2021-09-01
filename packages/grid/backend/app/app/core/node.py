@@ -8,17 +8,18 @@ from nacl.signing import SigningKey
 from syft import Domain  # type: ignore
 from syft import Network  # type: ignore
 from syft.core.node.common.client import Client
+from syft.core.node.common.node_table import Base
 from syft.core.node.common.node_table.utils import seed_db
 
 # grid absolute
 from app.core.config import settings
-from app.db.session import SessionLocal
-from app.db.session import engine
+from app.db.session import get_db_engine
+from app.db.session import get_db_session
 
 if settings.NODE_TYPE.lower() == "domain":
-    node = Domain("Domain", db_engine=engine)
+    node = Domain("Domain", db_engine=get_db_engine())
 elif settings.NODE_TYPE.lower() == "network":
-    node = Network("Network", db_engine=engine)
+    node = Network("Network", db_engine=get_db_engine())
 else:
     raise Exception(
         "Don't know NODE_TYPE "
@@ -29,15 +30,14 @@ else:
 
 node.loud_print()
 
-# Moving this to get called WITHIN Domain and Network so that they can operate in standalone mode
-# Base.metadata.create_all(engine)
+Base.metadata.create_all(get_db_engine())
 
 if len(node.setup):  # Check if setup was defined previously
     node.name = node.setup.node_name
 
 # Moving this to get called WITHIN Domain and Network so that they can operate in standalone mode
 if not len(node.roles):  # Check if roles were registered previously
-    seed_db(SessionLocal())
+    seed_db(get_db_session())
 
 
 def get_client(signing_key: Optional[SigningKey] = None) -> Client:

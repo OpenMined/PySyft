@@ -9,7 +9,7 @@ from tenacity import stop_after_attempt
 from tenacity import wait_fixed
 
 # grid absolute
-from app.db.session import SessionLocal
+from app.db.session import get_db_session
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ wait_seconds = 1
 def init() -> None:
     try:
         # Try to create session to check if DB is awake
-        db = SessionLocal()
+        db = get_db_session()
         db.execute("SELECT 1")
     except Exception as e:
         logger.error(e)
