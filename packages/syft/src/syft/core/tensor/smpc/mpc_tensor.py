@@ -25,7 +25,7 @@ from syft.core.tensor.passthrough import SupportedChainType
 from syft.core.tensor.smpc.share_tensor import ShareTensor
 
 # relative
-from ..util import implements
+from ..util import implements  # type: ignore
 from .utils import ispointer
 
 METHODS_FORWARD_ALL_SHARES = {
@@ -149,7 +149,7 @@ class MPCTensor(PassthroughTensor):
 
     @staticmethod
     def _get_shares_from_secret(
-        secret: Any, parties: List[Any], shape: Optional[Tuple[int]], seed_shares: int
+        secret: Any, parties: List[Any], shape: Tuple[int], seed_shares: int
     ) -> List[ShareTensor]:
         if ispointer(secret):
             if shape is None:
@@ -242,7 +242,7 @@ class MPCTensor(PassthroughTensor):
                 reason=reason, block=block, timeout_secs=timeout_secs, verbose=verbose
             )
 
-    def reconstruct(self):
+    def reconstruct(self) -> np.ndarray:
         # TODO: It might be that the resulted shares (if we run any computation) might
         # not be available at this point
 
@@ -335,7 +335,7 @@ class MPCTensor(PassthroughTensor):
             raise ValueError("Add works only for the MPCTensor at the moment!")
         return res_shares
 
-    def __apply_public_op(self, y: MPCTensor, op_str: str) -> List[ShareTensor]:
+    def __apply_public_op(self, y: Any, op_str: str) -> List[ShareTensor]:
         op = getattr(operator, op_str)
         if op_str in {"mul", "matmul", "add", "sub"}:
             res_shares = [op(share, y) for share in self.child]

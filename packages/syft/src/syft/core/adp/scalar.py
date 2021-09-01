@@ -291,6 +291,7 @@ class IntermediatePhiScalar(IntermediateScalar):
                     value=self.value,
                     max_val=self.max_val,
                     entity=self.entity,
+                    prime=-1,  # TODO: shouldn't we be passing in some kind of prime here?
                 )
             else:
                 raise Exception("GammaScalar requires min_val, value and max_val")

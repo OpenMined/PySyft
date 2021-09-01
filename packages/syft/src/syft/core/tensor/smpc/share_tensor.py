@@ -327,27 +327,28 @@ class ShareTensor(PassthroughTensor, Serializable):
         ShareTensor.sanity_checks(y)
         return y.matmul(self)
 
-    def div(
-        self, y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]
-    ) -> "ShareTensor":
-        """Apply the "div" operation between "self" and "y".
-
-        Args:
-            y (Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]): Denominator.
-
-        Returns:
-            ShareTensor: Result of the operation.
-
-        Raises:
-            ValueError: If y is not an integer or LongTensor.
-        """
-        if not isinstance(y, (int, torch.LongTensor)):
-            raise ValueError("Div works (for the moment) only with integers!")
-
-        res = ShareTensor(session_uuid=self.session_uuid, config=self.config)
-        # res = self.apply_function(y, "floordiv")
-        res.tensor = self.tensor // y
-        return res
+    # TRASK: commenting out because ShareTEnsor doesn't appear to have .session_uuid or .config
+    # def div(
+    #     self, y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]
+    # ) -> "ShareTensor":
+    #     """Apply the "div" operation between "self" and "y".
+    #
+    #     Args:
+    #         y (Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]): Denominator.
+    #
+    #     Returns:
+    #         ShareTensor: Result of the operation.
+    #
+    #     Raises:
+    #         ValueError: If y is not an integer or LongTensor.
+    #     """
+    #     if not isinstance(y, (int, torch.LongTensor)):
+    #         raise ValueError("Div works (for the moment) only with integers!")
+    #
+    #     res = ShareTensor(session_uuid=self.session_uuid, config=self.config)
+    #     # res = self.apply_function(y, "floordiv")
+    #     res.tensor = self.tensor // y
+    #     return res
 
     def _object2proto(self) -> ShareTensor_PB:
         if isinstance(self.child, np.ndarray):
