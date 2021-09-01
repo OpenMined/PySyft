@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# only run one redeploy.sh at a time
+pidof -o %PPID -x $0 >/dev/null && echo "ERROR: Script $0 already running" && exit 1
+
 # cronjob logs: $ tail -f /var/log/syslog | grep -i cron
 
 # $1 is the PySyft dir
