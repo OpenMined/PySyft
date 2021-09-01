@@ -63,6 +63,10 @@ def is_editable_mode() -> bool:
             break
         except Exception:
             pass
+
+    if os.path.exists(Path(current_package_root) / "hagrid.egg-info"):
+        installed_as_editable = True
+
     return installed_as_editable
 
 
