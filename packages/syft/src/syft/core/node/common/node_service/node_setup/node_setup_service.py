@@ -56,6 +56,8 @@ def create_initial_setup(
     msg: CreateInitialSetUpMessage, node: AbstractNode, verify_key: VerifyKey
 ) -> SuccessResponseMessage:
 
+    print("Performing initial setup...")
+
     # 1 - Should not run if Node has an owner
     if len(node.users):
         set_node_uid(node=node)  # make sure the node always has the same UID
@@ -73,13 +75,17 @@ def create_initial_setup(
 
     # 4 - Create Admin User
     _node_private_key = node.signing_key.encode(encoder=HexEncoder).decode("utf-8")
+
     _verify_key = node.signing_key.verify_key.encode(encoder=HexEncoder).decode("utf-8")
+
     _admin_role = node.roles.owner_role
+
     _ = node.users.signup(
         name=msg.name,
         email=msg.email,
         password=msg.password,
         role=_admin_role.id,
+        budget=msg.budget,
         private_key=_node_private_key,
         verify_key=_verify_key,
     )

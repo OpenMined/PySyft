@@ -1,3 +1,6 @@
+# future
+from __future__ import annotations
+
 # stdlib
 from typing import Any
 from typing import Optional

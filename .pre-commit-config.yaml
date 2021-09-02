@@ -107,7 +107,7 @@ repos:
       - id: mypy
         name: mypy-syft
         files: ^packages/syft
-        exclude: ^(packages/syft/src/syft/core/tensor|packages/syft/src/syft/core/adp|packages/syft/src/syft/proto|packages/syft/tests/syft/lib/python|packages/syft/examples/duet)
+        exclude: ^(packages/syft/src/syft/proto|packages/syft/tests/syft/lib/python)
         args: [
             "--ignore-missing-imports",
             "--scripts-are-modules",

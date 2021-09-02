@@ -4,6 +4,7 @@ package syft.grid.messages;
 
 import "proto/core/common/common_object.proto";
 import "proto/core/io/address.proto";
+import "proto/lib/python/dict.proto";
 
 
 // CREATE Request
@@ -25,7 +26,7 @@ message CreateRequestResponse {
 message GetRequestMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-  string content = 3;
+  string request_id = 3;
   syft.core.io.Address reply_to = 4;
 }
 
@@ -33,7 +34,7 @@ message GetRequestMessage {
 message GetRequestResponse {
   syft.core.common.UID msg_id = 1;
   int32 status_code = 2;
-  string content = 3;
+  string request_id = 3;
   syft.core.io.Address address = 4;
 }
 
@@ -41,14 +42,13 @@ message GetRequestResponse {
 message GetRequestsMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-  string content = 3;
   syft.core.io.Address reply_to = 4;
 }
 
 message GetRequestsResponse {
   syft.core.common.UID msg_id = 1;
   int32 status_code = 2;
-  string content = 3;
+  repeated syft.lib.python.Dict content = 3;
   syft.core.io.Address address = 4;
 }
 
@@ -56,14 +56,14 @@ message GetRequestsResponse {
 message DeleteRequestMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-  string content = 3;
+  string request_id = 3;
   syft.core.io.Address reply_to = 4;
 }
 
 message DeleteRequestResponse {
   syft.core.common.UID msg_id = 1;
   int32 status_code = 2;
-  string content = 3;
+  string request_id = 3;
   syft.core.io.Address address = 4;
 }
 
@@ -71,13 +71,15 @@ message DeleteRequestResponse {
 message UpdateRequestMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-  string content = 3;
-  syft.core.io.Address reply_to = 4;
+  string status = 3;
+  string request_id = 4;
+  syft.core.io.Address reply_to = 5;
 }
 
 message UpdateRequestResponse {
   syft.core.common.UID msg_id = 1;
   int32 status_code = 2;
-  string content = 3;
-  syft.core.io.Address address = 4;
+  string status = 3;
+  string request_id = 4;
+  syft.core.io.Address address = 5;
 }

@@ -1,3 +1,6 @@
+# future
+from __future__ import annotations
+
 # stdlib
 import functools
 from functools import lru_cache
@@ -10,6 +13,7 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
+from typing import cast
 
 # third party
 import numpy as np
@@ -17,10 +21,11 @@ import torch
 
 # syft absolute
 from syft.core.tensor.passthrough import PassthroughTensor
+from syft.core.tensor.passthrough import SupportedChainType
 from syft.core.tensor.smpc.share_tensor import ShareTensor
 
 # relative
-from ..util import implements
+from ..util import implements  # type: ignore
 from .utils import ispointer
 
 METHODS_FORWARD_ALL_SHARES = {
@@ -48,6 +53,7 @@ class MPCTensor(PassthroughTensor):
         shape: Optional[Tuple[int]] = None,
         seed_shares: Optional[int] = None,
     ) -> None:
+
         if secret is None and shares is None:
             raise ValueError("Secret or shares should be populated!")
 
@@ -56,7 +62,11 @@ class MPCTensor(PassthroughTensor):
             # ^This is unsecure and should be used with cautioness
             seed_shares = secrets.randbits(32)
 
+        self.seed_shares = seed_shares
+
         # TODO: We can get this from the the secret if the secret is local
+        # TODO: https://app.clubhouse.io/openmined/story/1128/tech-debt-for-adp-smpc-demo?stories_sort_by\
+        #  =priority&stories_group_by=WORKFLOW_STATE
         if shape is None:
             raise ValueError("Shape of the secret should be known")
 
@@ -77,9 +87,40 @@ class MPCTensor(PassthroughTensor):
 
         res = MPCTensor._mpc_from_shares(shares, parties)
 
+        self.parties = parties
+
         self.mpc_shape = shape
 
+        # we need to make sure that when we zip up clients from
+        # multiple MPC tensors that they are in corresponding order
+        # so we always sort all of them by the id of the domain
+        # TODO: store children as lists of dictionaries because eventually
+        # it's likely that we have multiple shares from the same client
+        # (For example, if you wanted a domain to have 90% share ownership
+        # you'd need to produce 10 shares and give 9 of them to the same domain)
+        # TODO captured: https://app.clubhouse.io/openmined/story/1128/tech-debt-for-adp-smpc-\
+        #  demo?stories_sort_by=priority&stories_group_by=WORKFLOW_STATE
+        res.sort(key=lambda share: share.client.name + share.client.id.no_dash)
+
         super().__init__(res)
+
+    def publish(self, sigma: float) -> MPCTensor:
+
+        new_shares = list()
+        for share in self.child:
+            new_share = share.publish(sigma=sigma)
+            new_shares.append(new_share)
+
+        return MPCTensor(
+            parties=self.parties,
+            shares=new_shares,
+            shape=self.mpc_shape,
+            seed_shares=self.seed_shares,
+        )
+
+    @property
+    def shape(self) -> Optional[Tuple[int]]:
+        return self.mpc_shape
 
     @staticmethod
     def _mpc_from_shares(
@@ -109,7 +150,7 @@ class MPCTensor(PassthroughTensor):
 
     @staticmethod
     def _get_shares_from_secret(
-        secret: Any, parties: List[Any], shape: Optional[Tuple[int]], seed_shares: int
+        secret: Any, parties: List[Any], shape: Tuple[int], seed_shares: int
     ) -> List[ShareTensor]:
         if ispointer(secret):
             if shape is None:
@@ -128,20 +169,40 @@ class MPCTensor(PassthroughTensor):
     ) -> List[ShareTensor]:
         shares = []
         for i, party in enumerate(parties):
-            if party == secret.client:
+            if secret is not None and party == secret.client:
                 value = secret
             else:
                 value = None
 
-            remote_share = (
-                party.syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs(
+            # syft absolute
+            from syft.core.tensor.autodp.single_entity_phi import (
+                TensorWrappedSingleEntityPhiTensorPointer,
+            )
+
+            if isinstance(secret, TensorWrappedSingleEntityPhiTensorPointer):
+
+                share_wrapper = secret.to_local_object_without_private_data_child()
+                share_wrapper_pointer = share_wrapper.send(party)
+
+                remote_share = party.syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs_on_dp_tensor(
                     rank=i,
                     nr_parties=len(parties),
                     value=value,
                     shape=shape,
                     seed_shares=seed_shares,
+                    share_wrapper=share_wrapper_pointer,
                 )
-            )
+
+            else:
+                remote_share = (
+                    party.syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs(
+                        rank=i,
+                        nr_parties=len(parties),
+                        value=value,
+                        shape=shape,
+                        seed_shares=seed_shares,
+                    )
+                )
 
             shares.append(remote_share)
 
@@ -170,11 +231,42 @@ class MPCTensor(PassthroughTensor):
 
         return shares
 
-    def reconstruct(self) -> Any:
-        # TODO: It might be that the resulted shares (if we run any computation) might
-        # not be available at this point
+    def request(
+        self,
+        reason: str = "",
+        block: bool = False,
+        timeout_secs: Optional[int] = None,
+        verbose: bool = False,
+    ) -> None:
+        for child in self.child:
+            child.request(
+                reason=reason, block=block, timeout_secs=timeout_secs, verbose=verbose
+            )
 
-        local_shares = [share.get_copy() for share in self.child]
+    def reconstruct(self) -> np.ndarray:
+        # TODO: It might be that the resulted shares (if we run any computation) might
+        # not be available at this point. We need to have this fail well with a nice
+        # description as to which node wasn't able to be reconstructued.
+        # Captured: https://app.clubhouse.io/openmined/story/1128/tech-debt-for-adp-smpc-demo?\
+        # stories_sort_by=priority&stories_group_by=WORKFLOW_STATE
+
+        # for now we need to convert the values coming back to int32
+        # sometimes they are floats coming from DP
+        def convert_child_numpy_type(tensor: Any, np_type: type) -> Any:
+            if isinstance(tensor, np.ndarray):
+                return np.array(tensor, np_type)
+            if hasattr(tensor, "child"):
+                tensor.child = convert_child_numpy_type(
+                    tensor=tensor.child, np_type=np_type
+                )
+            return tensor
+
+        local_shares = []
+        for share in self.child:
+            res = share.get()
+            res = convert_child_numpy_type(res, np.int32)
+            local_shares.append(res)
+
         is_share_tensor = isinstance(local_shares[0], ShareTensor)
 
         if is_share_tensor:
@@ -184,9 +276,12 @@ class MPCTensor(PassthroughTensor):
         for share in local_shares[1:]:
             result = result + share
 
-        # if not is_share_tensor:
-        #    result = result.decode()
+        if hasattr(result, "child") and isinstance(result.child, ShareTensor):
+            return result.child.child
+
         return result
+
+    get = reconstruct
 
     @staticmethod
     @lru_cache(maxsize=128)
@@ -207,13 +302,14 @@ class MPCTensor(PassthroughTensor):
         """
         op = getattr(operator, op_str)
         res = op(np.empty(x_shape), np.empty(y_shape)).shape
-        return tuple(res)
+        cast(Tuple[int], res)
+        return tuple(res)  # type: ignore
 
     def __getattribute__(self, attr_name: str) -> Any:
         if attr_name in METHODS_FORWARD_ALL_SHARES:
 
             def method_all_shares(
-                _self: "MPCTensor", *args: List[Any], **kwargs: Dict[Any, Any]
+                _self: MPCTensor, *args: List[Any], **kwargs: Dict[Any, Any]
             ) -> Any:
                 shares = []
 
@@ -232,7 +328,7 @@ class MPCTensor(PassthroughTensor):
             return functools.partial(method_all_shares, self)
         return object.__getattribute__(self, attr_name)
 
-    def __apply_private_op(self, other: "MPCTensor", op_str: str) -> List[ShareTensor]:
+    def __apply_private_op(self, other: MPCTensor, op_str: str) -> List[ShareTensor]:
         op = getattr(operator, op_str)
         if isinstance(other, MPCTensor):
             res_shares = [op(a, b) for a, b in zip(self.child, other.child)]
@@ -240,7 +336,7 @@ class MPCTensor(PassthroughTensor):
             raise ValueError("Add works only for the MPCTensor at the moment!")
         return res_shares
 
-    def __apply_public_op(self, y: "MPCTensor", op_str: str) -> List[ShareTensor]:
+    def __apply_public_op(self, y: Any, op_str: str) -> List[ShareTensor]:
         op = getattr(operator, op_str)
         if op_str in {"mul", "matmul", "add", "sub"}:
             res_shares = [op(share, y) for share in self.child]
@@ -251,26 +347,61 @@ class MPCTensor(PassthroughTensor):
 
     def __apply_op(
         self,
-        y: Union[int, float, torch.Tensor, np.ndarray, "MPCTensor"],
+        y: Union[int, float, torch.Tensor, np.ndarray, MPCTensor],
         op_str: str,
-    ) -> "MPCTensor":
+    ) -> MPCTensor:
         """Apply an operation on "self" which is a MPCTensor "y".
 
          This function checks if "y" is private or public value.
 
         Args:
-            y (Union[int, float, torch.Tensor, np.ndarray, "MPCTensor"]: tensor to apply the operation.
+            y (Union[int, float, torch.Tensor, np.ndarray, MPCTensor]: tensor to apply the operation.
             op_str (str): the operation.
 
         Returns:
             MPCTensor. the operation "op_str" applied on "self" and "y"
         """
-        is_private = isinstance(y, MPCTensor)
 
-        if is_private:
-            result = self.__apply_private_op(y, op_str)
+        _self = self
+        if ispointer(y):
+            client = getattr(y, "client", None)
+            if self.parties is None:
+                raise Exception("")
+            if client is not None and client not in self.parties:
+                parties = self.parties + [client]
+            else:
+                parties = [party for party in self.parties]
+
+            # TODO: Extract info for y shape from somewhere
+            # We presume at the moment that it is the same shape
+            # Captured: https://app.clubhouse.io/openmined/story/1128/tech-debt-for-adp-smpc-demo?\
+            # stories_sort_by=priority&stories_group_by=WORKFLOW_STATE\
+
+            y = MPCTensor(secret=y, shape=self.mpc_shape, parties=parties)
+
+            seed_shares = secrets.randbits(32)
+
+            shares = MPCTensor._get_shares_from_remote_secret(
+                secret=None,
+                shape=self.mpc_shape,
+                parties=parties,
+                seed_shares=seed_shares,
+            )
+
+            op = getattr(operator, op_str)
+
+            new_shares = [
+                op(share1, share2) for share1, share2 in zip(self.child, shares)
+            ]
+
+            new_shares.append(shares[-1])
+
+            _self = MPCTensor(shares=new_shares, shape=self.mpc_shape, parties=parties)
+
+        if isinstance(y, MPCTensor):
+            result = _self.__apply_private_op(y, op_str)
         else:
-            result = self.__apply_public_op(y, op_str)
+            result = _self.__apply_public_op(y, op_str)
 
         if isinstance(y, (float, int)):
             y_shape = (1,)
@@ -280,16 +411,18 @@ class MPCTensor(PassthroughTensor):
             y_shape = y.shape
 
         shape = MPCTensor.__get_shape(op_str, self.mpc_shape, y_shape)
-        result = MPCTensor(shares=result, shape=shape)
+
+        result = MPCTensor(shares=result, shape=shape, parties=_self.parties)
+
         return result
 
     def add(
-        self, y: Union[int, float, np.ndarray, torch.tensor, "MPCTensor"]
-    ) -> "MPCTensor":
+        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
+    ) -> MPCTensor:
         """Apply the "add" operation between "self" and "y".
 
         Args:
-            y (Union["MPCTensor", torch.Tensor, float, int]): self + y
+            y (Union[MPCTensor, torch.Tensor, float, int]): self + y
 
         Returns:
             MPCTensor. Result of the operation.
@@ -297,18 +430,18 @@ class MPCTensor(PassthroughTensor):
         res = self.__apply_op(y, "add")
         return res
 
-    def sub(self, y: "MPCTensor") -> "MPCTensor":
+    def sub(self, y: MPCTensor) -> MPCTensor:
         res = self.__apply_op(y, "sub")
         return res
 
-    def rsub(self, y: "MPCTensor") -> "MPCTensor":
+    def rsub(self, y: MPCTensor) -> MPCTensor:
         new_self = self * (-1)
         res = new_self.__apply_op(y, "add")
         return res
 
     def mul(
-        self, y: Union[int, float, np.ndarray, torch.tensor, "MPCTensor"]
-    ) -> "MPCTensor":
+        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
+    ) -> MPCTensor:
         if isinstance(y, MPCTensor):
             raise ValueError("Private multiplication not yet implemented!")
         else:
@@ -316,22 +449,27 @@ class MPCTensor(PassthroughTensor):
                 operator.mul(a, b) for a, b in zip(self.child, itertools.repeat(y))
             ]
 
-        if isinstance(y, (float, int)):
-            y_shape = (1,)
-        else:
-            y_shape = y.shape
-
+        y_shape = getattr(y, "shape", (1,))
         new_shape = MPCTensor.__get_shape("mul", self.mpc_shape, y_shape)
         res = MPCTensor(shares=res_shares, shape=new_shape)
 
         return res
 
-    def __str__(self):
+    def __str__(self) -> str:
         res = "MPCTensor"
         for share in self.child:
             res = f"{res}\n\t{share}"
 
         return res
+
+    def __repr__(self) -> str:
+        out = "MPCTensor"
+        out += ".shape=" + str(self.shape) + "\n"
+        for i, child in enumerate(self.child):
+            out += f"\t .child[{i}] = " + child.__repr__() + "\n"
+        out = out[:-1] + ""
+
+        return out
 
     __add__ = add
     __radd__ = add
@@ -342,15 +480,15 @@ class MPCTensor(PassthroughTensor):
 
 
 @implements(MPCTensor, np.add)
-def add(x: np.ndarray, y: MPCTensor):
+def add(x: np.ndarray, y: MPCTensor) -> SupportedChainType:
     return y.add(x)
 
 
 @implements(MPCTensor, np.subtract)
-def sub(x: np.ndarray, y: MPCTensor):
+def sub(x: np.ndarray, y: MPCTensor) -> SupportedChainType:
     return y.rsub(x)
 
 
 @implements(MPCTensor, np.multiply)
-def mul(x: np.ndarray, y: MPCTensor):
+def mul(x: np.ndarray, y: MPCTensor) -> SupportedChainType:
     return y.mul(x)

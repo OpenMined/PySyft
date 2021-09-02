@@ -24,6 +24,7 @@ from syft.core.node.common.node_service.node_service import (
 from syft.core.node.common.node_service.node_service import (
     ImmediateNodeServiceWithoutReply,
 )
+from syft.lib.python import List as SyftList
 from syft.util import validate_type
 
 # relative
@@ -160,7 +161,8 @@ def get_request_msg(
     return GetRequestResponse(
         address=msg.reply_to,
         status_code=200,
-        content=request_json,
+        # request_id=request_id
+        request_id=request_json,
     )
 
 
@@ -169,50 +171,31 @@ def get_all_request_msg(
     node: AbstractNode,
     verify_key: VerifyKey,
 ) -> GetRequestsResponse:
-
-    # Get Payload Content
-    current_user_id = msg.content.get("current_user", None)
-
     users = node.users
-
-    if not current_user_id:
-        current_user_id = users.first(
-            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
-        ).id
 
     allowed = users.can_triage_requests(verify_key=verify_key)
 
     if allowed:
-        requests = node.data_requests
-        requests = requests.all()
-        requests_json = [model_to_json(requests) for requests in requests]
+        requests = node.data_requests.all()
+        requests_json = [model_to_json(request) for request in requests]
     else:
         raise AuthorizationError("You're not allowed to get Request information!")
-
     return GetRequestsResponse(
-        address=msg.reply_to,
         status_code=200,
-        content=requests_json,
+        address=msg.reply_to,
+        content=SyftList(requests_json),
     )
 
 
 def update_request_msg(
-    msg: DeleteRequestMessage,
+    msg: UpdateRequestMessage,
     node: AbstractNode,
     verify_key: VerifyKey,
-) -> DeleteRequestResponse:
+) -> UpdateRequestResponse:
 
     # Get Payload Content
-    request_id = msg.content.get("request_id", None)
-    status = msg.content.get("status", None)
-    current_user_id = msg.content.get("current_user", None)
-
-    users = node.users
-
-    if not current_user_id:
-        current_user_id = users.first(
-            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
-        ).id
+    request_id = msg.request_id
+    status = msg.status
 
     # Check if status field is empty
     missing_paramaters = not status
@@ -247,10 +230,11 @@ def update_request_msg(
     else:
         raise AuthorizationError("You're not allowed to update Request information!")
 
-    return DeleteRequestResponse(
+    return UpdateRequestResponse(
         address=msg.reply_to,
         status_code=200,
-        content={"msg": "Request Updated!"},
+        status=msg.status,
+        request_id=msg.request_id,
     )
 
 
@@ -260,16 +244,11 @@ def del_request_msg(
     verify_key: VerifyKey,
 ) -> DeleteRequestResponse:
 
-    # Get Payload Content
-    request_id = msg.content.get("request_id", None)
-    current_user_id = msg.content.get("current_user", None)
+    request_id = msg.request_id.get("request_id", None)  # type: ignore
 
-    users = node.users
-
-    if not current_user_id:
-        current_user_id = users.first(
-            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
-        ).id
+    current_user_id = node.users.first(
+        verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+    ).id
 
     requests = node.data_requests
     request = requests.first(id=request_id)
@@ -283,11 +262,9 @@ def del_request_msg(
     return DeleteRequestResponse(
         address=msg.reply_to,
         status_code=200,
-        content={"msg": "Request deleted!"},
+        request_id=request_id
+        # content={"msg": "Request deleted!"},
     )
-
-
-# PySyft Services
 
 
 def request_answer_msg(

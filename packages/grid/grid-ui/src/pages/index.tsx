@@ -10,7 +10,7 @@ export default function Home() {
 
   if (typeof window !== 'undefined' && data) {
     if (isAuthenticated) {
-      router.replace('/dashboard')
+      router.replace('/users')
       return null
     } else {
       router.replace('/login')

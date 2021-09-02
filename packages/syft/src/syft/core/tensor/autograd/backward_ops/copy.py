@@ -12,7 +12,7 @@ from .op import Op
 class CopyOp(Op):
     """Copy a tensor"""
 
-    def forward(self, x: AutogradTensor) -> AutogradTensor:
+    def forward(self, x: AutogradTensor) -> AutogradTensor:  # type: ignore
         self.x = x
 
         return AutogradTensor(x.child.copy(), requires_grad=x.requires_grad)

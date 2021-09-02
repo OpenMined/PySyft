@@ -2,20 +2,21 @@
 from typing import Any
 from typing import Dict
 from typing import List
-from typing import Union
+from typing import Optional
+from typing import Tuple
 
 # third party
 import numpy as np
 
 # relative
-from .passthrough import implements  # type: ignore
-from .passthrough import inputs2child  # type: ignore
 from .tensor import Tensor
+from .util import implements
+from .util import inputs2child
 
 
 @implements(Tensor, np.mean)
 def mean(
-    array: Tensor, axis: Union[int, np.ndarray] = None, **kwargs: Dict[Any, Any]
+    array: np.typing.ArrayLike, axis: Optional[int] = None, **kwargs: Any
 ) -> Tensor:
     if axis is None:
         den = float(np.prod(array.shape))
@@ -26,14 +27,14 @@ def mean(
 
 
 @implements(Tensor, np.max)
-def npmax(*args: List[Any], **kwargs: Dict[Any, Any]) -> Tensor:
-    args, kwargs = inputs2child(*args, **kwargs)
+def npmax(*args: Tuple[Any, ...], **kwargs: Dict[Any, Any]) -> Tensor:
+    args, kwargs = inputs2child(*args, **kwargs)  # type: ignore
     return np.max(*args, **kwargs)
 
 
 @implements(Tensor, np.min)
 def npmin(*args: List[Any], **kwargs: Dict[Any, Any]) -> Tensor:
-    args, kwargs = inputs2child(*args, **kwargs)
+    args, kwargs = inputs2child(*args, **kwargs)  # type: ignore
     return np.min(*args, **kwargs)
 
 
@@ -44,7 +45,7 @@ def square(x: Tensor) -> Tensor:
 
 @implements(Tensor, np.expand_dims)
 def expand_dims(*args: List[Any], **kwargs: Dict[Any, Any]) -> Tensor:
-    args, kwargs = inputs2child(*args, **kwargs)
+    args, kwargs = inputs2child(*args, **kwargs)  # type: ignore
     return Tensor(np.expand_dims(*args, **kwargs))
 
 

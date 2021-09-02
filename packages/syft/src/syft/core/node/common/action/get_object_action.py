@@ -176,7 +176,7 @@ class GetObjectAction(ImmediateActionWithReply):
                 and verify_key not in storable_object.read_permissions
             ):
                 log = (
-                    f"You do not have permission to .get() Object with ID: {self.id_at_location}"
+                    f"You do not have permission to .get() Object with ID: {self.id_at_location} on node {node.name} "
                     + "Please submit a request."
                 )
                 traceback_and_raise(AuthorizationException(log))

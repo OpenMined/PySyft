@@ -5,7 +5,6 @@ from typing import Any
 # third party
 from fastapi import APIRouter
 from fastapi import Body
-from fastapi import Depends
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 from loguru import logger
@@ -15,8 +14,6 @@ from syft import serialize  # type: ignore
 from syft.core.node.common.exceptions import InvalidCredentialsError
 
 # grid absolute
-from app import schemas
-from app.api import deps
 from app.core import security
 from app.core.config import settings
 from app.core.node import node
@@ -57,11 +54,3 @@ def login_access_token(
         "metadata": metadata,
         "key": user.private_key,
     }
-
-
-@router.post("/login/test-token", response_model=schemas.User)
-def test_token(current_user: Any = Depends(deps.get_current_user)) -> Any:
-    """
-    Test access token
-    """
-    return current_user

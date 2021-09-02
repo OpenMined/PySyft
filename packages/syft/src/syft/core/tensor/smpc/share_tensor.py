@@ -1,3 +1,6 @@
+# future
+from __future__ import annotations
+
 # stdlib
 from functools import lru_cache
 import operator
@@ -37,7 +40,31 @@ class ShareTensor(PassthroughTensor, Serializable):
         )
         super().__init__(value)
 
-    def copy_tensor(self):
+    def flatten(self) -> ShareTensor:
+        return ShareTensor(
+            rank=self.rank,
+            nr_parties=self.nr_parties,
+            ring_size=self.ring_size,
+            value=self.child.flatten(),
+        )
+
+    def __getitem__(self, item: Union[str, int, slice]) -> ShareTensor:
+        return ShareTensor(
+            rank=self.rank,
+            nr_parties=self.nr_parties,
+            ring_size=self.ring_size,
+            value=self.child[item],
+        )
+
+    def reshape(self, *args: Tuple[Any, ...], **kwargs: Any) -> ShareTensor:
+        return ShareTensor(
+            rank=self.rank,
+            nr_parties=self.nr_parties,
+            ring_size=self.ring_size,
+            value=self.child.reshape(*args, **kwargs),
+        )
+
+    def copy_tensor(self) -> ShareTensor:
         return ShareTensor(
             rank=self.rank, nr_parties=self.nr_parties, ring_size=self.ring_size
         )
@@ -99,11 +126,12 @@ class ShareTensor(PassthroughTensor, Serializable):
         nr_parties: int,
         seed_shares: int,
     ) -> "ShareTensor":
+
         # syft absolute
         from syft.core.tensor.tensor import Tensor
 
         if value is None:
-            value = Tensor(np.zeros(shape, dtype=np.int64))
+            value = Tensor(np.zeros(shape, dtype=np.int32))  # TODO: change to np.int64
 
         # TODO: Sending the seed and having each party generate the shares is not safe
         # Since the parties would know some of the other parties shares (this might not impose a risk
@@ -123,7 +151,39 @@ class ShareTensor(PassthroughTensor, Serializable):
             for _ in range(nr_parties)
         ]
         share.child += shares[rank] - shares[(rank + 1) % nr_parties]
+
         return share
+
+    @staticmethod
+    def generate_przs_on_dp_tensor(
+        value: Optional[Any],
+        shape: Tuple[int],
+        rank: int,
+        nr_parties: int,
+        seed_shares: int,
+        share_wrapper: Any,
+    ) -> PassthroughTensor:
+
+        if value is not None:
+            share = ShareTensor.generate_przs(
+                value=value.child,
+                shape=shape,
+                rank=rank,
+                nr_parties=nr_parties,
+                seed_shares=seed_shares,
+            )
+        else:
+            share = ShareTensor.generate_przs(
+                value=value,
+                shape=shape,
+                rank=rank,
+                nr_parties=nr_parties,
+                seed_shares=seed_shares,
+            )
+
+        share_wrapper.child.child = share
+
+        return share_wrapper
 
     @staticmethod
     def sanity_check(
@@ -164,7 +224,7 @@ class ShareTensor(PassthroughTensor, Serializable):
             value = op(self.child, y.child)
         else:
             # TODO: Converting y to numpy because doing "numpy op torch tensor" raises exception
-            value = op(self.child, np.array(y, np.int64))
+            value = op(self.child, np.array(y, np.int32))  # TODO: change to np.int64
 
         res = self.copy_tensor()
         res.child = value
@@ -181,8 +241,11 @@ class ShareTensor(PassthroughTensor, Serializable):
         Returns:
             ShareTensor. Result of the operation.
         """
+
         ShareTensor.sanity_check(y)
+
         new_share = self.apply_function(y, "add")
+
         return new_share
 
     def sub(
@@ -264,27 +327,28 @@ class ShareTensor(PassthroughTensor, Serializable):
         ShareTensor.sanity_checks(y)
         return y.matmul(self)
 
-    def div(
-        self, y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]
-    ) -> "ShareTensor":
-        """Apply the "div" operation between "self" and "y".
-
-        Args:
-            y (Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]): Denominator.
-
-        Returns:
-            ShareTensor: Result of the operation.
-
-        Raises:
-            ValueError: If y is not an integer or LongTensor.
-        """
-        if not isinstance(y, (int, torch.LongTensor)):
-            raise ValueError("Div works (for the moment) only with integers!")
-
-        res = ShareTensor(session_uuid=self.session_uuid, config=self.config)
-        # res = self.apply_function(y, "floordiv")
-        res.tensor = self.tensor // y
-        return res
+    # TRASK: commenting out because ShareTEnsor doesn't appear to have .session_uuid or .config
+    # def div(
+    #     self, y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]
+    # ) -> "ShareTensor":
+    #     """Apply the "div" operation between "self" and "y".
+    #
+    #     Args:
+    #         y (Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]): Denominator.
+    #
+    #     Returns:
+    #         ShareTensor: Result of the operation.
+    #
+    #     Raises:
+    #         ValueError: If y is not an integer or LongTensor.
+    #     """
+    #     if not isinstance(y, (int, torch.LongTensor)):
+    #         raise ValueError("Div works (for the moment) only with integers!")
+    #
+    #     res = ShareTensor(session_uuid=self.session_uuid, config=self.config)
+    #     # res = self.apply_function(y, "floordiv")
+    #     res.tensor = self.tensor // y
+    #     return res
 
     def _object2proto(self) -> ShareTensor_PB:
         if isinstance(self.child, np.ndarray):
