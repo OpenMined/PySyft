@@ -64,7 +64,6 @@ class MPCTensor(PassthroughTensor):
 
         self.seed_shares = seed_shares
 
-        # TODO: We can get this from the the secret if the secret is local
         if shape is None:
             raise ValueError("Shape of the secret should be known")
 

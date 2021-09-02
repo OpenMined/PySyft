@@ -335,13 +335,6 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     ) -> PassthroughTensor:
         return self.__class__(self.child.repeat(repeats, axis))
 
-    # TODO: why does this version of repeat fail but the *args **kwargs one works?
-    # def repeat(
-    #     self, repeats: Union[int, TypeTuple[int, ...]], axis: Optional[int] = None
-    # ) -> PassthroughTensor:
-    #     return self.__class__(self.child.repeat(repeats, axis=axis))
-
-    # numpy.resize(a, new_shape)
     def resize(self, new_shape: Union[int, TypeTuple[int, ...]]) -> PassthroughTensor:
         return self.__class__(self.child.resize(new_shape))
 
