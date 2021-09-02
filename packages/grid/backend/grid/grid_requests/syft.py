@@ -1,6 +1,12 @@
 # stdlib
 from typing import List
 
+# third party
+from app.grid_requests.models import Request
+from app.grid_requests.models import RequestUpdate
+from app.users.models import UserPrivate
+from app.utils import send_message_with_reply
+
 # syft absolute
 from syft.core.node.common.node_service.object_request.object_request_messages import (
     GetRequestMessage,
@@ -11,12 +17,6 @@ from syft.core.node.common.node_service.object_request.object_request_messages i
 from syft.core.node.common.node_service.object_request.object_request_service import (
     GetRequestsMessage,
 )
-
-# grid absolute
-from app.grid_requests.models import Request
-from app.grid_requests.models import RequestUpdate
-from app.users.models import UserPrivate
-from app.utils import send_message_with_reply
 
 
 def get_all_requests(current_user: UserPrivate) -> List[Request]:

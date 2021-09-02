@@ -3,17 +3,15 @@ from typing import List
 from typing import NoReturn
 
 # third party
+from app.api import deps
+from app.grid_requests.models import Request
+from app.grid_requests.models import RequestUpdate
+from app.users.models import UserPrivate
 from fastapi import APIRouter
 from fastapi import Depends
 from loguru import logger
 from starlette import status
 from starlette.exceptions import HTTPException
-
-# grid absolute
-from app.api import deps
-from app.grid_requests.models import Request
-from app.grid_requests.models import RequestUpdate
-from app.users.models import UserPrivate
 
 # relative
 from . import syft as syft_requests_messages
