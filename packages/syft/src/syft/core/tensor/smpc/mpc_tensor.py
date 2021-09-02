@@ -98,14 +98,13 @@ class MPCTensor(PassthroughTensor):
         # it's likely that we have multiple shares from the same client
         # (For example, if you wanted a domain to have 90% share ownership
         # you'd need to produce 10 shares and give 9 of them to the same domain)
+        # TODO captured: https://app.clubhouse.io/openmined/story/1128/tech-debt-for-adp-smpc-\
+        #  demo?stories_sort_by=priority&stories_group_by=WORKFLOW_STATE
         res.sort(key=lambda share: share.client.name + share.client.id.no_dash)
 
         super().__init__(res)
 
     def publish(self, sigma: float) -> MPCTensor:
-        """Note: @George has proposed that we could just add .publish() to the
-        METHODS_FORWARD_ALL_SHARES but this doesn't seem to work at present so I'm adding
-        this back."""
 
         new_shares = list()
         for share in self.child:
@@ -246,7 +245,10 @@ class MPCTensor(PassthroughTensor):
 
     def reconstruct(self) -> np.ndarray:
         # TODO: It might be that the resulted shares (if we run any computation) might
-        # not be available at this point
+        # not be available at this point. We need to have this fail well with a nice
+        # description as to which node wasn't able to be reconstructued.
+        # Captured: https://app.clubhouse.io/openmined/story/1128/tech-debt-for-adp-smpc-demo?\
+        # stories_sort_by=priority&stories_group_by=WORKFLOW_STATE
 
         # for now we need to convert the values coming back to int32
         # sometimes they are floats coming from DP
@@ -262,9 +264,9 @@ class MPCTensor(PassthroughTensor):
         local_shares = []
         for share in self.child:
             res = share.get()
-            res = convert_child_numpy_type(res, np.int32)  # TODO: change to np.int64
+            res = convert_child_numpy_type(res, np.int32)
             local_shares.append(res)
-        # local_shares = [np.array(share.get(), np.int32) for share in self.child]
+
         is_share_tensor = isinstance(local_shares[0], ShareTensor)
 
         if is_share_tensor:
@@ -273,9 +275,6 @@ class MPCTensor(PassthroughTensor):
         result = local_shares[0]
         for share in local_shares[1:]:
             result = result + share
-
-        # if not is_share_tensor:
-        #    result = result.decode()
 
         if hasattr(result, "child") and isinstance(result.child, ShareTensor):
             return result.child.child
@@ -375,6 +374,9 @@ class MPCTensor(PassthroughTensor):
 
             # TODO: Extract info for y shape from somewhere
             # We presume at the moment that it is the same shape
+            # Captured: https://app.clubhouse.io/openmined/story/1128/tech-debt-for-adp-smpc-demo?\
+            # stories_sort_by=priority&stories_group_by=WORKFLOW_STATE\
+
             y = MPCTensor(secret=y, shape=self.mpc_shape, parties=parties)
 
             seed_shares = secrets.randbits(32)
@@ -409,8 +411,6 @@ class MPCTensor(PassthroughTensor):
             y_shape = y.shape
 
         shape = MPCTensor.__get_shape(op_str, self.mpc_shape, y_shape)
-        # shape = self.shape
-        # print("...when it should be " + str(self.shape) + " of type " + str(type(shape)))
 
         result = MPCTensor(shares=result, shape=shape, parties=_self.parties)
 
@@ -429,12 +429,6 @@ class MPCTensor(PassthroughTensor):
         """
         res = self.__apply_op(y, "add")
         return res
-        # if isinstance(y, MPCTensor):
-        #     res_shares = [operator.add(a, b) for a, b in zip(self.child, y.child)]
-        #     mpc_tensor = MPCTensor(shares=res_shares, shape=self.shape, parties=self.parties)
-        #     return mpc_tensor
-        # else:
-        #     return NotImplemented
 
     def sub(self, y: MPCTensor) -> MPCTensor:
         res = self.__apply_op(y, "sub")
