@@ -36,6 +36,9 @@ target_metadata = Base.metadata
 
 
 def get_url() -> str:
+    url = os.getenv("SQLALCHEMY_DATABASE_URI", "")
+    if url != "":
+        return url
     user = os.getenv("POSTGRES_USER", "postgres")
     password = os.getenv("POSTGRES_PASSWORD", "")
     server = os.getenv("POSTGRES_SERVER", "db")
