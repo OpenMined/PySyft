@@ -33,6 +33,7 @@ class RequestAPI:
         self._create_message = self.__create_message
         self.__get_message = get_msg
         self.__get_all_message = get_all_msg
+        self._get_all_message = get_all_msg
         self.__update_message = update_msg
         self.__delete_message = delete_msg
         self.__response_key = response_key

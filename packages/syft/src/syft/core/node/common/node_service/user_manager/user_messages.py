@@ -54,6 +54,7 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
         name: str,
         email: str,
         password: str,
+        budget: float,
         reply_to: Address,
         role: Optional[str] = "",
         msg_id: Optional[UID] = None,
@@ -63,6 +64,7 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
         self.password = password
         self.role = role
         self.name = name
+        self.budget = budget
 
     def _object2proto(self) -> CreateUserMessage_PB:
         """Returns a protobuf serialization of self.
@@ -83,6 +85,7 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
             password=self.password,
             role=self.role,
             name=self.name,
+            budget=self.budget,
             reply_to=serialize(self.reply_to),
         )
 
@@ -106,6 +109,7 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
             email=proto.email,
             password=proto.password,
             name=proto.name,
+            budget=proto.budget,
             role=proto.role,
             reply_to=_deserialize(blob=proto.reply_to),
         )
@@ -415,6 +419,7 @@ class UpdateUserMessage(ImmediateSyftMessageWithReply):
         password: Optional[str] = "",
         role: Optional[str] = "",
         groups: Optional[str] = "",
+        budget: Optional[float] = None,
         name: Optional[str] = "",
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -424,6 +429,7 @@ class UpdateUserMessage(ImmediateSyftMessageWithReply):
         self.role = role
         self.groups = groups
         self.name = name
+        self.budget = budget
 
     def _object2proto(self) -> UpdateUserMessage_PB:
         """Returns a protobuf serialization of self.
@@ -445,6 +451,7 @@ class UpdateUserMessage(ImmediateSyftMessageWithReply):
             password=self.password,
             role=self.role,
             groups=self.groups,
+            budget=self.budget,
             name=self.name,
             reply_to=serialize(self.reply_to),
         )
@@ -470,6 +477,7 @@ class UpdateUserMessage(ImmediateSyftMessageWithReply):
             email=proto.email,
             password=proto.password,
             role=proto.role,
+            budget=proto.budget,
             groups=proto.groups,
             name=proto.name,
             reply_to=_deserialize(blob=proto.reply_to),

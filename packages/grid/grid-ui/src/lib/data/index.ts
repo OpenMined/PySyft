@@ -1,10 +1,10 @@
 import {useQuery} from 'react-query'
 import {cacheKeys} from '@/utils'
 import {useCrudify} from '@/lib/data/useCrudify'
-import type {User, Dataset, Request, Tensor, Model, Role, Settings, DomainStatus} from '@/types/grid-types'
+import type {User, UserMe, Dataset, Request, Tensor, Model, Role, Settings, DomainStatus} from '@/types/grid-types'
 
 export function useMe() {
-  return useQuery<User>(cacheKeys.me)
+  return useQuery<UserMe>(cacheKeys.me)
 }
 
 export function useUsers() {

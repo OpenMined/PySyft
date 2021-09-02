@@ -18,9 +18,6 @@ from syft.proto.core.common import (
     common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
 )
 from syft.proto.core.io import address_pb2 as proto_dot_core_dot_io_dot_address__pb2
-from syft.proto.core.pointer import (
-    pointer_pb2 as proto_dot_core_dot_pointer_dot_pointer__pb2,
-)
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/core/node/common/service/object_search_message.proto",
@@ -28,11 +25,10 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n:proto/core/node/common/service/object_search_message.proto\x12\x1dsyft.core.node.common.service\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto\x1a proto/core/pointer/pointer.proto"\x8d\x01\n\x13ObjectSearchMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address"\x96\x01\n\x18ObjectSearchReplyMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12+\n\x07results\x18\x03 \x03(\x0b\x32\x1a.syft.core.pointer.Pointerb\x06proto3',
+    serialized_pb=b'\n:proto/core/node/common/service/object_search_message.proto\x12\x1dsyft.core.node.common.service\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\x8d\x01\n\x13ObjectSearchMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address"z\n\x18ObjectSearchReplyMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07results\x18\x03 \x03(\x0c\x62\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
-        proto_dot_core_dot_pointer_dot_pointer__pb2.DESCRIPTOR,
     ],
 )
 
@@ -111,8 +107,8 @@ _OBJECTSEARCHMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=196,
-    serialized_end=337,
+    serialized_start=162,
+    serialized_end=303,
 )
 
 
@@ -167,8 +163,8 @@ _OBJECTSEARCHREPLYMESSAGE = _descriptor.Descriptor(
             full_name="syft.core.node.common.service.ObjectSearchReplyMessage.results",
             index=2,
             number=3,
-            type=11,
-            cpp_type=10,
+            type=12,
+            cpp_type=9,
             label=3,
             has_default_value=False,
             default_value=[],
@@ -190,8 +186,8 @@ _OBJECTSEARCHREPLYMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=340,
-    serialized_end=490,
+    serialized_start=305,
+    serialized_end=427,
 )
 
 _OBJECTSEARCHMESSAGE.fields_by_name[
@@ -209,9 +205,6 @@ _OBJECTSEARCHREPLYMESSAGE.fields_by_name[
 _OBJECTSEARCHREPLYMESSAGE.fields_by_name[
     "address"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_OBJECTSEARCHREPLYMESSAGE.fields_by_name[
-    "results"
-].message_type = proto_dot_core_dot_pointer_dot_pointer__pb2._POINTER
 DESCRIPTOR.message_types_by_name["ObjectSearchMessage"] = _OBJECTSEARCHMESSAGE
 DESCRIPTOR.message_types_by_name["ObjectSearchReplyMessage"] = _OBJECTSEARCHREPLYMESSAGE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)

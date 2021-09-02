@@ -16,7 +16,7 @@ class Op:
         self.backprop_id: Optional[UUID] = None
 
     @abstractmethod
-    def forward(self, *args: Any, **kwargs: Any) -> Any:
+    def forward(self, *args: AutogradTensor, **kwargs: AutogradTensor) -> Any:
         raise NotImplementedError
 
     def _backward(self, grad: ndarray, backprop_id: UUID) -> Any:

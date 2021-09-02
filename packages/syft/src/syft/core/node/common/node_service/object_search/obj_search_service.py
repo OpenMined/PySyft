@@ -144,7 +144,7 @@ class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
         return ObjectSearchReplyMessage_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            results=list(map(lambda x: serialize(x), self.results)),
+            results=list(map(lambda x: serialize(x, to_bytes=True), self.results)),
         )
 
     @staticmethod
@@ -165,7 +165,7 @@ class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
         return ObjectSearchReplyMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            results=[_deserialize(blob=x) for x in proto.results],
+            results=[_deserialize(blob=x, from_bytes=True) for x in proto.results],
         )
 
     @staticmethod
@@ -216,16 +216,21 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
                     or verify_key == node.root_verify_key
                     or contains_all_in_permissions
                 ):
-                    ptr_type = obj2pointer_type(obj=obj.data)
-                    id_obj = obj.id
-                    ptr = ptr_type(
+                    if hasattr(obj.data, "init_pointer"):
+                        ptr_constructor = obj.data.init_pointer  # type: ignore
+                    else:
+                        ptr_constructor = obj2pointer_type(obj=obj.data)
+
+                    ptr = ptr_constructor(
                         client=node,
-                        id_at_location=id_obj,
+                        id_at_location=obj.id,
                         object_type=obj.object_type,
                         tags=obj.tags,
                         description=obj.description,
                     )
+
                     results.append(ptr)
+
         except Exception as e:
             error(f"Error searching store. {e}")
 

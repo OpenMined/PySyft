@@ -60,6 +60,7 @@ class Network(Node):
         verify_key: Optional[VerifyKey] = None,
         root_key: Optional[VerifyKey] = None,
         db_engine: Any = None,
+        db: Any = None,
     ):
         super().__init__(
             name=name,
@@ -70,6 +71,7 @@ class Network(Node):
             signing_key=signing_key,
             verify_key=verify_key,
             db_engine=db_engine,
+            db=db,
         )
 
         # specific location with name

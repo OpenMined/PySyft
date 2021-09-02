@@ -185,6 +185,7 @@ class CreateInitialSetUpMessage(ImmediateSyftMessageWithReply):
         email: str,
         password: str,
         domain_name: str,
+        budget: float,
         reply_to: Address,
         msg_id: Optional[UID] = None,
     ):
@@ -193,6 +194,7 @@ class CreateInitialSetUpMessage(ImmediateSyftMessageWithReply):
         self.email = email
         self.password = password
         self.domain_name = domain_name
+        self.budget = budget
 
     def _object2proto(self) -> CreateInitialSetUpMessage_PB:
         """Returns a protobuf serialization of self.
@@ -213,6 +215,7 @@ class CreateInitialSetUpMessage(ImmediateSyftMessageWithReply):
             email=self.email,
             password=self.password,
             domain_name=self.domain_name,
+            budget=self.budget,
             reply_to=serialize(self.reply_to),
         )
 
@@ -236,6 +239,7 @@ class CreateInitialSetUpMessage(ImmediateSyftMessageWithReply):
             name=proto.name,
             email=proto.email,
             password=proto.password,
+            budget=proto.budget,
             domain_name=proto.domain_name,
             reply_to=_deserialize(blob=proto.reply_to),
         )
