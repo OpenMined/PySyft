@@ -1,25 +1,35 @@
 # stdlib
 from typing import Any
 from typing import Dict
-from typing import List
+from typing import Tuple
 from typing import Tuple as TypeTuple
 
 HANDLED_FUNCTIONS: Dict[Any, Any] = {}
 
 
-def inputs2child(
-    *args: List[Any], **kwargs: Dict[Any, Any]
-) -> TypeTuple[List[Any], Dict[Any, Any]]:
+def inputs2child(*args: Tuple[Any, ...], **kwargs: Any) -> TypeTuple[Tuple[Any], Any]:
 
     # relative
     from .passthrough import PassthroughTensor  # type: ignore
 
-    args = tuple([x.child if isinstance(x, PassthroughTensor) else x for x in args])
-    kwargs = {
-        x[0]: x[1].child if isinstance(x[1], PassthroughTensor) else x[1]
-        for x in kwargs.items()
-    }
-    return args, kwargs  # type: ignore
+    out_args_list = list()
+
+    for out in tuple(
+        [x.child if isinstance(x, PassthroughTensor) else x for x in args]
+    ):
+        out_args_list.append(out)
+
+    out_kwargs = {}
+
+    for x in kwargs.items():
+        if isinstance(x[1], PassthroughTensor):
+            out_kwargs[x[0]] = x[1].child
+        else:
+            out_kwargs[x[0]] = x[1]
+
+    out_args = tuple(out_args_list)
+
+    return out_args, out_kwargs  # type: ignore
 
 
 def query_implementation(tensor_type: Any, func: Any) -> Any:

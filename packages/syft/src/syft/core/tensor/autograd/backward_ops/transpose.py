@@ -4,9 +4,10 @@ from uuid import UUID
 # third party
 from numpy import ndarray
 
-# relative
+# syft absolute
 from syft.lib.python import Tuple
 
+# relative
 from ..tensor import AutogradTensor
 from .op import Op
 
