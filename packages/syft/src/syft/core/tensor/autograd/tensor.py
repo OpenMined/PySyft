@@ -60,7 +60,6 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor, RecursiveSerde):
 
         self.backprop_id: Optional[uuid.UUID] = None
 
-        # self.n_backwards: Counter[uuid.UUID] = Counter()
         self.n_backwards: SerializableCounter = (
             SerializableCounter()
         )  # may have to add [uuid.UUID] for type annotation
