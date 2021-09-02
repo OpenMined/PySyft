@@ -20,6 +20,8 @@
 # git branch -D $3 || true
 # git checkout $3 --force
 
+pidof -o %PPID -x $0 >/dev/null && echo "ERROR: Script $0 already running" && exit 1
+
 cd $1
 START_HASH=$(git rev-parse HEAD)
 CURRENT_REMOTE=$(git remote -v | head -n 1 | cut -d ' ' -f 1 | awk '{print $2}')
@@ -51,7 +53,7 @@ git pull origin $3 --rebase
 chown -R $4:$5 .
 
 END_HASH=$(git rev-parse HEAD)
-CONTAINER_HASH=$(docker exec $(docker ps --format "{{.Names}}" | grep frontend) env | grep VERSION_HASH | sed 's/VERSION_HASH=//')
+CONTAINER_HASH=$(docker exec $(docker ps --format "{{.Names}}" | grep backend_1) env | grep VERSION_HASH | sed 's/VERSION_HASH=//')
 
 SCRIPT_PATH="$(dirname \"$0\")"
 
