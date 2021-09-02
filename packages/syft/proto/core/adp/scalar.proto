@@ -11,9 +11,9 @@ message IntermediateScalar {
 
 message BaseScalar {
   syft.core.common.UID id = 1;
-  optional float min_val = 2;
-  optional float value = 3;
-  optional float max_val = 4;
+  optional double min_val = 2;
+  optional double value = 3;
+  optional double max_val = 4;
   syft.core.adp.Entity entity = 5;
 }
 
@@ -24,10 +24,11 @@ message IntermediateGammaScalar {
 
 message GammaScalar {
   syft.core.common.UID id = 1;
-  optional float min_val = 2;
-  optional float value = 3;
-  optional float max_val = 4;
+  optional double min_val = 2;
+  optional double value = 3;
+  optional double max_val = 4;
   syft.core.adp.Entity entity = 5;
+  int64 prime = 6;
   // poly
 }
 
@@ -39,9 +40,9 @@ message IntermediatePhiScalar {
 
 message PhiScalar {
   syft.core.common.UID id = 1;
-  optional float min_val = 2;
-  optional float value = 3;
-  optional float max_val = 4;
+  optional double min_val = 2;
+  optional double value = 3;
+  optional double max_val = 4;
   syft.core.adp.Entity entity = 5;
   optional syft.core.adp.GammaScalar gamma = 6;
   // poly

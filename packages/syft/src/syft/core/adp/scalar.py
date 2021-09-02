@@ -1,3 +1,8 @@
+# CLEANUP NOTES (for ISHAN):
+# - add documentation for each method
+# - add comments inline explaining each piece
+# - add a unit test for each method (at least)
+
 # future
 from __future__ import annotations
 
@@ -11,6 +16,7 @@ from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from nacl.signing import VerifyKey
 import numpy as np
 from pymbolic import var
 from pymbolic.interop.sympy import PymbolicToSympyMapper
@@ -43,11 +49,19 @@ from .search import ssid2obj
 
 # the most generic class
 class Scalar(Serializable):
-    def publish(self, acc: Any, sigma: float = 1.5) -> float:
+    """
+    A Scalar is the most generic class, which keeps track of the current value, and a data-independent
+    min-val and max-val.
+    """
+
+    def publish(
+        self, acc: Any, user_key: VerifyKey, sigma: float = 1.5
+    ) -> TypeList[Any]:
+        """Adversarial accountant adds Gaussian noise and publishes the scalar's value"""
         # relative
         from .publish import publish
 
-        return publish([self], acc=acc, sigma=sigma)
+        return publish([self], acc=acc, sigma=sigma, user_key=user_key)
 
     @property
     def max_val(self) -> Optional[float]:
@@ -80,6 +94,8 @@ class Scalar(Serializable):
 
 @bind_protobuf
 class IntermediateScalar(Scalar):
+    """Serializable Scalar class that supports polynomial representations of data."""
+
     def __init__(self, poly: BasicSymbol, id: Optional[UID] = None) -> None:
         self.poly = poly
         self.id = id if id else UID()
@@ -109,6 +125,7 @@ class IntermediateScalar(Scalar):
 
     @property
     def input_scalars(self) -> TypeList[Union[PhiScalar, GammaScalar]]:
+        """Return a list of the PhiScalar & GammaScalar objects used to create this Scalar."""
         phi_gamma_scalars: TypeList[Union[PhiScalar, GammaScalar]] = list()
         for free_symbol in self.input_polys:
             ssid = str(free_symbol)
@@ -117,28 +134,30 @@ class IntermediateScalar(Scalar):
 
     @property
     def input_entities(self) -> TypeList[Entity]:
+        """Return a list of the entities involved in the creation of this scalar object."""
         return list(set([x.entity for x in self.input_scalars]))
 
     @property
     def input_polys(self) -> TypeSet[BasicSymbol]:
+        """Use a mapper object to return the unique set of polynomials"""
         mapper = GetSymbolsMapper()  # type: ignore
         mapper(self.poly)
         return mapper.free_symbols
 
     @property
-    def max_val(self) -> Optional[np.float64]:
+    def max_val(self) -> Optional[float]:
         if self.poly is not None:
             results = flatten_and_maximize_poly(-self.poly)
             if len(results) >= 1:
-                return -results[-1].fun
+                return float(-results[-1].fun)
         return None
 
     @property
-    def min_val(self) -> Optional[np.float64]:
+    def min_val(self) -> Optional[float]:
         if self.poly is not None:
             results = flatten_and_maximize_poly(self.poly)
             if len(results) >= 1:
-                return results[-1].fun
+                return float(results[-1].fun)
         return None
 
     @property
@@ -172,6 +191,12 @@ class IntermediateScalar(Scalar):
 
 @bind_protobuf
 class IntermediatePhiScalar(IntermediateScalar):
+    """
+    Serializable superclass for PhiScalars (Scalars with data from one entity).
+    This is where all the functionality of a PhiScalar is implemented,
+    such as searching for the max Lipshitz value.
+    """
+
     def __init__(
         self, poly: BasicSymbol, entity: Entity, id: Optional[UID] = None
     ) -> None:
@@ -180,37 +205,47 @@ class IntermediatePhiScalar(IntermediateScalar):
         self.entity = entity
 
     def max_lipschitz_wrt_entity(
-        self, *args: TypeTuple[Any, ...], **kwargs: Any
+        self,
+        entity: Entity,
     ) -> float:
-        return self.gamma.max_lipschitz_wrt_entity(*args, **kwargs)
+        """Perform the search for max Lipshitz with respect to the current PhiScalar's entity"""
+        return self.gamma.max_lipschitz_wrt_entity(entity=entity)
 
     @property
     def max_lipschitz(self) -> float:
+        """Perform the search for max Lipschitz"""
         return self.gamma.max_lipschitz
 
     def __mul__(self, other: IntermediateScalar) -> IntermediateScalar:
 
-        if isinstance(other, IntermediateGammaScalar):
+        if isinstance(
+            other, IntermediateGammaScalar
+        ):  # PhiScalar * GammaScalar = GammaScalar
             return self.gamma * other
 
-        if not isinstance(other, IntermediatePhiScalar):
+        if not isinstance(
+            other, IntermediatePhiScalar
+        ):  # PhiScalar * Int/Float/etc = PhiScalar
             return IntermediatePhiScalar(poly=self.poly * other, entity=self.entity)
 
-        # if other is referencing the same individual
+        # If the entities match, output is PhiScalar, otherwise it should be a GammaScalar
         if self.entity == other.entity:
             return IntermediatePhiScalar(
                 poly=self.poly * other.poly, entity=self.entity
             )
 
-        return self.gamma * other.gamma
+        return (
+            self.gamma * other.gamma
+        )  # Phi(E1) * Phi(E2) = Gamma(E1, E2) | E1,E2 = Entities
 
     def __add__(self, other: IntermediateScalar) -> IntermediateScalar:
 
-        if isinstance(other, IntermediateGammaScalar):
+        if isinstance(
+            other, IntermediateGammaScalar
+        ):  # PhiScalar + GammaScalar = GammaScalar
             return self.gamma + other
 
-        # if other is a public value
-        if not isinstance(other, IntermediatePhiScalar):
+        if not isinstance(other, IntermediatePhiScalar):  # PhiScalar + 5 = PhiScalar
             return IntermediatePhiScalar(poly=self.poly + other, entity=self.entity)
 
         # if other is referencing the same individual
@@ -218,7 +253,9 @@ class IntermediatePhiScalar(IntermediateScalar):
             return IntermediatePhiScalar(
                 poly=self.poly + other.poly, entity=self.entity
             )
-        return self.gamma + other.gamma
+        return (
+            self.gamma + other.gamma
+        )  # Phi(E1) * Phi(E2) = Gamma(E1, E2) | E1,E2 = Entities
 
     def __sub__(self, other: IntermediateScalar) -> IntermediateScalar:
 
@@ -235,17 +272,29 @@ class IntermediatePhiScalar(IntermediateScalar):
                 poly=self.poly - other.poly, entity=self.entity
             )
 
-        return self.gamma - other.gamma
+        return (
+            self.gamma - other.gamma
+        )  # Phi(E1) * Phi(E2) = Gamma(E1, E2) | E1,E2 = Entities
 
     @property
     def gamma(self) -> GammaScalar:
+        """Turn the PhiScalar into a GammaScalar, if another entity is involved"""
         if self._gamma is None:
-            self._gamma = GammaScalar(
-                min_val=self.min_val,
-                value=self.value,
-                max_val=self.max_val,
-                entity=self.entity,
-            )
+            if (
+                self.min_val is not None
+                and self.value is not None
+                and self.max_val is not None
+            ):
+                # TODO: Add prime to GammaScalar init
+                self._gamma = GammaScalar(
+                    min_val=self.min_val,
+                    value=self.value,
+                    max_val=self.max_val,
+                    entity=self.entity,
+                    prime=-1,  # TODO: shouldn't we be passing in some kind of prime here?
+                )
+            else:
+                raise Exception("GammaScalar requires min_val, value and max_val")
         return self._gamma
 
     def _object2proto(self) -> IntermediatePhiScalar_PB:
@@ -259,11 +308,11 @@ class IntermediatePhiScalar(IntermediateScalar):
     @staticmethod
     def _proto2object(proto: IntermediatePhiScalar_PB) -> "IntermediatePhiScalar":
         intermediate_phi_scalar = IntermediatePhiScalar(
+            id=deserialize(proto.id, from_proto=True),
             entity=deserialize(blob=proto.entity, from_proto=True),
             poly=None
             # poly=deserialize(proto.poly)
         )
-        intermediate_phi_scalar.id = deserialize(proto.id, from_proto=True)
         # intermediate_phi_scalar._gamma = deserialize(proto.gamma)
         return intermediate_phi_scalar
 
@@ -274,10 +323,12 @@ class IntermediatePhiScalar(IntermediateScalar):
 
 @bind_protobuf
 class BaseScalar(Scalar):
-    """A scalar which stores the root polynomial values. When this is a superclass of
+    """
+    A scalar which stores the root polynomial values. When this is a superclass of
     PhiScalar it represents data that was loaded in by a data owner. When this is a
-    superclass of GammaScalar this represents the node at which point data from multiple
-    entities was combined."""
+    superclass of GammaScalar this represents the NODE at which point data from multiple
+    entities was combined.
+    """
 
     def __init__(
         self,
@@ -312,10 +363,10 @@ class BaseScalar(Scalar):
         }
 
         for field in ["max_val", "min_val", "value"]:
-            if getattr(self, field):
+            if getattr(self, field) is not None:
                 kwargs[field] = getattr(self, field)
-
-        return BaseScalar_PB(**kwargs)
+        pb = BaseScalar_PB(**kwargs)
+        return pb
 
     @staticmethod
     def _proto2object(proto: BaseScalar_PB) -> BaseScalar:
@@ -334,7 +385,13 @@ class BaseScalar(Scalar):
 
 @bind_protobuf
 class PhiScalar(BaseScalar, IntermediatePhiScalar):
-    """A scalar over data from a single entity"""
+    """
+    Scalar with data from a single entity. Uses all the operations implemented in
+    IntermediatePhiScalar to let the user perform operations on the data. Uses the
+    BaseScalar class attributes are used to represent the data loaded in by a data owner.
+    Builds on both of the above by adding SSIDs to allow the object to be referenced in
+    string form and thus use the underlying polynomial libraries.
+    """
 
     def __init__(
         self,
@@ -357,7 +414,7 @@ class PhiScalar(BaseScalar, IntermediatePhiScalar):
         self.ssid = ssid
 
         IntermediatePhiScalar.__init__(
-            self, poly=var(self.ssid), entity=self.entity, id=id
+            self, poly=var(self.ssid), entity=self.entity, id=self.id
         )
 
         ssid2obj[self.ssid] = self
@@ -369,7 +426,7 @@ class PhiScalar(BaseScalar, IntermediatePhiScalar):
         }
 
         for field in ["max_val", "min_val", "value"]:
-            if getattr(self, field):
+            if getattr(self, field) is not None:
                 kwargs[field] = getattr(self, field)
 
         return PhiScalar_PB(**kwargs)
@@ -390,23 +447,28 @@ class PhiScalar(BaseScalar, IntermediatePhiScalar):
 
 
 class IntermediateGammaScalar(IntermediateScalar):
-    """ """
+    """
+    A Superclass for Scalars with data from multiple entities (GammaScalars).
+    Most importantly, this is where all of the operations (+/-/*/div) are implemented,
+    as well as the various methods with which to perform the search for the max Lipschitz.
+    """
 
-    def __add__(self, other) -> IntermediateGammaScalar:
+    # GammaScalar +/-/*/div other ---> GammaScalar
+    def __add__(self, other: Any) -> IntermediateGammaScalar:
         if isinstance(other, Scalar):
             if isinstance(other, IntermediatePhiScalar):
                 other = other.gamma
             return IntermediateGammaScalar(poly=self.poly + other.poly)
         return IntermediateGammaScalar(poly=self.poly + other)
 
-    def __sub__(self, other) -> IntermediateGammaScalar:
+    def __sub__(self, other: Any) -> IntermediateGammaScalar:
         if isinstance(other, Scalar):
             if isinstance(other, IntermediatePhiScalar):
                 other = other.gamma
             return IntermediateGammaScalar(poly=self.poly - other.poly)
         return IntermediateGammaScalar(poly=self.poly - other)
 
-    def __mul__(self, other) -> IntermediateGammaScalar:
+    def __mul__(self, other: Any) -> IntermediateGammaScalar:
         if isinstance(other, Scalar):
             if isinstance(other, IntermediatePhiScalar):
                 other = other.gamma
@@ -421,7 +483,7 @@ class IntermediateGammaScalar(IntermediateScalar):
 
         r2_diffs = np.array(
             [
-                GammaScalar(x.min_val, x.value, x.max_val, entity=x.entity).poly
+                GammaScalar(x.min_val, x.value, x.max_val, entity=x.entity).poly  # type: ignore
                 for x in self.input_scalars
             ]
         )
@@ -487,7 +549,7 @@ class IntermediateGammaScalar(IntermediateScalar):
             out = 0
             for index in [s2i[x.name] for x in r2_diffs]:
                 out += symbol_vector[index] ** 2
-            # theres a small bit of rounding error from this constraint - this should
+            # there's a small bit of rounding error from this constraint - this should
             # only be used as a double check or as a backup!!!
             return out ** 0.5 - 1 / 2 ** 16
 
@@ -514,7 +576,7 @@ class IntermediateGammaScalar(IntermediateScalar):
             data_dependent=data_dependent,
             force_all_searches=force_all_searches,
             try_hessian_shortcut=try_hessian_shortcut,
-        )
+        )  # type: ignore
 
     @property
     def max_lipschitz(self) -> float:
@@ -524,7 +586,7 @@ class IntermediateGammaScalar(IntermediateScalar):
         else:
             return -float(result.fun)
 
-    def max_lipschitz_wrt_entity(self, entity) -> float:
+    def max_lipschitz_wrt_entity(self, entity: Entity) -> float:
         result = self.max_lipschitz_via_jacobian(input_entity=entity)[0][-1]
         if isinstance(result, float):
             return -result
@@ -534,13 +596,18 @@ class IntermediateGammaScalar(IntermediateScalar):
 
 @bind_protobuf
 class GammaScalar(BaseScalar, IntermediateGammaScalar):
-    """A scalar over data from multiple entities"""
+    """
+    A scalar over data from multiple entities. Uses all the operators from IntermediateGammaScalar.
+    Uses BaseScalar to represent the node at which point data from multiple entities was combined.
+    Finally, adds SSIDs to allow the underlying polynomial libraries to work and run.
+    """
 
     def __init__(
         self,
         min_val: float,
         value: float,
         max_val: float,
+        prime: int,
         entity: Optional[Entity] = None,
         id: Optional[UID] = None,
         ssid: Optional[str] = None,
@@ -549,15 +616,16 @@ class GammaScalar(BaseScalar, IntermediateGammaScalar):
             min_val=min_val, value=value, max_val=max_val, entity=entity, id=id
         )
 
+        self.prime = prime
+
         # The scalar string identifier (SSID) - because we're using polynomial libraries
         # we need to be able to reference this object in string form. The library
         # doesn't know how to process things that aren't strings
         if ssid is None:
             ssid = "_" + self.id.no_dash + "_" + self.entity.id.no_dash
-
         self.ssid = ssid
 
-        IntermediateGammaScalar.__init__(self, poly=var(self.ssid), id=id)
+        IntermediateGammaScalar.__init__(self, poly=var(self.ssid), id=self.id)
 
         ssid2obj[self.ssid] = self
 
@@ -565,23 +633,25 @@ class GammaScalar(BaseScalar, IntermediateGammaScalar):
         kwargs = {
             "id": serialize(self.id, to_proto=True),
             "entity": serialize(self.entity, to_proto=True),
+            "prime": self.prime,
         }
 
         for field in ["max_val", "min_val", "value"]:
-            if getattr(self, field):
+            if getattr(self, field) is not None:
                 kwargs[field] = getattr(self, field)
+
         return GammaScalar_PB(**kwargs)
 
     @staticmethod
     def _proto2object(proto: GammaScalar_PB) -> GammaScalar:
-        scalar = GammaScalar(
+        return GammaScalar(
+            id=deserialize(proto.id, from_proto=True),
             min_val=proto.min_val if proto.HasField("min_val") else None,
             max_val=proto.max_val if proto.HasField("max_val") else None,
             value=proto.value if proto.HasField("value") else None,
             entity=deserialize(proto.entity),
+            prime=proto.prime,
         )
-        scalar.id = deserialize(proto.id, from_proto=True)
-        return scalar
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:

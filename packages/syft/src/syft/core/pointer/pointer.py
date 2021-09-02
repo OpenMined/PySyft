@@ -103,6 +103,7 @@ from ...logger import debug
 from ...logger import error
 from ...logger import warning
 from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
+from ...util import obj2pointer_type
 from ..common.pointer import AbstractPointer
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import bind_protobuf
@@ -136,6 +137,7 @@ class Pointer(AbstractPointer):
 
     path_and_name: str
     _pointable: bool = False
+    __name__ = "DefaultPointerDunderNamePleaseChangeMe"
 
     def __init__(
         self,
@@ -156,6 +158,9 @@ class Pointer(AbstractPointer):
         # when delete_obj is True and network call
         # has already been made
         self._exhausted = False
+
+    def __repr__(self) -> str:
+        return f"<{self.__name__} -> {self.client.name}:{self.id_at_location.no_dash}>"
 
     def _get(self, delete_obj: bool = True, verbose: bool = False) -> StorableObject:
         """Method to download a remote object from a pointer object if you have the right
@@ -246,6 +251,38 @@ class Pointer(AbstractPointer):
 
         return self
 
+    def publish(self, sigma: float = 1.5) -> Any:
+
+        # relative
+        # relative
+        from ...lib.python import Float
+        from ..node.common.node_service.publish.publish_service import (
+            PublishScalarsAction,
+        )
+
+        id_at_location = UID()
+
+        obj_msg = PublishScalarsAction(
+            id_at_location=id_at_location,
+            address=self.client.address,
+            publish_ids_at_location=[self.id_at_location],
+            sigma=sigma,
+        )
+
+        self.client.send_immediate_msg_without_reply(msg=obj_msg)
+        # create pointer which will point to float result
+
+        afloat = Float(0.0)
+        ptr_type = obj2pointer_type(obj=afloat)
+        ptr = ptr_type(
+            client=self.client,
+            id_at_location=id_at_location,
+        )
+        ptr._pointable = True
+
+        # return pointer
+        return ptr
+
     def get(
         self,
         request_block: bool = False,
@@ -309,6 +346,7 @@ class Pointer(AbstractPointer):
             the other public serialization methods if you wish to serialize an
             object.
         """
+
         return Pointer_PB(
             points_to_object_with_path=self.path_and_name,
             pointer_name=type(self).__name__,
@@ -318,6 +356,9 @@ class Pointer(AbstractPointer):
             description=self.description,
             object_type=self.object_type,
             attribute_name=getattr(self, "attribute_name", ""),
+            public_shape=sy.serialize(
+                getattr(self, "public_shape", None), to_bytes=True
+            ),
         )
 
     @staticmethod
@@ -340,15 +381,20 @@ class Pointer(AbstractPointer):
 
         points_to_type = sy.lib_ast.query(proto.points_to_object_with_path)
         pointer_type = getattr(points_to_type, proto.pointer_name)
+
         # WARNING: This is sending a serialized Address back to the constructor
         # which currently depends on a Client for send_immediate_msg_with_reply
-        return pointer_type(
+        out = pointer_type(
             id_at_location=_deserialize(blob=proto.id_at_location),
             client=_deserialize(blob=proto.location),
             tags=proto.tags,
             description=proto.description,
             object_type=proto.object_type,
         )
+
+        out.public_shape = sy.deserialize(proto.public_shape, from_bytes=True)
+
+        return out
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
@@ -444,8 +490,12 @@ class Pointer(AbstractPointer):
                 timeout_secs = 30  # default if not explicitly set
 
             # relative
-            from ..node.domain.service import RequestAnswerMessage
-            from ..node.domain.service import RequestStatus
+            from ..node.common.node_service.request_answer.request_answer_service import (
+                RequestAnswerMessage,
+            )
+            from ..node.common.node_service.request_receiver.request_receiver_messages import (
+                RequestStatus,
+            )
 
             output_string = "> Waiting for Blocking Request: "
             output_string += f"  {self.id_at_location}"

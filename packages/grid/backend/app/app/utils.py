@@ -6,7 +6,6 @@ from typing import Optional
 from nacl.signing import SigningKey
 
 # syft absolute
-# syft
 from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.io.address import Address
 from syft.core.node.common.action.exception_action import ExceptionMessage

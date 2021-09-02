@@ -1,5 +1,4 @@
 # stdlib
-import os
 import time
 
 # third party
@@ -11,8 +10,6 @@ import syft as sy
 from syft.core.tensor.smpc.mpc_tensor import MPCTensor
 
 sy.logger.remove()
-
-here = os.path.dirname(__file__)
 
 PORT = 9081
 

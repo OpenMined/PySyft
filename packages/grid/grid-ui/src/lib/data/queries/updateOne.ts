@@ -8,6 +8,6 @@ export type UpdateOneArgs<T> = {
 
 export async function updateOne<T>({data, id, queryKeys}: UpdateOneArgs<T>): Promise<T> {
   const [route] = queryKeys
-  const res = await api.put<T>(`${route}/${id}`, data)
+  const res = await api.patch<T>(`${route}/${id}`, data)
   return res.data
 }

@@ -2,8 +2,8 @@
 import numpy as np
 
 # relative
-from ..passthrough import inputs2child
 from ..util import implements
+from ..util import inputs2child
 from .tensor import AutogradTensor
 
 
@@ -29,4 +29,4 @@ def expand_dims(*args: AutogradTensor, **kwargs: AutogradTensor) -> AutogradTens
 
 @implements(AutogradTensor, np.multiply)
 def multiply(a: AutogradTensor, b: AutogradTensor) -> AutogradTensor:
-    return a * b
+    return AutogradTensor(a * b)

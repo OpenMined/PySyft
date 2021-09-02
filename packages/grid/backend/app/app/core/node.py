@@ -29,12 +29,13 @@ else:
     )
 
 node.loud_print()
+
 Base.metadata.create_all(get_db_engine())
 
 if len(node.setup):  # Check if setup was defined previously
     node.name = node.setup.node_name
 
-
+# Moving this to get called WITHIN Domain and Network so that they can operate in standalone mode
 if not len(node.roles):  # Check if roles were registered previously
     seed_db(get_db_session())
 

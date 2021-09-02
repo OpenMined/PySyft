@@ -31,12 +31,21 @@ export function UserList({users, me}: UsersAsProp & {me: Me}) {
 }
 
 function UserInfoTitle() {
-  const {user, role} = useContext(UserListContext)
+  const {user, role, me} = useContext(UserListContext)
   return (
     <div>
       <div className="flex space-x-2 truncate">
         <p className="font-medium truncate">{user.name}</p>
         <Badge bgColor={entityColors.roles}>{role.name}</Badge>
+        {/* Only DOs and DCOs can see the budget */}
+        {(user.id === me.id || me.permissions.canTriageRequests) && (
+          <Badge className="lowercase">
+            {user.budget ?? 0} {'\u03B5'}
+          </Badge>
+        )}
+        <Badge className="lowercase" bgColor="pink" textColor="gray">
+          {user.budgetSpent ?? 0} {'\u03B5'}
+        </Badge>
       </div>
       <p className="text-sm text-gray-500">{user.email}</p>
     </div>
@@ -98,7 +107,7 @@ function ChangeRole() {
   const queryClient = useQueryClient()
   const invalidate = () => queryClient.invalidateQueries(cacheKeys.users)
   const {data: allRoles} = useQuery<Role[]>(cacheKeys.roles)
-  const mutation = useMutation(() => api.put(`${cacheKeys.users}/${user.id}/role`, {role: newRole}), {
+  const mutation = useMutation(() => api.patch(`${cacheKeys.users}/${user.id}`, {role: newRole}), {
     onSuccess: invalidate
   })
 
@@ -108,7 +117,7 @@ function ChangeRole() {
         id="user-roles"
         label="Change user role"
         container="flex-grow w-full"
-        options={allRoles.map(role => ({value: String(role.id), label: role.name}))}
+        options={allRoles.map(role => ({value: String(role.name), label: role.name}))}
         className="overflow-hidden truncate"
         value={newRole}
         onChange={e => chooseNewRole(e.target.value)}
@@ -129,7 +138,7 @@ function ChangePassword() {
   const [password, setPassword] = useState<string>('')
   const queryClient = useQueryClient()
   const invalidate = () => queryClient.invalidateQueries(cacheKeys.users)
-  const mutation = useMutation(() => api.put(`${cacheKeys.users}/${user.id}/password`, {password}), {
+  const mutation = useMutation(() => api.patch(`${cacheKeys.users}/${user.id}`, {password}), {
     onSuccess: invalidate
   })
 
@@ -160,7 +169,7 @@ function ChangeEmail() {
   const [email, setEmail] = useState<string>(user.email)
   const queryClient = useQueryClient()
   const invalidate = () => queryClient.invalidateQueries(cacheKeys.users)
-  const mutation = useMutation(() => api.put(`${cacheKeys.users}/${user.id}/email`, {email}), {onSuccess: invalidate})
+  const mutation = useMutation(() => api.patch(`${cacheKeys.users}/${user.id}`, {email}), {onSuccess: invalidate})
 
   return (
     <div className="flex max-w-xl space-x-4">
@@ -170,6 +179,38 @@ function ChangeEmail() {
         container="flex-grow w-full"
         onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
         value={email}
+      />
+      <NormalButton
+        className="flex-shrink-0 w-24 mt-auto"
+        disabled={mutation.isLoading}
+        onClick={() => mutation.mutate()}
+        isLoading={mutation.isLoading}>
+        Submit
+      </NormalButton>
+    </div>
+  )
+}
+
+function ChangeEpsilon() {
+  const {user} = useContext(UserListContext)
+  const [budget, setBudget] = useState<string>(user.budget)
+  const queryClient = useQueryClient()
+  const invalidate = () => queryClient.invalidateQueries(cacheKeys.users)
+  const mutation = useMutation(() => api.patch(`${cacheKeys.users}/${user.id}`, {budget: parseFloat(budget)}), {
+    onSuccess: invalidate
+  })
+
+  return (
+    <div className="flex max-w-xl space-x-4">
+      <Input
+        id={`user-epsilon-${user.budget}`}
+        label="Change user privacy budget limit"
+        container="flex-grow w-full"
+        onChange={(e: ChangeEvent<HTMLInputElement>) => setBudget(e.target.value)}
+        value={budget}
+        type="number"
+        name="budget"
+        step="0.1"
       />
       <NormalButton
         className="flex-shrink-0 w-24 mt-auto"
@@ -215,6 +256,7 @@ function UserInfoPanel() {
         <>
           <ChangeEmail />
           <ChangePassword />
+          <ChangeEpsilon />
         </>
       )}
       {user.id !== 1 && me.permissions.canCreateUsers && <DeleteUser />}
@@ -227,6 +269,7 @@ interface UserSignUp {
   email: string
   password: string
   role: string
+  budget: number | string
 }
 
 export function UserCreate({onClose}: {onClose: () => void}) {
@@ -250,6 +293,7 @@ export function UserCreate({onClose}: {onClose: () => void}) {
   })
 
   const onSubmit = (values: UserSignUp) => {
+    values.budget = parseFloat(String(values.budget))
     mutation.mutate(values)
   }
 
@@ -275,6 +319,17 @@ export function UserCreate({onClose}: {onClose: () => void}) {
             name="password"
             ref={register}
             error={errors.password}
+            required
+          />
+          <Input
+            id="create-user-budget"
+            type="number"
+            label="Privacy Budget"
+            name="budget"
+            step="0.1"
+            ref={register}
+            error={errors.budget}
+            defaultValue="5.0"
             required
           />
           <Select

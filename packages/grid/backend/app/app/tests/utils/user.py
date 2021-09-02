@@ -14,6 +14,13 @@ def create_user(
     password: Optional[str] = random_lower_string(),
     name: Optional[str] = random_lower_string(),
     role: Optional[str] = "Administrator",
+    budget: Optional[float] = 0.0,
 ) -> UserCreate:
-    user = {"email": email, "password": password, "name": name, "role": role}
+    user = {
+        "email": email,
+        "password": password,
+        "name": name,
+        "role": role,
+        "budget": budget,
+    }
     return UserCreate(**user)

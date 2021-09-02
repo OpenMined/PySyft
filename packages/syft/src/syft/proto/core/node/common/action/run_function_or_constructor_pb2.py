@@ -18,9 +18,6 @@ from syft.proto.core.common import (
     common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
 )
 from syft.proto.core.io import address_pb2 as proto_dot_core_dot_io_dot_address__pb2
-from syft.proto.core.pointer import (
-    pointer_pb2 as proto_dot_core_dot_pointer_dot_pointer__pb2,
-)
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/core/node/common/action/run_function_or_constructor.proto",
@@ -28,10 +25,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n?proto/core/node/common/action/run_function_or_constructor.proto\x12\x1csyft.core.node.common.action\x1a%proto/core/common/common_object.proto\x1a proto/core/pointer/pointer.proto\x1a\x1bproto/core/io/address.proto"\x8e\x03\n\x1eRunFunctionOrConstructorAction\x12\x0c\n\x04path\x18\x01 \x01(\t\x12(\n\x04\x61rgs\x18\x02 \x03(\x0b\x32\x1a.syft.core.pointer.Pointer\x12X\n\x06kwargs\x18\x03 \x03(\x0b\x32H.syft.core.node.common.action.RunFunctionOrConstructorAction.KwargsEntry\x12-\n\x0eid_at_location\x18\x04 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x05 \x01(\x0b\x32\x15.syft.core.io.Address\x12%\n\x06msg_id\x18\x06 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x11\n\tis_static\x18\x07 \x01(\x08\x1aI\n\x0bKwargsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12)\n\x05value\x18\x02 \x01(\x0b\x32\x1a.syft.core.pointer.Pointer:\x02\x38\x01\x62\x06proto3',
+    serialized_pb=b'\n?proto/core/node/common/action/run_function_or_constructor.proto\x12\x1csyft.core.node.common.action\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\xd6\x02\n\x1eRunFunctionOrConstructorAction\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\x0c\n\x04\x61rgs\x18\x02 \x03(\x0c\x12X\n\x06kwargs\x18\x03 \x03(\x0b\x32H.syft.core.node.common.action.RunFunctionOrConstructorAction.KwargsEntry\x12-\n\x0eid_at_location\x18\x04 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x05 \x01(\x0b\x32\x15.syft.core.io.Address\x12%\n\x06msg_id\x18\x06 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x11\n\tis_static\x18\x07 \x01(\x08\x1a-\n\x0bKwargsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x0c:\x02\x38\x01\x62\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
-        proto_dot_core_dot_pointer_dot_pointer__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
     ],
 )
@@ -69,11 +65,11 @@ _RUNFUNCTIONORCONSTRUCTORACTION_KWARGSENTRY = _descriptor.Descriptor(
             full_name="syft.core.node.common.action.RunFunctionOrConstructorAction.KwargsEntry.value",
             index=1,
             number=2,
-            type=11,
-            cpp_type=10,
+            type=12,
+            cpp_type=9,
             label=1,
             has_default_value=False,
-            default_value=None,
+            default_value=b"",
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -92,8 +88,8 @@ _RUNFUNCTIONORCONSTRUCTORACTION_KWARGSENTRY = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=525,
-    serialized_end=598,
+    serialized_start=463,
+    serialized_end=508,
 )
 
 _RUNFUNCTIONORCONSTRUCTORACTION = _descriptor.Descriptor(
@@ -128,8 +124,8 @@ _RUNFUNCTIONORCONSTRUCTORACTION = _descriptor.Descriptor(
             full_name="syft.core.node.common.action.RunFunctionOrConstructorAction.args",
             index=1,
             number=2,
-            type=11,
-            cpp_type=10,
+            type=12,
+            cpp_type=9,
             label=3,
             has_default_value=False,
             default_value=[],
@@ -248,19 +244,13 @@ _RUNFUNCTIONORCONSTRUCTORACTION = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=200,
-    serialized_end=598,
+    serialized_start=166,
+    serialized_end=508,
 )
 
-_RUNFUNCTIONORCONSTRUCTORACTION_KWARGSENTRY.fields_by_name[
-    "value"
-].message_type = proto_dot_core_dot_pointer_dot_pointer__pb2._POINTER
 _RUNFUNCTIONORCONSTRUCTORACTION_KWARGSENTRY.containing_type = (
     _RUNFUNCTIONORCONSTRUCTORACTION
 )
-_RUNFUNCTIONORCONSTRUCTORACTION.fields_by_name[
-    "args"
-].message_type = proto_dot_core_dot_pointer_dot_pointer__pb2._POINTER
 _RUNFUNCTIONORCONSTRUCTORACTION.fields_by_name[
     "kwargs"
 ].message_type = _RUNFUNCTIONORCONSTRUCTORACTION_KWARGSENTRY

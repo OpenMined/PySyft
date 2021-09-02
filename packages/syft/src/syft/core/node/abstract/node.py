@@ -29,6 +29,7 @@ class AbstractNode(Address):
     guest_verify_key_registry: Set[VerifyKey]
     admin_verify_key_registry: Set[VerifyKey]
     cpl_ofcr_verify_key_registry: Set[VerifyKey]
+    acc: Optional[Any]
 
     # TODO: remove hacky in_memory_client_registry
     in_memory_client_registry: Dict[Any, Any]

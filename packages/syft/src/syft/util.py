@@ -117,6 +117,7 @@ def index_syft_by_module_name(fully_qualified_name: str) -> object:
         and attr_list[1] != "lib"
         and attr_list[1] != "grid"
         and attr_list[1] != "wrappers"
+        and attr_list[1] != "proxy"
     ):
         raise ReferenceError(f"Reference don't match: {attr_list[1]}")
 
