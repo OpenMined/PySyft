@@ -326,9 +326,6 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         self, other: Union[Type[PassthroughTensor], np.ndarray]
     ) -> PassthroughTensor:
         return self.manual_dot(other)
-        # if isinstance(other, self.__class__):
-        #     return self.__class__(self.child.dot(other.child))
-        # return self.__class__(self.child.dot(other))
 
     def reshape(self, *dims) -> PassthroughTensor:
         return self.__class__(self.child.reshape(*dims))

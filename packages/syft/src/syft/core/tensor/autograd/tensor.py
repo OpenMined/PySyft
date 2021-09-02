@@ -2,10 +2,11 @@
 from __future__ import annotations
 
 # stdlib
-from typing import Any, Tuple
+from typing import Any
 from typing import Dict as TypeDict
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Type
 from typing import Union
 import uuid
