@@ -1,11 +1,9 @@
 # stdlib
+from typing import Tuple
 from uuid import UUID
 
 # third party
 from numpy import ndarray
-
-# syft absolute
-from syft.lib.python import Tuple
 
 # relative
 from ..tensor import AutogradTensor
