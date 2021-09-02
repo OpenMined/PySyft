@@ -300,7 +300,7 @@ def smpc_gt(
                 self_id=self_id,
                 args_id=[other_id],
                 kwargs_id={},
-                ranks_to_run_actions=list(range(nr_parties)),
+                ranks_to_run_action=list(range(nr_parties)),
                 result_id=result_id,
                 address=node.address,
             )
@@ -308,8 +308,15 @@ def smpc_gt(
     return actions
 
 
-def bit_decomposition(*args, **kwargs):
-    print("Helllo")
+def bit_decomposition(_self, other_share):
+    zero_share = ShareTensor.generate_przs(
+        value=None,
+        shape=_self.shape,
+        rank=_self.rank,
+        nr_parties=_self.nr_parties,
+        generator_przs=_self.generator_przs,
+    )
+    print(zero_share)
 
 
 # Given an SMPC Action map it to an action constructor

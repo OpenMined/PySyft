@@ -13,5 +13,6 @@ message ShareTensor {
 
   uint32 rank = 3;
   uint32 nr_parties = 4;
-  map<string, string> parties = 5;
+  int32 seed_shares = 5;
+  map<string, string> parties = 6;
 }

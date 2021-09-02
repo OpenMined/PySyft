@@ -15,10 +15,10 @@ _sym_db = _symbol_database.Default()
 
 # syft absolute
 from syft.proto.core.tensor import (
-    share_tensor_pb2 as proto_dot_core_dot_tensor_dot_share__tensor__pb2,
-)
-from syft.proto.core.tensor import (
     tensor_pb2 as proto_dot_core_dot_tensor_dot_tensor__pb2,
+)
+from syft.proto.core.tensor.smpc import (
+    share_tensor_pb2 as proto_dot_core_dot_tensor_dot_smpc_dot_share__tensor__pb2,
 )
 from syft.proto.lib.numpy import array_pb2 as proto_dot_lib_dot_numpy_dot_array__pb2
 
@@ -28,10 +28,10 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n.proto/core/tensor/fixed_precision_tensor.proto\x12\x10syft.core.tensor\x1a\x1eproto/core/tensor/tensor.proto\x1a$proto/core/tensor/share_tensor.proto\x1a\x1bproto/lib/numpy/array.proto"\xc8\x01\n\x14\x46ixedPrecisionTensor\x12*\n\x06tensor\x18\x01 \x01(\x0b\x32\x18.syft.core.tensor.TensorH\x00\x12.\n\x05share\x18\x02 \x01(\x0b\x32\x1d.syft.core.tensor.ShareTensorH\x00\x12+\n\x05\x61rray\x18\x03 \x01(\x0b\x32\x1a.syft.lib.numpy.NumpyProtoH\x00\x12\x0c\n\x04\x62\x61se\x18\x04 \x01(\r\x12\x11\n\tprecision\x18\x05 \x01(\rB\x06\n\x04\x64\x61tab\x06proto3',
+    serialized_pb=b'\n.proto/core/tensor/fixed_precision_tensor.proto\x12\x10syft.core.tensor\x1a\x1eproto/core/tensor/tensor.proto\x1a)proto/core/tensor/smpc/share_tensor.proto\x1a\x1bproto/lib/numpy/array.proto"\xc8\x01\n\x14\x46ixedPrecisionTensor\x12*\n\x06tensor\x18\x01 \x01(\x0b\x32\x18.syft.core.tensor.TensorH\x00\x12.\n\x05share\x18\x02 \x01(\x0b\x32\x1d.syft.core.tensor.ShareTensorH\x00\x12+\n\x05\x61rray\x18\x03 \x01(\x0b\x32\x1a.syft.lib.numpy.NumpyProtoH\x00\x12\x0c\n\x04\x62\x61se\x18\x04 \x01(\r\x12\x11\n\tprecision\x18\x05 \x01(\rB\x06\n\x04\x64\x61tab\x06proto3',
     dependencies=[
         proto_dot_core_dot_tensor_dot_tensor__pb2.DESCRIPTOR,
-        proto_dot_core_dot_tensor_dot_share__tensor__pb2.DESCRIPTOR,
+        proto_dot_core_dot_tensor_dot_smpc_dot_share__tensor__pb2.DESCRIPTOR,
         proto_dot_lib_dot_numpy_dot_array__pb2.DESCRIPTOR,
     ],
 )
@@ -158,8 +158,8 @@ _FIXEDPRECISIONTENSOR = _descriptor.Descriptor(
             fields=[],
         ),
     ],
-    serialized_start=168,
-    serialized_end=368,
+    serialized_start=173,
+    serialized_end=373,
 )
 
 _FIXEDPRECISIONTENSOR.fields_by_name[
@@ -167,7 +167,7 @@ _FIXEDPRECISIONTENSOR.fields_by_name[
 ].message_type = proto_dot_core_dot_tensor_dot_tensor__pb2._TENSOR
 _FIXEDPRECISIONTENSOR.fields_by_name[
     "share"
-].message_type = proto_dot_core_dot_tensor_dot_share__tensor__pb2._SHARETENSOR
+].message_type = proto_dot_core_dot_tensor_dot_smpc_dot_share__tensor__pb2._SHARETENSOR
 _FIXEDPRECISIONTENSOR.fields_by_name[
     "array"
 ].message_type = proto_dot_lib_dot_numpy_dot_array__pb2._NUMPYPROTO

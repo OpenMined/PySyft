@@ -3,7 +3,7 @@ syntax = "proto3";
 package syft.core.tensor;
 
 import "proto/core/tensor/tensor.proto";
-import "proto/core/tensor/share_tensor.proto";
+import "proto/core/tensor/smpc/share_tensor.proto";
 import "proto/lib/numpy/array.proto";
 
 message FixedPrecisionTensor {
