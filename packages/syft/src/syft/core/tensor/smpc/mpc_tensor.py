@@ -64,6 +64,9 @@ class MPCTensor(PassthroughTensor):
 
         self.seed_shares = seed_shares
 
+        # TODO: We can get this from the the secret if the secret is local
+        # TODO: https://app.clubhouse.io/openmined/story/1128/tech-debt-for-adp-smpc-demo?stories_sort_by\
+        #  =priority&stories_group_by=WORKFLOW_STATE
         if shape is None:
             raise ValueError("Shape of the secret should be known")
 
