@@ -136,7 +136,7 @@ services:
       context: ./frontend
       dockerfile: frontend.dockerfile
       args:
-        FRONTEND_ENV: development
+        FRONTEND_ENV: ${FRONTEND_ENV-development}
         NODE_TYPE: ${NODE_TYPE?Variable not set}
     labels:
       - traefik.enable=true

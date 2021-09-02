@@ -4,14 +4,6 @@ RUN \
   apt-get update && \
   apt-get install -y --no-install-recommends curl wget 
 
-# copy start scripts and gunicorn conf
-COPY ./docker-scripts/start.sh /start.sh
-COPY ./docker-scripts/gunicorn_conf.py /gunicorn_conf.py
-COPY ./docker-scripts/start-reload.sh /start-reload.sh
-
-RUN chmod +x /start.sh
-RUN chmod +x /start-reload.sh
-
 COPY ./ /app/
 
 WORKDIR /app/
@@ -37,21 +29,24 @@ FROM python:3.9.6-slim as backend
 ENV PYTHONPATH=/app
 ENV PATH=/root/.local/bin:$PATH
 
+# copy start scripts and gunicorn conf
+COPY ./docker-scripts/start.sh /start.sh
+COPY ./docker-scripts/gunicorn_conf.py /gunicorn_conf.py
+COPY ./docker-scripts/start-reload.sh /start-reload.sh
+
+RUN chmod +x /start.sh
+RUN chmod +x /start-reload.sh
+
 COPY --from=build /app /app
 COPY --from=build /root/.local /root/.local
 COPY --from=build /usr/local/bin/waitforit /usr/local/bin/waitforit
+
+WORKDIR /app/
 
 # Celery worker
-FROM python:3.9.6-slim as celery-worker
-ENV PYTHONPATH=/app
-ENV PATH=/root/.local/bin:$PATH
-
+FROM backend as celery-worker
 ENV C_FORCE_ROOT=1
 RUN pip install --user watchdog pyyaml argh
-
-COPY --from=build /app /app
-COPY --from=build /root/.local /root/.local
-COPY --from=build /usr/local/bin/waitforit /usr/local/bin/waitforit
 
 COPY ./worker-start.sh /worker-start.sh
 RUN chmod +x /worker-start.sh
