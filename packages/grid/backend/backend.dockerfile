@@ -2,7 +2,7 @@ FROM python:3.9.6-slim as build
 
 RUN \
   apt-get update && \
-  apt-get install -y --no-install-recommends curl wget 
+  apt-get install -y --no-install-recommends curl wget
 
 COPY ./ /app/
 
