@@ -27,11 +27,6 @@ RUN pip install --user -r requirements.txt --no-cache-dir
 ARG INSTALL_JUPYTER=false
 RUN bash -c "if [ $INSTALL_JUPYTER == 'true' ] ; then pip install --user jupyterlab ; fi"
 
-# allow container to wait for other services
-ENV WAITFORIT_VERSION="v2.4.1"
-RUN curl -o /usr/local/bin/waitforit -sSL https://github.com/maxcnunes/waitforit/releases/download/$WAITFORIT_VERSION/waitforit-linux_amd64 && \
-    chmod +x /usr/local/bin/waitforit
-
 # Backend
 FROM python:3.9.6-slim as backend
 ENV PYTHONPATH=/app
@@ -40,6 +35,10 @@ ENV PATH=/root/.local/bin:$PATH
 COPY --from=build /app /app
 COPY --from=build /root/.local /root/.local
 COPY --from=build /usr/local/bin/waitforit /usr/local/bin/waitforit
+
+ENV WAITFORIT_VERSION="v2.4.1"
+RUN curl -o /usr/local/bin/waitforit -sSL https://github.com/maxcnunes/waitforit/releases/download/$WAITFORIT_VERSION/waitforit-linux_amd64 && \
+    chmod +x /usr/local/bin/waitforit
 
 # Celery worker
 FROM python:3.9.6-slim as celery-worker
@@ -52,6 +51,10 @@ RUN pip install --user watchdog pyyaml argh
 COPY --from=build /app /app
 COPY --from=build /root/.local /root/.local
 COPY --from=build /usr/local/bin/waitforit /usr/local/bin/waitforit
+
+ENV WAITFORIT_VERSION="v2.4.1"
+RUN curl -o /usr/local/bin/waitforit -sSL https://github.com/maxcnunes/waitforit/releases/download/$WAITFORIT_VERSION/waitforit-linux_amd64 && \
+    chmod +x /usr/local/bin/waitforit
 
 COPY ./worker-start.sh /worker-start.sh
 RUN chmod +x /worker-start.sh
