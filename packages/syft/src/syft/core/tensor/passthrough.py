@@ -46,8 +46,8 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         return len(self.child)
 
     @property
-    def shape(self) -> Union[TypeTuple[Any, ...], List[Any]]:
-        return self.child.shape
+    def shape(self) -> TypeTuple[Any, ...]:
+        return tuple(self.child.shape)
 
     # @property
     # def shape(self) -> Union[TypeTuple[Any, ...], List[Any]]:
