@@ -373,55 +373,46 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             f"{self.__class__.__name__}(entity={self.entity.name}, child={self.child})"
         )
 
+    # Check for shape1 = (1,s), and shape2 = (,s) --> as an example
     def __eq__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
-
-        if is_acceptable_simple_type(other) or self.child.shape == other.child.shape:  # type: ignore
-            # if the tensor being compared is also private
-            if isinstance(other, SingleEntityPhiTensor):
-                if self.entity != other.entity:
-                    # this should return a GammaTensor
-                    return NotImplemented
+        if is_acceptable_simple_type(other):
+            data = self.child == other  # Need to check if shapes are broadcastable!!
+        elif isinstance(other, SingleEntityPhiTensor):
+            if self.entity != other.entity:
+                raise NotImplementedError(
+                    "Operation not implemented yet for different entities"
+                )
+            else:
                 data = self.child == other.child
-            else:
-                # this can still fail, if shape1 = (1,s), and shape2 = (,s) --> as an example
-                data = self.child == other
-            min_vals = self.min_vals * 0.0
-            max_vals = self.max_vals * 0.0 + 1.0
-            entity = self.entity
-            return SingleEntityPhiTensor(
-                child=data,
-                entity=entity,
-                min_vals=min_vals,
-                max_vals=max_vals,
-                scalar_manager=self.scalar_manager,
-            )
+        elif isinstance(other, PassthroughTensor):
+            if (
+                self.child.shape == other.child.shape
+            ):  # also check if shapes are broadcastable
+                data = self.child == other.child
         else:
             raise Exception(
-                f"Tensor shapes do not match for __eq__: {len(self.child)} != {len(other.child)}"  # type: ignore
+                f"Tensor shapes do not match for __eq__: {self.child} != len{other}"
             )
+        return SingleEntityPhiTensor(
+            child=data,
+            entity=self.entity,
+            min_vals=self.min_vals * 0.0,
+            max_vals=self.max_vals * 0.0 + 1.0,
+            scalar_manager=self.scalar_manager,
+        )
 
-    def logical_and(self, other: SupportedChainType) -> SingleEntityPhiTensor:
-        if is_acceptable_simple_type(other) or self.child.shape == other.child.shape:
-            if isinstance(other, SingleEntityPhiTensor):
-                if self.entity != other.entity:
-                    return NotImplemented
-                data = self.child and other.child
-            else:
-                data = self.child and other
-            min_vals = self.min_vals * 0.0
-            max_vals = self.max_vals * 0.0 + 1.0
-            entity = self.entity
-            return SingleEntityPhiTensor(
-                child=data,
-                entity=entity,
-                min_vals=min_vals,
-                max_vals=max_vals,
-                scalar_manager=self.scalar_manager,
-            )
-        else:
-            raise Exception(
-                f"Tensor shapes do not match for __eq__: {len(self.child)} != {len(other.child)}"
-            )
+    def __ne__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
+        # TODO: Check if exceptions are raised properly
+        # Make use of the equal operator we just implemented, and invert the result
+        opposite_result = self.__eq__(other)
+
+        return SingleEntityPhiTensor(
+            child=np.invert(opposite_result.child),
+            entity=opposite_result.entity,
+            min_vals=opposite_result.min_vals,
+            max_vals=opposite_result.max_vals,
+            scalar_manager=opposite_result.scalar_manager
+        )
 
     def __abs__(self) -> SingleEntityPhiTensor:
 

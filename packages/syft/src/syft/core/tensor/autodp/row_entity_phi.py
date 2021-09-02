@@ -100,6 +100,18 @@ class RowEntityPhiTensor(PassthroughTensor, RecursiveSerde):
                 f"Tensor dims do not match for __eq__: {len(self.child)} != {len(other.child)}"  # type: ignore
             )
 
+    def __ne__(self, other: Any) -> RowEntityPhiTensor:
+        opposite_result = self.__eq__(other)
+
+        # Normal inversion on (opposite_result.child) might not work on nested lists
+        result = []
+        for row in opposite_result.child:
+            result.append(np.invert(row))
+
+        return RowEntityPhiTensor(
+            rows=result
+        )
+
     def __add__(  # type: ignore
         self, other: Union[RowEntityPhiTensor, AcceptableSimpleType]
     ) -> RowEntityPhiTensor:
