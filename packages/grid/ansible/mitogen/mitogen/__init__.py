@@ -117,7 +117,7 @@ def main(log_level="INFO", profiling=_default_profiling):
             mitogen.master.Router.profiling = profiling
         mitogen.utils.log_to_file(level=log_level)
         return mitogen.core._profile_hook(
-            "app.main",
+            "grid.main",
             mitogen.utils.run_with_router,
             func,
         )
