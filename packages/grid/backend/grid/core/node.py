@@ -7,9 +7,7 @@ from nacl.signing import SigningKey
 # syft absolute
 from syft import Domain  # type: ignore
 from syft import Network  # type: ignore
-from syft import logger  # noqa F401 # type: ignore
 from syft.core.node.common.client import Client
-from syft.core.node.common.node_table import Base
 from syft.core.node.common.node_table.utils import seed_db
 
 # grid absolute
@@ -30,8 +28,6 @@ else:
     )
 
 node.loud_print()
-
-Base.metadata.create_all(get_db_engine())
 
 if len(node.setup):  # Check if setup was defined previously
     node.name = node.setup.node_name
