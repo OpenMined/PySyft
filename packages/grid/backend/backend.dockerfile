@@ -11,7 +11,7 @@ WORKDIR /app/
 # Allow installing dev dependencies to run tests
 ARG INSTALL_DEV=false
 RUN pip install --user "uvicorn[standard]" gunicorn
-RUN pip install --user -r requirements.txt --no-cache-dir
+RUN pip install --user -r requirements.txt
 
 # For development, Jupyter remote kernel, Hydrogen
 # Using inside the container:
@@ -22,7 +22,7 @@ RUN bash -c "if [ $INSTALL_JUPYTER == 'true' ] ; then pip install --user jupyter
 # allow container to wait for other services
 ENV WAITFORIT_VERSION="v2.4.1"
 RUN curl -o /usr/local/bin/waitforit -sSL https://github.com/maxcnunes/waitforit/releases/download/$WAITFORIT_VERSION/waitforit-linux_amd64 && \
-    chmod +x /usr/local/bin/waitforit
+  chmod +x /usr/local/bin/waitforit
 
 # Backend
 FROM python:3.9.6-slim as backend

@@ -15,7 +15,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 WORKDIR /app
 COPY --from=init-stage /app .
-CMD ["/usr/local/bin/node", "--max_old_space_size=4096", "/app/node_modules/.bin/next", "dev", "-p", "80"]
+CMD ["/usr/local/bin/node", "--max-old-space-size=4096", "/app/node_modules/.bin/next", "dev", "-p", "80"]
 
 FROM init-stage as build-stage
 
