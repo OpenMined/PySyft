@@ -7,11 +7,9 @@ import os
 
 # third party
 from alembic import context  # type: ignore
+from grid.db.base import Base
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
-
-# syft absolute
-from syft.core.node.common.node_table import Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
