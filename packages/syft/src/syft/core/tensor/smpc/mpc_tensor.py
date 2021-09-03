@@ -263,7 +263,7 @@ class MPCTensor(PassthroughTensor):
 
         local_shares = []
         for share in self.child:
-            res = share.get()
+            res = share.get_copy()
             res = convert_child_numpy_type(res, np.int32)
             local_shares.append(res)
 
