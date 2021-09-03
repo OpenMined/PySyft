@@ -3,6 +3,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Tuple
 
 # third party
 import numpy as np
@@ -26,7 +27,7 @@ def mean(
 
 
 @implements(Tensor, np.max)
-def npmax(*args: List[Any], **kwargs: Dict[Any, Any]) -> Tensor:
+def npmax(*args: Tuple[Any, ...], **kwargs: Dict[Any, Any]) -> Tensor:
     args, kwargs = inputs2child(*args, **kwargs)  # type: ignore
     return np.max(*args, **kwargs)
 

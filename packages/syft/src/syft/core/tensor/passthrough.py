@@ -46,8 +46,8 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         return len(self.child)
 
     @property
-    def shape(self) -> Union[TypeTuple[Any, ...], List[Any]]:
-        return self.child.shape
+    def shape(self) -> TypeTuple[Any, ...]:
+        return tuple(self.child.shape)
 
     # @property
     # def shape(self) -> Union[TypeTuple[Any, ...], List[Any]]:
@@ -326,9 +326,6 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         self, other: Union[Type[PassthroughTensor], np.ndarray]
     ) -> PassthroughTensor:
         return self.manual_dot(other)
-        # if isinstance(other, self.__class__):
-        #     return self.__class__(self.child.dot(other.child))
-        # return self.__class__(self.child.dot(other))
 
     def reshape(self, *dims) -> PassthroughTensor:
         return self.__class__(self.child.reshape(*dims))
@@ -338,13 +335,6 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     ) -> PassthroughTensor:
         return self.__class__(self.child.repeat(repeats, axis))
 
-    # TODO: why does this version of repeat fail but the *args **kwargs one works?
-    # def repeat(
-    #     self, repeats: Union[int, TypeTuple[int, ...]], axis: Optional[int] = None
-    # ) -> PassthroughTensor:
-    #     return self.__class__(self.child.repeat(repeats, axis=axis))
-
-    # numpy.resize(a, new_shape)
     def resize(self, new_shape: Union[int, TypeTuple[int, ...]]) -> PassthroughTensor:
         return self.__class__(self.child.resize(new_shape))
 

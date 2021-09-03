@@ -48,7 +48,7 @@ class Settings(BaseSettings):
     POSTGRES_USER: str = "user"
     POSTGRES_PASSWORD: str = "pwd"
     POSTGRES_DB: str = "db"
-    SQLALCHEMY_DATABASE_URI: Optional[PostgresDsn] = None
+    SQLALCHEMY_DATABASE_URI: Optional[Union[PostgresDsn, str]] = None
 
     @validator("SQLALCHEMY_DATABASE_URI", pre=True)
     def assemble_db_connection(cls, v: Optional[str], values: Dict[str, Any]) -> Any:

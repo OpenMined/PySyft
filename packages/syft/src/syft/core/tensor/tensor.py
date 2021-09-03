@@ -26,9 +26,6 @@ from .ancestors import AutogradTensorAncestor
 from .ancestors import PhiTensorAncestor
 from .fixed_precision_tensor_ancestor import FixedPrecisionTensorAncestor
 from .passthrough import PassthroughTensor  # type: ignore
-
-# from .autodp.single_entity_phi import SingleEntityPhiTensor
-# from .autodp.single_entity_phi import SingleEntityPhiTensorPointer
 from .smpc.mpc_tensor import MPCTensor
 
 
@@ -143,8 +140,6 @@ class TensorPointer(Pointer):
         return self.simple_add(other=other)
 
 
-# TODO: Need to double check to see if smpc.ShareTensor operations are working correctly
-# here since it's not inherited
 @bind_protobuf
 class Tensor(
     PassthroughTensor,

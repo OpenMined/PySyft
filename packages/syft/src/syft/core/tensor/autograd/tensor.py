@@ -6,6 +6,7 @@ from typing import Any
 from typing import Dict as TypeDict
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Type
 from typing import Union
 import uuid
@@ -60,7 +61,6 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor, RecursiveSerde):
 
         self.backprop_id: Optional[uuid.UUID] = None
 
-        # self.n_backwards: Counter[uuid.UUID] = Counter()
         self.n_backwards: SerializableCounter = (
             SerializableCounter()
         )  # may have to add [uuid.UUID] for type annotation
@@ -117,11 +117,11 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor, RecursiveSerde):
         op = autograd.backward_ops.RPowOp()
         return op(self, other)
 
-    def reshape(self, *shape: tuple) -> AutogradTensorAncestor:  # type: ignore
+    def reshape(self, *shape: Tuple[int]) -> AutogradTensorAncestor:  # type: ignore
         op = autograd.backward_ops.ReshapeOp()
         return op(self, *shape)
 
-    def repeat(self, *args: int, **kwargs: int) -> AutogradTensorAncestor:  # type: ignore
+    def repeat(self, *args: Tuple[Any, ...], **kwargs: Any) -> AutogradTensorAncestor:  # type: ignore
         op = autograd.backward_ops.RepeatOp()
         return op(self, *args, **kwargs)
 

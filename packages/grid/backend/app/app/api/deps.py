@@ -13,7 +13,7 @@ from app import schemas
 from app.core import security
 from app.core.config import settings
 from app.core.node import node
-from app.db.session import SessionLocal
+from app.db.session import get_db_session
 from app.users.models import UserPrivate
 
 reusable_oauth2 = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/login")
@@ -21,7 +21,7 @@ reusable_oauth2 = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/login")
 
 def get_db() -> Generator:
     try:
-        db = SessionLocal()
+        db = get_db_session()
         yield db
     finally:
         db.close()

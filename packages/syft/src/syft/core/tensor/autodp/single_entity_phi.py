@@ -781,57 +781,6 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             scalar_manager=self.scalar_manager,
         )
 
-    #
-    # def _object2proto(self) -> Tensor_PB:
-    #     arrays = []
-    #     tensors = []
-    #     if isinstance(self.child, np.ndarray):
-    #         use_tensors = False
-    #         arrays = [
-    #             serialize(self.child),
-    #             serialize(self.min_vals),
-    #             serialize(self.max_vals),
-    #         ]
-    #     else:
-    #         use_tensors = True
-    #         tensors = [
-    #             serialize(self.child),
-    #             serialize(self.min_vals),
-    #             serialize(self.max_vals),
-    #         ]
-    #
-    #     return Tensor_PB(
-    #         obj_type=full_name_with_name(klass=type(self)),
-    #         use_tensors=use_tensors,
-    #         arrays=arrays,
-    #         tensors=tensors,
-    #         entity=serialize(self.entity),
-    #     )
-    #
-    # @staticmethod
-    # def _proto2object(proto: Tensor_PB) -> SingleEntityPhiTensor:
-    #     use_tensors = proto.use_tensors
-    #     children = []
-    #     if use_tensors:
-    #         children = [deserialize(tensor) for tensor in proto.tensors]
-    #     else:
-    #         children = [deserialize(array) for array in proto.arrays]
-    #
-    #     child = children.pop(0)
-    #     min_vals = children.pop(0)
-    #     max_vals = children.pop(0)
-    #
-    #     entity = deserialize(blob=proto.entity)
-    #
-    #     return SingleEntityPhiTensor(
-    #         child=child, entity=entity, min_vals=min_vals, max_vals=max_vals
-    #     )
-
-    # Cant have recursive and custom Tensor_PB
-    # @staticmethod
-    # def get_protobuf_schema() -> GeneratedProtocolMessageType:
-    #     return Tensor_PB
-
 
 @implements(SingleEntityPhiTensor, np.expand_dims)
 def expand_dims(a: npt.ArrayLike, axis: Optional[int] = None) -> SingleEntityPhiTensor:
