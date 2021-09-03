@@ -6,7 +6,7 @@ from typing import Tuple as TypeTuple
 # third party
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
 # relative
 from . import Base
@@ -49,7 +49,7 @@ def expand_user_object(_user: SyftUser, db: Engine) -> Dict[str, Any]:
     return user
 
 
-def seed_db(db: Engine) -> None:
+def seed_db(db: Session) -> None:
     new_role = Role(
         name="Data Scientist",
         can_triage_requests=False,
