@@ -3,10 +3,10 @@ from typing import List
 from typing import NoReturn
 
 # third party
-from app.api import deps
-from app.grid_requests.models import Request
-from app.grid_requests.models import RequestUpdate
-from app.users.models import UserPrivate
+from grid.api.dependencies.current_user import get_current_user
+from .models import Request
+from .models import RequestUpdate
+from grid.api.users.models import UserPrivate
 from fastapi import APIRouter
 from fastapi import Depends
 from loguru import logger
@@ -34,7 +34,7 @@ router = APIRouter()
     status_code=status.HTTP_200_OK,
 )
 async def get_all_requests_grid(
-    current_user: UserPrivate = Depends(deps.get_current_user),
+    current_user: UserPrivate = Depends(get_current_user),
 ) -> List[Request]:
     try:
         return syft_requests_messages.get_all_requests(current_user)
@@ -50,7 +50,7 @@ async def get_all_requests_grid(
     status_code=status.HTTP_200_OK,
 )
 async def get_request_grid(
-    request_id: str, current_user: UserPrivate = Depends(deps.get_current_user)
+    request_id: str, current_user: UserPrivate = Depends(get_current_user)
 ) -> Request:
     try:
         return syft_requests_messages.get_request(current_user, request_id)
@@ -67,7 +67,7 @@ async def get_request_grid(
 async def update_user_grid(
     request_id: str,
     updated_request: RequestUpdate,
-    current_user: UserPrivate = Depends(deps.get_current_user),
+    current_user: UserPrivate = Depends(get_current_user),
 ) -> str:
     try:
         return syft_requests_messages.update_request(
