@@ -28,7 +28,7 @@ repos:
         exclude: ^(packages/grid/ansible/)
       - id: name-tests-test
         always_run: true
-        exclude: ^(packages/grid/backend/app/app/tests/utils/)
+        exclude: ^(packages/grid/backend/grid/tests/utils/)
       - id: requirements-txt-fixer
         always_run: true
   - repo: https://github.com/pycqa/isort

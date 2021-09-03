@@ -140,7 +140,7 @@ def do_stat(tmpdir, sort, *args):
     outfile = os.path.join(tmpdir, "combined")
     do_record(tmpdir, outfile, *args)
     aggs = (
-        "app.main",
+        "grid.main",
         "mitogen.broker",
         "mitogen.child_main",
         "mitogen.service.pool",
