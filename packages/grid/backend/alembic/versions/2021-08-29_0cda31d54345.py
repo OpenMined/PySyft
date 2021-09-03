@@ -8,7 +8,7 @@ Create Date: 2021-08-29 20:11:00.622963
 
 """
 # third party
-from alembic import op
+from alembic import op  # type: ignore
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
