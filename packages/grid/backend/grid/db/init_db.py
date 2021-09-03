@@ -11,6 +11,7 @@ from grid.core.config import settings
 from grid.core.node import node
 from grid.db import base  # noqa: F401
 
+
 def init_db(db: Session) -> None:
 
     # Build Syft Message

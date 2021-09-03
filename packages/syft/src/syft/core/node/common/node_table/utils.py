@@ -6,7 +6,8 @@ from typing import Tuple as TypeTuple
 # third party
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
+from sqlalchemy.orm import sessionmaker
 
 # relative
 from . import Base

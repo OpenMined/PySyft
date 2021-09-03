@@ -3,18 +3,20 @@ from typing import List
 from typing import NoReturn
 
 # third party
-from grid.api.dependencies.current_user import get_current_user
-from .models import Request
-from .models import RequestUpdate
-from grid.api.users.models import UserPrivate
 from fastapi import APIRouter
 from fastapi import Depends
 from loguru import logger
 from starlette import status
 from starlette.exceptions import HTTPException
 
+# grid absolute
+from grid.api.dependencies.current_user import get_current_user
+from grid.api.users.models import UserPrivate
+
 # relative
 from . import syft as syft_requests_messages
+from .models import Request
+from .models import RequestUpdate
 
 
 def raise_generic_private_error() -> NoReturn:

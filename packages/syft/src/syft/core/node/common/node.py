@@ -93,7 +93,6 @@ from .action.exception_action import UnknownPrivateException
 from .client import Client
 from .metadata import Metadata
 from .node_manager.bin_obj_manager import BinObjectManager
-from .node_table.utils import seed_db
 
 # this generic type for Client bound by Client
 ClientT = TypeVar("ClientT", bound=Client)
