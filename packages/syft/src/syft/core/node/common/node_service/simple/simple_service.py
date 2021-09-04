@@ -33,6 +33,3 @@ class SimpleService(ImmediateNodeServiceWithReply):
     @staticmethod
     def message_handler_types() -> List[Type[SimpleMessage]]:
         return [SimpleMessage]
-
-
-tests / syft / core / node / common / service / obj_search_permission_service_test.py
