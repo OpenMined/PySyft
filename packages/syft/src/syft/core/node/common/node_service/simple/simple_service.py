@@ -17,7 +17,7 @@ from .simple_messages import SimpleReplyMessage
 
 class SimpleService(ImmediateNodeServiceWithReply):
     @staticmethod
-    @service_auth(root_only=True)
+    @service_auth(guests_welcome=True)
     def process(
         node: AbstractNode,
         msg: SimpleMessage,

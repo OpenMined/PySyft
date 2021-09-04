@@ -33,7 +33,9 @@ class NodeRunnableMessageWithReply(RecursiveSerde):
         self.stuff = stuff
 
     def run(self, node: AbstractNode, verify_key: Optional[VerifyKey] = None) -> Any:
-        return "Processed:" + str(self.stuff) + " " + str(node) + " " + str(verify_key)
+        return (
+            "Nothing to see here..." + self.stuff
+        )  # leaving this in for the test suite
 
     def prepare(self, address: Address, reply_to: Address) -> "SimpleMessage":
         return SimpleMessage(address=address, reply_to=reply_to, payload=self)
