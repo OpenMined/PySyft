@@ -46,7 +46,7 @@ jobs:
         uses: Broadshield/action-docker-layer-caching@main
         continue-on-error: true
         with:
-          filter: reference=openmined*
+          filter: reference='openmined/*'
 
       - name: Get pip cache dir
         id: pip-cache
