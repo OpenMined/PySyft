@@ -97,6 +97,8 @@ class Settings(BaseSettings):
     STREAM_QUEUE: bool = False
     NODE_TYPE: str = "Domain"
 
+    OPEN_REGISTRATION: bool = True
+
     class Config:
         case_sensitive = True
 

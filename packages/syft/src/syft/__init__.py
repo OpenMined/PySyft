@@ -67,6 +67,7 @@ from syft.core.tensor.tensor import Tensor  # noqa: F401
 from syft.experimental_flags import flags  # noqa: F401
 from syft.grid.client.client import connect  # noqa: F401
 from syft.grid.client.client import login  # noqa: F401
+from syft.grid.client.client import register  # noqa: F401
 
 # Convenience Functions
 from syft.grid.duet import bcolors  # noqa: F401
