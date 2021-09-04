@@ -28,9 +28,9 @@ class SimpleService(ImmediateNodeServiceWithReply):
                 "Can't process an GetReprService with no verification key."
             )
 
-        return SimpleReplyMessage(
-            payload="A result" + msg.payload, address=msg.reply_to
-        )
+        result = msg.payload.run(node=node, verify_key=verify_key)
+
+        return SimpleReplyMessage(payload=result, address=msg.reply_to)
 
     @staticmethod
     def message_handler_types() -> List[Type[SimpleMessage]]:

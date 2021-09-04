@@ -4,6 +4,7 @@ from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # relative
@@ -18,8 +19,24 @@ from ......proto.core.node.common.service.simple_service_pb2 import (
 from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.serde.deserialize import _deserialize
+from .....common.serde.recursive import RecursiveSerde
 from .....common.uid import UID
 from .....io.address import Address
+from ....abstract.node import AbstractNode
+
+
+class NodeRunnableMessageWithReply(RecursiveSerde):
+
+    __attr_allowlist__ = ["stuff"]
+
+    def __init__(self, stuff: str) -> None:
+        self.stuff = stuff
+
+    def run(self, node: AbstractNode, verify_key: Optional[VerifyKey] = None) -> Any:
+        return "Processed:" + str(self.stuff) + " " + str(node) + " " + str(verify_key)
+
+    def prepare(self, address: Address, reply_to: Address) -> "SimpleMessage":
+        return SimpleMessage(address=address, reply_to=reply_to, payload=self)
 
 
 @bind_protobuf
@@ -27,9 +44,9 @@ from .....io.address import Address
 class SimpleMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
+        payload: NodeRunnableMessageWithReply,
         address: Address,
         reply_to: Address,
-        payload: Any,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -61,7 +78,7 @@ class SimpleMessage(ImmediateSyftMessageWithReply):
 class SimpleReplyMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
-        payload: Any,
+        payload: NodeRunnableMessageWithReply,
         address: Address,
         msg_id: Optional[UID] = None,
     ):
