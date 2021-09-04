@@ -62,6 +62,7 @@ from ..common.node_service.request_receiver.request_receiver_messages import (
     RequestMessage,
 )
 from ..common.node_service.role_manager.role_manager_service import RoleManagerService
+from ..common.node_service.simple.simple_service import SimpleService
 from ..common.node_service.tensor_manager.tensor_manager_service import (
     TensorManagerService,
 )
@@ -134,6 +135,7 @@ class Domain(Node):
         self.immediate_services_with_reply.append(AssociationRequestService)
         # self.immediate_services_with_reply.append(DomainInfrastructureService)
         self.immediate_services_with_reply.append(GetRemainingBudgetService)
+        self.immediate_services_with_reply.append(SimpleService)
         self.immediate_services_with_reply.append(NodeSetupService)
         self.immediate_services_with_reply.append(TensorManagerService)
         self.immediate_services_with_reply.append(RoleManagerService)
