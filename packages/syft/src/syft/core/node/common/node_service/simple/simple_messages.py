@@ -1,4 +1,5 @@
 # stdlib
+from typing import Any
 from typing import Optional
 
 # third party
@@ -28,15 +29,15 @@ class SimpleMessage(ImmediateSyftMessageWithReply):
         self,
         address: Address,
         reply_to: Address,
-        id_at_location: UID,
+        payload: Any,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
-        self.id_at_location = id_at_location
+        self.payload = payload
 
     def _object2proto(self) -> SimpleMessage_PB:
         return SimpleMessage_PB(
-            id_at_location=serialize(self.id_at_location),
+            payload=serialize(self.payload, to_bytes=True),
             msg_id=serialize(self.id),
             address=serialize(self.address),
             reply_to=serialize(self.reply_to),
@@ -45,7 +46,7 @@ class SimpleMessage(ImmediateSyftMessageWithReply):
     @staticmethod
     def _proto2object(proto: SimpleMessage_PB) -> "SimpleMessage":
         return SimpleMessage(
-            id_at_location=_deserialize(blob=proto.id_at_location),
+            payload=_deserialize(blob=proto.payload, from_bytes=True),
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             reply_to=_deserialize(blob=proto.reply_to),
@@ -60,16 +61,16 @@ class SimpleMessage(ImmediateSyftMessageWithReply):
 class SimpleReplyMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
-        repr: str,
+        payload: Any,
         address: Address,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
-        self.repr = repr
+        self.payload = payload
 
     def _object2proto(self) -> SimpleReplyMessage_PB:
         return SimpleReplyMessage_PB(
-            repr=self.repr,
+            payload=serialize(self.payload, to_bytes=True),
             msg_id=serialize(self.id),
             address=serialize(self.address),
         )
@@ -77,7 +78,7 @@ class SimpleReplyMessage(ImmediateSyftMessageWithoutReply):
     @staticmethod
     def _proto2object(proto: SimpleReplyMessage_PB) -> "SimpleReplyMessage":
         return SimpleReplyMessage(
-            repr=proto.repr,
+            payload=_deserialize(proto.payload, from_bytes=True),
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
         )

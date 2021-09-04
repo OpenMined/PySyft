@@ -25,7 +25,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n3proto/core/node/common/service/simple_service.proto\x12\x1dsyft.core.node.common.service\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\xb6\x01\n\rSimpleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\x12-\n\x0eid_at_location\x18\x04 \x01(\x0b\x32\x15.syft.core.common.UID"q\n\x12SimpleReplyMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0c\n\x04repr\x18\x03 \x01(\tb\x06proto3',
+    serialized_pb=b'\n3proto/core/node/common/service/simple_service.proto\x12\x1dsyft.core.node.common.service\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\x98\x01\n\rSimpleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07payload\x18\x04 \x01(\x0c"t\n\x12SimpleReplyMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07payload\x18\x03 \x01(\x0c\x62\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
@@ -99,15 +99,15 @@ _SIMPLEMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="id_at_location",
-            full_name="syft.core.node.common.service.SimpleMessage.id_at_location",
+            name="payload",
+            full_name="syft.core.node.common.service.SimpleMessage.payload",
             index=3,
             number=4,
-            type=11,
-            cpp_type=10,
+            type=12,
+            cpp_type=9,
             label=1,
             has_default_value=False,
-            default_value=None,
+            default_value=b"",
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -127,7 +127,7 @@ _SIMPLEMESSAGE = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=155,
-    serialized_end=337,
+    serialized_end=307,
 )
 
 
@@ -178,15 +178,15 @@ _SIMPLEREPLYMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="repr",
-            full_name="syft.core.node.common.service.SimpleReplyMessage.repr",
+            name="payload",
+            full_name="syft.core.node.common.service.SimpleReplyMessage.payload",
             index=2,
             number=3,
-            type=9,
+            type=12,
             cpp_type=9,
             label=1,
             has_default_value=False,
-            default_value=b"".decode("utf-8"),
+            default_value=b"",
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -205,8 +205,8 @@ _SIMPLEREPLYMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=339,
-    serialized_end=452,
+    serialized_start=309,
+    serialized_end=425,
 )
 
 _SIMPLEMESSAGE.fields_by_name[
@@ -218,9 +218,6 @@ _SIMPLEMESSAGE.fields_by_name[
 _SIMPLEMESSAGE.fields_by_name[
     "reply_to"
 ].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
-_SIMPLEMESSAGE.fields_by_name[
-    "id_at_location"
-].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
 _SIMPLEREPLYMESSAGE.fields_by_name[
     "msg_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
