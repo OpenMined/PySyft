@@ -20,15 +20,15 @@ vms = [sy.VirtualMachine(name=name) for name in ["alice", "bob", "theo", "andrew
 clients = [vm.get_client() for vm in vms]
 
 PUBLIC_VALUES: Final[TypeDict[str, Union[np.ndarray, torch.Tensor, int]]] = {
-    "numpy_array": np.array([32], dtype=np.int64),
-    "torch_tensor": torch.tensor([42], dtype=torch.int64),
+    "numpy_array": np.array([32], dtype=np.int32),
+    "torch_tensor": torch.tensor([42], dtype=torch.int32),
     "int": 42,
 }
 
 
 @pytest.mark.parametrize("public_value_type", ["int", "torch_tensor", "numpy_array"])
 def test_remote_sharing(public_value_type: str) -> None:
-    value = np.array([[1, 2, 3, 4, -5]], dtype=np.int64)
+    value = np.array([[1, 2, 3, 4, -5]], dtype=np.int32)
     remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
 
     mpc_tensor = MPCTensor(
@@ -44,8 +44,8 @@ def test_remote_sharing(public_value_type: str) -> None:
 
 @pytest.mark.parametrize("op_str", ["add", "sub"])
 def test_mpc_private_private_op(op_str: str) -> None:
-    value_1 = np.array([[1, 2, 3, 4, -5]], dtype=np.int64)
-    value_2 = np.array([42], dtype=np.int64)
+    value_1 = np.array([[1, 2, 3, 4, -5]], dtype=np.int32)
+    value_2 = np.array([42], dtype=np.int32)
 
     remote_value_1 = clients[0].syft.core.tensor.tensor.Tensor(value_1)
     remote_value_2 = clients[2].syft.core.tensor.tensor.Tensor(value_2)
@@ -69,7 +69,7 @@ def test_mpc_private_private_op(op_str: str) -> None:
 @pytest.mark.parametrize("public_value_type", ["int", "torch_tensor", "numpy_array"])
 @pytest.mark.parametrize("op_str", ["add", "sub", "mul"])
 def test_mpc_private_public_op(op_str: str, public_value_type: str) -> None:
-    value_1 = np.array([[1, 2, 3, 4, -5]], dtype=np.int64)
+    value_1 = np.array([[1, 2, 3, 4, -5]], dtype=np.int32)
     value_2 = PUBLIC_VALUES[public_value_type]
 
     remote_value_1 = clients[0].syft.core.tensor.tensor.Tensor(value_1)
@@ -94,7 +94,7 @@ def test_mpc_private_public_op(op_str: str, public_value_type: str) -> None:
 @pytest.mark.parametrize("op_str", ["add", "sub", "mul"])
 def test_mpc_public_private_op(op_str: str, public_value_type: str) -> None:
     value_1 = PUBLIC_VALUES[public_value_type]
-    value_2 = np.array([[1, 2, 3, 4, -5]], dtype=np.int64)
+    value_2 = np.array([[1, 2, 3, 4, -5]], dtype=np.int32)
 
     remote_value_2 = clients[0].syft.core.tensor.tensor.Tensor(value_2)
 
@@ -117,7 +117,7 @@ def test_mpc_public_private_op(op_str: str, public_value_type: str) -> None:
     "method_str, kwargs", [("sum", {"axis": 0}), ("sum", {"axis": 1})]
 )
 def test_mpc_forward_methods(method_str: str, kwargs: TypeDict[str, Any]) -> None:
-    value = np.array([[1, 2, 3, 4, -5], [5, 6, 7, 8, 9]], dtype=np.int64)
+    value = np.array([[1, 2, 3, 4, -5], [5, 6, 7, 8, 9]], dtype=np.int32)
 
     remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
 

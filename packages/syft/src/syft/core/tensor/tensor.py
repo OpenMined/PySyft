@@ -148,9 +148,10 @@ def to32bit(np_array: np.ndarray, verbose: bool = True) -> np.ndarray:
         out = np_array.astype(np.int32)
 
     elif np_array.dtype == np.float64:
+
         if verbose:
             print("Casting internal tensor to float32")
-        out = np_array.astype(np.int32)
+        out = np_array.astype(np.float32)
 
     else:
         out = np_array
@@ -190,6 +191,16 @@ class Tensor(
             child, np.ndarray
         ):
             raise Exception("Data must be list or nd.array")
+
+        if (
+            not isinstance(child, np.ndarray)
+            or getattr(child, "dtype", None) != np.int32
+        ):
+            raise TypeError(
+                "Syft tensor objects only support np.int32 objects at this time. Please pass in either "
+                "a list of int objects or a np.int32 array. We apologise for the inconvenience and will "
+                "be adding support for more types very soon!"
+            )
 
         kwargs = {"child": child}
         super().__init__(**kwargs)

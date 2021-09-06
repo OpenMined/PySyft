@@ -106,6 +106,11 @@ class AutogradTensorAncestor(TensorChainManager):
         return self
 
 
+def entity_creation_tutorial() -> List[Any]:
+    print("Entity creation tutorial!")
+    return ["asdf"]
+
+
 class PhiTensorAncestor(TensorChainManager):
     """Inherited by any class which might have or like to have SingleEntityPhiTensor in its chain
     of .child objects"""
@@ -140,7 +145,7 @@ class PhiTensorAncestor(TensorChainManager):
         max_val: ArrayLike,
         scalar_manager: VirtualMachinePrivateScalarManager = VirtualMachinePrivateScalarManager(),
         entities: Optional[Any] = None,
-        skip_blocking_checks=False,
+        skip_blocking_checks: bool = False,
     ) -> PhiTensorAncestor:
         """ """
 
@@ -149,21 +154,38 @@ class PhiTensorAncestor(TensorChainManager):
         # Check 1: Is self.child a compatible type? We only support DP and SMPC for a few types.
         if (
             not isinstance(self.child, np.ndarray)
-            and getattr(self.child, "dtype", None) == np.int32
+            or getattr(self.child, "dtype", None) != np.int32
         ):
-            raise TypeError(
+
+            msg = (
                 "At present, you can only call .private() "
-                "on syft.Tensor objects wrapping np.int32 arrays. You called it on a"
-                "syft.Tensor wrapping a " + str(type(self.child))
+                + "on syft.Tensor objects wrapping np.int32 arrays. You called it on a "
+                + "syft.Tensor wrapping a "
+                + str(type(self.child))
             )
 
-        # Check 2: If entities is a string, make it a list with one entity in it
+            if isinstance(self.child, np.ndarray):
+                msg += " with dtype:" + str(getattr(self.child, "dtype", None))
+
+            raise TypeError(msg)
+
+        # Check 2: If entities == None, then run the entity creation tutorial
+        if entities is None:
+
+            if skip_blocking_checks:
+                raise Exception(
+                    "Error: 'entities' argument to .private() must not be None!"
+                )
+
+            entities = entity_creation_tutorial()
+
+        # Check 3: If entities is a string, make it a list with one entity in it
         if isinstance(entities, str):
             entities = [Entity(entities)]
         elif isinstance(entities, Entity):
             entities = [entities]
 
-        # Check 3: If entities are a list, are the items strings or Entity objects.
+        # Check 4: If entities are a list, are the items strings or Entity objects.
         # If they're strings lets create Entity objects.
         _entities = list()
         for e in entities:
