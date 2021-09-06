@@ -479,6 +479,22 @@ class MPCTensor(PassthroughTensor):
 
         return res
 
+    def matmul(self, y: Union[int, float, np.ndarray, torch.tensor, "MPCTensor"]):
+        """Apply the "matmul" operation between "self" and "y"
+
+        Args:
+            y (Union[int, float, np.ndarray, torch.tensor, "MPCTensor"]): self @ y
+
+        Returns:
+            MPCTensor: Result of the opeartion.
+        """
+        if isinstance(y, MPCTensor):
+            raise ValueError("Private multiplication not yet implemented!")
+
+        res = self.__apply_op(y, "mul")
+
+        return res
+
     def __str__(self) -> str:
         res = "MPCTensor"
         for share in self.child:
@@ -501,6 +517,7 @@ class MPCTensor(PassthroughTensor):
     __rsub__ = rsub
     __mul__ = mul
     __rmul__ = mul
+    __matmul__ = matmul
 
 
 @implements(MPCTensor, np.add)
