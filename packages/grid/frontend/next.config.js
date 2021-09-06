@@ -1,3 +1,6 @@
+const nodeType = process.env.NODE_TYPE
+const domainType = nodeType?.toLowerCase() === 'network' ? 'network' : 'domain'
+
 module.exports = {
   typescript: {
     ignoreDevErrors: true,
@@ -9,5 +12,27 @@ module.exports = {
       aggregateTimeout: 300
     }
     return config
+  },
+  async redirects() {
+    return [
+      {
+        source: '/_network/:path*',
+        destination: '/:path*',
+        permanent: false
+      },
+      {
+        source: '/_domain/:path*',
+        destination: '/:path*',
+        permanent: false
+      }
+    ]
+  },
+  async rewrites() {
+    return [
+      {
+        source: '/:path*',
+        destination: `/_${domainType}/:path*`
+      }
+    ]
   }
 }
