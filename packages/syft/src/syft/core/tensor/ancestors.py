@@ -7,13 +7,16 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Type
+from typing import Union
 import uuid
 
 # third party
 from nacl.signing import VerifyKey
+import numpy as np
 from numpy.typing import ArrayLike
 
 # relative
+from ..adp.entity import Entity
 from ..adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from .manager import TensorChainManager
 from .passthrough import PassthroughTensor  # type: ignore
@@ -137,12 +140,39 @@ class PhiTensorAncestor(TensorChainManager):
         min_val: ArrayLike,
         max_val: ArrayLike,
         scalar_manager: VirtualMachinePrivateScalarManager = VirtualMachinePrivateScalarManager(),
-        entities: Optional[List] = None,
-        entity: Optional[Dict[str, Any]] = None,
+        entities: Optional[Union[List[Union[Entity, str]], str]] = None
     ) -> PhiTensorAncestor:
         """ """
 
-        if entity is not None:
+        # PHASE 1: RUN CHECKS
+
+        # Check 1: Is self.child a compatible type? We only support DP and SMPC for a few types.
+        if (
+            not isinstance(self.child, np.ndarray)
+            and getattr(self.child, "dtype", None) == np.int32
+        ):
+            raise Exception(
+                "At present, you can only call .private() "
+                "on syft.Tensor objects wrapping np.int32 arrays. You called it on a"
+                "syft.Tensor wrapping a " + str(type(self.child))
+            )
+
+        # Check 2: If entities is a string, make it a list with one entity in it
+        if isinstance(entities, str):
+            entities = [Entity(entities)]
+
+        # Check 3: Are entities strings or Entity objects. If they're strings lets create Entity objects
+        _entities = list()
+        for e in entities:
+            if isinstance(e, str):
+                _entities.append(Entity(e))
+            else:
+                _entities.append(e)
+
+        entities = _entities
+
+        # PHASE 2: CREATE CHILD
+        if len(entities) == 1:
             # if there's only one entity - push a SingleEntityPhiTensor
 
             if isinstance(min_val, (float, int)):
@@ -161,7 +191,7 @@ class PhiTensorAncestor(TensorChainManager):
 
             self.push_abstraction_top(
                 _SingleEntityPhiTensor(),
-                entity=entity,
+                entity=entities[0],
                 min_vals=min_vals,
                 max_vals=max_vals,
                 scalar_manager=scalar_manager,  # type: ignore

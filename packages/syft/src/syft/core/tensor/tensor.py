@@ -140,14 +140,16 @@ class TensorPointer(Pointer):
         return self.simple_add(other=other)
 
 
-def to32bit(np_array: np.ndarray) -> np.ndarray:
+def to32bit(np_array: np.ndarray, verbose: bool = True) -> np.ndarray:
 
     if np_array.dtype == np.int64:
-        print("Casting internal tensor to int32")
+        if verbose:
+            print("Casting internal tensor to int32")
         out = np_array.astype(np.int32)
 
     elif np_array.dtype == np.float64:
-        print("Casting internal tensor to float32")
+        if verbose:
+            print("Casting internal tensor to float32")
         out = np_array.astype(np.int32)
 
     else:
@@ -176,7 +178,7 @@ class Tensor(
         """data must be a list of numpy array"""
 
         if isinstance(child, list):
-            child = to32bit(np.array(child))
+            child = to32bit(np.array(child), verbose=False)
 
         if isinstance(child, th.Tensor):
             print(
@@ -191,6 +193,10 @@ class Tensor(
 
         kwargs = {"child": child}
         super().__init__(**kwargs)
+
+        # set public shape to be the shape of the data since we have access to it at present
+        if public_shape is None:
+            public_shape = self.shape
 
         self.tag_name: Optional[str] = None
         self.public_shape = public_shape
