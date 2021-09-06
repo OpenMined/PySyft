@@ -36,6 +36,7 @@ from ..smpc.mpc_tensor import MPCTensor
 from ..tensor import Tensor
 from ..types import SupportedChainType  # type: ignore
 from ..util import inputs2child  # type: ignore
+from .adp_tensor import ADPTensor
 from .initial_gamma import InitialGammaTensor
 
 
@@ -267,7 +268,9 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
 
 
 @bind_protobuf
-class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, RecursiveSerde):
+class SingleEntityPhiTensor(
+    PassthroughTensor, AutogradTensorAncestor, RecursiveSerde, ADPTensor
+):
 
     PointerClassOverride = TensorWrappedSingleEntityPhiTensorPointer
 
