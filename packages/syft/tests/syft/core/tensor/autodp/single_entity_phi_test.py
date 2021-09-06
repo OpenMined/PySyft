@@ -9,7 +9,7 @@ from syft.core.adp.entity import Entity
 from syft.core.tensor.autodp.single_entity_phi import SingleEntityPhiTensor as SEPT
 from syft.core.tensor.tensor import Tensor
 
-################### EQUALITY OPERATORS ###############################################
+# ------------------- EQUALITY OPERATORS -----------------------------------------------
 
 # Global constants
 ishan = Entity(name="Ishan")

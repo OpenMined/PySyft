@@ -108,9 +108,7 @@ class RowEntityPhiTensor(PassthroughTensor, RecursiveSerde):
         for row in opposite_result.child:
             result.append(np.invert(row))
 
-        return RowEntityPhiTensor(
-            rows=result
-        )
+        return RowEntityPhiTensor(rows=result)
 
     def __add__(  # type: ignore
         self, other: Union[RowEntityPhiTensor, AcceptableSimpleType]

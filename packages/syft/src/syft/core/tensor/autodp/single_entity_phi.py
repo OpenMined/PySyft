@@ -411,7 +411,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             entity=opposite_result.entity,
             min_vals=opposite_result.min_vals,
             max_vals=opposite_result.max_vals,
-            scalar_manager=opposite_result.scalar_manager
+            scalar_manager=opposite_result.scalar_manager,
         )
 
     def __abs__(self) -> SingleEntityPhiTensor:

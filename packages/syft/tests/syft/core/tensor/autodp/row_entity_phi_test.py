@@ -6,14 +6,11 @@ import numpy as np
 import pytest
 
 # syft absolute
-from syft import deserialize
-from syft import serialize
 from syft.core.adp.entity import Entity
 from syft.core.tensor.autodp.row_entity_phi import RowEntityPhiTensor as REPT
 from syft.core.tensor.autodp.single_entity_phi import SingleEntityPhiTensor as SEPT
-from syft.core.tensor.tensor import Tensor
 
-################### EQUALITY OPERATORS ###############################################
+# ------------------- EQUALITY OPERATORS -----------------------------------------------
 
 # Global constants
 ishan = Entity(name="Ishan")
@@ -66,7 +63,7 @@ def reference_binary_data() -> np.ndarray:
     return binary_data
 
 
-def test_eq(row_data: List) -> bool:
+def test_eq(row_data: List) -> None:
     """Test equality between two identical RowEntityPhiTensors"""
     reference_tensor = REPT(rows=row_data)
     second_tensor = REPT(rows=row_data)
@@ -74,10 +71,9 @@ def test_eq(row_data: List) -> bool:
 
     assert reference_tensor == second_tensor, "Identical Tensors don't match up"
     assert reference_tensor == third_tensor, "Identical Tensors don't match up"
-    return True
 
 
-def test_eq_diff_tensors(row_data: List) -> bool:
+def test_eq_diff_tensors(row_data: List) -> None:
     """Here we're testing equality between a REPT and other tensor types."""
 
     # Narrow row data down to a single data point (SEPT)
@@ -93,11 +89,13 @@ def test_eq_diff_tensors(row_data: List) -> bool:
         type(reference_tensor == reference_sept) == REPT
     ), "Return type error for equality comparison b/w REPT, SEPT"
     # assert type(reference_sept == reference_tensor) == REPT, "Return type error for == comparison b/w SEPT, REPT"
-    return True
 
 
 def test_eq_diff_entities(
-    row_data: List, reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    row_data: List,
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
 ) -> REPT:
     """Test equality between REPTs with different owners"""
     data1 = SEPT(
@@ -116,10 +114,9 @@ def test_eq_diff_entities(
         return tensor1 == tensor2
 
 
-def test_eq_ndarray(row_data: List) -> bool:
+def test_eq_ndarray(row_data: List) -> None:
     """Test equality between a SEPT and a simple type (int, float, bool, np.ndarray)"""
-    row_data = row_data[0]
+    sub_row_data: SEPT = row_data[0]
 
-    reference_tensor = REPT(rows=row_data)
-    assert row_data.child == reference_tensor, "Comparison b/w REPT and "  # type: ignore
-    return True
+    reference_tensor = REPT(rows=sub_row_data)
+    assert sub_row_data.child == reference_tensor, "Comparison b/w REPT and "

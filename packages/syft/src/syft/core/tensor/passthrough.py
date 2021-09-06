@@ -22,6 +22,7 @@ from .util import implements
 from .util import query_implementation
 
 AcceptableSimpleType = Union[int, bool, float, np.ndarray]
+SupportedChainType = Union["PassthroughTensor", AcceptableSimpleType]
 
 
 def is_acceptable_simple_type(obj):
@@ -487,6 +488,3 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 @implements(PassthroughTensor, np.square)
 def square(x: Type[PassthroughTensor]) -> PassthroughTensor:
     return x * x
-
-
-SupportedChainType = Union["PassthroughTensor", AcceptableSimpleType]
