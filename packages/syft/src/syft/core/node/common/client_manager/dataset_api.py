@@ -77,13 +77,27 @@ class DatasetRequestAPI(RequestAPI):
 
         if isinstance(key, int):
             a = self.all()
-            return Dataset(a[key : key + 1], self.client, **a[key])  # noqa: E203
+            return Dataset(
+                a[key : key + 1], self.client, key=key, **a[key]
+            )  # noqa: E203
 
-    def all_as_datasets(self):
+        elif isinstance(key, slice):
+
+            class NewObject:
+                def _repr_html_(self2):
+                    return self.dataset_list_to_html(
+                        self.all_as_datasets().__getitem__(key)
+                    )
+
+            return NewObject()
+
+    def all_as_datasets(self) -> List[Any]:
         a = self.all()
         out = list()
         for key, d in enumerate(a):
-            out.append(Dataset(a[key : key + 1], self.client, **a[key]))  # noqa: E203
+            out.append(
+                Dataset(a[key : key + 1], self.client, key=key, **a[key])
+            )  # noqa: E203
         return out
 
     def __len__(self):
@@ -92,7 +106,11 @@ class DatasetRequestAPI(RequestAPI):
     def __delitem__(self, key: str) -> Any:
         self.delete(dataset_id=key)
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
+        return self.dataset_list_to_html(self.all_as_datasets())
+
+    @staticmethod
+    def dataset_list_to_html(dataset_iterable):
         initial_boilerplate = """<style>
         #myInput {
           background-position: 10px 12px; /* Position the search icon */
@@ -141,7 +159,7 @@ class DatasetRequestAPI(RequestAPI):
         """
 
         rows = ""
-        for row_i, d in enumerate(self.all_as_datasets()):
+        for row_i, d in enumerate(dataset_iterable):
             assets = ""
             for i, a in enumerate(d.data):
                 assets += '["' + a["name"] + '"] -> ' + a["dtype"] + "<br /><br />"
@@ -151,7 +169,7 @@ class DatasetRequestAPI(RequestAPI):
 
           <tr>
             <td>["""
-                + str(row_i)
+                + str(d.key)
                 + """]</td>
             <td>"""
                 + d.name
@@ -163,7 +181,7 @@ class DatasetRequestAPI(RequestAPI):
                 + assets
                 + """</td>
             <td>"""
-                + d.id.replace("-", "")
+                + d.id
                 + """</td>
           </tr>"""
             )
@@ -225,6 +243,7 @@ class Dataset:
         description: str,
         name: str,
         id: UID,
+        key: int,
         data: Any,
         tags: List[str] = [],
     ) -> None:
@@ -235,18 +254,94 @@ class Dataset:
         self.tags = tags
         self.data = data
         self.client = client
+        self.key = key
 
     @property
     def pandas(self) -> pd.DataFrame:
         return pd.DataFrame(self.raw)
 
     def __getitem__(self, key: str) -> Any:
+        keys = list()
         for d in self.data:
             if d["name"] == key:
                 return self.client.store[d["id"].replace("-", "")]
+            keys.append(d["name"])
 
-    def _repr_html_(self) -> str:
-        return self.pandas._repr_html_()
+        raise KeyError(
+            "Asset '" + key + "' doesn't exist! Try one of these: " + str(keys)
+        )
+
+    def _repr_html_(self):
+        initial_boilerplate = """<style>
+        #myInput {
+          background-position: 10px 12px; /* Position the search icon */
+          background-repeat: no-repeat; /* Do not repeat the icon image */
+          background-color: #bbb;
+          width: 98%; /* Full-width */
+          font-size: 14px; /* Increase font-size */
+          padding: 12px 20px 12px 40px; /* Add some padding */
+          border: 1px solid #ddd; /* Add a grey border */
+          margin-bottom: 12px; /* Add some space below the input */
+        }
+
+        #myTable {
+          border-collapse: collapse; /* Collapse borders */
+          width: 50%; /* Full-width */
+          border: 1px solid #ddd; /* Add a grey border */
+          font-size: 14px; /* Increase font-size */
+        }
+
+        #myTable th, #myTable td {
+          text-align: left; /* Left-align text */
+          padding: 10px; /* Add padding */
+        }
+
+        #myTable tr {
+          /* Add a bottom border to all table rows */
+          border-bottom: 1px solid #ddd;
+        }
+
+        #myTable tr.header, #myTable tr:hover {
+          /* Add a grey background color to the table header and on hover */
+          background-color: #777;
+        }
+        </style>
+
+        <table id="myTable">
+          <tr class="header">
+            <th style="width:15%;">Asset Key</th>          
+            <th style="width:20%;">Type</th>
+            <th style="width:10%;">Shape</th>
+          </tr>
+        """
+
+        rows = ""
+
+        assets = ""
+        for i, a in enumerate(self.data):
+            assets += '["' + a["name"] + '"] -> ' + a["dtype"] + "<br /><br />"
+
+            rows += (
+                """
+    
+              <tr>
+            <td>[\""""
+                + a['name']
+                + """\"]</td>
+            <td>"""
+                + a['dtype']
+                + """</td>
+            <td>"""
+                + a['shape']
+                + """</td>
+          </tr>"""
+            )
+        end_boilerplate = """
+        </table>
+
+        """
+
+        return initial_boilerplate + rows + end_boilerplate
 
 
 # class Dataset:
