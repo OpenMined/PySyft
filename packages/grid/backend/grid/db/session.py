@@ -15,9 +15,15 @@ def get_db_engine(db_uri: str = str(settings.SQLALCHEMY_DATABASE_URI)) -> Engine
         db_engine = create_engine(db_uri, echo=False)
         # TODO change to use alembic properly with the sqlite memory store:
         # https://stackoverflow.com/questions/31406359/use-alembic-to-upgrade-in-memory-sqlite3-database
-        Base.metadata.create_all(db_engine)
+
+        # should this go here?
+        # Base.metadata.create_all(db_engine)
+
     else:
         db_engine = create_engine(db_uri, pool_pre_ping=True)
+
+    # or should this go here?
+    Base.metadata.create_all(db_engine)
 
     return db_engine
 
