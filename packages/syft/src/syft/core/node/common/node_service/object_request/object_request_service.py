@@ -224,16 +224,7 @@ def update_request_msg(
         # TODO: clean up the RequestMessage API to explicitly have multiple request types, including
         # one for budget requests.
         if "budget" in _req.object_type:
-
-            print("Current user key:" + str(_current_user_key))
-            _requester_verify_key = _req.verify_key
-            print("Raw requester verify key:" + str(_requester_verify_key))
-            # print(
-            #     "Decoded requester verify key:"
-            #     + str(_requester_verify_key.encode(encoder=HexEncoder).decode("utf-8"))
-            # )
-            current_user = node.users.first(verify_key=_requester_verify_key)
-            print("Current user:" + str(current_user))
+            current_user = node.users.first(verify_key=_req.verify_key)
             node.users.set(
                 user_id=current_user.id,
                 budget=current_user.budget + float(_req.object_type.split(":")[1]),
