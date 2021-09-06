@@ -5,9 +5,9 @@ Revises: cd246fe6ff78
 Create Date: 2021-09-06 21:01:14.987905
 
 """
-from alembic import op
+# third party
+from alembic import op  # type: ignore
 import sqlalchemy as sa
-
 
 # revision identifiers, used by Alembic.
 revision = "bb642928e749"
@@ -37,12 +37,8 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column("entity_name", sa.String(length=256), nullable=True),
         sa.Column("mechanism_id", sa.Integer(), nullable=True),
-        sa.ForeignKeyConstraint(
-            ["entity_name"], ["entity.name"], ondelete="CASCADE"
-        ),
-        sa.ForeignKeyConstraint(
-            ["mechanism_id"], ["mechanism.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["entity_name"], ["entity.name"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["mechanism_id"], ["mechanism.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
     # ### end Alembic commands ###
