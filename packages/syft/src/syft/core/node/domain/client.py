@@ -509,6 +509,7 @@ class DomainClient(Client):
         assets: Optional[dict] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
+        skip_checks: bool = False,
         **metadata: TypeDict,
     ) -> None:
         sys.stdout.write("Loading dataset...")
@@ -527,6 +528,7 @@ class DomainClient(Client):
                 "you have an assets dictionary call load_dataset(assets=<your dict of objects>)."
             )
         sys.stdout.write("\rLoading dataset... checking assets...")
+
         if name is None:
             raise Exception(
                 "Missing Name: Oops!... You forgot to name your dataset!\n\n"
@@ -537,25 +539,27 @@ class DomainClient(Client):
             )
         sys.stdout.write("\rLoading dataset... checking dataset name for uniqueness...")
         datasets = self.datasets
-        for i in range(len(datasets)):
-            d = datasets[i]
-            sys.stdout.write(".")
-            if name == d.name:
-                print(
-                    "\n\nWARNING - Dataset Name Conflict: A dataset named '"
-                    + name
-                    + "' already exists.\n"
-                )
-                pref = input("Do you want to upload this dataset anyway? (y/n)")
-                while pref != "y" and pref != "n":
-                    pref = input(
-                        "Invalid input '" + pref + "', please specify 'y' or 'n'."
+
+        if not skip_checks:
+            for i in range(len(datasets)):
+                d = datasets[i]
+                sys.stdout.write(".")
+                if name == d.name:
+                    print(
+                        "\n\nWARNING - Dataset Name Conflict: A dataset named '"
+                        + name
+                        + "' already exists.\n"
                     )
-                if pref == "n":
-                    raise Exception("Dataset loading cancelled.")
-                else:
-                    print()  # just for the newline
-                    break
+                    pref = input("Do you want to upload this dataset anyway? (y/n)")
+                    while pref != "y" and pref != "n":
+                        pref = input(
+                            "Invalid input '" + pref + "', please specify 'y' or 'n'."
+                        )
+                    if pref == "n":
+                        raise Exception("Dataset loading cancelled.")
+                    else:
+                        print()  # just for the newline
+                        break
 
         sys.stdout.write(
             "\rLoading dataset... checking dataset name for uniqueness..."
@@ -582,30 +586,33 @@ class DomainClient(Client):
         # relative
         from ....lib.python.util import downcast
 
-        for asset_name, asset in assets.items():
+        if not skip_checks:
+            for asset_name, asset in assets.items():
 
-            if not isinstance(asset, Tensor) and not isinstance(asset.child, ADPTensor):
+                if not isinstance(asset, Tensor) and not isinstance(
+                    getattr(asset, "child", None), ADPTensor
+                ):
 
-                print(
-                    "WARNING - Non-DP Asset: You just passed in a asset '"
-                    + asset_name
-                    + "' which cannot be tracked with differential privacy because it is a "
-                    + str(type(asset))
-                    + " object.\n\n"
-                    + "This means you'll need to manually approve any requests which "
-                    + "leverage this data. If this is ok with you, proceed. If you'd like to use "
-                    + "automatic differential privacy budgeting, please pass in a DP-compatible tensor type "
-                    + "such as by calling .private() on a sy.Tensor with a np.int32 or np.float32 inside."
-                )
-
-                pref = input("Are you sure you want to proceed? (y/n)")
-
-                while pref != "y" and pref != "n":
-                    pref = input(
-                        "Invalid input '" + pref + "', please specify 'y' or 'n'."
+                    print(
+                        "\n\nWARNING - Non-DP Asset: You just passed in a asset '"
+                        + asset_name
+                        + "' which cannot be tracked with differential privacy because it is a "
+                        + str(type(asset))
+                        + " object.\n\n"
+                        + "This means you'll need to manually approve any requests which "
+                        + "leverage this data. If this is ok with you, proceed. If you'd like to use "
+                        + "automatic differential privacy budgeting, please pass in a DP-compatible tensor type "
+                        + "such as by calling .private() on a sy.Tensor with a np.int32 or np.float32 inside."
                     )
-                if pref == "n":
-                    raise Exception("Dataset loading cancelled.")
+
+                    pref = input("Are you sure you want to proceed? (y/n)")
+
+                    while pref != "y" and pref != "n":
+                        pref = input(
+                            "Invalid input '" + pref + "', please specify 'y' or 'n'."
+                        )
+                    if pref == "n":
+                        raise Exception("Dataset loading cancelled.")
 
         metadata["name"] = bytes(name, "utf-8")  # type: ignore
         metadata["description"] = bytes(description, "utf-8")  # type: ignore

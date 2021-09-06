@@ -92,11 +92,18 @@ end_boilerplate = """
           for (i = 0; i < tr.length; i++) {
             name_td = tr[i].getElementsByTagName("td")[1];
             desc_td = tr[i].getElementsByTagName("td")[2];
-            if (name_td || desc_td) {
+            asset_td = tr[i].getElementsByTagName("td")[3];
+            id_td = tr[i].getElementsByTagName("td")[4];
+            if (name_td || desc_td || asset_td || id_td) {
               name_txtValue = name_td.textContent || name_td.innerText;
               desc_txtValue = desc_td.textContent || name_td.innerText;
-              right = desc_txtValue.toUpperCase().indexOf(filter) > -1
-              if (name_txtValue.toUpperCase().indexOf(filter) > -1 || right) {
+              asset_txtValue = asset_td.textContent || name_td.innerText;
+              id_txtValue = id_td.textContent || name_td.innerText;
+              name_bool = name_txtValue.toUpperCase().indexOf(filter) > -1;
+              desc_bool = desc_txtValue.toUpperCase().indexOf(filter) > -1;
+              asset_bool = asset_txtValue.toUpperCase().indexOf(filter) > -1;
+              id_bool = id_txtValue.toUpperCase().indexOf(filter) > -1;
+              if (name_bool || desc_bool || asset_bool || id_bool) {
                 tr[i].style.display = "";
               } else {
                 tr[i].style.display = "none";
@@ -226,8 +233,8 @@ class DatasetRequestAPI(RequestAPI):
                   <tr class="header">
                     <th style="width:30px">Idx</th>
                     <th style="width:20%;">Name</th>
-                    <th style="width:45%;">Description</th>
-                    <th style="width:15%;">Assets</th>
+                    <th style="width:35%;">Description</th>
+                    <th style="width:20%;">Assets</th>
                     <th style="width:300px;">Id</th>
                   </tr>
                 """
