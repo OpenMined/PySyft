@@ -46,16 +46,18 @@ def cli() -> None:
 def clean(location: str) -> None:
 
     if location == "library" or location == "volumes":
-        print("Deleting all Docker volumes in 3 secs (Ctrl-C to stop)")
-        time.sleep(3)
+        print("Deleting all Docker volumes in 2 secs (Ctrl-C to stop)")
+        time.sleep(2)
         subprocess.call("docker volume rm $(docker volume ls -q)", shell=True)
 
     if location == "containers" or location == "pantry":
-        print("Deleting all Docker containers in 5 secs (Ctrl-C to stop)")
-        time.sleep(5)
+        print("Deleting all Docker containers in 2 secs (Ctrl-C to stop)")
+        time.sleep(2)
         subprocess.call("docker rm -f $(docker ps -a -q)", shell=True)
 
     if location == "images":
+        print("Deleting all Docker images in 2 secs (Ctrl-C to stop)")
+        time.sleep(2)
         subprocess.call("docker rmi $(docker images -q)")
 
 
