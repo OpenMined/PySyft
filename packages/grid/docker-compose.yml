@@ -226,8 +226,6 @@ services:
     build:
       context: ./frontend
       dockerfile: frontend.dockerfile
-      args:
-        FRONTEND_ENV: ${FRONTEND_ENV-development}
       target: "grid-ui-${FRONTEND_ENV-development}"
     environment:
       - VERSION=${VERSION}
