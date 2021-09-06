@@ -140,6 +140,22 @@ class TensorPointer(Pointer):
         return self.simple_add(other=other)
 
 
+def to32bit(np_array: np.ndarray) -> np.ndarray:
+
+    if np_array.dtype == np.int64:
+        print("Casting internal tensor to int32")
+        out = np_array.astype(np.int32)
+
+    elif np_array.dtype == np.float64:
+        print("Casting internal tensor to float32")
+        out = np_array.astype(np.int32)
+
+    else:
+        out = np_array
+
+    return out
+
+
 @bind_protobuf
 class Tensor(
     PassthroughTensor,
@@ -160,10 +176,13 @@ class Tensor(
         """data must be a list of numpy array"""
 
         if isinstance(child, list):
-            child = np.array(child)
+            child = to32bit(np.array(child))
 
         if isinstance(child, th.Tensor):
-            child = child.numpy()
+            print(
+                "Converting PyTorch tensor to numpy tensor for internal representation..."
+            )
+            child = to32bit(child.numpy())
 
         if not isinstance(child, PassthroughTensor) and not isinstance(
             child, np.ndarray
