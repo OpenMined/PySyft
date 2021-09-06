@@ -140,7 +140,7 @@ class PhiTensorAncestor(TensorChainManager):
         min_val: ArrayLike,
         max_val: ArrayLike,
         scalar_manager: VirtualMachinePrivateScalarManager = VirtualMachinePrivateScalarManager(),
-        entities: Optional[Union[List[Union[Entity, str]], str]] = None
+        entities: Optional[Union[List[Union[Entity, str]], str]] = None,
     ) -> PhiTensorAncestor:
         """ """
 
@@ -157,11 +157,14 @@ class PhiTensorAncestor(TensorChainManager):
                 "syft.Tensor wrapping a " + str(type(self.child))
             )
 
-        # Check 2: If entities is a string, make it a list with one entity in it
+        # Check 2: If entities is a string, make it a list with one entity in it
         if isinstance(entities, str):
             entities = [Entity(entities)]
+        elif isinstance(entities, Entity):
+            entities = [entities]
 
-        # Check 3: Are entities strings or Entity objects. If they're strings lets create Entity objects
+        # Check 3: If entities are a list, are the items strings or Entity objects.
+        # If they're strings lets create Entity objects.
         _entities = list()
         for e in entities:
             if isinstance(e, str):
