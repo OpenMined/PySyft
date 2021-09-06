@@ -3,7 +3,6 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
-from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Type
@@ -140,7 +139,8 @@ class PhiTensorAncestor(TensorChainManager):
         min_val: ArrayLike,
         max_val: ArrayLike,
         scalar_manager: VirtualMachinePrivateScalarManager = VirtualMachinePrivateScalarManager(),
-        entities: Optional[Union[List[Union[Entity, str]], str]] = None,
+        entities: Optional[Any] = None,
+        skip_blocking_checks=False,
     ) -> PhiTensorAncestor:
         """ """
 
@@ -151,7 +151,7 @@ class PhiTensorAncestor(TensorChainManager):
             not isinstance(self.child, np.ndarray)
             and getattr(self.child, "dtype", None) == np.int32
         ):
-            raise Exception(
+            raise TypeError(
                 "At present, you can only call .private() "
                 "on syft.Tensor objects wrapping np.int32 arrays. You called it on a"
                 "syft.Tensor wrapping a " + str(type(self.child))
