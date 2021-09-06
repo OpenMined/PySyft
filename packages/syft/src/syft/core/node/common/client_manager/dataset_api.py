@@ -79,8 +79,124 @@ class DatasetRequestAPI(RequestAPI):
             a = self.all()
             return Dataset(a[key : key + 1], self.client, **a[key])  # noqa: E203
 
+    def all_as_datasets(self):
+        a = self.all()
+        out = list()
+        for key, d in enumerate(a):
+            out.append(Dataset(a[key : key + 1], self.client, **a[key]))  # noqa: E203
+        return out
+
+    def __len__(self):
+        return len(self.all())
+
     def __delitem__(self, key: str) -> Any:
         self.delete(dataset_id=key)
+
+    def _repr_html_(self):
+        initial_boilerplate = """<style>
+        #myInput {
+          background-position: 10px 12px; /* Position the search icon */
+          background-repeat: no-repeat; /* Do not repeat the icon image */
+          background-color: #bbb;
+          width: 98%; /* Full-width */
+          font-size: 14px; /* Increase font-size */
+          padding: 12px 20px 12px 40px; /* Add some padding */
+          border: 1px solid #ddd; /* Add a grey border */
+          margin-bottom: 12px; /* Add some space below the input */
+        }
+
+        #myTable {
+          border-collapse: collapse; /* Collapse borders */
+          width: 100%; /* Full-width */
+          border: 1px solid #ddd; /* Add a grey border */
+          font-size: 14px; /* Increase font-size */
+        }
+
+        #myTable th, #myTable td {
+          text-align: left; /* Left-align text */
+          padding: 10px; /* Add padding */
+        }
+
+        #myTable tr {
+          /* Add a bottom border to all table rows */
+          border-bottom: 1px solid #ddd;
+        }
+
+        #myTable tr.header, #myTable tr:hover {
+          /* Add a grey background color to the table header and on hover */
+          background-color: #777;
+        }
+        </style>
+
+        <input type="text" id="myInput" onkeyup="myFunction()" placeholder="Search for datasets..">
+
+        <table id="myTable">
+          <tr class="header">
+            <th style="width:30px">Idx</th>
+            <th style="width:20%;">Name</th>
+            <th style="width:45%;">Description</th>
+            <th style="width:15%;">Assets</th>
+            <th style="width:300px;">Id</th>
+          </tr>
+        """
+
+        rows = ""
+        for row_i, d in enumerate(self.all_as_datasets()):
+            assets = ""
+            for i, a in enumerate(d.data):
+                assets += '["' + a["name"] + '"] -> ' + a["dtype"] + "<br /><br />"
+
+            rows += (
+                """
+
+          <tr>
+            <td>["""
+                + str(row_i)
+                + """]</td>
+            <td>"""
+                + d.name
+                + """</td>
+            <td>"""
+                + d.description[0:500]
+                + """</td>
+            <td>"""
+                + assets
+                + """</td>
+            <td>"""
+                + d.id.replace("-", "")
+                + """</td>
+          </tr>"""
+            )
+        end_boilerplate = """
+        </table>
+
+        <script>
+        function myFunction() {
+          // Declare variables
+          var input, filter, table, tr, td, i, txtValue;
+          input = document.getElementById("myInput");
+          filter = input.value.toUpperCase();
+          table = document.getElementById("myTable");
+          tr = table.getElementsByTagName("tr");
+
+          // Loop through all table rows, and hide those who don't match the search query
+          for (i = 0; i < tr.length; i++) {
+            name_td = tr[i].getElementsByTagName("td")[1];
+            desc_td = tr[i].getElementsByTagName("td")[2];
+            if (name_td || desc_td) {
+              name_txtValue = name_td.textContent || name_td.innerText;
+              desc_txtValue = desc_td.textContent || name_td.innerText;
+              if (name_txtValue.toUpperCase().indexOf(filter) > -1 || desc_txtValue.toUpperCase().indexOf(filter) > -1) {
+                tr[i].style.display = "";
+              } else {
+                tr[i].style.display = "none";
+              }
+            }
+          }
+        }
+        </script>"""
+
+        return initial_boilerplate + rows + end_boilerplate
 
     # def to_obj(self, result: Any) -> Any:
     #     dataset_obj = super().to_obj(result)
