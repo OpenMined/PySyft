@@ -13,6 +13,11 @@ module.exports = {
     }
     return config
   },
+  env: {
+    NEXT_PUBLIC_VERSION: process.env.VERSION,
+    NEXT_PUBLIC_VERSION_HASH: process.env.VERSION_HASH,
+    NEXT_PUBLIC_NODE_TYPE: process.env.NODE_TYPE
+  },
   async redirects() {
     return [
       {
