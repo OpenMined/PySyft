@@ -95,7 +95,8 @@ end_boilerplate = """
             if (name_td || desc_td) {
               name_txtValue = name_td.textContent || name_td.innerText;
               desc_txtValue = desc_td.textContent || name_td.innerText;
-              if (name_txtValue.toUpperCase().indexOf(filter) > -1 || desc_txtValue.toUpperCase().indexOf(filter) > -1) {
+              right = desc_txtValue.toUpperCase().indexOf(filter) > -1
+              if (name_txtValue.toUpperCase().indexOf(filter) > -1 || right) {
                 tr[i].style.display = "";
               } else {
                 tr[i].style.display = "none";
@@ -149,16 +150,15 @@ class DatasetRequestAPI(RequestAPI):
 
         if isinstance(key, int):
             a = self.all()
-            return Dataset(
-                a[key : key + 1], self.client, key=key, **a[key]
-            )  # noqa: E203
+            d = a[key : key + 1]  # noqa: E203
+            return Dataset(d, self.client, key=key, **a[key])
 
         elif isinstance(key, slice):
 
             class NewObject:
-                def _repr_html_(self2):
+                def _repr_html_(self2: Any) -> str:
                     return self.dataset_list_to_html(
-                        self.all_as_datasets().__getitem__(key)
+                        self.all_as_datasets().__getitem__(key)  # type: ignore
                     )
 
             return NewObject()
@@ -167,12 +167,11 @@ class DatasetRequestAPI(RequestAPI):
         a = self.all()
         out = list()
         for key, d in enumerate(a):
-            out.append(
-                Dataset(a[key : key + 1], self.client, key=key, **a[key])
-            )  # noqa: E203
+            raw = a[key : key + 1]  # noqa: E203
+            out.append(Dataset(raw, self.client, key=key, **a[key]))
         return out
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.all())
 
     def __delitem__(self, key: str) -> Any:
@@ -184,7 +183,7 @@ class DatasetRequestAPI(RequestAPI):
         return "(no datasets found)Z"
 
     @staticmethod
-    def dataset_list_to_html(dataset_iterable):
+    def dataset_list_to_html(dataset_iterable: List[Any]) -> str:
 
         initial_boilerplate = """<style>
                 #myInput {
@@ -300,7 +299,7 @@ class Dataset:
             "Asset '" + key + "' doesn't exist! Try one of these: " + str(keys)
         )
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
 
         print("Dataset: " + self.name)
         print("Description: " + self.description)

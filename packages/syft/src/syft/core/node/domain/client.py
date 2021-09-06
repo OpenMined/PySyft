@@ -537,7 +537,8 @@ class DomainClient(Client):
             )
         sys.stdout.write("\rLoading dataset... checking dataset name for uniqueness...")
         datasets = self.datasets
-        for d in datasets:
+        for i in range(len(datasets)):
+            d = datasets[i]
             sys.stdout.write(".")
             if name == d.name:
                 print(
