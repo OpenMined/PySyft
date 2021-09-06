@@ -18,7 +18,7 @@ def get_db_engine(db_uri: str = str(settings.SQLALCHEMY_DATABASE_URI)) -> Engine
         Base.metadata.create_all(db_engine)
     else:
         db_engine = create_engine(db_uri, pool_pre_ping=True)
-
+    # Base.metadata.create_all(db_engine)
     return db_engine
 
 

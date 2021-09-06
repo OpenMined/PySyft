@@ -30,7 +30,7 @@ class Request(Base):
     id = Column(String(255), primary_key=True)
     date = Column(DateTime())
     user_id = Column(Integer, ForeignKey("syft_user.id"))
-    user_lname = Column(String(255))
+    user_name = Column(String(255))
     object_id = Column(String(255))
     reason = Column(String(255))
     status = Column(String(255), default="pending")
