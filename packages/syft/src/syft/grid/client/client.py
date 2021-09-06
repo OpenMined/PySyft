@@ -1,5 +1,6 @@
 # stdlib
 from getpass import getpass
+import json
 import logging
 import sys
 import time
@@ -106,6 +107,8 @@ def login(
             requests.get(url)
         except Exception:
             url = "http://localhost:" + str(port)
+    elif port != 80:
+        url = url + ":" + str(port)
 
     if verbose:
         sys.stdout.write("Connecting to " + str(url) + "...")
@@ -115,6 +118,9 @@ def login(
     if email is None or password is None:
         credentials = {}
         logging.info(
+            "\n\nNo email and password defined in login() - connecting as anonymous user!!!\n"
+        )
+        print(
             "\n\nNo email and password defined in login() - connecting as anonymous user!!!\n"
         )
     else:
@@ -131,3 +137,37 @@ def login(
         print("done!")
 
     return node
+
+
+def register(
+    name: Optional[str] = None,
+    email: Optional[str] = None,
+    password: Optional[str] = None,
+    url: Optional[str] = None,
+    port: Optional[int] = None,
+) -> Client:
+    if name is None:
+        name = input("Please enter your name:")
+
+    if email is None:
+        email = input("Please enter your email:")
+
+    if password is None:
+        password = getpass("Please enter your password")
+
+    if url is None:
+        url = input("Please enter URL of domain (ex: 'http://localhost'):")
+
+    if port is None:
+        port = int(input("Please enter the port your domain is running on:"))
+
+    register_url = url + ":" + str(port) + "/api/v1/register"
+    myobj = {"name": name, "email": email, "password": password}
+
+    x = requests.post(register_url, data=json.dumps(myobj))
+
+    if "error" not in json.loads(x.text):
+        print("Successfully registered! Logging in...")
+        return login(url=url, port=port, email=email, password=password)
+
+    raise Exception(x.text)
