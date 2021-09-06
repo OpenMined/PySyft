@@ -58,7 +58,7 @@ def clean(location: str) -> None:
     if location == "images":
         print("Deleting all Docker images in 2 secs (Ctrl-C to stop)")
         time.sleep(2)
-        subprocess.call("docker rmi $(docker images -q)")
+        subprocess.call("docker rmi $(docker images -q)", shell=True)
 
 
 @click.command(help="Start a new PyGrid domain/network node!")
