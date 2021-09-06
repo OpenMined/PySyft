@@ -589,7 +589,7 @@ class DomainClient(Client):
         if not skip_checks:
             for asset_name, asset in assets.items():
 
-                if not isinstance(asset, Tensor) and not isinstance(
+                if not isinstance(asset, Tensor) or not isinstance(
                     getattr(asset, "child", None), ADPTensor
                 ):
 
