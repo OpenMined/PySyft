@@ -29,7 +29,6 @@ class RequestReceiverService(ImmediateNodeServiceWithoutReply):
                     "Can't process Request service without a given " "verification key"
                 )
             )
-        # node.requests.register_request(msg)  # type: ignore
 
         if msg.requester_verify_key != verify_key:
             traceback_and_raise(
@@ -63,6 +62,8 @@ class RequestReceiverService(ImmediateNodeServiceWithoutReply):
         # tags of the requested object. Because the DS may give fake tags.
         while msg.object_tags:
             msg.object_tags.pop()
-        msg.object_tags.extend(node.store[msg.object_id]._tags)
+
+        if "budget" not in msg.object_type:
+            msg.object_tags.extend(node.store[msg.object_id]._tags)
 
         node.requests.append(msg)

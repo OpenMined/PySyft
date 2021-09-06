@@ -219,11 +219,22 @@ def update_request_msg(
     _req_owner = _current_user_key == _req.verify_key
 
     if status == "accepted" and _can_triage_request:
-        tmp_obj = node.store[UID.from_string(_req.object_id)]
-        tmp_obj.read_permissions[
-            VerifyKey(_req.verify_key.encode("utf-8"), encoder=HexEncoder)
-        ] = _req.id
-        node.store[UID.from_string(_req.object_id)] = tmp_obj
+        # if the type of object being requested has the word 'budget' in it, then we're
+        # not really requesting an object per-say, we're requesting for a budget increase
+        # TODO: clean up the RequestMessage API to explicitly have multiple request types, including
+        # one for budget requests.
+        if "budget" in _req.object_type:
+            current_user = node.users.first(verify_key=_current_user_key)
+            node.users.set(
+                user_id=current_user.id,
+                budget=current_user.budget + float(_req.object_type.split(":")[1]),
+            )
+        else:
+            tmp_obj = node.store[UID.from_string(_req.object_id)]
+            tmp_obj.read_permissions[
+                VerifyKey(_req.verify_key.encode("utf-8"), encoder=HexEncoder)
+            ] = _req.id
+            node.store[UID.from_string(_req.object_id)] = tmp_obj
         node.data_requests.set(request_id=_req.id, status=status)
     elif status == "denied" and (_can_triage_request or _req_owner):
         node.data_requests.set(request_id=_req.id, status=status)
@@ -453,7 +464,7 @@ def build_request_message(
         request_type="permissions",
         verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8"),
         object_type=msg.object_type,
-        tags=node.store[msg.object_id]._tags,
+        tags=node.store[msg.object_id]._tags if "budget" not in msg.object_type else [],
     )
 
 

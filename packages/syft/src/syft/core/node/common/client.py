@@ -219,9 +219,23 @@ class Client(AbstractNodeClient, Serializable):
 
     def send_immediate_msg_with_reply(
         self,
-        msg: Union[SignedImmediateSyftMessageWithReply, ImmediateSyftMessageWithReply],
+        msg: Union[
+            SignedImmediateSyftMessageWithReply,
+            ImmediateSyftMessageWithReply,
+            Any,  # TEMPORARY until we switch everything to NodeRunnableMessage types.
+        ],
         route_index: int = 0,
     ) -> SyftMessage:
+
+        # syft absolute
+        from syft.core.node.common.node_service.simple.simple_messages import (
+            NodeRunnableMessageWithReply,
+        )
+
+        # TEMPORARY: if message is instance of NodeRunnableMessageWithReply then we need to wrap it in a SimpleMessage
+        if isinstance(msg, NodeRunnableMessageWithReply):
+            msg = msg.prepare(address=self.address, reply_to=self.address)
+
         route_index = route_index or self.default_route_index
 
         if isinstance(msg, ImmediateSyftMessageWithReply):

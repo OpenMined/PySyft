@@ -317,6 +317,60 @@ class DomainClient(Client):
         msg = GetRemainingBudgetMessage(address=self.address, reply_to=self.address)
         return self.send_immediate_msg_with_reply(msg).budget  # type: ignore
 
+    def request_budget(
+        self,
+        eps: float,
+        reason: str = "",
+    ) -> Any:
+        """Method that requests access to the data on which the pointer points to.
+
+        Example:
+
+        .. code-block::
+
+            # data holder domain
+            domain_1 = Domain(name="Data holder")
+
+            # data
+            tensor = th.tensor([1, 2, 3])
+
+            # generating the client for the domain
+            domain_1_client = domain_1.get_root_client()
+
+            # sending the data and receiving a pointer
+            data_ptr_domain_1 = tensor.send(domain_1_client)
+
+            # requesting access to the pointer
+            data_ptr_domain_1.request(name="My Request", reason="Research project.")
+
+        :param name: The title of the request that the data owner is going to see.
+        :type name: str
+        :param reason: The description of the request. This is the reason why you want to have
+            access to the data.
+        :type reason: str
+
+        .. note::
+            This method should be used when the remote data associated with the pointer wants to be
+            downloaded locally (or use .get() on the pointer).
+        """
+
+        # relative
+        from ..common.node_service.request_receiver.request_receiver_messages import (
+            RequestMessage,
+        )
+
+        msg = RequestMessage(
+            request_description=reason,
+            address=self.address,
+            owner_address=self.address,
+            object_id=UID(),  # TODO: this is a dummy ID just to appease things
+            object_type="budget:" + str(eps),  # TODO: remove this
+            requester_verify_key=self.verify_key,
+            timeout_secs=-1,
+        )
+
+        self.send_immediate_msg_without_reply(msg=msg)
+
     def load(
         self, obj_ptr: Type[Pointer], address: Address, pointable: bool = False
     ) -> None:

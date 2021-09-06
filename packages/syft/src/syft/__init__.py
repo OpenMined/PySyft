@@ -26,11 +26,11 @@ Syft "python" functionality includes the following modules:
 To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` module...
 """
 
+import sys
+
 # stdlib
 from pathlib import Path
-import sys
-from typing import Any
-from typing import Dict
+from typing import Any, Dict
 
 # third party
 from pkg_resources import DistributionNotFound  # noqa: F401
@@ -39,9 +39,6 @@ from pkg_resources import get_distribution  # noqa: F401
 # syft absolute
 # ASTRACT OBJECT IMPORTS
 from syft.core import common  # noqa: F401
-
-# from syft.core.adp.adversarial_accountant import AdversarialAccountant
-# from syft.core.adp.entity import Entity
 from syft.core.common import event_loop  # noqa: F401
 
 # Convenience Methods
@@ -70,6 +67,7 @@ from syft.core.tensor.tensor import Tensor  # noqa: F401
 from syft.experimental_flags import flags  # noqa: F401
 from syft.grid.client.client import connect  # noqa: F401
 from syft.grid.client.client import login  # noqa: F401
+from syft.grid.client.client import register  # noqa: F401
 
 # Convenience Functions
 from syft.grid.duet import bcolors  # noqa: F401
