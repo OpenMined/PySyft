@@ -55,6 +55,9 @@ def clean(location: str) -> None:
         time.sleep(5)
         subprocess.call("docker rm -f $(docker ps -a -q)", shell=True)
 
+    if location == "images":
+        subprocess.call("docker rmi $(docker images -q)")
+
 
 @click.command(help="Start a new PyGrid domain/network node!")
 @click.argument("args", type=str, nargs=-1)
