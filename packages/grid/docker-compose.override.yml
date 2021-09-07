@@ -137,7 +137,9 @@ services:
       dockerfile: frontend.dockerfile
       args:
         FRONTEND_ENV: ${FRONTEND_ENV-development}
-        NODE_TYPE: ${NODE_TYPE?Variable not set}
+        TYPE: ${NODE_TYPE?Variable not set}
+    volumes:
+      - ./frontend/src:/app/src
     labels:
       - traefik.enable=true
       - traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}
