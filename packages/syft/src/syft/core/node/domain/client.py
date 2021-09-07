@@ -332,7 +332,9 @@ class DomainClient(Client):
                 eps = float(input("Please specify how much more epsilon you want:"))
 
             if reason == "":
-                reason = str(input("Why should the domain owner give you more epsilon:"))
+                reason = str(
+                    input("Why should the domain owner give you more epsilon:")
+                )
 
         # relative
         from ..common.node_service.request_receiver.request_receiver_messages import (
@@ -351,7 +353,11 @@ class DomainClient(Client):
 
         self.send_immediate_msg_without_reply(msg=msg)
 
-        print("Requested " + str(eps) + " epsilon of budget. Call .privacy_budget to see if your budget has arrived!")
+        print(
+            "Requested "
+            + str(eps)
+            + " epsilon of budget. Call .privacy_budget to see if your budget has arrived!"
+        )
 
     def load(
         self, obj_ptr: Type[Pointer], address: Address, pointable: bool = False

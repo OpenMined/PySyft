@@ -23,6 +23,9 @@ from .passthrough import is_acceptable_simple_type  # type: ignore
 
 _SingleEntityPhiTensorRef = None
 
+# stdlib
+import textwrap
+
 
 def _SingleEntityPhiTensor() -> Type[PassthroughTensor]:
     global _SingleEntityPhiTensorRef
@@ -106,8 +109,125 @@ class AutogradTensorAncestor(TensorChainManager):
         return self
 
 
-def entity_creation_tutorial() -> List[Any]:
-    print("Entity creation tutorial!")
+def entity_creation_wizard(data) -> List[Any]:
+
+    w = textwrap.TextWrapper(initial_indent="\t", subsequent_indent="\t")
+
+    welcome_msg = "Welcome to the Data Subject Annotation Wizard!!!"
+
+    description1 = """You've arrived here because you called Tensor.private() without passing in any entities!
+Since the purpose of .private() is to add metadata for the support of automatic differential
+privacy budgeting, you need to describe which parts of your Tensor correspond to which
+real-world data subjects (entities) whose privacy you want to protect. This is the only
+way the system knows, for example, that it costs twice as much privacy budget when twice
+as much of your data (say, 2 rows instead of 1 row) refer to the same entity."""
+
+    description2 = """Entities can be people (such as a medical patient), places (such as a family's address), or
+even organizations (such as a business, state, or country). If you're not sure what kind of entity
+to include, just ask yourself the question, "who am I trying to protect the privacy of?". If it's
+an organization, make one entity per organization. If it's people, make one entity per person.
+If it's a group of people who are somehow similar/linked to each other (such as a family),
+make each entity a different group. For more information on differential privacy, see OpenMined's
+course on the subject: https://courses.openmined.org/"""
+
+    description3 = """Since you didn't pass in entities into .private() (or you did so incorrectly), this wizard is
+going to guide you through the process of annotating your data with entities."""
+
+    description4 = """In this wizard, we're going to ask you for *unique identifiers* which refer to the entities
+in your data. While the unique identifiers need not be personal data (they can be random strings of letters and numbers
+if you like). It is ESSENTIAL that you use the same identifier when referring to the same entity in the
+data that you never accidentally refer to two entities by the same identifier. Additionally, if you plan
+to do any kind of data JOIN with another dataset, it is ESSENTIAL that you are using the same unique
+identifiers for entities as the data you're joining with. Since these unique identifiers may be personal
+information, PySyft might not be able to detect if two tensors are using different identifiers for the
+same person."""
+
+    description5 = """So, in this tutorial we're going to be asking you to specify Unique Identifiers (UIDs) for each entity
+in your data. This could be an email, street address, or any other string that identifies someone
+uniquely in your data and in the data you intend to use with your data (if any)."""
+
+    print("\t" + "=" * 69)
+    print(w.fill(welcome_msg))
+    print("\t" + "=" * 69)
+    print()
+    print(w.fill(description1))
+    print()
+    print(w.fill(description2))
+    print()
+    print(w.fill(description3))
+    print()
+    print(w.fill(description4))
+    print()
+    print(w.fill(description5))
+    print()
+
+    print("\tDo you understand, and are you ready to proceed? (yes/no)")
+    consent = str(input("\t"))
+
+    if consent == "no":
+        raise Exception("User cancelled entity creation wizard!")
+
+    print("\tExcellent! Let's begin!\n")
+    # print("\tYou passed in a tensor with the shape:" + str(data.shape))
+    print()
+
+    print("\t" + "_" * 69)
+    print()
+
+    print(w.fill("Question 1: Is this entire tensor referring to the same entity?"))
+    print()
+    print(w.fill("Examples:"))
+    print("\t - a single medical scan of one patient")
+    print("\t - a single spreadsheet of proprietary statistics about a business")
+    print("\t - a tensor of facts about a country")
+    print()
+    print(
+        w.fill(
+            """(if the tensor is about one entity, but it also contains multiple other entities within,
+such as a tensor about all the customers of one business, ask yourself, are you trying to
+protect the people or the business)"""
+        )
+    )
+    print()
+    print(
+        w.fill(
+            "If yes, write the UID of the entity this data is about, otherwise write 'no'."
+        )
+    )
+    single_uid = input("\t")
+
+    if single_uid != "no":
+        print()
+        print(
+            w.fill(
+                "Excellent! Your data will be annotated as referring to:"
+                + str(single_uid)
+            )
+        )
+        print()
+        print(
+            w.fill(
+                "Congratulations! You're all done with the Data Subject Annotation Wizard!!!"
+            )
+        )
+        print()
+        print("\t" + "=" * 69)
+        return [single_uid]
+
+    print("\t" + "_" * 69)
+    print()
+    print(
+        w.fill(
+            "Question 2: Does each row correspond to an entity, perhaps with occasional repeats (yes/no)?"
+        )
+    )
+    answer = str(input("\t"))
+
+    print()
+
+    print("\t" + "_" * 69)
+    print(data)
+
     return ["asdf"]
 
 
@@ -176,8 +296,10 @@ class PhiTensorAncestor(TensorChainManager):
                 raise Exception(
                     "Error: 'entities' argument to .private() must not be None!"
                 )
-
-            entities = entity_creation_tutorial()
+            print(
+                "ALERT: You didn't pass in any entities. Launching entity wizard...\n"
+            )
+            entities = entity_creation_wizard(self.child)
 
         # Check 3: If entities is a string, make it a list with one entity in it
         if isinstance(entities, str):
