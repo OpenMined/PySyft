@@ -224,7 +224,7 @@ def update_request_msg(
         # TODO: clean up the RequestMessage API to explicitly have multiple request types, including
         # one for budget requests.
         if "budget" in _req.object_type:
-            current_user = node.users.first(verify_key=_current_user_key)
+            current_user = node.users.first(verify_key=_req.verify_key)
             node.users.set(
                 user_id=current_user.id,
                 budget=current_user.budget + float(_req.object_type.split(":")[1]),
