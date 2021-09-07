@@ -36,6 +36,7 @@ from ..smpc.mpc_tensor import MPCTensor
 from ..tensor import Tensor
 from ..types import SupportedChainType  # type: ignore
 from ..util import inputs2child  # type: ignore
+from ..broadcastable import is_broadcastable
 from .initial_gamma import InitialGammaTensor
 
 
@@ -376,18 +377,30 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
     # Check for shape1 = (1,s), and shape2 = (,s) --> as an example
     def __eq__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
         if is_acceptable_simple_type(other):
-            data = self.child == other  # Need to check if shapes are broadcastable!!
+            if isinstance(other, np.ndarray):
+                # If other is a Numpy Array, we need to check if shapes can be broadcast
+                if is_broadcastable(other.shape, self.child.shape):
+                    data = self.child == other
+                else:
+                    raise Exception(
+                        f"Tensor shapes do not match for __eq__: {self.child.shape} != {other.child.shape}"
+                    )
+            else:
+                data = self.child == other
         elif isinstance(other, SingleEntityPhiTensor):
             if self.entity != other.entity:
                 raise NotImplementedError(
                     "Operation not implemented yet for different entities"
                 )
             else:
-                data = self.child == other.child
+                if is_broadcastable(self.child.shape, other.child.shape):
+                    data = self.child == other.child
+                else:
+                    raise Exception(
+                        f"Tensor shapes do not match for __eq__: {self.child.shape} != {other.child.shape}"
+                    )
         elif isinstance(other, PassthroughTensor):
-            if (
-                self.child.shape == other.child.shape
-            ):  # also check if shapes are broadcastable
+            if is_broadcastable(self.child.shape, other.child.shape):
                 data = self.child == other.child
         else:
             raise Exception(
@@ -402,7 +415,6 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
         )
 
     def __ne__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
-        # TODO: Check if exceptions are raised properly
         # Make use of the equal operator we just implemented, and invert the result
         opposite_result = self.__eq__(other)
 
@@ -474,7 +486,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
 
             if self.entity.name != other.entity.name:
                 # this should return a GammaTensor
-                return NotImplemented
+                raise NotImplementedError
 
             data = self.child + other.child
             min_vals = self.min_vals + other.min_vals
@@ -506,8 +518,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             )
 
         else:
-
-            return NotImplemented
+            raise NotImplementedError
 
     def __neg__(self) -> SingleEntityPhiTensor:
 
@@ -645,7 +656,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
         if isinstance(other, SingleEntityPhiTensor):
             if self.entity != other.entity:
                 # this should return a GammaTensor
-                return NotImplemented
+                raise NotImplemented
 
             data = self.child - other.child
             min_vals = self.min_vals - other.min_vals
@@ -660,7 +671,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
                 scalar_manager=self.scalar_manager,
             )
         else:
-            return NotImplemented
+            raise NotImplemented
 
     def __truediv__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
 

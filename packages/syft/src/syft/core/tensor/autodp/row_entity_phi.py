@@ -24,6 +24,7 @@ from ..passthrough import is_acceptable_simple_type  # type: ignore
 from .initial_gamma import InitialGammaTensor  # type: ignore
 
 
+
 @bind_protobuf
 class RowEntityPhiTensor(PassthroughTensor, RecursiveSerde):
 
