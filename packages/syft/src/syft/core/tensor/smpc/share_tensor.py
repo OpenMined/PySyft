@@ -43,6 +43,8 @@ METHODS_FORWARD_ALL_SHARES = {
 INPLACE_OPS = {
     "resize",
 }
+# relative
+from .party import Party
 
 
 @serializable()
@@ -50,45 +52,58 @@ class ShareTensor(PassthroughTensor):
     __slots__ = (
         "rank",
         "ring_size",
-        "generator_przs",
-        "nr_parties",
+        "parties_info",  # parties info (email, password, port)
+        "clients",  # clients connections
         "min_value",
         "max_value",
+        "generator_przs",
+        # Only ShareTensors with seed_przs could be sent over the wire
+        "seed_przs",
     )
 
     def __init__(
         self,
         rank: int,
-        nr_parties: int,
-        ring_size: int = 2 ** 64,
+        parties_info: List[Party],
+        seed_przs: int,
+        clients: List[Any] = None,
+        ring_size: int = 2 ** 32,  # TODO: This needs to be changed to 2^64
         value: Optional[Any] = None,
-        seed_shares: Optional[int] = None,
-        generator_przs: Optional[Any] = None,  # TODO: Add correct type
+        init_clients: bool = True,
     ) -> None:
-
-        if (seed_shares is None) == (generator is None):
-            raise ValueError("Only seed_shares or generator should be populated!")
-
-        self.generator_przs = None
-        self.seed_shares = None
-
-        if generator_przs:
-            self.generator_przs = generator
-        else:
-            self.seed_shares = seed_shares
-
         self.rank = rank
         self.ring_size = ring_size
-        self.nr_parties = nr_parties
+        self.nr_parties = len(parties_info)
+        self.parties_info = parties_info
+        if clients is not None:
+            self.clients = clients
+        elif init_clients:
+            # syft absolute
+            import syft as sy
+
+            self.clients = [
+                sy.login(
+                    url=party_info.url,
+                    email=party_info.email,
+                    password=party_info.passwd,
+                    port=party_info.port,
+                )
+                for party_info in parties_info
+            ]
+
         self.min_value, self.max_value = ShareTensor.compute_min_max_from_ring(
             self.ring_size
         )
+
+        # This should be set only in the deserializer
+        self.generator_przs = None
+        self.seed_przs = seed_przs
         super().__init__(value)
 
     def __getitem__(self, item: Union[str, int, slice]) -> ShareTensor:
         return ShareTensor(
             rank=self.rank,
-            nr_parties=self.nr_parties,
+            parties=self.parties,
             ring_size=self.ring_size,
             value=self.child[item],
         )
@@ -98,13 +113,12 @@ class ShareTensor(PassthroughTensor):
             rank=self.rank,
             nr_parties=self.nr_parties,
             ring_size=self.ring_size,
-            generator=_self.generator_przs,
-            seed_shares=self.seed_shares,
+            seed_przs=self.seed_przs,
         )
 
     @staticmethod
     @lru_cache(32)
-    def compute_min_max_from_ring(ring_size: int = 2 ** 64) -> Tuple[int, int]:
+    def compute_min_max_from_ring(ring_size: int = 2 ** 32) -> Tuple[int, int]:
         min_value = (-ring_size) // 2
         max_value = (ring_size - 1) // 2
         return min_value, max_value
@@ -156,16 +170,17 @@ class ShareTensor(PassthroughTensor):
         value: Optional[Any],
         shape: Tuple[int, ...],
         rank: int,
-        nr_parties: int,
-        seed_shares: Optional[int] = None,
-        generator: Optional[Any] = None,
+        parties_info: List[Party],
+        seed_przs: Optional[int] = None,
+        generator_przs: Optional[Any] = None,
     ) -> "ShareTensor":
 
-        # relative
-        from ..tensor import Tensor
+        # syft absolute
+        from syft.core.tensor.tensor import Tensor
 
-        if (seed_shares is None) == (generator is None):
-            raise ValueError("Only seed_shares or generator should be populated")
+        nr_parties = len(parties_info)
+        if (seed_przs is None) == (generator_przs is None):
+            raise ValueError("Only seed_przs or generator should be populated")
 
         if value is None:
             value = Tensor(np.zeros(shape, dtype=np.int32))  # TODO: change to np.int64
@@ -175,25 +190,30 @@ class ShareTensor(PassthroughTensor):
         # when shares are not sent between parties -- like private addition/subtraction, but it might
         # impose for multiplication
         # The secret holder should generate the shares and send them to the other parties
-        if generator:
-            generator_shares = generator
+        if generator_przs:
+            generator_shares = generator_przs
         else:
-            generator_shares = np.random.default_rng(seed_shares)
+            generator_shares = np.random.default_rng(seed_przs)
 
-        share = value.child
-        if not isinstance(share, ShareTensor):
+        if isinstance(value, ShareTensor):
+            share = value
+        elif isinstance(value.child, ShareTensor):
+            share = value.child
+        else:
             share = ShareTensor(
-                value=share,
+                value=value.child,
                 rank=rank,
-                nr_parties=nr_parties,
-                generator_przs=generator_shares,
+                parties_info=parties_info,
+                seed_przs=None,
+                init_clients=False,
             )
 
+        share.generator_przs = generator_shares
         shares = [
             generator_shares.integers(
                 low=share.min_value, high=share.max_value, size=shape
             )
-            for _ in range(nr_parties)
+            for _ in parties_info
         ]
         share.child += shares[rank] - shares[(rank + 1) % nr_parties]
 
@@ -204,8 +224,8 @@ class ShareTensor(PassthroughTensor):
         value: Optional[Any],
         shape: Tuple[int],
         rank: int,
-        nr_parties: int,
-        seed_shares: int,
+        parties_info: List[Party],
+        seed_przs: int,
         share_wrapper: Any,
     ) -> PassthroughTensor:
 
@@ -214,16 +234,16 @@ class ShareTensor(PassthroughTensor):
                 value=value.child,
                 shape=shape,
                 rank=rank,
-                nr_parties=nr_parties,
-                seed_shares=seed_shares,
+                parties_info=parties_info,
+                seed_przs=seed_przs,
             )
         else:
             share = ShareTensor.generate_przs(
                 value=value,
                 shape=shape,
                 rank=rank,
-                nr_parties=nr_parties,
-                seed_shares=seed_shares,
+                parties_info=parties_info,
+                seed_przs=seed_przs,
             )
 
         share_wrapper.child.child = share
@@ -444,50 +464,35 @@ class ShareTensor(PassthroughTensor):
         return object.__getattribute__(self, attr_name)
 
     def _object2proto(self) -> ShareTensor_PB:
-        if self.generator_przs is not None:
-            raise ValueError(
-                "Should not attempt to send a ShareTensor that has a generator instanciated"
-            )
-
+        proto_init_kwargs = {
+            "rank": self.rank,
+            "parties_info": [serialize(party) for party in self.parties_info],
+            "seed_przs": self.seed_przs,
+        }
         if isinstance(self.child, np.ndarray):
-            return ShareTensor_PB(
-                array=serialize(self.child),
-                rank=self.rank,
-                nr_parties=self.nr_parties,
-                seed_shares=self.seed_shares,
-            )
+            proto_init_kwargs["array"] = serialize(self.child)
         elif isinstance(self.child, torch.Tensor):
-            return ShareTensor_PB(
-                array=serialize(np.array(self.child)),
-                rank=self.rank,
-                nr_parties=self.nr_parties,
-                seed_shares=self.seed_shares,
-            )
+            proto_init_kwargs["array"] = serialize(np.array(self.child))
         else:
-            return ShareTensor_PB(
-                tensor=serialize(self.child),
-                rank=self.rank,
-                nr_parties=self.nr_parties,
-                seed_shares=self.seed_shares,
-            )
+            proto_init_kwargs["tensor"] = serialize(self.child)
+
+        return ShareTensor_PB(**proto_init_kwargs)
 
     @staticmethod
     def _proto2object(proto: ShareTensor_PB) -> "ShareTensor":
+        init_kwargs = {
+            "rank": proto.rank,
+            "parties_info": [deserialize(party) for party in proto.parties_info],
+            "seed_przs": proto.seed_przs,
+        }
         if proto.HasField("tensor"):
-            res = ShareTensor(
-                rank=proto.rank,
-                nr_parties=proto.nr_parties,
-                value=deserialize(proto.tensor),
-                generator=np.default_rng(proto.seed_shares),
-            )
+            init_kwargs["value"] = deserialize(proto.tensor)
         else:
-            res = ShareTensor(
-                rank=proto.rank,
-                nr_parties=proto.nr_parties,
-                value=deserialize(proto.array),
-                generator=np.default_rng(proto.seed_shares),
-            )
+            init_kwargs["value"] = deserialize(proto.array)
 
+        res = ShareTensor(**init_kwargs)
+        generator_przs = np.random.default_rng(proto.seed_przs)
+        res.generator_przs = generator_przs
         return res
 
     @staticmethod

@@ -34,7 +34,7 @@ MAP_FUNC_TO_NR_GENERATOR_INVOKES = {
     "__add__": 0,
     "__mul__": 0,
     "__sub__": 0,
-    "__gt__": 0,
+    "__gt__": 1,
 }
 
 
@@ -274,19 +274,13 @@ def smpc_mul(
     return actions
 
 
-def bit_decomposition(*args, **kwargs):
-    ...
-
-
 def smpc_gt(
     nr_parties: int, self_id: UID, other_id: UID, seed_id_locations: int, node: Any
 ) -> List[SMPCActionMessage]:
     """Generator for the smpc_gt with a private value"""
     generator = np.random.default_rng(seed_id_locations)
 
-    for _ in range(MAP_FUNC_TO_NR_GENERATOR_INVOKES["__gt__"]):
-        generator.bytes(16)
-
+    sub_result_id = UID(UUID(bytes=generator.bytes(16)))
     result_id = UID(UUID(bytes=generator.bytes(16)))
     other = node.store[other_id].data
 
@@ -294,11 +288,25 @@ def smpc_gt(
     if not isinstance(other, ShareTensor):
         raise ValueError("Greater than not yet implement for public values")
     else:
+        # [Z] = [A] -[B]
+        # Convert [Z] to binary share
+        actions.append(
+            SMPCActionMessage(
+                "mpc_sub",
+                self_id=self_id,
+                args_id=[other_id],
+                kwargs_id={},
+                ranks_to_run_action=list(range(nr_parties)),
+                result_id=sub_result_id,
+                address=node.address,
+            )
+        )
+
         actions.append(
             SMPCActionMessage(
                 "mpc_bit_decomposition",
-                self_id=self_id,
-                args_id=[other_id],
+                self_id=sub_result_id,
+                args_id=[],
                 kwargs_id={},
                 ranks_to_run_action=list(range(nr_parties)),
                 result_id=result_id,
@@ -308,15 +316,33 @@ def smpc_gt(
     return actions
 
 
-def bit_decomposition(_self, other_share):
+def bit_decomposition(share):
+    # syft absolute
+    import syft as sy
+
+    rank = share.rank
+    nr_parties = share.nr_parties
+    parties = share.parties
+
+    shares = []
+    for i in range(nr_parties):
+        if rank == 0:
+            value = share
+        else:
+            value = None
+
     zero_share = ShareTensor.generate_przs(
-        value=None,
-        shape=_self.shape,
-        rank=_self.rank,
-        nr_parties=_self.nr_parties,
-        generator_przs=_self.generator_przs,
+        value=value,
+        shape=share.shape,
+        rank=rank,
+        nr_parties=nr_parties,
+        generator_przs=share.generator_przs,
     )
-    print(zero_share)
+
+    for username, passwd, port in parties:
+        parties.append(sy.login(email=username, password=passwd, port=port))
+
+    return zero_share
 
 
 # Given an SMPC Action map it to an action constructor

@@ -20,11 +20,18 @@ from typing import cast
 import numpy as np
 import torch
 
+# syft absolute
+import syft as sy
+from syft.core.tensor.passthrough import PassthroughTensor
+from syft.core.tensor.passthrough import SupportedChainType
+from syft.core.tensor.smpc.share_tensor import ShareTensor
+
 # relative
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import SupportedChainType  # type: ignore
 from ..util import implements  # type: ignore
 from .share_tensor import ShareTensor
+from .party import Party
 from .utils import ispointer
 
 METHODS_FORWARD_ALL_SHARES = {
@@ -48,24 +55,45 @@ INPLACE_OPS = {
 
 
 class MPCTensor(PassthroughTensor):
+    __slots__ = (
+        "seed_przs",
+        "mpc_shape",
+        "parties",  # parties info (email, password, port)
+        "clients",  # clients connection
+    )
+
     def __init__(
         self,
-        parties: Optional[List[Any]] = None,
+        parties_info: List[Party],
+        clients: Optional[List[Any]] = None,
         secret: Optional[Any] = None,
         shares: Optional[List[ShareTensor]] = None,
-        shape: Optional[Tuple[int, ...]] = None,
-        seed_shares: Optional[int] = None,
+        shape: Optional[Tuple[int]] = None,
+        seed_przs: Optional[int] = None,
     ) -> None:
+
+        if clients is not None:
+            self.clients = clients
+        else:
+            self.clients = [
+                sy.login(
+                    url=party_info.url,
+                    email=party_info.email,
+                    password=party_info.passwd,
+                    port=party_info.port,
+                )
+                for party_info in parties_info
+            ]
 
         if secret is None and shares is None:
             raise ValueError("Secret or shares should be populated!")
 
-        if seed_shares is None:
+        if seed_przs is None:
             # Allow the user to specify if they want to use a specific seed when generating the shares
             # ^This is unsecure and should be used with cautioness
-            seed_shares = secrets.randbits(32)
+            seed_przs = secrets.randbits(32)
 
-        self.seed_shares = seed_shares
+        self.seed_przs = seed_przs
 
         # TODO: We can get this from the the secret if the secret is local
         # TODO: https://app.clubhouse.io/openmined/story/1128/tech-debt-for-adp-smpc-demo?stories_sort_by\
@@ -74,24 +102,26 @@ class MPCTensor(PassthroughTensor):
             raise ValueError("Shape of the secret should be known")
 
         if secret is not None:
-            if parties is None:
+            if parties_info is None:
                 raise ValueError(
                     "Parties should not be None if secret is not already secret shared"
                 )
             shares = MPCTensor._get_shares_from_secret(
                 secret=secret,
-                parties=parties,
+                parties_info=parties_info,
+                clients=clients,
                 shape=shape,
-                seed_shares=seed_shares,
+                seed_przs=seed_przs,
             )
 
         if shares is None:
             raise ValueError("Shares should not be None at this step")
 
-        res = MPCTensor._mpc_from_shares(shares, parties)
+        res = MPCTensor._mpc_from_shares(
+            shares, clients=self.clients, parties_info=parties_info
+        )
 
-        self.parties = parties
-
+        self.parties_info = parties_info
         self.mpc_shape = shape
 
         # we need to make sure that when we zip up clients from
@@ -117,9 +147,10 @@ class MPCTensor(PassthroughTensor):
 
         return MPCTensor(
             parties=self.parties,
+            clients=self.clients,
             shares=new_shares,
             shape=self.mpc_shape,
-            seed_shares=self.seed_shares,
+            seed_przs=self.seed_przs,
         )
 
     @property
@@ -129,7 +160,8 @@ class MPCTensor(PassthroughTensor):
     @staticmethod
     def _mpc_from_shares(
         shares: List[ShareTensor],
-        parties: Optional[List[Any]] = None,
+        clients: Optional[List[Any]] = None,
+        parties_info: Optional[List[PartyInfo]] = None,
     ) -> List[ShareTensor]:
         if not isinstance(shares, list):
             raise ValueError("_mpc_from_shares expected a list of shares")
@@ -137,43 +169,68 @@ class MPCTensor(PassthroughTensor):
         if ispointer(shares[0]):
             # Remote shares
             return shares
-        elif parties is None:
+        elif parties_info is None:
             raise ValueError(
                 "Parties should not be None if shares are not already sent to parties"
             )
+        elif clients is None:
+            raise ValueError(
+                "There should exist a list of connections with each client"
+            )
         else:
-            return MPCTensor._mpc_from_local_shares(shares, parties)
+            return MPCTensor._mpc_from_local_shares(
+                shares, clients=clients, parties_info=parties_info
+            )
 
     @staticmethod
     def _mpc_from_local_shares(
-        shares: List[ShareTensor], parties: List[Any]
+        shares: List[ShareTensor], clients: List[Any], parties_info: List[PartyInfo]
     ) -> List[ShareTensor]:
-        # TODO: ShareTensor needs to have serde serializer/deserializer
-        shares_ptr = [share.send(party) for share, party in zip(shares, parties)]
+        shares_ptr = [share.send(client) for share, client in zip(shares, clients)]
         return shares_ptr
 
     @staticmethod
     def _get_shares_from_secret(
+<<<<<<< HEAD
         secret: Any, parties: List[Any], shape: Tuple[int, ...], seed_shares: int
+=======
+        secret: Any,
+        parties_info: List[PartyInfo],
+        clients: List[Any],
+        shape: Tuple[int],
+        seed_przs: int,
+>>>>>>> 74dbe75e1... Test
     ) -> List[ShareTensor]:
         if ispointer(secret):
             if shape is None:
                 raise ValueError("Shape must be specified when the secret is remote")
             return MPCTensor._get_shares_from_remote_secret(
-                secret=secret, shape=shape, parties=parties, seed_shares=seed_shares
+                secret=secret,
+                shape=shape,
+                parties_info=parties_info,
+                clients=clients,
+                seed_przs=seed_przs,
             )
 
         return MPCTensor._get_shares_from_local_secret(
-            secret=secret, seed_shares=seed_shares, shape=shape, nr_parties=len(parties)
+            secret=secret, seed_przs=seed_przs, shape=shape, parties_info=parties_info
         )
 
     @staticmethod
     def _get_shares_from_remote_secret(
+<<<<<<< HEAD
         secret: Any, shape: Tuple[int, ...], parties: List[Any], seed_shares: int
+=======
+        secret: Any,
+        shape: Tuple[int],
+        parties_info: List[PartyInfo],
+        clients: List[Any],
+        seed_przs: int,
+>>>>>>> 74dbe75e1... Test
     ) -> List[ShareTensor]:
         shares = []
-        for i, party in enumerate(parties):
-            if secret is not None and party == secret.client:
+        for i, party_connection in enumerate(clients):
+            if secret is not None and party_connection == secret.client:
                 value = secret
             else:
                 value = None
@@ -188,24 +245,22 @@ class MPCTensor(PassthroughTensor):
                 share_wrapper = secret.to_local_object_without_private_data_child()
                 share_wrapper_pointer = share_wrapper.send(party)
 
-                remote_share = party.syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs_on_dp_tensor(
+                remote_share = party_connection.syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs_on_dp_tensor(
                     rank=i,
-                    nr_parties=len(parties),
+                    parties_info=parties_info,
                     value=value,
                     shape=shape,
-                    seed_shares=seed_shares,
+                    seed_przs=seed_przs,
                     share_wrapper=share_wrapper_pointer,
                 )
 
             else:
-                remote_share = (
-                    party.syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs(
-                        rank=i,
-                        nr_parties=len(parties),
-                        value=value,
-                        shape=shape,
-                        seed_shares=seed_shares,
-                    )
+                remote_share = party_connection.syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs(
+                    rank=i,
+                    parties_info=parties_info,
+                    value=value,
+                    shape=shape,
+                    seed_przs=seed_przs,
                 )
 
             shares.append(remote_share)
@@ -214,9 +269,14 @@ class MPCTensor(PassthroughTensor):
 
     @staticmethod
     def _get_shares_from_local_secret(
+<<<<<<< HEAD
         secret: Any, shape: Tuple[int, ...], nr_parties: int, seed_shares: int
+=======
+        secret: Any, shape: Tuple[int], parties_info: List[Party], seed_przs: int
+>>>>>>> 74dbe75e1... Test
     ) -> List[ShareTensor]:
         shares = []
+        nr_parties = len(parties_info)
         for i in range(nr_parties):
             if i == nr_parties - 1:
                 value = secret
@@ -225,10 +285,10 @@ class MPCTensor(PassthroughTensor):
 
             local_share = ShareTensor.generate_przs(
                 rank=i,
-                nr_parties=nr_parties,
+                parties_info=parties_info,
                 value=value,
                 shape=shape,
-                seed_shares=seed_shares,
+                seed_przs=seed_przs,
             )
 
             shares.append(local_share)
@@ -357,7 +417,9 @@ class MPCTensor(PassthroughTensor):
         if isinstance(other, MPCTensor):
             res_shares = [op(a, b) for a, b in zip(self.child, other.child)]
         else:
-            raise ValueError("Add works only for the MPCTensor at the moment!")
+            raise ValueError(
+                "Private operations works only for the MPCTensor (at the moment...)!"
+            )
         return res_shares
 
     def __apply_public_op(self, y: Any, op_str: str) -> List[ShareTensor]:
@@ -389,27 +451,42 @@ class MPCTensor(PassthroughTensor):
         _self = self
         if ispointer(y):
             client = getattr(y, "client", None)
+            if self.clients is None:
+                raise Exception(
+                    "We don't have clients list of connections in the MPCTensor! This should not happen."
+                )
             if self.parties is None:
-                raise Exception("")
-            if client is not None and client not in self.parties:
-                parties = self.parties + [client]
+                raise Exception(
+                    "We don't have parties info in the MPCTensor! This should not happen."
+                )
+            if client is not None and client not in self.clients:
+                clients = self.clients + [client]
+                # TODO: Way to extract information about the parties from the client?
+                # Presume we always have sheldon cooper with password bazinga and next_port
+                # Presume it is the next port
+                next_port = max(party.port for party in self.parties) + 1
+                parties_info = self.parties + [
+                    ("sheldon@caltech.edu", "bazinga", next_port)
+                ]
             else:
-                parties = [party for party in self.parties]
+                clients = [client for client in self.clients]
+                parties_info = [party for party in self.parties]
 
             # TODO: Extract info for y shape from somewhere
             # We presume at the moment that it is the same shape
             # Captured: https://app.clubhouse.io/openmined/story/1128/tech-debt-for-adp-smpc-demo?\
             # stories_sort_by=priority&stories_group_by=WORKFLOW_STATE\
+            y = MPCTensor(
+                secret=y, shape=self.mpc_shape, parties=parties_info, clients=clients
+            )
 
-            y = MPCTensor(secret=y, shape=self.mpc_shape, parties=parties)
-
-            seed_shares = secrets.randbits(32)
+            seed_przs = secrets.randbits(32)
 
             shares = MPCTensor._get_shares_from_remote_secret(
                 secret=None,
                 shape=self.mpc_shape,
                 parties=parties,
-                seed_shares=seed_shares,
+                seed_przs=seed_przs,
             )
 
             op = getattr(operator, op_str)
@@ -420,7 +497,12 @@ class MPCTensor(PassthroughTensor):
 
             new_shares.append(shares[-1])
 
-            _self = MPCTensor(shares=new_shares, shape=self.mpc_shape, parties=parties)
+            _self = MPCTensor(
+                shares=new_shares,
+                shape=self.mpc_shape,
+                parties=parties,
+                clients=clients,
+            )
 
         if isinstance(y, MPCTensor):
             result = _self.__apply_private_op(y, op_str)
@@ -436,7 +518,12 @@ class MPCTensor(PassthroughTensor):
 
         shape = MPCTensor.__get_shape(op_str, self.mpc_shape, y_shape)
 
-        result = MPCTensor(shares=result, shape=shape, parties=_self.parties)
+        result = MPCTensor(
+            shares=result,
+            shape=shape,
+            clients=self.clients,
+            parties_info=_self.parties_info,
+        )
 
         return result
 

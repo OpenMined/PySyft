@@ -4,6 +4,7 @@ package syft.core.tensor;
 
 import "proto/core/tensor/tensor.proto";
 import "proto/lib/numpy/array.proto";
+import "proto/core/tensor/smpc/party.proto";
 
 message ShareTensor {
   oneof data {
@@ -13,6 +14,6 @@ message ShareTensor {
 
   uint32 rank = 3;
   uint32 nr_parties = 4;
-  int32 seed_shares = 5;
-  map<string, string> parties = 6;
+  int32 seed_przs = 5;
+  repeated Party parties_info = 6;
 }

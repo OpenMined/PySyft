@@ -17,6 +17,9 @@ _sym_db = _symbol_database.Default()
 from syft.proto.core.tensor import (
     tensor_pb2 as proto_dot_core_dot_tensor_dot_tensor__pb2,
 )
+from syft.proto.core.tensor.smpc import (
+    party_pb2 as proto_dot_core_dot_tensor_dot_smpc_dot_party__pb2,
+)
 from syft.proto.lib.numpy import array_pb2 as proto_dot_lib_dot_numpy_dot_array__pb2
 
 DESCRIPTOR = _descriptor.FileDescriptor(
@@ -25,72 +28,14 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n)proto/core/tensor/smpc/share_tensor.proto\x12\x10syft.core.tensor\x1a\x1eproto/core/tensor/tensor.proto\x1a\x1bproto/lib/numpy/array.proto"\x92\x02\n\x0bShareTensor\x12*\n\x06tensor\x18\x01 \x01(\x0b\x32\x18.syft.core.tensor.TensorH\x00\x12+\n\x05\x61rray\x18\x02 \x01(\x0b\x32\x1a.syft.lib.numpy.NumpyProtoH\x00\x12\x0c\n\x04rank\x18\x03 \x01(\r\x12\x12\n\nnr_parties\x18\x04 \x01(\r\x12\x13\n\x0bseed_shares\x18\x05 \x01(\x05\x12;\n\x07parties\x18\x06 \x03(\x0b\x32*.syft.core.tensor.ShareTensor.PartiesEntry\x1a.\n\x0cPartiesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x42\x06\n\x04\x64\x61tab\x06proto3',
+    serialized_pb=b'\n)proto/core/tensor/smpc/share_tensor.proto\x12\x10syft.core.tensor\x1a\x1eproto/core/tensor/tensor.proto\x1a\x1bproto/lib/numpy/array.proto\x1a"proto/core/tensor/smpc/party.proto"\xd2\x01\n\x0bShareTensor\x12*\n\x06tensor\x18\x01 \x01(\x0b\x32\x18.syft.core.tensor.TensorH\x00\x12+\n\x05\x61rray\x18\x02 \x01(\x0b\x32\x1a.syft.lib.numpy.NumpyProtoH\x00\x12\x0c\n\x04rank\x18\x03 \x01(\r\x12\x12\n\nnr_parties\x18\x04 \x01(\r\x12\x11\n\tseed_przs\x18\x05 \x01(\x05\x12-\n\x0cparties_info\x18\x06 \x03(\x0b\x32\x17.syft.core.tensor.PartyB\x06\n\x04\x64\x61tab\x06proto3',
     dependencies=[
         proto_dot_core_dot_tensor_dot_tensor__pb2.DESCRIPTOR,
         proto_dot_lib_dot_numpy_dot_array__pb2.DESCRIPTOR,
+        proto_dot_core_dot_tensor_dot_smpc_dot_party__pb2.DESCRIPTOR,
     ],
 )
 
-
-_SHARETENSOR_PARTIESENTRY = _descriptor.Descriptor(
-    name="PartiesEntry",
-    full_name="syft.core.tensor.ShareTensor.PartiesEntry",
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    create_key=_descriptor._internal_create_key,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name="key",
-            full_name="syft.core.tensor.ShareTensor.PartiesEntry.key",
-            index=0,
-            number=1,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=b"".decode("utf-8"),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="value",
-            full_name="syft.core.tensor.ShareTensor.PartiesEntry.value",
-            index=1,
-            number=2,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=b"".decode("utf-8"),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=b"8\001",
-    is_extendable=False,
-    syntax="proto3",
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=345,
-    serialized_end=391,
-)
 
 _SHARETENSOR = _descriptor.Descriptor(
     name="ShareTensor",
@@ -177,8 +122,8 @@ _SHARETENSOR = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="seed_shares",
-            full_name="syft.core.tensor.ShareTensor.seed_shares",
+            name="seed_przs",
+            full_name="syft.core.tensor.ShareTensor.seed_przs",
             index=4,
             number=5,
             type=5,
@@ -196,8 +141,8 @@ _SHARETENSOR = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="parties",
-            full_name="syft.core.tensor.ShareTensor.parties",
+            name="parties_info",
+            full_name="syft.core.tensor.ShareTensor.parties_info",
             index=5,
             number=6,
             type=11,
@@ -216,9 +161,7 @@ _SHARETENSOR = _descriptor.Descriptor(
         ),
     ],
     extensions=[],
-    nested_types=[
-        _SHARETENSOR_PARTIESENTRY,
-    ],
+    nested_types=[],
     enum_types=[],
     serialized_options=None,
     is_extendable=False,
@@ -234,18 +177,19 @@ _SHARETENSOR = _descriptor.Descriptor(
             fields=[],
         ),
     ],
-    serialized_start=125,
-    serialized_end=399,
+    serialized_start=161,
+    serialized_end=371,
 )
 
-_SHARETENSOR_PARTIESENTRY.containing_type = _SHARETENSOR
 _SHARETENSOR.fields_by_name[
     "tensor"
 ].message_type = proto_dot_core_dot_tensor_dot_tensor__pb2._TENSOR
 _SHARETENSOR.fields_by_name[
     "array"
 ].message_type = proto_dot_lib_dot_numpy_dot_array__pb2._NUMPYPROTO
-_SHARETENSOR.fields_by_name["parties"].message_type = _SHARETENSOR_PARTIESENTRY
+_SHARETENSOR.fields_by_name[
+    "parties_info"
+].message_type = proto_dot_core_dot_tensor_dot_smpc_dot_party__pb2._PARTY
 _SHARETENSOR.oneofs_by_name["data"].fields.append(_SHARETENSOR.fields_by_name["tensor"])
 _SHARETENSOR.fields_by_name["tensor"].containing_oneof = _SHARETENSOR.oneofs_by_name[
     "data"
@@ -261,23 +205,12 @@ ShareTensor = _reflection.GeneratedProtocolMessageType(
     "ShareTensor",
     (_message.Message,),
     {
-        "PartiesEntry": _reflection.GeneratedProtocolMessageType(
-            "PartiesEntry",
-            (_message.Message,),
-            {
-                "DESCRIPTOR": _SHARETENSOR_PARTIESENTRY,
-                "__module__": "proto.core.tensor.smpc.share_tensor_pb2"
-                # @@protoc_insertion_point(class_scope:syft.core.tensor.ShareTensor.PartiesEntry)
-            },
-        ),
         "DESCRIPTOR": _SHARETENSOR,
         "__module__": "proto.core.tensor.smpc.share_tensor_pb2"
         # @@protoc_insertion_point(class_scope:syft.core.tensor.ShareTensor)
     },
 )
 _sym_db.RegisterMessage(ShareTensor)
-_sym_db.RegisterMessage(ShareTensor.PartiesEntry)
 
 
-_SHARETENSOR_PARTIESENTRY._options = None
 # @@protoc_insertion_point(module_scope)
