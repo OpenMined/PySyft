@@ -42,6 +42,7 @@ METHODS_FORWARD_ALL_SHARES = {
     "reshape",
     "squeeze",
     "swapaxes",
+    "sum",
 }
 
 
