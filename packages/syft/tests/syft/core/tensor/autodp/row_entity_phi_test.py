@@ -115,6 +115,50 @@ def test_eq_diff_entities(
         return tensor1 == tensor2
 
 
+# TODO: Update this test after REPT.all() and .any() are implemented, and check `assert not comparison_result`
+def test_eq_values(
+        row_data: List,
+        reference_data: np.ndarray,
+        upper_bound: np.ndarray,
+        lower_bound: np.ndarray,
+) -> None:
+    """ Test REPTs belonging to the same owner, with different data"""
+    tensor1 = REPT(rows=row_data)
+    tensor2 = REPT(rows=row_data) + 1
+
+    assert tensor2.shape == tensor1.shape, "Tensors not initialized properly"
+    # assert tensor2 != tensor1, "Error: REPT + 1 == REPT"  # TODO: Investigate RecursionError Here
+
+    # Debug test issues
+    assert type(tensor2.child[0]) is type(tensor1.child[0])
+    assert tensor2.child[0] != tensor1.child[0]
+    assert isinstance(tensor2.child[0] != tensor1.child[0], SEPT), "Underlying SEPT comparison yields wrong type"
+    assert isinstance(tensor2 == tensor1, REPT), "REPT == REPT, Output has wrong type"
+    assert not (tensor2 == tensor1).child[0].child.any()
+    for i in range(len(tensor2.child)):
+        # Explicitly checks that comparison_result below is correct
+        assert not (tensor2 == tensor1).child[i].child.any(), f'REPT + 1 == REPT failed at child {i}'
+
+    comparison_result = tensor1 == tensor2
+    # assert not comparison_result  # This will work as soon as the .all() or .any() methods are implemented.
+    # Would this be more user-friendly if SEPT == SEPT -> singular T/F instead of array of T/F?
+
+
+def test_ne_shapes(
+        row_data: List,
+        reference_data: np.ndarray,
+        upper_bound: np.ndarray,
+        lower_bound: np.ndarray,
+) -> None:
+    """ Test REPTs belonging to the same owner, with different shapes"""
+    tensor1 = REPT(rows=row_data)
+    tensor2 = REPT(rows=row_data + row_data)
+    assert tensor2.shape != tensor1.shape, "Tensors not initialized properly for this test"
+
+    with pytest.raises(Exception):
+        result = tensor2 == tensor1
+
+
 def test_eq_ndarray(row_data: List) -> None:
     """Test equality between a SEPT and a simple type (int, float, bool, np.ndarray)"""
     sub_row_data: SEPT = row_data[0]
@@ -161,6 +205,7 @@ def test_add_simple_types(
     return None
 
 
+@pytest.mark.skip(reason="Temporary")
 def test_add_tensor_types(row_data: List) -> None:
     """ Test addition of a REPT with various other kinds of Tensors"""
 
