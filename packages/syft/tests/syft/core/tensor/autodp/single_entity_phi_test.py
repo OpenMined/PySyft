@@ -153,28 +153,36 @@ def test_eq_int(
 
 
 def test_ne_values(
-        reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
 ) -> None:
-    """ Test non-equality between SEPTs with diff values but the same shape"""
+    """Test non-equality between SEPTs with diff values but the same shape"""
     reference_tensor = SEPT(
         child=reference_data, entity=ishan, max_vals=upper_bound, min_vals=lower_bound
     )
     comparison_tensor = SEPT(
-        child=reference_data + 1, entity=ishan, max_vals=upper_bound, min_vals=lower_bound
+        child=reference_data + 1,
+        entity=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
     )
-    assert (reference_tensor != comparison_tensor).child.any(), "SEPTs with different values are somehow equal"
+    assert (
+        reference_tensor != comparison_tensor
+    ).child.any(), "SEPTs with different values are somehow equal"
     return None
 
 
 def test_ne_shapes(
-        reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
 ) -> None:
-    """ Test non-equality between SEPTs with different shapes"""
+    """Test non-equality between SEPTs with different shapes"""
     reference_tensor = SEPT(
         child=reference_data, entity=ishan, max_vals=upper_bound, min_vals=lower_bound
     )
     comparison_tensor = SEPT(
-        child=np.random.random((dims + 10, dims + 10)), entity=ishan, max_vals=upper_bound, min_vals=lower_bound
+        child=np.random.random((dims + 10, dims + 10)),
+        entity=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
     )
 
     with pytest.raises(Exception):
@@ -183,28 +191,34 @@ def test_ne_shapes(
 
 
 def test_ne_broadcastability(
-        reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
 ) -> None:
-    """ Test to ensure broadcastability of array sizes works"""
+    """Test to ensure broadcastability of array sizes works"""
     reference_tensor = SEPT(
         child=reference_data, entity=ishan, max_vals=upper_bound, min_vals=lower_bound
     )
     comparison_tensor = SEPT(
-        child=np.random.random((dims, 1)), entity=ishan, max_vals=upper_bound, min_vals=lower_bound
+        child=np.random.random((dims, 1)),
+        entity=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
     )
     assert reference_tensor != comparison_tensor, "Randomly generated tensors are equal"
 
 
 def test_ne_diff_entities(
-        reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
 ) -> None:
-    """ Test non-equality between SEPTs of different entities"""
+    """Test non-equality between SEPTs of different entities"""
     reference_tensor = SEPT(
         child=reference_data, entity=ishan, max_vals=upper_bound, min_vals=lower_bound
     )
 
     comparison_tensor = SEPT(
-        child=reference_data, entity=supreme_leader, max_vals=upper_bound, min_vals=lower_bound
+        child=reference_data,
+        entity=supreme_leader,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
     )
 
     with pytest.raises(NotImplementedError):
@@ -213,9 +227,9 @@ def test_ne_diff_entities(
 
 
 def test_add_wrong_types(
-        reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
 ) -> None:
-    """ Ensure that addition with incorrect types aren't supported"""
+    """Ensure that addition with incorrect types aren't supported"""
     reference_tensor = SEPT(
         child=reference_data, entity=ishan, max_vals=upper_bound, min_vals=lower_bound
     )
@@ -227,9 +241,9 @@ def test_add_wrong_types(
 
 
 def test_add_simple_types(
-        reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
 ) -> None:
-    """ Test addition of a SEPT with simple types (float, ints, bools, etc) """
+    """Test addition of a SEPT with simple types (float, ints, bools, etc)"""
     tensor = SEPT(
         child=reference_data, entity=ishan, max_vals=upper_bound, min_vals=lower_bound
     )
@@ -237,14 +251,22 @@ def test_add_simple_types(
     random_int = np.random.randint(low=15, high=1000)
     result = tensor + random_int
     assert isinstance(result, SEPT), "SEPT + int != SEPT"
-    assert (result.max_vals == tensor.max_vals + random_int).all(), "SEPT + int: incorrect max_val"
-    assert (result.min_vals == tensor.min_vals + random_int).all(), "SEPT + int: incorrect min_val"
+    assert (
+        result.max_vals == tensor.max_vals + random_int
+    ).all(), "SEPT + int: incorrect max_val"
+    assert (
+        result.min_vals == tensor.min_vals + random_int
+    ).all(), "SEPT + int: incorrect min_val"
 
     random_float = random_int * np.random.rand()
     result = tensor + random_float
     assert isinstance(result, SEPT), "SEPT + float != SEPT"
-    assert (result.max_vals == tensor.max_vals + random_float).all(), "SEPT + float: incorrect max_val"
-    assert (result.min_vals == tensor.min_vals + random_float).all(), "SEPT + float: incorrect min_val"
+    assert (
+        result.max_vals == tensor.max_vals + random_float
+    ).all(), "SEPT + float: incorrect max_val"
+    assert (
+        result.min_vals == tensor.min_vals + random_float
+    ).all(), "SEPT + float: incorrect min_val"
 
     random_ndarray = np.random.random((dims, dims))
     result = tensor + random_ndarray
@@ -256,9 +278,9 @@ def test_add_simple_types(
 
 
 def test_add_tensor_types(
-        reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
 ) -> None:
-    """ Test addition of a SEPT with various other kinds of Tensors"""
+    """Test addition of a SEPT with various other kinds of Tensors"""
     # TODO: Add tests for REPT, GammaTensor, etc when those are built out.
 
     reference_tensor = SEPT(
@@ -270,13 +292,17 @@ def test_add_tensor_types(
     with pytest.raises(NotImplementedError):
         result = reference_tensor + simple_tensor
         assert isinstance(result, SEPT), "SEPT + Tensor != SEPT"
-        assert (result.max_vals == reference_tensor.max_vals + simple_tensor.child.max()), "SEPT + Tensor: incorrect max_val"
-        assert (result.min_vals == reference_tensor.min_vals + simple_tensor.child.min()), "SEPT + Tensor: incorrect min_val"
+        assert (
+            result.max_vals == reference_tensor.max_vals + simple_tensor.child.max()
+        ), "SEPT + Tensor: incorrect max_val"
+        assert (
+            result.min_vals == reference_tensor.min_vals + simple_tensor.child.min()
+        ), "SEPT + Tensor: incorrect min_val"
         return None
 
 
 def test_add_single_entities(
-        reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
 ) -> None:
     """Test the addition of SEPTs"""
     tensor1 = SEPT(
@@ -288,31 +314,45 @@ def test_add_single_entities(
 
     result = tensor2 + tensor1
     assert isinstance(result, SEPT), "Addition of two SEPTs is wrong type"
-    assert (result.max_vals == 2 * upper_bound).all(), "Addition of two SEPTs results in incorrect max_val"
-    assert (result.min_vals == 2 * lower_bound).all(), "Addition of two SEPTs results in incorrect min_val"
+    assert (
+        result.max_vals == 2 * upper_bound
+    ).all(), "Addition of two SEPTs results in incorrect max_val"
+    assert (
+        result.min_vals == 2 * lower_bound
+    ).all(), "Addition of two SEPTs results in incorrect min_val"
 
     # Try with negative values
     tensor3 = SEPT(
-        child=reference_data * -1.5, entity=ishan, max_vals=upper_bound, min_vals=lower_bound
+        child=reference_data * -1.5,
+        entity=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
     )
 
     result = tensor3 + tensor1
     assert isinstance(result, SEPT), "Addition of two SEPTs is wrong type"
-    assert (result.max_vals == tensor3.max_vals + tensor1.max_vals).all(), "SEPT + SEPT results in incorrect max_val"
-    assert (result.min_vals == tensor3.min_vals + tensor1.min_vals).all(), "SEPT + SEPT results in incorrect min_val"
+    assert (
+        result.max_vals == tensor3.max_vals + tensor1.max_vals
+    ).all(), "SEPT + SEPT results in incorrect max_val"
+    assert (
+        result.min_vals == tensor3.min_vals + tensor1.min_vals
+    ).all(), "SEPT + SEPT results in incorrect min_val"
     return None
 
 
 def test_add_diff_entities(
-        reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
 ) -> None:
-    """ Test the addition of SEPTs"""
+    """Test the addition of SEPTs"""
 
     tensor1 = SEPT(
         child=reference_data, entity=ishan, max_vals=upper_bound, min_vals=lower_bound
     )
     tensor2 = SEPT(
-        child=reference_data, entity=supreme_leader, max_vals=upper_bound, min_vals=lower_bound
+        child=reference_data,
+        entity=supreme_leader,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
     )
 
     assert tensor2.entity != tensor1.entity, "Entities aren't actually different"
@@ -323,19 +363,24 @@ def test_add_diff_entities(
 
 
 def test_add_sub_equivalence(
-        reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
 ) -> None:
-    """ Test that the addition of negative values is the same as subtraction."""
+    """Test that the addition of negative values is the same as subtraction."""
     tensor1 = SEPT(
         child=reference_data, entity=ishan, max_vals=upper_bound, min_vals=lower_bound
     )
     tensor2 = SEPT(
-        child=reference_data * -1, entity=ishan, max_vals=upper_bound, min_vals=lower_bound
+        child=reference_data * -1,
+        entity=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
     )
 
     add_result = tensor1 + tensor2
     sub_result = tensor1 - tensor1
-    assert add_result == sub_result, "Addition of negative values does not give the same result as subtraction"
+    assert (
+        add_result == sub_result
+    ), "Addition of negative values does not give the same result as subtraction"
     return None
 
 

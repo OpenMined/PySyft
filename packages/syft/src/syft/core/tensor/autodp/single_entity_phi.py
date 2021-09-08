@@ -28,6 +28,7 @@ from ...common.uid import UID
 from ...node.abstract.node import AbstractNodeClient
 from ...pointer.pointer import Pointer
 from ..ancestors import AutogradTensorAncestor
+from ..broadcastable import is_broadcastable
 from ..passthrough import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import implements  # type: ignore
@@ -36,7 +37,6 @@ from ..smpc.mpc_tensor import MPCTensor
 from ..tensor import Tensor
 from ..types import SupportedChainType  # type: ignore
 from ..util import inputs2child  # type: ignore
-from ..broadcastable import is_broadcastable
 from .initial_gamma import InitialGammaTensor
 
 
@@ -69,8 +69,8 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
     def __init__(
         self,
         entity: Entity,
-        min_vals: np.ArrayLike,
-        max_vals: np.ArrayLike,
+        min_vals: np.typing.ArrayLike,
+        max_vals: np.typing.ArrayLike,
         client: Any,
         scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None,
         id_at_location: Optional[UID] = None,
@@ -185,8 +185,8 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
             SingleEntityPhiTensor(
                 child=None,
                 entity=self.entity,
-                min_vals=self.min_vals,
-                max_vals=self.max_vals,
+                min_vals=self.min_vals,  # type: ignore
+                max_vals=self.max_vals,  # type: ignore
                 scalar_manager=self.scalar_manager,
             )
         )
@@ -379,11 +379,12 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
         if is_acceptable_simple_type(other):
             if isinstance(other, np.ndarray):
                 # If other is a Numpy Array, we need to check if shapes can be broadcast
-                if is_broadcastable(other.shape, self.child.shape):
+                if is_broadcastable(other.shape, self.child.shape):  # type: ignore
                     data = self.child == other
                 else:
                     raise Exception(
-                        f"Tensor shapes do not match for __eq__: {self.child.shape} != {other.child.shape}"
+                        f"Tensor shapes do not match "
+                        f"for __eq__: {self.child.shape} != {other.child.shape}"  # type: ignore
                     )
             else:
                 data = self.child == other
@@ -393,14 +394,14 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
                     "Operation not implemented yet for different entities"
                 )
             else:
-                if is_broadcastable(self.child.shape, other.child.shape):
+                if is_broadcastable(self.child.shape, other.child.shape):  # type: ignore
                     data = self.child == other.child
                 else:
                     raise Exception(
                         f"Tensor shapes do not match for __eq__: {self.child.shape} != {other.child.shape}"
                     )
         elif isinstance(other, PassthroughTensor):
-            if is_broadcastable(self.child.shape, other.child.shape):
+            if is_broadcastable(self.child.shape, other.child.shape):  # type: ignore
                 data = self.child == other.child
         else:
             raise Exception(
@@ -459,7 +460,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
         max_vals_strict_gt0 = self.max_vals
 
         # if min_vals < 0 and max_vals > 0, then new min_vals = 0
-        max_vals_gtlt0 = np.max([self.max_vals, -self.min_vals])
+        max_vals_gtlt0 = np.max([self.max_vals, -self.min_vals])  # type: ignore
 
         #  if min_vals < 0 and max_vals < 0, then new min_vals = -max_vals
         max_vals_strict_lt0 = -self.min_vals
@@ -616,8 +617,8 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             max_min = self.max_vals * other.min_vals
             max_max = self.max_vals * other.max_vals
 
-            min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)
-            max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)
+            min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+            max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
             entity = self.entity
 
             return SingleEntityPhiTensor(
@@ -636,8 +637,8 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             max_min = self.max_vals * other
             max_max = self.max_vals * other
 
-            min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)
-            max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)
+            min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+            max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
             entity = self.entity
 
             return SingleEntityPhiTensor(
@@ -665,9 +666,9 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
 
         elif is_acceptable_simple_type(other):
             if isinstance(other, np.ndarray):
-                if not is_broadcastable(other.shape, self.child.shape):
+                if not is_broadcastable(other.shape, self.child.shape):  # type: ignore
                     raise Exception(
-                        f'Shapes do not match for subtraction: {self.child.shape} and {other.shape}'
+                        f"Shapes do not match for subtraction: {self.child.shape} and {other.shape}"
                     )
             data = self.child - other
             min_vals = self.min_vals - other
@@ -706,8 +707,8 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
                 max_min = self.max_vals / other.min_vals
                 max_max = self.max_vals / other.max_vals
 
-                min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)
-                max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)
+                min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+                max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
 
             entity = self.entity
 
@@ -728,8 +729,8 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
     # ndarray.flatten(order='C')
     def flatten(self, order: str = "C") -> SingleEntityPhiTensor:
         data = self.child.flatten(order=order)
-        min_vals = self.min_vals.flatten(order=order)
-        max_vals = self.max_vals.flatten(order=order)
+        min_vals = self.min_vals.flatten(order=order)  # type: ignore
+        max_vals = self.max_vals.flatten(order=order)  # type: ignore
         entity = self.entity
 
         return SingleEntityPhiTensor(
@@ -806,19 +807,19 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
 @implements(SingleEntityPhiTensor, np.expand_dims)
 def expand_dims(a: npt.ArrayLike, axis: Optional[int] = None) -> SingleEntityPhiTensor:
 
-    entity = a.entity
+    entity = a.entity  # type: ignore
 
-    min_vals = np.expand_dims(a=a.min_vals, axis=axis)
-    max_vals = np.expand_dims(a=a.max_vals, axis=axis)
+    min_vals = np.expand_dims(a=a.min_vals, axis=axis)  # type: ignore
+    max_vals = np.expand_dims(a=a.max_vals, axis=axis)  # type: ignore
 
-    data = np.expand_dims(a.child, axis=axis)
+    data = np.expand_dims(a.child, axis=axis)  # type: ignore
 
     return SingleEntityPhiTensor(
         child=data,
         entity=entity,
         min_vals=min_vals,
         max_vals=max_vals,
-        scalar_manager=a.scalar_manager,
+        scalar_manager=a.scalar_manager,  # type: ignore
     )
 
 

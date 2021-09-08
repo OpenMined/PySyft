@@ -1,5 +1,5 @@
 def is_broadcastable(shape1, shape2):
-    """ Helper function to determine if Tensor Operations can be broadcast
+    """Helper function to determine if Tensor Operations can be broadcast
     inputs:
     shape1, shape 2: shapes of numpy arrays/syft tensors
 

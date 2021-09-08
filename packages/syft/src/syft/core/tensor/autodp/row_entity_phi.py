@@ -24,7 +24,6 @@ from ..passthrough import is_acceptable_simple_type  # type: ignore
 from .initial_gamma import InitialGammaTensor  # type: ignore
 
 
-
 @bind_protobuf
 class RowEntityPhiTensor(PassthroughTensor, RecursiveSerde):
 
@@ -47,15 +46,15 @@ class RowEntityPhiTensor(PassthroughTensor, RecursiveSerde):
 
     @property
     def min_vals(self) -> np.ndarray:
-        return np.concatenate([x.min_vals for x in self.child]).reshape(self.shape)
+        return np.concatenate([x.min_vals for x in self.child]).reshape(self.shape)  # type: ignore
 
     @property
     def max_vals(self) -> np.ndarray:
-        return np.concatenate([x.max_vals for x in self.child]).reshape(self.shape)
+        return np.concatenate([x.max_vals for x in self.child]).reshape(self.shape)  # type: ignore
 
     @property
     def value(self) -> np.ndarray:
-        return np.concatenate([x.child for x in self.child]).reshape(self.shape)
+        return np.concatenate([x.child for x in self.child]).reshape(self.shape)  # type: ignore
 
     @property
     def entities(self) -> np.ndarray:
@@ -267,7 +266,7 @@ def expand_dims(a: np.typing.ArrayLike, axis: int) -> RowEntityPhiTensor:
         )
 
     new_rows = list()
-    for row in a.child:
-        new_rows.append(np.expand_dims(row, axis - 1))
+    for row in a.child:  # type: ignore
+        new_rows.append(np.expand_dims(row, axis - 1))  # type: ignore
 
     return RowEntityPhiTensor(rows=new_rows, check_shape=False)
