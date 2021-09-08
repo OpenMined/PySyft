@@ -20,9 +20,10 @@ from ...common.serde.recursive import RecursiveSerde
 from ...tensor.passthrough import PassthroughTensor  # type: ignore
 from ...tensor.passthrough import SupportedChainType  # type: ignore
 from ...tensor.passthrough import is_acceptable_simple_type  # type: ignore
+from .adp_tensor import ADPTensor
 
 
-class IntermediateGammaTensor(PassthroughTensor, RecursiveSerde):
+class IntermediateGammaTensor(PassthroughTensor, RecursiveSerde, ADPTensor):
 
     __attr_allowlist__ = [
         "term_tensor",
