@@ -114,7 +114,7 @@ class RowEntityPhiTensor(PassthroughTensor, RecursiveSerde):
     def __add__(  # type: ignore
         self, other: Union[RowEntityPhiTensor, AcceptableSimpleType]
     ) -> RowEntityPhiTensor:
-
+        # TODO: Catch unacceptable types (str, dict, etc) to avoid errors for other.child below
         if is_acceptable_simple_type(other) or len(self.child) == len(other.child):  # type: ignore
             new_list = list()
             for i in range(len(self.child)):
@@ -131,6 +131,7 @@ class RowEntityPhiTensor(PassthroughTensor, RecursiveSerde):
     def __sub__(  # type: ignore
         self, other: Union[RowEntityPhiTensor, AcceptableSimpleType]
     ) -> RowEntityPhiTensor:
+        # TODO: Catch unacceptable types (str, dict, etc) to avoid errors for other.child below
         if is_acceptable_simple_type(other) or len(self.child) == len(other.child):  # type: ignore
             new_list = list()
             for i in range(len(self.child)):

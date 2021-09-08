@@ -663,15 +663,25 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             max_vals = self.max_vals - other.max_vals
             entity = self.entity
 
-            return SingleEntityPhiTensor(
-                child=data,
-                entity=entity,
-                min_vals=min_vals,
-                max_vals=max_vals,
-                scalar_manager=self.scalar_manager,
-            )
+        elif is_acceptable_simple_type(other):
+            if isinstance(other, np.ndarray):
+                if not is_broadcastable(other.shape, self.child.shape):
+                    raise Exception(
+                        f'Shapes do not match for subtraction: {self.child.shape} and {other.shape}'
+                    )
+            data = self.child - other
+            min_vals = self.min_vals - other
+            max_vals = self.max_vals - other
+            entity = self.entity
         else:
-            raise NotImplemented
+            raise NotImplementedError
+        return SingleEntityPhiTensor(
+            child=data,
+            entity=entity,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            scalar_manager=self.scalar_manager,
+        )
 
     def __truediv__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
 
