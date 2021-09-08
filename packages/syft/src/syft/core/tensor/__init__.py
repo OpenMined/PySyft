@@ -177,6 +177,54 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.core.tensor.smpc.share_tensor.ShareTensor.sum",
             "syft.core.tensor.smpc.share_tensor.ShareTensor",
         ),
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.repeat",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.copy",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.diagonal",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.flatten",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.transpose",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
+        # (
+        #    "syft.core.tensor.smpc.share_tensor.ShareTensor.partition",
+        #    "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        # ),
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.resize",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
+        # (
+        #    "syft.core.tensor.smpc.share_tensor.ShareTensor.ravel",
+        #    "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        # ),
+        # (
+        #    "syft.core.tensor.smpc.share_tensor.ShareTensor.compress",
+        #    "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        # ),
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.reshape",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.squeeze",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
+        # (
+        #    "syft.core.tensor.smpc.share_tensor.ShareTensor.swapaxes",
+        #    "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        # ),
     ]
 
     add_modules(ast, modules)
