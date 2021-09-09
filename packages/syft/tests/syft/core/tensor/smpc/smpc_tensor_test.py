@@ -210,34 +210,18 @@ def test_transpose() -> None:
     assert (res == exp_res).all()
 
 
-@pytest.mark.xfail
-def test_partition() -> None:
-    value = np.array([12, 1, 12, 41, 8, 4, 7, 39, 27])
-
-    remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
-
-    mpc_tensor = MPCTensor(
-        parties=clients, secret=remote_value, shape=(9,), seed_shares=42
-    )
-
-    res = mpc_tensor.partition(5).reconstruct()
-    exp_res = value.partition(5)
-
-    assert (res == exp_res).all()
-
-
-@pytest.mark.xfail
 def test_resize() -> None:
-    value = np.array([[89, 12, 54], [412, 89, 42], [87, 32, 58]])
+    value = np.array([[89, 12], [412, 89], [87, 32]])
 
     remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
 
     mpc_tensor = MPCTensor(
-        parties=clients, secret=remote_value, shape=(3, 3), seed_shares=42
+        parties=clients, secret=remote_value, shape=(3, 2), seed_shares=42
     )
 
     res = mpc_tensor.resize(2, 3).reconstruct()
-    exp_res = value.resize(2, 3)
+    value.resize(2, 3)
+    exp_res = value  # inplace op
 
     assert (res == exp_res).all()
 

@@ -46,7 +46,6 @@ METHODS_FORWARD_ALL_SHARES = {
 }
 INPLACE_OPS = {
     "resize",
-    "partition",
 }
 
 

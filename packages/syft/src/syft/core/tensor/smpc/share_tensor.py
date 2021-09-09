@@ -42,7 +42,6 @@ METHODS_FORWARD_ALL_SHARES = {
 }
 INPLACE_OPS = {
     "resize",
-    "partition",
 }
 
 
@@ -373,7 +372,13 @@ class ShareTensor(PassthroughTensor, Serializable):
         ) -> Any:
 
             share = _self.child
-            method = getattr(share, method_name)
+            if method_name != "resize":
+                method = getattr(share, method_name)
+            else:
+                # Should be modified to remove copy
+                # https://stackoverflow.com/questions/23253144/numpy-the-array-doesnt-have-its-own-data
+                share = share.copy()
+                method = getattr(share, method_name)
 
             if method_name not in INPLACE_OPS:
                 new_share = method(*args, **kwargs)
