@@ -26,11 +26,11 @@ Syft "python" functionality includes the following modules:
 To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` module...
 """
 
+import sys
+
 # stdlib
 from pathlib import Path
-import sys
-from typing import Any
-from typing import Dict
+from typing import Any, Dict
 
 # third party
 from pkg_resources import DistributionNotFound  # noqa: F401
@@ -59,10 +59,15 @@ from syft.core.node.vm.vm import VirtualMachine  # noqa: F401
 from syft.core.node.vm.vm import VirtualMachineClient  # noqa: F401
 from syft.core.plan.plan import Plan  # noqa: F401
 from syft.core.plan.plan_builder import make_plan  # noqa: F401
+from syft.core.tensor import autodp  # noqa: F401
+from syft.core.tensor import autograd  # noqa: F401
+from syft.core.tensor.autodp import row_entity_phi  # noqa: F401
+from syft.core.tensor.autodp import single_entity_phi  # noqa: F401
 from syft.core.tensor.tensor import Tensor  # noqa: F401
 from syft.experimental_flags import flags  # noqa: F401
 from syft.grid.client.client import connect  # noqa: F401
 from syft.grid.client.client import login  # noqa: F401
+from syft.grid.client.client import register  # noqa: F401
 
 # Convenience Functions
 from syft.grid.duet import bcolors  # noqa: F401

@@ -7,7 +7,6 @@ from typing import Type
 
 # third party
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import Query
 from sqlalchemy.orm import sessionmaker
 
 # syft absolute
@@ -33,7 +32,7 @@ class DatabaseManager:
         session_local.commit()
         return _obj
 
-    def query(self, **kwargs: Any) -> Query:
+    def query(self, **kwargs: Any) -> List[Any]:
         """Query db objects filtering by parameters
         Args:
             parameters : List of parameters used to filter.

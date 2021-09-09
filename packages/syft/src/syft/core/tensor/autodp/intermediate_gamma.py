@@ -1,22 +1,44 @@
+# future
+from __future__ import annotations
+
+# stdlib
+from typing import Any
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Union
+
 # third party
+from nacl.signing import VerifyKey
 import numpy as np
 from sympy.ntheory.factor_ import factorint
 
 # relative
 from ...adp.publish import publish
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
-from ...tensor.passthrough import PassthroughTensor
-from ...tensor.passthrough import is_acceptable_simple_type
+from ...common.serde.recursive import RecursiveSerde
+from ...tensor.passthrough import PassthroughTensor  # type: ignore
+from ...tensor.passthrough import is_acceptable_simple_type  # type: ignore
+from .adp_tensor import ADPTensor
 
 
-class IntermediateGammaTensor(PassthroughTensor):
+class IntermediateGammaTensor(PassthroughTensor, RecursiveSerde, ADPTensor):
+
+    __attr_allowlist__ = [
+        "term_tensor",
+        "coeff_tensor",
+        "bias_tensor",
+        "scalar_manager",
+        "child",
+    ]
+
     def __init__(
         self,
-        term_tensor,
-        coeff_tensor,
-        bias_tensor,
-        scalar_manager=VirtualMachinePrivateScalarManager(),
-    ):
+        term_tensor: np.ndarray,
+        coeff_tensor: np.ndarray,
+        bias_tensor: np.ndarray,
+        scalar_manager: VirtualMachinePrivateScalarManager = VirtualMachinePrivateScalarManager(),
+    ) -> None:
         super().__init__(term_tensor)
         self.term_tensor = term_tensor
         self.coeff_tensor = coeff_tensor
@@ -24,20 +46,42 @@ class IntermediateGammaTensor(PassthroughTensor):
         self.scalar_manager = scalar_manager
 
     @property
-    def shape(self):
+    def shape(self) -> Tuple[int]:
         return self.term_tensor.shape[:-1]
 
     @property
-    def full_shape(self):
+    def full_shape(self) -> Tuple[int]:
         return self.term_tensor.shape
 
-    def publish(self, acc, sigma):
-        return np.array(
-            publish(scalars=self.flat_scalars, acc=acc, sigma=sigma)
+    def publish(self, acc: Any, sigma: float, user_key: VerifyKey) -> np.ndarray:
+        print("IntermediateGamma.publish")
+        print(type(self))
+        print(type(self.flat_scalars))
+
+        result = np.array(
+            publish(
+                scalars=self.flat_scalars,
+                acc=acc,
+                sigma=sigma,
+                user_key=user_key,
+                public_only=True,
+            )
         ).reshape(self.shape)
 
+        if self.sharetensor_values is not None:
+            # syft absolute
+            from syft.core.tensor.smpc.share_tensor import ShareTensor
+
+            result = ShareTensor(
+                rank=self.sharetensor_values.rank,
+                nr_parties=self.sharetensor_values.nr_parties,
+                ring_size=self.sharetensor_values.ring_size,
+                value=result,
+            )
+        return result
+
     @property
-    def flat_scalars(self):
+    def flat_scalars(self) -> List[Any]:
         flattened_terms = self.term_tensor.reshape(-1, self.term_tensor.shape[-1])
         flattened_coeffs = self.coeff_tensor.reshape(-1, self.coeff_tensor.shape[-1])
         flattened_bias = self.bias_tensor.reshape(-1)
@@ -57,14 +101,17 @@ class IntermediateGammaTensor(PassthroughTensor):
 
                 for prime, n_times in factorint(term).items():
                     input_scalar = self.scalar_manager.prime2symbol[prime]
-
-                    scalar = scalar + (input_scalar * n_times * coeff)
+                    right = input_scalar * n_times * coeff
+                    scalar = scalar + right
 
             scalars.append(scalar)
 
         return scalars
 
-    def sum(self, axis):
+    def sum(
+        self, axis: Optional[Union[int, Tuple[int, ...]]] = None
+    ) -> IntermediateGammaTensor:
+
         new_term_tensor = np.swapaxes(self.term_tensor, axis, -1).squeeze(axis)
         new_coeff_tensor = np.swapaxes(self.coeff_tensor, axis, -1).squeeze(axis)
         new_bias_tensor = self.bias_tensor.sum(axis)
@@ -76,18 +123,20 @@ class IntermediateGammaTensor(PassthroughTensor):
             scalar_manager=self.scalar_manager,
         )
 
-    def prod(self, axis):
+    def prod(
+        self, axis: Optional[Union[int, Tuple[int, ...]]] = None
+    ) -> IntermediateGammaTensor:
         new_term_tensor = self.term_tensor.prod(axis)
         new_coeff_tensor = self.coeff_tensor.prod(axis)
         new_bias_tensor = self.bias_tensor.prod(axis)
         return IntermediateGammaTensor(
             term_tensor=new_term_tensor,
             coeff_tensor=new_coeff_tensor,
-            bias_Tensor=new_bias_tensor,
+            bias_tensor=new_bias_tensor,
             scalar_manager=self.scalar_manager,
         )
 
-    def __add__(self, other):
+    def __add__(self, other: Any) -> IntermediateGammaTensor:
 
         if is_acceptable_simple_type(other):
 
@@ -130,7 +179,7 @@ class IntermediateGammaTensor(PassthroughTensor):
             scalar_manager=self.scalar_manager,
         )
 
-    def __mul__(self, other):
+    def __mul__(self, other: Any) -> IntermediateGammaTensor:
 
         # EXPLAIN A: if our polynomial is y = mx
         # EXPLAIN B: self.child = 10x5

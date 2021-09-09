@@ -6,11 +6,12 @@ from syft.core.tensor.manager import TensorChainManager
 
 # relative
 from .fixed_precision_tensor import FixedPrecisionTensor
+from .types import SupportedChainType
 
 
 class FixedPrecisionTensorAncestor(TensorChainManager):
     def fix_precision(self, base: int = 10, precision: int = 3) -> Any:
-        self.child = FixedPrecisionTensor(
+        self.child: SupportedChainType = FixedPrecisionTensor(
             base=base, precision=precision, value=self.child  # type: ignore
         )
         return self

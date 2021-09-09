@@ -163,6 +163,7 @@ class Node(AbstractNode):
         self.TableBase = TableBase
         self.db_engine = db_engine
         self.db = db
+        self.session = db
 
         # launch the tables in the database
         # Tudor: experimental
@@ -307,6 +308,9 @@ class Node(AbstractNode):
         # For logging the number of messages received
         self.message_counter = 0
 
+    def post_init(self) -> None:
+        debug(f"> Creating {self.pprint}")
+
     def set_node_uid(self) -> None:
         try:
             setup = self.setup.first()
@@ -425,6 +429,7 @@ class Node(AbstractNode):
             )
 
         except Exception as e:
+            print(type(e), e)
             error(e)
             public_exception: Exception
             if isinstance(e, AuthorizationException):
@@ -527,7 +532,6 @@ class Node(AbstractNode):
     def process_message(
         self, msg: SignedMessage, router: dict
     ) -> Union[SyftMessage, None]:
-        print(msg.message)
         self.message_counter += 1
 
         debug(f"> Processing 📨 {msg.pprint} @ {self.pprint} {msg.message}")
@@ -542,7 +546,6 @@ class Node(AbstractNode):
 
             try:  # we use try/except here because it's marginally faster in Python
                 service = router[type(msg.message)]
-                print(service)
             except KeyError as e:
                 log = (
                     f"The node {self.id} of type {type(self)} cannot process messages of type "

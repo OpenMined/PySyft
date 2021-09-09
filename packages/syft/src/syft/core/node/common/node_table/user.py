@@ -1,5 +1,6 @@
 # third party
 from sqlalchemy import Column
+from sqlalchemy import Float
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import String
@@ -14,6 +15,7 @@ class SyftUser(Base):
     id = Column(Integer(), primary_key=True, autoincrement=True)
     email = Column(String(255))
     name = Column(String(255), default="")
+    budget = Column(Float(), default=0.0)
     hashed_password = Column(String(512))
     salt = Column(String(255))
     private_key = Column(String(2048))
@@ -34,6 +36,7 @@ def create_user(
     private_key: str,
     role: int,
     name: str = "",
+    budget: float = 0.0,
 ) -> SyftUser:
     new_user = SyftUser(
         email=email,
@@ -42,5 +45,6 @@ def create_user(
         private_key=private_key,
         role=role,
         name=name,
+        budget=budget,
     )
     return new_user

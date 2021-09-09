@@ -5,15 +5,15 @@ from uuid import UUID
 import numpy as np
 
 # relative
-from ...passthrough import is_acceptable_simple_type
-from ..tensor import AutogradTensor
-from .op import Op
+from ...passthrough import is_acceptable_simple_type  # type: ignore
+from ..tensor import AutogradTensor  # type: ignore
+from .op import Op  # type: ignore
 
 
 class SubOp(Op):
     """Substraction operation with 2 tensors"""
 
-    def forward(self, x: AutogradTensor, y: AutogradTensor) -> AutogradTensor:
+    def forward(self, x: AutogradTensor, y: AutogradTensor) -> AutogradTensor:  # type: ignore
         self.x = x
         self.y = y
 

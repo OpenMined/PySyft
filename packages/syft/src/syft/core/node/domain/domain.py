@@ -20,6 +20,7 @@ from ....logger import critical
 from ....logger import debug
 from ....logger import info
 from ....logger import traceback
+from ...adp.adversarial_accountant import AdversarialAccountant
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage
 from ...common.uid import UID
@@ -41,6 +42,9 @@ from ..common.node_service.association_request.association_request_service impor
 from ..common.node_service.dataset_manager.dataset_manager_service import (
     DatasetManagerService,
 )
+from ..common.node_service.get_remaining_budget.get_remaining_budget_service import (
+    GetRemainingBudgetService,
+)
 from ..common.node_service.group_manager.group_manager_service import (
     GroupManagerService,
 )
@@ -49,6 +53,7 @@ from ..common.node_service.object_request.object_request_service import (
     ObjectRequestServiceWithoutReply,
 )
 from ..common.node_service.object_request.object_request_service import RequestService
+from ..common.node_service.publish.publish_service import PublishScalarsService
 from ..common.node_service.request_answer.request_answer_messages import RequestStatus
 from ..common.node_service.request_answer.request_answer_service import (
     RequestAnswerService,
@@ -57,10 +62,12 @@ from ..common.node_service.request_receiver.request_receiver_messages import (
     RequestMessage,
 )
 from ..common.node_service.role_manager.role_manager_service import RoleManagerService
+from ..common.node_service.simple.simple_service import SimpleService
 from ..common.node_service.tensor_manager.tensor_manager_service import (
     TensorManagerService,
 )
 from ..common.node_service.user_manager.user_manager_service import UserManagerService
+from ..common.node_table.utils import create_memory_db_engine
 from ..device import Device
 from ..device import DeviceClient
 from .client import DomainClient
@@ -85,7 +92,12 @@ class Domain(Node):
         verify_key: Optional[VerifyKey] = None,
         root_key: Optional[VerifyKey] = None,
         db_engine: Any = None,
+        db: Any = None,
     ):
+
+        if db_engine is None:
+            db_engine, _ = create_memory_db_engine()
+
         super().__init__(
             name=name,
             network=network,
@@ -95,7 +107,9 @@ class Domain(Node):
             signing_key=signing_key,
             verify_key=verify_key,
             db_engine=db_engine,
+            db=db,
         )
+
         # specific location with name
         self.domain = SpecificLocation(name=self.name)
         self.root_key = root_key
@@ -108,16 +122,20 @@ class Domain(Node):
         self.association_requests = AssociationRequestManager(db_engine)
         self.data_requests = RequestManager(db_engine)
         self.datasets = DatasetManager(db_engine)
+        self.acc = AdversarialAccountant(db_engine=db_engine, max_budget=10000)
+
         # self.immediate_services_without_reply.append(RequestReceiverService)
         # self.immediate_services_without_reply.append(AcceptOrDenyRequestService)
         # self.immediate_services_without_reply.append(UpdateRequestHandlerService)
-
+        self.immediate_services_without_reply.append(PublishScalarsService)
         self.immediate_services_with_reply.append(RequestAnswerService)
         # self.immediate_services_with_reply.append(GetAllRequestHandlersService)
 
         # Grid Domain Services
         self.immediate_services_with_reply.append(AssociationRequestService)
         # self.immediate_services_with_reply.append(DomainInfrastructureService)
+        self.immediate_services_with_reply.append(GetRemainingBudgetService)
+        self.immediate_services_with_reply.append(SimpleService)
         self.immediate_services_with_reply.append(NodeSetupService)
         self.immediate_services_with_reply.append(TensorManagerService)
         self.immediate_services_with_reply.append(RoleManagerService)

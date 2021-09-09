@@ -24,6 +24,7 @@ from syft.core.node.common.node_service.node_service import (
 from syft.core.node.common.node_service.node_service import (
     ImmediateNodeServiceWithoutReply,
 )
+from syft.lib.python import List as SyftList
 from syft.util import validate_type
 
 # relative
@@ -160,7 +161,8 @@ def get_request_msg(
     return GetRequestResponse(
         address=msg.reply_to,
         status_code=200,
-        content=request_json,
+        # request_id=request_id
+        request_id=request_json,
     )
 
 
@@ -169,50 +171,31 @@ def get_all_request_msg(
     node: AbstractNode,
     verify_key: VerifyKey,
 ) -> GetRequestsResponse:
-
-    # Get Payload Content
-    current_user_id = msg.content.get("current_user", None)
-
     users = node.users
-
-    if not current_user_id:
-        current_user_id = users.first(
-            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
-        ).id
 
     allowed = users.can_triage_requests(verify_key=verify_key)
 
     if allowed:
-        requests = node.data_requests
-        requests = requests.all()
-        requests_json = [model_to_json(requests) for requests in requests]
+        requests = node.data_requests.all()
+        requests_json = [model_to_json(request) for request in requests]
     else:
         raise AuthorizationError("You're not allowed to get Request information!")
-
     return GetRequestsResponse(
-        address=msg.reply_to,
         status_code=200,
-        content=requests_json,
+        address=msg.reply_to,
+        content=SyftList(requests_json),
     )
 
 
 def update_request_msg(
-    msg: DeleteRequestMessage,
+    msg: UpdateRequestMessage,
     node: AbstractNode,
     verify_key: VerifyKey,
-) -> DeleteRequestResponse:
+) -> UpdateRequestResponse:
 
     # Get Payload Content
-    request_id = msg.content.get("request_id", None)
-    status = msg.content.get("status", None)
-    current_user_id = msg.content.get("current_user", None)
-
-    users = node.users
-
-    if not current_user_id:
-        current_user_id = users.first(
-            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
-        ).id
+    request_id = msg.request_id
+    status = msg.status
 
     # Check if status field is empty
     missing_paramaters = not status
@@ -236,21 +219,33 @@ def update_request_msg(
     _req_owner = _current_user_key == _req.verify_key
 
     if status == "accepted" and _can_triage_request:
-        tmp_obj = node.store[UID.from_string(_req.object_id)]
-        tmp_obj.read_permissions[
-            VerifyKey(_req.verify_key.encode("utf-8"), encoder=HexEncoder)
-        ] = _req.id
-        node.store[UID.from_string(_req.object_id)] = tmp_obj
+        # if the type of object being requested has the word 'budget' in it, then we're
+        # not really requesting an object per-say, we're requesting for a budget increase
+        # TODO: clean up the RequestMessage API to explicitly have multiple request types, including
+        # one for budget requests.
+        if "budget" in _req.object_type:
+            current_user = node.users.first(verify_key=_req.verify_key)
+            node.users.set(
+                user_id=current_user.id,
+                budget=current_user.budget + float(_req.object_type.split(":")[1]),
+            )
+        else:
+            tmp_obj = node.store[UID.from_string(_req.object_id)]
+            tmp_obj.read_permissions[
+                VerifyKey(_req.verify_key.encode("utf-8"), encoder=HexEncoder)
+            ] = _req.id
+            node.store[UID.from_string(_req.object_id)] = tmp_obj
         node.data_requests.set(request_id=_req.id, status=status)
     elif status == "denied" and (_can_triage_request or _req_owner):
         node.data_requests.set(request_id=_req.id, status=status)
     else:
         raise AuthorizationError("You're not allowed to update Request information!")
 
-    return DeleteRequestResponse(
+    return UpdateRequestResponse(
         address=msg.reply_to,
         status_code=200,
-        content={"msg": "Request Updated!"},
+        status=msg.status,
+        request_id=msg.request_id,
     )
 
 
@@ -260,16 +255,11 @@ def del_request_msg(
     verify_key: VerifyKey,
 ) -> DeleteRequestResponse:
 
-    # Get Payload Content
-    request_id = msg.content.get("request_id", None)
-    current_user_id = msg.content.get("current_user", None)
+    request_id = msg.request_id.get("request_id", None)  # type: ignore
 
-    users = node.users
-
-    if not current_user_id:
-        current_user_id = users.first(
-            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
-        ).id
+    current_user_id = node.users.first(
+        verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+    ).id
 
     requests = node.data_requests
     request = requests.first(id=request_id)
@@ -283,11 +273,9 @@ def del_request_msg(
     return DeleteRequestResponse(
         address=msg.reply_to,
         status_code=200,
-        content={"msg": "Request deleted!"},
+        request_id=request_id
+        # content={"msg": "Request deleted!"},
     )
-
-
-# PySyft Services
 
 
 def request_answer_msg(
@@ -476,7 +464,7 @@ def build_request_message(
         request_type="permissions",
         verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8"),
         object_type=msg.object_type,
-        tags=node.store[msg.object_id]._tags,
+        tags=node.store[msg.object_id]._tags if "budget" not in msg.object_type else [],
     )
 
 

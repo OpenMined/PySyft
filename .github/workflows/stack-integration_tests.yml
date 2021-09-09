@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
       - "0.6.0"
+      - "dev"
   push:
     branches:
       - "0.6.0"
@@ -41,13 +42,11 @@ jobs:
       # In this step, this action saves a list of existing images,
       # the cache is created without them in the post run.
       # It also restores the cache if it exists.
-      - uses: satackey/action-docker-layer-caching@v0.0.11
-        # Ignore the failure of a step and avoid terminating the job.
+      - name: Cache docker images
+        uses: Broadshield/action-docker-layer-caching@main
         continue-on-error: true
         with:
-          key: stack-${{ hashFiles('packages/grid/docker-compose.yml') }}
-          restore-keys: |
-            stack-
+          filter: reference='openmined/*'
 
       - name: Get pip cache dir
         id: pip-cache

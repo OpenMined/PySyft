@@ -4,7 +4,6 @@ package syft.core.node.common.service;
 
 import "proto/core/common/common_object.proto";
 import "proto/core/io/address.proto";
-import "proto/core/pointer/pointer.proto";
 
 message ObjectSearchMessage {
   syft.core.common.UID msg_id = 1;
@@ -15,5 +14,5 @@ message ObjectSearchMessage {
 message ObjectSearchReplyMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-  repeated syft.core.pointer.Pointer results = 3;
+  repeated bytes results = 3;
 }

@@ -172,6 +172,7 @@ $ pip install "git+https://github.com/OpenMined/PySyft@demo_strike_team_branch_4
 ## Deploying HAGrid to a running Linux Machine (Ubuntu 20.x)
 
 Log into your linux machine and run the following:
+
 ```
 pip install hagrid
 ```
@@ -191,19 +192,25 @@ ner slytherin_docker-host_1  Created", "Container slytherin_flower_1  Starting",
 PLAY RECAP ***************************************************************************************************************************
 104.42.1.158               : ok=26   changed=21   unreachable=0    failed=1    skipped=1    rescued=0    ignored=0
 ```
+
 If you see this don't worry about it.
 
 ### Post install checks.
 
 Log into the openmined user.
+
 ```
 sudo su - om
 ```
+
 Check that the autoupdater is running correctly and pointed to the branch you specified.
+
 ```
 sudo crontab -l
 ```
+
 Should return something like
+
 ```
 #Ansible: Update PySyft Repo
 * * * * * /home/om/PySyft/packages/grid/scripts/cron.sh /home/om/PySyft The-PET-Lab-at-the-UN-PPTTT/PySyft ungp_pet_lab om om domain slytherin

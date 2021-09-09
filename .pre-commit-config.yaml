@@ -28,7 +28,7 @@ repos:
         exclude: ^(packages/grid/ansible/)
       - id: name-tests-test
         always_run: true
-        exclude: ^(packages/grid/backend/app/app/tests/utils/)
+        exclude: ^(packages/grid/backend/grid/tests/utils/)
       - id: requirements-txt-fixer
         always_run: true
   - repo: https://github.com/pycqa/isort
@@ -107,7 +107,7 @@ repos:
       - id: mypy
         name: mypy-syft
         files: ^packages/syft
-        exclude: ^(packages/syft/src/syft/core/tensor|packages/syft/src/syft/core/adp|packages/syft/src/syft/proto|packages/syft/tests/syft/lib/python|packages/syft/examples/duet)
+        exclude: ^(packages/syft/src/syft/proto|packages/syft/tests/syft/lib/python)
         args: [
             "--ignore-missing-imports",
             "--scripts-are-modules",

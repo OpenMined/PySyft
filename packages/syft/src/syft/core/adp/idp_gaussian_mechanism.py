@@ -1,14 +1,38 @@
+# CLEANUP NOTES:
+# - remove unused comments
+# - add documentation for each method
+# - add comments inline explaining each piece
+# - add a unit test for each method (at least)
+
 # stdlib
 from functools import lru_cache
 from typing import Dict
+from typing import List
+from typing import Optional
 
 # third party
 from autodp import dp_bank
 from autodp import fdp_bank
 from autodp.autodp_core import Mechanism
+from nacl.signing import VerifyKey
 import numpy as np
 
+# relative
+from ..common.serde.recursive import RecursiveSerde
 
+
+# methods serialize/deserialize np.int64 number
+# syft.serde seems to not support np.int64 serialization/deserialization
+def numpy64tolist(value: np.int64) -> List:
+    list_version = value.tolist()
+    return list_version
+
+
+def listtonumpy64(value: List) -> np.int64:
+    return np.int64(value)
+
+
+# returns the privacy budget spent by each entity
 @lru_cache(maxsize=None)
 def _individual_RDP_gaussian(
     sigma: float, value: float, L: float, alpha: float
@@ -20,6 +44,8 @@ def individual_RDP_gaussian(params: Dict, alpha: float) -> np.float64:
     """
     :param params:
         'sigma' --- is the normalized noise level: std divided by global L2 sensitivity
+        'value' --- is the output of query on a data point
+        'L' --- is the Lipschitz constant of query with respect to the output of query on a data point
     :param alpha: The order of the Renyi Divergence
     :return: Evaluation of the RDP's epsilon
     """
@@ -35,30 +61,56 @@ def individual_RDP_gaussian(params: Dict, alpha: float) -> np.float64:
 
 
 # Example of a specific mechanism that inherits the Mechanism class
-class iDPGaussianMechanism(Mechanism):
+class iDPGaussianMechanism(Mechanism, RecursiveSerde):
+    __attr_allowlist__ = [
+        "name",
+        "params",
+        "entity_name",
+        "fdp",
+        "eps_pureDP",
+        "delta0",
+        "RDP_off",
+        "approxDP_off",
+        "fdp_off",
+        "use_basic_rdp_to_approx_dp_conversion",
+        "use_fdp_based_rdp_to_approx_dp_conversion",
+        "user_key",
+    ]
+
+    # delta0 is a numpy.int64 number (not supported by syft.serde)
+    __serde_overrides__ = {
+        "delta0": [numpy64tolist, listtonumpy64],
+    }
+
     def __init__(
         self,
         sigma: float,
-        value: float,
+        squared_l2_norm: float,
+        squared_l2_norm_upper_bound: float,
         L: np.float,
-        entity: str,
+        entity_name: str,
         name: str = "Gaussian",
         RDP_off: bool = False,
         approxDP_off: bool = False,
         fdp_off: bool = True,
         use_basic_rdp_to_approx_dp_conversion: bool = False,
         use_fdp_based_rdp_to_approx_dp_conversion: bool = False,
+        user_key: Optional[VerifyKey] = None,
     ):
+
         # the sigma parameter is the std of the noise divide by the l2 sensitivity
         Mechanism.__init__(self)
 
+        self.user_key = user_key
+
         self.name = name  # When composing
         self.params = {
-            "sigma": sigma,
-            "value": value,
-            "L": L,
+            "sigma": float(sigma),
+            "private_value": float(squared_l2_norm),
+            "public_value": float(squared_l2_norm_upper_bound),
+            "L": float(L),
         }  # This will be useful for the Calibrator
-        self.entity = entity
+        self.entity_name = entity_name
         # TODO: should a generic unspecified mechanism have a name and a param dictionary?
 
         self.delta0 = 0

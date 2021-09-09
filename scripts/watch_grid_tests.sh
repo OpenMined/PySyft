@@ -5,7 +5,7 @@ while [[ true ]]
 do
     chsum2=`find packages/ -name "*.py" -type f -exec md5 {} \;`
     if [[ $chsum1 != $chsum2 ]] ; then
-        tox -e grid.test.unit
+        tox -e grid.test.backend
         chsum1=$chsum2
     fi
     sleep 120
