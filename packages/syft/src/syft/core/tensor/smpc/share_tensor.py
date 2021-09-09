@@ -40,6 +40,10 @@ METHODS_FORWARD_ALL_SHARES = {
     "squeeze",
     "swapaxes",
 }
+INPLACE_OPS = {
+    "resize",
+    "partition",
+}
 
 
 @bind_protobuf
@@ -59,28 +63,12 @@ class ShareTensor(PassthroughTensor, Serializable):
         )
         super().__init__(value)
 
-    def flatten(self) -> ShareTensor:
-        return ShareTensor(
-            rank=self.rank,
-            nr_parties=self.nr_parties,
-            ring_size=self.ring_size,
-            value=self.child.flatten(),
-        )
-
     def __getitem__(self, item: Union[str, int, slice]) -> ShareTensor:
         return ShareTensor(
             rank=self.rank,
             nr_parties=self.nr_parties,
             ring_size=self.ring_size,
             value=self.child[item],
-        )
-
-    def reshape(self, *args: Tuple[Any, ...], **kwargs: Any) -> ShareTensor:
-        return ShareTensor(
-            rank=self.rank,
-            nr_parties=self.nr_parties,
-            ring_size=self.ring_size,
-            value=self.child.reshape(*args, **kwargs),
         )
 
     def copy_tensor(self) -> ShareTensor:
@@ -386,7 +374,12 @@ class ShareTensor(PassthroughTensor, Serializable):
 
             share = _self.child
             method = getattr(share, method_name)
-            new_share = method(*args, **kwargs)
+
+            if method_name not in INPLACE_OPS:
+                new_share = method(*args, **kwargs)
+            else:
+                method(*args, **kwargs)
+                new_share = share
 
             res = ShareTensor(
                 rank=_self.rank,

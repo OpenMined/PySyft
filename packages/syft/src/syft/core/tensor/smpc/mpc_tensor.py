@@ -44,6 +44,10 @@ METHODS_FORWARD_ALL_SHARES = {
     "swapaxes",
     "sum",
 }
+INPLACE_OPS = {
+    "resize",
+    "partition",
+}
 
 
 class MPCTensor(PassthroughTensor):
@@ -329,9 +333,14 @@ class MPCTensor(PassthroughTensor):
                 new_share = method(*args, **kwargs)
                 shares.append(new_share)
 
-                dummy_res = getattr(np.empty(_self.mpc_shape), method_name)(
-                    *args, **kwargs
-                )
+                dummy_res = np.empty(_self.mpc_shape)
+                if method_name not in INPLACE_OPS:
+                    dummy_res = getattr(np.empty(_self.mpc_shape), method_name)(
+                        *args, **kwargs
+                    )
+                else:
+                    getattr(np.empty(_self.mpc_shape), method_name)(*args, **kwargs)
+
                 new_shape = dummy_res.shape
             res = MPCTensor(shares=shares, shape=new_shape)
             return res
