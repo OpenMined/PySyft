@@ -29,6 +29,8 @@ from ..success_resp_message import SuccessResponseMessage
 from .node_setup_messages import CreateInitialSetUpMessage
 from .node_setup_messages import GetSetUpMessage
 from .node_setup_messages import GetSetUpResponse
+from .node_setup_messages import UpdateSetupMessage
+from .node_setup_messages import UpdateSetupResponse
 
 
 def set_node_uid(node: AbstractNode) -> None:
@@ -131,11 +133,28 @@ def get_setup(
     )
 
 
+def update_settings(
+    msg: UpdateSetupMessage, node: AbstractNode, verify_key: VerifyKey
+) -> UpdateSetupResponse:
+    if verify_key == node.root_verify_key:
+        node.setup.update(
+            domain_name=msg.domain_name,
+            description=msg.description,
+            daa=msg.daa,
+            contact=msg.contact,
+        )
+    else:
+        raise AuthorizationError("You're not allowed to get setup configs!")
+
+    return UpdateSetupResponse(address=msg.reply_to, content="Success!")
+
+
 class NodeSetupService(ImmediateNodeServiceWithReply):
 
     msg_handler_map: Dict[type, Callable] = {
         CreateInitialSetUpMessage: create_initial_setup,
         GetSetUpMessage: get_setup,
+        UpdateSetupMessage: update_settings,
     }
 
     @staticmethod
@@ -145,9 +164,10 @@ class NodeSetupService(ImmediateNodeServiceWithReply):
         msg: Union[
             CreateInitialSetUpMessage,
             GetSetUpMessage,
+            UpdateSetupMessage,
         ],
         verify_key: VerifyKey,
-    ) -> Union[SuccessResponseMessage, GetSetUpResponse]:
+    ) -> Union[SuccessResponseMessage, GetSetUpResponse, UpdateSetupMessage]:
         return NodeSetupService.msg_handler_map[type(msg)](
             msg=msg, node=node, verify_key=verify_key
         )
@@ -157,4 +177,5 @@ class NodeSetupService(ImmediateNodeServiceWithReply):
         return [
             CreateInitialSetUpMessage,
             GetSetUpMessage,
+            UpdateSetupMessage,
         ]
