@@ -33,8 +33,11 @@ message GetSetUpResponse {
 message UpdateSetupMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-  string content = 3;
-  syft.core.io.Address reply_to = 4;
+  string domain_name = 3;
+  string description = 4;
+  bool daa = 5;
+  string contact = 6;
+  syft.core.io.Address reply_to = 7;
 }
 
 message UpdateSetupResponse {
