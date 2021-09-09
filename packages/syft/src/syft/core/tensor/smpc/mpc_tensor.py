@@ -8,6 +8,7 @@ import itertools
 import operator
 import secrets
 from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -29,18 +30,22 @@ from ..util import implements  # type: ignore
 from .utils import ispointer
 
 METHODS_FORWARD_ALL_SHARES = {
-    "t",
-    "squeeze",
-    "unsqueeze",
-    "view",
-    "sum",
-    "clone",
-    "flatten",
-    "reshape",
     "repeat",
-    "narrow",
-    "dim",
+    "copy",
+    "diagonal",
+    "flatten",
     "transpose",
+    "partition",
+    "resize",
+    "ravel",
+    "compress",
+    "reshape",
+    "squeeze",
+    "swapaxes",
+    "sum",
+}
+INPLACE_OPS = {
+    "resize",
 }
 
 
@@ -305,27 +310,47 @@ class MPCTensor(PassthroughTensor):
         cast(Tuple[int], res)
         return tuple(res)  # type: ignore
 
-    def __getattribute__(self, attr_name: str) -> Any:
-        if attr_name in METHODS_FORWARD_ALL_SHARES:
+    @staticmethod
+    def hook_method(__self: MPCTensor, method_name: str) -> Callable[..., Any]:
+        """Hook a framework method.
 
-            def method_all_shares(
-                _self: MPCTensor, *args: List[Any], **kwargs: Dict[Any, Any]
-            ) -> Any:
-                shares = []
+        Args:
+            method_name (str): method to hook
 
-                for share in _self.child:
-                    method = getattr(share, attr_name)
-                    new_share = method(*args, **kwargs)
-                    shares.append(new_share)
+        Returns:
+            A hooked method
+        """
 
-                    dummy_res = getattr(np.empty(_self.mpc_shape), attr_name)(
+        def method_all_shares(
+            _self: MPCTensor, *args: List[Any], **kwargs: Dict[Any, Any]
+        ) -> Any:
+
+            shares = []
+
+            for share in _self.child:
+                method = getattr(share, method_name)
+                new_share = method(*args, **kwargs)
+                shares.append(new_share)
+
+                dummy_res = np.empty(_self.mpc_shape)
+                if method_name not in INPLACE_OPS:
+                    dummy_res = getattr(np.empty(_self.mpc_shape), method_name)(
                         *args, **kwargs
                     )
-                    new_shape = dummy_res.shape
-                res = MPCTensor(shares=shares, shape=new_shape)
-                return res
+                else:
+                    getattr(np.empty(_self.mpc_shape), method_name)(*args, **kwargs)
 
-            return functools.partial(method_all_shares, self)
+                new_shape = dummy_res.shape
+            res = MPCTensor(shares=shares, shape=new_shape)
+            return res
+
+        return functools.partial(method_all_shares, __self)
+
+    def __getattribute__(self, attr_name: str) -> Any:
+
+        if attr_name in METHODS_FORWARD_ALL_SHARES:
+            return MPCTensor.hook_method(self, attr_name)
+
         return object.__getattribute__(self, attr_name)
 
     def __apply_private_op(self, other: MPCTensor, op_str: str) -> List[ShareTensor]:
