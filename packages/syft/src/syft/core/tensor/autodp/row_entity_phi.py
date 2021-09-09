@@ -21,11 +21,12 @@ from ...tensor.types import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import implements  # type: ignore
 from ..passthrough import is_acceptable_simple_type  # type: ignore
+from .adp_tensor import ADPTensor
 from .initial_gamma import InitialGammaTensor  # type: ignore
 
 
 @bind_protobuf
-class RowEntityPhiTensor(PassthroughTensor, RecursiveSerde):
+class RowEntityPhiTensor(PassthroughTensor, RecursiveSerde, ADPTensor):
 
     __attr_allowlist__ = ["child"]
 

@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "sh ./scripts/deploy-node-type.sh",
     "build": "next build",
     "start": "next start -p $PORT",
     "lint": "eslint .",
