@@ -268,12 +268,18 @@ class UpdateSetupMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
         address: Address,
-        content: Dict,
+        domain_name: str,
+        description: str,
+        daa: bool,
+        contact: str,
         reply_to: Address,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
-        self.content = content
+        self.daa = daa
+        self.contact = contact
+        self.description = description
+        self.domain_name = domain_name
 
     def _object2proto(self) -> UpdateSetupMessage_PB:
         """Returns a protobuf serialization of self.
@@ -290,7 +296,10 @@ class UpdateSetupMessage(ImmediateSyftMessageWithReply):
         return UpdateSetupMessage_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            content=json.dumps(self.content),
+            domain_name=self.domain_name,
+            contact=self.contact,
+            daa=self.daa,
+            description=self.description,
             reply_to=serialize(self.reply_to),
         )
 
@@ -311,7 +320,10 @@ class UpdateSetupMessage(ImmediateSyftMessageWithReply):
         return UpdateSetupMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            content=json.loads(proto.content),
+            daa=proto.daa,
+            contact=proto.contact,
+            domain_name=proto.domain_name,
+            description=proto.description,
             reply_to=_deserialize(blob=proto.reply_to),
         )
 
