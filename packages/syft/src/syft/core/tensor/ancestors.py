@@ -318,6 +318,8 @@ class PhiTensorAncestor(TensorChainManager):
 
         entities = _entities
 
+        out = self.copy()
+
         # PHASE 2: CREATE CHILD
         if len(entities) == 1:
             # if there's only one entity - push a SingleEntityPhiTensor
@@ -336,7 +338,7 @@ class PhiTensorAncestor(TensorChainManager):
                     "min_val should be a float, got " + str(type(min_val)) + " instead."
                 )
 
-            self.push_abstraction_top(
+            out.push_abstraction_top(
                 _SingleEntityPhiTensor(),
                 entity=entities[0],
                 min_vals=min_vals,
@@ -382,7 +384,7 @@ class PhiTensorAncestor(TensorChainManager):
                     )
                 )
 
-            self.replace_abstraction_top(_RowEntityPhiTensor(), rows=new_list)  # type: ignore
+            out.replace_abstraction_top(_RowEntityPhiTensor(), rows=new_list)  # type: ignore
 
         # TODO: if there's element-level entities - push all elements with PhiScalars
         else:
@@ -391,4 +393,4 @@ class PhiTensorAncestor(TensorChainManager):
                 "If you're passing in mulitple entities, please pass in one entity per row."
             )
 
-        return self
+        return out
