@@ -143,6 +143,31 @@ class GridHTTPConnection(HTTPConnection):
         else:
             raise RequestAPIException(response.get(RequestAPIFields.ERROR))
 
+    def reset(self) -> Any:
+        header = {}
+
+        if self.session_token and self.token_type:
+            header = dict(
+                Authorization="Bearer "
+                + json.loads(
+                    '{"auth_token":"'
+                    + str(self.session_token)
+                    + '","token_type":"'
+                    + str(self.token_type)
+                    + '"}'
+                )["auth_token"]
+            )
+
+        response = json.loads(
+            requests.delete(
+                self.base_url + GridHTTPConnection.SYFT_ROUTE, headers=header
+            ).text
+        )
+        if response.get(RequestAPIFields.MESSAGE, None):
+            return response
+        else:
+            raise RequestAPIException(response.get(RequestAPIFields.ERROR))
+
     def send_files(self, file_path: str, metadata: Dict = {}) -> Dict[str, Any]:
         header = {}
 
