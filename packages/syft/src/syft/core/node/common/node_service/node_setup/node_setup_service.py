@@ -128,7 +128,6 @@ def get_setup(
 
     return GetSetUpResponse(
         address=msg.reply_to,
-        status_code=200,
         content=_setup,
     )
 
@@ -150,7 +149,8 @@ def update_settings(
         raise AuthorizationError("You're not allowed to get setup configs!")
 
     return UpdateSetupResponse(
-        address=msg.reply_to, content="Node settings have been updated successfully!"
+        address=msg.reply_to,
+        content={"message": "Node settings have been updated successfully!"},
     )
 
 
