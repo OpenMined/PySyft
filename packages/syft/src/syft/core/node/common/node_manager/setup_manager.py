@@ -46,6 +46,6 @@ class SetupManager(DatabaseManager):
 
     def update(self, **kwargs: Any) -> None:
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
-        session_local.query(self._schema).first().update(**kwargs)
+        session_local.query(self._schema).update(kwargs)
         session_local.commit()
         session_local.close()

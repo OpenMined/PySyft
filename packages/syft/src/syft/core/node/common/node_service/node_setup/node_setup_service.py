@@ -109,22 +109,7 @@ def get_setup(
     msg: GetSetUpMessage, node: AbstractNode, verify_key: VerifyKey
 ) -> GetSetUpResponse:
 
-    _current_user_id = msg.content.get("current_user", None)
-
-    users = node.users
-
-    if not _current_user_id:
-        try:
-            _current_user_id = users.first(
-                verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
-            ).id
-        except Exception as e:
-            traceback_and_raise(e)
-
-    if users.role(user_id=_current_user_id).name != "Owner":
-        raise AuthorizationError("You're not allowed to get setup configs!")
-    else:
-        _setup = model_to_json(node.setup.first(domain_name=node.name))
+    _setup = model_to_json(node.setup.first(domain_name=node.name))
 
     return GetSetUpResponse(
         address=msg.reply_to,
@@ -135,7 +120,7 @@ def get_setup(
 def update_settings(
     msg: UpdateSetupMessage, node: AbstractNode, verify_key: VerifyKey
 ) -> UpdateSetupResponse:
-    if verify_key == node.root_verify_key:
+    if node.users.role(verify_key=verify_key).id == node.roles.owner_role.id:
         if msg.domain_name:
             node.name = msg.domain_name
 
