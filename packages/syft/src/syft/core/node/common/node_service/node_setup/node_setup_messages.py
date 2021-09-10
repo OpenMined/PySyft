@@ -38,12 +38,10 @@ class GetSetUpMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
         address: Address,
-        content: Dict,
         reply_to: Address,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
-        self.content = content
 
     def _object2proto(self) -> GetSetUpMessage_PB:
         """Returns a protobuf serialization of self.
@@ -60,7 +58,6 @@ class GetSetUpMessage(ImmediateSyftMessageWithReply):
         return GetSetUpMessage_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            content=json.dumps(self.content),
             reply_to=serialize(self.reply_to),
         )
 
@@ -81,7 +78,6 @@ class GetSetUpMessage(ImmediateSyftMessageWithReply):
         return GetSetUpMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            content=json.loads(proto.content),
             reply_to=_deserialize(blob=proto.reply_to),
         )
 

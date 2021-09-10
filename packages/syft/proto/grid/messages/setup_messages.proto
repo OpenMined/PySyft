@@ -19,8 +19,7 @@ message CreateInitialSetUpMessage {
 message GetSetUpMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-  string content = 3;
-  syft.core.io.Address reply_to = 4;
+  syft.core.io.Address reply_to = 3;
 }
 
 message GetSetUpResponse {
