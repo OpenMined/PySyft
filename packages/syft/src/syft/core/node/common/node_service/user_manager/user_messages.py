@@ -54,7 +54,6 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
         name: str,
         email: str,
         password: str,
-        budget: float,
         reply_to: Address,
         role: Optional[str] = "",
         msg_id: Optional[UID] = None,
@@ -64,7 +63,6 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
         self.password = password
         self.role = role
         self.name = name
-        self.budget = budget
 
     def _object2proto(self) -> CreateUserMessage_PB:
         """Returns a protobuf serialization of self.
@@ -85,7 +83,6 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
             password=self.password,
             role=self.role,
             name=self.name,
-            budget=self.budget,
             reply_to=serialize(self.reply_to),
         )
 
@@ -109,7 +106,6 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
             email=proto.email,
             password=proto.password,
             name=proto.name,
-            budget=proto.budget,
             role=proto.role,
             reply_to=_deserialize(blob=proto.reply_to),
         )
