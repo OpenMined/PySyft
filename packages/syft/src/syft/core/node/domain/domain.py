@@ -382,6 +382,11 @@ class Domain(Node):
                 alive_handlers.append(handler)
         self.request_handlers = alive_handlers
 
+    def clear(self) -> None:
+        # Cleanup database tables
+        self.store.clear()
+        self.data_requests.clear()
+
     def clean_up_requests(self) -> None:
         # this allows a request to be re-handled if the handler somehow failed
         now = time.time()
