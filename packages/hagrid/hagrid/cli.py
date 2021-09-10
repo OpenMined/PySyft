@@ -617,6 +617,7 @@ def create_launch_docker_cmd(
     cmd += " NODE_TYPE=" + str(node_type.input)
     cmd += " VERSION=`python VERSION`"
     cmd += " VERSION_HASH=`python VERSION hash`"
+    cmd += " INSTALL_DEV=0 TRAEFIK_PUBLIC_NETWORK_IS_EXTERNAL=false INSTALL_JUPYTER=0"
     cmd += " docker compose -p " + snake_name
     cmd += " up"
 
