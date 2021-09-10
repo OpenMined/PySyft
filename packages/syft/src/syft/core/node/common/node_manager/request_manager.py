@@ -7,6 +7,7 @@ from typing import Optional
 # third party
 from nacl.signing import VerifyKey
 from sqlalchemy.engine import Engine
+from sqlalchemy.orm import sessionmaker
 
 # syft absolute
 from syft.core.common.uid import UID
@@ -71,3 +72,9 @@ class RequestManager(DatabaseManager):
 
     def set(self, request_id: int, status: RequestStatus) -> None:
         self.modify({"id": request_id}, {"status": status})
+
+    def clear(self) -> None:
+        local_session = sessionmaker(bind=self.db)()
+        local_session.query(self.schema).delete()
+        local_session.commit()
+        local_session.close()
