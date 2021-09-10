@@ -260,6 +260,21 @@ class PhiTensorAncestor(TensorChainManager):
         )
 
     def private(
+            self,
+            min_val: ArrayLike,
+            max_val: ArrayLike,
+            scalar_manager: VirtualMachinePrivateScalarManager = VirtualMachinePrivateScalarManager(),
+            entities: Optional[Any] = None,
+            skip_blocking_checks: bool = False,
+    ) -> PhiTensorAncestor:
+
+        return self.copy()._private(min_val=min_val,
+                                   max_val=max_val,
+                                   scalar_manager=scalar_manager,
+                                   entities=entities,
+                                   skip_blocking_checks=skip_blocking_checks)
+
+    def _private(
         self,
         min_val: ArrayLike,
         max_val: ArrayLike,
@@ -318,8 +333,6 @@ class PhiTensorAncestor(TensorChainManager):
 
         entities = _entities
 
-        out = self.copy()
-
         # PHASE 2: CREATE CHILD
         if len(entities) == 1:
             # if there's only one entity - push a SingleEntityPhiTensor
@@ -338,7 +351,7 @@ class PhiTensorAncestor(TensorChainManager):
                     "min_val should be a float, got " + str(type(min_val)) + " instead."
                 )
 
-            out.push_abstraction_top(
+            self.push_abstraction_top(
                 _SingleEntityPhiTensor(),
                 entity=entities[0],
                 min_vals=min_vals,
@@ -384,7 +397,7 @@ class PhiTensorAncestor(TensorChainManager):
                     )
                 )
 
-            out.replace_abstraction_top(_RowEntityPhiTensor(), rows=new_list)  # type: ignore
+            self.replace_abstraction_top(_RowEntityPhiTensor(), rows=new_list)  # type: ignore
 
         # TODO: if there's element-level entities - push all elements with PhiScalars
         else:
@@ -393,4 +406,4 @@ class PhiTensorAncestor(TensorChainManager):
                 "If you're passing in mulitple entities, please pass in one entity per row."
             )
 
-        return out
+        return self
