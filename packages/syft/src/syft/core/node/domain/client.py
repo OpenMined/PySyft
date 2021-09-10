@@ -399,6 +399,14 @@ class DomainClient(Client):
         response = self.conn.setup(**kwargs)  # type: ignore
         logging.info(response[RequestAPIFields.MESSAGE])
 
+    def reset(self):
+        logging.warning(
+            "When resetting the node, all stored data will be lost, as well as the request history. Are you sure you want to continue (y/N)?"
+        )
+        response = input().lower()
+        if response == "y":
+            response = self.routes[0].connection.reset()
+
     def get_setup(self, **kwargs: Any) -> Any:
         return self._perform_grid_request(grid_msg=GetSetUpMessage, content=kwargs)
 
