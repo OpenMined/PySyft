@@ -99,7 +99,7 @@ def create_user_msg(
             name=msg.name,
             email=msg.email,
             password=msg.password,
-            budget=msg.budget,
+            budget=0,
             role=node.roles.first(name="Data Scientist").id,
             private_key=encoded_pk,
             verify_key=encoded_vk,
@@ -173,8 +173,26 @@ def update_user_msg(
         if _allowed:
             new_role_id = node.roles.first(name=msg.role).id
             node.users.set(user_id=msg.user_id, role=new_role_id)
-        elif msg.role == node.roles.owner_role.name:
-            raise AuthorizationError("You can't change it to Owner role!")
+        elif (  # Transfering Owner's role
+            msg.role == node.roles.owner_role.name  # target role == Owner
+            and node.users.role(verify_key=verify_key).name
+            == node.roles.owner_role.name  # Current user is the current node owner.
+        ):
+            new_role_id = node.roles.first(name=msg.role).id
+            node.users.set(user_id=msg.user_id, role=new_role_id)
+            current_user = node.users.get_user(verify_key=verify_key)
+            node.users.set(user_id=current_user.id, role=node.roles.admin_role.id)
+            # Updating current node keys
+            root_key = SigningKey(
+                current_user.private_key.encode("utf-8"), encoder=HexEncoder
+            )
+            node.signing_key = root_key
+            node.verify_key = root_key.verify_key
+            # IDK why, but we also have a different var (node.root_verify_key)
+            # defined at ...common.node.py that points to the verify_key.
+            # So we need to update it as well.
+            node.root_verify_key = root_key.verify_key
+
         elif target_user.role == node.roles.owner_role.id:
             raise AuthorizationError("You're not allowed to change Owner user roles!")
         else:
