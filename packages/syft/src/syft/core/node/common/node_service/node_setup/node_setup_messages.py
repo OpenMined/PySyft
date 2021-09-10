@@ -347,12 +347,10 @@ class UpdateSetupResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        status_code: int,
         content: Dict,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
-        self.status_code = status_code
         self.content = content
 
     def _object2proto(self) -> UpdateSetupResponse_PB:
@@ -370,7 +368,6 @@ class UpdateSetupResponse(ImmediateSyftMessageWithoutReply):
         return UpdateSetupResponse_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            status_code=self.status_code,
             content=json.dumps(self.content),
         )
 
@@ -391,7 +388,6 @@ class UpdateSetupResponse(ImmediateSyftMessageWithoutReply):
         return UpdateSetupResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            status_code=proto.status_code,
             content=json.loads(proto.content),
         )
 
