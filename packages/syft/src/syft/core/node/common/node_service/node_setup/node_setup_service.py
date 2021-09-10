@@ -137,8 +137,11 @@ def update_settings(
     msg: UpdateSetupMessage, node: AbstractNode, verify_key: VerifyKey
 ) -> UpdateSetupResponse:
     if verify_key == node.root_verify_key:
+        if msg.domain_name:
+            node.name = msg.domain_name
+
         node.setup.update(
-            domain_name=msg.domain_name,
+            domain_name=node.name,
             description=msg.description,
             daa=msg.daa,
             contact=msg.contact,
@@ -146,7 +149,9 @@ def update_settings(
     else:
         raise AuthorizationError("You're not allowed to get setup configs!")
 
-    return UpdateSetupResponse(address=msg.reply_to, content="Success!")
+    return UpdateSetupResponse(
+        address=msg.reply_to, content="Node settings have been updated successfully!"
+    )
 
 
 class NodeSetupService(ImmediateNodeServiceWithReply):
