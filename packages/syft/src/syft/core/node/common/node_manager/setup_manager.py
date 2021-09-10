@@ -4,6 +4,7 @@ from typing import List
 
 # third party
 from sqlalchemy.engine import Engine
+from sqlalchemy.orm import sessionmaker
 
 # relative
 from ..node_table.setup import SetupConfig
