@@ -1,18 +1,25 @@
 # stdlib
+import json
 from typing import Any
 
 # third party
 from fastapi import APIRouter
+from fastapi import Depends
 from fastapi import Request
 from fastapi import Response
+from nacl.encoding import HexEncoder
+from nacl.signing import SigningKey
 
 # syft absolute
 from syft import deserialize  # type: ignore
 from syft import serialize  # type: ignore
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
+from syft.core.node.domain.enums import RequestAPIFields
 
 # grid absolute
+from grid.api.dependencies.current_user import get_current_user
+from grid.api.users.models import UserPrivate
 from grid.core.celery_app import celery_app
 from grid.core.config import settings
 from grid.core.node import node
@@ -26,6 +33,20 @@ async def syft_metadata() -> Response:
         node.get_metadata_for_client()._object2proto().SerializeToString(),
         media_type="application/octet-stream",
     )
+
+
+@router.delete("", response_model=str)
+async def delete(current_user: UserPrivate = Depends(get_current_user)) -> Response:
+    # If current user is the node owner ...
+    if current_user.role == node.roles.owner_role.id:
+        node.clear()
+        response = {RequestAPIFields.MESSAGE: "Domain node has been reset!"}
+    else:
+        response = {
+            RequestAPIFields.ERROR: "You're not allowed to reset the node data."
+        }
+
+    return Response(json.dumps(response))
 
 
 @router.post("", response_model=str)
