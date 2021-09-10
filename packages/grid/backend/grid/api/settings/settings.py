@@ -24,6 +24,7 @@ from syft.core.node.common.node_service.node_setup.node_setup_service import (
 
 # grid absolute
 from grid.api.dependencies.current_user import get_current_user
+from grid.api.users.models import UserPrivate
 from grid.core.node import node
 
 router = APIRouter()
@@ -35,10 +36,9 @@ def update_settings(
     domain_name: str = Body(..., example="OpenGrid"),
     description: str = Body(..., example="A Domain Node Description ..."),
     daa: Optional[bool] = False,
+    current_user: UserPrivate = Depends(get_current_user),
 ) -> Any:
-    """
-    You must pass valid email,password and domain_name to setup the initial configs.
-    """
+    user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
 
     # Build Syft Message
     msg = UpdateSetupMessage(
@@ -48,7 +48,7 @@ def update_settings(
         description=description,
         daa=daa,
         reply_to=node.address,
-    ).sign(signing_key=node.signing_key)
+    ).sign(signing_key=user_key)
 
     # Process syft message
     reply = node.recv_immediate_msg_with_reply(msg=msg).message
@@ -58,12 +58,12 @@ def update_settings(
     if isinstance(reply, ExceptionMessage):
         resp = {"error": reply.exception_msg}
     else:
-        resp = {"message": reply.resp_msg}
+        resp = {"message": reply.content}
     return resp
 
 
 @router.get("", status_code=200, response_class=JSONResponse)
-def get_setup(request: Request, current_user: Any = Depends(get_current_user)) -> Any:
+def get_setup(current_user: UserPrivate = Depends(get_current_user)) -> Any:
     user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
 
     msg = GetSetUpMessage(address=node.address, reply_to=node.address).sign(
