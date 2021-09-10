@@ -126,6 +126,9 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.core.tensor.tensor.Tensor.diagonal", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.dot", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.flatten", "syft.core.tensor.tensor.Tensor"),
+        ("syft.core.tensor.tensor.Tensor.ravel", "syft.core.tensor.tensor.Tensor"),
+        ("syft.core.tensor.tensor.Tensor.compress", "syft.core.tensor.tensor.Tensor"),
+        ("syft.core.tensor.tensor.Tensor.swapaxes", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.gamma", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.grad", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.max", "syft.core.tensor.tensor.Tensor"),
@@ -175,6 +178,50 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ),
         (
             "syft.core.tensor.smpc.share_tensor.ShareTensor.sum",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.repeat",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.copy",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.diagonal",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.flatten",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.transpose",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.resize",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.ravel",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.compress",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.reshape",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.squeeze",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.swapaxes",
             "syft.core.tensor.smpc.share_tensor.ShareTensor",
         ),
     ]
