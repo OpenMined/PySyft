@@ -19,6 +19,9 @@ from pandas import DataFrame
 
 # syft absolute
 from syft import deserialize
+from syft.core.node.common.node_service.node_setup.node_setup_messages import (
+    UpdateSetupMessage,
+)
 
 # relative
 from ....core.common.serde.serialize import _serialize as serialize  # noqa: F401
@@ -401,14 +404,23 @@ class DomainClient(Client):
 
     def reset(self) -> None:
         logging.warning(
-            "Reset the node, will delete the data, as well as the request history. Are you sure you want to continue (y/N)?"
+            "Node reset will delete the data, as well as the requests. Do you want to continue (y/N)?"
         )
         response = input().lower()
         if response == "y":
             response = self.routes[0].connection.reset()
 
-    def get_setup(self, **kwargs: Any) -> Any:
-        return self._perform_grid_request(grid_msg=GetSetUpMessage, content=kwargs)
+    def configure(self, **kwargs: Any) -> Any:
+        response = self._perform_grid_request(
+            grid_msg=UpdateSetupMessage, content=kwargs
+        ).content
+        logging.info(response)
+
+    @property
+    def settings(self, **kwargs: Any) -> Dict[Any, Any]:
+        return self._perform_grid_request(
+            grid_msg=GetSetUpMessage, content=kwargs
+        ).content
 
     def search(self, query: List, pandas: bool = False) -> Any:
         response = self._perform_grid_request(
