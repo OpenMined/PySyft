@@ -13,9 +13,9 @@ class SetupConfig(Base):
 
     id = Column(Integer(), primary_key=True, autoincrement=True)
     domain_name = Column(String(255), default="")
-    # description = Column(String(255), default="")
-    # contact = Column(String(255), default="")
-    # daa = Column(Boolean(), default=False)
+    description = Column(String(255), default="")
+    contact = Column(String(255), default="")
+    daa = Column(Boolean(), default=False)
     node_id = Column(String(32), default="")
 
     def __str__(self) -> str:

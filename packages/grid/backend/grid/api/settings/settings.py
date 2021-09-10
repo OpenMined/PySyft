@@ -6,7 +6,6 @@ from typing import Optional
 from fastapi import APIRouter
 from fastapi import Body
 from fastapi import Depends
-from fastapi import Request
 from fastapi.responses import JSONResponse
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
@@ -63,7 +62,9 @@ def update_settings(
 
 
 @router.get("", status_code=200, response_class=JSONResponse)
-def get_setup(current_user: UserPrivate = Depends(get_current_user)) -> Any:
+def get_setup(
+    current_user: UserPrivate = Depends(get_current_user),
+) -> Any:
     user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
 
     msg = GetSetUpMessage(address=node.address, reply_to=node.address).sign(
@@ -71,5 +72,4 @@ def get_setup(current_user: UserPrivate = Depends(get_current_user)) -> Any:
     )
 
     reply = node.recv_immediate_msg_with_reply(msg=msg)
-
-    return {"message": reply.message.content}
+    return JSONResponse(reply.message.content)

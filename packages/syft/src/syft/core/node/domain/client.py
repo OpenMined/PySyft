@@ -399,9 +399,9 @@ class DomainClient(Client):
         response = self.conn.setup(**kwargs)  # type: ignore
         logging.info(response[RequestAPIFields.MESSAGE])
 
-    def reset(self):
+    def reset(self) -> None:
         logging.warning(
-            "When resetting the node, all stored data will be lost, as well as the request history. Are you sure you want to continue (y/N)?"
+            "Reset the node, will delete the data, as well as the request history. Are you sure you want to continue (y/N)?"
         )
         response = input().lower()
         if response == "y":

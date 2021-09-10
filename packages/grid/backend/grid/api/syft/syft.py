@@ -7,8 +7,6 @@ from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import Request
 from fastapi import Response
-from nacl.encoding import HexEncoder
-from nacl.signing import SigningKey
 
 # syft absolute
 from syft import deserialize  # type: ignore
