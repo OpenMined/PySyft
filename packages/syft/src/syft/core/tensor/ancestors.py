@@ -162,16 +162,18 @@ uniquely in your data and in the data you intend to use with your data (if any).
     print()
 
     print("\tDo you understand, and are you ready to proceed? (yes/no)")
+    print()
     consent = str(input("\t"))
+    print()
 
     if consent == "no":
         raise Exception("User cancelled entity creation wizard!")
 
-    print("\tExcellent! Let's begin!\n")
+    print("\tExcellent! Let's begin!")
     # print("\tYou passed in a tensor with the shape:" + str(data.shape))
     print()
 
-    print("\t" + "_" * 69)
+    print("\t" + "-" * 69)
     print()
 
     print(w.fill("Question 1: Is this entire tensor referring to the same entity?"))
@@ -191,12 +193,15 @@ protect the people or the business)"""
     print()
     print(
         w.fill(
-            "If yes, write the UID of the entity this data is about, otherwise write 'no'."
+            "If yes, write the UID of the entity this data is about, otherwise write 'no' "
+            " because this data is about more than one entity."
         )
     )
+    print()
     single_uid = input("\t")
-
+    print()
     if single_uid != "no":
+        print("\t" + "-" * 69)
         print()
         print(
             w.fill(
@@ -208,20 +213,114 @@ protect the people or the business)"""
         print(
             w.fill(
                 "Congratulations! You're all done with the Data Subject Annotation Wizard!!!"
+                "In the future, you can accomplish this without the wizard by running:"
+            )
+        )
+        print()
+        print(
+            w.fill(
+                "\t.private(entities='"+str(single_uid)+"')"
             )
         )
         print()
         print("\t" + "=" * 69)
         return [single_uid]
 
-    print("\t" + "_" * 69)
+    print("\t" + "-" * 69)
     print()
     print(
         w.fill(
             "Question 2: Does each row correspond to an entity, perhaps with occasional repeats (yes/no)?"
         )
     )
+    print()
     answer = str(input("\t"))
+    print()
+    print("\t" + "-" * 69)
+    print()
+    if answer == 'yes':
+        print(
+            w.fill(
+                "Question 3: Excellent! Well, since your dataset has " + str(data.shape[0]) + " rows, " +\
+                "would you like to hand enter an entity for each one (yes) or if there are too " +\
+                "many for you to hand-enter, we'll print some example code for you to run (no)."
+            )
+        )
+
+        print()
+
+        answer = str(input("\t"))
+
+        if answer == 'yes':
+
+            print()
+
+            entities = list()
+            for i in range(len(data)):
+                print("\t\t" + "-" * 61)
+                print()
+                print(
+                    w.fill(
+                        "\tData Row "+str(i)+":" + str(data[i])
+                    )
+                )
+                ent = input("\t\t What entity is this row about:")
+                entities.append(ent)
+                print()
+            print("\t\t" + "-" * 61)
+            print()
+            print(
+                w.fill(
+                    "All done! Next time if you want to skip the wizard, call .private() like this:"
+                )
+            )
+            print()
+            print(
+                w.fill(
+                    ".private(entities=['"+entities[0]+"', '"+entities[1]+"', '"+entities[-1]+"'])"
+                )
+            )
+            print()
+            print(
+                w.fill(
+                    " where you pass in entities as a list of strings, one per row. As long as you"
+                    " pass in the same number of entities as there are rows in your tensor, it will"
+                    " automatically detect you have and assume you mean one entity per row."
+                )
+            )
+            return entities
+
+        elif answer == "no":
+
+            print()
+
+            print(
+                w.fill(
+                    "Excellent. Well, in that case you'll need to re-run .private() but pass in"
+                    " a list of strings where each string is a unique identifier for an entity, and where"
+                    " the length of the list is equal to the number of rows in your tensor. Like so:"
+                )
+            )
+
+            print()
+            print(
+                w.fill(
+                    ".private(entities=['bob', 'alice', 'john'])"
+                )
+            )
+            print()
+            print(" Now just to make sure I don't corrupt your tensor - I'm going to throw an exception.")
+            print()
+            raise Exception("Wizard aborted. Please run .private(entities=<your entities>)"
+                            " again with your list of entity unique identifiers (strings),"
+                            "one per row of your tensor.")
+    elif answer == 'no':
+
+        print(
+            w.fill(
+                "Question 3: "
+            )
+        )
 
     print()
 
