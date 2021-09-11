@@ -318,16 +318,53 @@ protect the people or the business)"""
 
         print(
             w.fill(
-                "Question 3: "
+                "Question 3: Is your data one entity for every column (yes/no)?"
             )
         )
 
+        print()
+
+        answer = str(input("\t"))
+
+        print()
+
+        if answer == 'yes':
+            print(
+                w.fill(
+                    "We don't yet support this form of injestion. Please transpose your data"
+                    " into one entity per row and re-run the wizard. Aborting:)"
+                )
+            )
+
+            raise Exception("Wizard aborted.")
+
+        elif answer == 'no':
+
+            print(
+                w.fill(
+                    "It sounds like your tensor is a random assortment of entities (and perhaps empty/non-entities). "
+                    "If you have empty values, just create random entities for them for now. If you have various "
+                    "entities scattered throughout your tensor (not organized by row), then you'll need to pass "
+                    "in a np.ndarray of strings which is identically shaped to your data in entities like so:"
+                )
+            )
+
+            print()
+            print("\t\ttensor = sy.Tensor(np.ones((2,2)).astype(np.int32))")
+            print()
+            print("\t\tentities = np.array([['bob', 'alice'],['charlie', 'danielle']])")
+            print()
+            print("\t\ttensor.private(min_val=0, max_val=1, entities=entities))")
+            print()
+            print("Aborting wizard now so that you rcan re-run .private with the right parameters.")
+            print()
+            raise Exception("Wizard aborted. Please run .private(entities=<your entities>)"
+                            " again with your np.ndarray of entity unique identifiers (strings),"
+                            " one per value of your tensor and where your np.ndarray of entities is"
+                            " the same shape as your data.")
     print()
 
     print("\t" + "_" * 69)
-    print(data)
-
-    return ["asdf"]
 
 
 class PhiTensorAncestor(TensorChainManager):
@@ -423,12 +460,34 @@ class PhiTensorAncestor(TensorChainManager):
 
         # Check 4: If entities are a list, are the items strings or Entity objects.
         # If they're strings lets create Entity objects.
-        _entities = list()
-        for e in entities:
-            if isinstance(e, str):
-                _entities.append(Entity(e))
+        elif isinstance(entities, list):
+            _entities = list()
+            for e in entities:
+                if isinstance(e, str):
+                    _entities.append(Entity(e))
+                elif isinstance(e, Entity):
+                    _entities.append(e)
+                elif isinstance(e, (list, np.ndarray)):
+                    # looks like it's actually a list of tensors, let's try to
+                    # cast the whole thing to an ndarray nd see if that works.
+                    entities = np.array(entities)
+                    break
+                else:
+                    raise Exception("What kind of entity is this?!")
+
+        elif isinstance(entities, np.ndarray):
+            if entities.shape != self.shape:
+                raise Exception("Entities shape doesn't match data shape. If you're"
+                                " going to pass in something other than 1 entity for the"
+                                " entire tensor or one entity per row, you're going to need"
+                                " to make the np.ndarray of entities have the same shape as"
+                                " the tensor you're calling .private() on. Try again.")
             else:
-                _entities.append(e)
+
+                raise Exception("We don't yet support passing in a tensor of arbitrary entities. "
+                                "For now, call.flatten() on your tensor so you have one entity per row, "
+                                "or split your tensor into separate tensors for each value. We apologize "
+                                "for the inconvenience and will be adding this functionality soon!")
 
         entities = _entities
 
