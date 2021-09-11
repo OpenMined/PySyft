@@ -181,8 +181,8 @@ def test_ne_shapes(
     comparison_tensor = SEPT(
         child=np.random.random((dims + 10, dims + 10)),
         entity=ishan,
-        max_vals=upper_bound,
-        min_vals=lower_bound,
+        max_vals=np.ones(dims + 10),
+        min_vals=np.ones(dims + 10),
     )
 
     with pytest.raises(Exception):
@@ -382,6 +382,108 @@ def test_add_sub_equivalence(
         add_result == sub_result
     ), "Addition of negative values does not give the same result as subtraction"
     return None
+
+
+def test_transpose_simple_types() -> None:
+    """ Test that if self.child can't be transposed (b/c it's an int/float/bool/etc), it isn't changed"""
+    random_int = np.random.randint(low=50, high=100)
+    int_tensor = SEPT(child=random_int, entity=ishan, min_vals=50, max_vals=100)
+    int_tensor_transposed = int_tensor.transpose()
+    assert int_tensor_transposed.shape == int_tensor.shape, "Transpose shape is incorrect"
+    assert int_tensor_transposed.child == int_tensor.child, "Transpose: child incorrect"
+    assert int_tensor_transposed.min_vals == int_tensor.min_vals, "Transpose: min values incorrect"
+    assert int_tensor_transposed.max_vals == int_tensor.max_vals, "Transpose: max_values incorrect"
+    assert int_tensor_transposed == int_tensor, "Transpose: equality error"
+
+    random_float = random_int * np.random.random()
+    float_tensor = SEPT(child=random_float, entity=ishan, min_vals=0, max_vals=100)
+    float_tensor_transposed = float_tensor.transpose()
+    assert float_tensor_transposed.shape == float_tensor.shape, "Transpose shape is incorrect"
+    assert float_tensor_transposed.child == float_tensor.child, "Transpose: child incorrect"
+    assert float_tensor_transposed.min_vals == float_tensor.min_vals, "Transpose: min values incorrect"
+    assert float_tensor_transposed.max_vals == float_tensor.max_vals, "Transpose: max_values incorrect"
+    assert float_tensor_transposed == float_tensor, "Transpose: equality error"
+
+    random_bool = np.random.choice([True, False], p=[0.5, 0.5])
+    bool_tensor = SEPT(child=random_bool, entity=ishan, min_vals=0, max_vals=1)
+    bool_tensor_transposed = bool_tensor.transpose()
+    assert bool_tensor_transposed.shape == bool_tensor.shape, "Transpose shape is incorrect"
+    assert bool_tensor_transposed.child == bool_tensor.child, "Transpose: child incorrect"
+    assert bool_tensor_transposed.min_vals == bool_tensor.min_vals, "Transpose: min values incorrect"
+    assert bool_tensor_transposed.max_vals == bool_tensor.max_vals, "Transpose: max_values incorrect"
+    # assert bool_tensor_transposed == bool_tensor, "Transpose: equality error"
+    return None
+
+
+def test_transpose_square_matrix(
+        reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+) -> None:
+    """ Test transpose works on the most important use case, which is when self.child is a np.array or Tensor"""
+    tensor = SEPT(child=reference_data, entity=ishan, max_vals=upper_bound, min_vals=lower_bound)
+    transposed_tensor = tensor.transpose()
+    assert tensor.shape == transposed_tensor.shape, "Transposing square matrix changed shape"
+    assert (upper_bound.transpose() == transposed_tensor.max_vals).all(), "Transpose: Incorrect max_vals"
+    assert (lower_bound.transpose() == transposed_tensor.min_vals).all(), "Transpose: Incorrect min_vals"
+    assert (transposed_tensor.transpose() == tensor), "Transposing tensor twice should return the original tensor"
+
+    # Can't index directly into SEPT due to IndexErrors arising due to __getitem__'s effect on min_val/max_val
+    for i in range(dims):
+        for j in range(dims):
+            assert tensor.child[i, j] == transposed_tensor.child[j, i], "Transpose failed"
+
+
+def test_transpose_non_square_matrix() -> None:
+    """ Test transpose on SEPTs where self.child is not a square matrix"""
+    rows = dims
+    cols = dims + np.random.randint(low=1, high=5)
+    tensor = SEPT(child=np.random.random((rows, cols)), entity=ishan, max_vals=np.ones(rows), min_vals=np.zeros(rows))
+    transposed_tensor = tensor.transpose()
+    assert tensor.shape != transposed_tensor.shape, "Transposing non-square matrix did not change shape"
+    assert tensor.shape[::-1] == transposed_tensor.shape, "Transposing non-square matrix resulted in incorrect shape"
+    assert (np.ones((1, rows)) == transposed_tensor.max_vals).all(), "Transpose: Incorrect max_vals"
+    assert (np.zeros((1, rows)) == transposed_tensor.min_vals).all(), "Transpose: Incorrect min_vals"
+    assert (transposed_tensor.transpose() == tensor), "Transposing tensor twice should return the original tensor"
+
+    # Can't index directly into SEPT due to IndexErrors arising due to __getitem__'s effect on min_val/max_val
+    for i in range(dims):
+        for j in range(dims):
+            assert tensor.child[i, j] == transposed_tensor.child[j, i], "Transpose failed"
+
+
+@pytest.mark.skip(reason="min_val, max_val currently not transposing correctly with arguments")
+def test_transpose_args(
+        reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+) -> None:
+    """ Ensure the optional arguments passed to .transpose() work as intended. """
+
+    # Try with square matrix
+    square_tensor = SEPT(child=reference_data, entity=ishan, min_vals=lower_bound, max_vals=upper_bound)
+    order = list(range(len(square_tensor.shape)))
+    np.random.shuffle(order)
+    transposed_square_tensor = square_tensor.transpose(order)
+    assert square_tensor.shape == transposed_square_tensor.shape, "Transposing square matrix changed shape"
+
+    for original_index, final_index in enumerate(order):
+        assert square_tensor.child[:, original_index] == transposed_square_tensor[final_index], "Transposition failed"
+
+    # TODO: min_vals and max_vals checks.
+    # TODO: check by reverse/undo the transpose
+    # TODO: check arguments don't interfere with simple type transpose
+
+    # Try with non-square matrix
+    rows = dims
+    cols = dims + np.random.randint(low=1, high=5)
+    tensor = SEPT(child=np.random.random(rows, cols), entity=ishan, max_vals=np.ones(rows), min_vals=np.zeros(cols))
+    order = list(range(len(tensor.shape)))
+    np.random.shuffle(order)
+    transposed_tensor = tensor.transpose(order)
+    assert tensor.shape[::-1] == transposed_tensor.shape, "Transposing non-square matrix resulted in incorrect shape"
+
+    for original_index, final_index in enumerate(order):
+        assert tensor.child[:, original_index] == transposed_tensor[final_index], "Transposition failed"
+
+
+# End of Ishan's tests
 
 
 gonzalo = Entity(name="Gonzalo")

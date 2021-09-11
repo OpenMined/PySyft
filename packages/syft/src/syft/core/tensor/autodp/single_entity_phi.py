@@ -394,12 +394,15 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
                     "Operation not implemented yet for different entities"
                 )
             else:
-                if is_broadcastable(self.child.shape, other.child.shape):  # type: ignore
-                    data = self.child == other.child
-                else:
-                    raise Exception(
-                        f"Tensor shapes do not match for __eq__: {self.child.shape} != {other.child.shape}"
-                    )
+                if isinstance(self.child, np.ndarray):
+                    if is_broadcastable(self.child.shape, other.child.shape):  # type: ignore
+                        data = self.child == other.child
+                    else:
+                        raise Exception(
+                            f"Tensor shapes do not match for __eq__: {self.child.shape} != {other.child.shape}"
+                        )
+                elif isinstance(self.child, int) or isinstance(self.child, float) or isinstance(self.child, bool):
+                    data = self.child == other
         elif isinstance(other, PassthroughTensor):
             if is_broadcastable(self.child.shape, other.child.shape):  # type: ignore
                 data = self.child == other.child
@@ -407,6 +410,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             raise Exception(
                 f"Tensor shapes do not match for __eq__: {self.child} != len{other}"
             )
+
         return SingleEntityPhiTensor(
             child=data,
             entity=self.entity,
@@ -723,14 +727,140 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             # Ignoring unsupported operand error b/c other logic is taken care of
             return self * (1 / other)  # type: ignore
 
+    def compress(self, condition: np.typing.ArrayLike, axis: Optional[int] = None, out: Optional[np.ndarray] = None):
+        """ Return selected slices of this array along a given axis"""
+        if isinstance(self.child, int) or isinstance(self.child, float) or isinstance(self.child, bool):
+            # For these data types, the compress operation is meaningless, so don't change them.
+            data = self.child
+            print(f'Warning: Tensor data was of type {type(data)}, compress operation had no effect.')
+        else:
+            data = self.child.compress(condition, axis, out)
+
+            # TODO: Should we give warnings for min_val and max_val being single floats/integers/booleans too?
+        if isinstance(self.min_vals, int) or isinstance(self.min_vals, float) or isinstance(self.min_vals, bool):
+            # For these data types, the compress operation is meaningless, so don't change them.
+            min_vals = self.min_vals
+            # print(f'Warning: Tensor data was of type {type(data)}, compress operation had no effect.')
+        else:
+            min_vals = self.min_vals.compress(condition, axis, out)
+
+        if isinstance(self.max_vals, int) or isinstance(self.max_vals, float) or isinstance(self.max_vals, bool):
+            # For these data types, the compress operation is meaningless, so don't change them.
+            max_vals = self.max_vals
+            # print(f'Warning: Tensor data was of type {type(data)}, compress operation had no effect.')
+        else:
+            max_vals = self.max_vals.compress(condition, axis, out)
+
+        entity = self.entity
+
+        return SingleEntityPhiTensor(
+            child=data,
+            entity=entity,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            scalar_manager=self.scalar_manager,
+        )
+
     def dot(self, other: SupportedChainType) -> SingleEntityPhiTensor:
         return self.manual_dot(other)
 
     # ndarray.flatten(order='C')
     def flatten(self, order: str = "C") -> SingleEntityPhiTensor:
-        data = self.child.flatten(order=order)
-        min_vals = self.min_vals.flatten(order=order)  # type: ignore
-        max_vals = self.max_vals.flatten(order=order)  # type: ignore
+        if isinstance(self.child, int) or isinstance(self.child, float) or isinstance(self.child, bool):
+            # For these data types, the flatten operation is meaningless, so don't change them.
+            data = self.child
+            print(f'Warning: Tensor data was of type {type(data)}, flatten operation had no effect.')
+        else:
+            data = self.child.flatten(order)
+
+            # TODO: Should we give warnings for min_val and max_val being single floats/integers/booleans too?
+        if isinstance(self.min_vals, int) or isinstance(self.min_vals, float) or isinstance(self.min_vals, bool):
+            # For these data types, the flatten operation is meaningless, so don't change them.
+            min_vals = self.min_vals
+            # print(f'Warning: Tensor data was of type {type(data)}, flatten operation had no effect.')
+        else:
+            min_vals = self.min_vals.flatten(order)
+
+        if isinstance(self.max_vals, int) or isinstance(self.max_vals, float) or isinstance(self.max_vals, bool):
+            # For these data types, the flatten operation is meaningless, so don't change them.
+            max_vals = self.max_vals
+            # print(f'Warning: Tensor data was of type {type(data)}, flatten operation had no effect.')
+        else:
+            max_vals = self.max_vals.flatten(order)
+
+        entity = self.entity
+
+        return SingleEntityPhiTensor(
+            child=data,
+            entity=entity,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            scalar_manager=self.scalar_manager,
+        )
+
+    def partition(self,
+                  kth: Union[int, List[int], np.ndarray],
+                  axis: Optional[int] = -1,
+                  kind: Optional[str] ='introselect',
+                  order: Optional[Union[str, List[str]]] = None
+                  ) -> SingleEntityPhiTensor:
+        """ Interchange two axes of the Tensor"""
+        if isinstance(self.child, int) or isinstance(self.child, float) or isinstance(self.child, bool):
+            # For these singleton data types, the partition operation is meaningless, so don't change them.
+            data = self.child
+            print(f'Warning: Tensor data was of type {type(data)}, partition operation had no effect.')
+        else:
+            data = self.child.partition(kth, axis, kind, order)
+
+            # TODO: Should we give warnings for min_val and max_val being single floats/integers/booleans too?
+        if isinstance(self.min_vals, int) or isinstance(self.min_vals, float) or isinstance(self.min_vals, bool):
+            # For these singleton data types, the partition operation is meaningless, so don't change them.
+            min_vals = self.min_vals
+            # print(f'Warning: Tensor data was of type {type(data)}, partition operation had no effect.')
+        else:
+            min_vals = self.min_vals.partition(kth, axis, kind, order)
+
+        if isinstance(self.max_vals, int) or isinstance(self.max_vals, float) or isinstance(self.max_vals, bool):
+            # For these singleton data types, the partition operation is meaningless, so don't change them.
+            max_vals = self.max_vals
+            # print(f'Warning: Tensor data was of type {type(data)}, partition operation had no effect.')
+        else:
+            max_vals = self.max_vals.partition(kth, axis, kind, order)
+
+        entity = self.entity
+
+        return SingleEntityPhiTensor(
+            child=data,
+            entity=entity,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            scalar_manager=self.scalar_manager
+        )
+
+    # ndarray.ravel(order='C')
+    def ravel(self, order: str = "C") -> SingleEntityPhiTensor:
+        if isinstance(self.child, int) or isinstance(self.child, float) or isinstance(self.child, bool):
+            # For these data types, the ravel operation is meaningless, so don't change them.
+            data = self.child
+            print(f'Warning: Tensor data was of type {type(data)}, ravel operation had no effect.')
+        else:
+            data = self.child.ravel(order)
+
+            # TODO: Should we give warnings for min_val and max_val being single floats/integers/booleans too?
+        if isinstance(self.min_vals, int) or isinstance(self.min_vals, float) or isinstance(self.min_vals, bool):
+            # For these data types, the ravel operation is meaningless, so don't change them.
+            min_vals = self.min_vals
+            # print(f'Warning: Tensor data was of type {type(data)}, ravel operation had no effect.')
+        else:
+            min_vals = self.min_vals.ravel(order)
+
+        if isinstance(self.max_vals, int) or isinstance(self.max_vals, float) or isinstance(self.max_vals, bool):
+            # For these data types, the ravel operation is meaningless, so don't change them.
+            max_vals = self.max_vals
+            # print(f'Warning: Tensor data was of type {type(data)}, ravel operation had no effect.')
+        else:
+            max_vals = self.max_vals.ravel(order)
+
         entity = self.entity
 
         return SingleEntityPhiTensor(
@@ -759,10 +889,28 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
         )
 
     def reshape(self, *args: Any) -> SingleEntityPhiTensor:
+        if isinstance(self.child, int) or isinstance(self.child, float) or isinstance(self.child, bool):
+            # For these data types, the reshape operation is meaningless, so don't change them.
+            data = self.child
+            print(f'Warning: Tensor data was of type {type(data)}, reshape operation had no effect.')
+        else:
+            data = self.child.reshape(*args)
 
-        data = self.child.reshape(*args)
-        min_vals = self.min_vals.reshape(*args)
-        max_vals = self.max_vals.reshape(*args)
+            # TODO: Should we give warnings for min_val and max_val being single floats/integers/booleans too?
+        if isinstance(self.min_vals, int) or isinstance(self.min_vals, float) or isinstance(self.min_vals, bool):
+            # For these data types, the reshape operation is meaningless, so don't change them.
+            min_vals = self.min_vals
+            # print(f'Warning: Tensor data was of type {type(data)}, reshape operation had no effect.')
+        else:
+            min_vals = self.min_vals.reshape(*args)
+
+        if isinstance(self.max_vals, int) or isinstance(self.max_vals, float) or isinstance(self.max_vals, bool):
+            # For these data types, the reshape operation is meaningless, so don't change them.
+            max_vals = self.max_vals
+            # print(f'Warning: Tensor data was of type {type(data)}, reshape operation had no effect.')
+        else:
+            max_vals = self.max_vals.reshape(*args)
+
         entity = self.entity
 
         return SingleEntityPhiTensor(
@@ -771,6 +919,65 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             min_vals=min_vals,
             max_vals=max_vals,
             scalar_manager=self.scalar_manager,
+        )
+
+    def resize(self, new_shape: TypeTuple[int], refcheck: bool = True) -> None:
+        """ Change shape and size of array, in-place."""
+        if isinstance(self.child, int) or isinstance(self.child, float) or isinstance(self.child, bool):
+            # For these data types, the resize operation is meaningless, so don't change them.
+            pass
+            print(f'Warning: Tensor data was of type {type(self.child)}, resize operation had no effect.')
+        else:
+            self.child = self.child.resize(new_shape, refcheck)
+
+        # TODO: Should we give warnings for min_val and max_val being single floats/integers/booleans too?
+        if isinstance(self.min_vals, int) or isinstance(self.min_vals, float) or isinstance(self.min_vals, bool):
+            # For these data types, the resize operation is meaningless, so don't change them.
+            pass
+            # print(f'Warning: min_vals data was of type {type(self.min_vals)}, resize operation had no effect.')
+        else:
+            self.min_vals = self.min_vals.resize(new_shape, refcheck)
+
+        if isinstance(self.max_vals, int) or isinstance(self.max_vals, float) or isinstance(self.max_vals, bool):
+            # For these data types, the resize operation is meaningless, so don't change them.
+            pass
+            # print(f'Warning: max_vals data was of type {type(data)}, resize operation had no effect.')
+        else:
+            self.max_vals = self.max_vals.resize(new_shape, refcheck)
+
+        return None
+
+    def squeeze(self, axis: Optional[int] = None) -> SingleEntityPhiTensor:
+        if isinstance(self.child, int) or isinstance(self.child, float) or isinstance(self.child, bool):
+            # For these data types, the squeeze operation is meaningless, so don't change them.
+            data = self.child
+            print(f'Warning: Tensor data was of type {type(data)}, squeeze operation had no effect.')
+        else:
+            data = self.child.squeeze(axis)
+
+            # TODO: Should we give warnings for min_val and max_val being single floats/integers/booleans too?
+        if isinstance(self.min_vals, int) or isinstance(self.min_vals, float) or isinstance(self.min_vals, bool):
+            # For these data types, the squeeze operation is meaningless, so don't change them.
+            min_vals = self.min_vals
+            # print(f'Warning: Tensor data was of type {type(data)}, squeeze operation had no effect.')
+        else:
+            min_vals = self.min_vals.squeeze(axis)
+
+        if isinstance(self.max_vals, int) or isinstance(self.max_vals, float) or isinstance(self.max_vals, bool):
+            # For these data types, the squeeze operation is meaningless, so don't change them.
+            max_vals = self.max_vals
+            # print(f'Warning: Tensor data was of type {type(data)}, squeeze operation had no effect.')
+        else:
+            max_vals = self.max_vals.squeeze(axis)
+
+        entity = self.entity
+
+        return SingleEntityPhiTensor(
+            child=data,
+            entity=entity,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            scalar_manager=self.scalar_manager
         )
 
     def sum(self, *args: Any, **kwargs: Any) -> SingleEntityPhiTensor:
@@ -788,11 +995,64 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             scalar_manager=self.scalar_manager,
         )
 
-    def transpose(self, *args: Any, **kwargs: Any) -> SingleEntityPhiTensor:
+    def swapaxes(self, axis1: int, axis2: int) -> SingleEntityPhiTensor:
+        """ Interchange two axes of the Tensor"""
+        if isinstance(self.child, int) or isinstance(self.child, float) or isinstance(self.child, bool):
+            # For these singleton data types, the swapaxes operation is meaningless, so don't change them.
+            data = self.child
+            print(f'Warning: Tensor data was of type {type(data)}, swapaxes operation had no effect.')
+        else:
+            data = self.child.swapaxes(axis1, axis2)
 
-        data = self.child.transpose(*args)
-        min_vals = self.min_vals.transpose(*args)
-        max_vals = self.max_vals.transpose(*args)
+            # TODO: Should we give warnings for min_val and max_val being single floats/integers/booleans too?
+        if isinstance(self.min_vals, int) or isinstance(self.min_vals, float) or isinstance(self.min_vals, bool):
+            # For these singleton data types, the swapaxes operation is meaningless, so don't change them.
+            min_vals = self.min_vals
+            # print(f'Warning: Tensor data was of type {type(data)}, swapaxes operation had no effect.')
+        else:
+            min_vals = self.min_vals.swapaxes(axis1, axis2)
+
+        if isinstance(self.max_vals, int) or isinstance(self.max_vals, float) or isinstance(self.max_vals, bool):
+            # For these singleton data types, the swapaxes operation is meaningless, so don't change them.
+            max_vals = self.max_vals
+            # print(f'Warning: Tensor data was of type {type(data)}, swapaxes operation had no effect.')
+        else:
+            max_vals = self.max_vals.swapaxes(axis1, axis2)
+
+        entity = self.entity
+
+        return SingleEntityPhiTensor(
+            child=data,
+            entity=entity,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            scalar_manager=self.scalar_manager
+        )
+
+    def transpose(self, *args: Any, **kwargs: Any) -> SingleEntityPhiTensor:
+        """ Transposes self.child, min_vals, and max_vals if these can be transposed, otherwise doesn't change them."""
+        if isinstance(self.child, int) or isinstance(self.child, float) or isinstance(self.child, bool):
+            # For these data types, the transpose operation is meaningless, so don't change them.
+            data = self.child
+            print(f'Warning: Tensor data was of type {type(data)}, transpose operation had no effect.')
+        else:
+            data = self.child.transpose(*args)
+
+        # TODO: Should we give warnings for min_val and max_val being single floats/integers/booleans too?
+        if isinstance(self.min_vals, int) or isinstance(self.min_vals, float) or isinstance(self.min_vals, bool):
+            # For these data types, the transpose operation is meaningless, so don't change them.
+            min_vals = self.min_vals
+            # print(f'Warning: Tensor data was of type {type(data)}, transpose operation had no effect.')
+        else:
+            min_vals = self.min_vals.transpose(*args)
+
+        if isinstance(self.max_vals, int) or isinstance(self.max_vals, float) or isinstance(self.max_vals, bool):
+            # For these data types, the transpose operation is meaningless, so don't change them.
+            max_vals = self.max_vals
+            # print(f'Warning: Tensor data was of type {type(data)}, transpose operation had no effect.')
+        else:
+            max_vals = self.max_vals.transpose(*args)
+
         entity = self.entity
 
         return SingleEntityPhiTensor(

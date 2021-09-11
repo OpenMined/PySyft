@@ -44,10 +44,14 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         return data
 
     def __len__(self) -> int:
+        if isinstance(self.child, float) or isinstance(self.child, int) or isinstance(self.child, bool):
+            return 1
         return len(self.child)
 
     @property
     def shape(self) -> TypeTuple[Any, ...]:
+        if isinstance(self.child, float) or isinstance(self.child, int) or isinstance(self.child, bool):
+            return (1,)
         return tuple(self.child.shape)
 
     # @property
