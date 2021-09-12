@@ -27,7 +27,17 @@ from .initial_gamma import InitialGammaTensor  # type: ignore
 
 @bind_protobuf
 class RowEntityPhiTensor(PassthroughTensor, RecursiveSerde, ADPTensor):
+    """This tensor is one of several tensors whose purpose is to carry metadata
+    relevant to automatically tracking the privacy budgets of tensor operations. This
+    tensor is called 'Phi' tensor because it assumes that each number in the tensor
+    originates from a single entity (no numbers originate from multiple entities). This
+    tensor is called 'RowEntity' because it additionally assumes that all entries in a row
+    come from the same entity (note: multiple rows may also be from the same or different
+    entities). The reason we have a tensor specifically for tracking row-organized entities
+    is that data entity-linked by row is very common and specifically accommodating it offers
+    significant performance benefits over other DP tracking tensors."""
 
+    # a list of attributes needed for serialization using RecursiveSerde
     __attr_allowlist__ = ["child"]
 
     def __init__(self, rows: Any, check_shape: bool = True):
