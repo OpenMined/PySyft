@@ -411,16 +411,16 @@ class DomainClient(Client):
             response = self.routes[0].connection.reset()
 
     def configure(self, **kwargs: Any) -> Any:
-        response = self._perform_grid_request(
+        response = self._perform_grid_request(  # type: ignore
             grid_msg=UpdateSetupMessage, content=kwargs
         ).content
         logging.info(response)
 
     @property
-    def settings(self, **kwargs: Any) -> Dict[Any, Any]:
-        return self._perform_grid_request(
+    def settings(self, **kwargs: Any) -> Dict[Any, Any]:  # type: ignore
+        return self._perform_grid_request(  # type: ignore
             grid_msg=GetSetUpMessage, content=kwargs
-        ).content
+        ).content  # type : ignore
 
     def search(self, query: List, pandas: bool = False) -> Any:
         response = self._perform_grid_request(
