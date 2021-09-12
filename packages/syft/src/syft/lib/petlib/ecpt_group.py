@@ -2,7 +2,7 @@
 import petlib as pl
 
 # relative
-from ...generate_wrapper import GenerateWrapper
+from ...core.common.serde.serializable import serializable
 from ...proto.lib.petlib.ecpt_group_pb2 import EcPtGroup as EcPtGroup_PB
 
 
@@ -17,7 +17,7 @@ def proto2object_group(proto: EcPtGroup_PB) -> pl.ec.EcGroup:
     return ec_group
 
 
-GenerateWrapper(
+serializable(generate_wrapper=True)(
     wrapped_type=pl.ec.EcGroup,
     import_path="petlib.ec.EcGroup",
     protobuf_scheme=EcPtGroup_PB,

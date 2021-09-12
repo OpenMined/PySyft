@@ -2,7 +2,7 @@
 import pandas as pd
 
 # relative
-from ...generate_wrapper import GenerateWrapper
+from ...core.common.serde.serializable import serializable
 from ...lib.python.list import List
 from ...lib.python.primitive_factory import PrimitiveFactory
 from ...proto.lib.pandas.categorical_pb2 import (
@@ -26,7 +26,7 @@ def proto2object(proto: PandasCategoricalDtype_PB) -> pd.CategoricalDtype:
     return pd.CategoricalDtype(categories=categories, ordered=ordered)
 
 
-GenerateWrapper(
+serializable(generate_wrapper=True)(
     wrapped_type=pd.CategoricalDtype,
     import_path="pandas.CategoricalDtype",
     protobuf_scheme=PandasCategoricalDtype_PB,

@@ -5,7 +5,7 @@ import pandas as pd
 import pyarrow as pa
 
 # relative
-from ...generate_wrapper import GenerateWrapper
+from ...core.common.serde.serializable import serializable
 from ...proto.lib.pandas.series_pb2 import PandasSeries as PandasSeries_PB
 
 
@@ -55,7 +55,7 @@ def proto2object(proto: PandasSeries_PB) -> pd.Series:
     return dataframe[dataframe.columns[0]]
 
 
-GenerateWrapper(
+serializable(generate_wrapper=True)(
     wrapped_type=pd.Series,
     import_path="pandas.Series",
     protobuf_scheme=PandasSeries_PB,

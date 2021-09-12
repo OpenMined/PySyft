@@ -8,7 +8,6 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
 # relative
-from ...generate_wrapper import GenerateWrapper
 from ...proto.core.auth.signed_message_pb2 import VerifyAll as VerifyAllWrapper_PB
 from ...proto.core.auth.signed_message_pb2 import VerifyKey as VerifyKey_PB
 from .serde.serializable import serializable
@@ -22,7 +21,7 @@ def proto2object(proto: VerifyKey_PB) -> VerifyKey:
     return VerifyKey(proto.verify_key)
 
 
-GenerateWrapper(
+serializable(generate_wrapper=True)(
     wrapped_type=VerifyKey,
     import_path="nacl.signing.VerifyKey",
     protobuf_scheme=VerifyKey_PB,

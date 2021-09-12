@@ -21,8 +21,9 @@ from .....common.serde.serializable import serializable
 from .....io.address import Address
 from ..request_receiver.request_receiver_messages import RequestMessage
 
-
 serializable()
+
+
 class GetAllRequestsMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self, address: Address, reply_to: Address, msg_id: Optional[UID] = None
