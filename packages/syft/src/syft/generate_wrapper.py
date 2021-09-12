@@ -9,8 +9,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 import syft
 
 # relative
-from .core.common.serde.serializable import Serializable
-from .core.common.serde.serializable import bind_protobuf
+from .core.common.serde.serializable import serializable
 from .util import aggressive_set_attr
 
 module_type = type(syft)
@@ -25,8 +24,8 @@ def GenerateWrapper(
     type_object2proto: CallableT,
     type_proto2object: CallableT,
 ) -> None:
-    @bind_protobuf
-    class Wrapper(Serializable):
+    @serializable()
+    class Wrapper:
         def __init__(self, value: object):
             self.obj = value
 

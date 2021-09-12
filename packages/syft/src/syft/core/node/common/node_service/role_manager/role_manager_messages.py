@@ -12,7 +12,7 @@ from syft import serialize
 from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.serde.deserialize import _deserialize
-from syft.core.common.serde.serializable import bind_protobuf
+from syft.core.common.serde.serializable import serializable
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
 from syft.proto.grid.messages.role_messages_pb2 import (
@@ -38,7 +38,7 @@ from syft.proto.grid.messages.role_messages_pb2 import (
 )
 
 
-@bind_protobuf
+@serializable()
 @final
 class CreateRoleMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -137,7 +137,7 @@ class CreateRoleMessage(ImmediateSyftMessageWithReply):
         return CreateRoleMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class GetRoleMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -208,7 +208,7 @@ class GetRoleMessage(ImmediateSyftMessageWithReply):
         return GetRoleMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class GetRoleResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -276,7 +276,7 @@ class GetRoleResponse(ImmediateSyftMessageWithoutReply):
         return GetRoleResponse_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class GetRolesMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -343,7 +343,7 @@ class GetRolesMessage(ImmediateSyftMessageWithReply):
         return GetRolesMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class GetRolesResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -411,7 +411,7 @@ class GetRolesResponse(ImmediateSyftMessageWithoutReply):
         return GetRolesResponse_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class UpdateRoleMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -514,7 +514,7 @@ class UpdateRoleMessage(ImmediateSyftMessageWithReply):
         return UpdateRoleMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class DeleteRoleMessage(ImmediateSyftMessageWithReply):
     def __init__(

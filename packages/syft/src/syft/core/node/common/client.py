@@ -31,8 +31,7 @@ from ...common.message import SignedImmediateSyftMessageWithReply
 from ...common.message import SignedImmediateSyftMessageWithoutReply
 from ...common.message import SyftMessage
 from ...common.serde.deserialize import _deserialize
-from ...common.serde.serializable import Serializable
-from ...common.serde.serializable import bind_protobuf
+from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from ...io.location import Location
 from ...io.location import SpecificLocation
@@ -50,8 +49,8 @@ from .node_service.child_node_lifecycle.child_node_lifecycle_service import (
 from .node_service.object_search.obj_search_service import ObjectSearchMessage
 
 
-@bind_protobuf
-class Client(AbstractNodeClient, Serializable):
+@serializable()
+class Client(AbstractNodeClient):
     """Client is an incredibly powerful abstraction in Syft. We assume that,
     no matter where a client is, it can figure out how to communicate with
     the Node it is supposed to point to. If I send you a client I have

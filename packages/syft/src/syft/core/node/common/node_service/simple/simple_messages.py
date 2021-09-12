@@ -9,7 +9,7 @@ from typing_extensions import final
 
 # relative
 from ...... import serialize
-from ......core.common.serde.serializable import bind_protobuf
+from ......core.common.serde.serializable import serializable
 from ......proto.core.node.common.service.simple_service_pb2 import (
     SimpleMessage as SimpleMessage_PB,
 )
@@ -41,7 +41,7 @@ class NodeRunnableMessageWithReply(RecursiveSerde):
         return SimpleMessage(address=address, reply_to=reply_to, payload=self)
 
 
-@bind_protobuf
+@serializable()
 @final
 class SimpleMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -76,7 +76,7 @@ class SimpleMessage(ImmediateSyftMessageWithReply):
         return SimpleMessage_PB
 
 
-@bind_protobuf
+@serializable()
 class SimpleReplyMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,

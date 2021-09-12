@@ -13,9 +13,9 @@ from ...logger import debug
 from ...logger import traceback_and_raise
 from ...proto.core.io.address_pb2 import Address as Address_PB
 from ...util import key_emoji as key_emoji_util
+from ...util import random_name
 from ..common.serde.deserialize import _deserialize
-from ..common.serde.serializable import Serializable
-from ..common.serde.serializable import bind_protobuf
+from ..common.serde.serializable import serializable
 from ..common.serde.serialize import _serialize as serialize
 from ..common.uid import UID
 from ..io.location import Location
@@ -26,8 +26,8 @@ class Unspecified(object):
         return "Unspecified"
 
 
-@bind_protobuf
-class Address(Serializable):
+@serializable()
+class Address:
     name: Optional[str]
 
     def __init__(
@@ -38,7 +38,7 @@ class Address(Serializable):
         device: Optional[Location] = None,
         vm: Optional[Location] = None,
     ):
-        self.name = name if name is not None else Serializable.random_name()
+        self.name = name if name is not None else random_name()
 
         # All node should have a representation of where they think
         # they are currently held. Note that this is at risk of going
@@ -96,7 +96,7 @@ class Address(Serializable):
 
     @property
     def pprint(self) -> str:
-        output = f"{self.icon} {self.named} ({self.class_name})"
+        output = f"{self.icon} {self.name} ({str(self.__class__.__name__)})"
         if hasattr(self, "id"):
             output += f"@{self.target_id.id.emoji()}"
         return output
@@ -115,7 +115,7 @@ class Address(Serializable):
         if hasattr(self, "name"):
             name = self.name
         else:
-            name = Serializable.random_name()
+            name = random_name()
 
         address = Address(
             name=name,

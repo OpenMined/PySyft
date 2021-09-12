@@ -10,7 +10,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 # relative
 from ... import deserialize
 from ... import serialize
-from ...core.common.serde.serializable import bind_protobuf
+from ...core.common.serde.serializable import serializable
 from ...core.common.uid import UID
 from ...proto.lib.python.set_pb2 import Set as Set_PB
 from .primitive_factory import PrimitiveFactory
@@ -20,7 +20,7 @@ from .util import downcast
 from .util import upcast
 
 
-@bind_protobuf
+@serializable()
 class Set(set, PyPrimitive):
     def __init__(self, iterable: Iterable, _id: Optional[UID] = None):
         super().__init__(iterable)

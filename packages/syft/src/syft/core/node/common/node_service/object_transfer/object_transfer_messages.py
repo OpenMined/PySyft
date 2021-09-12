@@ -11,7 +11,7 @@ from typing_extensions import final
 from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.serde.deserialize import _deserialize
-from syft.core.common.serde.serializable import bind_protobuf
+from syft.core.common.serde.serializable import serializable
 from syft.core.common.serde.serialize import _serialize as serialize
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
@@ -29,7 +29,7 @@ from syft.proto.grid.messages.transfer_messages_pb2 import (
 )
 
 
-@bind_protobuf
+@serializable()
 @final
 class LoadObjectMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -100,7 +100,7 @@ class LoadObjectMessage(ImmediateSyftMessageWithReply):
         return LoadObjectMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class LoadObjectResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -172,7 +172,7 @@ class LoadObjectResponse(ImmediateSyftMessageWithoutReply):
         return LoadObjectResponse_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class SaveObjectMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -240,7 +240,7 @@ class SaveObjectMessage(ImmediateSyftMessageWithoutReply):
         return SaveObjectMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class SaveObjectResponse(ImmediateSyftMessageWithoutReply):
     def __init__(

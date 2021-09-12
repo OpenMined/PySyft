@@ -11,8 +11,7 @@ from nacl.signing import VerifyKey
 from ...generate_wrapper import GenerateWrapper
 from ...proto.core.auth.signed_message_pb2 import VerifyAll as VerifyAllWrapper_PB
 from ...proto.core.auth.signed_message_pb2 import VerifyKey as VerifyKey_PB
-from .serde.serializable import Serializable
-from .serde.serializable import bind_protobuf
+from .serde.serializable import serializable
 
 
 def object2proto(obj: Any) -> VerifyKey_PB:
@@ -33,8 +32,8 @@ GenerateWrapper(
 
 
 def _create_VERIFYALL() -> Any:
-    @bind_protobuf
-    class VerifyAll(Serializable):
+    @serializable()
+    class VerifyAll:
         _instance = None
 
         def __new__(cls: Type) -> "VerifyAll":

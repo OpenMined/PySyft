@@ -11,12 +11,11 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from ...logger import critical
 from ...logger import traceback_and_raise
 from ...proto.core.common.common_object_pb2 import UID as UID_PB
-from ..common.serde.serializable import Serializable
-from ..common.serde.serializable import bind_protobuf
+from ..common.serde.serializable import serializable
 
 
-@bind_protobuf
-class UID(Serializable):
+@serializable()
+class UID:
     """A unique ID for every Syft object.
 
     This object creates a unique ID for every object in the Syft

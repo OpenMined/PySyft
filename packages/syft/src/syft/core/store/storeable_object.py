@@ -16,13 +16,12 @@ from ...util import get_fully_qualified_name
 from ...util import index_syft_by_module_name
 from ...util import key_emoji
 from ..common.serde.deserialize import _deserialize
-from ..common.serde.serializable import Serializable
-from ..common.serde.serializable import bind_protobuf
+from ..common.serde.serializable import serializable
 from ..common.storeable_object import AbstractStorableObject
 from ..common.uid import UID
 
 
-@bind_protobuf
+@serializable()
 class StorableObject(AbstractStorableObject):
     """
     StorableObject is a wrapper over some Serializable objects, which we want to keep in an
@@ -162,7 +161,7 @@ class StorableObject(AbstractStorableObject):
         return proto
 
     @staticmethod
-    def _proto2object(proto: StorableObject_PB) -> Serializable:
+    def _proto2object(proto: StorableObject_PB) -> "StorableObject":
         # Step 1: deserialize the ID
         id = _deserialize(blob=proto.id)
 

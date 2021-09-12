@@ -11,18 +11,17 @@ from syft import deserialize
 from syft import serialize
 
 # relative
-from ....core.common.serde.serializable import bind_protobuf
+from ....core.common.serde.serializable import serializable
 from ....lib.python import Dict
 from ....proto.core.common.recursive_serde_pb2 import (
     RecursiveSerde as RecursiveSerde_PB,
 )
 from ....util import get_fully_qualified_name
 from ....util import index_syft_by_module_name
-from .serializable import Serializable
 
 
-@bind_protobuf
-class RecursiveSerde(Serializable):
+@serializable()
+class RecursiveSerde:
     """If you subclass from this object and put that subclass in the syft classpath somehow, then
     you'll be able to serialize it without having to create a custom protobuf. Be careful with this
     though, because it's going to include all attributes by default (including private data if

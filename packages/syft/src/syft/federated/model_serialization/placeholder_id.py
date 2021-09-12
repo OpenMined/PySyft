@@ -6,12 +6,13 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from syft_proto.execution.v1.placeholder_id_pb2 import PlaceholderId as PlaceholderIdPB
 
 # relative
-from ...core.common.object import Serializable
+from ...core.common.serde.serializable import serializable
 from .common import get_protobuf_id
 from .common import set_protobuf_id
 
 
-class PlaceholderId(Serializable):
+@serializable()
+class PlaceholderId:
     """
     Represents Syft Plan translated to TorchScript
     """

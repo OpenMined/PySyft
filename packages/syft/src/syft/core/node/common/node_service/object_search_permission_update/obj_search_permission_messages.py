@@ -19,12 +19,12 @@ from ......proto.core.node.common.service.object_search_permission_update_messag
 )
 from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.serde.deserialize import _deserialize
-from .....common.serde.serializable import bind_protobuf
+from .....common.serde.serializable import serializable
 from .....common.uid import UID
 from .....io.address import Address
 
 
-@bind_protobuf
+@serializable()
 @final
 class ObjectSearchPermissionUpdateMessage(ImmediateSyftMessageWithoutReply):
     def __init__(

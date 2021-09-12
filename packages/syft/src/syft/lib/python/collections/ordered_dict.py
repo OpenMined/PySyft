@@ -12,7 +12,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 # relative
 from .... import deserialize
 from .... import serialize
-from ....core.common.serde.serializable import bind_protobuf
+from ....core.common.serde.serializable import serializable
 from ....core.common.uid import UID
 from ....logger import traceback_and_raise
 from ....proto.lib.python.collections.ordered_dict_pb2 import (
@@ -27,7 +27,7 @@ from ..util import downcast
 from ..util import upcast
 
 
-@bind_protobuf
+@serializable()
 class OrderedDict(PyOrderedDict, PyPrimitive):
     def __init__(self, *args: Any, _id: UID = UID(), **kwds: Any):
         super().__init__(*args, **kwds)

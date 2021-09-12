@@ -20,7 +20,7 @@ from .....proto.core.node.common.action.get_set_property_pb2 import (
 )
 from .....util import inherit_tags
 from ....common.serde.deserialize import _deserialize
-from ....common.serde.serializable import bind_protobuf
+from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
@@ -35,7 +35,7 @@ class PropertyActions(Enum):
     DEL = 3
 
 
-@bind_protobuf
+@serializable()
 class GetOrSetPropertyAction(ImmediateActionWithoutReply):
     def __init__(
         self,
@@ -174,7 +174,7 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
 
     def __repr__(self) -> str:
         attr_name = self.path.split(".")[-1]
-        self_name = self._self.class_name
+        self_name = str(self._self.__class__.__name__)
 
         if self.action == PropertyActions.SET:
             val = self.args[0]

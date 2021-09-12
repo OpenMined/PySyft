@@ -24,7 +24,7 @@ from .....proto.core.node.common.action.smpc_action_message_pb2 import (
 )
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
-from ....common.serde.serializable import bind_protobuf
+from ....common.serde.serializable import serializable
 from ....io.address import Address
 from ....tensor.smpc.share_tensor import ShareTensor
 
@@ -32,7 +32,7 @@ from ....tensor.smpc.share_tensor import ShareTensor
 MAP_FUNC_TO_NR_GENERATOR_INVOKES = {"__add__": 0, "__mul__": 0, "__sub__": 0}
 
 
-@bind_protobuf
+@serializable()
 class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,

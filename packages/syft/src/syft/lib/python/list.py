@@ -12,7 +12,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from ... import deserialize
 from ... import serialize
 from ...core.common import UID
-from ...core.common.serde.serializable import bind_protobuf
+from ...core.common.serde.serializable import serializable
 from ...proto.lib.python.list_pb2 import List as List_PB
 from .iterator import Iterator
 from .primitive_factory import PrimitiveFactory
@@ -28,7 +28,7 @@ class ListIterator(Iterator):
     pass
 
 
-@bind_protobuf
+@serializable()
 class List(UserList, PyPrimitive):
     __slots__ = ["_id", "_index"]
 
