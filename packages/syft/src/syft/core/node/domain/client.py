@@ -408,7 +408,7 @@ class DomainClient(Client):
         )
         response = input().lower()
         if response == "y":
-            response = self.routes[0].connection.reset()
+            response = self.routes[0].connection.reset() # type: ignore
 
     def configure(self, **kwargs: Any) -> Any:
         response = self._perform_grid_request(  # type: ignore
