@@ -18,7 +18,6 @@ from syft.core.node.common.node_service.node_service import (
 )
 
 # relative
-from ......logger import traceback_and_raise
 from .....common import UID
 from .....io.location import SpecificLocation
 from ...exceptions import AuthorizationError
