@@ -35,16 +35,32 @@ class RowEntityPhiTensor(PassthroughTensor, RecursiveSerde, ADPTensor):
     come from the same entity (note: multiple rows may also be from the same or different
     entities). The reason we have a tensor specifically for tracking row-organized entities
     is that data entity-linked by row is very common and specifically accommodating it offers
-    significant performance benefits over other DP tracking tensors."""
+    significant performance benefits over other DP tracking tensors. Note that when
+    we refer to the number of 'rows' we simply refer to the length of the first dimension. This
+    tensor can have an arbitrary number of dimensions."""
 
     # a list of attributes needed for serialization using RecursiveSerde
     __attr_allowlist__ = ["child"]
 
     def __init__(self, rows: Any, check_shape: bool = True):
+        """Initialize a RowEntityPhiTensor
+
+        rows: the actual data organized as an iterable (can be any type of iterable)
+        check_shape: whether or not we are already confident that the objects in iterable
+            'rows' all have the same dimension (check if we're not sure).
+
+        """
+
         super().__init__(rows)
 
+        # include this check because it's expensvie to check and sometimes we can skip it when
+        # we already know the rows are identically shaped.
         if check_shape:
+
+            # shape of the first row we use for reference
             shape = rows[0].shape
+
+            # check each row to make sure it's the same shape as the first
             for row in rows[1:]:
                 if shape != row.shape:
                     raise Exception(

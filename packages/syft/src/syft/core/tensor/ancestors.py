@@ -217,11 +217,7 @@ protect the people or the business)"""
             )
         )
         print()
-        print(
-            w.fill(
-                "\t.private(entities='"+str(single_uid)+"')"
-            )
-        )
+        print(w.fill("\t.private(entities='" + str(single_uid) + "')"))
         print()
         print("\t" + "=" * 69)
         return [single_uid]
@@ -238,12 +234,14 @@ protect the people or the business)"""
     print()
     print("\t" + "-" * 69)
     print()
-    if answer == 'yes':
+    if answer == "yes":
         print(
             w.fill(
-                "Question 3: Excellent! Well, since your dataset has " + str(data.shape[0]) + " rows, " +\
-                "would you like to hand enter an entity for each one (yes) or if there are too " +\
-                "many for you to hand-enter, we'll print some example code for you to run (no)."
+                "Question 3: Excellent! Well, since your dataset has "
+                + str(data.shape[0])
+                + " rows, "
+                + "would you like to hand enter an entity for each one (yes) or if there are too "
+                + "many for you to hand-enter, we'll print some example code for you to run (no)."
             )
         )
 
@@ -251,7 +249,7 @@ protect the people or the business)"""
 
         answer = str(input("\t"))
 
-        if answer == 'yes':
+        if answer == "yes":
 
             print()
 
@@ -259,11 +257,7 @@ protect the people or the business)"""
             for i in range(len(data)):
                 print("\t\t" + "-" * 61)
                 print()
-                print(
-                    w.fill(
-                        "\tData Row "+str(i)+":" + str(data[i])
-                    )
-                )
+                print(w.fill("\tData Row " + str(i) + ":" + str(data[i])))
                 ent = input("\t\t What entity is this row about:")
                 entities.append(ent)
                 print()
@@ -277,7 +271,13 @@ protect the people or the business)"""
             print()
             print(
                 w.fill(
-                    ".private(entities=['"+entities[0]+"', '"+entities[1]+"', '"+entities[-1]+"'])"
+                    ".private(entities=['"
+                    + entities[0]
+                    + "', '"
+                    + entities[1]
+                    + "', '"
+                    + entities[-1]
+                    + "'])"
                 )
             )
             print()
@@ -303,24 +303,20 @@ protect the people or the business)"""
             )
 
             print()
+            print(w.fill(".private(entities=['bob', 'alice', 'john'])"))
+            print()
             print(
-                w.fill(
-                    ".private(entities=['bob', 'alice', 'john'])"
-                )
+                " Now just to make sure I don't corrupt your tensor - I'm going to throw an exception."
             )
             print()
-            print(" Now just to make sure I don't corrupt your tensor - I'm going to throw an exception.")
-            print()
-            raise Exception("Wizard aborted. Please run .private(entities=<your entities>)"
-                            " again with your list of entity unique identifiers (strings),"
-                            "one per row of your tensor.")
-    elif answer == 'no':
+            raise Exception(
+                "Wizard aborted. Please run .private(entities=<your entities>)"
+                " again with your list of entity unique identifiers (strings),"
+                "one per row of your tensor."
+            )
+    elif answer == "no":
 
-        print(
-            w.fill(
-                "Question 3: Is your data one entity for every column (yes/no)?"
-            )
-        )
+        print(w.fill("Question 3: Is your data one entity for every column (yes/no)?"))
 
         print()
 
@@ -328,7 +324,7 @@ protect the people or the business)"""
 
         print()
 
-        if answer == 'yes':
+        if answer == "yes":
             print(
                 w.fill(
                     "We don't yet support this form of injestion. Please transpose your data"
@@ -338,7 +334,7 @@ protect the people or the business)"""
 
             raise Exception("Wizard aborted.")
 
-        elif answer == 'no':
+        elif answer == "no":
 
             print(
                 w.fill(
@@ -356,12 +352,16 @@ protect the people or the business)"""
             print()
             print("\t\ttensor.private(min_val=0, max_val=1, entities=entities))")
             print()
-            print("Aborting wizard now so that you rcan re-run .private with the right parameters.")
+            print(
+                "Aborting wizard now so that you rcan re-run .private with the right parameters."
+            )
             print()
-            raise Exception("Wizard aborted. Please run .private(entities=<your entities>)"
-                            " again with your np.ndarray of entity unique identifiers (strings),"
-                            " one per value of your tensor and where your np.ndarray of entities is"
-                            " the same shape as your data.")
+            raise Exception(
+                "Wizard aborted. Please run .private(entities=<your entities>)"
+                " again with your np.ndarray of entity unique identifiers (strings),"
+                " one per value of your tensor and where your np.ndarray of entities is"
+                " the same shape as your data."
+            )
     print()
 
     print("\t" + "_" * 69)
@@ -396,19 +396,21 @@ class PhiTensorAncestor(TensorChainManager):
         )
 
     def private(
-            self,
-            min_val: ArrayLike,
-            max_val: ArrayLike,
-            scalar_manager: VirtualMachinePrivateScalarManager = VirtualMachinePrivateScalarManager(),
-            entities: Optional[Any] = None,
-            skip_blocking_checks: bool = False,
+        self,
+        min_val: ArrayLike,
+        max_val: ArrayLike,
+        scalar_manager: VirtualMachinePrivateScalarManager = VirtualMachinePrivateScalarManager(),
+        entities: Optional[Any] = None,
+        skip_blocking_checks: bool = False,
     ) -> PhiTensorAncestor:
 
-        return self.copy()._private(min_val=min_val,
-                                   max_val=max_val,
-                                   scalar_manager=scalar_manager,
-                                   entities=entities,
-                                   skip_blocking_checks=skip_blocking_checks)
+        return self.copy()._private(
+            min_val=min_val,
+            max_val=max_val,
+            scalar_manager=scalar_manager,
+            entities=entities,
+            skip_blocking_checks=skip_blocking_checks,
+        )
 
     def _private(
         self,
@@ -477,17 +479,21 @@ class PhiTensorAncestor(TensorChainManager):
 
         elif isinstance(entities, np.ndarray):
             if entities.shape != self.shape:
-                raise Exception("Entities shape doesn't match data shape. If you're"
-                                " going to pass in something other than 1 entity for the"
-                                " entire tensor or one entity per row, you're going to need"
-                                " to make the np.ndarray of entities have the same shape as"
-                                " the tensor you're calling .private() on. Try again.")
+                raise Exception(
+                    "Entities shape doesn't match data shape. If you're"
+                    " going to pass in something other than 1 entity for the"
+                    " entire tensor or one entity per row, you're going to need"
+                    " to make the np.ndarray of entities have the same shape as"
+                    " the tensor you're calling .private() on. Try again."
+                )
             else:
 
-                raise Exception("We don't yet support passing in a tensor of arbitrary entities. "
-                                "For now, call.flatten() on your tensor so you have one entity per row, "
-                                "or split your tensor into separate tensors for each value. We apologize "
-                                "for the inconvenience and will be adding this functionality soon!")
+                raise Exception(
+                    "We don't yet support passing in a tensor of arbitrary entities. "
+                    "For now, call.flatten() on your tensor so you have one entity per row, "
+                    "or split your tensor into separate tensors for each value. We apologize "
+                    "for the inconvenience and will be adding this functionality soon!"
+                )
 
         entities = _entities
 

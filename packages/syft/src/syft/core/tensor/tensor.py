@@ -192,15 +192,16 @@ class Tensor(
         ):
             raise Exception("Data must be list or nd.array")
 
-
-        if (
-            not isinstance(child, (np.ndarray, PassthroughTensor))
-            or (getattr(child, "dtype", None) != np.int32 and getattr(child, "dtype", None) is not None)
+        if not isinstance(child, (np.ndarray, PassthroughTensor)) or (
+            getattr(child, "dtype", None) != np.int32
+            and getattr(child, "dtype", None) is not None
         ):
             raise TypeError(
-                "You tried to pass an a tensor of type:" + str(type(child)) + " with child.dtype == " +\
-                str(getattr(child, "dtype", None)) +\
-                ". Syft tensor objects only support np.int32 objects at this time. Please pass in either "
+                "You tried to pass an a tensor of type:"
+                + str(type(child))
+                + " with child.dtype == "
+                + str(getattr(child, "dtype", None))
+                + ". Syft tensor objects only support np.int32 objects at this time. Please pass in either "
                 "a list of int objects or a np.int32 array. We apologise for the inconvenience and will "
                 "be adding support for more types very soon!"
             )
