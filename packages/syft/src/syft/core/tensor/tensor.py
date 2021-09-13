@@ -14,6 +14,7 @@ import torch as th
 
 # relative
 from ... import lib
+from ... import parties as mpc_parties
 from ...ast.klass import pointerize_args_and_kwargs
 from ...core.common.serde.recursive import RecursiveSerde
 from ...util import inherit_tags
@@ -123,19 +124,29 @@ class TensorPointer(Pointer):
 
     def __add__(self, other: Any) -> Union[TensorPointer, MPCTensor]:
 
-        if self.client != other.client:
+        if isinstance(other, TensorPointer) and self.client != other.client:
 
-            parties = [self.client, other.client]
-
-            self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=parties)
+            self_mpc = MPCTensor(
+                secret=self, shape=self.public_shape, parties=mpc_parties
+            )
             other_mpc = MPCTensor(
-                secret=other, shape=other.public_shape, parties=parties
+                secret=other, shape=other.public_shape, parties=mpc_parties
             )
 
             print(self_mpc.__repr__())
             print(other_mpc.__repr__())
 
             return self_mpc + other_mpc
+
+        elif isinstance(other, MPCTensor):
+            self_mpc = MPCTensor(
+                secret=self, shape=self.public_shape, parties=mpc_parties
+            )
+
+            print(self_mpc.__repr__())
+            print(other.__repr__())
+
+            return self_mpc + other
 
         return self.simple_add(other=other)
 

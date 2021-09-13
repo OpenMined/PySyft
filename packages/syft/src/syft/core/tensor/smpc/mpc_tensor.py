@@ -21,6 +21,7 @@ import numpy as np
 import torch
 
 # syft absolute
+from syft import parties as mpc_parties
 from syft.core.tensor.passthrough import PassthroughTensor
 from syft.core.tensor.passthrough import SupportedChainType
 from syft.core.tensor.smpc.share_tensor import ShareTensor
@@ -389,39 +390,8 @@ class MPCTensor(PassthroughTensor):
 
         _self = self
         if ispointer(y):
-            client = getattr(y, "client", None)
-            if self.parties is None:
-                raise Exception("")
-            if client is not None and client not in self.parties:
-                parties = self.parties + [client]
-            else:
-                parties = [party for party in self.parties]
-
-            # TODO: Extract info for y shape from somewhere
-            # We presume at the moment that it is the same shape
-            # Captured: https://app.clubhouse.io/openmined/story/1128/tech-debt-for-adp-smpc-demo?\
-            # stories_sort_by=priority&stories_group_by=WORKFLOW_STATE\
-
-            y = MPCTensor(secret=y, shape=self.mpc_shape, parties=parties)
-
-            seed_shares = secrets.randbits(32)
-
-            shares = MPCTensor._get_shares_from_remote_secret(
-                secret=None,
-                shape=self.mpc_shape,
-                parties=parties,
-                seed_shares=seed_shares,
-            )
-
-            op = getattr(operator, op_str)
-
-            new_shares = [
-                op(share1, share2) for share1, share2 in zip(self.child, shares)
-            ]
-
-            new_shares.append(shares[-1])
-
-            _self = MPCTensor(shares=new_shares, shape=self.mpc_shape, parties=parties)
+            public_shape = getattr(y, "public_shape", None)
+            y = MPCTensor(secret=y, shape=public_shape, parties=mpc_parties)
 
         if isinstance(y, MPCTensor):
             result = _self.__apply_private_op(y, op_str)
