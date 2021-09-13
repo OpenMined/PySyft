@@ -36,3 +36,4 @@ packages/hagrid/grid
 # helmcharts
 helm-charts/**/*.tgz
 helm-charts/**/*.lock
+.helm/**

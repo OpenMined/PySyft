@@ -1,3 +1,4 @@
+{{- $serviceNodePort :=  .Values.service.nodePort -}}
 apiVersion: v1
 kind: Service
 metadata:
@@ -11,5 +12,8 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
+      {{- if $serviceNodePort }}
+      nodePort: {{ $serviceNodePort }}
+      {{- end }}
   selector:
     {{- include "frontend.selectorLabels" . | nindent 4 }}

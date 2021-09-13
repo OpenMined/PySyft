@@ -17,17 +17,17 @@ dependencies:
   - name: postgresql
     version: 10.9.3
     repository: https://charts.bitnami.com/bitnami
-    alias: db
-    condition: db.enabled, global.db.enabled
+    # alias: db
+    condition: postgresql.enabled, global.postgresql.enabled
     tags:
-      - db
+      - postgresql
   - name: rabbitmq
     version: 8.20.1
     repository: https://charts.bitnami.com/bitnami
-    alias: queue
-    condition: queue.enabled, global.queue.enabled
+    # alias: queue
+    condition: rabbitmq.enabled, global.rabbitmq.enabled
     tags:
-      - queue
+      - rabbitmq
 
 
 # This is the chart version. This version number should be incremented each time you make changes

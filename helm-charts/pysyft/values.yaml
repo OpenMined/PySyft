@@ -7,13 +7,33 @@ tags:
   db: true
   queue: true
 
-# Set of Global environment variables.
+## @section Global parameters
+## Global Docker image parameters
+## Please, note that this will override the image parameters, including dependencies, configured to use the global value
+## Current available global Docker image parameters: imageRegistry, imagePullSecrets and storageClass
+
+## @param global.imageRegistry Global Docker image registry
+## @param global.imagePullSecrets Global Docker registry secret names as an array
+## @param global.storageClass Global StorageClass for Persistent Volume(s)
+## @param global.postgresql.enabled global.postgresql.enabled
+## @param global.rabbitmq.enabled global.rabbitmq.enabled
+##
 global:
+  imageRegistry: "docker.io"
+  ## E.g.
+  ## imagePullSecrets:
+  ##   - myRegistryKeySecretName
+  ##
+  imagePullSecrets: []
   storageClass: ""
+  postgresql:
+    enabled: ""
+  rabbitmq:
+    enabled: ""
 
 # Postgresql database
 # Rererence link: https://artifacthub.io/packages/helm/bitnami/postgresql
-db:
+postgresql:
   postgresqlUsername: "postgres"
   postgresqlPassword: ""
   postgresqlDatabase: ""
@@ -33,7 +53,7 @@ db:
 
 # RabbitMQ message broker
 # Reference link: https://artifacthub.io/packages/helm/bitnami/rabbitmq
-queue:
+rabbitmq:
   auth:
     username: "user"
     password: ""
@@ -59,13 +79,42 @@ queue:
     #   helm.sh/resource-policy: "keep"
 
 frontend:
+  image:
+    repository: openmined/grid-frontend
+    tag: "latest"
+    pullPolicy: IfNotPresent
+
   persistence:
     enabled: false
     storageClass: "standard"
-    accessModes: "ReadWriteMany"
-  image:
-    repository: openmined/grid-frontend
+  resources:
+    limits:
+      memory: 512Mi
+      cpu: 500m
+    requests:
+      memory: 256Mi
+      cpu: 250m
   
 backend: 
   image:
     repository: openmined/grid-backend
+    tag: "latest"
+  resources:
+    limits:
+      memory: 512Mi
+      cpu: 500m
+    requests:
+      memory: 256Mi
+      cpu: 250m
+
+celeryworker: 
+  image:
+    repository: openmined/grid-worker
+    tag: "latest"
+  resources:
+    limits:
+      memory: 512Mi
+      cpu: 500m
+    requests:
+      memory: 256Mi
+      cpu: 250m

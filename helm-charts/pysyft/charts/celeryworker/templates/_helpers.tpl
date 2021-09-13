@@ -60,3 +60,17 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Return the proper PostgreSQL image name
+*/}}
+{{- define "celeryworker.image" -}}
+{{ include "pysyft.images.image" (dict "imageRoot" .Values.image "global" .Values.global) }}
+{{- end -}}
+
+{{/*
+Return the proper Docker Image Registry Secret Names
+*/}}
+{{- define "celeryworker.imagePullSecrets" -}}
+{{ include "pysyft.images.pullSecrets" (dict "images" .Values.image  "global" .Values.global) }}
+{{- end -}}
