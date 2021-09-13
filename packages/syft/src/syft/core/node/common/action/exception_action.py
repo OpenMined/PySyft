@@ -26,7 +26,7 @@ class UnknownPrivateException(Exception):
 
 
 @final
-@serializable(generate_wrapper=True)
+@serializable()
 class ExceptionMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
