@@ -5,7 +5,6 @@ from typing import Union
 from google.protobuf.message import Message
 
 # relative
-from ....logger import debug
 from ....logger import traceback_and_raise
 from ....proto.util.data_message_pb2 import DataMessage
 from ....util import get_fully_qualified_name
