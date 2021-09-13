@@ -21,7 +21,6 @@ import numpy as np
 import torch
 
 # syft absolute
-from syft import parties as mpc_parties
 from syft.core.tensor.passthrough import PassthroughTensor
 from syft.core.tensor.passthrough import SupportedChainType
 from syft.core.tensor.smpc.share_tensor import ShareTensor
@@ -387,6 +386,8 @@ class MPCTensor(PassthroughTensor):
         Returns:
             MPCTensor. the operation "op_str" applied on "self" and "y"
         """
+        # syft absolute
+        from syft import parties as mpc_parties
 
         _self = self
         if ispointer(y):

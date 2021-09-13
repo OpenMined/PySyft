@@ -14,7 +14,6 @@ import torch as th
 
 # relative
 from ... import lib
-from ... import parties as mpc_parties
 from ...ast.klass import pointerize_args_and_kwargs
 from ...core.common.serde.recursive import RecursiveSerde
 from ...util import inherit_tags
@@ -123,6 +122,9 @@ class TensorPointer(Pointer):
         return result
 
     def __add__(self, other: Any) -> Union[TensorPointer, MPCTensor]:
+
+        # syft absolute
+        from syft import parties as mpc_parties
 
         if isinstance(other, TensorPointer) and self.client != other.client:
 
