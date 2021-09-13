@@ -116,4 +116,5 @@ logger.add(sink=sys.stderr, level="CRITICAL")
 # TODO: remove this requirement in pytorch lightning
 client_cache: Dict[str, Any] = {}
 
+
 parties: Set[DomainClient] = set()  # stores the parties metadata for SMPC computation
