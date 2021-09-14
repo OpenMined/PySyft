@@ -18,6 +18,7 @@ from ...util import key_emoji
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import Serializable
 from ..common.serde.serializable import bind_protobuf
+from ..common.serde.serialize import _serialize
 from ..common.storeable_object import AbstractStorableObject
 from ..common.uid import UID
 
@@ -130,7 +131,12 @@ class StorableObject(AbstractStorableObject):
         proto.data_type = get_fully_qualified_name(obj=self._data)
 
         # Step 3: Serialize data to protobuf and pack into proto
-        data = self._data._object2proto()
+        if hasattr(self._data, "_object2proto"):
+            data = self._data._object2proto()
+        else:
+            # @Tudor this needs fixing during the serde refactor
+            # we should probably just support the native type names as lookups for serde
+            data = _serialize(self._data, to_proto=True)
 
         proto.data.Pack(data)
 
