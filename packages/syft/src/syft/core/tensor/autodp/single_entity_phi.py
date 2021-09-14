@@ -15,7 +15,6 @@ import numpy as np
 import numpy.typing as npt
 
 # relative
-from ....core.common.serde.recursive import RecursiveSerde
 from ....proto.core.tensor.single_entity_phi_tensor_pb2 import (
     TensorWrappedSingleEntityPhiTensorPointer as TensorWrappedSingleEntityPhiTensorPointer_PB,
 )
@@ -267,10 +266,8 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
         return TensorWrappedSingleEntityPhiTensorPointer_PB
 
 
-@serializable()
-class SingleEntityPhiTensor(
-    PassthroughTensor, AutogradTensorAncestor, RecursiveSerde, ADPTensor
-):
+@serializable(recursive_serde=True)
+class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
     PointerClassOverride = TensorWrappedSingleEntityPhiTensorPointer
 

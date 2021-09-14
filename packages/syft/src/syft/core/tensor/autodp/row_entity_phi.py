@@ -15,7 +15,6 @@ import numpy as np
 from ....core.adp.vm_private_scalar_manager import (
     VirtualMachinePrivateScalarManager as TypeScalarManager,
 )
-from ....core.common.serde.recursive import RecursiveSerde
 from ...common.serde.serializable import serializable
 from ...tensor.types import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
@@ -25,8 +24,8 @@ from .adp_tensor import ADPTensor
 from .initial_gamma import InitialGammaTensor  # type: ignore
 
 
-@serializable()
-class RowEntityPhiTensor(PassthroughTensor, RecursiveSerde, ADPTensor):
+@serializable(recursive_serde=True)
+class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
     __attr_allowlist__ = ["child"]
 

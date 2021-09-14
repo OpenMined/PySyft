@@ -9,7 +9,7 @@ import numpy as np
 
 # relative
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
-from ...common.serde.recursive import RecursiveSerde
+from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from ..passthrough import PassthroughTensor  # type: ignore
 from .adp_tensor import ADPTensor
@@ -26,7 +26,8 @@ def list2numpy(l_shape: Any) -> np.ndarray:
     return np.array(list_length).reshape(shape)
 
 
-class InitialGammaTensor(IntermediateGammaTensor, RecursiveSerde, ADPTensor):
+@serializable(recursive_serde=True)
+class InitialGammaTensor(IntermediateGammaTensor, ADPTensor):
 
     __attr_allowlist__ = [
         "uid",
