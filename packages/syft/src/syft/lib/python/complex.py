@@ -9,7 +9,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from ... import deserialize
 from ... import serialize
 from ...core.common import UID
-from ...core.common.serde.serializable import bind_protobuf
+from ...core.common.serde.serializable import serializable
 from ...logger import traceback_and_raise
 from ...proto.lib.python.complex_pb2 import Complex as Complex_PB
 from .primitive_factory import PrimitiveFactory
@@ -18,7 +18,7 @@ from .types import SyPrimitiveRet
 
 
 # TODO - actually make all of this work
-@bind_protobuf
+@serializable()
 class Complex(complex, PyPrimitive):
     def __new__(
         self, real: Any = None, imag: Any = None, id: Optional[UID] = None

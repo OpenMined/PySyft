@@ -11,7 +11,7 @@ from syft import serialize
 
 # relative
 from .. import python as py
-from ...core.common.serde.serializable import bind_protobuf
+from ...core.common.serde.serializable import serializable
 from ...core.common.uid import UID
 from ...logger import traceback_and_raise
 from ...proto.lib.python.iterator_pb2 import Iterator as Iterator_PB
@@ -20,7 +20,7 @@ from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
 
 
-@bind_protobuf
+@serializable()
 class Iterator(PyPrimitive):
     def __init__(self, _ref: Any, max_len: Optional[int] = None):
         super().__init__()

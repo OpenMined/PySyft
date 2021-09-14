@@ -4,8 +4,8 @@ import pyarrow as pa
 import torch
 
 # relative
+from ...core.common.serde.serializable import serializable
 from ...experimental_flags import flags
-from ...generate_wrapper import GenerateWrapper
 from ...lib.torch.tensor_util import tensor_deserializer
 from ...lib.torch.tensor_util import tensor_serializer
 from ...proto.lib.numpy.array_pb2 import NumpyProto
@@ -92,7 +92,7 @@ def deserialize_numpy_array(proto: NumpyProto) -> np.ndarray:
         return protobuf_deserialize(proto)
 
 
-GenerateWrapper(
+serializable(generate_wrapper=True)(
     wrapped_type=np.ndarray,
     import_path="numpy.ndarray",
     protobuf_scheme=NumpyProto,

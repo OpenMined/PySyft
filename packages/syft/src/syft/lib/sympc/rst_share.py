@@ -11,7 +11,7 @@ from sympc.tensor import ReplicatedSharedTensor
 import syft
 
 # relative
-from ...generate_wrapper import GenerateWrapper
+from ...core.common.serde.serializable import serializable
 from ...proto.lib.sympc.replicatedshared_tensor_pb2 import (
     ReplicatedSharedTensor as ReplicatedSharedTensor_PB,
 )
@@ -72,7 +72,7 @@ def proto2object(proto: ReplicatedSharedTensor_PB) -> ReplicatedSharedTensor:
     return share
 
 
-GenerateWrapper(
+serializable(generate_wrapper=True)(
     wrapped_type=ReplicatedSharedTensor,
     import_path="sympc.tensor.ReplicatedSharedTensor",
     protobuf_scheme=ReplicatedSharedTensor_PB,

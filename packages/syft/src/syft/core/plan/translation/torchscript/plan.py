@@ -9,11 +9,12 @@ from syft_proto.execution.v1.plan_pb2 import Plan as Plan_PB
 import torch as th
 
 # relative
-from .....core.common.object import Serializable
 from .....logger import traceback_and_raise
+from ....common.serde.serializable import serializable
 
 
-class PlanTorchscript(Serializable):
+@serializable()
+class PlanTorchscript:
     """
     Represents Syft Plan translated to TorchScript
     """

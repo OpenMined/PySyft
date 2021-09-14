@@ -13,17 +13,16 @@ import numpy as np
 from syft.core.tensor.passthrough import PassthroughTensor
 
 # relative
-from ...core.common.serde.serializable import Serializable
 from ...proto.core.tensor.fixed_precision_tensor_pb2 import (
     FixedPrecisionTensor as FixedPrecisionTensor_PB,
 )
 from ..common.serde.deserialize import _deserialize as deserialize
-from ..common.serde.serializable import bind_protobuf
+from ..common.serde.serializable import serializable
 from ..common.serde.serialize import _serialize as serialize
 
 
-@bind_protobuf
-class FixedPrecisionTensor(PassthroughTensor, Serializable):
+@serializable()
+class FixedPrecisionTensor(PassthroughTensor):
     def __init__(
         self, value: Optional[Any] = None, base: int = 10, precision: int = 3
     ) -> None:

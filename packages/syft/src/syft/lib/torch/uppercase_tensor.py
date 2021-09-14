@@ -4,7 +4,7 @@
 import torch as th
 
 # relative
-from ...generate_wrapper import GenerateWrapper
+from ...core.common.serde.serializable import serializable
 from ...lib.torch.tensor_util import tensor_deserializer
 from ...lib.torch.tensor_util import tensor_serializer
 from ...logger import warning
@@ -58,7 +58,7 @@ def proto2object(proto: Tensor_PB) -> th.Tensor:
     return tensor
 
 
-GenerateWrapper(
+serializable(generate_wrapper=True)(
     wrapped_type=torch_tensor_type,
     import_path="torch.Tensor",
     protobuf_scheme=Tensor_PB,

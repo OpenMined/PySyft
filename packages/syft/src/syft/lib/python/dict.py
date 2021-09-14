@@ -16,7 +16,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from ... import deserialize
 from ... import serialize
 from ...core.common import UID
-from ...core.common.serde.serializable import bind_protobuf
+from ...core.common.serde.serializable import serializable
 from ...logger import traceback_and_raise
 from ...logger import warning
 from ...proto.lib.python.dict_pb2 import Dict as Dict_PB
@@ -29,7 +29,7 @@ from .util import downcast
 from .util import upcast
 
 
-@bind_protobuf
+@serializable()
 class Dict(UserDict, PyPrimitive):
     # the incoming types to UserDict __init__ are overloaded and weird
     # see https://github.com/python/cpython/blob/master/Lib/collections/__init__.py

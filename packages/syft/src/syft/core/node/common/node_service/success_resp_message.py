@@ -9,7 +9,7 @@ from typing_extensions import final
 from syft import deserialize
 from syft import serialize
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.common.serde.serializable import bind_protobuf
+from syft.core.common.serde.serializable import serializable
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
 from syft.proto.grid.messages.success_resp_message_pb2 import (
@@ -17,7 +17,7 @@ from syft.proto.grid.messages.success_resp_message_pb2 import (
 )
 
 
-@bind_protobuf
+@serializable()
 @final
 class SuccessResponseMessage(ImmediateSyftMessageWithoutReply):
     def __init__(

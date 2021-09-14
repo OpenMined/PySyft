@@ -4,7 +4,7 @@
 from sympc.session import Session
 
 # relative
-from ...generate_wrapper import GenerateWrapper
+from ...core.common.serde.serializable import serializable
 from ...proto.lib.sympc.session_pb2 import MPCSession as MPCSession_PB
 from .session_util import protobuf_session_deserializer
 from .session_util import protobuf_session_serializer
@@ -20,7 +20,7 @@ def proto2object(proto: MPCSession_PB) -> Session:
     return session
 
 
-GenerateWrapper(
+serializable(generate_wrapper=True)(
     wrapped_type=Session,
     import_path="sympc.session.Session",
     protobuf_scheme=MPCSession_PB,

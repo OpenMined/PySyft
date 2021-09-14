@@ -9,7 +9,7 @@ from nacl.signing import VerifyKey
 
 # relative
 from ...... import serialize
-from ......core.common.serde.serializable import bind_protobuf
+from ......core.common.serde.serializable import serializable
 from ......proto.core.node.common.service.resolve_pointer_type_service_pb2 import (
     ResolvePointerTypeAnswerMessage as ResolvePointerTypeAnswerMessage_PB,
 )
@@ -22,7 +22,7 @@ from ..node_service import ImmediateNodeServiceWithReply
 from .resolve_pointer_type_messages import ResolvePointerTypeMessage
 
 
-@bind_protobuf
+@serializable()
 class ResolvePointerTypeAnswerMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,

@@ -9,7 +9,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from ... import deserialize
 from ... import serialize
 from ...core.common import UID
-from ...core.common.serde.serializable import bind_protobuf
+from ...core.common.serde.serializable import serializable
 from ...proto.lib.python.none_pb2 import SyNone as None_PB
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
@@ -18,7 +18,7 @@ from .types import SyPrimitiveRet
 NoneType = type(None)
 
 
-@bind_protobuf
+@serializable()
 class _SyNone(PyPrimitive):
     def __init__(self, id: Optional[UID] = None, temporary_box: bool = False):
         self._id: UID = id if id else UID()

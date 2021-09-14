@@ -21,8 +21,7 @@ from ... import serialize
 from ...logger import traceback_and_raise
 from ...proto.core.node.common.action.action_pb2 import Action as Action_PB
 from ...proto.core.plan.plan_pb2 import Plan as Plan_PB
-from ..common.object import Serializable
-from ..common.serde.serializable import bind_protobuf
+from ..common.serde.serializable import serializable
 from ..node.abstract.node import AbstractNode
 from ..node.common import client
 from ..node.common.action.common import Action
@@ -33,8 +32,8 @@ from ..store.storeable_object import StorableObject
 CAMEL_TO_SNAKE_PAT = re.compile(r"(?<!^)(?=[A-Z])")
 
 
-@bind_protobuf
-class Plan(Serializable):
+@serializable()
+class Plan:
     """
     A plan is a collection of actions, plus some variable inputs, that together form a computation graph.
 
