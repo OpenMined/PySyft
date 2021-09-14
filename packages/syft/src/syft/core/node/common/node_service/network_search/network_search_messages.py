@@ -12,7 +12,7 @@ from syft import serialize
 from syft.core.common.message import ImmediateSyftMessageWithReply
 from syft.core.common.message import ImmediateSyftMessageWithoutReply
 from syft.core.common.serde.deserialize import _deserialize
-from syft.core.common.serde.serializable import bind_protobuf
+from syft.core.common.serde.serializable import serializable
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
 from syft.proto.grid.messages.network_search_messages_pb2 import (
@@ -23,7 +23,7 @@ from syft.proto.grid.messages.network_search_messages_pb2 import (
 )
 
 
-@bind_protobuf
+@serializable()
 @final
 class NetworkSearchMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -94,7 +94,7 @@ class NetworkSearchMessage(ImmediateSyftMessageWithReply):
         return NetworkSearchMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class NetworkSearchResponse(ImmediateSyftMessageWithoutReply):
     def __init__(

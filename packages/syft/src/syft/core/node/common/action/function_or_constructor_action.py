@@ -19,7 +19,7 @@ from .....proto.core.node.common.action.run_function_or_constructor_pb2 import (
 )
 from .....util import inherit_tags
 from ....common.serde.deserialize import _deserialize
-from ....common.serde.serializable import bind_protobuf
+from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
 from ....pointer.pointer import Pointer
@@ -29,7 +29,7 @@ from ..util import listify
 from .common import ImmediateActionWithoutReply
 
 
-@bind_protobuf
+@serializable()
 class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
     """
     When executing a RunFunctionOrConstructorAction, a :class:`Node` will run
@@ -158,8 +158,10 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
 
     def __repr__(self) -> str:
         method_name = self.path.split(".")[-1]
-        arg_names = ",".join([a.class_name for a in self.args])
-        kwargs_names = ",".join([f"{k}={v.class_name}" for k, v in self.kwargs.items()])
+        arg_names = ",".join([a.__class__.__name__ for a in self.args])
+        kwargs_names = ",".join(
+            [f"{k}={v.__class__.__name__}" for k, v in self.kwargs.items()]
+        )
         return f"RunClassMethodAction {method_name}({arg_names}, {kwargs_names})"
 
     def _object2proto(self) -> RunFunctionOrConstructorAction_PB:

@@ -29,8 +29,8 @@ from syft.lib.python import _SyNone
 
 # relative
 from .. import lib_ast
+from ...core.common.serde.serializable import serializable
 from ...core.pointer.pointer import Pointer
-from ...generate_wrapper import GenerateWrapper
 from ...lib.util import full_name_with_qualname
 from ...logger import critical
 from ...logger import info
@@ -548,7 +548,7 @@ def recompile(sy_module: "SyModule") -> None:
                 )
 
 
-GenerateWrapper(
+serializable(generate_wrapper=True)(
     wrapped_type=torch.nn.Module,
     import_path="torch.nn.Module",
     protobuf_scheme=Module_PB,

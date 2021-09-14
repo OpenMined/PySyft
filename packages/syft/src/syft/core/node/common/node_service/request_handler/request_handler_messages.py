@@ -25,11 +25,11 @@ from ......proto.core.node.domain.service.request_handler_message_pb2 import (
 from .....common import UID
 from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import ImmediateSyftMessageWithoutReply
-from .....common.serde.serializable import bind_protobuf
+from .....common.serde.serializable import serializable
 from .....io.address import Address
 
 
-@bind_protobuf
+@serializable()
 class UpdateRequestHandlerMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
@@ -110,7 +110,7 @@ class UpdateRequestHandlerMessage(ImmediateSyftMessageWithoutReply):
         return UpdateRequestHandlerMessage_PB
 
 
-@bind_protobuf
+@serializable()
 class GetAllRequestHandlersMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self, address: Address, reply_to: Address, msg_id: Optional[UID] = None
@@ -182,7 +182,7 @@ class GetAllRequestHandlersMessage(ImmediateSyftMessageWithReply):
         return GetAllRequestHandlersMessage_PB
 
 
-@bind_protobuf
+@serializable()
 class GetAllRequestHandlersResponseMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,

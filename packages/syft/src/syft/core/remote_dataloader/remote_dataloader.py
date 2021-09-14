@@ -19,14 +19,13 @@ from ...proto.core.remote_dataloader.remote_dataset_pb2 import (
 from ...proto.core.remote_dataloader.remote_dataset_pb2 import (
     RemoteDataset as RemoteDataset_PB,
 )
-from ..common.serde.serializable import Serializable
-from ..common.serde.serializable import bind_protobuf
+from ..common.serde.serializable import serializable
 
 DATA_TYPE_TORCH_TENSOR = "torch_tensor"
 
 
-@bind_protobuf
-class RemoteDataset(Dataset, Serializable):
+@serializable()
+class RemoteDataset(Dataset):
     def __init__(self, path: str, data_type: str = DATA_TYPE_TORCH_TENSOR):
         """
         Arguments:
@@ -69,8 +68,8 @@ class RemoteDataset(Dataset, Serializable):
         return RemoteDataset_PB
 
 
-@bind_protobuf
-class RemoteDataLoader(Serializable):
+@serializable()
+class RemoteDataLoader:
     def __init__(self, remote_dataset: RemoteDataset, batch_size: int = 1):
         """
         TODO: now, only batch_size can be passed in by users, and it's used when create

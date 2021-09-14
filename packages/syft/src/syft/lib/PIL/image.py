@@ -7,7 +7,7 @@ import torchvision
 # relative
 from ... import deserialize
 from ... import serialize
-from ...generate_wrapper import GenerateWrapper
+from ...core.common.serde.serializable import serializable
 from ...proto.lib.PIL.image_pb2 import Image as Image_PB
 
 
@@ -25,7 +25,7 @@ def proto2object(proto: Image_PB) -> PIL.Image.Image:
     return image_obj
 
 
-GenerateWrapper(
+serializable(generate_wrapper=True)(
     wrapped_type=PIL.Image.Image,
     import_path="PIL.Image.Image",
     protobuf_scheme=Image_PB,

@@ -10,7 +10,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from ... import deserialize
 from ... import serialize
 from ...core.common import UID
-from ...core.common.serde.serializable import bind_protobuf
+from ...core.common.serde.serializable import serializable
 from ...proto.lib.python.bool_pb2 import Bool as Bool_PB
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
@@ -23,7 +23,7 @@ def dispatch_other(obj: Any) -> bool:
     return obj
 
 
-@bind_protobuf
+@serializable()
 class Bool(int, PyPrimitive):
     def __new__(cls, value: Any = None, id: Optional[UID] = None) -> "Bool":
         value = bool(value)

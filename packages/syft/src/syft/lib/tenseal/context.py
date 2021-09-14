@@ -6,7 +6,7 @@ from packaging import version
 import tenseal as ts
 
 # relative
-from ...generate_wrapper import GenerateWrapper
+from ...core.common.serde.serializable import serializable
 from ...logger import info
 from ...logger import traceback_and_raise
 from ...proto.util.vendor_bytes_pb2 import VendorBytes as VendorBytes_PB
@@ -40,7 +40,7 @@ def context_proto2object(proto: VendorBytes_PB) -> ts.Context:
     return ts.context_from(proto.content, n_threads=1)
 
 
-GenerateWrapper(
+serializable(generate_wrapper=True)(
     wrapped_type=ts.Context,
     import_path="tenseal.Context",
     protobuf_scheme=VendorBytes_PB,
@@ -75,7 +75,7 @@ def schemetype_proto2object(proto: VendorBytes_PB) -> ts.SCHEME_TYPE:
     return ts.SCHEME_TYPE[proto.content.decode()]
 
 
-GenerateWrapper(
+serializable(generate_wrapper=True)(
     wrapped_type=ts.SCHEME_TYPE,
     import_path="tenseal.SCHEME_TYPE",
     protobuf_scheme=VendorBytes_PB,

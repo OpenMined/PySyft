@@ -7,14 +7,15 @@ from syft_proto.execution.v1.state_pb2 import State as StatePB
 from syft_proto.execution.v1.state_tensor_pb2 import StateTensor as StateTensorPB
 
 # relative
-from ...core.common.object import Serializable
+from ...core.common.serde.serializable import serializable
 from ...core.common.serde.serialize import _serialize as serialize
 from .common import deserialize_tensor
 from .common import serialize_tensor
 from .placeholder import PlaceHolder
 
 
-class State(Serializable):
+@serializable()
+class State:
     """The State is a Plan attribute and is used to send tensors along functions.
 
     It references Plan tensor or parameters attributes using their name, and make

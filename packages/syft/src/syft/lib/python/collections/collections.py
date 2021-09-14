@@ -6,10 +6,10 @@ from typing import Optional
 
 # relative
 from ....core.common.serde.recursive import RecursiveSerde
-from ....core.common.serde.serializable import bind_protobuf
+from ....core.common.serde.serializable import serializable
 
 
-@bind_protobuf
+@serializable()
 class DefaultDict(defaultdict, RecursiveSerde):
     """Aim: build a class that inherits all the methods from collections.defaultdict but is serializable"""
 
@@ -19,7 +19,7 @@ class DefaultDict(defaultdict, RecursiveSerde):
         super().__init__(default_factory=factory, **kwargs)
 
 
-@bind_protobuf
+@serializable()
 class SerializableCounter(Counter, RecursiveSerde):
 
     __attr_allowlist__ = []  # type: ignore
