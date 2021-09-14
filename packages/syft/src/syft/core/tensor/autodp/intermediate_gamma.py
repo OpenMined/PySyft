@@ -23,7 +23,16 @@ from .adp_tensor import ADPTensor
 
 
 class IntermediateGammaTensor(PassthroughTensor, RecursiveSerde, ADPTensor):
+    """Functionality for tracking differential privacy when individual values
+    are contributed to by multiple entities. IntermediateGammaTensor differs
+    from IniitalGammaTensor only in that InitialGammaTensor has additional
+    functionality in its constructor essential to when one initially begins
+    tracking metadata across mutliple entities, whereas IntermediateGammaTensor
+    has a simpler constructor for use when performing operations across one or
+    more IntermediateGammaTensor objects.
 
+
+    """
     __attr_allowlist__ = [
         "term_tensor",
         "coeff_tensor",
@@ -54,9 +63,6 @@ class IntermediateGammaTensor(PassthroughTensor, RecursiveSerde, ADPTensor):
         return self.term_tensor.shape
 
     def publish(self, acc: Any, sigma: float, user_key: VerifyKey) -> np.ndarray:
-        print("IntermediateGamma.publish")
-        print(type(self))
-        print(type(self.flat_scalars))
 
         result = np.array(
             publish(
