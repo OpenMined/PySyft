@@ -28,6 +28,7 @@ from ...common.uid import UID
 from ...node.abstract.node import AbstractNodeClient
 from ...pointer.pointer import Pointer
 from ..ancestors import AutogradTensorAncestor
+from ..broadcastable import is_broadcastable
 from ..passthrough import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import implements  # type: ignore
@@ -36,7 +37,6 @@ from ..smpc.mpc_tensor import MPCTensor
 from ..tensor import Tensor
 from ..types import SupportedChainType  # type: ignore
 from ..util import inputs2child  # type: ignore
-from ..broadcastable import is_broadcastable
 from .adp_tensor import ADPTensor
 from .initial_gamma import InitialGammaTensor
 
@@ -659,7 +659,7 @@ class SingleEntityPhiTensor(
         if isinstance(other, SingleEntityPhiTensor):
             if self.entity != other.entity:
                 # this should return a GammaTensor
-                raise NotImplemented
+                raise NotImplementedError
 
             data = self.child - other.child
             min_vals = self.min_vals - other.min_vals
@@ -670,7 +670,7 @@ class SingleEntityPhiTensor(
             if isinstance(other, np.ndarray):
                 if not is_broadcastable(other.shape, self.child.shape):
                     raise Exception(
-                        f'Shapes do not match for subtraction: {self.child.shape} and {other.shape}'
+                        f"Shapes do not match for subtraction: {self.child.shape} and {other.shape}"
                     )
             data = self.child - other
             min_vals = self.min_vals - other

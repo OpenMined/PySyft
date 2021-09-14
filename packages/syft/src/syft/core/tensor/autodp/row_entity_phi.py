@@ -25,7 +25,6 @@ from .adp_tensor import ADPTensor
 from .initial_gamma import InitialGammaTensor  # type: ignore
 
 
-
 @bind_protobuf
 class RowEntityPhiTensor(PassthroughTensor, RecursiveSerde, ADPTensor):
 
