@@ -10,31 +10,27 @@ from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
-# syft absolute
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.node.abstract.node import AbstractNode
-from syft.core.node.common.node_service.auth import service_auth
-from syft.core.node.common.node_service.node_service import (
-    ImmediateNodeServiceWithReply,
-)
-from syft.lib.python import Dict as SyftDict
-from syft.lib.python import List as SyftList
-
 # relative
+from ......lib.python import Dict as SyftDict
+from ......lib.python import List as SyftList
+from .....common.message import ImmediateSyftMessageWithReply
+from ....abstract.node import AbstractNode
 from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
 from ...exceptions import UserNotFoundError
 from ...node_table.utils import model_to_json
+from ..auth import service_auth
+from ..node_service import ImmediateNodeServiceWithReply
 from ..success_resp_message import SuccessResponseMessage
-from ..user_manager.user_messages import CreateUserMessage
-from ..user_manager.user_messages import DeleteUserMessage
-from ..user_manager.user_messages import GetUserMessage
-from ..user_manager.user_messages import GetUserResponse
-from ..user_manager.user_messages import GetUsersMessage
-from ..user_manager.user_messages import GetUsersResponse
-from ..user_manager.user_messages import SearchUsersMessage
-from ..user_manager.user_messages import SearchUsersResponse
-from ..user_manager.user_messages import UpdateUserMessage
+from .user_messages import CreateUserMessage
+from .user_messages import DeleteUserMessage
+from .user_messages import GetUserMessage
+from .user_messages import GetUserResponse
+from .user_messages import GetUsersMessage
+from .user_messages import GetUsersResponse
+from .user_messages import SearchUsersMessage
+from .user_messages import SearchUsersResponse
+from .user_messages import UpdateUserMessage
 
 
 def create_user_msg(

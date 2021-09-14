@@ -13,16 +13,14 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-# syft absolute
-from syft.proto.core.common import (
-    common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
-)
-from syft.proto.core.io import (
-    connection_pb2 as proto_dot_core_dot_io_dot_connection__pb2,
-)
-from syft.proto.core.io import location_pb2 as proto_dot_core_dot_io_dot_location__pb2
-from syft.proto.grid.connections import (
+# relative
+from . import connection_pb2 as proto_dot_core_dot_io_dot_connection__pb2
+from . import location_pb2 as proto_dot_core_dot_io_dot_location__pb2
+from ...grid.connections import (
     http_connection_pb2 as proto_dot_grid_dot_connections_dot_http__connection__pb2,
+)
+from ..common import (
+    common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
 )
 
 DESCRIPTOR = _descriptor.FileDescriptor(

@@ -5,11 +5,11 @@ import torch as th
 
 # relative
 from ...core.common.serde.serializable import serializable
-from ...lib.torch.tensor_util import tensor_deserializer
-from ...lib.torch.tensor_util import tensor_serializer
 from ...logger import warning
 from ...proto.lib.torch.device_pb2 import Device as Device_PB
 from ...proto.lib.torch.tensor_pb2 import TensorProto as Tensor_PB
+from .tensor_util import tensor_deserializer
+from .tensor_util import tensor_serializer
 
 torch_tensor_type = type(th.tensor([1, 2, 3]))
 

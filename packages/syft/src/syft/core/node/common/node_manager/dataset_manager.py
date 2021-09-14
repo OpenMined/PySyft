@@ -8,10 +8,8 @@ from typing import Tuple
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
 
-# syft absolute
-from syft import serialize
-
 # relative
+from ..... import serialize
 from ....common.uid import UID
 from ..node_table.bin_obj_dataset import BinObjDataset
 from ..node_table.dataset import Dataset

@@ -17,23 +17,21 @@ import names
 import pandas as pd
 from pandas import DataFrame
 
-# syft absolute
-from syft import deserialize
-
 # relative
-from ....core.common.serde.serialize import _serialize as serialize  # noqa: F401
-from ....core.io.location.specific import SpecificLocation
-from ....core.node.common.action.exception_action import ExceptionMessage
-from ....core.pointer.pointer import Pointer
+from .... import deserialize
 from ....logger import traceback_and_raise
 from ....util import validate_field
 from ...common.message import SyftMessage
+from ...common.serde.serialize import _serialize as serialize  # noqa: F401
 from ...common.uid import UID
 from ...io.address import Address
 from ...io.location import Location
+from ...io.location.specific import SpecificLocation
 from ...io.route import Route
+from ...pointer.pointer import Pointer
 from ...tensor.autodp.adp_tensor import ADPTensor
 from ...tensor.tensor import Tensor
+from ..common.action.exception_action import ExceptionMessage
 from ..common.client import Client
 from ..common.client_manager.association_api import AssociationRequestAPI
 from ..common.client_manager.dataset_api import DatasetRequestAPI
@@ -71,8 +69,8 @@ class RequestQueueClient:
     @property
     def requests(self) -> List[RequestMessage]:
 
-        # syft absolute
-        from syft.core.node.common.node_service.get_all_requests.get_all_requests_messages import (
+        # relative
+        from ..common.node_service.get_all_requests.get_all_requests_messages import (
             GetAllRequestsMessage,
         )
 
@@ -196,10 +194,8 @@ class RequestQueueClient:
         return handler_opts
 
     def _update_handler(self, request_handler: Dict[str, Any], keep: bool) -> None:
-        # syft absolute
-        from syft.core.node.common.node_service.request_handler import (
-            UpdateRequestHandlerMessage,
-        )
+        # relative
+        from ..common.node_service.request_handler import UpdateRequestHandlerMessage
 
         msg = UpdateRequestHandlerMessage(
             address=self.client.address, handler=request_handler, keep=keep
@@ -213,10 +209,8 @@ class RequestHandlerQueueClient:
 
     @property
     def handlers(self) -> List[Dict]:
-        # syft absolute
-        from syft.core.node.common.node_service.request_handler import (
-            GetAllRequestHandlersMessage,
-        )
+        # relative
+        from ..common.node_service.request_handler import GetAllRequestHandlersMessage
 
         msg = GetAllRequestHandlersMessage(
             address=self.client.address, reply_to=self.client.address

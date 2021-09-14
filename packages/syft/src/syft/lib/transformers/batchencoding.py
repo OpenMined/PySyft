@@ -3,11 +3,11 @@ from transformers.tokenization_utils_base import BatchEncoding
 
 # relative
 from ...core.common.serde.serializable import serializable
-from ...lib.python.dict import Dict
-from ...lib.python.primitive_factory import PrimitiveFactory
 from ...proto.lib.transformers.batch_encoding_pb2 import (
     BatchEncoding as BatchEncoding_PB,
 )
+from ..python.dict import Dict
+from ..python.primitive_factory import PrimitiveFactory
 
 
 def object2proto(obj: BatchEncoding) -> BatchEncoding_PB:

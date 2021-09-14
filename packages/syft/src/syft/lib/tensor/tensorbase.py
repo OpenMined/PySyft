@@ -8,8 +8,8 @@ from typing import Union
 import numpy as np
 import torch
 
-# syft absolute
-from syft.lib.tensor.tensorbase_util import call_func_and_wrap_result
+# relative
+from .tensorbase_util import call_func_and_wrap_result
 
 Num = Union[int, float]
 

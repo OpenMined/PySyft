@@ -20,13 +20,11 @@ from typing import cast
 import numpy as np
 import torch
 
-# syft absolute
-from syft.core.tensor.passthrough import PassthroughTensor
-from syft.core.tensor.passthrough import SupportedChainType
-from syft.core.tensor.smpc.share_tensor import ShareTensor
-
 # relative
+from ..passthrough import PassthroughTensor
+from ..passthrough import SupportedChainType
 from ..util import implements  # type: ignore
+from .share_tensor import ShareTensor
 from .utils import ispointer
 
 METHODS_FORWARD_ALL_SHARES = {
@@ -179,8 +177,8 @@ class MPCTensor(PassthroughTensor):
             else:
                 value = None
 
-            # syft absolute
-            from syft.core.tensor.autodp.single_entity_phi import (
+            # relative
+            from ..autodp.single_entity_phi import (
                 TensorWrappedSingleEntityPhiTensorPointer,
             )
 

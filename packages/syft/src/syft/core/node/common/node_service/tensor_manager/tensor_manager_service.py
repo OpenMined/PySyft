@@ -11,19 +11,15 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import torch as th
 
-# syft absolute
-from syft.core.common.group import VerifyAll
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.common.uid import UID
-from syft.core.node.abstract.node import AbstractNode
-from syft.core.node.common.action.save_object_action import SaveObjectAction
-from syft.core.node.common.node_service.auth import service_auth
-from syft.core.node.common.node_service.node_service import (
-    ImmediateNodeServiceWithReply,
-)
-from syft.core.store.storeable_object import StorableObject
-
 # relative
+from .....common.group import VerifyAll
+from .....common.message import ImmediateSyftMessageWithReply
+from .....common.uid import UID
+from .....store.storeable_object import StorableObject
+from ....abstract.node import AbstractNode
+from ...action.save_object_action import SaveObjectAction
+from ..auth import service_auth
+from ..node_service import ImmediateNodeServiceWithReply
 from .tensor_manager_messages import CreateTensorMessage
 from .tensor_manager_messages import CreateTensorResponse
 from .tensor_manager_messages import DeleteTensorMessage

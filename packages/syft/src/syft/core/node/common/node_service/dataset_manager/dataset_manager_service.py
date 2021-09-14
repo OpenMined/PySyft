@@ -13,22 +13,18 @@ from nacl.signing import VerifyKey
 import numpy as np
 import torch as th
 
-# syft absolute
-from syft import deserialize
-from syft.core.common.group import VERIFYALL
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.common.uid import UID
-from syft.core.node.abstract.node import AbstractNode
-from syft.core.node.common.node_service.auth import service_auth
-from syft.core.node.common.node_service.node_service import (
-    ImmediateNodeServiceWithReply,
-)
-from syft.core.store.storeable_object import StorableObject
-
 # relative
+from ...... import deserialize
+from .....common.group import VERIFYALL
+from .....common.message import ImmediateSyftMessageWithReply
+from .....common.uid import UID
+from .....store.storeable_object import StorableObject
+from ....abstract.node import AbstractNode
 from ...exceptions import AuthorizationError
 from ...exceptions import DatasetNotFoundError
 from ...node_table.utils import model_to_json
+from ..auth import service_auth
+from ..node_service import ImmediateNodeServiceWithReply
 from ..success_resp_message import SuccessResponseMessage
 from .dataset_manager_messages import CreateDatasetMessage
 from .dataset_manager_messages import DeleteDatasetMessage

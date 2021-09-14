@@ -2,8 +2,8 @@
 from enum import Enum
 from typing import Any
 
-# syft absolute
-from syft.core.common.serde.recursive import RecursiveSerde
+# relative
+from ..common.serde.recursive import RecursiveSerde
 
 global_value: int = 5
 

@@ -9,22 +9,18 @@ from typing import Union
 from nacl.encoding import HexEncoder
 from nacl.signing import VerifyKey
 
-# syft absolute
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.node.abstract.node import AbstractNode
-from syft.core.node.common.node_service.auth import service_auth
-from syft.core.node.common.node_service.node_service import (
-    ImmediateNodeServiceWithReply,
-)
-
 # relative
 from ......logger import traceback_and_raise
 from .....common import UID
+from .....common.message import ImmediateSyftMessageWithReply
 from .....io.location import SpecificLocation
+from ....abstract.node import AbstractNode
 from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
 from ...exceptions import OwnerAlreadyExistsError
 from ...node_table.utils import model_to_json
+from ..auth import service_auth
+from ..node_service import ImmediateNodeServiceWithReply
 from ..success_resp_message import SuccessResponseMessage
 from .node_setup_messages import CreateInitialSetUpMessage
 from .node_setup_messages import GetSetUpMessage

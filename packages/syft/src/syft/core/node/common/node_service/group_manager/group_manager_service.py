@@ -9,19 +9,15 @@ from typing import Union
 from nacl.encoding import HexEncoder
 from nacl.signing import VerifyKey
 
-# syft absolute
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.node.abstract.node import AbstractNode
-from syft.core.node.common.node_service.auth import service_auth
-from syft.core.node.common.node_service.node_service import (
-    ImmediateNodeServiceWithReply,
-)
-
 # relative
+from .....common.message import ImmediateSyftMessageWithReply
+from ....abstract.node import AbstractNode
 from ...exceptions import AuthorizationError
 from ...exceptions import GroupNotFoundError
 from ...exceptions import MissingRequestKeyError
 from ...node_table.utils import model_to_json
+from ..auth import service_auth
+from ..node_service import ImmediateNodeServiceWithReply
 from .group_manager_messages import CreateGroupMessage
 from .group_manager_messages import CreateGroupResponse
 from .group_manager_messages import DeleteGroupMessage

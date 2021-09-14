@@ -7,12 +7,10 @@ from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy.types import LargeBinary
 
-# syft absolute
-from syft import deserialize
-from syft.core.node.abstract.node import AbstractNodeClient
-
 # relative
 from . import Base
+from ..... import deserialize
+from ...abstract.node import AbstractNodeClient
 
 
 class AssociationRequest(Base):

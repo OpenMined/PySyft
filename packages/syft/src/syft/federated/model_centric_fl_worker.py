@@ -15,9 +15,9 @@ from syft_proto.execution.v1.plan_pb2 import Plan as PlanTorchscriptPB
 # relative
 from ..core.plan import Plan
 from ..core.plan.translation.torchscript.plan import PlanTorchscript
-from ..federated.model_centric_fl_base import ModelCentricFLBase
 from ..lib.python.list import List
 from ..proto.core.plan.plan_pb2 import Plan as PlanPB
+from .model_centric_fl_base import ModelCentricFLBase
 from .model_serialization import deserialize_model_params
 from .model_serialization import wrap_model_params
 

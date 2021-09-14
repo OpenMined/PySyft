@@ -18,7 +18,7 @@ from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import serializable
 from ..common.serde.serialize import _serialize as serialize
 from ..common.uid import UID
-from ..io.location import Location
+from .location import Location
 
 
 class Unspecified(object):

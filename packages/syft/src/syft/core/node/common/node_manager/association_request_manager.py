@@ -10,11 +10,9 @@ import warnings
 # third party
 from sqlalchemy.engine import Engine
 
-# syft absolute
-from syft.core.node.abstract.node import AbstractNodeClient
-
 # relative
 from ..... import serialize
+from ...abstract.node import AbstractNodeClient
 from ...domain.enums import RequestAPIFields
 from ..exceptions import AssociationRequestError
 from ..node_table.association import Association

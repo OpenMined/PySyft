@@ -12,11 +12,11 @@ import pickle  # nosec
 from flask import Flask
 from flask import request
 
-# syft absolute
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.node.domain.domain import Domain
-from syft.logger import critical
+# relative
+from ...core.common.message import ImmediateSyftMessageWithReply
+from ...core.common.message import ImmediateSyftMessageWithoutReply
+from ...core.node.domain.domain import Domain
+from ...logger import critical
 
 app = Flask(__name__)
 

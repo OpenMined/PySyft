@@ -53,8 +53,8 @@ class InitialGammaTensor(IntermediateGammaTensor, RecursiveSerde, ADPTensor):
     ) -> None:
         self.uid = UID()
 
-        # syft absolute
-        from syft.core.tensor.smpc.share_tensor import ShareTensor
+        # relative
+        from ..smpc.share_tensor import ShareTensor
 
         if isinstance(values, ShareTensor):
             self.sharetensor_values = values

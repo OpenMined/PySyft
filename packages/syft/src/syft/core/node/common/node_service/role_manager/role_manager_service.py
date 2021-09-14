@@ -8,22 +8,18 @@ from typing import Union
 # third party
 from nacl.signing import VerifyKey
 
-# syft absolute
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.node.abstract.node import AbstractNode
-from syft.core.node.common.node_service.auth import service_auth
-from syft.core.node.common.node_service.node_service import (
-    ImmediateNodeServiceWithReply,
-)
-from syft.lib.python import Dict as SyftDict
-from syft.lib.python import List as SyftList
-
 # relative
+from ......lib.python import Dict as SyftDict
+from ......lib.python import List as SyftList
+from .....common.message import ImmediateSyftMessageWithReply
+from ....abstract.node import AbstractNode
 from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
 from ...exceptions import RequestError
 from ...exceptions import RoleNotFoundError
 from ...node_table.utils import model_to_json
+from ..auth import service_auth
+from ..node_service import ImmediateNodeServiceWithReply
 from ..success_resp_message import SuccessResponseMessage
 from .role_manager_messages import CreateRoleMessage
 from .role_manager_messages import DeleteRoleMessage

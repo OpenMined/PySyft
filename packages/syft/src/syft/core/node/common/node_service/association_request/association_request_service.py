@@ -10,22 +10,16 @@ from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
-# syft absolute
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.node.abstract.node import AbstractNode
-from syft.core.node.common.node_service.auth import service_auth
-from syft.core.node.common.node_service.node_service import (
-    ImmediateNodeServiceWithReply,
-)
-from syft.core.node.common.node_service.success_resp_message import (
-    SuccessResponseMessage,
-)
-from syft.core.node.domain.enums import AssociationRequestResponses
-from syft.logger import info
-
 # relative
+from ......logger import info
+from .....common.message import ImmediateSyftMessageWithReply
+from ....abstract.node import AbstractNode
+from ....domain.enums import AssociationRequestResponses
 from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
+from ..auth import service_auth
+from ..node_service import ImmediateNodeServiceWithReply
+from ..success_resp_message import SuccessResponseMessage
 from .association_request_messages import DeleteAssociationRequestMessage
 from .association_request_messages import GetAssociationRequestMessage
 from .association_request_messages import GetAssociationRequestResponse

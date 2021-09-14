@@ -11,11 +11,11 @@ from torch import Tensor
 
 # syft absolute
 import syft
-from syft.core.common.uid import UID
-from syft.core.store import ObjectStore
-from syft.core.store.storeable_object import StorableObject
 
 # relative
+from ....common.uid import UID
+from ....store import ObjectStore
+from ....store.storeable_object import StorableObject
 from ..node_table.bin_obj import BinObject
 from ..node_table.bin_obj_metadata import ObjectMetadata
 
@@ -23,7 +23,7 @@ ENCODING = "UTF-8"
 
 
 def create_storable(
-    _id: UID, data: Tensor, description: str, tags: Iterable[str]
+    _id: UID, data: Tensor, description: str, tags: Optional[List[str]] = None
 ) -> StorableObject:
     obj = StorableObject(id=_id, data=data, description=description, tags=tags)
 

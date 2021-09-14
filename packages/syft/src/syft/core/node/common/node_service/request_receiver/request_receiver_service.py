@@ -8,9 +8,9 @@ from nacl.signing import VerifyKey
 
 # relative
 from ......logger import traceback_and_raise
-from .....node.common.node import DuplicateRequestException
 from ....abstract.node import AbstractNode
-from ....common.node_service.node_service import ImmediateNodeServiceWithoutReply
+from ...node import DuplicateRequestException
+from ..node_service import ImmediateNodeServiceWithoutReply
 from .request_receiver_messages import RequestMessage
 
 

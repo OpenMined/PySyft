@@ -8,12 +8,10 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
-# syft absolute
-from syft import serialize
-
 # relative
 from ..... import deserialize
 from ..... import lib
+from ..... import serialize
 from .....logger import critical
 from .....proto.core.node.common.action.run_class_method_smpc_pb2 import (
     RunClassMethodSMPCAction as RunClassMethodSMPCAction_PB,

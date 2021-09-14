@@ -5,12 +5,10 @@ from typing import Optional
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft absolute
-from syft import deserialize
-from syft import serialize
-
 # relative
 from .. import python as py
+from ... import deserialize
+from ... import serialize
 from ...core.common.serde.serializable import serializable
 from ...core.common.uid import UID
 from ...logger import traceback_and_raise

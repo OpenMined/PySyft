@@ -9,9 +9,6 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 
-# syft absolute
-from syft.core.tensor.passthrough import PassthroughTensor
-
 # relative
 from ...proto.core.tensor.fixed_precision_tensor_pb2 import (
     FixedPrecisionTensor as FixedPrecisionTensor_PB,
@@ -19,6 +16,7 @@ from ...proto.core.tensor.fixed_precision_tensor_pb2 import (
 from ..common.serde.deserialize import _deserialize as deserialize
 from ..common.serde.serializable import serializable
 from ..common.serde.serialize import _serialize as serialize
+from .passthrough import PassthroughTensor
 
 
 @serializable()
@@ -53,9 +51,9 @@ class FixedPrecisionTensor(PassthroughTensor):
         return res
 
     def _object2proto(self) -> FixedPrecisionTensor_PB:
-        # syft absolute
-        from syft.core.tensor.share_tensor import ShareTensor
-        from syft.core.tensor.tensor import Tensor
+        # relative
+        from .share_tensor import ShareTensor
+        from .tensor import Tensor
 
         if isinstance(self.child, Tensor):
             return FixedPrecisionTensor_PB(

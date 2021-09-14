@@ -6,12 +6,12 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # relative
 from ...... import serialize
-from ......core.common.serde.serializable import serializable
 from ......proto.core.node.common.service.resolve_pointer_type_service_pb2 import (
     ResolvePointerTypeMessage as ResolvePointerTypeMessage_PB,
 )
 from .....common.message import ImmediateSyftMessageWithReply
 from .....common.serde.deserialize import _deserialize
+from .....common.serde.serializable import serializable
 from .....common.uid import UID
 from .....io.address import Address
 

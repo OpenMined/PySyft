@@ -6,18 +6,16 @@ from typing import List
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft absolute
-from syft import deserialize
-from syft import serialize
-
 # relative
-from ....core.common.serde.serializable import serializable
+from .... import deserialize
+from .... import serialize
 from ....lib.python import Dict
 from ....proto.core.common.recursive_serde_pb2 import (
     RecursiveSerde as RecursiveSerde_PB,
 )
 from ....util import get_fully_qualified_name
 from ....util import index_syft_by_module_name
+from .serializable import serializable
 
 
 @serializable()

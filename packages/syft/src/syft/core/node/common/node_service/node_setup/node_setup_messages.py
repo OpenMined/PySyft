@@ -7,29 +7,29 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import final
 
-# syft absolute
-from syft import serialize
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.common.serde.deserialize import _deserialize
-from syft.core.common.serde.serializable import serializable
-from syft.core.common.uid import UID
-from syft.core.io.address import Address
-from syft.proto.grid.messages.setup_messages_pb2 import (
+# relative
+from ...... import serialize
+from ......proto.grid.messages.setup_messages_pb2 import (
     CreateInitialSetUpMessage as CreateInitialSetUpMessage_PB,
 )
-from syft.proto.grid.messages.setup_messages_pb2 import (
+from ......proto.grid.messages.setup_messages_pb2 import (
     GetSetUpMessage as GetSetUpMessage_PB,
 )
-from syft.proto.grid.messages.setup_messages_pb2 import (
+from ......proto.grid.messages.setup_messages_pb2 import (
     GetSetUpResponse as GetSetUpResponse_PB,
 )
-from syft.proto.grid.messages.setup_messages_pb2 import (
+from ......proto.grid.messages.setup_messages_pb2 import (
     UpdateSetupMessage as UpdateSetupMessage_PB,
 )
-from syft.proto.grid.messages.setup_messages_pb2 import (
+from ......proto.grid.messages.setup_messages_pb2 import (
     UpdateSetupResponse as UpdateSetupResponse_PB,
 )
+from .....common.message import ImmediateSyftMessageWithReply
+from .....common.message import ImmediateSyftMessageWithoutReply
+from .....common.serde.deserialize import _deserialize
+from .....common.serde.serializable import serializable
+from .....common.uid import UID
+from .....io.address import Address
 
 
 @serializable()
