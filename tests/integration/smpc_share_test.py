@@ -1,4 +1,5 @@
 # stdlib
+import operator
 import time
 
 # third party
@@ -14,18 +15,16 @@ sy.logger.remove()
 PORT = 9081
 
 PARTIES = 2
+clients = []
+for i in range(PARTIES):
+    client = sy.login(
+        email="info@openmined.org", password="changethis", port=(PORT + i)
+    )
+    clients.append(client)
 
 
-@pytest.mark.xfail
 @pytest.mark.integration
 def test_secret_sharing() -> None:
-    clients = []
-    for i in range(PARTIES):
-        client = sy.login(
-            email="info@openmined.org", password="changethis", port=(PORT + i)
-        )
-        clients.append(client)
-
     data = np.array([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]], dtype=np.int64)
     value_secret = clients[0].syft.core.tensor.tensor.Tensor(data)
     mpc_tensor = MPCTensor(secret=value_secret, shape=(2, 5), parties=clients)
@@ -36,27 +35,48 @@ def test_secret_sharing() -> None:
     res = mpc_tensor.reconstruct()
     assert (res == data).all()
 
+
+@pytest.mark.integration
+@pytest.mark.parametrize("op_str", ["add", "sub"])
+def test_mpc_private_private_op(op_str: str) -> None:
+    value_1 = np.array([[1, 2, 3, 4, -5]], dtype=np.int64)
+    value_2 = np.array([42], dtype=np.int64)
+
+    remote_value_1 = clients[0].syft.core.tensor.tensor.Tensor(value_1)
+    remote_value_2 = clients[1].syft.core.tensor.tensor.Tensor(value_2)
+
+    mpc_tensor_1 = MPCTensor(
+        parties=clients, secret=remote_value_1, shape=(1, 5), seed_shares=52
+    )
+
+    mpc_tensor_2 = MPCTensor(
+        parties=clients, secret=remote_value_2, shape=(1,), seed_shares=42
+    )
+
+    op = getattr(operator, op_str)
+
+    res = op(mpc_tensor_1, mpc_tensor_2).reconstruct()
+    expected = op(value_1, value_2)
+
+    assert (res == expected).all()
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize("op_str", ["add", "sub", "mul"])
+def test_mpc_public_private_op(op_str: str) -> None:
+    value_1 = np.array([[1, 2, 3, 4, -5]], dtype=np.int64)
+
+    remote_value_1 = clients[0].syft.core.tensor.tensor.Tensor(value_1)
+
+    mpc_tensor_1 = MPCTensor(
+        parties=clients, secret=remote_value_1, shape=(1, 5), seed_shares=52
+    )
+
     public_value = 42
-    res_add = mpc_tensor + public_value
 
-    # wait for network comms between nodes
-    time.sleep(2)
+    op = getattr(operator, op_str)
 
-    result = res_add.reconstruct()
-    assert ((data + public_value) == result).all()
+    res = op(mpc_tensor_1, public_value).reconstruct()
+    expected = op(value_1, public_value)
 
-    res_sub = mpc_tensor - public_value
-
-    # wait for network comms between nodes
-    time.sleep(2)
-
-    result = res_sub.reconstruct()
-    assert ((data - public_value) == result).all()
-
-    res_mul = mpc_tensor * public_value
-
-    # wait for network comms between nodes
-    time.sleep(2)
-
-    result = res_mul.reconstruct()
-    assert ((data * public_value) == result).all()
+    assert (res == expected).all()
