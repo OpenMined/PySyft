@@ -35,14 +35,9 @@ repos:
     rev: v0.3.0
     hooks:
       - id: absolufy-imports
-        args:
-          [
-            "packages/syft/src/**/*.py",
-            "--never",
-            "--keep-submodules-relative",
-            "--application-directories packages/syft/src",
-          ]
-        exclude: ^(packages/syft/src/syft/proto|packages/syft/examples/duet|packages/grid|packages/hagrid)
+        args: ["--never", "--application-directories=packages/syft/src"]
+        files: ^packages/syft/src
+        exclude: ^(packages/syft/src/syft/tests|packages/syft/src/syft/proto|packages/syft/examples/duet|packages/grid|packages/hagrid)
   - repo: https://github.com/pycqa/isort
     rev: 5.9.2
     hooks:

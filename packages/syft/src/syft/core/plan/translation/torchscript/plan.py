@@ -9,6 +9,7 @@ import syft_proto
 import torch as th
 
 # relative
+from .....lib import create_adp_ast
 from .....logger import traceback_and_raise
 from ....common.serde.serializable import serializable
 
