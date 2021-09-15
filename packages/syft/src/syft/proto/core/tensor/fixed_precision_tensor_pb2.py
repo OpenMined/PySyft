@@ -13,10 +13,14 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-# relative
-from . import share_tensor_pb2 as proto_dot_core_dot_tensor_dot_share__tensor__pb2
-from . import tensor_pb2 as proto_dot_core_dot_tensor_dot_tensor__pb2
-from ...lib.numpy import array_pb2 as proto_dot_lib_dot_numpy_dot_array__pb2
+# syft absolute
+from syft.proto.core.tensor import (
+    share_tensor_pb2 as proto_dot_core_dot_tensor_dot_share__tensor__pb2,
+)
+from syft.proto.core.tensor import (
+    tensor_pb2 as proto_dot_core_dot_tensor_dot_tensor__pb2,
+)
+from syft.proto.lib.numpy import array_pb2 as proto_dot_lib_dot_numpy_dot_array__pb2
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/core/tensor/fixed_precision_tensor.proto",

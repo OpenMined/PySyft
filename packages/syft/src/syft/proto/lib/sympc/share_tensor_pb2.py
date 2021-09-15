@@ -13,9 +13,9 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-# relative
-from ..python import dict_pb2 as proto_dot_lib_dot_python_dot_dict__pb2
-from ..torch import tensor_pb2 as proto_dot_lib_dot_torch_dot_tensor__pb2
+# syft absolute
+from syft.proto.lib.python import dict_pb2 as proto_dot_lib_dot_python_dot_dict__pb2
+from syft.proto.lib.torch import tensor_pb2 as proto_dot_lib_dot_torch_dot_tensor__pb2
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/lib/sympc/share_tensor.proto",

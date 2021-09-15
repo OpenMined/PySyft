@@ -13,12 +13,14 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-# relative
-from . import protocol_pb2 as proto_dot_lib_dot_sympc_dot_protocol__pb2
-from ...core.node.common import (
+# syft absolute
+from syft.proto.core.node.common import (
     client_pb2 as proto_dot_core_dot_node_dot_common_dot_client__pb2,
 )
-from ..python import dict_pb2 as proto_dot_lib_dot_python_dot_dict__pb2
+from syft.proto.lib.python import dict_pb2 as proto_dot_lib_dot_python_dot_dict__pb2
+from syft.proto.lib.sympc import (
+    protocol_pb2 as proto_dot_lib_dot_sympc_dot_protocol__pb2,
+)
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/lib/sympc/session.proto",
