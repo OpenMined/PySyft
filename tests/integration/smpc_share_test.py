@@ -30,7 +30,7 @@ def test_secret_sharing() -> None:
     mpc_tensor = MPCTensor(secret=value_secret, shape=(2, 5), parties=clients)
 
     # wait for network comms between nodes
-    time.sleep(2)
+    time.sleep(3)
 
     res = mpc_tensor.reconstruct()
     assert (res == data).all()
@@ -52,7 +52,7 @@ def test_mpc_private_private_op(op_str: str) -> None:
     mpc_tensor_2 = MPCTensor(
         parties=clients, secret=remote_value_2, shape=(1,), seed_shares=42
     )
-
+    time.sleep(3)
     op = getattr(operator, op_str)
 
     res = op(mpc_tensor_1, mpc_tensor_2).reconstruct()
@@ -71,7 +71,7 @@ def test_mpc_public_private_op(op_str: str) -> None:
     mpc_tensor_1 = MPCTensor(
         parties=clients, secret=remote_value_1, shape=(1, 5), seed_shares=52
     )
-
+    time.sleep(3)
     public_value = 42
 
     op = getattr(operator, op_str)
