@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+import operator
 from typing import Any
 from typing import List
 from typing import Optional
@@ -64,13 +65,14 @@ class TensorPointer(Pointer):
 
         return self_mpc
 
-    def simple_add(self, other: Any) -> TensorPointer:
+    def _apply_tensor_op(self, other: Any, op_str: str) -> Any:
         # we want to get the return type which matches the attr_path_and_name
         # so we ask lib_ast for the return type name that matches out
         # attr_path_and_name and then use that to get the actual pointer klass
         # then set the result to that pointer klass
 
-        attr_path_and_name = "syft.core.tensor.tensor.Tensor.__add__"
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor."
+        attr_path_and_name += "__" + op_str + "__"
 
         result = TensorPointer(client=self.client)
 
@@ -112,17 +114,31 @@ class TensorPointer(Pointer):
 
         result_public_shape = None
 
+        op = getattr(operator, op_str)
+
         if self.public_shape is not None and other.public_shape is not None:
             result_public_shape = (
-                np.empty(self.public_shape) + np.empty(other.public_shape)
+                op(np.empty(self.public_shape), np.empty(other.public_shape))
             ).shape
 
         result.public_shape = result_public_shape
 
         return result
 
-    def __add__(self, other: Any) -> Union[TensorPointer, MPCTensor]:
+    @staticmethod
+    def _apply_op(
+        self: TensorPointer,
+        other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
+        op_str: str,
+    ) -> Tuple[MPCTensor, Union[MPCTensor, int, float, np.ndarray]]:
+        """Performs the operation based on op_str
 
+        Args:
+            other (Union[TensorPointer,MPCTensor,int,float,np.ndarray]): second operand.
+
+        Returns:
+            Tuple[MPCTensor,Union[MPCTensor,int,float,np.ndarray]] : Result of the operation
+        """
         # syft absolute
         from syft import parties as mpc_parties
 
@@ -135,9 +151,6 @@ class TensorPointer(Pointer):
                 secret=other, shape=other.public_shape, parties=mpc_parties
             )
 
-            print(self_mpc.__repr__())
-            print(other_mpc.__repr__())
-
             return self_mpc + other_mpc
 
         elif isinstance(other, MPCTensor):
@@ -145,12 +158,48 @@ class TensorPointer(Pointer):
                 secret=self, shape=self.public_shape, parties=mpc_parties
             )
 
-            print(self_mpc.__repr__())
-            print(other.__repr__())
-
             return self_mpc + other
 
-        return self.simple_add(other=other)
+        return self._apply_tensor_op(other=other, op_str=op_str)
+
+    def __add__(
+        self, other: Union[TensorPointer, MPCTensor, int, float, np.ndarray]
+    ) -> Union[TensorPointer, MPCTensor]:
+        """Apply the "add" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorPointer._apply_op(self, other, "add")
+
+    def __sub__(
+        self, other: Union[TensorPointer, MPCTensor, int, float, np.ndarray]
+    ) -> Union[TensorPointer, MPCTensor]:
+        """Apply the "sub" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorPointer._apply_op(self, other, "sub")
+
+    def __mul__(
+        self, other: Union[TensorPointer, MPCTensor, int, float, np.ndarray]
+    ) -> Union[TensorPointer, MPCTensor]:
+        """Apply the "mul" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorPointer._apply_op(self, other, "mul")
 
 
 @bind_protobuf
