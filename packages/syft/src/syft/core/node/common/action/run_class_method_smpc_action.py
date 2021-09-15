@@ -18,14 +18,14 @@ from .....logger import critical
 from .....proto.core.node.common.action.run_class_method_smpc_pb2 import (
     RunClassMethodSMPCAction as RunClassMethodSMPCAction_PB,
 )
-from ....common.serde.serializable import bind_protobuf
+from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
 
 
-@bind_protobuf
+@serializable()
 class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
     """
     When executing a RunClassMethodSMPCAction, a list of SMPCActionMessages is sent to the
@@ -77,9 +77,11 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
 
     def __repr__(self) -> str:
         method_name = self.path.split(".")[-1]
-        self_name = self._self.class_name
-        arg_names = ",".join([a.class_name for a in self.args])
-        kwargs_names = ",".join([f"{k}={v.class_name}" for k, v in self.kwargs.items()])
+        self_name = self._self.__class__.__name__
+        arg_names = ",".join([a.__class__.__name__ for a in self.args])
+        kwargs_names = ",".join(
+            [f"{k}={v.__class__.__name__}" for k, v in self.kwargs.items()]
+        )
         return f"RunClassMethodSMPCAction {self_name}.{method_name}({arg_names}, {kwargs_names})"
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:

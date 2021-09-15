@@ -13,14 +13,13 @@ from ... import serialize
 from ...proto.core.store.dataset_pb2 import Dataset as Dataset_PB
 from ...util import get_fully_qualified_name
 from ..common.serde.deserialize import _deserialize
-from ..common.serde.serializable import Serializable
-from ..common.serde.serializable import bind_protobuf
+from ..common.serde.serializable import serializable
 from ..common.uid import UID
 from .storeable_object import StorableObject
 
 
-@bind_protobuf
-class Dataset(Serializable):
+@serializable()
+class Dataset:
     """
     Dataset is a wrapper over a collection of Serializable objects.
 
@@ -142,7 +141,7 @@ class Dataset(Serializable):
         return proto
 
     @staticmethod
-    def _proto2object(proto: Dataset_PB) -> Serializable:
+    def _proto2object(proto: Dataset_PB) -> "Dataset":
 
         # Step 1: deserialize the ID
         id = _deserialize(blob=proto.id)

@@ -10,7 +10,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from ... import deserialize
 from ... import serialize
 from ...core.common import UID
-from ...core.common.serde.serializable import bind_protobuf
+from ...core.common.serde.serializable import serializable
 from ...proto.lib.python.tuple_pb2 import Tuple as Tuple_PB
 from .iterator import Iterator
 from .primitive_factory import PrimitiveFactory
@@ -26,7 +26,7 @@ class TupleIterator(Iterator):
     pass
 
 
-@bind_protobuf
+@serializable()
 class Tuple(tuple, PyPrimitive):
     def __init__(self, *args: Any):
         self._id = UID()

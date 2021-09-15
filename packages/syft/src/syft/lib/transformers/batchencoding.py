@@ -2,7 +2,7 @@
 from transformers.tokenization_utils_base import BatchEncoding
 
 # relative
-from ...generate_wrapper import GenerateWrapper
+from ...core.common.serde.serializable import serializable
 from ...lib.python.dict import Dict
 from ...lib.python.primitive_factory import PrimitiveFactory
 from ...proto.lib.transformers.batch_encoding_pb2 import (
@@ -22,7 +22,7 @@ def proto2object(proto: BatchEncoding_PB) -> BatchEncoding:
     return BatchEncoding(data=obj_dict.data)
 
 
-GenerateWrapper(
+serializable(generate_wrapper=True)(
     wrapped_type=BatchEncoding,
     import_path="transformers.tokenization_utils_base.BatchEncoding",
     protobuf_scheme=BatchEncoding_PB,

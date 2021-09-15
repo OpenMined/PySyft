@@ -7,7 +7,7 @@ from typing_extensions import final
 
 # relative
 from ...... import serialize
-from ......core.common.serde.serializable import bind_protobuf
+from ......core.common.serde.serializable import serializable
 from ......proto.core.node.common.service.get_repr_service_pb2 import (
     GetReprMessage as GetReprMessage_PB,
 )
@@ -21,7 +21,7 @@ from .....common.uid import UID
 from .....io.address import Address
 
 
-@bind_protobuf
+@serializable()
 @final
 class GetReprMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -56,7 +56,7 @@ class GetReprMessage(ImmediateSyftMessageWithReply):
         return GetReprMessage_PB
 
 
-@bind_protobuf
+@serializable()
 class GetReprReplyMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,

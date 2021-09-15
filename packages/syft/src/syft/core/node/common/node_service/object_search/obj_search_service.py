@@ -16,7 +16,7 @@ from typing_extensions import final
 
 # relative
 from ...... import serialize
-from ......core.common.serde.serializable import bind_protobuf
+from ......core.common.serde.serializable import serializable
 from ......logger import error
 from ......proto.core.node.common.service.object_search_message_pb2 import (
     ObjectSearchMessage as ObjectSearchMessage_PB,
@@ -37,7 +37,7 @@ from ....abstract.node import AbstractNode
 from ..node_service import ImmediateNodeServiceWithReply
 
 
-@bind_protobuf
+@serializable()
 @final
 class ObjectSearchMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -111,7 +111,7 @@ class ObjectSearchMessage(ImmediateSyftMessageWithReply):
         return ObjectSearchMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
     def __init__(

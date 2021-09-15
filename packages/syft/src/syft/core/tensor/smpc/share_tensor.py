@@ -20,8 +20,7 @@ import torch
 
 # syft absolute
 from syft.core.common.serde.deserialize import _deserialize as deserialize
-from syft.core.common.serde.serializable import Serializable
-from syft.core.common.serde.serializable import bind_protobuf
+from syft.core.common.serde.serializable import serializable
 from syft.core.common.serde.serialize import _serialize as serialize
 from syft.core.tensor.passthrough import PassthroughTensor
 from syft.proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB
@@ -45,8 +44,8 @@ INPLACE_OPS = {
 }
 
 
-@bind_protobuf
-class ShareTensor(PassthroughTensor, Serializable):
+@serializable()
+class ShareTensor(PassthroughTensor):
     def __init__(
         self,
         rank: int,

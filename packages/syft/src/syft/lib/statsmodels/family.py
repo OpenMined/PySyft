@@ -6,7 +6,7 @@ from typing import Type
 import statsmodels
 
 # relative
-from ...generate_wrapper import GenerateWrapper
+from ...core.common.serde.serializable import serializable
 from ...lib.python.primitive_factory import PrimitiveFactory
 from ...lib.python.string import String
 from ...proto.lib.statsmodels.family_pb2 import FamilyProto
@@ -63,7 +63,7 @@ def proto2object(proto: FamilyProto) -> Type[statsmodels.genmod.families.family.
 
 
 for fam in FAMILY_2_STR.keys():
-    GenerateWrapper(
+    serializable(generate_wrapper=True)(
         wrapped_type=fam,
         import_path="statsmodels.genmod.families.family" + fam.__class__.__name__,
         protobuf_scheme=FamilyProto,
