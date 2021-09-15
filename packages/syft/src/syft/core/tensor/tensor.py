@@ -142,6 +142,8 @@ class TensorPointer(Pointer):
         # syft absolute
         from syft import parties as mpc_parties
 
+        op = getattr(operator, op_str)
+
         if isinstance(other, TensorPointer) and self.client != other.client:
 
             self_mpc = MPCTensor(
@@ -151,14 +153,14 @@ class TensorPointer(Pointer):
                 secret=other, shape=other.public_shape, parties=mpc_parties
             )
 
-            return self_mpc + other_mpc
+            return op(self_mpc, other_mpc)
 
         elif isinstance(other, MPCTensor):
             self_mpc = MPCTensor(
                 secret=self, shape=self.public_shape, parties=mpc_parties
             )
 
-            return self_mpc + other
+            return op(self_mpc, other)
 
         return self._apply_tensor_op(other=other, op_str=op_str)
 
