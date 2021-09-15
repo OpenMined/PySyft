@@ -7,9 +7,10 @@ from typing import Set as TypeSet
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
+# syft absolute
+import syft as sy
+
 # relative
-from ... import deserialize
-from ... import serialize
 from ...core.common.serde.serializable import serializable
 from ...core.common.uid import UID
 from ...proto.lib.python.set_pb2 import Set as Set_PB
@@ -171,16 +172,17 @@ class Set(set, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     def _object2proto(self) -> Set_PB:
-        id_ = serialize(obj=self.id)
+        id_ = sy.serialize(obj=self.id)
         downcasted = [downcast(value=element) for element in self]
-        data = [serialize(obj=element, to_bytes=True) for element in downcasted]
+        data = [sy.serialize(obj=element, to_bytes=True) for element in downcasted]
         return Set_PB(id=id_, data=data)
 
     @staticmethod
     def _proto2object(proto: Set_PB) -> "Set":
-        id_: UID = deserialize(blob=proto.id)
+        id_: UID = sy.deserialize(blob=proto.id)
         value = [
-            upcast(deserialize(blob=element, from_bytes=True)) for element in proto.data
+            upcast(sy.deserialize(blob=element, from_bytes=True))
+            for element in proto.data
         ]
         new_list = Set(value)
         new_list._id = id_

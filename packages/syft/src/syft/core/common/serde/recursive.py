@@ -7,17 +7,16 @@ from typing import List
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft absolute
-from syft import deserialize
-from syft import serialize
+import syft as sy
 
 # relative
-from ....core.common.serde.serializable import serializable
 from ....lib.python import Dict
 from ....proto.core.common.recursive_serde_pb2 import (
     RecursiveSerde as RecursiveSerde_PB,
 )
 from ....util import get_fully_qualified_name
 from ....util import index_syft_by_module_name
+from .serializable import serializable
 
 
 @serializable()
@@ -49,14 +48,14 @@ class RecursiveSerde:
             attrs = self.__dict__  # type: ignore
 
         return RecursiveSerde_PB(
-            data=serialize(Dict(attrs), to_bytes=True),
+            data=sy.serialize(Dict(attrs), to_bytes=True),
             fully_qualified_name=get_fully_qualified_name(self),
         )
 
     @staticmethod
     def _proto2object(proto: RecursiveSerde_PB) -> "RecursiveSerde":
 
-        attrs = dict(deserialize(proto.data, from_bytes=True))
+        attrs = dict(sy.deserialize(proto.data, from_bytes=True))
 
         class_type = index_syft_by_module_name(proto.fully_qualified_name)
 

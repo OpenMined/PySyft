@@ -5,9 +5,10 @@ from typing import Optional
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
+# syft absolute
+import syft as sy
+
 # relative
-from ... import deserialize
-from ... import serialize
 from ...core.common import UID
 from ...core.common.serde.serializable import serializable
 from ...proto.lib.python.none_pb2 import SyNone as None_PB
@@ -54,13 +55,13 @@ class _SyNone(PyPrimitive):
 
     def _object2proto(self) -> None_PB:
         none_pb = None_PB()
-        none_pb.id.CopyFrom(serialize(obj=self.id))
+        none_pb.id.CopyFrom(sy.serialize(obj=self.id))
         none_pb.temporary_box = self.temporary_box
         return none_pb
 
     @staticmethod
     def _proto2object(proto: None_PB) -> "_SyNone":
-        none_id: UID = deserialize(blob=proto.id)
+        none_id: UID = sy.deserialize(blob=proto.id)
 
         de_none = _SyNone()
         de_none._id = none_id

@@ -1,11 +1,9 @@
 # stdlib
 from typing import Any
 
-# syft absolute
-from syft.core.tensor.manager import TensorChainManager
-
 # relative
 from .fixed_precision_tensor import FixedPrecisionTensor
+from .manager import TensorChainManager
 from .types import SupportedChainType
 
 

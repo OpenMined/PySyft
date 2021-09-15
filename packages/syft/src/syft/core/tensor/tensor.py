@@ -15,8 +15,8 @@ import torch as th
 # relative
 from ... import lib
 from ...ast.klass import pointerize_args_and_kwargs
-from ...core.common.serde.recursive import RecursiveSerde
 from ...util import inherit_tags
+from ..common.serde.recursive import RecursiveSerde
 from ..common.serde.serializable import serializable
 from ..common.uid import UID
 from ..node.abstract.node import AbstractNodeClient
@@ -57,11 +57,8 @@ class TensorPointer(Pointer):
         self.public_shape = public_shape
 
     def share(self, *parties: Tuple[AbstractNodeClient, ...]) -> MPCTensor:
-
-        parties = tuple(list(parties) + [self.client])
-
-        self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=parties)
-
+        all_parties = list(parties) + [self.client]
+        self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=all_parties)
         return self_mpc
 
     def simple_add(self, other: Any) -> TensorPointer:

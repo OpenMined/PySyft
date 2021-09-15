@@ -15,13 +15,13 @@ import numpy as np
 import numpy.typing as npt
 
 # relative
-from ....core.common.serde.recursive import RecursiveSerde
 from ....proto.core.tensor.single_entity_phi_tensor_pb2 import (
     TensorWrappedSingleEntityPhiTensorPointer as TensorWrappedSingleEntityPhiTensorPointer_PB,
 )
 from ...adp.entity import Entity
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...common.serde.deserialize import _deserialize as deserialize
+from ...common.serde.recursive import RecursiveSerde
 from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
@@ -95,10 +95,8 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
         self.public_shape = public_shape
 
     def share(self, *parties: TypeTuple[AbstractNodeClient, ...]) -> MPCTensor:
-
-        parties = tuple(list(parties) + [self.client])
-
-        self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=parties)
+        all_parties = list(parties) + [self.client]
+        self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=all_parties)
 
         return self_mpc
 

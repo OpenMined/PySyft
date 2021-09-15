@@ -7,7 +7,7 @@ from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
-from ...core.node.abstract.node import AbstractNodeClient
+from ..node.abstract.node import AbstractNodeClient
 from .autodp.single_entity_phi import SingleEntityPhiTensor
 from .fixed_precision_tensor import FixedPrecisionTensor
 from .smpc.share_tensor import ShareTensor

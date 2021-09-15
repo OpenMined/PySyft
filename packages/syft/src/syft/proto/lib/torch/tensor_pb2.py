@@ -13,8 +13,8 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-# syft absolute
-from syft.proto.lib.torch import device_pb2 as proto_dot_lib_dot_torch_dot_device__pb2
+# relative
+from . import device_pb2 as proto_dot_lib_dot_torch_dot_device__pb2
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/lib/torch/tensor.proto",

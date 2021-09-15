@@ -9,16 +9,14 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 
-# syft absolute
-from syft.core.tensor.passthrough import PassthroughTensor
-
 # relative
 from ...proto.core.tensor.fixed_precision_tensor_pb2 import (
     FixedPrecisionTensor as FixedPrecisionTensor_PB,
-)
+)  # type: ignore
 from ..common.serde.deserialize import _deserialize as deserialize
 from ..common.serde.serializable import serializable
 from ..common.serde.serialize import _serialize as serialize
+from .passthrough import PassthroughTensor  # type: ignore
 
 
 @serializable()
@@ -42,20 +40,20 @@ class FixedPrecisionTensor(PassthroughTensor):
         value = dividend.astype(np.float32) + remainder.astype(np.float32) / self._scale
         return value
 
-    def __add__(self, other: Any) -> "FixedPrecisionTensor":
+    def __add__(self, other: Any) -> FixedPrecisionTensor:
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)
         res.child = self.child + other.child
         return res
 
-    def __sub__(self, other: Any) -> "FixedPrecisionTensor":
+    def __sub__(self, other: Any) -> FixedPrecisionTensor:
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)
         res.child = self.child - other.child
         return res
 
     def _object2proto(self) -> FixedPrecisionTensor_PB:
-        # syft absolute
-        from syft.core.tensor.share_tensor import ShareTensor
-        from syft.core.tensor.tensor import Tensor
+        # relative
+        from .share_tensor import ShareTensor
+        from .tensor import Tensor
 
         if isinstance(self.child, Tensor):
             return FixedPrecisionTensor_PB(
@@ -71,7 +69,7 @@ class FixedPrecisionTensor(PassthroughTensor):
         )
 
     @staticmethod
-    def _proto2object(proto: FixedPrecisionTensor_PB) -> "FixedPrecisionTensor":
+    def _proto2object(proto: FixedPrecisionTensor_PB) -> FixedPrecisionTensor:
         res = FixedPrecisionTensor(base=proto.base, precision=proto.precision)
 
         # Put it manually since we send it already encoded

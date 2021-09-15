@@ -12,6 +12,7 @@ from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...common.serde.recursive import RecursiveSerde
 from ...common.uid import UID
 from ..passthrough import PassthroughTensor  # type: ignore
+from ..smpc.share_tensor import ShareTensor
 from .adp_tensor import ADPTensor
 from .intermediate_gamma import IntermediateGammaTensor
 
@@ -43,6 +44,8 @@ class InitialGammaTensor(IntermediateGammaTensor, RecursiveSerde, ADPTensor):
 
     __serde_overrides__ = {"entities": [numpy2list, list2numpy]}
 
+    sharetensor_values: Optional[ShareTensor]
+
     def __init__(
         self,
         values: Union[IntermediateGammaTensor, PassthroughTensor, np.ndarray],
@@ -52,9 +55,6 @@ class InitialGammaTensor(IntermediateGammaTensor, RecursiveSerde, ADPTensor):
         scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None,
     ) -> None:
         self.uid = UID()
-
-        # syft absolute
-        from syft.core.tensor.smpc.share_tensor import ShareTensor
 
         if isinstance(values, ShareTensor):
             self.sharetensor_values = values

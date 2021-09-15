@@ -12,13 +12,14 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 from typing_extensions import final
 
+# syft absolute
+import syft as sy
+
 # relative
-from ...... import serialize
 from ......proto.core.node.common.service.object_search_permission_update_message_pb2 import (
     ObjectSearchPermissionUpdateMessage as ObjectSearchPermissionUpdateMessage_PB,
 )
 from .....common.message import ImmediateSyftMessageWithoutReply
-from .....common.serde.deserialize import _deserialize
 from .....common.serde.serializable import serializable
 from .....common.uid import UID
 from .....io.address import Address
@@ -57,12 +58,12 @@ class ObjectSearchPermissionUpdateMessage(ImmediateSyftMessageWithoutReply):
             object.
         """
         return ObjectSearchPermissionUpdateMessage_PB(
-            msg_id=serialize(self.id),
-            address=serialize(self.address),
+            msg_id=sy.serialize(self.id),
+            address=sy.serialize(self.address),
             target_verify_key=bytes(self.target_verify_key)
             if self.target_verify_key
             else None,
-            target_object_id=serialize(self.target_object_id),
+            target_object_id=sy.serialize(self.target_object_id),
             add_instead_of_remove=self.add_instead_of_remove,
         )
 
@@ -84,12 +85,12 @@ class ObjectSearchPermissionUpdateMessage(ImmediateSyftMessageWithoutReply):
         """
 
         return ObjectSearchPermissionUpdateMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            msg_id=sy.deserialize(blob=proto.msg_id),
+            address=sy.deserialize(blob=proto.address),
             target_verify_key=VerifyKey(proto.target_verify_key)
             if proto.target_verify_key
             else None,
-            target_object_id=_deserialize(blob=proto.target_object_id),
+            target_object_id=sy.deserialize(blob=proto.target_object_id),
             add_instead_of_remove=proto.add_instead_of_remove,
         )
 

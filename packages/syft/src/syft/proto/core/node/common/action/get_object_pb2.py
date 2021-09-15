@@ -13,12 +13,12 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-# syft absolute
-from syft.proto.core.common import (
+# relative
+from ....common import (
     common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
 )
-from syft.proto.core.io import address_pb2 as proto_dot_core_dot_io_dot_address__pb2
-from syft.proto.core.store import (
+from ....io import address_pb2 as proto_dot_core_dot_io_dot_address__pb2
+from ....store import (
     store_object_pb2 as proto_dot_core_dot_store_dot_store__object__pb2,
 )
 
