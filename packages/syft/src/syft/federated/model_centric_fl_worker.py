@@ -10,7 +10,7 @@ from typing import Union
 
 # third party
 import requests
-from syft_proto.execution.v1.plan_pb2 import Plan as PlanTorchscriptPB
+import syft_proto
 
 # relative
 from ..core.plan import Plan
@@ -174,7 +174,7 @@ class ModelCentricFLWorker(ModelCentricFLBase):
         serialized_plan = self._send_http_req("GET", "/model-centric/get-plan", params)
         if receive_operations_as == ModelCentricFLWorker.PLAN_TYPE_TORCHSCRIPT:
             # TODO migrate to syft-core protobufs
-            pb = PlanTorchscriptPB()
+            pb = syft_proto.execution.v1.plan_pb2.PlanTorchscriptPB()
             pb.ParseFromString(serialized_plan)
             return PlanTorchscript._proto2object(pb)
         else:

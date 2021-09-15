@@ -1,3 +1,6 @@
+# future
+from __future__ import annotations
+
 # stdlib
 from typing import Optional
 from typing import Set
@@ -6,7 +9,7 @@ from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from syft_proto.execution.v1.placeholder_pb2 import Placeholder as PlaceholderPB
+import syft_proto
 import torch as th
 
 # relative
@@ -44,7 +47,7 @@ class PlaceHolder:
             tuple(shape) if shape is not None else None
         )
         self.expected_dtype = expected_dtype
-        self.child: Optional[Union[th.Tensor, th.nn.Parameter, "PlaceHolder"]] = None
+        self.child: Optional[Union[th.Tensor, th.nn.Parameter, Placeholder]] = None
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
@@ -63,9 +66,9 @@ class PlaceHolder:
         :rtype: GeneratedProtocolMessageType
 
         """
-        return PlaceholderPB
+        return syft_proto.execution.v1.placeholder_pb2.Placeholder
 
-    def _object2proto(self) -> PlaceholderPB:
+    def _object2proto(self) -> syft_proto.execution.v1.placeholder_pb2.Placeholder:
         """Returns a protobuf serialization of self.
 
         As a requirement of all objects which inherit from Serializable,
@@ -81,7 +84,7 @@ class PlaceHolder:
             object.
         """
 
-        protobuf_placeholder = PlaceholderPB()
+        protobuf_placeholder = syft_proto.execution.v1.placeholder_pb2.Placeholder()
         set_protobuf_id(protobuf_placeholder.id, self.id.value)
         protobuf_placeholder.tags.extend(self.tags)
 
@@ -94,7 +97,9 @@ class PlaceHolder:
         return protobuf_placeholder
 
     @staticmethod
-    def _proto2object(proto: PlaceholderPB) -> "PlaceHolder":
+    def _proto2object(
+        proto: syft_proto.execution.v1.placeholder_pb2.Placeholder,
+    ) -> Placeholder:
         """Creates a ObjectWithID from a protobuf
 
         As a requirement of all objects which inherit from Serializable,
@@ -121,7 +126,7 @@ class PlaceHolder:
             id=tensor_id, tags=tags, description=description, shape=expected_shape
         )
 
-    def instantiate(self, tensor: Union[th.Tensor, th.nn.Parameter]) -> "PlaceHolder":
+    def instantiate(self, tensor: Union[th.Tensor, th.nn.Parameter]) -> Placeholder:
         """
         Add a tensor as a child attribute. All operations on the placeholder will be also
         executed on this child tensor.

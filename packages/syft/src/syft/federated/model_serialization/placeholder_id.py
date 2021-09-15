@@ -3,7 +3,7 @@ from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from syft_proto.execution.v1.placeholder_id_pb2 import PlaceholderId as PlaceholderIdPB
+import syft_proto
 
 # relative
 from ...core.common.serde.serializable import serializable
@@ -38,9 +38,9 @@ class PlaceholderId:
         :rtype: GeneratedProtocolMessageType
 
         """
-        return PlaceholderIdPB
+        return syft_proto.execution.v1.placeholder_id_pb2.PlaceholderId
 
-    def _object2proto(self) -> PlaceholderIdPB:
+    def _object2proto(self) -> syft_proto.execution.v1.placeholder_id_pb2.PlaceholderId:
         """Returns a protobuf serialization of self.
 
         As a requirement of all objects which inherit from Serializable,
@@ -55,12 +55,14 @@ class PlaceholderId:
             the other public serialization methods if you wish to serialize an
             object.
         """
-        protobuf_id = PlaceholderIdPB()
+        protobuf_id = syft_proto.execution.v1.placeholder_id_pb2.PlaceholderId()
         set_protobuf_id(protobuf_id.id, self.value)
         return protobuf_id
 
     @staticmethod
-    def _proto2object(proto: PlaceholderIdPB) -> "PlaceholderId":
+    def _proto2object(
+        proto: syft_proto.execution.v1.placeholder_id_pb2.PlaceholderId,
+    ) -> "PlaceholderId":
         """Creates a ObjectWithID from a protobuf
 
         As a requirement of all objects which inherit from Serializable,

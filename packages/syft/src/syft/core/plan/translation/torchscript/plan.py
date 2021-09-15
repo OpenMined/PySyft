@@ -5,7 +5,7 @@ from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from syft_proto.execution.v1.plan_pb2 import Plan as Plan_PB
+import syft_proto
 import torch as th
 
 # relative
@@ -41,7 +41,7 @@ class PlanTorchscript:
             The type of protobuf object which corresponds to this class.
 
         """
-        return Plan_PB
+        return syft_proto.execution.v1.plan_pb2.Plan
 
     def __call__(self, *args: Any) -> Any:
         if self.torchscript:
@@ -49,7 +49,7 @@ class PlanTorchscript:
         else:
             traceback_and_raise("No torchscript")
 
-    def _object2proto(self) -> Plan_PB:
+    def _object2proto(self) -> syft_proto.execution.v1.plan_pb2.Plan:
         """
         Returns a protobuf serialization of self.
 
@@ -62,10 +62,12 @@ class PlanTorchscript:
 
         """
         bin = self.torchscript.save_to_buffer() if self.torchscript else None
-        return Plan_PB(torchscript=bin)
+        return syft_proto.execution.v1.plan_pb2.Plan(torchscript=bin)
 
     @staticmethod
-    def _proto2object(proto: Plan_PB) -> "PlanTorchscript":
+    def _proto2object(
+        proto: syft_proto.execution.v1.plan_pb2.Plan,
+    ) -> "PlanTorchscript":
         """Creates a ObjectWithID from a protobuf
 
         As a requirement of all objects which inherit from Serializable,
