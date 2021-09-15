@@ -40,8 +40,20 @@ class IntermediateGammaTensor(PassthroughTensor, RecursiveSerde, ADPTensor):
         scalar_manager: VirtualMachinePrivateScalarManager = VirtualMachinePrivateScalarManager(),
     ) -> None:
         super().__init__(term_tensor)
+
+        # EXPLAIN A: if our polynomail is y = mx + b
+        # EXPLAIN B: if self.child = 5x10
+
+        # EXPLAIN A: this is "x"
+        # EXPLAIN B: this is a 5x10x1
         self.term_tensor = term_tensor
+
+        # EXPLAIN A: this is "m"
+        # EXPLAIN B: this is a 5x10x1
         self.coeff_tensor = coeff_tensor
+
+        # EXPLAIN A: this is "b"
+        # EXPLAIN B: this is a 5x10
         self.bias_tensor = bias_tensor
         self.scalar_manager = scalar_manager
 
