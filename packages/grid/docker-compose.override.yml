@@ -145,21 +145,21 @@ services:
       - traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}
       - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-http.rule=PathPrefix(`/`)
       - traefik.http.services.${STACK_NAME?Variable not set}-frontend.loadbalancer.server.port=80
-        #docker-host:
-        #depends_on:
-        #- proxy
-        #- pgadmin
-        #- db
-        #- flower
-        #- queue
-        #- backend
-        #- backend_stream
-        #- celeryworker
-        #- frontend
-        #image: qoomon/docker-host
-        #cap_add: ["NET_ADMIN", "NET_RAW"]
-        #mem_limit: 8M
-        #restart: always
+  docker-host:
+    depends_on:
+    - proxy
+    - pgadmin
+    - db
+    - flower
+    - queue
+    - backend
+    - backend_stream
+    - celeryworker
+    - frontend
+    image: qoomon/docker-host
+    cap_add: ["NET_ADMIN", "NET_RAW"]
+    mem_limit: 8M
+    restart: always
 
 networks:
   traefik-public:

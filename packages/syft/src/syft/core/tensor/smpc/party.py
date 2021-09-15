@@ -18,15 +18,13 @@ class Party(Serializable):
         self.port = port
 
     def _object2proto(self) -> Party_PB:
-        return Party_PB(
-            url=self.url, email=self.email, passwd=self.passwd, port=self.port
-        )
+        return Party_PB(url=self.url, port=self.port)
 
     @staticmethod
     def _proto2object(proto: Party_PB) -> "Party":
-        res = Party(
-            url=proto.url, email=proto.email, passwd=proto.passwd, port=proto.port
-        )
+        # TODO: If on the same machine use docker-host - if not real address
+        # How to distinguish? (if 127.0.0.1 and localhost we consider using docker-host?)
+        res = Party(url="docker-host", email="", passwd="", port=proto.port)
         return res
 
     @staticmethod
