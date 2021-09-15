@@ -48,10 +48,12 @@ def test_mpc_private_private_op(op_str: str) -> None:
     mpc_tensor_1 = MPCTensor(parties=clients, secret=remote_value_1, shape=(1, 5))
 
     mpc_tensor_2 = MPCTensor(parties=clients, secret=remote_value_2, shape=(1,))
-    time.sleep(2)
+
     op = getattr(operator, op_str)
 
-    res = op(mpc_tensor_1, mpc_tensor_2).reconstruct()
+    res = op(mpc_tensor_1, mpc_tensor_2)
+    time.sleep(2)
+    res = res.reconstruct()
     expected = op(value_1, value_2)
 
     assert (res == expected).all()
@@ -65,12 +67,14 @@ def test_mpc_public_private_op(op_str: str) -> None:
     remote_value_1 = clients[0].syft.core.tensor.tensor.Tensor(value_1)
 
     mpc_tensor_1 = MPCTensor(parties=clients, secret=remote_value_1, shape=(1, 5))
-    time.sleep(2)
+
     public_value = 42
 
     op = getattr(operator, op_str)
 
-    res = op(mpc_tensor_1, public_value).reconstruct()
+    res = op(mpc_tensor_1, public_value)
+    time.sleep(2)
+    res = res.reconstruct()
     expected = op(value_1, public_value)
 
     assert (res == expected).all()
