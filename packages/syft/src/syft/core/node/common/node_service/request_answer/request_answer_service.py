@@ -8,7 +8,7 @@ from nacl.signing import VerifyKey
 # relative
 from ......logger import traceback_and_raise
 from ....abstract.node import AbstractNode
-from ....common.node_service.node_service import ImmediateNodeServiceWithReply
+from ..node_service import ImmediateNodeServiceWithReply
 from .request_answer_messages import RequestAnswerMessage
 from .request_answer_messages import RequestAnswerResponse
 

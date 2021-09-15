@@ -8,30 +8,18 @@ from typing import Union
 # third party
 import pandas as pd
 
-# syft absolute
-from syft import deserialize
-from syft.core.common import UID
-from syft.core.node.abstract.node import AbstractNodeClient
-from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
-    CreateDatasetMessage,
-)
-from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
-    DeleteDatasetMessage,
-)
-from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
-    GetDatasetMessage,
-)
-from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
-    GetDatasetsMessage,
-)
-from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
-    UpdateDatasetMessage,
-)
-
 # relative
-from ....node.domain.enums import RequestAPIFields
-from ....node.domain.enums import ResponseObjectEnum
-from ...common.client_manager.request_api import RequestAPI
+from ..... import deserialize
+from ....common import UID
+from ...abstract.node import AbstractNodeClient
+from ...domain.enums import RequestAPIFields
+from ...domain.enums import ResponseObjectEnum
+from ..node_service.dataset_manager.dataset_manager_messages import CreateDatasetMessage
+from ..node_service.dataset_manager.dataset_manager_messages import DeleteDatasetMessage
+from ..node_service.dataset_manager.dataset_manager_messages import GetDatasetMessage
+from ..node_service.dataset_manager.dataset_manager_messages import GetDatasetsMessage
+from ..node_service.dataset_manager.dataset_manager_messages import UpdateDatasetMessage
+from .request_api import RequestAPI
 
 initial_boilerplate = """<style>
         #myInput {
@@ -299,7 +287,7 @@ class Dataset:
         keys = list()
         for d in self.data:
             if d["name"] == key:
-                return self.client.store[d["id"].replace("-", "")]
+                return self.client.store[d["id"].replace("-", "")]  # type: ignore
             keys.append(d["name"])
 
         raise KeyError(

@@ -6,9 +6,10 @@ from typing import Optional
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
+# syft absolute
+import syft as sy
+
 # relative
-from ... import deserialize
-from ... import serialize
 from ...core.common import UID
 from ...core.common.serde.serializable import serializable
 from ...proto.lib.python.bool_pb2 import Bool as Bool_PB
@@ -260,11 +261,11 @@ class Bool(int, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=self.value.real)
 
     def _object2proto(self) -> Bool_PB:
-        return Bool_PB(id=serialize(obj=self.id), data=self)
+        return Bool_PB(id=sy.serialize(obj=self.id), data=self)
 
     @staticmethod
     def _proto2object(proto: Bool_PB) -> "Bool":
-        return Bool(id=deserialize(blob=proto.id), value=proto.data)
+        return Bool(id=sy.deserialize(blob=proto.id), value=proto.data)
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:

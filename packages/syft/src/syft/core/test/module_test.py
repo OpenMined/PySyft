@@ -2,8 +2,8 @@
 from enum import Enum
 from typing import Any
 
-# syft absolute
-from syft.core.common.serde.serializable import serializable
+# relative
+from ..common.serde.serializable import serializable
 
 global_value: int = 5
 

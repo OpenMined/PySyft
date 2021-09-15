@@ -8,14 +8,10 @@ from typing import Optional
 from nacl.signing import VerifyKey
 from sqlalchemy.engine import Engine
 
-# syft absolute
-from syft.core.common.uid import UID
-from syft.core.node.common.node_service.request_receiver.request_receiver_messages import (
-    RequestStatus,
-)
-
 # relative
+from ....common.uid import UID
 from ..exceptions import RequestError
+from ..node_service.request_receiver.request_receiver_messages import RequestStatus
 from ..node_table.request import Request
 from .database_manager import DatabaseManager
 
@@ -44,7 +40,7 @@ class RequestManager(DatabaseManager):
         verify_key: Optional[VerifyKey] = None,
         tags: Optional[List[str]] = None,
         object_type: str = "",
-    ) -> None:
+    ) -> Request:
         date = datetime.now()
 
         return self.register(
@@ -60,7 +56,7 @@ class RequestManager(DatabaseManager):
             object_type=object_type,
         )
 
-    def status(self, request_id: int) -> RequestStatus:
+    def status(self, request_id: str) -> RequestStatus:
         _req = self.first(id=request_id)
         if _req.status == "pending":
             return RequestStatus.Pending

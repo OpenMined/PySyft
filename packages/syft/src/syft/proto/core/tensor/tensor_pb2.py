@@ -13,9 +13,9 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-# syft absolute
-from syft.proto.core.adp import entity_pb2 as proto_dot_core_dot_adp_dot_entity__pb2
-from syft.proto.lib.numpy import array_pb2 as proto_dot_lib_dot_numpy_dot_array__pb2
+# relative
+from ...lib.numpy import array_pb2 as proto_dot_lib_dot_numpy_dot_array__pb2
+from ..adp import entity_pb2 as proto_dot_core_dot_adp_dot_entity__pb2
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/core/tensor/tensor.proto",

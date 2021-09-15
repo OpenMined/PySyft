@@ -12,8 +12,8 @@ from typing import Union
 
 # relative
 from .. import ast
-from ..ast.callable import Callable
 from ..logger import traceback_and_raise
+from .callable import Callable
 
 
 def is_static_method(host_object, attr) -> bool:  # type: ignore

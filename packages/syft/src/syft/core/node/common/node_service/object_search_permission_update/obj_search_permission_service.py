@@ -8,7 +8,7 @@ from nacl.signing import VerifyKey
 # relative
 from .....common.group import VERIFYALL
 from ....abstract.node import AbstractNode
-from ....common.node_service.auth import AuthorizationException
+from ..auth import AuthorizationException
 from ..auth import service_auth
 from ..node_service import ImmediateNodeServiceWithoutReply
 from .obj_search_permission_messages import ObjectSearchPermissionUpdateMessage

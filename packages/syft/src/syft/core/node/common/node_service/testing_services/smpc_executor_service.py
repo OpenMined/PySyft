@@ -12,9 +12,9 @@ from ...... import logger
 from ......logger import traceback_and_raise
 from .....store.storeable_object import StorableObject
 from ....abstract.node import AbstractNode
-from ....common.action.smpc_action_message import SMPCActionMessage
-from ....common.action.smpc_action_message import _MAP_ACTION_TO_FUNCTION
-from ....common.node_service.node_service import ImmediateNodeServiceWithoutReply
+from ...action.smpc_action_message import SMPCActionMessage
+from ...action.smpc_action_message import _MAP_ACTION_TO_FUNCTION
+from ..node_service import ImmediateNodeServiceWithoutReply
 
 
 class SMPCExecutorService(ImmediateNodeServiceWithoutReply):

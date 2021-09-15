@@ -13,11 +13,11 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-# syft absolute
-from syft.proto.core.plan import plan_pb2 as proto_dot_core_dot_plan_dot_plan__pb2
-from syft.proto.lib.python import dict_pb2 as proto_dot_lib_dot_python_dot_dict__pb2
-from syft.proto.lib.python import list_pb2 as proto_dot_lib_dot_python_dot_list__pb2
-from syft.proto.lib.python.collections import (
+# relative
+from ...core.plan import plan_pb2 as proto_dot_core_dot_plan_dot_plan__pb2
+from ..python import dict_pb2 as proto_dot_lib_dot_python_dot_dict__pb2
+from ..python import list_pb2 as proto_dot_lib_dot_python_dot_list__pb2
+from ..python.collections import (
     ordered_dict_pb2 as proto_dot_lib_dot_python_dot_collections_dot_ordered__dict__pb2,
 )
 

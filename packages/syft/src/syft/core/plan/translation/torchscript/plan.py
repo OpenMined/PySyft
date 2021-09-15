@@ -5,10 +5,10 @@ from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from syft_proto.execution.v1.plan_pb2 import Plan as Plan_PB
 import torch as th
 
 # relative
+from .....federated.model_serialization.protos import Plan_PB
 from .....logger import traceback_and_raise
 from ....common.serde.serializable import serializable
 
@@ -65,7 +65,9 @@ class PlanTorchscript:
         return Plan_PB(torchscript=bin)
 
     @staticmethod
-    def _proto2object(proto: Plan_PB) -> "PlanTorchscript":
+    def _proto2object(
+        proto: Plan_PB,
+    ) -> "PlanTorchscript":
         """Creates a ObjectWithID from a protobuf
 
         As a requirement of all objects which inherit from Serializable,

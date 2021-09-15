@@ -4,11 +4,9 @@ from typing import Any
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft absolute
-from syft import deserialize
-from syft import serialize
-
 # relative
+from .... import deserialize
+from .... import serialize
 from ....proto.core.common.recursive_serde_pb2 import (
     RecursiveSerde as RecursiveSerde_PB,
 )

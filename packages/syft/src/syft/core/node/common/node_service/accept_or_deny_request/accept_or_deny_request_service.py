@@ -19,7 +19,7 @@ from ......util import key_emoji
 from ......util import validate_type
 from .....common.message import ImmediateSyftMessageWithoutReply
 from ....abstract.node import AbstractNode
-from ....common.node_service.node_service import ImmediateNodeServiceWithoutReply
+from ..node_service import ImmediateNodeServiceWithoutReply
 from .accept_or_deny_request_messages import AcceptOrDenyRequestMessage
 
 
