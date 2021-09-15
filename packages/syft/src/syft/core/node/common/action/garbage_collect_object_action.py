@@ -12,14 +12,14 @@ from .....proto.core.node.common.action.garbage_collect_object_pb2 import (
     GarbageCollectObjectAction as GarbageCollectObjectAction_PB,
 )
 from ....common.serde.deserialize import _deserialize
-from ....common.serde.serializable import bind_protobuf
+from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
 from ...abstract.node import AbstractNode
 from .common import EventualActionWithoutReply
 
 
-@bind_protobuf
+@serializable()
 class GarbageCollectObjectAction(EventualActionWithoutReply):
     def __init__(
         self, id_at_location: UID, address: Address, msg_id: Optional[UID] = None

@@ -12,12 +12,12 @@ from ......proto.core.node.common.service.child_node_lifecycle_service_pb2 impor
 )
 from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.serde.deserialize import _deserialize
-from .....common.serde.serializable import bind_protobuf
+from .....common.serde.serializable import serializable
 from .....common.uid import UID
 from .....io.address import Address
 
 
-@bind_protobuf
+@serializable()
 class RegisterChildNodeMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,

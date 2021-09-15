@@ -16,7 +16,7 @@ from ....core.adp.vm_private_scalar_manager import (
     VirtualMachinePrivateScalarManager as TypeScalarManager,
 )
 from ....core.common.serde.recursive import RecursiveSerde
-from ...common.serde.serializable import bind_protobuf
+from ...common.serde.serializable import serializable
 from ...tensor.types import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import implements  # type: ignore
@@ -25,7 +25,7 @@ from .adp_tensor import ADPTensor
 from .initial_gamma import InitialGammaTensor  # type: ignore
 
 
-@bind_protobuf
+@serializable()
 class RowEntityPhiTensor(PassthroughTensor, RecursiveSerde, ADPTensor):
     """This tensor is one of several tensors whose purpose is to carry metadata
     relevant to automatically tracking the privacy budgets of tensor operations. This

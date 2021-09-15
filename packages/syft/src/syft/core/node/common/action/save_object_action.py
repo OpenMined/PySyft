@@ -11,8 +11,7 @@ from .....proto.core.node.common.action.save_object_pb2 import (
     SaveObjectAction as SaveObjectAction_PB,
 )
 from ....common.serde.deserialize import _deserialize
-from ....common.serde.serializable import Serializable
-from ....common.serde.serializable import bind_protobuf
+from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
@@ -20,8 +19,8 @@ from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
 
 
-@bind_protobuf
-class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
+@serializable()
+class SaveObjectAction(ImmediateActionWithoutReply):
     def __init__(
         self,
         obj: StorableObject,

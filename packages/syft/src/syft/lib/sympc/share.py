@@ -13,7 +13,7 @@ from sympc.tensor import ShareTensor
 import syft
 
 # relative
-from ...generate_wrapper import GenerateWrapper
+from ...core.common.serde.serializable import serializable
 from ...proto.lib.sympc.share_tensor_pb2 import ShareTensor as ShareTensor_PB
 from ..python.primitive_factory import PrimitiveFactory
 
@@ -68,7 +68,7 @@ def proto2object(proto: ShareTensor_PB) -> ShareTensor:
     return share
 
 
-GenerateWrapper(
+serializable(generate_wrapper=True)(
     wrapped_type=ShareTensor,
     import_path="sympc.tensor.ShareTensor",
     protobuf_scheme=ShareTensor_PB,

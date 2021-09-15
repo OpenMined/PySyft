@@ -17,7 +17,7 @@ from ... import lib
 from ...ast.klass import pointerize_args_and_kwargs
 from ...core.common.serde.recursive import RecursiveSerde
 from ...util import inherit_tags
-from ..common.serde.serializable import bind_protobuf
+from ..common.serde.serializable import serializable
 from ..common.uid import UID
 from ..node.abstract.node import AbstractNodeClient
 from ..node.common.action.run_class_method_action import RunClassMethodAction
@@ -159,7 +159,7 @@ def to32bit(np_array: np.ndarray, verbose: bool = True) -> np.ndarray:
     return out
 
 
-@bind_protobuf
+@serializable()
 class Tensor(
     PassthroughTensor,
     AutogradTensorAncestor,

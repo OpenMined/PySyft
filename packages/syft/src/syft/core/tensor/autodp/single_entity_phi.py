@@ -22,7 +22,7 @@ from ....proto.core.tensor.single_entity_phi_tensor_pb2 import (
 from ...adp.entity import Entity
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...common.serde.deserialize import _deserialize as deserialize
-from ...common.serde.serializable import bind_protobuf
+from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
 from ...node.abstract.node import AbstractNodeClient
@@ -40,7 +40,7 @@ from .adp_tensor import ADPTensor
 from .initial_gamma import InitialGammaTensor
 
 
-@bind_protobuf
+@serializable()
 class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
     """
     This tensor represents a pointer to a very specific tensor chain. Eventually we'll have some sort
@@ -267,7 +267,7 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
         return TensorWrappedSingleEntityPhiTensorPointer_PB
 
 
-@bind_protobuf
+@serializable()
 class SingleEntityPhiTensor(
     PassthroughTensor, AutogradTensorAncestor, RecursiveSerde, ADPTensor
 ):

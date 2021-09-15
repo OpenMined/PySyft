@@ -42,11 +42,11 @@ from syft.proto.grid.messages.association_messages_pb2 import (
 )
 
 # relative
-from ......core.common.serde.serializable import bind_protobuf
+from ......core.common.serde.serializable import serializable
 
 
-@bind_protobuf
 @final
+@serializable()
 class SendAssociationRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
@@ -124,8 +124,8 @@ class SendAssociationRequestMessage(ImmediateSyftMessageWithReply):
         return SendAssociationRequestMessage_PB
 
 
-@bind_protobuf
 @final
+@serializable()
 class ReceiveAssociationRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
@@ -207,8 +207,8 @@ class ReceiveAssociationRequestMessage(ImmediateSyftMessageWithReply):
         return ReceiveAssociationRequestMessage_PB
 
 
-@bind_protobuf
 @final
+@serializable()
 class RespondAssociationRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
@@ -286,8 +286,8 @@ class RespondAssociationRequestMessage(ImmediateSyftMessageWithReply):
         return RespondAssociationRequestMessage_PB
 
 
-@bind_protobuf
 @final
+@serializable()
 class GetAssociationRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
@@ -357,8 +357,8 @@ class GetAssociationRequestMessage(ImmediateSyftMessageWithReply):
         return GetAssociationRequestMessage_PB
 
 
-@bind_protobuf
 @final
+@serializable()
 class GetAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
@@ -433,8 +433,8 @@ class GetAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
         return GetAssociationRequestResponse_PB
 
 
-@bind_protobuf
 @final
+@serializable()
 class GetAssociationRequestsMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
@@ -500,8 +500,8 @@ class GetAssociationRequestsMessage(ImmediateSyftMessageWithReply):
         return GetAssociationRequestsMessage_PB
 
 
-@bind_protobuf
 @final
+@serializable()
 class GetAssociationRequestsResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
@@ -576,7 +576,7 @@ class GetAssociationRequestsResponse(ImmediateSyftMessageWithoutReply):
         return GetAssociationRequestsResponse_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class DeleteAssociationRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(

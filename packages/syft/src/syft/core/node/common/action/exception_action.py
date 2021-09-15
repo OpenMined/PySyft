@@ -9,14 +9,14 @@ from typing_extensions import final
 
 # relative
 from ..... import serialize
+from .....lib.util import full_name_with_qualname
 from .....proto.core.node.common.action.exception_action_pb2 import (
     ExceptionMessage as ExceptionMessage_PB,
 )
-from .....util import get_fully_qualified_name
 from .....util import validate_type
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.deserialize import _deserialize
-from ....common.serde.serializable import bind_protobuf
+from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
 
@@ -25,8 +25,8 @@ class UnknownPrivateException(Exception):
     pass
 
 
-@bind_protobuf
 @final
+@serializable()
 class ExceptionMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
@@ -58,7 +58,7 @@ class ExceptionMessage(ImmediateSyftMessageWithoutReply):
         """
 
         # convert exception into fully qualified class path
-        fqn = get_fully_qualified_name(obj=self.exception_type)
+        fqn = full_name_with_qualname(klass=self.exception_type)
         module_parts = fqn.split(".")
         _ = module_parts.pop()  # remove incorrect .type ending
         module_parts.append(self.exception_type.__name__)

@@ -28,8 +28,7 @@ from sympy.core.basic import Basic as BasicSymbol
 from ... import deserialize
 from ... import serialize
 from ...core.common import UID
-from ...core.common.serde.serializable import Serializable
-from ...core.common.serde.serializable import bind_protobuf
+from ...core.common.serde.serializable import serializable
 from ...proto.core.adp.scalar_pb2 import (
     IntermediatePhiScalar as IntermediatePhiScalar_PB,
 )
@@ -48,7 +47,7 @@ from .search import ssid2obj
 
 
 # the most generic class
-class Scalar(Serializable):
+class Scalar:
     """
     A Scalar is the most generic class, which keeps track of the current value, and a data-independent
     min-val and max-val.
@@ -92,7 +91,7 @@ class Scalar(Serializable):
         return str(self)
 
 
-@bind_protobuf
+@serializable()
 class IntermediateScalar(Scalar):
     """Serializable Scalar class that supports polynomial representations of data."""
 
@@ -189,7 +188,7 @@ class IntermediateScalar(Scalar):
         return IntermediateScalar_PB
 
 
-@bind_protobuf
+@serializable()
 class IntermediatePhiScalar(IntermediateScalar):
     """
     Serializable superclass for PhiScalars (Scalars with data from one entity).
@@ -321,7 +320,7 @@ class IntermediatePhiScalar(IntermediateScalar):
         return IntermediatePhiScalar_PB
 
 
-@bind_protobuf
+@serializable()
 class BaseScalar(Scalar):
     """
     A scalar which stores the root polynomial values. When this is a superclass of
@@ -383,7 +382,7 @@ class BaseScalar(Scalar):
         return BaseScalar_PB
 
 
-@bind_protobuf
+@serializable()
 class PhiScalar(BaseScalar, IntermediatePhiScalar):
     """
     Scalar with data from a single entity. Uses all the operations implemented in
@@ -594,7 +593,7 @@ class IntermediateGammaScalar(IntermediateScalar):
             return -float(result.fun)
 
 
-@bind_protobuf
+@serializable()
 class GammaScalar(BaseScalar, IntermediateGammaScalar):
     """
     A scalar over data from multiple entities. Uses all the operators from IntermediateGammaScalar.

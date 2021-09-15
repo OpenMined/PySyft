@@ -19,7 +19,7 @@ from .. import autograd
 from ....core.common.serde.recursive import RecursiveSerde
 from ....lib.python.collections.collections import DefaultDict
 from ....lib.python.collections.collections import SerializableCounter
-from ...common.serde.serializable import bind_protobuf
+from ...common.serde.serializable import serializable
 from ..ancestors import AutogradTensorAncestor
 from ..ancestors import PhiTensorAncestor
 from ..passthrough import AcceptableSimpleType  # type: ignore
@@ -27,7 +27,7 @@ from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import is_acceptable_simple_type  # type: ignore
 
 
-@bind_protobuf
+@serializable()
 class AutogradTensor(PassthroughTensor, PhiTensorAncestor, RecursiveSerde):
 
     __attr_allowlist__ = [

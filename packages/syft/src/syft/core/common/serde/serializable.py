@@ -1,169 +1,107 @@
 # stdlib
 from typing import Any
-from typing import Type
+from typing import Callable as CallableT
 
 # third party
-from google.protobuf.message import Message
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
+# syft absolute
+import syft
+
 # relative
-from ....logger import traceback_and_raise
-from ....util import random_name
+from ....util import aggressive_set_attr
+
+module_type = type(syft)
 
 
-def bind_protobuf(cls: Any) -> Any:
-    protobuf_schema = cls.get_protobuf_schema()
-    # overloading a protobuf by adding multiple classes and we will check the
-    # obj_type string later to dispatch to the correct one
-    if hasattr(protobuf_schema, "schema2type"):
-        if isinstance(protobuf_schema.schema2type, list):
-            protobuf_schema.schema2type.append(cls)
+# this will overwrite the ._sy_serializable_wrapper_type with an auto generated
+# wrapper which will basically just hold the object being wrapped.
+def GenerateWrapper(
+    wrapped_type: type,
+    import_path: str,
+    protobuf_scheme: GeneratedProtocolMessageType,
+    type_object2proto: CallableT,
+    type_proto2object: CallableT,
+) -> None:
+    @serializable()
+    class Wrapper:
+        def __init__(self, value: object):
+            self.obj = value
+
+        def _object2proto(self) -> Any:
+            return type_object2proto(self.obj)
+
+        @staticmethod
+        def _proto2object(proto: Any) -> Any:
+            return type_proto2object(proto)
+
+        @staticmethod
+        def get_protobuf_schema() -> GeneratedProtocolMessageType:
+            return protobuf_scheme
+
+        def upcast(self) -> Any:
+            return self.obj
+
+        @staticmethod
+        def wrapped_type() -> type:
+            return wrapped_type
+
+    # TODO: refactor like proxy class to get correct name
+    # WARNING: Changing this can break the Wrapper lookup during deserialize
+    module_parts = import_path.split(".")
+    klass = module_parts.pop()
+    Wrapper.__name__ = f"{klass}Wrapper"
+    Wrapper.__module__ = f"syft.wrappers.{'.'.join(module_parts)}"
+    # create a fake module `wrappers` under `syft`
+    if "wrappers" not in syft.__dict__:
+        syft.__dict__["wrappers"] = module_type(name="wrappers")
+    # for each part of the path, create a fake module and add it to it's parent
+    parent = syft.__dict__["wrappers"]
+    for n in module_parts:
+        if n not in parent.__dict__:
+            parent.__dict__[n] = module_type(name=n)
+        parent = parent.__dict__[n]
+    # finally add our wrapper class to the end of the path
+    parent.__dict__[Wrapper.__name__] = Wrapper
+
+    aggressive_set_attr(
+        obj=wrapped_type, name="_sy_serializable_wrapper_type", attr=Wrapper
+    )
+
+
+def GenerateProtobufWrapper(
+    cls_pb: GeneratedProtocolMessageType, import_path: str
+) -> None:
+    def object2proto(obj: Any) -> Any:
+        return obj
+
+    def proto2object(proto: Any) -> Any:
+        return proto
+
+    GenerateWrapper(
+        wrapped_type=cls_pb,
+        import_path=import_path,
+        protobuf_scheme=cls_pb,
+        type_object2proto=object2proto,
+        type_proto2object=proto2object,
+    )
+
+
+def serializable(generate_wrapper: bool = False, protobuf_object: bool = False) -> Any:
+    def serializable_decorator(cls: Any) -> Any:
+        protobuf_schema = cls.get_protobuf_schema()
+        # overloading a protobuf by adding multiple classes and we will check the
+        # obj_type string later to dispatch to the correct one
+        if hasattr(protobuf_schema, "schema2type"):
+            if isinstance(protobuf_schema.schema2type, list):
+                protobuf_schema.schema2type.append(cls)
+            else:
+                protobuf_schema.schema2type = [protobuf_schema.schema2type, cls]
         else:
-            protobuf_schema.schema2type = [protobuf_schema.schema2type, cls]
+            protobuf_schema.schema2type = cls
+        return cls
+
+    if generate_wrapper:
+        return GenerateWrapper
     else:
-        protobuf_schema.schema2type = cls
-
-    return cls
-
-
-class Serializable:
-    """When we want a custom object to be serializable within the Syft ecosystem
-    (as outline in the tutorial above), the first thing we need to do is have it
-    subclass from this class. You must then do the following in order for the
-    subclass to be properly implemented:
-
-    - implement a protobuf file in the "PySyft/proto" folder for this custom class.
-    - compile the protobuf file by running `bash scripts/build_proto`
-    - find the generated python file in syft.proto
-    - import the generated protobuf class into my custom class
-    - implement get_protobuf_schema
-    - implement <my class>._object2proto() method to serialize the object to protobuf
-    - implement <my class>._proto2object() to deserialize the protobuf object
-
-    At this point, your class should be ready to serialize and deserialize! Don't
-    forget to add tests for your object!
-
-    If you want to wrap an existing type (like a torch.tensor) to be used in our serialization
-    ecosystem, you should consider wrapping it. Wrapping means that we NEVER use the wrapper
-    further more into our ecosystem, we only need an easy interface to serialize wrappers.
-
-    Eg:
-
-    .. code-block:: python
-
-        class WrapperInt(Serializable)
-            def __init__(self, value: int):
-               self.int_obj = value
-
-            def _object2proto(self) -> WrapperIntPB:
-               ...
-
-            @staticmethod
-            def _proto2object(proto) -> int:
-               ...
-
-            @staticmethod
-            def get_protobuf_schema() -> GeneratedProtocolMessageType:
-               ...
-
-            @staticmethod
-            def get_wrapped_type() -> type:
-               return int
-
-    You must implement the following in order for the subclass to be properly implemented to be
-    seen as a wrapper:
-
-    - everything presented in the first tutorial of this docstring.
-    - implement get_wrapped_type to return the wrapped type.
-
-    Note: A wrapper should NEVER be used in the codebase, these are only for serialization purposes
-    on external objects.
-
-    After doing all of the above steps, you can call something like sy.serialize(5) and be
-    serialized using our messaging proto backbone.
-    """
-
-    @property
-    def named(self) -> str:
-        if hasattr(self, "name"):
-            return self.name  # type: ignore
-        else:
-            return "UNNAMED"
-
-    @property
-    def class_name(self) -> str:
-        return str(self.__class__.__name__)
-
-    @property
-    def icon(self) -> str:
-        # as in cereal, get it!?
-        return "🌾"
-
-    @property
-    def pprint(self) -> str:
-        return f"{self.icon} {self.named} ({self.class_name})"
-
-    @staticmethod
-    def _proto2object(proto: Message) -> "Serializable":
-        """This method converts a protobuf object into a subclass of Serializable
-
-        This method must be implemented for all classes which subclassSerializable - namely
-        all classes which can be serialized within the Syft ecosystem. It should convert the
-        corresponding protobuf message for the subclass into an instance of the class. This
-        allows all the logic which goes from protobuf message to other formats (JSON, binary, etc.)
-        to be generic and simply inherited from the rest of this class.
-
-        :param proto: the protobuf object to be converted into an instance of type(self)
-        :param type: Message
-        :return: an instance of type(self)
-        :rtype: Serializable
-
-        """
-        traceback_and_raise(NotImplementedError)
-
-    def _object2proto(self) -> Message:
-        """This methods converts self into a protobuf object
-
-        This method must be implemented by all subclasses so that generic high-level functions
-        implemented here (such as serialize(, to_bytes=True), etc) know how to convert the object into
-        a protobuf object before further converting it into the requested format.
-
-        :return: a protobuf message
-        :rtype: Message
-        """
-
-        traceback_and_raise(NotImplementedError)
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """Return the type of protobuf object which stores a class of this type
-
-        As a part of serialization and deserialization, we need the ability to
-        lookup the protobuf object type directly from the object type. This
-        static method allows us to do this.
-
-        Importantly, this method is also used to create the reverse lookup ability within
-        the metaclass of Serializable. In the metaclass, it calls this method and then
-        it takes whatever type is returned from this method and adds an attribute to it
-        with the type of this class attached to it. See the MetaSerializable class for details.
-
-        :return: the type of protobuf object which corresponds to this class.
-        :rtype: GeneratedProtocolMessageType
-        """
-
-        traceback_and_raise(NotImplementedError)
-
-    @staticmethod
-    def get_wrapped_type() -> Type:
-        """
-        This static method returns the wrapped type, if the current class is
-        a wrapper over an external object.
-
-        :return: the wrapped type
-        :rtype: type
-        """
-        traceback_and_raise(NotImplementedError)
-
-    @staticmethod
-    def random_name() -> str:
-        return random_name()
+        return serializable_decorator

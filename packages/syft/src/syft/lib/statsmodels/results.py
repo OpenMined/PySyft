@@ -2,7 +2,7 @@
 from statsmodels.genmod.generalized_linear_model import GLMResultsWrapper
 
 # relative
-from ...generate_wrapper import GenerateWrapper
+from ...core.common.serde.serializable import serializable
 from ...lib.python.primitive_factory import PrimitiveFactory
 from ...lib.python.string import String
 from ...proto.lib.statsmodels.results_pb2 import ResultsProto
@@ -19,7 +19,7 @@ def proto2object(proto: ResultsProto) -> str:
     return str(String._proto2object(proto.summary))
 
 
-GenerateWrapper(
+serializable(generate_wrapper=True)(
     wrapped_type=GLMResultsWrapper,
     import_path="statsmodels.genmod.generalized_linear_model.GLMResultsWrapper",
     protobuf_scheme=ResultsProto,

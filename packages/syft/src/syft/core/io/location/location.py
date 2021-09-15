@@ -7,18 +7,18 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # relative
 from ....logger import traceback_and_raise
-from ...common.serde.serializable import Serializable
+from ....util import random_name
 from ...common.uid import UID
 
 
-class Location(Serializable):
+class Location:
     """This represents the location of a node, including
     location-relevant metadata (such as how long it takes
     for us to communicate with this location, etc.)"""
 
     def __init__(self, name: Optional[str] = None) -> None:
         if name is None:
-            name = Serializable.random_name()
+            name = random_name()
         self.name = name
         super().__init__()
 
@@ -36,7 +36,7 @@ class Location(Serializable):
         return self.__repr__()
 
     @staticmethod
-    def _proto2object(proto: Message) -> "Serializable":
+    def _proto2object(proto: Message) -> "Location":
         """This method converts a protobuf object into a subclass of Serializable
 
         This method must be implemented for all classes which subclassSerializable - namely

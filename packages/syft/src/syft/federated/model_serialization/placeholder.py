@@ -10,13 +10,14 @@ from syft_proto.execution.v1.placeholder_pb2 import Placeholder as PlaceholderPB
 import torch as th
 
 # relative
-from ...core.common.object import Serializable
+from ...core.common.serde.serializable import serializable
 from .common import get_protobuf_id
 from .common import set_protobuf_id
 from .placeholder_id import PlaceholderId
 
 
-class PlaceHolder(Serializable):
+@serializable()
+class PlaceHolder:
     def __init__(
         self,
         id: Union[int, str],

@@ -9,14 +9,14 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from ... import deserialize
 from ... import serialize
 from ...core.common import UID
-from ...core.common.serde.serializable import bind_protobuf
+from ...core.common.serde.serializable import serializable
 from ...proto.lib.python.float_pb2 import Float as Float_PB
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
 
 
-@bind_protobuf
+@serializable()
 class Float(float, PyPrimitive):
     def __new__(cls, value: Any = None, id: Optional[UID] = None) -> "Float":
         if value is None:

@@ -12,7 +12,7 @@
 # from syft.core.common.message import ImmediateSyftMessageWithReply
 # from syft.core.common.message import ImmediateSyftMessageWithoutReply
 # from syft.core.common.serde.deserialize import _deserialize
-# from syft.core.common.serde.serializable import bind_protobuf
+# from syft.core.common.serde.serializable import serializable
 # from syft.core.common.uid import UID
 # from syft.core.io.address import Address
 # from syft.proto.grid.messages.infra_messages_pb2 import (
@@ -53,7 +53,7 @@
 # )
 #
 #
-# @bind_protobuf
+# @serializable()
 # @final
 # class CreateWorkerMessage(ImmediateSyftMessageWithReply):
 #     def __init__(
@@ -124,7 +124,7 @@
 #         return CreateWorkerMessage_PB
 #
 #
-# @bind_protobuf
+# @serializable()
 # @final
 # class CreateWorkerResponse(ImmediateSyftMessageWithoutReply):
 #     def __init__(
@@ -196,7 +196,7 @@
 #         return CreateWorkerResponse_PB
 #
 #
-# @bind_protobuf
+# @serializable()
 # @final
 # class GetWorkerInstanceTypesMessage(ImmediateSyftMessageWithReply):
 #     def __init__(
@@ -267,7 +267,7 @@
 #         return GetWorkerInstanceTypesMessage_PB
 #
 #
-# @bind_protobuf
+# @serializable()
 # @final
 # class GetWorkerInstanceTypesResponse(ImmediateSyftMessageWithoutReply):
 #     def __init__(
@@ -339,7 +339,7 @@
 #         return GetWorkerInstanceTypesResponse_PB
 #
 #
-# @bind_protobuf
+# @serializable()
 # @final
 # class GetWorkerMessage(ImmediateSyftMessageWithReply):
 #     def __init__(
@@ -410,7 +410,7 @@
 #         return GetWorkerMessage_PB
 #
 #
-# @bind_protobuf
+# @serializable()
 # @final
 # class GetWorkerResponse(ImmediateSyftMessageWithoutReply):
 #     def __init__(
@@ -482,7 +482,7 @@
 #         return GetWorkerResponse_PB
 #
 #
-# @bind_protobuf
+# @serializable()
 # @final
 # class GetWorkersMessage(ImmediateSyftMessageWithReply):
 #     def __init__(
@@ -553,7 +553,7 @@
 #         return GetWorkersMessage_PB
 #
 #
-# @bind_protobuf
+# @serializable()
 # @final
 # class GetWorkersResponse(ImmediateSyftMessageWithoutReply):
 #     def __init__(
@@ -625,7 +625,7 @@
 #         return GetWorkersResponse_PB
 #
 #
-# @bind_protobuf
+# @serializable()
 # @final
 # class UpdateWorkerMessage(ImmediateSyftMessageWithReply):
 #     def __init__(
@@ -696,7 +696,7 @@
 #         return UpdateWorkerMessage_PB
 #
 #
-# @bind_protobuf
+# @serializable()
 # @final
 # class UpdateWorkerResponse(ImmediateSyftMessageWithoutReply):
 #     def __init__(
@@ -768,7 +768,7 @@
 #         return UpdateWorkerResponse_PB
 #
 #
-# @bind_protobuf
+# @serializable()
 # @final
 # class DeleteWorkerMessage(ImmediateSyftMessageWithReply):
 #     def __init__(
@@ -839,7 +839,7 @@
 #         return DeleteWorkerMessage_PB
 #
 #
-# @bind_protobuf
+# @serializable()
 # @final
 # class DeleteWorkerResponse(ImmediateSyftMessageWithoutReply):
 #     def __init__(
