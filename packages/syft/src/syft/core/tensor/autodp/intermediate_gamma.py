@@ -179,6 +179,14 @@ class IntermediateGammaTensor(PassthroughTensor, RecursiveSerde, ADPTensor):
             scalar_manager=self.scalar_manager,
         )
 
+    def repeat(self, *args, **kwargs):
+        return IntermediateGammaTensor(
+            term_tensor=self.term_tensor.repeat(*args, **kwargs).reshape(-1, self.term_tensor.shape[-1]),
+            coeff_tensor=self.coeff_tensor.repeat(*args, **kwargs).reshape(-1, self.coeff_tensor.shape[-1]),
+            bias_tensor=self.bias_tensor.repeat(*args, **kwargs),
+            scalar_manager=self.scalar_manager,
+        )
+
     def __mul__(self, other: Any) -> IntermediateGammaTensor:
 
         # EXPLAIN A: if our polynomial is y = mx
