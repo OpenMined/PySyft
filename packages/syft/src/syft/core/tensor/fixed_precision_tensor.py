@@ -12,11 +12,11 @@ import numpy as np
 # relative
 from ...proto.core.tensor.fixed_precision_tensor_pb2 import (
     FixedPrecisionTensor as FixedPrecisionTensor_PB,
-)
+)  # type: ignore
 from ..common.serde.deserialize import _deserialize as deserialize
 from ..common.serde.serializable import serializable
 from ..common.serde.serialize import _serialize as serialize
-from .passthrough import PassthroughTensor
+from .passthrough import PassthroughTensor  # type: ignore
 
 
 @serializable()
@@ -40,12 +40,12 @@ class FixedPrecisionTensor(PassthroughTensor):
         value = dividend.astype(np.float32) + remainder.astype(np.float32) / self._scale
         return value
 
-    def __add__(self, other: Any) -> "FixedPrecisionTensor":
+    def __add__(self, other: Any) -> FixedPrecisionTensor:
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)
         res.child = self.child + other.child
         return res
 
-    def __sub__(self, other: Any) -> "FixedPrecisionTensor":
+    def __sub__(self, other: Any) -> FixedPrecisionTensor:
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)
         res.child = self.child - other.child
         return res
@@ -69,7 +69,7 @@ class FixedPrecisionTensor(PassthroughTensor):
         )
 
     @staticmethod
-    def _proto2object(proto: FixedPrecisionTensor_PB) -> "FixedPrecisionTensor":
+    def _proto2object(proto: FixedPrecisionTensor_PB) -> FixedPrecisionTensor:
         res = FixedPrecisionTensor(base=proto.base, precision=proto.precision)
 
         # Put it manually since we send it already encoded

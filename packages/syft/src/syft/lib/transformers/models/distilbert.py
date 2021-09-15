@@ -1,3 +1,4 @@
+# type: ignore
 # stdlib
 import math
 import time

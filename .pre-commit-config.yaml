@@ -37,7 +37,15 @@ repos:
       - id: absolufy-imports
         args: ["--never", "--application-directories=packages/syft/src"]
         files: ^packages/syft/src
-        exclude: ^(packages/syft/src/syft/tests|packages/syft/src/syft/proto|packages/syft/examples/duet|packages/grid|packages/hagrid)
+        exclude: |
+          (?x)^(
+              packages/syft/examples/.*|
+              packages/syft/src/syft/proto.*|
+              packages/syft/tests/syft/lib/python.*|
+              packages/grid.*|
+              packages/hagrid.*|
+              packages/syft/src/syft/federated/model_serialization/protos.py
+          )$
   - repo: https://github.com/pycqa/isort
     rev: 5.9.2
     hooks:
@@ -115,7 +123,13 @@ repos:
       - id: mypy
         name: mypy-syft
         files: ^packages/syft
-        exclude: ^(packages/syft/src/syft/proto|packages/syft/tests/syft/lib/python)
+        exclude: |
+          (?x)^(
+              packages/syft/examples/.*|
+              packages/syft/tests/.*|
+              packages/syft/src/syft/proto.*|
+              packages/syft/tests/syft/lib/python.*
+          )$
         args: [
             "--ignore-missing-imports",
             "--scripts-are-modules",

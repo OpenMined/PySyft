@@ -24,7 +24,6 @@ from .....util import inherit_tags
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
-from ....plan.plan import Plan
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
@@ -155,6 +154,9 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                 )
 
             method_name = self.path.split(".")[-1]
+
+            # relative
+            from ....plan.plan import Plan
 
             if (
                 isinstance(resolved_self.data, Plan)

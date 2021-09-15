@@ -2,6 +2,7 @@
 import sys
 from typing import Any
 from typing import Dict
+from typing import Iterator
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -388,8 +389,10 @@ class StoreClient:
 
     def __len__(self) -> int:
         """Return the number of items in the object store we're allowed to know about"""
-
         return len(self.store)
+
+    def __iter__(self) -> Iterator[Any]:
+        return self.store.__iter__()
 
     def __getitem__(self, key: Union[str, int]) -> Pointer:
         if isinstance(key, str):

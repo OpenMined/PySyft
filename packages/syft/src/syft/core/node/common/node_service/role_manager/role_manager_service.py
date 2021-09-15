@@ -9,10 +9,8 @@ from typing import Union
 from nacl.signing import VerifyKey
 
 # relative
-from ......lib.python import Dict as SyftDict
-from ......lib.python import List as SyftList
 from .....common.message import ImmediateSyftMessageWithReply
-from ....abstract.node import AbstractNode
+from ....domain.domain_interface import DomainInterface
 from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
 from ...exceptions import RequestError
@@ -50,7 +48,7 @@ OUTPUT_MESSAGES = Union[SuccessResponseMessage, GetRoleResponse, GetRolesRespons
 
 def create_role_msg(
     msg: CreateRoleMessage,
-    node: AbstractNode,
+    node: DomainInterface,
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
     # Check key permissions
@@ -90,7 +88,7 @@ def create_role_msg(
 
 def update_role_msg(
     msg: UpdateRoleMessage,
-    node: AbstractNode,
+    node: DomainInterface,
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
 
@@ -124,7 +122,7 @@ def update_role_msg(
 
 def get_role_msg(
     msg: GetRoleMessage,
-    node: AbstractNode,
+    node: DomainInterface,
     verify_key: VerifyKey,
 ) -> GetRoleResponse:
 
@@ -137,12 +135,12 @@ def get_role_msg(
     else:
         raise AuthorizationError("You're not allowed to get User information!")
 
-    return GetRoleResponse(address=msg.reply_to, content=SyftDict(_msg))
+    return GetRoleResponse(address=msg.reply_to, content=_msg)
 
 
 def get_all_roles_msg(
     msg: GetRolesMessage,
-    node: AbstractNode,
+    node: DomainInterface,
     verify_key: VerifyKey,
 ) -> GetRolesResponse:
 
@@ -154,12 +152,12 @@ def get_all_roles_msg(
     else:
         raise AuthorizationError("You're not allowed to get Role information!")
 
-    return GetRolesResponse(address=msg.reply_to, content=SyftList(_msg))
+    return GetRolesResponse(address=msg.reply_to, content=_msg)
 
 
 def del_role_msg(
     msg: DeleteRoleMessage,
-    node: AbstractNode,
+    node: DomainInterface,
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
     _allowed = node.users.can_edit_roles(verify_key=verify_key)
@@ -187,7 +185,7 @@ class RoleManagerService(ImmediateNodeServiceWithReply):
     @staticmethod
     @service_auth(guests_welcome=True)
     def process(
-        node: AbstractNode,
+        node: DomainInterface,
         msg: INPUT_MESSAGES,
         verify_key: VerifyKey,
     ) -> OUTPUT_MESSAGES:

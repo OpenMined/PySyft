@@ -3,8 +3,11 @@ from typing import Any
 from typing import Union
 
 # third party
-import syft_proto
 import torch as th
+
+# relative
+from .protos import TensorData_PB
+from .protos import TorchTensor_PB
 
 # Torch dtypes to string (and back) mappers
 TORCH_DTYPE_STR = {
@@ -41,7 +44,7 @@ def get_protobuf_id(field: Any) -> Union[int, str]:
 
 def serialize_tensor(
     tensor: th.Tensor,
-) -> syft_proto.types.torch.v1.tensor_pb2.TorchTensor:
+) -> TorchTensor_PB:
     """
     This method converts a Torch tensor into a serialized tensor
     using Protobuf.
@@ -54,7 +57,7 @@ def serialize_tensor(
     """
     dtype = TORCH_DTYPE_STR[tensor.dtype]
 
-    tensor_data = syft_proto.types.torch.v1.tensor_data_pb2.TensorData()
+    tensor_data = TensorData_PB()
 
     if tensor.is_quantized:
         tensor_data.is_quantized = True
@@ -68,19 +71,17 @@ def serialize_tensor(
     tensor_data.shape.dims.extend(tensor.size())
     getattr(tensor_data, "contents_" + dtype).extend(data)
 
-    protobuf_tensor = syft_proto.types.torch.v1.tensor_pb2.TorchTensor()
+    protobuf_tensor = TorchTensor_PB()
     set_protobuf_id(protobuf_tensor.id, getattr(tensor, "id", 1))
 
-    protobuf_tensor.serializer = (
-        syft_proto.types.torch.v1.tensor_pb2.TorchTensor.Serializer.SERIALIZER_ALL
-    )
+    protobuf_tensor.serializer = TorchTensor_PB.Serializer.SERIALIZER_ALL
     protobuf_tensor.contents_data.CopyFrom(tensor_data)
     protobuf_tensor.tags.extend(getattr(tensor, "tags", []))
     return protobuf_tensor
 
 
 def deserialize_tensor(
-    protobuf_tensor: syft_proto.types.torch.v1.tensor_pb2.TorchTensor,
+    protobuf_tensor: TorchTensor_PB,
 ) -> th.Tensor:
     """
     This method converts a Protobuf torch tensor back into a

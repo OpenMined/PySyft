@@ -10,6 +10,7 @@ from nacl.signing import VerifyKey
 # relative
 from ......proto.core.io.address_pb2 import Address as Address_PB
 from .....common.message import ImmediateSyftMessageWithReply
+from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.serde.deserialize import _deserialize
 from .....common.uid import UID
 from ....domain.domain import Domain
@@ -20,8 +21,6 @@ from .object_transfer_messages import LoadObjectMessage
 from .object_transfer_messages import LoadObjectResponse
 from .object_transfer_messages import SaveObjectMessage
 from .object_transfer_messages import SaveObjectResponse
-
-# from ...utils.executor import executor
 
 
 class TransferObjectService(ImmediateNodeServiceWithReply):
@@ -97,5 +96,5 @@ class SaveObjectService(ImmediateNodeServiceWithoutReply):
         # executor.submit(send_obj, _obj, node)
 
     @staticmethod
-    def message_handler_types() -> List[Type[ImmediateSyftMessageWithReply]]:
+    def message_handler_types() -> List[Type[ImmediateSyftMessageWithoutReply]]:
         return [SaveObjectMessage]

@@ -21,8 +21,8 @@ import numpy as np
 import torch
 
 # relative
-from ..passthrough import PassthroughTensor
-from ..passthrough import SupportedChainType
+from ..passthrough import PassthroughTensor  # type: ignore
+from ..passthrough import SupportedChainType  # type: ignore
 from ..util import implements  # type: ignore
 from .share_tensor import ShareTensor
 from .utils import ispointer
@@ -53,7 +53,7 @@ class MPCTensor(PassthroughTensor):
         parties: Optional[List[Any]] = None,
         secret: Optional[Any] = None,
         shares: Optional[List[ShareTensor]] = None,
-        shape: Optional[Tuple[int]] = None,
+        shape: Optional[Tuple[int, ...]] = None,
         seed_shares: Optional[int] = None,
     ) -> None:
 
@@ -122,7 +122,7 @@ class MPCTensor(PassthroughTensor):
         )
 
     @property
-    def shape(self) -> Optional[Tuple[int]]:
+    def shape(self) -> Tuple[int, ...]:
         return self.mpc_shape
 
     @staticmethod
@@ -153,7 +153,7 @@ class MPCTensor(PassthroughTensor):
 
     @staticmethod
     def _get_shares_from_secret(
-        secret: Any, parties: List[Any], shape: Tuple[int], seed_shares: int
+        secret: Any, parties: List[Any], shape: Tuple[int, ...], seed_shares: int
     ) -> List[ShareTensor]:
         if ispointer(secret):
             if shape is None:
@@ -168,7 +168,7 @@ class MPCTensor(PassthroughTensor):
 
     @staticmethod
     def _get_shares_from_remote_secret(
-        secret: Any, shape: Tuple[int], parties: List[Any], seed_shares: int
+        secret: Any, shape: Tuple[int, ...], parties: List[Any], seed_shares: int
     ) -> List[ShareTensor]:
         shares = []
         for i, party in enumerate(parties):
@@ -213,7 +213,7 @@ class MPCTensor(PassthroughTensor):
 
     @staticmethod
     def _get_shares_from_local_secret(
-        secret: Any, shape: Tuple[int], nr_parties: int, seed_shares: int
+        secret: Any, shape: Tuple[int, ...], nr_parties: int, seed_shares: int
     ) -> List[ShareTensor]:
         shares = []
         for i in range(nr_parties):
@@ -427,7 +427,7 @@ class MPCTensor(PassthroughTensor):
             result = _self.__apply_public_op(y, op_str)
 
         if isinstance(y, (float, int)):
-            y_shape = (1,)
+            y_shape: Tuple[int, ...] = (1,)
         elif isinstance(y, MPCTensor):
             y_shape = y.mpc_shape
         else:

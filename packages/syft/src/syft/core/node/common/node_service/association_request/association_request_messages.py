@@ -40,7 +40,6 @@ from .....common.serde.serializable import serializable
 from .....common.uid import UID
 from .....io.address import Address
 from ...client import AbstractNodeClient
-from ...client import Client
 
 
 @final
@@ -129,8 +128,8 @@ class ReceiveAssociationRequestMessage(ImmediateSyftMessageWithReply):
         self,
         address: Address,
         reply_to: Address,
-        source: Client,
-        target: Client,
+        source: AbstractNodeClient,
+        target: AbstractNodeClient,
         metadata: Dict[str, str],
         msg_id: Optional[UID] = None,
         response: Optional[str] = "",
@@ -213,8 +212,8 @@ class RespondAssociationRequestMessage(ImmediateSyftMessageWithReply):
         address: Address,
         response: str,
         reply_to: Address,
-        source: Client,
-        target: Client,
+        source: AbstractNodeClient,
+        target: AbstractNodeClient,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -362,8 +361,8 @@ class GetAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
         self,
         address: Address,
         metadata: Dict,
-        source: Client,
-        target: Client,
+        source: AbstractNodeClient,
+        target: AbstractNodeClient,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)

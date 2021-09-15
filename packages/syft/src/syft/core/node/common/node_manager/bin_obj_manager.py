@@ -3,6 +3,7 @@ from typing import Iterable
 from typing import KeysView
 from typing import List
 from typing import Optional
+from typing import cast
 
 # third party
 from sqlalchemy.orm import sessionmaker
@@ -122,11 +123,17 @@ class BinObjectManager(ObjectStore):
             obj=bin_obj.id,
             tags=value.tags,
             description=value.description,
-            read_permissions=syft.serialize(
-                syft.lib.python.Dict(value.read_permissions), to_bytes=True
+            read_permissions=cast(
+                bytes,
+                syft.serialize(
+                    syft.lib.python.Dict(value.read_permissions), to_bytes=True
+                ),
             ).hex(),
-            search_permissions=syft.serialize(
-                syft.lib.python.Dict(value.search_permissions), to_bytes=True
+            search_permissions=cast(
+                bytes,
+                syft.serialize(
+                    syft.lib.python.Dict(value.search_permissions), to_bytes=True
+                ),
             ).hex(),
             # name=metadata_dict["name"],
         )

@@ -14,6 +14,7 @@ import torch as th
 # relative
 from .....common.group import VerifyAll
 from .....common.message import ImmediateSyftMessageWithReply
+from .....common.message import SignedImmediateSyftMessageWithoutReply
 from .....common.uid import UID
 from .....store.storeable_object import StorableObject
 from ....abstract.node import AbstractNode
@@ -58,7 +59,7 @@ def create_tensor_msg(
 
         obj_msg = SaveObjectAction(obj=storable, address=node.address)
 
-        signed_message = obj_msg.sign(
+        signed_message: SignedImmediateSyftMessageWithoutReply = obj_msg.sign(
             signing_key=SigningKey(
                 payload["internal_key"].encode("utf-8"), encoder=HexEncoder
             )
@@ -108,7 +109,7 @@ def update_tensor_msg(
 
         obj_msg = SaveObjectAction(obj=storable, address=node.address)
 
-        signed_message = obj_msg.sign(
+        signed_message: SignedImmediateSyftMessageWithoutReply = obj_msg.sign(
             signing_key=SigningKey(
                 payload["internal_key"].encode("utf-8"), encoder=HexEncoder
             )
@@ -119,7 +120,7 @@ def update_tensor_msg(
         return UpdateTensorResponse(
             address=msg.reply_to,
             status_code=200,
-            content={"msg": "Tensor modified succesfully!"},
+            content={"msg": "Tensor modified successfully!"},
         )
     except Exception as e:
         return UpdateTensorResponse(

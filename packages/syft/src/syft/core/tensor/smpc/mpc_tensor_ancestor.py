@@ -18,4 +18,4 @@ class MPCTensorAncestor(TensorChainManager):
                 "Cannot call share on a remote tensor. Use MPCTensor(remote_secret)"
             )
 
-        return MPCTensor(secret=self.child, parties=parties)
+        return MPCTensor(secret=self.child, parties=list(parties))

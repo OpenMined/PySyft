@@ -31,6 +31,7 @@ from ...io.route import Route
 from ...pointer.pointer import Pointer
 from ...tensor.autodp.adp_tensor import ADPTensor
 from ...tensor.tensor import Tensor
+from ..abstract.node import AbstractNodeClient
 from ..common.action.exception_action import ExceptionMessage
 from ..common.client import Client
 from ..common.client_manager.association_api import AssociationRequestAPI
@@ -55,7 +56,7 @@ from .enums import PyGridClientEnums
 from .enums import RequestAPIFields
 
 
-class RequestQueueClient:
+class RequestQueueClient(AbstractNodeClient):
     def __init__(self, client: Client) -> None:
         self.client = client
         self.handlers = RequestHandlerQueueClient(client=client)
@@ -195,7 +196,9 @@ class RequestQueueClient:
 
     def _update_handler(self, request_handler: Dict[str, Any], keep: bool) -> None:
         # relative
-        from ..common.node_service.request_handler import UpdateRequestHandlerMessage
+        from ..common.node_service.request_handler.request_handler_messages import (
+            UpdateRequestHandlerMessage,
+        )
 
         msg = UpdateRequestHandlerMessage(
             address=self.client.address, handler=request_handler, keep=keep
@@ -210,7 +213,9 @@ class RequestHandlerQueueClient:
     @property
     def handlers(self) -> List[Dict]:
         # relative
-        from ..common.node_service.request_handler import GetAllRequestHandlersMessage
+        from ..common.node_service.request_handler.request_handler_messages import (
+            GetAllRequestHandlersMessage,
+        )
 
         msg = GetAllRequestHandlersMessage(
             address=self.client.address, reply_to=self.client.address

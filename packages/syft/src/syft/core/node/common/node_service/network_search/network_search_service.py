@@ -25,7 +25,7 @@ class NetworkSearchService(ImmediateNodeServiceWithReply):
         verify_key: VerifyKey,
     ) -> NetworkSearchResponse:
         queries = set(msg.content.get("query", []))
-        associations = node.association_requests.associations()
+        associations = node.association_requests.associations()  # type: ignore
 
         def filter_domains(url: str) -> bool:
             domain = connect(

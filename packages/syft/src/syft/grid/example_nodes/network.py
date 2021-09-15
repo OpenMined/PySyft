@@ -34,7 +34,7 @@ def signaling_server(port: int = 5000, host: str = "127.0.0.1") -> None:  # nose
         metadata = network.get_metadata_for_client()
         metadata_proto = serialize(metadata)
         r = Response(
-            response=metadata_proto.SerializeToString(),
+            response=metadata_proto.SerializeToString(),  # type: ignore
             status=200,
         )
         r.headers["Content-Type"] = "application/octet-stream"

@@ -19,11 +19,11 @@ import numpy as np
 import torch
 
 # relative
-from ....proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB
+from ....proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB  # type: ignore
 from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize as serialize
-from ..passthrough import PassthroughTensor
+from ..passthrough import PassthroughTensor  # type: ignore
 
 METHODS_FORWARD_ALL_SHARES = {
     "repeat",
@@ -126,7 +126,7 @@ class ShareTensor(PassthroughTensor):
     @staticmethod
     def generate_przs(
         value: Optional[Any],
-        shape: Tuple[int],
+        shape: Tuple[int, ...],
         rank: int,
         nr_parties: int,
         seed_shares: int,

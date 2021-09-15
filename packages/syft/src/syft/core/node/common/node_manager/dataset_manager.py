@@ -3,6 +3,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Tuple
+from typing import cast
 
 # third party
 from sqlalchemy.engine import Engine
@@ -51,7 +52,9 @@ class DatasetManager(DatabaseManager):
                 if isinstance(key, str) and isinstance(value, str):
                     str_metadata[key] = value
                 else:
-                    blob_metadata[str(key)] = serialize(value, to_bytes=True).hex()
+                    blob_metadata[str(key)] = cast(
+                        bytes, serialize(value, to_bytes=True)
+                    ).hex()
 
         _obj = self._schema(
             id=str(UID().value),

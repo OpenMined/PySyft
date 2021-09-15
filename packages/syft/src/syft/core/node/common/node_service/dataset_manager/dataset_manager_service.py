@@ -19,7 +19,7 @@ from .....common.group import VERIFYALL
 from .....common.message import ImmediateSyftMessageWithReply
 from .....common.uid import UID
 from .....store.storeable_object import StorableObject
-from ....abstract.node import AbstractNode
+from ....domain.domain_interface import DomainInterface
 from ...exceptions import AuthorizationError
 from ...exceptions import DatasetNotFoundError
 from ...node_table.utils import model_to_json
@@ -38,7 +38,7 @@ ENCODING = "UTF-8"
 
 
 def _handle_dataset_creation_grid_ui(
-    msg: CreateDatasetMessage, node: AbstractNode, verify_key: VerifyKey
+    msg: CreateDatasetMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> None:
 
     file_obj = io.BytesIO(msg.dataset)
@@ -77,7 +77,7 @@ def _handle_dataset_creation_grid_ui(
 
             node.datasets.add(
                 name=item.name,
-                dataset_id=dataset_id,
+                dataset_id=int(dataset_id),
                 obj_id=str(id_at_location.value),
                 dtype=df.__class__.__name__,
                 shape=str(tuple(df.shape)),
@@ -85,7 +85,7 @@ def _handle_dataset_creation_grid_ui(
 
 
 def _handle_dataset_creation_syft(
-    msg: CreateDatasetMessage, node: AbstractNode, verify_key: VerifyKey
+    msg: CreateDatasetMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> None:
     result = deserialize(msg.dataset, from_bytes=True)
     dataset_id = node.datasets.register(**msg.metadata)
@@ -103,7 +103,7 @@ def _handle_dataset_creation_syft(
         node.store[storable.id] = storable
         node.datasets.add(
             name=table_name,
-            dataset_id=dataset_id,
+            dataset_id=int(dataset_id),
             obj_id=str(id_at_location.value),
             dtype=str(table.__class__.__name__),
             shape=str(table.shape),
@@ -112,7 +112,7 @@ def _handle_dataset_creation_syft(
 
 def create_dataset_msg(
     msg: CreateDatasetMessage,
-    node: AbstractNode,
+    node: DomainInterface,
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
     # Check key permissions
@@ -134,15 +134,16 @@ def create_dataset_msg(
 
 def get_dataset_metadata_msg(
     msg: GetDatasetMessage,
-    node: AbstractNode,
+    node: DomainInterface,
     verify_key: VerifyKey,
 ) -> GetDatasetResponse:
     ds, objs = node.datasets.get(msg.dataset_id)
     if not ds:
         raise DatasetNotFoundError
     dataset_json = model_to_json(ds)
+    # these types seem broken
     dataset_json["data"] = [
-        {"name": obj.name, "id": obj.obj, "dtype": obj.dtype, "shape": obj.shape}
+        {"name": obj.name, "id": obj.obj, "dtype": obj.dtype, "shape": obj.shape}  # type: ignore
         for obj in objs
     ]
     return GetDatasetResponse(
@@ -153,19 +154,20 @@ def get_dataset_metadata_msg(
 
 def get_all_datasets_metadata_msg(
     msg: GetDatasetsMessage,
-    node: AbstractNode,
+    node: DomainInterface,
     verify_key: VerifyKey,
 ) -> GetDatasetsResponse:
     datasets = []
     for dataset in node.datasets.all():
         ds = model_to_json(dataset)
         _, objs = node.datasets.get(dataset.id)
+        # these types seem broken
         ds["data"] = [
             {
-                "name": obj.name,
-                "id": obj.obj,
-                "dtype": obj.dtype,
-                "shape": obj.shape,
+                "name": obj.name,  # type: ignore
+                "id": obj.obj,  # type: ignore
+                "dtype": obj.dtype,  # type: ignore
+                "shape": obj.shape,  # type: ignore
             }
             for obj in objs
         ]
@@ -178,7 +180,7 @@ def get_all_datasets_metadata_msg(
 
 def update_dataset_msg(
     msg: UpdateDatasetMessage,
-    node: AbstractNode,
+    node: DomainInterface,
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
     # Get Payload Content
@@ -202,7 +204,7 @@ def update_dataset_msg(
 
 def delete_dataset_msg(
     msg: UpdateDatasetMessage,
-    node: AbstractNode,
+    node: DomainInterface,
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
     _allowed = node.users.can_upload_data(verify_key=verify_key)
@@ -250,7 +252,7 @@ class DatasetManagerService(ImmediateNodeServiceWithReply):
     @staticmethod
     @service_auth(guests_welcome=True)
     def process(
-        node: AbstractNode,
+        node: DomainInterface,
         msg: INPUT_MESSAGES,
         verify_key: VerifyKey,
     ) -> OUTPUT_MESSAGES:

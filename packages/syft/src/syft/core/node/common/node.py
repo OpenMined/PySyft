@@ -147,7 +147,7 @@ class Node(AbstractNode):
             # If a DB engine isn't provided then
             if db_engine is None:
                 db_engine = create_engine("sqlite://", echo=False)
-                Base.metadata.create_all(db_engine)
+                Base.metadata.create_all(db_engine)  # type: ignore
 
             db = sessionmaker(bind=db_engine)()
 

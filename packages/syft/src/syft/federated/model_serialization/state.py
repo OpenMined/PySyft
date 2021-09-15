@@ -6,7 +6,6 @@ from typing import List
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-import syft_proto
 
 # relative
 from ...core.common.serde.serializable import serializable
@@ -14,6 +13,8 @@ from ...core.common.serde.serialize import _serialize as serialize
 from .common import deserialize_tensor
 from .common import serialize_tensor
 from .placeholder import PlaceHolder
+from .protos import StateTensor_PB
+from .protos import State_PB
 
 
 @serializable()
@@ -50,9 +51,9 @@ class State:
         :rtype: GeneratedProtocolMessageType
 
         """
-        return syft_proto.execution.v1.state_pb2.State
+        return State_PB
 
-    def _object2proto(self) -> syft_proto.execution.v1.state_pb2.State:
+    def _object2proto(self) -> State_PB:
         """Returns a protobuf serialization of self.
 
         As a requirement of all objects which inherit from Serializable,
@@ -67,7 +68,7 @@ class State:
             the other public serialization methods if you wish to serialize an
             object.
         """
-        proto = syft_proto.execution.v1.state_pb2.State()
+        proto = State_PB()
         protobuf_placeholders = [
             serialize(placeholder) for placeholder in self.state_placeholders
         ]
@@ -75,7 +76,7 @@ class State:
 
         state_tensors = []
         for tensor in self.tensors():
-            state_tensor = syft_proto.execution.v1.state_tensor_pb2.StateTensor()
+            state_tensor = StateTensor_PB()
             state_tensor.torch_tensor.CopyFrom(serialize_tensor(tensor))
             state_tensors.append(state_tensor)
 
@@ -83,7 +84,7 @@ class State:
         return proto
 
     @staticmethod
-    def _proto2object(proto: syft_proto.execution.v1.state_pb2.State) -> State:
+    def _proto2object(proto: State_PB) -> State:
         """Creates a ObjectWithID from a protobuf
 
         As a requirement of all objects which inherit from Serializable,

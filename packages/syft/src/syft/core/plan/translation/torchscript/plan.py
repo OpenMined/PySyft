@@ -5,11 +5,10 @@ from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-import syft_proto
 import torch as th
 
 # relative
-from .....lib import create_adp_ast
+from .....federated.model_serialization.protos import Plan_PB
 from .....logger import traceback_and_raise
 from ....common.serde.serializable import serializable
 
@@ -42,7 +41,7 @@ class PlanTorchscript:
             The type of protobuf object which corresponds to this class.
 
         """
-        return syft_proto.execution.v1.plan_pb2.Plan
+        return Plan_PB
 
     def __call__(self, *args: Any) -> Any:
         if self.torchscript:
@@ -50,7 +49,7 @@ class PlanTorchscript:
         else:
             traceback_and_raise("No torchscript")
 
-    def _object2proto(self) -> syft_proto.execution.v1.plan_pb2.Plan:
+    def _object2proto(self) -> Plan_PB:
         """
         Returns a protobuf serialization of self.
 
@@ -63,11 +62,11 @@ class PlanTorchscript:
 
         """
         bin = self.torchscript.save_to_buffer() if self.torchscript else None
-        return syft_proto.execution.v1.plan_pb2.Plan(torchscript=bin)
+        return Plan_PB(torchscript=bin)
 
     @staticmethod
     def _proto2object(
-        proto: syft_proto.execution.v1.plan_pb2.Plan,
+        proto: Plan_PB,
     ) -> "PlanTorchscript":
         """Creates a ObjectWithID from a protobuf
 

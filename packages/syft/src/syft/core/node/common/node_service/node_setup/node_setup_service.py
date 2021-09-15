@@ -14,7 +14,7 @@ from ......logger import traceback_and_raise
 from .....common import UID
 from .....common.message import ImmediateSyftMessageWithReply
 from .....io.location import SpecificLocation
-from ....abstract.node import AbstractNode
+from ....domain.domain_interface import DomainInterface
 from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
 from ...exceptions import OwnerAlreadyExistsError
@@ -27,7 +27,7 @@ from .node_setup_messages import GetSetUpMessage
 from .node_setup_messages import GetSetUpResponse
 
 
-def set_node_uid(node: AbstractNode) -> None:
+def set_node_uid(node: DomainInterface) -> None:
     try:
         setup = node.setup.first()
     except Exception as e:
@@ -49,7 +49,7 @@ def set_node_uid(node: AbstractNode) -> None:
 
 
 def create_initial_setup(
-    msg: CreateInitialSetUpMessage, node: AbstractNode, verify_key: VerifyKey
+    msg: CreateInitialSetUpMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> SuccessResponseMessage:
 
     print("Performing initial setup...")
@@ -70,9 +70,9 @@ def create_initial_setup(
     node.name = msg.domain_name
 
     # 4 - Create Admin User
-    _node_private_key = node.signing_key.encode(encoder=HexEncoder).decode("utf-8")
+    _node_private_key = node.signing_key.encode(encoder=HexEncoder).decode("utf-8")  # type: ignore
 
-    _verify_key = node.signing_key.verify_key.encode(encoder=HexEncoder).decode("utf-8")
+    _verify_key = node.signing_key.verify_key.encode(encoder=HexEncoder).decode("utf-8")  # type: ignore
 
     _admin_role = node.roles.owner_role
 
@@ -100,7 +100,7 @@ def create_initial_setup(
 
 
 def get_setup(
-    msg: GetSetUpMessage, node: AbstractNode, verify_key: VerifyKey
+    msg: GetSetUpMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> GetSetUpResponse:
 
     _current_user_id = msg.content.get("current_user", None)
@@ -115,7 +115,7 @@ def get_setup(
         except Exception as e:
             traceback_and_raise(e)
 
-    if users.role(user_id=_current_user_id).name != "Owner":
+    if users.role(verify_key=verify_key).name != "Owner":
         raise AuthorizationError("You're not allowed to get setup configs!")
     else:
         _setup = model_to_json(node.setup.first(domain_name=node.name))
@@ -137,7 +137,7 @@ class NodeSetupService(ImmediateNodeServiceWithReply):
     @staticmethod
     @service_auth(guests_welcome=True)
     def process(
-        node: AbstractNode,
+        node: DomainInterface,
         msg: Union[
             CreateInitialSetUpMessage,
             GetSetUpMessage,

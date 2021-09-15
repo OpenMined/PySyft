@@ -134,8 +134,9 @@ def get_request_msg(
 ) -> GetRequestResponse:
 
     # Get Payload Content
-    request_id = msg.content.get("request_id", None)
-    current_user_id = msg.content.get("current_user", None)
+    request_id = msg.request_id
+    current_user = node.users.first(verify_key=verify_key)
+    current_user_id = current_user.id
 
     users = node.users
 
@@ -235,9 +236,11 @@ def update_request_msg(
                 VerifyKey(_req.verify_key.encode("utf-8"), encoder=HexEncoder)
             ] = _req.id
             node.store[UID.from_string(_req.object_id)] = tmp_obj
-        node.data_requests.set(request_id=_req.id, status=status)
+        # this should be an enum not a string
+        node.data_requests.set(request_id=_req.id, status=status)  # type: ignore
     elif status == "denied" and (_can_triage_request or _req_owner):
-        node.data_requests.set(request_id=_req.id, status=status)
+        # this should be an enum not a string
+        node.data_requests.set(request_id=_req.id, status=status)  # type: ignore
     else:
         raise AuthorizationError("You're not allowed to update Request information!")
 

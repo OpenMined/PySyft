@@ -589,7 +589,7 @@ class SearchUsersMessage(ImmediateSyftMessageWithReply):
         self.email = email
         self.role = role
         self.groups = groups
-        self.name
+        self.name = name
 
     def _object2proto(self) -> SearchUsersMessage_PB:
         """Returns a protobuf serialization of self.
