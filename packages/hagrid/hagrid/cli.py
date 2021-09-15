@@ -31,7 +31,7 @@ from .lib import GRID_SRC_PATH
 from .lib import check_docker_version
 from .lib import name_tag
 from .lib import use_branch
-from .style import RichGroup
+from .style import RichGroupe
 
 
 @click.group(cls=RichGroup)
