@@ -418,7 +418,7 @@ class MPCTensor(PassthroughTensor):
         """Apply the "add" operation between "self" and "y".
 
         Args:
-            y (Union[MPCTensor, torch.Tensor, float, int]): self + y
+            y (Union[MPCTensor, torch.Tensor, float, int]): self + y.
 
         Returns:
             MPCTensor. Result of the operation.
