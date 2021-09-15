@@ -116,9 +116,18 @@ class TensorPointer(Pointer):
 
         op = getattr(operator, op_str)
 
-        if self.public_shape is not None and other.public_shape is not None:
+        if isinstance(other, TensorPointer):
+            other_shape = other.public_shape
+        elif isinstance(other, (int, float)):
+            other_shape = (1,)
+        elif isinstance(other, np.ndarray):
+            other_shape = other.shape
+        else:
+            raise ValueError(f"Invalid Type for TensorPointer:{type(other)}")
+
+        if self.public_shape is not None and other_shape is not None:
             result_public_shape = (
-                op(np.empty(self.public_shape), np.empty(other.public_shape))
+                op(np.empty(self.public_shape), np.empty(other_shape))
             ).shape
 
         result.public_shape = result_public_shape
