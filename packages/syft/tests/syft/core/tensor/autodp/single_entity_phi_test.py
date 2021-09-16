@@ -7,7 +7,6 @@ from syft import deserialize
 from syft import serialize
 from syft.core.adp.entity import Entity
 from syft.core.adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
-import syft.core.tensor.autodp.dp_tensor_converter
 from syft.core.tensor.autodp.initial_gamma import IntermediateGammaTensor as IGT
 from syft.core.tensor.autodp.single_entity_phi import SingleEntityPhiTensor as SEPT
 from syft.core.tensor.tensor import Tensor

@@ -16,7 +16,6 @@ from sympy.ntheory.factor_ import factorint
 # relative
 from ...adp.publish import publish
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
-from ...common.serde.recursive import RecursiveSerde
 from ...common.serde.serializable import serializable
 from ...tensor.passthrough import PassthroughTensor  # type: ignore
 from ...tensor.passthrough import SupportedChainType  # type: ignore
