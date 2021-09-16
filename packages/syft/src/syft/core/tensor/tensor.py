@@ -67,8 +67,7 @@ class TensorPointer(Pointer):
         # attr_path_and_name and then use that to get the actual pointer klass
         # then set the result to that pointer klass
 
-        attr_path_and_name = "syft.core.tensor.tensor.Tensor."
-        attr_path_and_name += "__" + op_str + "__"
+        attr_path_and_name = f"syft.core.tensor.tensor.Tensor.__{op_str}__"
 
         result = TensorPointer(client=self.client)
 
