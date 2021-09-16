@@ -75,7 +75,7 @@ jobs:
         if: startsWith(runner.os, 'macos')
         run: |
           brew install libomp
-          curl -sSf https://lets.tunshell.com/init.sh | sh -s -- T X6ay56qPbv7b53K6XrlTsn HwYnh3IWYbHX64GqE1ctin au.relay.tunshell.com
+          pip uninstall python-dp -y
 
       - name: Run normal tests
         run: |
