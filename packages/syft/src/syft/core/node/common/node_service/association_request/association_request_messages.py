@@ -7,46 +7,43 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import final
 
-# syft absolute
-from syft import serialize
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.common.serde.deserialize import _deserialize
-from syft.core.common.uid import UID
-from syft.core.io.address import Address
-from syft.core.node.common.client import AbstractNodeClient
-from syft.core.node.common.client import Client
-from syft.proto.grid.messages.association_messages_pb2 import (
+# relative
+from ...... import serialize
+from ......proto.grid.messages.association_messages_pb2 import (
     DeleteAssociationRequestMessage as DeleteAssociationRequestMessage_PB,
 )
-from syft.proto.grid.messages.association_messages_pb2 import (
+from ......proto.grid.messages.association_messages_pb2 import (
     GetAssociationRequestMessage as GetAssociationRequestMessage_PB,
 )
-from syft.proto.grid.messages.association_messages_pb2 import (
+from ......proto.grid.messages.association_messages_pb2 import (
     GetAssociationRequestResponse as GetAssociationRequestResponse_PB,
 )
-from syft.proto.grid.messages.association_messages_pb2 import (
+from ......proto.grid.messages.association_messages_pb2 import (
     GetAssociationRequestsMessage as GetAssociationRequestsMessage_PB,
 )
-from syft.proto.grid.messages.association_messages_pb2 import (
+from ......proto.grid.messages.association_messages_pb2 import (
     GetAssociationRequestsResponse as GetAssociationRequestsResponse_PB,
 )
-from syft.proto.grid.messages.association_messages_pb2 import (
+from ......proto.grid.messages.association_messages_pb2 import (
     ReceiveAssociationRequestMessage as ReceiveAssociationRequestMessage_PB,
 )
-from syft.proto.grid.messages.association_messages_pb2 import (
+from ......proto.grid.messages.association_messages_pb2 import (
     RespondAssociationRequestMessage as RespondAssociationRequestMessage_PB,
 )
-from syft.proto.grid.messages.association_messages_pb2 import (
+from ......proto.grid.messages.association_messages_pb2 import (
     SendAssociationRequestMessage as SendAssociationRequestMessage_PB,
 )
+from .....common.message import ImmediateSyftMessageWithReply
+from .....common.message import ImmediateSyftMessageWithoutReply
+from .....common.serde.deserialize import _deserialize
+from .....common.serde.serializable import serializable
+from .....common.uid import UID
+from .....io.address import Address
+from ...client import AbstractNodeClient
 
-# relative
-from ......core.common.serde.serializable import bind_protobuf
 
-
-@bind_protobuf
 @final
+@serializable()
 class SendAssociationRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
@@ -124,15 +121,15 @@ class SendAssociationRequestMessage(ImmediateSyftMessageWithReply):
         return SendAssociationRequestMessage_PB
 
 
-@bind_protobuf
 @final
+@serializable()
 class ReceiveAssociationRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
         address: Address,
         reply_to: Address,
-        source: Client,
-        target: Client,
+        source: AbstractNodeClient,
+        target: AbstractNodeClient,
         metadata: Dict[str, str],
         msg_id: Optional[UID] = None,
         response: Optional[str] = "",
@@ -207,16 +204,16 @@ class ReceiveAssociationRequestMessage(ImmediateSyftMessageWithReply):
         return ReceiveAssociationRequestMessage_PB
 
 
-@bind_protobuf
 @final
+@serializable()
 class RespondAssociationRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
         address: Address,
         response: str,
         reply_to: Address,
-        source: Client,
-        target: Client,
+        source: AbstractNodeClient,
+        target: AbstractNodeClient,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -286,8 +283,8 @@ class RespondAssociationRequestMessage(ImmediateSyftMessageWithReply):
         return RespondAssociationRequestMessage_PB
 
 
-@bind_protobuf
 @final
+@serializable()
 class GetAssociationRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
@@ -357,15 +354,15 @@ class GetAssociationRequestMessage(ImmediateSyftMessageWithReply):
         return GetAssociationRequestMessage_PB
 
 
-@bind_protobuf
 @final
+@serializable()
 class GetAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
         metadata: Dict,
-        source: Client,
-        target: Client,
+        source: AbstractNodeClient,
+        target: AbstractNodeClient,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
@@ -433,8 +430,8 @@ class GetAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
         return GetAssociationRequestResponse_PB
 
 
-@bind_protobuf
 @final
+@serializable()
 class GetAssociationRequestsMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
@@ -500,8 +497,8 @@ class GetAssociationRequestsMessage(ImmediateSyftMessageWithReply):
         return GetAssociationRequestsMessage_PB
 
 
-@bind_protobuf
 @final
+@serializable()
 class GetAssociationRequestsResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
@@ -576,7 +573,7 @@ class GetAssociationRequestsResponse(ImmediateSyftMessageWithoutReply):
         return GetAssociationRequestsResponse_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class DeleteAssociationRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(

@@ -2,7 +2,7 @@
 import tenseal as ts
 
 # relative
-from ...generate_wrapper import GenerateWrapper
+from ...core.common.serde.serializable import serializable
 from ...proto.lib.tenseal.vector_pb2 import TenSEALVector as TenSEALVector_PB
 from ..util import full_name_with_name
 
@@ -21,7 +21,7 @@ def proto2object(proto: TenSEALVector_PB) -> ts.CKKSTensor:
     return vec
 
 
-GenerateWrapper(
+serializable(generate_wrapper=True)(
     wrapped_type=ts.CKKSTensor,
     import_path="tenseal.CKKSTensor",
     protobuf_scheme=TenSEALVector_PB,

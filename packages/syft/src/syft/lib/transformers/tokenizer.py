@@ -4,12 +4,12 @@ from transformers import PreTrainedTokenizerFast
 
 # relative
 from ... import deserialize
-from ...generate_wrapper import GenerateWrapper
-from ...lib.python.primitive_factory import PrimitiveFactory
-from ...lib.python.util import upcast
+from ...core.common.serde.serializable import serializable
 from ...proto.lib.transformers.tokenizerfast_pb2 import (
     TokenizerFast as TokenizerFast_PB,
 )
+from ..python.primitive_factory import PrimitiveFactory
+from ..python.util import upcast
 from ..util import full_name_with_qualname
 
 
@@ -47,7 +47,7 @@ def proto2object(proto: TokenizerFast_PB) -> PreTrainedTokenizerFast:
     return tokenizer
 
 
-GenerateWrapper(
+serializable(generate_wrapper=True)(
     wrapped_type=PreTrainedTokenizerFast,
     import_path="transformers.PreTrainedTokenizerFast",
     protobuf_scheme=TokenizerFast_PB,

@@ -10,16 +10,17 @@ from typing import Union
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
+# syft absolute
+import syft as sy
+
 # relative
 from ..... import lib
-from ..... import serialize
 from .....logger import traceback_and_raise
 from .....proto.core.node.common.action.run_function_or_constructor_pb2 import (
     RunFunctionOrConstructorAction as RunFunctionOrConstructorAction_PB,
 )
 from .....util import inherit_tags
-from ....common.serde.deserialize import _deserialize
-from ....common.serde.serializable import bind_protobuf
+from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
 from ....pointer.pointer import Pointer
@@ -29,7 +30,7 @@ from ..util import listify
 from .common import ImmediateActionWithoutReply
 
 
-@bind_protobuf
+@serializable()
 class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
     """
     When executing a RunFunctionOrConstructorAction, a :class:`Node` will run
@@ -158,8 +159,10 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
 
     def __repr__(self) -> str:
         method_name = self.path.split(".")[-1]
-        arg_names = ",".join([a.class_name for a in self.args])
-        kwargs_names = ",".join([f"{k}={v.class_name}" for k, v in self.kwargs.items()])
+        arg_names = ",".join([a.__class__.__name__ for a in self.args])
+        kwargs_names = ",".join(
+            [f"{k}={v.__class__.__name__}" for k, v in self.kwargs.items()]
+        )
         return f"RunClassMethodAction {method_name}({arg_names}, {kwargs_names})"
 
     def _object2proto(self) -> RunFunctionOrConstructorAction_PB:
@@ -179,11 +182,11 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         """
         return RunFunctionOrConstructorAction_PB(
             path=self.path,
-            args=[serialize(x, to_bytes=True) for x in self.args],
-            kwargs={k: serialize(v, to_bytes=True) for k, v in self.kwargs.items()},
-            id_at_location=serialize(self.id_at_location),
-            address=serialize(self.address),
-            msg_id=serialize(self.id),
+            args=[sy.serialize(x, to_bytes=True) for x in self.args],
+            kwargs={k: sy.serialize(v, to_bytes=True) for k, v in self.kwargs.items()},
+            id_at_location=sy.serialize(self.id_at_location),
+            address=sy.serialize(self.address),
+            msg_id=sy.serialize(self.id),
         )
 
     @staticmethod
@@ -199,20 +202,20 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         :rtype: RunFunctionOrConstructorAction
 
         .. note::
-            This method is purely an internal method. Please use syft.deserialize()
+            This method is purely an internal method. Please use deserialize()
             if you wish to deserialize an object.
         """
 
         return RunFunctionOrConstructorAction(
             path=proto.path,
-            args=tuple(_deserialize(blob=x, from_bytes=True) for x in proto.args),
+            args=tuple(sy.deserialize(blob=x, from_bytes=True) for x in proto.args),
             kwargs={
-                k: _deserialize(blob=v, from_bytes=True)
+                k: sy.deserialize(blob=v, from_bytes=True)
                 for k, v in proto.kwargs.items()
             },
-            id_at_location=_deserialize(blob=proto.id_at_location),
-            address=_deserialize(blob=proto.address),
-            msg_id=_deserialize(blob=proto.msg_id),
+            id_at_location=sy.deserialize(blob=proto.id_at_location),
+            address=sy.deserialize(blob=proto.address),
+            msg_id=sy.deserialize(blob=proto.msg_id),
         )
 
     @staticmethod

@@ -7,23 +7,23 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import final
 
-# syft absolute
-from syft import serialize
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.common.serde.deserialize import _deserialize
-from syft.core.common.serde.serializable import bind_protobuf
-from syft.core.common.uid import UID
-from syft.core.io.address import Address
-from syft.proto.grid.messages.network_search_messages_pb2 import (
+# relative
+from ...... import serialize
+from ......proto.grid.messages.network_search_messages_pb2 import (
     NetworkSearchMessage as NetworkSearchMessage_PB,
 )
-from syft.proto.grid.messages.network_search_messages_pb2 import (
+from ......proto.grid.messages.network_search_messages_pb2 import (
     NetworkSearchResponse as NetworkSearchResponse_PB,
 )
+from .....common.message import ImmediateSyftMessageWithReply
+from .....common.message import ImmediateSyftMessageWithoutReply
+from .....common.serde.deserialize import _deserialize
+from .....common.serde.serializable import serializable
+from .....common.uid import UID
+from .....io.address import Address
 
 
-@bind_protobuf
+@serializable()
 @final
 class NetworkSearchMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -94,7 +94,7 @@ class NetworkSearchMessage(ImmediateSyftMessageWithReply):
         return NetworkSearchMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class NetworkSearchResponse(ImmediateSyftMessageWithoutReply):
     def __init__(

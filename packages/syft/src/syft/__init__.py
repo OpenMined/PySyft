@@ -26,68 +26,67 @@ Syft "python" functionality includes the following modules:
 To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` module...
 """
 
-import sys
-
 # stdlib
 from pathlib import Path
-from typing import Any, Dict
+import sys
+from typing import Any
+from typing import Dict
 
 # third party
 from pkg_resources import DistributionNotFound  # noqa: F401
 from pkg_resources import get_distribution  # noqa: F401
 
-# syft absolute
-# ASTRACT OBJECT IMPORTS
-from syft.core import common  # noqa: F401
-from syft.core.common import event_loop  # noqa: F401
-
-# Convenience Methods
-from syft.core.common.serde.deserialize import _deserialize as deserialize  # noqa: F401
-from syft.core.common.serde.serialize import _serialize as serialize  # noqa: F401
-from syft.core.node.common.node_service.testing_services.repr_service import (  # noqa: F401
-    ReprMessage,
-)
-from syft.core.node.device.device import Device  # noqa: F401
-from syft.core.node.device.device import DeviceClient  # noqa: F401
-from syft.core.node.domain.domain import Domain  # noqa: F401
-from syft.core.node.domain.domain import DomainClient  # noqa: F401
-from syft.core.node.network.network import Network  # noqa: F401
-from syft.core.node.network.network import NetworkClient  # noqa: F401
-
-# Convenience Constructors
-from syft.core.node.vm.vm import VirtualMachine  # noqa: F401
-from syft.core.node.vm.vm import VirtualMachineClient  # noqa: F401
-from syft.core.plan.plan import Plan  # noqa: F401
-from syft.core.plan.plan_builder import make_plan  # noqa: F401
-from syft.core.tensor import autodp  # noqa: F401
-from syft.core.tensor import autograd  # noqa: F401
-from syft.core.tensor.autodp import row_entity_phi  # noqa: F401
-from syft.core.tensor.autodp import single_entity_phi  # noqa: F401
-from syft.core.tensor.tensor import Tensor  # noqa: F401
-from syft.experimental_flags import flags  # noqa: F401
-from syft.grid.client.client import connect  # noqa: F401
-from syft.grid.client.client import login  # noqa: F401
-from syft.grid.client.client import register  # noqa: F401
-
-# Convenience Functions
-from syft.grid.duet import bcolors  # noqa: F401
-from syft.grid.duet import duet  # noqa: F401
-from syft.grid.duet import join_duet  # noqa: F401
-from syft.grid.duet import launch_duet  # noqa: F401
-from syft.grid.duet import test_duet_network  # noqa: F401
-
-# Convenience Objects
-from syft.lib import lib_ast  # noqa: F401
-from syft.lib import load  # noqa: F401
-from syft.lib import load_lib  # noqa: F401
-from syft.lib.torch.module import Module  # noqa: F401
-from syft.lib.torch.module import SyModule  # noqa: F401
-from syft.lib.torch.module import SySequential  # noqa: F401
-
 # relative
 # Package Imports
 from . import lib  # noqa: F401
 from . import logger  # noqa: F401
+
+# ASTRACT OBJECT IMPORTS
+from .core import common  # noqa: F401
+from .core.common import event_loop  # noqa: F401
+
+# Convenience Methods
+from .core.common.serde.deserialize import _deserialize as deserialize  # noqa: F401
+from .core.common.serde.serialize import _serialize as serialize  # noqa: F401
+from .core.node.common.node_service.testing_services.repr_service import (  # noqa: F401
+    ReprMessage,
+)
+from .core.node.device.device import Device  # noqa: F401
+from .core.node.device.device import DeviceClient  # noqa: F401
+from .core.node.domain.domain import Domain  # noqa: F401
+from .core.node.domain.domain import DomainClient  # noqa: F401
+from .core.node.network.network import Network  # noqa: F401
+from .core.node.network.network import NetworkClient  # noqa: F401
+
+# Convenience Constructors
+from .core.node.vm.vm import VirtualMachine  # noqa: F401
+from .core.node.vm.vm import VirtualMachineClient  # noqa: F401
+from .core.plan.plan import Plan  # noqa: F401
+from .core.plan.plan_builder import make_plan  # noqa: F401
+from .core.tensor import autodp  # noqa: F401
+from .core.tensor import autograd  # noqa: F401
+from .core.tensor.autodp import row_entity_phi  # noqa: F401
+from .core.tensor.autodp import single_entity_phi  # noqa: F401
+from .core.tensor.tensor import Tensor  # noqa: F401
+from .experimental_flags import flags  # noqa: F401
+from .grid.client.client import connect  # noqa: F401
+from .grid.client.client import login  # noqa: F401
+from .grid.client.client import register  # noqa: F401
+
+# Convenience Functions
+from .grid.duet import bcolors  # noqa: F401
+from .grid.duet import duet  # noqa: F401
+from .grid.duet import join_duet  # noqa: F401
+from .grid.duet import launch_duet  # noqa: F401
+from .grid.duet import test_duet_network  # noqa: F401
+
+# Convenience Objects
+from .lib import lib_ast  # noqa: F401
+from .lib import load  # noqa: F401
+from .lib import load_lib  # noqa: F401
+from .lib.torch.module import Module  # noqa: F401
+from .lib.torch.module import SyModule  # noqa: F401
+from .lib.torch.module import SySequential  # noqa: F401
 
 if sys.version_info[:2] >= (3, 8):
     # TODO: Import directly (no need for conditional) when `python_requires = >= 3.8`
