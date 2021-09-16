@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -180,7 +181,9 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             scalar_manager=self.scalar_manager,
         )
 
-    def repeat(self, *args, **kwargs) -> IntermediateGammaTensor:
+    def repeat(
+        self, *args: List[Any], **kwargs: Dict[Any, Any]
+    ) -> IntermediateGammaTensor:
         return IntermediateGammaTensor(
             term_tensor=self.term_tensor.repeat(*args, **kwargs).reshape(
                 -1, self.term_tensor.shape[-1]
