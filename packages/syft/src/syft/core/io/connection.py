@@ -1,8 +1,8 @@
 # relative
-from ...core.common.message import SignedEventualSyftMessageWithoutReply
-from ...core.common.message import SignedImmediateSyftMessageWithReply
-from ...core.common.message import SignedImmediateSyftMessageWithoutReply
 from ...logger import traceback_and_raise
+from ..common.message import SignedEventualSyftMessageWithoutReply
+from ..common.message import SignedImmediateSyftMessageWithReply
+from ..common.message import SignedImmediateSyftMessageWithoutReply
 
 
 class BidirectionalConnection:

@@ -5,12 +5,13 @@ from uuid import UUID
 import numpy as np
 
 # relative
-from .....core.common.serde.recursive import RecursiveSerde
+from .....core.common.serde.serializable import serializable
 from ..tensor import AutogradTensor
 from .op import Op
 
 
-class SumOp(Op, RecursiveSerde):
+@serializable(recursive_serde=True)
+class SumOp(Op):
     """Sum operation across a dimension"""
 
     __attr_allowlist__ = ["x", "axis", "dim_at_axis", "backward_shape"]

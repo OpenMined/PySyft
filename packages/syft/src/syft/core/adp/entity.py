@@ -15,12 +15,10 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import names
 
-# syft absolute
-from syft.core.common.serde.serializable import serializable
-
 # relative
-from ...core.common import UID
 from ...proto.core.adp.entity_pb2 import Entity as Entity_PB
+from ..common import UID
+from ..common.serde.serializable import serializable
 
 
 @serializable()

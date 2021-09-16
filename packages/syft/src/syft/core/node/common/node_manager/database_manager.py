@@ -9,8 +9,8 @@ from typing import Type
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
 
-# syft absolute
-from syft.core.node.common.node_table import Base
+# relative
+from ..node_table import Base
 
 
 class DatabaseManager:

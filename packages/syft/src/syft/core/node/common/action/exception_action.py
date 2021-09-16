@@ -7,15 +7,16 @@ from typing import Type
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import final
 
+# syft absolute
+import syft as sy
+
 # relative
-from ..... import serialize
 from .....lib.util import full_name_with_qualname
 from .....proto.core.node.common.action.exception_action_pb2 import (
     ExceptionMessage as ExceptionMessage_PB,
 )
 from .....util import validate_type
 from ....common.message import ImmediateSyftMessageWithoutReply
-from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
@@ -65,9 +66,9 @@ class ExceptionMessage(ImmediateSyftMessageWithoutReply):
         fqn = ".".join(module_parts)
 
         return ExceptionMessage_PB(
-            msg_id=serialize(self.id),
-            address=serialize(self.address),
-            msg_id_causing_exception=serialize(self.msg_id_causing_exception),
+            msg_id=sy.serialize(self.id),
+            address=sy.serialize(self.address),
+            msg_id_causing_exception=sy.serialize(self.msg_id_causing_exception),
             exception_type=fqn,
             exception_msg=self.exception_msg,
         )
@@ -93,10 +94,10 @@ class ExceptionMessage(ImmediateSyftMessageWithoutReply):
         exception_type = getattr(sys.modules[".".join(module_parts)], klass)
 
         return ExceptionMessage(
-            msg_id=validate_type(_deserialize(blob=proto.msg_id), UID, optional=True),
-            address=validate_type(_deserialize(blob=proto.address), Address),
+            msg_id=validate_type(sy.deserialize(blob=proto.msg_id), UID, optional=True),
+            address=validate_type(sy.deserialize(blob=proto.address), Address),
             msg_id_causing_exception=validate_type(
-                _deserialize(blob=proto.msg_id_causing_exception), UID
+                sy.deserialize(blob=proto.msg_id_causing_exception), UID
             ),
             exception_type=exception_type,
             exception_msg=proto.exception_msg,

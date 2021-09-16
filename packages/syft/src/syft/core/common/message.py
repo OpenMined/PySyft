@@ -12,17 +12,17 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
 # relative
-from ...core.common.object import ObjectWithID
-from ...core.common.serde.serialize import _serialize as serialize
-from ...core.common.uid import UID
-from ...core.io.address import Address
 from ...logger import debug
 from ...logger import traceback_and_raise
 from ...proto.core.auth.signed_message_pb2 import SignedMessage as SignedMessage_PB
 from ...util import get_fully_qualified_name
 from ...util import validate_type
-from ..common.serde.deserialize import _deserialize
-from ..common.serde.serializable import serializable
+from ..io.address import Address
+from .object import ObjectWithID
+from .serde.deserialize import _deserialize
+from .serde.serializable import serializable
+from .serde.serialize import _serialize as serialize
+from .uid import UID
 
 # this generic type for SignedMessage
 SignedMessageT = TypeVar("SignedMessageT")

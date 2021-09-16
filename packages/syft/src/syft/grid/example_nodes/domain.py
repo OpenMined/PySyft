@@ -12,11 +12,11 @@ import pickle  # nosec
 from flask import Flask
 from flask import request
 
-# syft absolute
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.node.domain.domain import Domain
-from syft.logger import critical
+# relative
+from ...core.common.message import SignedImmediateSyftMessageWithReply
+from ...core.common.message import SignedImmediateSyftMessageWithoutReply
+from ...core.node.domain.domain import Domain
+from ...logger import critical
 
 app = Flask(__name__)
 
@@ -36,11 +36,11 @@ def recv() -> str:
     msg = pickle.loads(binascii.unhexlify(hex_msg))  # nosec # TODO make less insecure
     reply = None
     critical(str(msg))
-    if isinstance(msg, ImmediateSyftMessageWithReply):
+    if isinstance(msg, (SignedImmediateSyftMessageWithReply)):
         reply = domain.recv_immediate_msg_with_reply(msg=msg)
         # QUESTION: is this expected to be a json string with the top level key data =>
         return json.dumps({"data": pickle.dumps(reply).hex()})
-    elif isinstance(msg, ImmediateSyftMessageWithoutReply):
+    elif isinstance(msg, (SignedImmediateSyftMessageWithoutReply)):
         domain.recv_immediate_msg_without_reply(msg=msg)
     else:
         domain.recv_eventual_msg_without_reply(msg=msg)

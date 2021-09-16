@@ -5,8 +5,10 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
+# syft absolute
+import syft as sy
+
 # relative
-from ..... import serialize
 from .....logger import critical
 from .....logger import debug
 from .....logger import traceback_and_raise
@@ -20,7 +22,6 @@ from .....proto.core.node.common.action.get_object_pb2 import (
 from .....util import get_fully_qualified_name
 from .....util import validate_type
 from ....common.message import ImmediateSyftMessageWithoutReply
-from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
@@ -61,11 +62,11 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
             the other public serialization methods if you wish to serialize an
             object.
         """
-        ser = serialize(self.obj)
+        ser = sy.serialize(self.obj)
 
         return GetObjectResponseMessage_PB(
-            msg_id=serialize(self.id),
-            address=serialize(self.address),
+            msg_id=sy.serialize(self.id),
+            address=sy.serialize(self.address),
             obj=ser,
         )
 
@@ -84,9 +85,9 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
             if you wish to deserialize an object.
         """
         return GetObjectResponseMessage(
-            obj=_deserialize(blob=proto.obj),
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
+            obj=sy.deserialize(blob=proto.obj),
+            msg_id=sy.deserialize(blob=proto.msg_id),
+            address=sy.deserialize(blob=proto.address),
         )
 
     @property
@@ -229,10 +230,10 @@ class GetObjectAction(ImmediateActionWithReply):
             object.
         """
         return GetObjectAction_PB(
-            id_at_location=serialize(self.id_at_location, to_proto=True),
-            msg_id=serialize(self.id, to_proto=True),
-            address=serialize(self.address, to_proto=True),
-            reply_to=serialize(self.reply_to, to_proto=True),
+            id_at_location=sy.serialize(self.id_at_location, to_proto=True),
+            msg_id=sy.serialize(self.id, to_proto=True),
+            address=sy.serialize(self.address, to_proto=True),
+            reply_to=sy.serialize(self.reply_to, to_proto=True),
             delete_obj=self.delete_obj,
         )
 
@@ -252,10 +253,10 @@ class GetObjectAction(ImmediateActionWithReply):
         """
 
         return GetObjectAction(
-            id_at_location=_deserialize(blob=proto.id_at_location),
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
-            reply_to=_deserialize(blob=proto.reply_to),
+            id_at_location=sy.deserialize(blob=proto.id_at_location),
+            msg_id=sy.deserialize(blob=proto.msg_id),
+            address=sy.deserialize(blob=proto.address),
+            reply_to=sy.deserialize(blob=proto.reply_to),
             delete_obj=proto.delete_obj,
         )
 

@@ -8,16 +8,16 @@ import flask
 from flask import Flask
 from flask import Response
 
-# syft absolute
-from syft import serialize
-from syft.core.common.message import SignedImmediateSyftMessageWithReply
-from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
-from syft.core.common.serde.deserialize import _deserialize
-from syft.core.node.network.network import Network
-from syft.grid.services.signaling_service import PullSignalingService
-from syft.grid.services.signaling_service import PushSignalingService
-from syft.grid.services.signaling_service import RegisterDuetPeerService
-from syft.logger import info
+# relative
+from ... import serialize
+from ...core.common.message import SignedImmediateSyftMessageWithReply
+from ...core.common.message import SignedImmediateSyftMessageWithoutReply
+from ...core.common.serde.deserialize import _deserialize
+from ...core.node.network.network import Network
+from ...logger import info
+from ..services.signaling_service import PullSignalingService
+from ..services.signaling_service import PushSignalingService
+from ..services.signaling_service import RegisterDuetPeerService
 
 
 def signaling_server(port: int = 5000, host: str = "127.0.0.1") -> None:  # nosec
@@ -34,7 +34,7 @@ def signaling_server(port: int = 5000, host: str = "127.0.0.1") -> None:  # nose
         metadata = network.get_metadata_for_client()
         metadata_proto = serialize(metadata)
         r = Response(
-            response=metadata_proto.SerializeToString(),
+            response=metadata_proto.SerializeToString(),  # type: ignore
             status=200,
         )
         r.headers["Content-Type"] = "application/octet-stream"
