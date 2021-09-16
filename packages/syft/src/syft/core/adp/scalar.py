@@ -24,11 +24,10 @@ from pymbolic.mapper.evaluator import EvaluationMapper as EM
 from scipy import optimize
 from sympy.core.basic import Basic as BasicSymbol
 
+# syft absolute
+import syft as sy
+
 # relative
-from ... import deserialize
-from ... import serialize
-from ...core.common import UID
-from ...core.common.serde.serializable import serializable
 from ...proto.core.adp.scalar_pb2 import (
     IntermediatePhiScalar as IntermediatePhiScalar_PB,
 )
@@ -36,6 +35,8 @@ from ...proto.core.adp.scalar_pb2 import BaseScalar as BaseScalar_PB
 from ...proto.core.adp.scalar_pb2 import GammaScalar as GammaScalar_PB
 from ...proto.core.adp.scalar_pb2 import IntermediateScalar as IntermediateScalar_PB
 from ...proto.core.adp.scalar_pb2 import PhiScalar as PhiScalar_PB
+from ..common import UID
+from ..common.serde.serializable import serializable
 from .entity import Entity
 from .search import GetSymbolsMapper
 from .search import create_lookup_tables_for_symbol
@@ -179,7 +180,7 @@ class IntermediateScalar(Scalar):
         intermediate_scalar = IntermediateScalar(
             id=UID._proto2object(proto.id),
             poly=None
-            # poly=deserialize(proto.poly)
+            # poly=sy.deserialize(proto.poly)
         )
         return intermediate_scalar
 
@@ -298,21 +299,21 @@ class IntermediatePhiScalar(IntermediateScalar):
 
     def _object2proto(self) -> IntermediatePhiScalar_PB:
         return IntermediatePhiScalar_PB(
-            id=serialize(self.id, to_proto=True),
-            # gamma=serialize(self._gamma, to_proto=True),
+            id=sy.serialize(self.id, to_proto=True),
+            # gamma=sy.serialize(self._gamma, to_proto=True),
             # poly=self._poly if self._poly is not None else None,
-            entity=serialize(self.entity, to_proto=True),
+            entity=sy.serialize(self.entity, to_proto=True),
         )
 
     @staticmethod
     def _proto2object(proto: IntermediatePhiScalar_PB) -> "IntermediatePhiScalar":
         intermediate_phi_scalar = IntermediatePhiScalar(
-            id=deserialize(proto.id, from_proto=True),
-            entity=deserialize(blob=proto.entity, from_proto=True),
+            id=sy.deserialize(proto.id, from_proto=True),
+            entity=sy.deserialize(blob=proto.entity, from_proto=True),
             poly=None
-            # poly=deserialize(proto.poly)
+            # poly=sy.deserialize(proto.poly)
         )
-        # intermediate_phi_scalar._gamma = deserialize(proto.gamma)
+        # intermediate_phi_scalar._gamma = sy.deserialize(proto.gamma)
         return intermediate_phi_scalar
 
     @staticmethod
@@ -357,8 +358,8 @@ class BaseScalar(Scalar):
 
     def _object2proto(self) -> BaseScalar_PB:
         kwargs = {
-            "id": serialize(self.id, to_proto=True),
-            "entity": serialize(self.entity, to_proto=True),
+            "id": sy.serialize(self.id, to_proto=True),
+            "entity": sy.serialize(self.entity, to_proto=True),
         }
 
         for field in ["max_val", "min_val", "value"]:
@@ -373,8 +374,8 @@ class BaseScalar(Scalar):
             min_val=proto.min_val if proto.HasField("min_val") else None,
             max_val=proto.max_val if proto.HasField("max_val") else None,
             value=proto.value if proto.HasField("value") else None,
-            entity=deserialize(proto.entity, from_proto=True),
-            id=deserialize(proto.id, from_proto=True),
+            entity=sy.deserialize(proto.entity, from_proto=True),
+            id=sy.deserialize(proto.id, from_proto=True),
         )
 
     @staticmethod
@@ -420,8 +421,8 @@ class PhiScalar(BaseScalar, IntermediatePhiScalar):
 
     def _object2proto(self) -> PhiScalar_PB:
         kwargs = {
-            "id": serialize(self.id, to_proto=True),
-            "entity": serialize(self.entity, to_proto=True),
+            "id": sy.serialize(self.id, to_proto=True),
+            "entity": sy.serialize(self.entity, to_proto=True),
         }
 
         for field in ["max_val", "min_val", "value"]:
@@ -433,8 +434,8 @@ class PhiScalar(BaseScalar, IntermediatePhiScalar):
     @staticmethod
     def _proto2object(proto: PhiScalar_PB) -> "PhiScalar":
         return PhiScalar(
-            id=deserialize(proto.id),
-            entity=deserialize(proto.entity),
+            id=sy.deserialize(proto.id),
+            entity=sy.deserialize(proto.entity),
             min_val=proto.min_val if proto.HasField("min_val") else None,
             max_val=proto.max_val if proto.HasField("max_val") else None,
             value=proto.value if proto.HasField("value") else None,
@@ -630,8 +631,8 @@ class GammaScalar(BaseScalar, IntermediateGammaScalar):
 
     def _object2proto(self) -> GammaScalar_PB:
         kwargs = {
-            "id": serialize(self.id, to_proto=True),
-            "entity": serialize(self.entity, to_proto=True),
+            "id": sy.serialize(self.id, to_proto=True),
+            "entity": sy.serialize(self.entity, to_proto=True),
             "prime": self.prime,
         }
 
@@ -644,11 +645,11 @@ class GammaScalar(BaseScalar, IntermediateGammaScalar):
     @staticmethod
     def _proto2object(proto: GammaScalar_PB) -> GammaScalar:
         return GammaScalar(
-            id=deserialize(proto.id, from_proto=True),
+            id=sy.deserialize(proto.id, from_proto=True),
             min_val=proto.min_val if proto.HasField("min_val") else None,
             max_val=proto.max_val if proto.HasField("max_val") else None,
             value=proto.value if proto.HasField("value") else None,
-            entity=deserialize(proto.entity),
+            entity=sy.deserialize(proto.entity),
             prime=proto.prime,
         )
 

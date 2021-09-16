@@ -9,19 +9,15 @@ from typing import Union
 from nacl.encoding import HexEncoder
 from nacl.signing import VerifyKey
 
-# syft absolute
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.node.abstract.node import AbstractNode
-from syft.core.node.common.node_service.auth import service_auth
-from syft.core.node.common.node_service.node_service import (
-    ImmediateNodeServiceWithReply,
-)
-
 # relative
+from .....common.message import ImmediateSyftMessageWithReply
+from ....domain.domain_interface import DomainInterface
 from ...exceptions import AuthorizationError
 from ...exceptions import GroupNotFoundError
 from ...exceptions import MissingRequestKeyError
 from ...node_table.utils import model_to_json
+from ..auth import service_auth
+from ..node_service import ImmediateNodeServiceWithReply
 from .group_manager_messages import CreateGroupMessage
 from .group_manager_messages import CreateGroupResponse
 from .group_manager_messages import DeleteGroupMessage
@@ -60,7 +56,7 @@ OUTPUT_MESSAGES = Union[
 
 def create_group_msg(
     msg: CreateGroupMessage,
-    node: AbstractNode,
+    node: DomainInterface,
     verify_key: VerifyKey,
 ) -> CreateGroupResponse:
     _current_user_id = msg.content.get("current_user", None)
@@ -75,7 +71,7 @@ def create_group_msg(
         ).id
 
     # Checks
-    _is_allowed = node.users.can_create_groups(user_id=_current_user_id)
+    _is_allowed = node.users.can_create_groups(verify_key=verify_key)
 
     if not _group_name:
         raise MissingRequestKeyError("Invalid group name!")
@@ -93,7 +89,7 @@ def create_group_msg(
 
 def update_group_msg(
     msg: UpdateGroupMessage,
-    node: AbstractNode,
+    node: DomainInterface,
     verify_key: VerifyKey,
 ) -> UpdateGroupResponse:
     _current_user_id = msg.content.get("current_user", None)
@@ -109,7 +105,7 @@ def update_group_msg(
         ).id
 
     # Checks
-    _is_allowed = node.users.can_create_groups(user_id=_current_user_id)
+    _is_allowed = node.users.can_create_groups(verify_key=verify_key)
 
     if not node.groups.contain(id=_group_id):
         raise GroupNotFoundError("Group ID not found!")
@@ -127,7 +123,7 @@ def update_group_msg(
 
 def get_group_msg(
     msg: GetGroupMessage,
-    node: AbstractNode,
+    node: DomainInterface,
     verify_key: VerifyKey,
 ) -> GetGroupResponse:
     _current_user_id = msg.content.get("current_user", None)
@@ -141,7 +137,7 @@ def get_group_msg(
         ).id
 
     # Checks
-    _is_allowed = node.users.can_create_groups(user_id=_current_user_id)
+    _is_allowed = node.users.can_create_groups(verify_key=verify_key)
 
     if not node.groups.contain(id=_group_id):
         raise GroupNotFoundError("Group ID not found!")
@@ -162,7 +158,7 @@ def get_group_msg(
 
 def get_all_groups_msg(
     msg: GetGroupsMessage,
-    node: AbstractNode,
+    node: DomainInterface,
     verify_key: VerifyKey,
 ) -> GetGroupsResponse:
 
@@ -179,7 +175,7 @@ def get_all_groups_msg(
         ).id
 
     # Checks
-    _is_allowed = node.users.can_create_groups(user_id=_current_user_id)
+    _is_allowed = node.users.can_create_groups(verify_key=verify_key)
     if _is_allowed:
         _groups = node.groups.all()
     else:
@@ -198,7 +194,7 @@ def get_all_groups_msg(
 
 def del_group_msg(
     msg: DeleteGroupMessage,
-    node: AbstractNode,
+    node: DomainInterface,
     verify_key: VerifyKey,
 ) -> DeleteGroupResponse:
     _current_user_id = msg.content.get("current_user", None)
@@ -212,7 +208,7 @@ def del_group_msg(
         ).id
 
     # Checks
-    _is_allowed = node.users.can_create_groups(user_id=_current_user_id)
+    _is_allowed = node.users.can_create_groups(verify_key=verify_key)
 
     if not node.groups.contain(id=_group_id):
         raise GroupNotFoundError("Group ID not found!")
@@ -241,7 +237,7 @@ class GroupManagerService(ImmediateNodeServiceWithReply):
     @staticmethod
     @service_auth(guests_welcome=True)
     def process(
-        node: AbstractNode,
+        node: DomainInterface,
         msg: INPUT_MESSAGES,
         verify_key: VerifyKey,
     ) -> OUTPUT_MESSAGES:

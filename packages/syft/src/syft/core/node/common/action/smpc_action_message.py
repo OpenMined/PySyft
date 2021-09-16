@@ -16,15 +16,16 @@ from uuid import UUID
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 
+# syft absolute
+import syft as sy
+
 # relative
-from ..... import serialize
-from .....core.common.uid import UID
 from .....proto.core.node.common.action.smpc_action_message_pb2 import (
     SMPCActionMessage as SMPCActionMessage_PB,
 )
 from ....common.message import ImmediateSyftMessageWithoutReply
-from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import serializable
+from ....common.uid import UID
 from ....io.address import Address
 from ....tensor.smpc.share_tensor import ShareTensor
 
@@ -124,10 +125,10 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
 
         return SMPCActionMessage_PB(
             name_action=self.name_action,
-            self_id=serialize(self.self_id),
-            args_id=list(map(lambda x: serialize(x), self.args_id)),
-            kwargs_id={k: serialize(v) for k, v in self.kwargs_id.items()},
-            id_at_location=serialize(self.id_at_location),
+            self_id=sy.serialize(self.self_id),
+            args_id=list(map(lambda x: sy.serialize(x), self.args_id)),
+            kwargs_id={k: sy.serialize(v) for k, v in self.kwargs_id.items()},
+            id_at_location=sy.serialize(self.id_at_location),
         )
 
     @staticmethod
@@ -147,10 +148,10 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
 
         return SMPCActionMessage(
             name_action=proto.name_action,
-            self_id=_deserialize(blob=proto.self_id),
-            args_id=list(map(lambda x: _deserialize(blob=x), proto.args_id)),
+            self_id=sy.deserialize(blob=proto.self_id),
+            args_id=list(map(lambda x: sy.deserialize(blob=x), proto.args_id)),
             kwargs_id={k: v for k, v in proto.kwargs_id.items()},
-            result_id=_deserialize(blob=proto.id_at_location),
+            result_id=sy.deserialize(blob=proto.id_at_location),
             address=proto,
         )
 

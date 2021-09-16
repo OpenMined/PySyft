@@ -3,6 +3,7 @@ from typing import Iterable
 from typing import KeysView
 from typing import List
 from typing import Optional
+from typing import cast
 
 # third party
 from sqlalchemy.orm import sessionmaker
@@ -11,11 +12,11 @@ from torch import Tensor
 
 # syft absolute
 import syft
-from syft.core.common.uid import UID
-from syft.core.store import ObjectStore
-from syft.core.store.storeable_object import StorableObject
 
 # relative
+from ....common.uid import UID
+from ....store import ObjectStore
+from ....store.storeable_object import StorableObject
 from ..node_table.bin_obj import BinObject
 from ..node_table.bin_obj_metadata import ObjectMetadata
 
@@ -23,7 +24,7 @@ ENCODING = "UTF-8"
 
 
 def create_storable(
-    _id: UID, data: Tensor, description: str, tags: Iterable[str]
+    _id: UID, data: Tensor, description: str, tags: Optional[List[str]] = None
 ) -> StorableObject:
     obj = StorableObject(id=_id, data=data, description=description, tags=tags)
 
@@ -122,11 +123,17 @@ class BinObjectManager(ObjectStore):
             obj=bin_obj.id,
             tags=value.tags,
             description=value.description,
-            read_permissions=syft.serialize(
-                syft.lib.python.Dict(value.read_permissions), to_bytes=True
+            read_permissions=cast(
+                bytes,
+                syft.serialize(
+                    syft.lib.python.Dict(value.read_permissions), to_bytes=True
+                ),
             ).hex(),
-            search_permissions=syft.serialize(
-                syft.lib.python.Dict(value.search_permissions), to_bytes=True
+            search_permissions=cast(
+                bytes,
+                syft.serialize(
+                    syft.lib.python.Dict(value.search_permissions), to_bytes=True
+                ),
             ).hex(),
             # name=metadata_dict["name"],
         )

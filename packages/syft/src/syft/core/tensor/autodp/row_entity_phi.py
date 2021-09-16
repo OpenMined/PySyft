@@ -12,22 +12,21 @@ from typing import Union
 import numpy as np
 
 # relative
-from ....core.adp.vm_private_scalar_manager import (
+from ...adp.vm_private_scalar_manager import (
     VirtualMachinePrivateScalarManager as TypeScalarManager,
 )
-from ....core.common.serde.recursive import RecursiveSerde
 from ...common.serde.serializable import serializable
-from ...tensor.types import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import implements  # type: ignore
 from ..passthrough import is_acceptable_simple_type  # type: ignore
+from ..types import AcceptableSimpleType  # type: ignore
 from .adp_tensor import ADPTensor
 from .initial_gamma import InitialGammaTensor  # type: ignore
 
 
-@serializable()
-class RowEntityPhiTensor(PassthroughTensor, RecursiveSerde, ADPTensor):
-    """This tensor is one of several tensors whose purpose is to carry metadata
+@serializable(recursive_serde=True)
+class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
+   """This tensor is one of several tensors whose purpose is to carry metadata
     relevant to automatically tracking the privacy budgets of tensor operations. This
     tensor is called 'Phi' tensor because it assumes that each number in the tensor
     originates from a single entity (no numbers originate from multiple entities). This
@@ -39,7 +38,7 @@ class RowEntityPhiTensor(PassthroughTensor, RecursiveSerde, ADPTensor):
     we refer to the number of 'rows' we simply refer to the length of the first dimension. This
     tensor can have an arbitrary number of dimensions."""
 
-    # a list of attributes needed for serialization using RecursiveSerde
+    # a list of attributes needed for serialization using RecursiveSerde  
     __attr_allowlist__ = ["child"]
 
     def __init__(self, rows: Any, check_shape: bool = True):

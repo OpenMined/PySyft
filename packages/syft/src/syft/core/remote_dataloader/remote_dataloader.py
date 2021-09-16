@@ -9,9 +9,10 @@ import torch as th
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 
+# syft absolute
+import syft as sy
+
 # relative
-from ... import deserialize
-from ... import serialize
 from ...logger import traceback_and_raise
 from ...proto.core.remote_dataloader.remote_dataset_pb2 import (
     RemoteDataLoader as RemoteDataLoader_PB,
@@ -82,12 +83,12 @@ class RemoteDataLoader:
     def _object2proto(self) -> RemoteDataLoader_PB:
         proto = RemoteDataLoader_PB()
         proto.batch_size = self.batch_size
-        proto.remote_dataset.CopyFrom(serialize(self.remote_dataset))
+        proto.remote_dataset.CopyFrom(sy.serialize(self.remote_dataset))
         return proto
 
     @staticmethod
     def _proto2object(proto: Any) -> "RemoteDataLoader":
-        remote_dataset = deserialize(proto.remote_dataset)
+        remote_dataset = sy.deserialize(proto.remote_dataset)
         batch_size = proto.batch_size
         return RemoteDataLoader(remote_dataset=remote_dataset, batch_size=batch_size)
 

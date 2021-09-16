@@ -21,8 +21,8 @@ from .....common import UID
 from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.serde.serializable import serializable
 from .....io.address import Address
-from .....node.common.client import Client
-from ....common.node import Node
+from ...client import Client
+from ...node import Node
 from ..accept_or_deny_request.accept_or_deny_request_messages import (
     AcceptOrDenyRequestMessage,
 )
