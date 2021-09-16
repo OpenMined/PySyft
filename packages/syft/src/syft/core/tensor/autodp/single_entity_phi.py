@@ -37,7 +37,9 @@ from ..smpc.mpc_tensor import MPCTensor
 from ..tensor import Tensor
 from ..types import SupportedChainType  # type: ignore
 from ..util import inputs2child  # type: ignore
+from .dp_tensor_converter import convert_to_gamma_tensor
 from .initial_gamma import InitialGammaTensor
+from .initial_gamma import IntermediateGammaTensor
 
 
 @bind_protobuf
@@ -383,7 +385,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
                     data = self.child == other
                 else:
                     raise Exception(
-                        f"Tensor shapes do not match "
+                        f"Tensor shapes do not match "  # type: ignore
                         f"for __eq__: {self.child.shape} != {other.child.shape}"  # type: ignore
                     )
             else:
@@ -480,14 +482,14 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
             scalar_manager=self.scalar_manager,
         )
 
-    def __add__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
+    def __add__(
+        self, other: SupportedChainType
+    ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
 
         # if the tensor being added is also private
         if isinstance(other, SingleEntityPhiTensor):
-
             if self.entity.name != other.entity.name:
-                # this should return a GammaTensor
-                raise NotImplementedError
+                return convert_to_gamma_tensor(self) + convert_to_gamma_tensor(other)
 
             data = self.child + other.child
             min_vals = self.min_vals + other.min_vals
@@ -607,8 +609,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
         if isinstance(other, SingleEntityPhiTensor):
 
             if self.entity != other.entity:
-                # this should return a GammaTensor
-                return NotImplemented
+                return convert_to_gamma_tensor(self) * convert_to_gamma_tensor(other)
 
             data = self.child * other.child
 
@@ -652,12 +653,17 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, Recursive
         else:
             return NotImplemented
 
-    def __sub__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
+    def __pos__(self) -> SingleEntityPhiTensor:
+        """Identity operator, returns itself"""
+        return self
+
+    def __sub__(
+        self, other: SupportedChainType
+    ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
 
         if isinstance(other, SingleEntityPhiTensor):
             if self.entity != other.entity:
-                # this should return a GammaTensor
-                raise NotImplemented
+                return convert_to_gamma_tensor(self) - convert_to_gamma_tensor(other)
 
             data = self.child - other.child
             min_vals = self.min_vals - other.min_vals

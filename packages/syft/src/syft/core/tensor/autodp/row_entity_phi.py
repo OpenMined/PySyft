@@ -21,16 +21,17 @@ from ...tensor.types import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import implements  # type: ignore
 from ..passthrough import is_acceptable_simple_type  # type: ignore
+from .adp_tensor import ADPTensor
 from .initial_gamma import InitialGammaTensor  # type: ignore
 
 
 @bind_protobuf
-class RowEntityPhiTensor(PassthroughTensor, RecursiveSerde):
+class RowEntityPhiTensor(PassthroughTensor, RecursiveSerde, ADPTensor):
 
     __attr_allowlist__ = ["child"]
 
     def __init__(self, rows: Any, check_shape: bool = True):
-        super().__init__(rows)
+        super().__init__(rows)  # rows = [SEPT1, SEPT2, SEPT3]
 
         if check_shape:
             shape = rows[0].shape
@@ -120,9 +121,11 @@ class RowEntityPhiTensor(PassthroughTensor, RecursiveSerde):
                 if is_acceptable_simple_type(other):
                     new_list.append(self.child[i] + other)
                 else:
+                    # Private/Public and Private/Private are handled by the underlying SEPT self.child objects.
                     new_list.append(self.child[i] + other.child[i])  # type: ignore
             return RowEntityPhiTensor(rows=new_list, check_shape=False)
         else:
+            # Broadcasting is possible, but we're skipping that for now.
             raise Exception(
                 f"Tensor dims do not match for __add__: {len(self.child)} != {len(other.child)}"  # type: ignore
             )
@@ -163,6 +166,9 @@ class RowEntityPhiTensor(PassthroughTensor, RecursiveSerde):
             raise Exception(
                 f"Tensor dims do not match for __mul__: {len(self.child)} != {len(other.child)}"  # type: ignore
             )
+
+    def __pos__(self) -> RowEntityPhiTensor:
+        return RowEntityPhiTensor(rows=[+x for x in self.child], check_shape=False)
 
     def __truediv__(  # type: ignore
         self, other: Union[RowEntityPhiTensor, AcceptableSimpleType]

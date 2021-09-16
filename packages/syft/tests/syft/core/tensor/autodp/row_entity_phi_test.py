@@ -7,6 +7,10 @@ import pytest
 
 # syft absolute
 from syft.core.adp.entity import Entity
+from syft.core.adp.vm_private_scalar_manager import (
+    VirtualMachinePrivateScalarManager as ScalarManager,
+)
+from syft.core.tensor.autodp.intermediate_gamma import IntermediateGammaTensor as IGT
 from syft.core.tensor.autodp.row_entity_phi import RowEntityPhiTensor as REPT
 from syft.core.tensor.autodp.single_entity_phi import SingleEntityPhiTensor as SEPT
 from syft.core.tensor.tensor import Tensor
@@ -15,9 +19,10 @@ from syft.core.tensor.tensor import Tensor
 
 # Global constants
 ishan = Entity(name="Ishan")
-supreme_leader = Entity(name="Trask")
+traskmaster = Entity(name="Trask")
 dims = np.random.randint(10) + 1  # Avoid size 0
 row_count = np.random.randint(7) + 1
+scalar_manager = ScalarManager()
 
 
 @pytest.fixture
@@ -42,16 +47,36 @@ def reference_data() -> np.ndarray:
 
 
 @pytest.fixture
-def row_data(lower_bound: np.ndarray, upper_bound: np.ndarray) -> List:
+def row_data_ishan() -> List:
     """This generates a random number of SEPTs to populate the REPTs."""
     reference_data = []
     for _ in range(row_count):
+        new_data = np.random.random((dims, dims))
         reference_data.append(
             SEPT(
-                child=np.random.random((dims, dims)),
+                child=new_data,
                 entity=ishan,
-                min_vals=lower_bound,
-                max_vals=upper_bound,
+                min_vals=np.zeros_like(new_data),
+                max_vals=np.ones_like(new_data),
+                scalar_manager=scalar_manager,
+            )
+        )
+    return reference_data
+
+
+@pytest.fixture
+def row_data_trask() -> List:
+    """This generates a random number of SEPTs to populate the REPTs."""
+    reference_data = []
+    for _ in range(row_count):
+        new_data = np.random.random((dims, dims))
+        reference_data.append(
+            SEPT(
+                child=new_data,
+                entity=traskmaster,
+                min_vals=np.zeros_like(new_data),
+                max_vals=np.ones_like(new_data),
+                scalar_manager=scalar_manager,
             )
         )
     return reference_data
@@ -64,28 +89,28 @@ def reference_binary_data() -> np.ndarray:
     return binary_data
 
 
-def test_eq(row_data: List) -> None:
+def test_eq(row_data_ishan: List) -> None:
     """Test equality between two identical RowEntityPhiTensors"""
-    reference_tensor = REPT(rows=row_data)
-    second_tensor = REPT(rows=row_data)
+    reference_tensor = REPT(rows=row_data_ishan)
+    second_tensor = REPT(rows=row_data_ishan)
     third_tensor = reference_tensor
 
     assert reference_tensor == second_tensor, "Identical Tensors don't match up"
     assert reference_tensor == third_tensor, "Identical Tensors don't match up"
 
 
-def test_eq_diff_tensors(row_data: List) -> None:
+def test_eq_diff_tensors(row_data_ishan: List) -> None:
     """Here we're testing equality between a REPT and other tensor types."""
 
     # Narrow row data down to a single data point (SEPT)
-    sept_data: SEPT = row_data[0]
+    sept_data: SEPT = row_data_ishan[0]
     reference_tensor = REPT(rows=sept_data)
     reference_sept = sept_data
 
     assert (
         reference_tensor == reference_sept
     ), "REPT and SEPT equality comparison failed"
-    assert row_data == reference_tensor.child, "Error: data & child don't match"
+    # assert row_data_ishan == reference_tensor.child, "Error: data & child don't match"
     assert (
         type(reference_tensor == reference_sept) == REPT
     ), "Return type error for equality comparison b/w REPT, SEPT"
@@ -93,7 +118,7 @@ def test_eq_diff_tensors(row_data: List) -> None:
 
 
 def test_eq_diff_entities(
-    row_data: List,
+    row_data_ishan: List,
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
@@ -106,7 +131,7 @@ def test_eq_diff_entities(
         child=reference_data,
         max_vals=upper_bound,
         min_vals=lower_bound,
-        entity=supreme_leader,
+        entity=traskmaster,
     )
     tensor1 = REPT(rows=data1)
     tensor2 = REPT(rows=data2)
@@ -117,14 +142,14 @@ def test_eq_diff_entities(
 
 # TODO: Update this test after REPT.all() and .any() are implemented, and check `assert not comparison_result`
 def test_eq_values(
-    row_data: List,
+    row_data_ishan: List,
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
 ) -> None:
     """Test REPTs belonging to the same owner, with different data"""
-    tensor1 = REPT(rows=row_data)
-    tensor2 = REPT(rows=row_data) + 1
+    tensor1 = REPT(rows=row_data_ishan)
+    tensor2 = REPT(rows=row_data_ishan) + 1
 
     assert tensor2.shape == tensor1.shape, "Tensors not initialized properly"
     # assert tensor2 != tensor1, "Error: REPT + 1 == REPT"  # TODO: Investigate RecursionError Here
@@ -149,14 +174,14 @@ def test_eq_values(
 
 
 def test_ne_shapes(
-    row_data: List,
+    row_data_ishan: List,
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
 ) -> None:
     """Test REPTs belonging to the same owner, with different shapes"""
-    tensor1 = REPT(rows=row_data)
-    tensor2 = REPT(rows=row_data + row_data)
+    tensor1 = REPT(rows=row_data_ishan)
+    tensor2 = REPT(rows=row_data_ishan + row_data_ishan)
     assert (
         tensor2.shape != tensor1.shape
     ), "Tensors not initialized properly for this test"
@@ -165,20 +190,20 @@ def test_ne_shapes(
         result = tensor2 == tensor1
 
 
-def test_eq_ndarray(row_data: List) -> None:
+def test_eq_ndarray(row_data_ishan: List) -> None:
     """Test equality between a SEPT and a simple type (int, float, bool, np.ndarray)"""
-    sub_row_data: SEPT = row_data[0]
+    sub_row_data_ishan: SEPT = row_data_ishan[0]
 
-    reference_tensor = REPT(rows=sub_row_data)
-    assert sub_row_data.child == reference_tensor, "Comparison b/w REPT and "
+    reference_tensor = REPT(rows=sub_row_data_ishan)
+    assert sub_row_data_ishan.child == reference_tensor, "Comparison b/w REPT and "
 
 
 @pytest.mark.skip(
     reason="REPT addition currently doesn't catch incorrect types (str, dict, etc)"
 )
-def test_add_wrong_types(row_data: List) -> None:
+def test_add_wrong_types(row_data_ishan: List) -> None:
     """Ensure that addition with incorrect types aren't supported"""
-    reference_tensor = REPT(rows=row_data)
+    reference_tensor = REPT(rows=row_data_ishan)
     with pytest.raises(NotImplementedError):
         result1 = reference_tensor + "some string"
         result2 = reference_tensor + dict()
@@ -186,9 +211,9 @@ def test_add_wrong_types(row_data: List) -> None:
     return None
 
 
-def test_add_simple_types(row_data: List) -> None:
+def test_add_simple_types(row_data_ishan: List) -> None:
     """Test addition of a REPT with simple types (float, ints, bools, etc)"""
-    tensor = REPT(rows=row_data)
+    tensor = REPT(rows=row_data_ishan)
 
     random_int = np.random.randint(low=15, high=1000)
     result = tensor + random_int
@@ -210,10 +235,10 @@ def test_add_simple_types(row_data: List) -> None:
 
 
 @pytest.mark.skip(reason="Temporary")
-def test_add_tensor_types(row_data: List) -> None:
+def test_add_tensor_types(row_data_ishan: List) -> None:
     """Test addition of a REPT with various other kinds of Tensors"""
 
-    reference_tensor = REPT(rows=row_data)
+    reference_tensor = REPT(rows=row_data_ishan)
     simple_tensor = Tensor(child=np.random.random((dims, dims)))
     assert len(simple_tensor.child) == len(
         reference_tensor.child
@@ -238,10 +263,10 @@ def test_add_single_entity(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
-    row_data: List,
+    row_data_ishan: List,
 ) -> None:
     """Test the addition of REPT + SEPT"""
-    tensor1 = REPT(rows=row_data)
+    tensor1 = REPT(rows=row_data_ishan)
     tensor2 = SEPT(
         child=reference_data, entity=ishan, max_vals=upper_bound, min_vals=lower_bound
     )
@@ -275,9 +300,9 @@ def test_add_single_entity(
 
 
 # TODO: Fix REPT.min_vals and REPT.max_vals properties
-def test_add_row_entities(row_data: List) -> None:
+def test_add_row_entities(row_data_ishan: List) -> None:
     """Test normal addition of two REPTs"""
-    tensor1 = REPT(rows=row_data)
+    tensor1 = REPT(rows=row_data_ishan)
 
     tensor2 = tensor1 + tensor1
     assert isinstance(tensor2, REPT), "Error: REPT + REPT != REPT "
@@ -300,9 +325,9 @@ def test_add_row_entities(row_data: List) -> None:
     return None
 
 
-def test_add_sub_equivalence(row_data: List) -> None:
+def test_add_sub_equivalence(row_data_ishan: List) -> None:
     """Test to see if addition of -ve and subtraction of +ve produce the same results"""
-    tensor1 = REPT(rows=row_data)
+    tensor1 = REPT(rows=row_data_ishan)
     tensor2 = tensor1 * 2
     assert tensor2.shape == tensor1.shape, "REPTs initialized incorrectly"
 
@@ -310,3 +335,29 @@ def test_add_sub_equivalence(row_data: List) -> None:
     assert (
         tensor2 - tensor1 == tensor2 + tensor1 * -1
     ), "Addition of -ve != Subtraction of +ve"
+
+
+def test_add_result_gamma(row_data_ishan: List, row_data_trask: List) -> None:
+    """Test to see if GammaTensors are produced by adding Tensors of different entities"""
+    tensor1 = REPT(rows=row_data_ishan)
+    tensor2 = REPT(rows=row_data_trask)
+    result = tensor2 + tensor1
+
+    assert isinstance(result, REPT), "REPT + REPT != REPT"
+    for tensor in result.child:
+        assert isinstance(
+            tensor, IGT
+        ), "SEPT(entity1) + SEPT(entity2) != IGT(entity1, entity2)"
+
+
+def test_sub_result_gamma(row_data_ishan: List, row_data_trask: List) -> None:
+    """Test to see if GammaTensors are produced by subtracting Tensors of different entities"""
+    tensor1 = REPT(rows=row_data_ishan)
+    tensor2 = REPT(rows=row_data_trask)
+    result = tensor2 - tensor1
+
+    assert isinstance(result, REPT), "REPT + REPT != REPT"
+    for tensor in result.child:
+        assert isinstance(
+            tensor, IGT
+        ), "SEPT(entity1) + SEPT(entity2) != IGT(entity1, entity2)"

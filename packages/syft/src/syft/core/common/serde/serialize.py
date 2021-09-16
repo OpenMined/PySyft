@@ -74,7 +74,7 @@ def _serialize(
         is_serializable = obj
 
     if to_bytes:
-        debug(f"Serializing {type(is_serializable)}")
+        # debug(f"Serializing {type(is_serializable)}")
         # indent=None means no white space or \n in the serialized version
         # this is compatible with json.dumps(x, indent=None)
         serialized_data = is_serializable._object2proto().SerializeToString()

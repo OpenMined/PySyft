@@ -6,6 +6,9 @@ import pytest
 from syft import deserialize
 from syft import serialize
 from syft.core.adp.entity import Entity
+from syft.core.adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
+import syft.core.tensor.autodp.dp_tensor_converter
+from syft.core.tensor.autodp.initial_gamma import IntermediateGammaTensor as IGT
 from syft.core.tensor.autodp.single_entity_phi import SingleEntityPhiTensor as SEPT
 from syft.core.tensor.tensor import Tensor
 
@@ -41,6 +44,13 @@ def reference_binary_data() -> np.ndarray:
     """Generate binary data to test the equality operators with bools"""
     binary_data = np.random.randint(2, size=(dims, dims))
     return binary_data
+
+
+@pytest.fixture
+def reference_scalar_manager() -> VirtualMachinePrivateScalarManager:
+    """Generate a ScalarFactory that will allow GammaTensors to be created."""
+    reference_scalar_manager = VirtualMachinePrivateScalarManager()
+    return reference_scalar_manager
 
 
 def test_eq(
@@ -340,6 +350,7 @@ def test_add_single_entities(
     return None
 
 
+@pytest.mark.skip(reason="GammaTensors have now been implemented")
 def test_add_diff_entities(
     reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
 ) -> None:
@@ -354,9 +365,6 @@ def test_add_diff_entities(
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-
-    assert tensor2.entity != tensor1.entity, "Entities aren't actually different"
-
     with pytest.raises(NotImplementedError):
         tensor2 + tensor1
     return None
@@ -382,6 +390,160 @@ def test_add_sub_equivalence(
         add_result == sub_result
     ), "Addition of negative values does not give the same result as subtraction"
     return None
+
+
+def test_add_to_gamma_tensor(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    reference_scalar_manager: VirtualMachinePrivateScalarManager,
+) -> None:
+    """Test that SEPTs with different entities create a GammaTensor when added"""
+    # We have to use a reference scalar manager for now because we can't combine scalar factories yet.
+
+    tensor1 = SEPT(
+        child=reference_data,
+        entity=ishan,
+        max_vals=np.ones_like(reference_data),
+        min_vals=np.zeros_like(reference_data),
+        scalar_manager=reference_scalar_manager,
+    )
+    tensor2 = SEPT(
+        child=reference_data,
+        entity=supreme_leader,
+        max_vals=np.ones_like(reference_data),
+        min_vals=np.zeros_like(reference_data),
+        scalar_manager=reference_scalar_manager,
+    )
+
+    assert tensor2.entity != tensor1.entity, "Entities aren't actually different"
+    result = tensor2 + tensor1
+    assert isinstance(
+        result, IGT
+    ), "Addition of SEPTs with diff entities did not give GammaTensor"
+    assert result.shape == tensor2.shape, "SEPT + SEPT changed shape"
+    assert result.shape == tensor1.shape, "SEPT + SEPT changed shape"
+
+    # Check that all values are as expected, and addition was conducted correctly.
+    for i in range(len(result.flat_scalars)):
+        assert (
+            result.flat_scalars[i].value
+            == tensor2.child.flatten()[i] + tensor1.child.flatten()[i]
+        ), "Wrong value."
+    return None
+
+
+def test_sub_to_gamma_tensor(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    reference_scalar_manager: VirtualMachinePrivateScalarManager,
+) -> None:
+    """Test that SEPTs with different entities create a GammaTensor when subtracted"""
+    # We have to use a reference scalar manager for now because we can't combine scalar factories yet.
+
+    tensor1 = SEPT(
+        child=reference_data,
+        entity=ishan,
+        max_vals=np.ones_like(reference_data),
+        min_vals=np.zeros_like(reference_data),
+        scalar_manager=reference_scalar_manager,
+    )
+    tensor2 = SEPT(
+        child=reference_data,
+        entity=supreme_leader,
+        max_vals=np.ones_like(reference_data),
+        min_vals=np.zeros_like(reference_data),
+        scalar_manager=reference_scalar_manager,
+    )
+
+    assert tensor2.entity != tensor1.entity, "Entities aren't actually different"
+    result = tensor2 - tensor1
+    assert isinstance(
+        result, IGT
+    ), "Addition of SEPTs with diff entities did not give GammaTensor"
+    assert result.shape == tensor2.shape, "SEPT + SEPT changed shape"
+    assert result.shape == tensor1.shape, "SEPT + SEPT changed shape"
+
+    # Check that all values are as expected, and addition was conducted correctly.
+    for i in range(len(result.flat_scalars)):
+        assert (
+            result.flat_scalars[i].value
+            == tensor2.child.flatten()[i] - tensor1.child.flatten()[i]
+        ), "Wrong value."
+    return None
+
+
+def test_pos(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    reference_scalar_manager: VirtualMachinePrivateScalarManager,
+) -> None:
+    """Ensure the __pos__ operator works as intended"""
+    tensor = SEPT(
+        child=reference_data,
+        entity=ishan,
+        max_vals=np.ones_like(reference_data),
+        min_vals=np.zeros_like(reference_data),
+        scalar_manager=reference_scalar_manager,
+    )
+    assert (
+        +tensor == tensor
+    ), "__pos__ failed at literally the one thing it was supposed to do."
+
+    # Change to integer tensor
+    tensor.child = tensor.child.astype("int32")
+    assert +tensor == tensor, "__pos__ failed after converting floats to ints."
+
+
+def test_repeat(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    reference_scalar_manager: VirtualMachinePrivateScalarManager,
+) -> None:
+    """Test that the repeat method extends a SEPT.child normally"""
+    repeat_count = np.random.randint(5, 10)
+
+    tensor = SEPT(
+        child=reference_data,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+        entity=ishan,
+        scalar_manager=reference_scalar_manager,
+    )
+    repeated_tensor = tensor.repeat(repeat_count)  # shape = (dims*dims*repeat_count, )
+
+    for i in range(len(tensor.child.flatten())):
+        for j in range(i * repeat_count, (i + 1) * repeat_count - 1):
+            assert (
+                tensor.child.flatten()[i] == repeated_tensor.child[j]
+            ), "Repeats did not function as intended!"
+
+
+def test_repeat_axes(
+    reference_data: np.ndarray,
+    reference_scalar_manager: VirtualMachinePrivateScalarManager,
+) -> None:
+    """Test that the axes argument of the repeat method works as intended"""
+    repeat_count = np.random.randint(5, 10)
+    tensor = SEPT(
+        child=reference_data,
+        max_vals=np.ones_like(reference_data),
+        min_vals=np.zeros_like(reference_data),
+        entity=ishan,
+        scalar_manager=reference_scalar_manager,
+    )
+    repeated_tensor = tensor.repeat(
+        repeat_count, axis=1
+    )  # shape = (dims*dims*repeat_count, )
+
+    for i in range(len(tensor.child.flatten())):
+        for j in range(i * repeat_count, (i + 1) * repeat_count - 1):
+            assert (
+                tensor.child.flatten()[i] == repeated_tensor.child.flatten()[j]
+            ), "Repeats did not function as intended!"
 
 
 gonzalo = Entity(name="Gonzalo")
