@@ -33,6 +33,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
     node.vm.hostname = "network1.openmined.grid"
     node.vm.network :private_network, ip: "10.0.1.2"
+    node.vm.network "forwarded_port", guest: 8080, host: 8080
 
     node.vm.synced_folder "../../", "/home/om/PySyft",
       mount_options: ["dmode=775,fmode=774"]
