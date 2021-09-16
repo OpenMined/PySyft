@@ -483,6 +483,8 @@ class PhiTensorAncestor(TensorChainManager):
                 else:
                     raise Exception("What kind of entity is this?!")
 
+            entities = _entities
+
         elif isinstance(entities, np.ndarray):
             if entities.shape != self.shape:
                 raise Exception(
@@ -500,8 +502,6 @@ class PhiTensorAncestor(TensorChainManager):
                     "or split your tensor into separate tensors for each value. We apologize "
                     "for the inconvenience and will be adding this functionality soon!"
                 )
-
-        entities = _entities
 
         # PHASE 2: CREATE CHILD
         if len(entities) == 1:
@@ -523,7 +523,7 @@ class PhiTensorAncestor(TensorChainManager):
 
             self.push_abstraction_top(
                 _SingleEntityPhiTensor(),
-                entity={entities[0].name: entities[0]},
+                entity=entities[0],  # type: ignore
                 min_vals=min_vals,
                 max_vals=max_vals,
                 scalar_manager=scalar_manager,  # type: ignore
