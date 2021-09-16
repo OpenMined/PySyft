@@ -5,11 +5,11 @@ from transformers import PreTrainedTokenizerFast
 # relative
 from ... import deserialize
 from ...core.common.serde.serializable import serializable
-from ...lib.python.primitive_factory import PrimitiveFactory
-from ...lib.python.util import upcast
 from ...proto.lib.transformers.tokenizerfast_pb2 import (
     TokenizerFast as TokenizerFast_PB,
 )
+from ..python.primitive_factory import PrimitiveFactory
+from ..python.util import upcast
 from ..util import full_name_with_qualname
 
 

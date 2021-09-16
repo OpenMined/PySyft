@@ -5,9 +5,9 @@ import sklearn  # noqa: 401
 
 # relative
 from ...core.common.serde.serializable import serializable
-from ...lib.python.dict import Dict
-from ...lib.python.primitive_factory import PrimitiveFactory
 from ...proto.lib.sklearn.logistic_model_pb2 import Logistic as Logistic_PB
+from ..python.dict import Dict
+from ..python.primitive_factory import PrimitiveFactory
 
 
 def object2proto(obj: sklearn.linear_model.LogisticRegression) -> Logistic_PB:

@@ -8,9 +8,9 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 # relative
 from ...proto.core.common.common_object_pb2 import ObjectWithID as ObjectWithID_PB
 from ...util import validate_type
-from ..common.serde.deserialize import _deserialize
-from ..common.serde.serializable import serializable
-from ..common.serde.serialize import _serialize as serialize
+from .serde.deserialize import _deserialize
+from .serde.serializable import serializable
+from .serde.serialize import _serialize as serialize
 from .uid import UID
 
 

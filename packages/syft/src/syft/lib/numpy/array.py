@@ -6,9 +6,9 @@ import torch
 # relative
 from ...core.common.serde.serializable import serializable
 from ...experimental_flags import flags
-from ...lib.torch.tensor_util import tensor_deserializer
-from ...lib.torch.tensor_util import tensor_serializer
 from ...proto.lib.numpy.array_pb2 import NumpyProto
+from ..torch.tensor_util import tensor_deserializer
+from ..torch.tensor_util import tensor_serializer
 
 SUPPORTED_BOOL_TYPES = [np.bool_]
 SUPPORTED_INT_TYPES = [

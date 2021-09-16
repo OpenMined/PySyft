@@ -9,44 +9,44 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import final
 
-# syft absolute
-from syft import serialize
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.common.serde.deserialize import _deserialize
-from syft.core.common.serde.serializable import serializable
-from syft.core.common.uid import UID
-from syft.core.io.address import Address
-from syft.proto.grid.messages.request_messages_pb2 import (
+# relative
+from ...... import serialize
+from ......proto.grid.messages.request_messages_pb2 import (
     CreateRequestMessage as CreateRequestMessage_PB,
 )
-from syft.proto.grid.messages.request_messages_pb2 import (
+from ......proto.grid.messages.request_messages_pb2 import (
     CreateRequestResponse as CreateRequestResponse_PB,
 )
-from syft.proto.grid.messages.request_messages_pb2 import (
+from ......proto.grid.messages.request_messages_pb2 import (
     DeleteRequestMessage as DeleteRequestMessage_PB,
 )
-from syft.proto.grid.messages.request_messages_pb2 import (
+from ......proto.grid.messages.request_messages_pb2 import (
     DeleteRequestResponse as DeleteRequestResponse_PB,
 )
-from syft.proto.grid.messages.request_messages_pb2 import (
+from ......proto.grid.messages.request_messages_pb2 import (
     GetRequestMessage as GetRequestMessage_PB,
 )
-from syft.proto.grid.messages.request_messages_pb2 import (
+from ......proto.grid.messages.request_messages_pb2 import (
     GetRequestResponse as GetRequestResponse_PB,
 )
-from syft.proto.grid.messages.request_messages_pb2 import (
+from ......proto.grid.messages.request_messages_pb2 import (
     GetRequestsMessage as GetRequestsMessage_PB,
 )
-from syft.proto.grid.messages.request_messages_pb2 import (
+from ......proto.grid.messages.request_messages_pb2 import (
     GetRequestsResponse as GetRequestsResponse_PB,
 )
-from syft.proto.grid.messages.request_messages_pb2 import (
+from ......proto.grid.messages.request_messages_pb2 import (
     UpdateRequestMessage as UpdateRequestMessage_PB,
 )
-from syft.proto.grid.messages.request_messages_pb2 import (
+from ......proto.grid.messages.request_messages_pb2 import (
     UpdateRequestResponse as UpdateRequestResponse_PB,
 )
+from .....common.message import ImmediateSyftMessageWithReply
+from .....common.message import ImmediateSyftMessageWithoutReply
+from .....common.serde.deserialize import _deserialize
+from .....common.serde.serializable import serializable
+from .....common.uid import UID
+from .....io.address import Address
 
 
 @serializable()

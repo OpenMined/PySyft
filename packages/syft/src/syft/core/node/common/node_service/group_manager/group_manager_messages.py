@@ -1,50 +1,51 @@
 # stdlib
 import json
 from typing import Dict
+from typing import List
 from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import final
 
-# syft absolute
-from syft import serialize
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.common.serde.deserialize import _deserialize
-from syft.core.common.serde.serializable import serializable
-from syft.core.common.uid import UID
-from syft.core.io.address import Address
-from syft.proto.grid.messages.group_messages_pb2 import (
+# relative
+from ...... import serialize
+from ......proto.grid.messages.group_messages_pb2 import (
     CreateGroupMessage as CreateGroupMessage_PB,
 )
-from syft.proto.grid.messages.group_messages_pb2 import (
+from ......proto.grid.messages.group_messages_pb2 import (
     CreateGroupResponse as CreateGroupResponse_PB,
 )
-from syft.proto.grid.messages.group_messages_pb2 import (
+from ......proto.grid.messages.group_messages_pb2 import (
     DeleteGroupMessage as DeleteGroupMessage_PB,
 )
-from syft.proto.grid.messages.group_messages_pb2 import (
+from ......proto.grid.messages.group_messages_pb2 import (
     DeleteGroupResponse as DeleteGroupResponse_PB,
 )
-from syft.proto.grid.messages.group_messages_pb2 import (
+from ......proto.grid.messages.group_messages_pb2 import (
     GetGroupMessage as GetGroupMessage_PB,
 )
-from syft.proto.grid.messages.group_messages_pb2 import (
+from ......proto.grid.messages.group_messages_pb2 import (
     GetGroupResponse as GetGroupResponse_PB,
 )
-from syft.proto.grid.messages.group_messages_pb2 import (
+from ......proto.grid.messages.group_messages_pb2 import (
     GetGroupsMessage as GetGroupsMessage_PB,
 )
-from syft.proto.grid.messages.group_messages_pb2 import (
+from ......proto.grid.messages.group_messages_pb2 import (
     GetGroupsResponse as GetGroupsResponse_PB,
 )
-from syft.proto.grid.messages.group_messages_pb2 import (
+from ......proto.grid.messages.group_messages_pb2 import (
     UpdateGroupMessage as UpdateGroupMessage_PB,
 )
-from syft.proto.grid.messages.group_messages_pb2 import (
+from ......proto.grid.messages.group_messages_pb2 import (
     UpdateGroupResponse as UpdateGroupResponse_PB,
 )
+from .....common.message import ImmediateSyftMessageWithReply
+from .....common.message import ImmediateSyftMessageWithoutReply
+from .....common.serde.deserialize import _deserialize
+from .....common.serde.serializable import serializable
+from .....common.uid import UID
+from .....io.address import Address
 
 
 @serializable()
@@ -411,7 +412,7 @@ class GetGroupsResponse(ImmediateSyftMessageWithoutReply):
         self,
         address: Address,
         status_code: int,
-        content: Dict,
+        content: List,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)

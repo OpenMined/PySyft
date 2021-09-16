@@ -5,12 +5,11 @@ from typing import Any
 from typing import Optional
 
 # relative
-from ....core.common.serde.recursive import RecursiveSerde
 from ....core.common.serde.serializable import serializable
 
 
-@serializable()
-class DefaultDict(defaultdict, RecursiveSerde):
+@serializable(recursive_serde=True)
+class DefaultDict(defaultdict):
     """Aim: build a class that inherits all the methods from collections.defaultdict but is serializable"""
 
     __attr_allowlist__ = []  # type: ignore
@@ -19,8 +18,8 @@ class DefaultDict(defaultdict, RecursiveSerde):
         super().__init__(default_factory=factory, **kwargs)
 
 
-@serializable()
-class SerializableCounter(Counter, RecursiveSerde):
+@serializable(recursive_serde=True)
+class SerializableCounter(Counter):
 
     __attr_allowlist__ = []  # type: ignore
 

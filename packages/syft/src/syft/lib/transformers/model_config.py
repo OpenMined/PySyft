@@ -5,9 +5,9 @@ from transformers import PretrainedConfig
 # relative
 from ... import deserialize
 from ...core.common.serde.serializable import serializable
-from ...lib.python.primitive_factory import PrimitiveFactory
-from ...lib.python.util import upcast
 from ...proto.lib.transformers.hf_config_pb2 import HFConfig as HFConfig_PB
+from ..python.primitive_factory import PrimitiveFactory
+from ..python.util import upcast
 
 
 def object2proto(obj: PretrainedConfig) -> HFConfig_PB:
