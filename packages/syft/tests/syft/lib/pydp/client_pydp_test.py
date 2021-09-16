@@ -13,7 +13,7 @@ import syft as sy
 @pytest.mark.vendor(lib="pydp")
 def test_pydp(root_client: sy.VirtualMachineClient) -> None:
     # third party
-    import pydp
+    import pydp  # noqa: 401
 
     x_ptr = root_client.pydp.algorithms.laplacian.BoundedMean(
         epsilon=1, lower_bound=1, upper_bound=50, dtype="float"
@@ -36,7 +36,7 @@ def test_pydp(root_client: sy.VirtualMachineClient) -> None:
 @pytest.mark.vendor(lib="pydp")
 def test_pydp_functions(root_client: sy.VirtualMachineClient) -> None:
     # third party
-    import pydp
+    import pydp  # noqa: 401
 
     x_ptr = root_client.pydp.algorithms.laplacian.BoundedMean(
         epsilon=1, lower_bound=1, upper_bound=50, dtype="float"
