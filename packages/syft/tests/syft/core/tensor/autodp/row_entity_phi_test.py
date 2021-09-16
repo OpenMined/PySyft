@@ -210,7 +210,6 @@ def test_add_wrong_types(row_data_ishan: List) -> None:
         # TODO: Double check how tuples behave during addition/subtraction with np.ndarrays
 
 
-<<<<<<< HEAD
 def test_add_simple_types(row_data_ishan: List) -> None:
     """Test addition of a REPT with simple types (float, ints, bools, etc)"""
     tensor = REPT(rows=row_data_ishan)
