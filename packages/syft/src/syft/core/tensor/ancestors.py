@@ -362,8 +362,10 @@ protect the people or the business)"""
     print()
 
     print("\t" + "_" * 69)
-    raise Exception("Not sure what happened... this code shouldn't have been reached. Try answering questions with "
-                    "options given by the prompts (such as yes/no).")
+    raise Exception(
+        "Not sure what happened... this code shouldn't have been reached. Try answering questions with "
+        "options given by the prompts (such as yes/no)."
+    )
 
 
 class PhiTensorAncestor(TensorChainManager):
@@ -393,6 +395,11 @@ class PhiTensorAncestor(TensorChainManager):
         return self.__class__(
             self.child.publish(acc=acc, sigma=sigma, user_key=user_key)
         )
+
+    def copy(self) -> PhiTensorAncestor:
+        """This should certainly be implemented by the subclass but adding this here to satisfy mypy."""
+
+        return NotImplemented
 
     def private(
         self,
@@ -516,7 +523,7 @@ class PhiTensorAncestor(TensorChainManager):
 
             self.push_abstraction_top(
                 _SingleEntityPhiTensor(),
-                entity=entities[0],
+                entity={entities[0].name: entities[0]},
                 min_vals=min_vals,
                 max_vals=max_vals,
                 scalar_manager=scalar_manager,  # type: ignore

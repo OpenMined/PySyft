@@ -211,7 +211,7 @@ class Tensor(
 
         # set public shape to be the shape of the data since we have access to it at present
         if public_shape is None:
-            public_shape = self.shape
+            public_shape = tuple(self.shape)
 
         self.tag_name: Optional[str] = None
         self.public_shape = public_shape
