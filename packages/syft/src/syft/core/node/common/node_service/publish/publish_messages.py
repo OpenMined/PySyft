@@ -9,13 +9,13 @@ from typing_extensions import final
 from ......proto.core.node.domain.service.pss_pb2 import PSA  # type: ignore
 from .....common.message import ImmediateSyftMessageWithoutReply  # type: ignore
 from .....common.serde.deserialize import _deserialize as deserialize  # type: ignore
-from .....common.serde.serializable import bind_protobuf  # type: ignore
+from .....common.serde.serializable import serializable  # type: ignore
 from .....common.serde.serialize import _serialize as serialize  # type: ignore
 from .....common.uid import UID  # type: ignore
 from .....io.address import Address  # type: ignore
 
 
-@bind_protobuf
+@serializable()
 @final
 class PublishScalarsAction(ImmediateSyftMessageWithoutReply):
     def __init__(

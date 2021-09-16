@@ -1,9 +1,9 @@
 # relative
-from ..federated import JSONDict
-from ..federated.model_centric_fl_base import ModelCentricFLBase
+from . import JSONDict
 from ..lib.python import List
 from ..lib.torch.module import Module as SyModule
 from ..proto.core.plan.plan_pb2 import Plan
+from .model_centric_fl_base import ModelCentricFLBase
 from .model_serialization import deserialize_model_params
 from .model_serialization import wrap_model_params
 

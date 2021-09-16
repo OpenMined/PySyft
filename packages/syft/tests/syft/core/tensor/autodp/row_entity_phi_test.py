@@ -144,8 +144,6 @@ def test_eq_diff_entities(
 def test_eq_values(
     row_data_ishan: List,
     reference_data: np.ndarray,
-    upper_bound: np.ndarray,
-    lower_bound: np.ndarray,
 ) -> None:
     """Test REPTs belonging to the same owner, with different data"""
     tensor1 = REPT(rows=row_data_ishan)
@@ -155,7 +153,7 @@ def test_eq_values(
     # assert tensor2 != tensor1, "Error: REPT + 1 == REPT"  # TODO: Investigate RecursionError Here
 
     # Debug test issues
-    assert type(tensor2.child[0]) is type(tensor1.child[0])
+    assert isinstance(tensor2.child[0], type(tensor1.child[0]))
     assert tensor2.child[0] != tensor1.child[0]
     assert isinstance(
         tensor2.child[0] != tensor1.child[0], SEPT
@@ -168,7 +166,7 @@ def test_eq_values(
             not (tensor2 == tensor1).child[i].child.any()
         ), f"REPT + 1 == REPT failed at child {i}"
 
-    comparison_result = tensor1 == tensor2
+    # comparison_result = tensor1 == tensor2
     # assert not comparison_result  # This will work as soon as the .all() or .any() methods are implemented.
     # Would this be more user-friendly if SEPT == SEPT -> singular T/F instead of array of T/F?
 
@@ -187,7 +185,7 @@ def test_ne_shapes(
     ), "Tensors not initialized properly for this test"
 
     with pytest.raises(Exception):
-        result = tensor2 == tensor1
+        _ = tensor2 == tensor1
 
 
 def test_eq_ndarray(row_data_ishan: List) -> None:
@@ -205,16 +203,17 @@ def test_add_wrong_types(row_data_ishan: List) -> None:
     """Ensure that addition with incorrect types aren't supported"""
     reference_tensor = REPT(rows=row_data_ishan)
     with pytest.raises(NotImplementedError):
-        result1 = reference_tensor + "some string"
-        result2 = reference_tensor + dict()
+        _ = reference_tensor + "some string"
+
+    with pytest.raises(NotImplementedError):
+        _ = reference_tensor + dict()
         # TODO: Double check how tuples behave during addition/subtraction with np.ndarrays
-    return None
 
 
+<<<<<<< HEAD
 def test_add_simple_types(row_data_ishan: List) -> None:
     """Test addition of a REPT with simple types (float, ints, bools, etc)"""
     tensor = REPT(rows=row_data_ishan)
-
     random_int = np.random.randint(low=15, high=1000)
     result = tensor + random_int
     assert isinstance(result, REPT), "REPT + int != REPT"
@@ -231,12 +230,10 @@ def test_add_simple_types(row_data_ishan: List) -> None:
     result = tensor + random_ndarray
     assert isinstance(result, REPT), "SEPT + np.ndarray != SEPT"
 
-    return None
-
 
 @pytest.mark.skip(reason="Temporary")
 def test_add_tensor_types(row_data_ishan: List) -> None:
-    """Test addition of a REPT with various other kinds of Tensors"""
+   """Test addition of a REPT with various other kinds of Tensors"""
 
     reference_tensor = REPT(rows=row_data_ishan)
     simple_tensor = Tensor(child=np.random.random((dims, dims)))
@@ -253,7 +250,6 @@ def test_add_tensor_types(row_data_ishan: List) -> None:
         assert (
             result.min_vals == reference_tensor.min_vals + simple_tensor.child.min()
         ), "REPT + Tensor: incorrect min_val"
-        return None
 
 
 @pytest.mark.skip(
@@ -328,7 +324,7 @@ def test_add_row_entities(row_data_ishan: List) -> None:
 def test_add_sub_equivalence(row_data_ishan: List) -> None:
     """Test to see if addition of -ve and subtraction of +ve produce the same results"""
     tensor1 = REPT(rows=row_data_ishan)
-    tensor2 = tensor1 * 2
+   tensor2 = tensor1 * 2
     assert tensor2.shape == tensor1.shape, "REPTs initialized incorrectly"
 
     assert tensor1 - 5 == tensor1 + 5 * -1, "Addition of -ve != Subtraction of +ve"

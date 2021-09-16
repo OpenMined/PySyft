@@ -4,11 +4,10 @@ from typing import List
 from typing import Optional
 
 # relative
-from ..common.uid import UID
-from .serde import Serializable
+from .uid import UID
 
 
-class AbstractPointer(Serializable):
+class AbstractPointer:
     def __init__(
         self,
         client: Any,

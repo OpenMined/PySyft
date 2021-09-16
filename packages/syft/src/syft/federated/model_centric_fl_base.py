@@ -13,9 +13,9 @@ import requests
 import websocket
 
 # relative
+from . import JSONDict
 from ..core.common.serde.deserialize import _deserialize as deserialize
 from ..core.common.serde.serialize import _serialize as serialize
-from ..federated import JSONDict
 
 TIMEOUT_INTERVAL = 60
 

@@ -99,7 +99,8 @@ from ..common.message import SignedImmediateSyftMessageWithReply
 from ..common.message import SignedImmediateSyftMessageWithoutReply
 from ..common.object import ObjectWithID
 from ..common.serde.deserialize import _deserialize
-from ..common.serde.serializable import bind_protobuf
+from ..common.serde.serializable import serializable
+from ..common.serde.serialize import _serialize
 from .connection import BidirectionalConnection
 from .connection import ClientConnection
 from .location import Location
@@ -135,7 +136,7 @@ class Route(ObjectWithID):
 
     @property
     def pprint(self) -> str:
-        return f"{self.icon} ({self.class_name})"
+        return f"{self.icon} ({str(self.__class__.__name__)})"
 
     def send_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
@@ -153,7 +154,7 @@ class Route(ObjectWithID):
         traceback_and_raise(NotImplementedError)
 
 
-@bind_protobuf
+@serializable()
 class SoloRoute(Route):
     def __init__(
         self,
@@ -185,9 +186,11 @@ class SoloRoute(Route):
             destination=self.schema.destination._object2proto(),
         )
         if isinstance(self.connection, VirtualClientConnection):
-            route.virtual_connection.CopyFrom(self.connection._object2proto())
+            route.virtual_connection.CopyFrom(
+                _serialize(self.connection, to_proto=True)
+            )
         else:
-            route.grid_connection.CopyFrom(self.connection._object2proto())
+            route.grid_connection.CopyFrom(_serialize(self.connection, to_proto=True))
         return route
 
     @staticmethod

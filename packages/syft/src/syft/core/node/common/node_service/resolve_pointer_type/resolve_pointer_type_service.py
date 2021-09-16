@@ -9,12 +9,12 @@ from nacl.signing import VerifyKey
 
 # relative
 from ...... import serialize
-from ......core.common.serde.serializable import bind_protobuf
 from ......proto.core.node.common.service.resolve_pointer_type_service_pb2 import (
     ResolvePointerTypeAnswerMessage as ResolvePointerTypeAnswerMessage_PB,
 )
 from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.serde.deserialize import _deserialize
+from .....common.serde.serializable import serializable
 from .....common.uid import UID
 from .....io.address import Address
 from ....abstract.node import AbstractNode
@@ -22,7 +22,7 @@ from ..node_service import ImmediateNodeServiceWithReply
 from .resolve_pointer_type_messages import ResolvePointerTypeMessage
 
 
-@bind_protobuf
+@serializable()
 class ResolvePointerTypeAnswerMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,

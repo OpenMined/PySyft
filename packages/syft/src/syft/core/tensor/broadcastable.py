@@ -1,4 +1,8 @@
-def is_broadcastable(shape1, shape2):
+# stdlib
+from typing import Sequence
+
+
+def is_broadcastable(shape1: Sequence, shape2: Sequence) -> bool:
     """Helper function to determine if Tensor Operations can be broadcast
     inputs:
     shape1, shape 2: shapes of numpy arrays/syft tensors

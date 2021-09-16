@@ -15,14 +15,13 @@ import numpy as np
 import numpy.typing as npt
 
 # relative
-from ....core.common.serde.recursive import RecursiveSerde
 from ....proto.core.tensor.single_entity_phi_tensor_pb2 import (
     TensorWrappedSingleEntityPhiTensorPointer as TensorWrappedSingleEntityPhiTensorPointer_PB,
 )
 from ...adp.entity import Entity
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...common.serde.deserialize import _deserialize as deserialize
-from ...common.serde.serializable import bind_protobuf
+from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
 from ...node.abstract.node import AbstractNodeClient
@@ -38,11 +37,12 @@ from ..tensor import Tensor
 from ..types import SupportedChainType  # type: ignore
 from ..util import inputs2child  # type: ignore
 from .dp_tensor_converter import convert_to_gamma_tensor
+from .adp_tensor import ADPTensor
 from .initial_gamma import InitialGammaTensor
 from .initial_gamma import IntermediateGammaTensor
 
 
-@bind_protobuf
+@serializable()
 class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
     """
     This tensor represents a pointer to a very specific tensor chain. Eventually we'll have some sort
@@ -97,10 +97,8 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
         self.public_shape = public_shape
 
     def share(self, *parties: TypeTuple[AbstractNodeClient, ...]) -> MPCTensor:
-
-        parties = tuple(list(parties) + [self.client])
-
-        self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=parties)
+        all_parties = list(parties) + [self.client]
+        self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=all_parties)
 
         return self_mpc
 
@@ -269,8 +267,8 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
         return TensorWrappedSingleEntityPhiTensorPointer_PB
 
 
-@bind_protobuf
-class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, RecursiveSerde):
+@serializable(recursive_serde=True)
+class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
     PointerClassOverride = TensorWrappedSingleEntityPhiTensorPointer
 

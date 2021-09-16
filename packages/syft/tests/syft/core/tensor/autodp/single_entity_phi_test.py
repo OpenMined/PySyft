@@ -233,7 +233,6 @@ def test_ne_diff_entities(
 
     with pytest.raises(NotImplementedError):
         reference_tensor != comparison_tensor
-    return None
 
 
 def test_add_wrong_types(
@@ -244,10 +243,11 @@ def test_add_wrong_types(
         child=reference_data, entity=ishan, max_vals=upper_bound, min_vals=lower_bound
     )
     with pytest.raises(NotImplementedError):
-        result1 = reference_tensor + "some string"
-        result2 = reference_tensor + dict()
+        _ = reference_tensor + "some string"
+
+    with pytest.raises(NotImplementedError):
+        _ = reference_tensor + dict()
         # TODO: Double check how tuples behave during addition/subtraction with np.ndarrays
-    return None
 
 
 def test_add_simple_types(
@@ -283,8 +283,6 @@ def test_add_simple_types(
     assert isinstance(result, SEPT), "SEPT + np.ndarray != SEPT"
     # assert (result.max_vals == tensor.max_vals + random_ndarray.max()).all(), "SEPT + np.ndarray: incorrect max_val"
     # assert (result.min_vals == tensor.min_vals + random_ndarray.min()).all(), "SEPT + np.ndarray: incorrect min_val"
-
-    return None
 
 
 def test_add_tensor_types(

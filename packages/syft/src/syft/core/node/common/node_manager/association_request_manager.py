@@ -4,17 +4,14 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Union
 import warnings
 
 # third party
 from sqlalchemy.engine import Engine
 
-# syft absolute
-from syft.core.node.abstract.node import AbstractNodeClient
-
 # relative
 from ..... import serialize
+from ...abstract.node import AbstractNodeClient
 from ...domain.enums import RequestAPIFields
 from ..exceptions import AssociationRequestError
 from ..node_table.association import Association
@@ -29,7 +26,7 @@ class AssociationRequestManager(DatabaseManager):
     def __init__(self, database: Engine) -> None:
         super().__init__(schema=AssociationRequestManager.schema, db=database)
 
-    def first(self, **kwargs: Any) -> Union[None, List]:
+    def first(self, **kwargs: Any) -> AssociationRequest:
         result = super().first(**kwargs)
         if not result:
             raise AssociationRequestError
@@ -41,7 +38,7 @@ class AssociationRequestManager(DatabaseManager):
         node: str,
         source: AbstractNodeClient,
         target: AbstractNodeClient,
-        metadata: Dict[str, str],
+        metadata: Dict[str, Any],
         status: str,
     ) -> None:
         if super().first(node=node):
