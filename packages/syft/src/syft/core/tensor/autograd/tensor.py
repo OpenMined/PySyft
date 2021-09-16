@@ -18,7 +18,6 @@ import numpy as np
 from .. import autograd
 from ....lib.python.collections.collections import DefaultDict
 from ....lib.python.collections.collections import SerializableCounter
-from ...common.serde.recursive import RecursiveSerde
 from ...common.serde.serializable import serializable
 from ..ancestors import AutogradTensorAncestor
 from ..ancestors import PhiTensorAncestor
@@ -27,8 +26,8 @@ from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import is_acceptable_simple_type  # type: ignore
 
 
-@serializable()
-class AutogradTensor(PassthroughTensor, PhiTensorAncestor, RecursiveSerde):
+@serializable(recursive_serde=True)
+class AutogradTensor(PassthroughTensor, PhiTensorAncestor):
 
     __attr_allowlist__ = [
         "child",

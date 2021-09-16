@@ -13,8 +13,8 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-# relative
-from . import location_pb2 as proto_dot_core_dot_io_dot_location__pb2
+# syft absolute
+from syft.proto.core.io import location_pb2 as proto_dot_core_dot_io_dot_location__pb2
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/core/io/address.proto",

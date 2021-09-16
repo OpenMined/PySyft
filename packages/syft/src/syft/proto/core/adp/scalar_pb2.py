@@ -13,9 +13,9 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-# relative
-from . import entity_pb2 as proto_dot_core_dot_adp_dot_entity__pb2
-from ..common import (
+# syft absolute
+from syft.proto.core.adp import entity_pb2 as proto_dot_core_dot_adp_dot_entity__pb2
+from syft.proto.core.common import (
     common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
 )
 

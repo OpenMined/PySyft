@@ -16,8 +16,8 @@ _sym_db = _symbol_database.Default()
 # third party
 from google.protobuf import any_pb2 as google_dot_protobuf_dot_any__pb2
 
-# relative
-from ..common import (
+# syft absolute
+from syft.proto.core.common import (
     common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
 )
 

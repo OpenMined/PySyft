@@ -21,7 +21,6 @@ from ....proto.core.tensor.single_entity_phi_tensor_pb2 import (
 from ...adp.entity import Entity
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...common.serde.deserialize import _deserialize as deserialize
-from ...common.serde.recursive import RecursiveSerde
 from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
@@ -265,10 +264,8 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
         return TensorWrappedSingleEntityPhiTensorPointer_PB
 
 
-@serializable()
-class SingleEntityPhiTensor(
-    PassthroughTensor, AutogradTensorAncestor, RecursiveSerde, ADPTensor
-):
+@serializable(recursive_serde=True)
+class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
     PointerClassOverride = TensorWrappedSingleEntityPhiTensorPointer
 

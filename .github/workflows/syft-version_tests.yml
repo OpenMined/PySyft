@@ -93,6 +93,7 @@ jobs:
         if: startsWith(runner.os, 'macos')
         run: |
           brew install libomp
+          pip uninstall python-dp -y
 
       - name: Run supported library tests
         run: |

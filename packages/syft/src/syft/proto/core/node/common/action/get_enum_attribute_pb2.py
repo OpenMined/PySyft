@@ -13,11 +13,11 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-# relative
-from ....common import (
+# syft absolute
+from syft.proto.core.common import (
     common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
 )
-from ....io import address_pb2 as proto_dot_core_dot_io_dot_address__pb2
+from syft.proto.core.io import address_pb2 as proto_dot_core_dot_io_dot_address__pb2
 
 DESCRIPTOR = _descriptor.FileDescriptor(
     name="proto/core/node/common/action/get_enum_attribute.proto",

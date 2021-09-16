@@ -16,7 +16,6 @@ import torch as th
 from ... import lib
 from ...ast.klass import pointerize_args_and_kwargs
 from ...util import inherit_tags
-from ..common.serde.recursive import RecursiveSerde
 from ..common.serde.serializable import serializable
 from ..common.uid import UID
 from ..node.abstract.node import AbstractNodeClient
@@ -137,14 +136,13 @@ class TensorPointer(Pointer):
         return self.simple_add(other=other)
 
 
-@serializable()
+@serializable(recursive_serde=True)
 class Tensor(
     PassthroughTensor,
     AutogradTensorAncestor,
     PhiTensorAncestor,
     FixedPrecisionTensorAncestor,
     # MPCTensorAncestor,
-    RecursiveSerde,
 ):
 
     __attr_allowlist__ = ["child", "tag_name", "public_shape"]
