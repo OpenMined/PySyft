@@ -384,10 +384,11 @@ class MPCTensor(PassthroughTensor):
         Returns:
             MPCTensor. the operation "op_str" applied on "self" and "y"
         """
-        # syft absolute
-        from syft import parties as mpc_parties
+        # relative
+        from .... import parties as mpc_parties
 
         _self = self
+
         if ispointer(y):
             public_shape = getattr(y, "public_shape", None)
             y = MPCTensor(secret=y, shape=public_shape, parties=mpc_parties)

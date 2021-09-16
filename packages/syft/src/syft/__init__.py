@@ -31,7 +31,7 @@ from pathlib import Path
 import sys
 from typing import Any
 from typing import Dict
-from typing import Set
+from typing import List
 
 # third party
 from pkg_resources import DistributionNotFound  # noqa: F401
@@ -117,4 +117,4 @@ logger.add(sink=sys.stderr, level="CRITICAL")
 client_cache: Dict[str, Any] = {}
 
 
-parties: Set[DomainClient] = set()  # stores the parties metadata for SMPC computation
+parties: List[Any] = []  # stores the parties metadata for SMPC computation

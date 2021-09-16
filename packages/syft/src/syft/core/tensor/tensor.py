@@ -135,7 +135,7 @@ class TensorPointer(Pointer):
         self: TensorPointer,
         other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
         op_str: str,
-    ) -> Tuple[MPCTensor, Union[MPCTensor, int, float, np.ndarray]]:
+    ) -> Union[MPCTensor, TensorPointer]:
         """Performs the operation based on op_str
 
         Args:
@@ -144,8 +144,8 @@ class TensorPointer(Pointer):
         Returns:
             Tuple[MPCTensor,Union[MPCTensor,int,float,np.ndarray]] : Result of the operation
         """
-        # syft absolute
-        from syft import parties as mpc_parties
+        # relative
+        from ... import parties as mpc_parties
 
         op = getattr(operator, op_str)
 

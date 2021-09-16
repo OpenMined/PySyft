@@ -140,7 +140,7 @@ def login(
         time.sleep(1)  # ok maybe too fancy... but c'mon don't you want to be fancy?
         print("done!")
 
-    sy.parties.add(node)
+    sy.parties.append(node)
 
     return node
 
