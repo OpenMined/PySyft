@@ -87,6 +87,7 @@ def login(
 ) -> Client:
 
     if email is None and password is None:
+
         email = "info@openmined.org"
         password = "changethis"  # nosec
 
@@ -98,7 +99,7 @@ def login(
         password = getpass(prompt="Please enter you password:")
 
     if port is None and not url:  # if url is used, we can ignore port
-        raise Exception("You must specify a port.")
+        port = int(input("Please specify the port of the domain you're logging into:"))
 
     # TODO: build multiple route objects and let the Client decide which one to use
     if url is None:

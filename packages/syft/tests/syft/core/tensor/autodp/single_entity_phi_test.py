@@ -549,14 +549,14 @@ gonzalo = Entity(name="Gonzalo")
 @pytest.fixture(scope="function")
 def x() -> Tensor:
     x = Tensor(np.array([[1, 2, 3], [4, 5, 6]]))
-    x = x.private(min_val=-1, max_val=7, entity=gonzalo)
+    x = x.private(min_val=-1, max_val=7, entities=[gonzalo])
     return x
 
 
 @pytest.fixture(scope="function")
 def y() -> Tensor:
     y = Tensor(np.array([[-1, -2, -3], [-4, -5, -6]]))
-    y = y.private(min_val=-7, max_val=1, entity=gonzalo)
+    y = y.private(min_val=-7, max_val=1, entities=[gonzalo])
     return y
 
 
