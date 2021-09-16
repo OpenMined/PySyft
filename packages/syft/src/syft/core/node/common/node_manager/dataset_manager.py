@@ -39,7 +39,6 @@ class DatasetManager(DatabaseManager):
 
         print("All the dataset arguments:")
         print(kwargs)
-
         blob_metadata = {}
         str_metadata = {}
         for key, value in kwargs.items():
@@ -73,7 +72,7 @@ class DatasetManager(DatabaseManager):
         return obj_id
 
     def add(
-        self, name: str, dataset_id: int, obj_id: str, dtype: str, shape: str
+        self, name: str, dataset_id: str, obj_id: str, dtype: str, shape: str
     ) -> None:
 
         obj_dataset_relation = BinObjDataset(

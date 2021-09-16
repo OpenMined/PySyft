@@ -77,7 +77,7 @@ def _handle_dataset_creation_grid_ui(
 
             node.datasets.add(
                 name=item.name,
-                dataset_id=int(dataset_id),
+                dataset_id=str(dataset_id),
                 obj_id=str(id_at_location.value),
                 dtype=df.__class__.__name__,
                 shape=str(tuple(df.shape)),
@@ -92,7 +92,6 @@ def _handle_dataset_creation_syft(
 
     for table_name, table in result.items():
         id_at_location = UID()
-
         storable = StorableObject(
             id=id_at_location,
             data=table,
@@ -103,7 +102,7 @@ def _handle_dataset_creation_syft(
         node.store[storable.id] = storable
         node.datasets.add(
             name=table_name,
-            dataset_id=int(dataset_id),
+            dataset_id=str(dataset_id),
             obj_id=str(id_at_location.value),
             dtype=str(table.__class__.__name__),
             shape=str(table.shape),
