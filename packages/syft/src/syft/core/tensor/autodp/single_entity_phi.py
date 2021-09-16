@@ -36,8 +36,8 @@ from ..smpc.mpc_tensor import MPCTensor
 from ..tensor import Tensor
 from ..types import SupportedChainType  # type: ignore
 from ..util import inputs2child  # type: ignore
-from .dp_tensor_converter import convert_to_gamma_tensor
 from .adp_tensor import ADPTensor
+from .dp_tensor_converter import convert_to_gamma_tensor
 from .initial_gamma import InitialGammaTensor
 from .initial_gamma import IntermediateGammaTensor
 

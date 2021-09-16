@@ -232,8 +232,7 @@ def test_add_simple_types(row_data_ishan: List) -> None:
 
 @pytest.mark.skip(reason="Temporary")
 def test_add_tensor_types(row_data_ishan: List) -> None:
-   """Test addition of a REPT with various other kinds of Tensors"""
-
+    """Test addition of a REPT with various other kinds of Tensors"""
     reference_tensor = REPT(rows=row_data_ishan)
     simple_tensor = Tensor(child=np.random.random((dims, dims)))
     assert len(simple_tensor.child) == len(
@@ -323,7 +322,7 @@ def test_add_row_entities(row_data_ishan: List) -> None:
 def test_add_sub_equivalence(row_data_ishan: List) -> None:
     """Test to see if addition of -ve and subtraction of +ve produce the same results"""
     tensor1 = REPT(rows=row_data_ishan)
-   tensor2 = tensor1 * 2
+    tensor2 = tensor1 * 2
     assert tensor2.shape == tensor1.shape, "REPTs initialized incorrectly"
 
     assert tensor1 - 5 == tensor1 + 5 * -1, "Addition of -ve != Subtraction of +ve"
