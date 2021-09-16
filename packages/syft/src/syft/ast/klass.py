@@ -20,7 +20,6 @@ import warnings
 # relative
 from .. import ast
 from .. import lib
-from ..ast.callable import Callable
 from ..core.common.group import VERIFYALL
 from ..core.common.uid import UID
 from ..core.node.common.action.get_or_set_property_action import GetOrSetPropertyAction
@@ -40,6 +39,7 @@ from ..logger import traceback_and_raise
 from ..logger import warning
 from ..util import aggressive_set_attr
 from ..util import inherit_tags
+from .callable import Callable
 
 
 def _resolve_pointer_type(self: Pointer) -> Pointer:
@@ -384,8 +384,8 @@ def wrap_iterator(attrs: Dict[str, Union[str, CallableT, property]]) -> None:
             Returns:
                 Iterable: syft Iterator.
             """
-            # syft absolute
-            from syft.lib.python.iterator import Iterator
+            # relative
+            from ..lib.python.iterator import Iterator
 
             if not hasattr(self, "__len__"):
                 traceback_and_raise(

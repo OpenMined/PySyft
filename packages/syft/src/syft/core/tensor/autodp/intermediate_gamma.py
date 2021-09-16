@@ -16,13 +16,14 @@ from sympy.ntheory.factor_ import factorint
 # relative
 from ...adp.publish import publish
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
-from ...common.serde.recursive import RecursiveSerde
-from ...tensor.passthrough import PassthroughTensor  # type: ignore
-from ...tensor.passthrough import is_acceptable_simple_type  # type: ignore
+from ...common.serde.serializable import serializable
+from ..passthrough import PassthroughTensor  # type: ignore
+from ..passthrough import is_acceptable_simple_type  # type: ignore
 from .adp_tensor import ADPTensor
 
 
-class IntermediateGammaTensor(PassthroughTensor, RecursiveSerde, ADPTensor):
+@serializable(recursive_serde=True)
+class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
 
     __attr_allowlist__ = [
         "term_tensor",
@@ -81,8 +82,8 @@ class IntermediateGammaTensor(PassthroughTensor, RecursiveSerde, ADPTensor):
         ).reshape(self.shape)
 
         if self.sharetensor_values is not None:
-            # syft absolute
-            from syft.core.tensor.smpc.share_tensor import ShareTensor
+            # relative
+            from ..smpc.share_tensor import ShareTensor
 
             result = ShareTensor(
                 rank=self.sharetensor_values.rank,

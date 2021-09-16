@@ -5,16 +5,16 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import final
 
-# syft absolute
-from syft import deserialize
-from syft import serialize
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.common.serde.serializable import serializable
-from syft.core.common.uid import UID
-from syft.core.io.address import Address
-from syft.proto.grid.messages.success_resp_message_pb2 import (
+# relative
+from ..... import deserialize
+from ..... import serialize
+from .....proto.grid.messages.success_resp_message_pb2 import (
     SuccessResponseMessage as SuccessResponseMessage_PB,
 )
+from ....common.message import ImmediateSyftMessageWithoutReply
+from ....common.serde.serializable import serializable
+from ....common.uid import UID
+from ....io.address import Address
 
 
 @serializable()

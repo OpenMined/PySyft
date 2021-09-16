@@ -2,30 +2,28 @@
 from typing import Any
 from typing import Dict
 
-# syft absolute
-from syft.core.node.abstract.node import AbstractNodeClient
-from syft.core.node.common.node_service.association_request.association_request_messages import (
+# relative
+from ...abstract.node import AbstractNodeClient
+from ...domain.enums import AssociationRequestResponses
+from ...domain.enums import RequestAPIFields
+from ...domain.enums import ResponseObjectEnum
+from ...domain.exceptions import PyGridClientException
+from ..node_service.association_request.association_request_messages import (
     DeleteAssociationRequestMessage,
 )
-from syft.core.node.common.node_service.association_request.association_request_messages import (
+from ..node_service.association_request.association_request_messages import (
     GetAssociationRequestMessage,
 )
-from syft.core.node.common.node_service.association_request.association_request_messages import (
+from ..node_service.association_request.association_request_messages import (
     GetAssociationRequestsMessage,
 )
-from syft.core.node.common.node_service.association_request.association_request_messages import (
+from ..node_service.association_request.association_request_messages import (
     RespondAssociationRequestMessage,
 )
-from syft.core.node.common.node_service.association_request.association_request_messages import (
+from ..node_service.association_request.association_request_messages import (
     SendAssociationRequestMessage,
 )
-from syft.core.node.domain.exceptions import PyGridClientException
-
-# relative
-from ....node.domain.enums import AssociationRequestResponses
-from ....node.domain.enums import RequestAPIFields
-from ....node.domain.enums import ResponseObjectEnum
-from ...common.client_manager.request_api import RequestAPI
+from .request_api import RequestAPI
 
 
 class AssociationRequestAPI(RequestAPI):

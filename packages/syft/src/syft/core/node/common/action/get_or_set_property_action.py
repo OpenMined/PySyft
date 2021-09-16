@@ -12,14 +12,15 @@ from typing import Union
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
+# syft absolute
+import syft as sy
+
 # relative
 from ..... import lib
-from ..... import serialize
 from .....proto.core.node.common.action.get_set_property_pb2 import (
     GetOrSetPropertyAction as GetOrSetPropertyAction_PB,
 )
 from .....util import inherit_tags
-from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
@@ -192,18 +193,18 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
         :return: returns a protobuf object
         :rtype: GetOrSetPropertyAction_PB
         .. note::
-            This method is purely an internal method. Please use serialize(object) or one of
+            This method is purely an internal method. Please use sy.serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetOrSetPropertyAction_PB(
             path=self.path,
-            id_at_location=serialize(self.id_at_location),
-            args=list(map(lambda x: serialize(x), self.args)),
-            kwargs={k: serialize(v) for k, v in self.kwargs.items()},
-            address=serialize(self.address),
-            _self=serialize(self._self),
-            msg_id=serialize(self.id),
+            id_at_location=sy.serialize(self.id_at_location),
+            args=list(map(lambda x: sy.serialize(x), self.args)),
+            kwargs={k: sy.serialize(v) for k, v in self.kwargs.items()},
+            address=sy.serialize(self.address),
+            _self=sy.serialize(self._self),
+            msg_id=sy.serialize(self.id),
             action=self.action.value,
             map_to_dyn=self.map_to_dyn,
         )
@@ -224,12 +225,12 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
 
         return GetOrSetPropertyAction(
             path=proto.path,
-            id_at_location=_deserialize(blob=proto.id_at_location),
-            address=_deserialize(blob=proto.address),
-            _self=_deserialize(blob=proto._self),
-            msg_id=_deserialize(blob=proto.msg_id),
-            args=tuple(_deserialize(blob=x) for x in proto.args),
-            kwargs={k: _deserialize(blob=v) for k, v in proto.kwargs.items()},
+            id_at_location=sy.deserialize(blob=proto.id_at_location),
+            address=sy.deserialize(blob=proto.address),
+            _self=sy.deserialize(blob=proto._self),
+            msg_id=sy.deserialize(blob=proto.msg_id),
+            args=tuple(sy.deserialize(blob=x) for x in proto.args),
+            kwargs={k: sy.deserialize(blob=v) for k, v in proto.kwargs.items()},
             action=PropertyActions(proto.action),
             map_to_dyn=proto.map_to_dyn,
         )

@@ -85,6 +85,7 @@ import time
 from typing import Any
 from typing import Optional
 from typing import Union
+from typing import cast
 
 # third party
 from aiortc import RTCDataChannel
@@ -346,7 +347,7 @@ class WebRTCConnection(BidirectionalConnection):
 
                 # If self.producer_pool.get() returns a message
                 # send it as a binary using the RTCDataChannel.
-                data = serialize(msg, to_bytes=True)
+                data = cast(bytes, serialize(msg, to_bytes=True))
                 data_len = len(data)
 
                 if DC_CHUNKING_ENABLED and data_len > DC_MAX_CHUNK_SIZE:
@@ -391,8 +392,8 @@ class WebRTCConnection(BidirectionalConnection):
         try:
             # Build Close Message to warn the other peer
             bye_msg = CloseConnectionMessage(address=Address())
-
-            self.channel.send(OrderedChunk(0, serialize(bye_msg, to_bytes=True)).save())
+            msg_bytes = cast(bytes, serialize(bye_msg, to_bytes=True))
+            self.channel.send(OrderedChunk(0, msg_bytes).save())
 
             # Finish async tasks related with this connection
             self._finish_coroutines()

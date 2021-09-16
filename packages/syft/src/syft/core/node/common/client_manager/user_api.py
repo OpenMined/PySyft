@@ -1,12 +1,10 @@
 # stdlib
 from typing import Any
 
-# syft absolute
-from syft.core.node.abstract.node import AbstractNodeClient
-
 # relative
 from .....logger import logger
-from ....node.domain.enums import ResponseObjectEnum
+from ...abstract.node import AbstractNodeClient
+from ...domain.enums import ResponseObjectEnum
 from ..node_service.user_manager.user_messages import CreateUserMessage
 from ..node_service.user_manager.user_messages import DeleteUserMessage
 from ..node_service.user_manager.user_messages import GetUserMessage

@@ -188,7 +188,7 @@ def obj2pointer_type(obj: object) -> type:
         critical(log)
         raise Exception(log)
 
-    return ref.pointer_type
+    return ref.pointer_type  # type: ignore
 
 
 def key_emoji(key: object) -> str:

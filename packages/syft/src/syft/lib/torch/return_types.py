@@ -10,10 +10,10 @@ import torch
 
 # relative
 from ...core.common.serde.serializable import serializable
-from ...lib.util import full_name_with_name
 from ...proto.lib.torch.returntypes_pb2 import ReturnTypes as ReturnTypes_PB
-from ..torch.tensor_util import tensor_deserializer
-from ..torch.tensor_util import tensor_serializer
+from ..util import full_name_with_name
+from .tensor_util import tensor_deserializer
+from .tensor_util import tensor_serializer
 
 # TODO: a better way. Loot at https://github.com/OpenMined/PySyft/issues/5249
 module_type = type(torch)
