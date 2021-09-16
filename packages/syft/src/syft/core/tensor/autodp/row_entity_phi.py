@@ -26,7 +26,7 @@ from .initial_gamma import InitialGammaTensor  # type: ignore
 
 @serializable(recursive_serde=True)
 class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
-   """This tensor is one of several tensors whose purpose is to carry metadata
+    """This tensor is one of several tensors whose purpose is to carry metadata
     relevant to automatically tracking the privacy budgets of tensor operations. This
     tensor is called 'Phi' tensor because it assumes that each number in the tensor
     originates from a single entity (no numbers originate from multiple entities). This
@@ -38,7 +38,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
     we refer to the number of 'rows' we simply refer to the length of the first dimension. This
     tensor can have an arbitrary number of dimensions."""
 
-    # a list of attributes needed for serialization using RecursiveSerde  
+    # a list of attributes needed for serialization using RecursiveSerde
     __attr_allowlist__ = ["child"]
 
     def __init__(self, rows: Any, check_shape: bool = True):
