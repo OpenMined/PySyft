@@ -18,12 +18,12 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 import torch
 
-# syft absolute
-from syft.core.common.serde.deserialize import _deserialize as deserialize
-from syft.core.common.serde.serializable import serializable
-from syft.core.common.serde.serialize import _serialize as serialize
-from syft.core.tensor.passthrough import PassthroughTensor
-from syft.proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB
+# relative
+from ....proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB  # type: ignore
+from ...common.serde.deserialize import _deserialize as deserialize
+from ...common.serde.serializable import serializable
+from ...common.serde.serialize import _serialize as serialize
+from ..passthrough import PassthroughTensor  # type: ignore
 
 METHODS_FORWARD_ALL_SHARES = {
     "repeat",
@@ -126,14 +126,14 @@ class ShareTensor(PassthroughTensor):
     @staticmethod
     def generate_przs(
         value: Optional[Any],
-        shape: Tuple[int],
+        shape: Tuple[int, ...],
         rank: int,
         nr_parties: int,
         seed_shares: int,
     ) -> "ShareTensor":
 
-        # syft absolute
-        from syft.core.tensor.tensor import Tensor
+        # relative
+        from ..tensor import Tensor
 
         if value is None:
             value = Tensor(np.zeros(shape, dtype=np.int32))  # TODO: change to np.int64

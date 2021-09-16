@@ -7,9 +7,9 @@ import statsmodels
 
 # relative
 from ...core.common.serde.serializable import serializable
-from ...lib.python.primitive_factory import PrimitiveFactory
-from ...lib.python.string import String
 from ...proto.lib.statsmodels.family_pb2 import FamilyProto
+from ..python.primitive_factory import PrimitiveFactory
+from ..python.string import String
 
 FAMILY_2_STR: Dict[Type[statsmodels.genmod.families.family.Family], str] = {
     statsmodels.genmod.families.family.Binomial: "Binomial",

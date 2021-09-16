@@ -8,9 +8,10 @@ from typing import Union
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
+# syft absolute
+import syft as sy
+
 # relative
-from ... import deserialize
-from ... import serialize
 from ...core.common import UID
 from ...core.common.serde.serializable import serializable
 from ...proto.lib.python.string_pb2 import String as String_PB
@@ -395,13 +396,13 @@ class String(UserString, PyPrimitive):
     def _object2proto(self) -> String_PB:
         return String_PB(
             data=self.data,
-            id=serialize(obj=self.id),
+            id=sy.serialize(obj=self.id),
             temporary_box=self.temporary_box,
         )
 
     @staticmethod
     def _proto2object(proto: String_PB) -> "String":
-        str_id: UID = deserialize(blob=proto.id)
+        str_id: UID = sy.deserialize(blob=proto.id)
         return String(
             value=proto.data,
             id=str_id,

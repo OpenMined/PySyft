@@ -11,19 +11,16 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import torch as th
 
-# syft absolute
-from syft.core.common.group import VerifyAll
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.common.uid import UID
-from syft.core.node.abstract.node import AbstractNode
-from syft.core.node.common.action.save_object_action import SaveObjectAction
-from syft.core.node.common.node_service.auth import service_auth
-from syft.core.node.common.node_service.node_service import (
-    ImmediateNodeServiceWithReply,
-)
-from syft.core.store.storeable_object import StorableObject
-
 # relative
+from .....common.group import VerifyAll
+from .....common.message import ImmediateSyftMessageWithReply
+from .....common.message import SignedImmediateSyftMessageWithoutReply
+from .....common.uid import UID
+from .....store.storeable_object import StorableObject
+from ....abstract.node import AbstractNode
+from ...action.save_object_action import SaveObjectAction
+from ..auth import service_auth
+from ..node_service import ImmediateNodeServiceWithReply
 from .tensor_manager_messages import CreateTensorMessage
 from .tensor_manager_messages import CreateTensorResponse
 from .tensor_manager_messages import DeleteTensorMessage
@@ -62,7 +59,7 @@ def create_tensor_msg(
 
         obj_msg = SaveObjectAction(obj=storable, address=node.address)
 
-        signed_message = obj_msg.sign(
+        signed_message: SignedImmediateSyftMessageWithoutReply = obj_msg.sign(
             signing_key=SigningKey(
                 payload["internal_key"].encode("utf-8"), encoder=HexEncoder
             )
@@ -112,7 +109,7 @@ def update_tensor_msg(
 
         obj_msg = SaveObjectAction(obj=storable, address=node.address)
 
-        signed_message = obj_msg.sign(
+        signed_message: SignedImmediateSyftMessageWithoutReply = obj_msg.sign(
             signing_key=SigningKey(
                 payload["internal_key"].encode("utf-8"), encoder=HexEncoder
             )
@@ -123,7 +120,7 @@ def update_tensor_msg(
         return UpdateTensorResponse(
             address=msg.reply_to,
             status_code=200,
-            content={"msg": "Tensor modified succesfully!"},
+            content={"msg": "Tensor modified successfully!"},
         )
     except Exception as e:
         return UpdateTensorResponse(

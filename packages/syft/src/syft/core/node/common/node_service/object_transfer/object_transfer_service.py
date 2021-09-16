@@ -7,40 +7,27 @@ from typing import Union
 from nacl.encoding import HexEncoder
 from nacl.signing import VerifyKey
 
-# syft absolute
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.common.serde.deserialize import _deserialize
-from syft.core.common.uid import UID
-from syft.core.node.abstract.node import AbstractNode
-from syft.core.node.common.node_service.auth import service_auth
-from syft.core.node.common.node_service.node_service import (
-    ImmediateNodeServiceWithReply,
-)
-from syft.core.node.common.node_service.node_service import (
-    ImmediateNodeServiceWithoutReply,
-)
-from syft.core.node.common.node_service.object_transfer.object_transfer_messages import (
-    LoadObjectMessage,
-)
-from syft.core.node.common.node_service.object_transfer.object_transfer_messages import (
-    LoadObjectResponse,
-)
-from syft.core.node.common.node_service.object_transfer.object_transfer_messages import (
-    SaveObjectMessage,
-)
-from syft.core.node.common.node_service.object_transfer.object_transfer_messages import (
-    SaveObjectResponse,
-)
-from syft.proto.core.io.address_pb2 import Address as Address_PB
-
-# from ...utils.executor import executor
+# relative
+from ......proto.core.io.address_pb2 import Address as Address_PB
+from .....common.message import ImmediateSyftMessageWithReply
+from .....common.message import ImmediateSyftMessageWithoutReply
+from .....common.serde.deserialize import _deserialize
+from .....common.uid import UID
+from ....domain.domain import Domain
+from ..auth import service_auth
+from ..node_service import ImmediateNodeServiceWithReply
+from ..node_service import ImmediateNodeServiceWithoutReply
+from .object_transfer_messages import LoadObjectMessage
+from .object_transfer_messages import LoadObjectResponse
+from .object_transfer_messages import SaveObjectMessage
+from .object_transfer_messages import SaveObjectResponse
 
 
 class TransferObjectService(ImmediateNodeServiceWithReply):
     @staticmethod
     @service_auth(guests_welcome=True)
     def process(
-        node: AbstractNode,
+        node: Domain,
         msg: Union[
             LoadObjectMessage,
         ],
@@ -92,7 +79,7 @@ class SaveObjectService(ImmediateNodeServiceWithoutReply):
     @staticmethod
     @service_auth(guests_welcome=True)
     def process(
-        node: AbstractNode,
+        node: Domain,
         msg: SaveObjectMessage,
         verify_key: VerifyKey,
     ) -> None:
@@ -109,5 +96,5 @@ class SaveObjectService(ImmediateNodeServiceWithoutReply):
         # executor.submit(send_obj, _obj, node)
 
     @staticmethod
-    def message_handler_types() -> List[Type[ImmediateSyftMessageWithReply]]:
+    def message_handler_types() -> List[Type[ImmediateSyftMessageWithoutReply]]:
         return [SaveObjectMessage]

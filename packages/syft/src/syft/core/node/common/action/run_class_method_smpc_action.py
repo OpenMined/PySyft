@@ -9,10 +9,9 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
 # syft absolute
-from syft import serialize
+import syft as sy
 
 # relative
-from ..... import deserialize
 from ..... import lib
 from .....logger import critical
 from .....proto.core.node.common.action.run_class_method_smpc_pb2 import (
@@ -169,19 +168,19 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         :rtype: RunClassMethodSMPCAction_PB
 
         .. note::
-            This method is purely an internal method. Please use serialize(object) or one of
+            This method is purely an internal method. Please use sy.serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
 
         return RunClassMethodSMPCAction_PB(
             path=self.path,
-            _self=serialize(self._self),
-            args=list(map(lambda x: serialize(x), self.args)),
-            kwargs={k: serialize(v) for k, v in self.kwargs.items()},
-            id_at_location=serialize(self.id_at_location),
-            address=serialize(self.address),
-            msg_id=serialize(self.id),
+            _self=sy.serialize(self._self),
+            args=list(map(lambda x: sy.serialize(x), self.args)),
+            kwargs={k: sy.serialize(v) for k, v in self.kwargs.items()},
+            id_at_location=sy.serialize(self.id_at_location),
+            address=sy.serialize(self.address),
+            msg_id=sy.serialize(self.id),
         )
 
     @staticmethod
@@ -201,12 +200,12 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
 
         return RunClassMethodSMPCAction(
             path=proto.path,
-            _self=deserialize(blob=proto._self),
-            args=list(map(lambda x: deserialize(blob=x), proto.args)),
-            kwargs={k: deserialize(blob=v) for k, v in proto.kwargs.items()},
-            id_at_location=deserialize(blob=proto.id_at_location),
-            address=deserialize(blob=proto.address),
-            msg_id=deserialize(blob=proto.msg_id),
+            _self=sy.deserialize(blob=proto._self),
+            args=list(map(lambda x: sy.deserialize(blob=x), proto.args)),
+            kwargs={k: sy.deserialize(blob=v) for k, v in proto.kwargs.items()},
+            id_at_location=sy.deserialize(blob=proto.id_at_location),
+            address=sy.deserialize(blob=proto.address),
+            msg_id=sy.deserialize(blob=proto.msg_id),
         )
 
     @staticmethod
