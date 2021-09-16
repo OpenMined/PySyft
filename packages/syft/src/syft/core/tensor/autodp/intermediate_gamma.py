@@ -179,7 +179,7 @@ class IntermediateGammaTensor(PassthroughTensor, RecursiveSerde, ADPTensor):
             scalar_manager=self.scalar_manager,
         )
 
-    def repeat(self, *args, **kwargs):
+    def repeat(self, *args, **kwargs) -> IntermediateGammaTensor:
         return IntermediateGammaTensor(
             term_tensor=self.term_tensor.repeat(*args, **kwargs).reshape(
                 -1, self.term_tensor.shape[-1]
