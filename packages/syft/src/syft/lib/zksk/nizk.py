@@ -3,10 +3,10 @@ import zksk as zk  # noqa: 401
 
 # relative
 from ...core.common.serde.deserialize import _deserialize as deserialize
+from ...core.common.serde.serializable import serializable
 from ...core.common.serde.serialize import _serialize as serialize
-from ...generate_wrapper import GenerateWrapper
-from ...lib.python import Tuple
 from ...proto.lib.zksk.nizk_pb2 import NIZK as NIZK_PB
+from ..python import Tuple
 
 
 def object2proto(obj: zk.base.NIZK) -> NIZK_PB:
@@ -25,7 +25,7 @@ def proto2object(proto: NIZK_PB) -> zk.expr.Secret:
     )
 
 
-GenerateWrapper(
+serializable(generate_wrapper=True)(
     wrapped_type=zk.base.NIZK,
     import_path="zksk.base.NIZK",
     protobuf_scheme=NIZK_PB,

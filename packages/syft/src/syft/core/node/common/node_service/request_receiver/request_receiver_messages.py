@@ -19,10 +19,10 @@ from ......proto.core.node.domain.service.request_message_pb2 import (
 )
 from .....common import UID
 from .....common.message import ImmediateSyftMessageWithoutReply
-from .....common.serde.serializable import bind_protobuf
+from .....common.serde.serializable import serializable
 from .....io.address import Address
-from .....node.common.client import Client
-from ....common.node import Node
+from ...client import Client
+from ...node import Node
 from ..accept_or_deny_request.accept_or_deny_request_messages import (
     AcceptOrDenyRequestMessage,
 )
@@ -36,7 +36,7 @@ class RequestStatus(Enum):
 
 # TODO: this message conflates Message functionality with Manager/Request_API functionality
 # TODO: this needs to be split into two separate pieces of functionality.
-@bind_protobuf
+@serializable()
 class RequestMessage(ImmediateSyftMessageWithoutReply):
 
     __slots__ = ["name", "request_description", "request_id"]

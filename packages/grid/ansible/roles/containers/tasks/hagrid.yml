@@ -1,10 +1,10 @@
 ---
 - name: Install HAGrid
-  shell: "runuser -l {{ om_user }} -c 'pipx install {{ build_dir }}/packages/hagrid --editable --force'"
+  shell: "runuser -l {{ om_user }} -c 'pip install -e {{ syft_dir }}/packages/hagrid'"
   become: yes
   when: vagrant is not defined
 
 - name: Install HAGrid
-  shell: "runuser -l {{ om_user }} -c 'pipx install {{ syft_dir }}/packages/hagrid --editable --force'"
+  shell: "runuser -l {{ om_user }} -c 'pip install -e {{ syft_dir }}/packages/hagrid'"
   become: yes
   when: vagrant is defined

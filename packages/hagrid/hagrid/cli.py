@@ -46,14 +46,19 @@ def cli() -> None:
 def clean(location: str) -> None:
 
     if location == "library" or location == "volumes":
-        print("Deleting all Docker volumes in 3 secs (Ctrl-C to stop)")
-        time.sleep(3)
+        print("Deleting all Docker volumes in 2 secs (Ctrl-C to stop)")
+        time.sleep(2)
         subprocess.call("docker volume rm $(docker volume ls -q)", shell=True)
 
     if location == "containers" or location == "pantry":
-        print("Deleting all Docker containers in 5 secs (Ctrl-C to stop)")
-        time.sleep(5)
+        print("Deleting all Docker containers in 2 secs (Ctrl-C to stop)")
+        time.sleep(2)
         subprocess.call("docker rm -f $(docker ps -a -q)", shell=True)
+
+    if location == "images":
+        print("Deleting all Docker images in 2 secs (Ctrl-C to stop)")
+        time.sleep(2)
+        subprocess.call("docker rmi $(docker images -q)", shell=True)
 
 
 @click.command(help="Start a new PyGrid domain/network node!")
@@ -72,20 +77,13 @@ def clean(location: str) -> None:
     type=str,
     help="Optional: the path to the key file for provisioning the remote host",
 )
-# @click.option(
-#     "--password",
-#     default=None,
-#     required=False,
-#     type=str,
-#     help="Optional: the password for provisioning the remote host",
-# )
-# @click.option(
-#     "--mode",
-#     default=None,
-#     required=False,
-#     type=str,
-#     help="Optional: mode either provision or deploy, where deploy is a quick code update",
-# )
+@click.option(
+    "--password",
+    default=None,
+    required=False,
+    type=str,
+    help="Optional: the password for provisioning the remote host",
+)
 @click.option(
     "--repo",
     default=None,
@@ -114,6 +112,16 @@ def clean(location: str) -> None:
     type=str,
     help="Optional: print the cmd without running it",
 )
+@click.option(
+    "--auth_type",
+    default=None,
+    type=click.Choice(["key", "password"], case_sensitive=False),
+)
+@click.option(
+    "--ansible_extras",
+    default="",
+    type=str,
+)
 def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_launch_verb()
     try:
@@ -128,9 +136,21 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     except Exception as e:
         print(f"{e}")
         return
-    print("Running: \n", cmd)
+    print("Running: \n", hide_password(cmd=cmd))
     if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
         subprocess.call(cmd, shell=True)
+
+
+def hide_password(cmd: str) -> str:
+    matcher = r"ansible_ssh_pass='(.+?)'"
+    passwords = re.findall(matcher, cmd)
+    if len(passwords) > 0:
+        password = passwords[0]
+        stars = "*" * 4
+        cmd = cmd.replace(
+            f"ansible_ssh_pass='{password}'", f"ansible_ssh_pass='{stars}'"
+        )
+    return cmd
 
 
 class QuestionInputError(Exception):
@@ -149,14 +169,17 @@ class Question:
         kind: str,
         default: Optional[str] = None,
         cache: bool = False,
+        options: TypeList[str] = [],
     ) -> None:
         self.var_name = var_name
         self.question = question
         self.default = default
         self.kind = kind
         self.cache = cache
+        self.options = options
 
     def validate(self, value: str) -> str:
+        value = value.strip()
         if self.default is not None and value == "":
             return self.default
 
@@ -173,6 +196,20 @@ class Question:
                 return "y"
             elif value.lower().startswith("n"):
                 return "n"
+            else:
+                raise QuestionInputError(f"{value} is not an yes or no answer")
+
+        if self.kind == "options":
+            if value in self.options:
+                return value
+            first_letter = value.lower()[0]
+            for option in self.options:
+                if option.startswith(first_letter):
+                    return option
+
+            raise QuestionInputError(
+                f"{value} is not one of the options: {self.options}"
+            )
 
         return value
 
@@ -183,6 +220,10 @@ def ask(question: Question, kwargs: TypeDict[str, str]) -> str:
     else:
         if question.default is not None:
             value = click.prompt(question.question, type=str, default=question.default)
+        elif question.var_name == "password":
+            value = click.prompt(
+                question.question, type=str, hide_input=True, confirmation_prompt=True
+            )
         else:
             value = click.prompt(question.question, type=str)
 
@@ -191,30 +232,6 @@ def ask(question: Question, kwargs: TypeDict[str, str]) -> str:
         setattr(arg_cache, question.var_name, value)
 
     return value
-
-
-def requires_kwargs(
-    required: TypeList[Question], kwargs: TypeDict[str, str]
-) -> TypeDict[str, Any]:
-
-    parsed_kwargs = {}
-    for question in required:
-        if question.var_name in kwargs and kwargs[question.var_name] is not None:
-            value = kwargs[question.var_name]
-        else:
-            if question.default is not None:
-                value = click.prompt(
-                    question.question, type=str, default=question.default
-                )
-            else:
-                value = click.prompt(question.question, type=str)
-
-        value = question.validate(value=value)
-        if question.cache:
-            setattr(arg_cache, question.var_name, value)
-
-        parsed_kwargs[question.var_name] = value
-    return parsed_kwargs
 
 
 def fix_key_permission(private_key_path: str) -> None:
@@ -399,6 +416,7 @@ def create_launch_cmd(
                     kwargs=kwargs,
                 )
             except QuestionInputPathError as e:
+                print(e)
                 key_path = str(e).split("is not a valid path")[0].strip()
 
                 create_key_question = Question(
@@ -453,6 +471,7 @@ def create_launch_cmd(
                 repo=repo,
                 branch=branch,
                 auth=auth,
+                ansible_extras=kwargs["ansible_extras"],
             )
         else:
             errors = []
@@ -466,57 +485,87 @@ def create_launch_cmd(
         return ""
     else:
         if DEPENDENCIES["ansible-playbook"]:
-            username_question = Question(
-                var_name="username",
-                question=f"Username for {host} with sudo privledges?",
-                default=arg_cache.username,
-                kind="string",
-                cache=True,
-            )
-            key_path_question = Question(
-                var_name="key_path",
-                question=f"Private key to access [username]@{host}?",
-                default=arg_cache.key_path,
-                kind="path",
-                cache=True,
-            )
-            repo_question = Question(
-                var_name="repo",
-                question="Repo to fetch source from?",
-                default=arg_cache.repo,
-                kind="string",
-                cache=True,
-            )
-            branch_question = Question(
-                var_name="branch",
-                question="Branch to monitor for updates?",
-                default=arg_cache.branch,
-                kind="string",
-                cache=True,
-            )
-            required_questions = []
+            parsed_kwargs = {}
             if host != "localhost":
-                required_questions.append(username_question)
-                required_questions.append(key_path_question)
-            required_questions.append(repo_question)
-            required_questions.append(branch_question)
+                parsed_kwargs["username"] = ask(
+                    question=Question(
+                        var_name="username",
+                        question=f"Username for {host} with sudo privledges?",
+                        default=arg_cache.username,
+                        kind="string",
+                        cache=True,
+                    ),
+                    kwargs=kwargs,
+                )
+                parsed_kwargs["auth_type"] = ask(
+                    question=Question(
+                        var_name="auth_type",
+                        question="Do you want to login with a key or password",
+                        default=arg_cache.auth_type,
+                        kind="option",
+                        options=["key", "password"],
+                        cache=True,
+                    ),
+                    kwargs=kwargs,
+                )
+                if parsed_kwargs["auth_type"] == "key":
+                    parsed_kwargs["key_path"] = ask(
+                        question=Question(
+                            var_name="key_path",
+                            question=f"Private key to access {parsed_kwargs['username']}@{host}?",
+                            default=arg_cache.key_path,
+                            kind="path",
+                            cache=True,
+                        ),
+                        kwargs=kwargs,
+                    )
+                elif parsed_kwargs["auth_type"] == "password":
+                    parsed_kwargs["password"] = ask(
+                        question=Question(
+                            var_name="password",
+                            question=f"Password for {parsed_kwargs['username']}@{host}?",
+                            kind="password",
+                        ),
+                        kwargs=kwargs,
+                    )
 
-            parsed_kwargs = requires_kwargs(
-                required=required_questions,
+            parsed_kwargs["repo"] = ask(
+                question=Question(
+                    var_name="repo",
+                    question="Repo to fetch source from?",
+                    default=arg_cache.repo,
+                    kind="string",
+                    cache=True,
+                ),
                 kwargs=kwargs,
             )
 
-            if "branch" in parsed_kwargs:
-                use_branch(branch=parsed_kwargs["branch"])
+            parsed_kwargs["branch"] = ask(
+                Question(
+                    var_name="branch",
+                    question="Branch to monitor for updates?",
+                    default=arg_cache.branch,
+                    kind="string",
+                    cache=True,
+                ),
+                kwargs=kwargs,
+            )
 
             auth = None
             if host != "localhost":
-                auth = AuthCredentials(
-                    username=parsed_kwargs["username"],
-                    key_path=parsed_kwargs["key_path"],
-                )
+                if parsed_kwargs["auth_type"] == "key":
+                    auth = AuthCredentials(
+                        username=parsed_kwargs["username"],
+                        key_path=parsed_kwargs["key_path"],
+                    )
+                else:
+                    auth = AuthCredentials(
+                        username=parsed_kwargs["username"],
+                        key_path=parsed_kwargs["password"],
+                    )
                 if not auth.valid:
                     raise Exception(f"Login Credentials are not valid. {auth}")
+            parsed_kwargs["ansible_extras"] = kwargs["ansible_extras"]
             return create_launch_custom_cmd(verb=verb, auth=auth, kwargs=parsed_kwargs)
         else:
             errors = []
@@ -568,6 +617,7 @@ def create_launch_docker_cmd(
     cmd += " NODE_TYPE=" + str(node_type.input)
     cmd += " VERSION=`python VERSION`"
     cmd += " VERSION_HASH=`python VERSION hash`"
+    cmd += " INSTALL_DEV=0 TRAEFIK_PUBLIC_NETWORK_IS_EXTERNAL=false INSTALL_JUPYTER=0"
     cmd += " docker compose -p " + snake_name
     cmd += " up"
 
@@ -704,6 +754,7 @@ def create_launch_azure_cmd(
     repo: str,
     branch: str,
     auth: AuthCredentials,
+    ansible_extras: str,
 ) -> str:
     # resource group
     get_or_make_resource_group(resource_group=resource_group, location=location)
@@ -723,7 +774,12 @@ def create_launch_azure_cmd(
     host_term.parse_input(host_ip)
     verb.set_named_term_type(name="host", new_term=host_term)
 
-    kwargs = {"repo": repo, "branch": branch}
+    kwargs = {
+        "repo": repo,
+        "branch": branch,
+        "auth_type": "key",
+        "ansible_extras": ansible_extras,
+    }
 
     # provision
     return create_launch_custom_cmd(verb=verb, auth=auth, kwargs=kwargs)
@@ -765,8 +821,11 @@ def create_launch_custom_cmd(
     if host_term.host == "localhost":
         cmd += "--connection=local "
     cmd += f"-i {host_term.host}, {playbook_path}"
-    if host_term.host != "localhost":
+    if host_term.host != "localhost" and kwargs["auth_type"] == "key":
         cmd += f" --private-key {auth.key_path} --user {auth.username}"
+    elif host_term.host != "localhost" and kwargs["auth_type"] == "password":
+        cmd += f" -c paramiko --user {auth.username}"
+
     ANSIBLE_ARGS = {
         "node_type": node_type.input,
         "node_name": snake_name,
@@ -774,8 +833,18 @@ def create_launch_custom_cmd(
         "repo_branch": kwargs["branch"],
     }
 
+    if host_term.host != "localhost" and kwargs["auth_type"] == "password":
+        ANSIBLE_ARGS["ansible_ssh_pass"] = kwargs["password"]
+
     if host_term.host == "localhost":
         ANSIBLE_ARGS["local"] = "true"
+
+    if "ansible_extras" in kwargs and kwargs["ansible_extras"] != "":
+        options = kwargs["ansible_extras"].split(",")
+        for option in options:
+            parts = option.strip().split("=")
+            if len(parts) == 2:
+                ANSIBLE_ARGS[parts[0]] = parts[1]
 
     # if mode == "deploy":
     #     ANSIBLE_ARGS["deploy"] = "true"

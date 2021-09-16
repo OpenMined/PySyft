@@ -6,10 +6,12 @@ from typing import Union
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
+# syft absolute
+import syft as sy
+
 # relative
-from ... import deserialize
 from ...core.common import UID
-from ...core.common.serde.serializable import bind_protobuf
+from ...core.common.serde.serializable import serializable
 from ...proto.lib.python.range_pb2 import Range as Range_PB
 from .iterator import Iterator
 from .primitive_factory import PrimitiveFactory
@@ -17,7 +19,7 @@ from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
 
 
-@bind_protobuf
+@serializable()
 class Range(PyPrimitive):
     __slots__ = ["_id", "_index"]
 
@@ -125,7 +127,7 @@ class Range(PyPrimitive):
             start=proto.start,
             stop=proto.stop,
             step=proto.step,
-            id=deserialize(blob=proto.id),
+            id=sy.deserialize(blob=proto.id),
         )
 
     @staticmethod

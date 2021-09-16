@@ -62,11 +62,11 @@ from ..common.node_service.request_receiver.request_receiver_messages import (
     RequestMessage,
 )
 from ..common.node_service.role_manager.role_manager_service import RoleManagerService
+from ..common.node_service.simple.simple_service import SimpleService
 from ..common.node_service.tensor_manager.tensor_manager_service import (
     TensorManagerService,
 )
 from ..common.node_service.user_manager.user_manager_service import UserManagerService
-from ..common.node_table import Base
 from ..common.node_table.utils import create_memory_db_engine
 from ..device import Device
 from ..device import DeviceClient
@@ -135,6 +135,7 @@ class Domain(Node):
         self.immediate_services_with_reply.append(AssociationRequestService)
         # self.immediate_services_with_reply.append(DomainInfrastructureService)
         self.immediate_services_with_reply.append(GetRemainingBudgetService)
+        self.immediate_services_with_reply.append(SimpleService)
         self.immediate_services_with_reply.append(NodeSetupService)
         self.immediate_services_with_reply.append(TensorManagerService)
         self.immediate_services_with_reply.append(RoleManagerService)
@@ -161,8 +162,6 @@ class Domain(Node):
         self.handled_requests: Dict[Any, float] = {}
 
         self.post_init()
-
-        Base.metadata.create_all(db_engine)  # type: ignore
 
         # run the handlers in an asyncio future
         asyncio.ensure_future(self.run_handlers())

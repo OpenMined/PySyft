@@ -103,6 +103,11 @@ def index_syft_by_module_name(fully_qualified_name: str) -> object:
         a reference to the actual object at that string path
 
     """
+
+    # @Tudor this needs fixing during the serde refactor
+    # we should probably just support the native type names as lookups for serde
+    if fully_qualified_name == "builtins.NoneType":
+        fully_qualified_name = "syft.lib.python._SyNone"
     attr_list = fully_qualified_name.split(".")
 
     # we deal with VerifyAll differently, because we don't it be imported and used by users
@@ -139,7 +144,8 @@ def get_fully_qualified_name(obj: object) -> str:
         the full path and name of the object
 
     """
-    fqn = obj.__module__
+
+    fqn = obj.__class__.__module__
     try:
         fqn += "." + obj.__class__.__name__
     except Exception as e:
@@ -182,7 +188,7 @@ def obj2pointer_type(obj: object) -> type:
         critical(log)
         raise Exception(log)
 
-    return ref.pointer_type
+    return ref.pointer_type  # type: ignore
 
 
 def key_emoji(key: object) -> str:

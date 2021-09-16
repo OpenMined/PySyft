@@ -15,9 +15,8 @@ import torch as th
 # relative
 from ... import lib
 from ...ast.klass import pointerize_args_and_kwargs
-from ...core.common.serde.recursive import RecursiveSerde
 from ...util import inherit_tags
-from ..common.serde.serializable import bind_protobuf
+from ..common.serde.serializable import serializable
 from ..common.uid import UID
 from ..node.abstract.node import AbstractNodeClient
 from ..node.common.action.run_class_method_action import RunClassMethodAction
@@ -26,9 +25,6 @@ from .ancestors import AutogradTensorAncestor
 from .ancestors import PhiTensorAncestor
 from .fixed_precision_tensor_ancestor import FixedPrecisionTensorAncestor
 from .passthrough import PassthroughTensor  # type: ignore
-
-# from .autodp.single_entity_phi import SingleEntityPhiTensor
-# from .autodp.single_entity_phi import SingleEntityPhiTensorPointer
 from .smpc.mpc_tensor import MPCTensor
 
 
@@ -60,11 +56,8 @@ class TensorPointer(Pointer):
         self.public_shape = public_shape
 
     def share(self, *parties: Tuple[AbstractNodeClient, ...]) -> MPCTensor:
-
-        parties = tuple(list(parties) + [self.client])
-
-        self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=parties)
-
+        all_parties = list(parties) + [self.client]
+        self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=all_parties)
         return self_mpc
 
     def simple_add(self, other: Any) -> TensorPointer:
@@ -143,16 +136,13 @@ class TensorPointer(Pointer):
         return self.simple_add(other=other)
 
 
-# TODO: Need to double check to see if smpc.ShareTensor operations are working correctly
-# here since it's not inherited
-@bind_protobuf
+@serializable(recursive_serde=True)
 class Tensor(
     PassthroughTensor,
     AutogradTensorAncestor,
     PhiTensorAncestor,
     FixedPrecisionTensorAncestor,
     # MPCTensorAncestor,
-    RecursiveSerde,
 ):
 
     __attr_allowlist__ = ["child", "tag_name", "public_shape"]

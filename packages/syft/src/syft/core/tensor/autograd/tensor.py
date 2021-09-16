@@ -6,6 +6,7 @@ from typing import Any
 from typing import Dict as TypeDict
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Type
 from typing import Union
 import uuid
@@ -15,10 +16,9 @@ import numpy as np
 
 # relative
 from .. import autograd
-from ....core.common.serde.recursive import RecursiveSerde
 from ....lib.python.collections.collections import DefaultDict
 from ....lib.python.collections.collections import SerializableCounter
-from ...common.serde.serializable import bind_protobuf
+from ...common.serde.serializable import serializable
 from ..ancestors import AutogradTensorAncestor
 from ..ancestors import PhiTensorAncestor
 from ..passthrough import AcceptableSimpleType  # type: ignore
@@ -26,8 +26,8 @@ from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import is_acceptable_simple_type  # type: ignore
 
 
-@bind_protobuf
-class AutogradTensor(PassthroughTensor, PhiTensorAncestor, RecursiveSerde):
+@serializable(recursive_serde=True)
+class AutogradTensor(PassthroughTensor, PhiTensorAncestor):
 
     __attr_allowlist__ = [
         "child",
@@ -60,7 +60,6 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor, RecursiveSerde):
 
         self.backprop_id: Optional[uuid.UUID] = None
 
-        # self.n_backwards: Counter[uuid.UUID] = Counter()
         self.n_backwards: SerializableCounter = (
             SerializableCounter()
         )  # may have to add [uuid.UUID] for type annotation
@@ -117,11 +116,11 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor, RecursiveSerde):
         op = autograd.backward_ops.RPowOp()
         return op(self, other)
 
-    def reshape(self, *shape: tuple) -> AutogradTensorAncestor:  # type: ignore
+    def reshape(self, *shape: Tuple[int]) -> AutogradTensorAncestor:  # type: ignore
         op = autograd.backward_ops.ReshapeOp()
         return op(self, *shape)
 
-    def repeat(self, *args: int, **kwargs: int) -> AutogradTensorAncestor:  # type: ignore
+    def repeat(self, *args: Tuple[Any, ...], **kwargs: Any) -> AutogradTensorAncestor:  # type: ignore
         op = autograd.backward_ops.RepeatOp()
         return op(self, *args, **kwargs)
 

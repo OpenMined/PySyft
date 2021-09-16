@@ -5,14 +5,14 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
+# syft absolute
+import syft as sy
+
 # relative
-from ..... import serialize
 from .....proto.core.node.common.action.save_object_pb2 import (
     SaveObjectAction as SaveObjectAction_PB,
 )
-from ....common.serde.deserialize import _deserialize
-from ....common.serde.serializable import Serializable
-from ....common.serde.serializable import bind_protobuf
+from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
@@ -20,8 +20,8 @@ from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
 
 
-@bind_protobuf
-class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
+@serializable()
+class SaveObjectAction(ImmediateActionWithoutReply):
     def __init__(
         self,
         obj: StorableObject,
@@ -51,13 +51,13 @@ class SaveObjectAction(ImmediateActionWithoutReply, Serializable):
 
     def _object2proto(self) -> SaveObjectAction_PB:
         obj = self.obj._object2proto()
-        addr = serialize(self.address)
+        addr = sy.serialize(self.address)
         return SaveObjectAction_PB(obj=obj, address=addr)
 
     @staticmethod
     def _proto2object(proto: SaveObjectAction_PB) -> "SaveObjectAction":
-        obj = _deserialize(blob=proto.obj)
-        addr = _deserialize(blob=proto.address)
+        obj = sy.deserialize(blob=proto.obj)
+        addr = sy.deserialize(blob=proto.address)
         return SaveObjectAction(obj=obj, address=addr)
 
     @staticmethod

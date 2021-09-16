@@ -9,6 +9,7 @@ arg_defaults = {
     "repo": "OpenMined/PySyft",
     "branch": DEFAULT_BRANCH,
     "username": "root",
+    "auth_type": "key",
     "key_path": "~/.ssh/id_rsa",
     "azure_repo": "OpenMined/PySyft",
     "azure_branch": DEFAULT_BRANCH,

@@ -46,8 +46,8 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         return len(self.child)
 
     @property
-    def shape(self) -> Union[TypeTuple[Any, ...], List[Any]]:
-        return self.child.shape
+    def shape(self) -> TypeTuple[Any, ...]:
+        return tuple(self.child.shape)
 
     # @property
     # def shape(self) -> Union[TypeTuple[Any, ...], List[Any]]:
@@ -326,9 +326,6 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         self, other: Union[Type[PassthroughTensor], np.ndarray]
     ) -> PassthroughTensor:
         return self.manual_dot(other)
-        # if isinstance(other, self.__class__):
-        #     return self.__class__(self.child.dot(other.child))
-        # return self.__class__(self.child.dot(other))
 
     def reshape(self, *dims) -> PassthroughTensor:
         return self.__class__(self.child.reshape(*dims))
@@ -338,15 +335,16 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     ) -> PassthroughTensor:
         return self.__class__(self.child.repeat(repeats, axis))
 
-    # TODO: why does this version of repeat fail but the *args **kwargs one works?
-    # def repeat(
-    #     self, repeats: Union[int, TypeTuple[int, ...]], axis: Optional[int] = None
-    # ) -> PassthroughTensor:
-    #     return self.__class__(self.child.repeat(repeats, axis=axis))
-
-    # numpy.resize(a, new_shape)
-    def resize(self, new_shape: Union[int, TypeTuple[int, ...]]) -> PassthroughTensor:
-        return self.__class__(self.child.resize(new_shape))
+    def resize(
+        self,
+        new_shape: Union[int, TypeTuple[int, ...]],
+        refcheck: Optional[bool] = True,
+    ) -> PassthroughTensor:
+        # Should be modified to  remove copy
+        # https://stackoverflow.com/questions/23253144/numpy-the-array-doesnt-have-its-own-data
+        res = self.child.copy()
+        res.resize(new_shape, refcheck=refcheck)
+        return self.__class__(res)
 
     @property
     def T(self) -> PassthroughTensor:
@@ -404,8 +402,35 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         return self.__class__(self.child.tolist())
 
     # ndarray.flatten(order='C')
-    def flatten(self, order: str = "C") -> PassthroughTensor:
+    def flatten(self, order: Optional[str] = "C") -> PassthroughTensor:
         return self.__class__(self.child.flatten(order))
+
+    # ndarray.partition(kth, axis=- 1, kind='introselect', order=None)
+    def partition(
+        self,
+        kth: Union[int, TypeTuple[int, ...]],
+        axis: Optional[int] = -1,
+        kind: Optional[str] = "introselect",
+        order: Optional[Union[int, TypeTuple[int, ...]]] = None,
+    ) -> PassthroughTensor:
+        self.child.partition(kth=kth, axis=axis, kind=kind, order=order)  # inplace op
+        return self.__class__(self.child)
+
+    # ndarray.ravel([order])
+    def ravel(self, order: Optional[str] = "C") -> PassthroughTensor:
+        return self.__class__(self.child.ravel(order=order))
+
+    # ndarray.compress(condition, axis=None, out=None)
+    def compress(
+        self, condition: List[bool], axis: int = None, out: Optional[np.ndarray] = None
+    ) -> PassthroughTensor:
+        return self.__class__(
+            self.child.compress(condition=condition, axis=axis, out=out)
+        )
+
+    # ndarray.swapaxes(axis1, axis2)
+    def swapaxes(self, axis1: int, axis2: int) -> PassthroughTensor:
+        return self.__class__(self.child.swapaxes(axis1=axis1, axis2=axis2))
 
     # numpy.mean(a, axis=None, dtype=None, out=None, keepdims=<no value>, *, where=<no value>)
     def mean(
