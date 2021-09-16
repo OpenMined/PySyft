@@ -4,7 +4,7 @@ from typing import List
 from typing import Optional
 
 # relative
-from ..common.uid import UID
+from .uid import UID
 
 
 class AbstractPointer:

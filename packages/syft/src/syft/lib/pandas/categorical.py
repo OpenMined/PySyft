@@ -3,11 +3,11 @@ import pandas as pd
 
 # relative
 from ...core.common.serde.serializable import serializable
-from ...lib.python.list import List
-from ...lib.python.primitive_factory import PrimitiveFactory
 from ...proto.lib.pandas.categorical_pb2 import (
     PandasCategorical as PandasCategorical_PB,
 )
+from ..python.list import List
+from ..python.primitive_factory import PrimitiveFactory
 
 
 def object2proto(obj: pd.Categorical) -> PandasCategorical_PB:

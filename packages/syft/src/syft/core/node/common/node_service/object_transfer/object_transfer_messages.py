@@ -7,26 +7,26 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import final
 
-# syft absolute
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.common.serde.deserialize import _deserialize
-from syft.core.common.serde.serializable import serializable
-from syft.core.common.serde.serialize import _serialize as serialize
-from syft.core.common.uid import UID
-from syft.core.io.address import Address
-from syft.proto.grid.messages.transfer_messages_pb2 import (
+# relative
+from ......proto.grid.messages.transfer_messages_pb2 import (
     LoadObjectMessage as LoadObjectMessage_PB,
 )
-from syft.proto.grid.messages.transfer_messages_pb2 import (
+from ......proto.grid.messages.transfer_messages_pb2 import (
     LoadObjectResponse as LoadObjectResponse_PB,
 )
-from syft.proto.grid.messages.transfer_messages_pb2 import (
+from ......proto.grid.messages.transfer_messages_pb2 import (
     SaveObjectMessage as SaveObjectMessage_PB,
 )
-from syft.proto.grid.messages.transfer_messages_pb2 import (
+from ......proto.grid.messages.transfer_messages_pb2 import (
     SaveObjectResponse as SaveObjectResponse_PB,
 )
+from .....common.message import ImmediateSyftMessageWithReply
+from .....common.message import ImmediateSyftMessageWithoutReply
+from .....common.serde.deserialize import _deserialize
+from .....common.serde.serializable import serializable
+from .....common.serde.serialize import _serialize as serialize
+from .....common.uid import UID
+from .....io.address import Address
 
 
 @serializable()

@@ -5,8 +5,8 @@ import zksk as zk  # noqa: 401
 from ...core.common.serde.deserialize import _deserialize as deserialize
 from ...core.common.serde.serializable import serializable
 from ...core.common.serde.serialize import _serialize as serialize
-from ...lib.python import Tuple
 from ...proto.lib.zksk.nizk_pb2 import NIZK as NIZK_PB
+from ..python import Tuple
 
 
 def object2proto(obj: zk.base.NIZK) -> NIZK_PB:

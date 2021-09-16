@@ -4,14 +4,15 @@ from typing import Optional
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
+# syft absolute
+import syft as sy
+
 # relative
-from ...... import serialize
-from ......core.common.serde.serializable import serializable
 from ......proto.core.node.common.service.resolve_pointer_type_service_pb2 import (
     ResolvePointerTypeMessage as ResolvePointerTypeMessage_PB,
 )
 from .....common.message import ImmediateSyftMessageWithReply
-from .....common.serde.deserialize import _deserialize
+from .....common.serde.serializable import serializable
 from .....common.uid import UID
 from .....io.address import Address
 
@@ -30,10 +31,10 @@ class ResolvePointerTypeMessage(ImmediateSyftMessageWithReply):
 
     def _object2proto(self) -> ResolvePointerTypeMessage_PB:
         return ResolvePointerTypeMessage_PB(
-            id_at_location=serialize(self.id_at_location),
-            address=serialize(self.address),
-            msg_id=serialize(self.id),
-            reply_to=serialize(self.reply_to),
+            id_at_location=sy.serialize(self.id_at_location),
+            address=sy.serialize(self.address),
+            msg_id=sy.serialize(self.id),
+            reply_to=sy.serialize(self.reply_to),
         )
 
     @staticmethod
@@ -41,10 +42,10 @@ class ResolvePointerTypeMessage(ImmediateSyftMessageWithReply):
         proto: ResolvePointerTypeMessage_PB,
     ) -> "ResolvePointerTypeMessage":
         return ResolvePointerTypeMessage(
-            id_at_location=_deserialize(blob=proto.id_at_location),
-            address=_deserialize(blob=proto.address),
-            msg_id=_deserialize(blob=proto.msg_id),
-            reply_to=_deserialize(blob=proto.reply_to),
+            id_at_location=sy.deserialize(blob=proto.id_at_location),
+            address=sy.deserialize(blob=proto.address),
+            msg_id=sy.deserialize(blob=proto.msg_id),
+            reply_to=sy.deserialize(blob=proto.reply_to),
         )
 
     @staticmethod

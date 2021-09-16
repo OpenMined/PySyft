@@ -6,8 +6,8 @@ production (that's the *actual* grid's job)."""
 # third party
 from flask import Flask
 
-# syft absolute
-from syft.core.node.device.device import Device
+# relative
+from ...core.node.device.device import Device
 
 app = Flask(__name__)
 device = Device(name="cpu1")

@@ -2,8 +2,8 @@
 from enum import Enum
 from typing import Any
 
-# syft absolute
-from syft.core.common.serde.recursive import RecursiveSerde
+# relative
+from ..common.serde.serializable import serializable
 
 global_value: int = 5
 
@@ -12,7 +12,8 @@ def global_function() -> int:
     return global_value
 
 
-class A(RecursiveSerde):
+@serializable(recursive_serde=True)
+class A:
     """This is a test class to be used in functionality test."""
 
     __slots__ = ["_private_attr", "n"]
@@ -62,7 +63,8 @@ class B(Enum):
     Dog = 3
 
 
-class IterWithoutLen(RecursiveSerde):
+@serializable(recursive_serde=True)
+class IterWithoutLen:
     """This is a test class for testing iterator method in Klass."""
 
     __slots__ = ["n"]
@@ -83,7 +85,8 @@ class IterWithoutLen(RecursiveSerde):
             raise StopIteration
 
 
-class C(RecursiveSerde):
+@serializable(recursive_serde=True)
+class C:
 
     __attr_allowlist__ = ["dynamic_object"]
 

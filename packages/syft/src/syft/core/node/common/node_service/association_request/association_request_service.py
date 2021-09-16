@@ -10,22 +10,18 @@ from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
-# syft absolute
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.node.abstract.node import AbstractNode
-from syft.core.node.common.node_service.auth import service_auth
-from syft.core.node.common.node_service.node_service import (
-    ImmediateNodeServiceWithReply,
-)
-from syft.core.node.common.node_service.success_resp_message import (
-    SuccessResponseMessage,
-)
-from syft.core.node.domain.enums import AssociationRequestResponses
-from syft.logger import info
-
 # relative
+from ......logger import info
+from .....common.message import ImmediateSyftMessageWithReply
+from .....common.message import SignedImmediateSyftMessageWithReply
+from ....domain.domain_interface import DomainInterface
+from ....domain.enums import AssociationRequestResponses
 from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
+from ...node_table.association_request import AssociationRequest
+from ..auth import service_auth
+from ..node_service import ImmediateNodeServiceWithReply
+from ..success_resp_message import SuccessResponseMessage
 from .association_request_messages import DeleteAssociationRequestMessage
 from .association_request_messages import GetAssociationRequestMessage
 from .association_request_messages import GetAssociationRequestResponse
@@ -38,7 +34,7 @@ from .association_request_messages import SendAssociationRequestMessage
 
 def send_association_request_msg(
     msg: SendAssociationRequestMessage,
-    node: AbstractNode,
+    node: DomainInterface,
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
     # Check Key permissions
@@ -55,16 +51,18 @@ def send_association_request_msg(
 
         # Build an association request to send to the target
         user_priv_key = SigningKey(
-            node.users.get_user(verify_key).private_key.encode(), encoder=HexEncoder
+            node.users.get_user(verify_key).private_key.encode(), encoder=HexEncoder  # type: ignore
         )
 
-        target_msg = ReceiveAssociationRequestMessage(
-            address=msg.target.address,
-            reply_to=msg.source.address,
-            metadata=msg.metadata,
-            source=msg.source,
-            target=msg.target,
-        ).sign(signing_key=user_priv_key)
+        target_msg: SignedImmediateSyftMessageWithReply = (
+            ReceiveAssociationRequestMessage(
+                address=msg.target.address,
+                reply_to=msg.source.address,
+                metadata=msg.metadata,
+                source=msg.source,
+                target=msg.target,
+            ).sign(signing_key=user_priv_key)
+        )
 
         # Send the message to the target
         info(
@@ -80,7 +78,7 @@ def send_association_request_msg(
             f"Node {node} - send_association_request_msg: adding requests to the Database."
         )
         node.association_requests.create_association_request(
-            node=msg.target.name,
+            node=msg.target.name,  # type: ignore
             status=AssociationRequestResponses.PENDING,
             metadata=msg.metadata,
             source=msg.source,
@@ -97,7 +95,7 @@ def send_association_request_msg(
 
 def recv_association_request_msg(
     msg: ReceiveAssociationRequestMessage,
-    node: AbstractNode,
+    node: DomainInterface,
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
     if not msg.target.name:
@@ -126,7 +124,7 @@ def recv_association_request_msg(
         info(
             f"Node {node} - recv_association_request_msg: answering an existing association request."
         )
-        node.association_requests.set(msg.target.name, msg.response)
+        node.association_requests.set(msg.target.name, msg.response)  # type: ignore
 
     return SuccessResponseMessage(
         address=msg.reply_to,
@@ -136,7 +134,7 @@ def recv_association_request_msg(
 
 def respond_association_request_msg(
     msg: RespondAssociationRequestMessage,
-    node: AbstractNode,
+    node: DomainInterface,
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
     # Check if handshake/address/value fields are empty
@@ -152,20 +150,23 @@ def respond_association_request_msg(
     )
     if allowed:
         # Set the status of the Association Request according to the "value" field received
-        node.association_requests.set(msg.target.name, msg.response)
+        node.association_requests.set(msg.target.name, msg.response)  # type: ignore
 
         user_priv_key = SigningKey(
-            node.users.get_user(verify_key).private_key.encode(), encoder=HexEncoder
+            node.users.get_user(verify_key).private_key.encode(), encoder=HexEncoder  # type: ignore
         )
 
-        node_msg = ReceiveAssociationRequestMessage(
-            address=msg.source.address,
-            response=msg.response,
-            reply_to=msg.target.address,
-            metadata={},
-            source=msg.source,
-            target=msg.target,
-        ).sign(signing_key=user_priv_key)
+        node_msg: SignedImmediateSyftMessageWithReply = (
+            ReceiveAssociationRequestMessage(
+                address=msg.source.address,
+                response=msg.response,
+                reply_to=msg.target.address,
+                metadata={},
+                source=msg.source,
+                target=msg.target,
+            ).sign(signing_key=user_priv_key)
+        )
+
         info(
             f"Node {node} - respond_association_request_msg: sending ReceiveAssociationRequestMessage."
         )
@@ -186,14 +187,16 @@ def respond_association_request_msg(
 
 def get_association_request_msg(
     msg: GetAssociationRequestMessage,
-    node: AbstractNode,
+    node: DomainInterface,
     verify_key: VerifyKey,
 ) -> GetAssociationRequestResponse:
     # Check Key Permissions
     allowed = node.users.can_manage_infrastructure(verify_key=verify_key)
     # If allowed
     if allowed:
-        association_request = node.association_requests.first(id=msg.association_id)
+        association_request: AssociationRequest = node.association_requests.first(
+            id=msg.association_id
+        )
     else:  # Otherwise
         raise AuthorizationError(
             "You're not allowed to get Association Request information!"
@@ -209,7 +212,7 @@ def get_association_request_msg(
 
 def get_all_association_request_msg(
     msg: GetAssociationRequestsMessage,
-    node: AbstractNode,
+    node: DomainInterface,
     verify_key: VerifyKey,
 ) -> GetAssociationRequestsResponse:
     allowed = node.users.can_manage_infrastructure(verify_key=verify_key)
@@ -235,7 +238,7 @@ def get_all_association_request_msg(
 
 def del_association_request_msg(
     msg: DeleteAssociationRequestMessage,
-    node: AbstractNode,
+    node: DomainInterface,
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
     # Check Key permissions
@@ -271,7 +274,7 @@ class AssociationRequestService(ImmediateNodeServiceWithReply):
     @staticmethod
     @service_auth(guests_welcome=True)
     def process(
-        node: AbstractNode,
+        node: DomainInterface,
         msg: Union[
             SendAssociationRequestMessage,
             ReceiveAssociationRequestMessage,
