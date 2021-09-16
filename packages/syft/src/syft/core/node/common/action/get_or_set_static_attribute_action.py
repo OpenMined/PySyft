@@ -8,13 +8,14 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
+# syft absolute
+import syft as sy
+
 # relative
 from ..... import lib
-from ..... import serialize
 from .....proto.core.node.common.action.get_set_static_attribute_pb2 import (
     GetSetStaticAttributeAction as GetSetStaticAttributeAction_PB,
 )
-from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
@@ -101,7 +102,7 @@ class GetSetStaticAttributeAction(ImmediateActionWithoutReply):
         :return: returns a protobuf object
         :rtype: GetOrSetPropertyAction_PB
         .. note::
-            This method is purely an internal method. Please use serialize(object) or one of
+            This method is purely an internal method. Please use sy.serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
@@ -110,18 +111,18 @@ class GetSetStaticAttributeAction(ImmediateActionWithoutReply):
         if self.set_arg is not None:
             return GetSetStaticAttributeAction_PB(
                 path=self.path,
-                id_at_location=serialize(self.id_at_location),
-                address=serialize(self.address),
-                msg_id=serialize(self.id),
+                id_at_location=sy.serialize(self.id_at_location),
+                address=sy.serialize(self.address),
+                msg_id=sy.serialize(self.id),
                 action=self.action.value,
-                set_arg=serialize(self.set_arg),
+                set_arg=sy.serialize(self.set_arg),
             )
         else:
             return GetSetStaticAttributeAction_PB(
                 path=self.path,
-                id_at_location=serialize(self.id_at_location),
-                address=serialize(self.address),
-                msg_id=serialize(self.id),
+                id_at_location=sy.serialize(self.id_at_location),
+                address=sy.serialize(self.address),
+                msg_id=sy.serialize(self.id),
                 action=self.action.value,
             )
 
@@ -140,10 +141,10 @@ class GetSetStaticAttributeAction(ImmediateActionWithoutReply):
         """
         return GetSetStaticAttributeAction(
             path=proto.path,
-            id_at_location=_deserialize(blob=proto.id_at_location),
-            address=_deserialize(blob=proto.address),
-            msg_id=_deserialize(blob=proto.msg_id),
-            set_arg=_deserialize(blob=proto.set_arg)
+            id_at_location=sy.deserialize(blob=proto.id_at_location),
+            address=sy.deserialize(blob=proto.address),
+            msg_id=sy.deserialize(blob=proto.msg_id),
+            set_arg=sy.deserialize(blob=proto.set_arg)
             if proto.HasField("set_arg")
             else None,
             action=StaticAttributeAction(proto.action),

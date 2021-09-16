@@ -1,6 +1,7 @@
 # stdlib
 from typing import Any
 from typing import Callable as CallableT
+import warnings
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -87,7 +88,32 @@ def GenerateProtobufWrapper(
     )
 
 
-def serializable(generate_wrapper: bool = False, protobuf_object: bool = False) -> Any:
+def serializable(
+    generate_wrapper: bool = False,
+    protobuf_object: bool = False,
+    recursive_serde: bool = False,
+) -> Any:
+    def rs_decorator(cls: Any) -> Any:
+        # relative
+        from .recursive import rs_get_protobuf_schema
+        from .recursive import rs_object2proto
+        from .recursive import rs_proto2object
+
+        if not hasattr(cls, "__attr_allowlist__"):
+            warnings.warn(
+                f"__attr_allowlist__ not defined for type {cls.__name__},"
+                " even if it uses recursive serde, defaulting on the empty list."
+            )
+            setattr(cls, "__attr_allowlist__", [])
+
+        if not hasattr(cls, "__serde_overrides__"):
+            setattr(cls, "__serde_overrides__", {})
+
+        setattr(cls, "_object2proto", rs_object2proto)
+        setattr(cls, "_proto2object", staticmethod(rs_proto2object))
+        setattr(cls, "get_protobuf_schema", staticmethod(rs_get_protobuf_schema))
+        return cls
+
     def serializable_decorator(cls: Any) -> Any:
         protobuf_schema = cls.get_protobuf_schema()
         # overloading a protobuf by adding multiple classes and we will check the
@@ -103,5 +129,8 @@ def serializable(generate_wrapper: bool = False, protobuf_object: bool = False) 
 
     if generate_wrapper:
         return GenerateWrapper
-    else:
-        return serializable_decorator
+
+    if recursive_serde:
+        return rs_decorator
+
+    return serializable_decorator

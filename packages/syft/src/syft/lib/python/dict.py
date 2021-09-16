@@ -12,9 +12,10 @@ from typing import Union
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
+# syft absolute
+import syft as sy
+
 # relative
-from ... import deserialize
-from ... import serialize
 from ...core.common import UID
 from ...core.common.serde.serializable import serializable
 from ...logger import traceback_and_raise
@@ -206,15 +207,15 @@ class Dict(UserDict, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=super().clear())
 
     def _object2proto(self) -> Dict_PB:
-        id_ = serialize(obj=self.id)
+        id_ = sy.serialize(obj=self.id)
 
         keys = [
-            serialize(obj=downcast(value=element), to_bytes=True)
+            sy.serialize(obj=downcast(value=element), to_bytes=True)
             for element in self.data.keys()
         ]
 
         values = [
-            serialize(obj=downcast(value=element), to_bytes=True)
+            sy.serialize(obj=downcast(value=element), to_bytes=True)
             for element in self.data.values()
         ]
 
@@ -232,15 +233,15 @@ class Dict(UserDict, PyPrimitive):
 
     @staticmethod
     def _proto2object(proto: Dict_PB) -> "Dict":
-        id_: UID = deserialize(blob=proto.id)
+        id_: UID = sy.deserialize(blob=proto.id)
 
         values = [
-            upcast(value=deserialize(blob=element, from_bytes=True))
+            upcast(value=sy.deserialize(blob=element, from_bytes=True))
             for element in proto.values
         ]
 
         keys = [
-            upcast(value=deserialize(blob=element, from_bytes=True))
+            upcast(value=sy.deserialize(blob=element, from_bytes=True))
             for element in proto.keys
         ]
         new_dict = Dict(dict(zip(keys, values)))

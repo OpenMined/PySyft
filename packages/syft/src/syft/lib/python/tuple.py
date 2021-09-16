@@ -6,9 +6,10 @@ from typing import Union
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
+# syft absolute
+import syft as sy
+
 # relative
-from ... import deserialize
-from ... import serialize
 from ...core.common import UID
 from ...core.common.serde.serializable import serializable
 from ...proto.lib.python.tuple_pb2 import Tuple as Tuple_PB
@@ -107,16 +108,17 @@ class Tuple(tuple, PyPrimitive):
         return TupleIterator(self, max_len=max_len)
 
     def _object2proto(self) -> Tuple_PB:
-        id_ = serialize(obj=self.id)
+        id_ = sy.serialize(obj=self.id)
         downcasted = [downcast(value=element) for element in self]
-        data = [serialize(obj=element, to_bytes=True) for element in downcasted]
+        data = [sy.serialize(obj=element, to_bytes=True) for element in downcasted]
         return Tuple_PB(id=id_, data=data)
 
     @staticmethod
     def _proto2object(proto: Tuple_PB) -> "Tuple":
-        id_: UID = deserialize(blob=proto.id)
+        id_: UID = sy.deserialize(blob=proto.id)
         value = [
-            upcast(deserialize(blob=element, from_bytes=True)) for element in proto.data
+            upcast(sy.deserialize(blob=element, from_bytes=True))
+            for element in proto.data
         ]
         new_list = Tuple(value)
         new_list._id = id_

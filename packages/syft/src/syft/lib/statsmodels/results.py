@@ -3,9 +3,9 @@ from statsmodels.genmod.generalized_linear_model import GLMResultsWrapper
 
 # relative
 from ...core.common.serde.serializable import serializable
-from ...lib.python.primitive_factory import PrimitiveFactory
-from ...lib.python.string import String
 from ...proto.lib.statsmodels.results_pb2 import ResultsProto
+from ..python.primitive_factory import PrimitiveFactory
+from ..python.string import String
 
 
 def object2proto(obj: GLMResultsWrapper) -> ResultsProto:

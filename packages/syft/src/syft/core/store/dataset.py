@@ -1,3 +1,6 @@
+# future
+from __future__ import annotations
+
 # stdlib
 from typing import List
 from typing import Optional
@@ -9,10 +12,8 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 import syft as sy
 
 # relative
-from ... import serialize
 from ...proto.core.store.dataset_pb2 import Dataset as Dataset_PB
 from ...util import get_fully_qualified_name
-from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import serializable
 from ..common.uid import UID
 from .storeable_object import StorableObject
@@ -100,7 +101,7 @@ class Dataset:
         proto = Dataset_PB()
 
         # Step 1: Serialize the id to protobuf and copy into protobuf
-        id = serialize(self.id)
+        id = sy.serialize(self.id)
         proto.id.CopyFrom(id)
 
         # Step 2: Save the type of wrapper to use to deserialize
@@ -129,14 +130,14 @@ class Dataset:
             permission_data = sy.lib.python.Dict()
             for k, v in self.read_permissions.items():
                 permission_data[k] = v
-            proto.read_permissions = serialize(permission_data, to_bytes=True)
+            proto.read_permissions = sy.serialize(permission_data, to_bytes=True)
 
         # Step 7: save search permissions
         if len(self.search_permissions.keys()) > 0:
             permission_data = sy.lib.python.Dict()
             for k, v in self.search_permissions.items():
                 permission_data[k] = v
-            proto.search_permissions = serialize(permission_data, to_bytes=True)
+            proto.search_permissions = sy.serialize(permission_data, to_bytes=True)
 
         return proto
 
@@ -144,7 +145,7 @@ class Dataset:
     def _proto2object(proto: Dataset_PB) -> "Dataset":
 
         # Step 1: deserialize the ID
-        id = _deserialize(blob=proto.id)
+        id = sy.deserialize(blob=proto.id)
 
         if not isinstance(id, UID):
             raise ValueError("TODO")

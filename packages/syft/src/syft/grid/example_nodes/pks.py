@@ -5,8 +5,8 @@ production (that's the *actual* grid's job)."""
 # third party
 from flask import Flask
 
-# syft absolute
-from syft.core.node.network.network import Network
+# relative
+from ...core.node.network.network import Network
 
 app = Flask(__name__)
 network = Network(name="ucsf-net")

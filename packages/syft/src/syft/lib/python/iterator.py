@@ -6,8 +6,7 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # syft absolute
-from syft import deserialize
-from syft import serialize
+import syft as sy
 
 # relative
 from .. import python as py
@@ -140,8 +139,8 @@ class Iterator(PyPrimitive):
     # And there are similar edge cases to this.
 
     def _object2proto(self) -> Iterator_PB:
-        id_ = serialize(obj=self._id)
-        obj_ref_ = serialize(py.list.List(list(self._obj_ref)), to_bytes=True)
+        id_ = sy.serialize(obj=self._id)
+        obj_ref_ = sy.serialize(py.list.List(list(self._obj_ref)), to_bytes=True)
         index_ = self._index
         max_len_ = self.max_len
         exhausted_ = self.exhausted
@@ -155,8 +154,8 @@ class Iterator(PyPrimitive):
 
     @staticmethod
     def _proto2object(proto: Iterator_PB) -> "Iterator":
-        id_: UID = deserialize(blob=proto.id)
-        obj_ref_ = deserialize(blob=proto.obj_ref, from_bytes=True)
+        id_: UID = sy.deserialize(blob=proto.id)
+        obj_ref_ = sy.deserialize(blob=proto.obj_ref, from_bytes=True)
         index_ = proto.index
         max_len_ = proto.max_len
         exhausted_ = proto.exhausted

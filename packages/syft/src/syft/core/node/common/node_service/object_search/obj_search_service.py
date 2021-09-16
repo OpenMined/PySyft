@@ -14,9 +14,10 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 from typing_extensions import final
 
+# syft absolute
+import syft as sy
+
 # relative
-from ...... import serialize
-from ......core.common.serde.serializable import serializable
 from ......logger import error
 from ......proto.core.node.common.service.object_search_message_pb2 import (
     ObjectSearchMessage as ObjectSearchMessage_PB,
@@ -29,7 +30,7 @@ from ......util import traceback_and_raise
 from .....common.group import VERIFYALL
 from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import ImmediateSyftMessageWithoutReply
-from .....common.serde.deserialize import _deserialize
+from .....common.serde.serializable import serializable
 from .....common.uid import UID
 from .....io.address import Address
 from .....pointer.pointer import Pointer
@@ -59,14 +60,14 @@ class ObjectSearchMessage(ImmediateSyftMessageWithReply):
         :rtype: ObjectSearchMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use serialize(object) or one of
+            This method is purely an internal method. Please use sy.serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return ObjectSearchMessage_PB(
-            msg_id=serialize(self.id),
-            address=serialize(self.address),
-            reply_to=serialize(self.reply_to),
+            msg_id=sy.serialize(self.id),
+            address=sy.serialize(self.address),
+            reply_to=sy.serialize(self.reply_to),
         )
 
     @staticmethod
@@ -85,9 +86,9 @@ class ObjectSearchMessage(ImmediateSyftMessageWithReply):
         """
 
         return ObjectSearchMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
-            reply_to=_deserialize(blob=proto.reply_to),
+            msg_id=sy.deserialize(blob=proto.msg_id),
+            address=sy.deserialize(blob=proto.address),
+            reply_to=sy.deserialize(blob=proto.reply_to),
         )
 
     @staticmethod
@@ -137,14 +138,14 @@ class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
         :rtype: ObjectSearchReplyMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use serialize(object) or one of
+            This method is purely an internal method. Please use sy.serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return ObjectSearchReplyMessage_PB(
-            msg_id=serialize(self.id),
-            address=serialize(self.address),
-            results=list(map(lambda x: serialize(x, to_bytes=True), self.results)),
+            msg_id=sy.serialize(self.id),
+            address=sy.serialize(self.address),
+            results=list(map(lambda x: sy.serialize(x, to_bytes=True), self.results)),
         )
 
     @staticmethod
@@ -163,9 +164,9 @@ class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
         """
 
         return ObjectSearchReplyMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
-            results=[_deserialize(blob=x, from_bytes=True) for x in proto.results],
+            msg_id=sy.deserialize(blob=proto.msg_id),
+            address=sy.deserialize(blob=proto.address),
+            results=[sy.deserialize(blob=x, from_bytes=True) for x in proto.results],
         )
 
     @staticmethod

@@ -9,9 +9,10 @@ from typing import Optional
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
+# syft absolute
+import syft as sy
+
 # relative
-from .... import deserialize
-from .... import serialize
 from ....core.common.serde.serializable import serializable
 from ....core.common.uid import UID
 from ....logger import traceback_and_raise
@@ -147,38 +148,38 @@ class OrderedDict(PyOrderedDict, PyPrimitive):
         return Iterator(ValuesView(self), max_len=max_len)
 
     def _object2proto(self) -> OrderedDict_PB:
-        id_ = serialize(obj=self.id)
+        id_ = sy.serialize(obj=self.id)
         # serialize to bytes so that we can avoid using StorableObject
         # otherwise we get recursion where the permissions of StorableObject
         # themselves utilise Dict
         keys = [
-            serialize(obj=downcast(value=element), to_bytes=True)
+            sy.serialize(obj=downcast(value=element), to_bytes=True)
             for element in self.keys()
         ]
         # serialize to bytes so that we can avoid using StorableObject
         # otherwise we get recursion where the permissions of StorableObject
         # themselves utilise Dict
         values = [
-            serialize(obj=downcast(value=element), to_bytes=True)
+            sy.serialize(obj=downcast(value=element), to_bytes=True)
             for element in self.values()
         ]
         return OrderedDict_PB(id=id_, keys=keys, values=values)
 
     @staticmethod
     def _proto2object(proto: OrderedDict_PB) -> "OrderedDict":
-        id_: UID = deserialize(blob=proto.id)
+        id_: UID = sy.deserialize(blob=proto.id)
         # deserialize from bytes so that we can avoid using StorableObject
         # otherwise we get recursion where the permissions of StorableObject
         # themselves utilise OrderedDict
         values = [
-            deserialize(blob=upcast(value=element), from_bytes=True)
+            sy.deserialize(blob=upcast(value=element), from_bytes=True)
             for element in proto.values
         ]
         # deserialize from bytes so that we can avoid using StorableObject
         # otherwise we get recursion where the permissions of StorableObject
         # themselves utilise OrderedDict
         keys = [
-            deserialize(blob=upcast(value=element), from_bytes=True)
+            sy.deserialize(blob=upcast(value=element), from_bytes=True)
             for element in proto.keys
         ]
         new_dict = OrderedDict(dict(zip(keys, values)))

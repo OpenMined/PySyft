@@ -22,23 +22,23 @@ import torch
 
 # syft absolute
 import syft as sy
-from syft.core.node.common.action.save_object_action import SaveObjectAction
-from syft.core.plan.plan_builder import ROOT_CLIENT
-from syft.core.plan.plan_builder import make_plan
-from syft.lib.python import _SyNone
 
 # relative
 from .. import lib_ast
 from ...core.common.serde.serializable import serializable
+from ...core.node.common.action.save_object_action import SaveObjectAction
+from ...core.plan.plan_builder import ROOT_CLIENT
+from ...core.plan.plan_builder import make_plan
 from ...core.pointer.pointer import Pointer
-from ...lib.util import full_name_with_qualname
 from ...logger import critical
 from ...logger import info
 from ...logger import traceback_and_raise
 from ...proto.lib.torch.module_pb2 import Module as Module_PB
+from ..python import _SyNone
 from ..python.collections import OrderedDict as SyOrderedDict
 from ..python.util import downcast
 from ..python.util import upcast
+from ..util import full_name_with_qualname
 
 # from ...core.node.common.service.auth import AuthorizationException
 
