@@ -2,11 +2,11 @@
 from __future__ import annotations
 
 # stdlib
+import textwrap
 from typing import Any
 from typing import List
 from typing import Optional
 from typing import Type
-from typing import Union
 import uuid
 
 # third party
@@ -22,9 +22,6 @@ from .passthrough import PassthroughTensor  # type: ignore
 from .passthrough import is_acceptable_simple_type  # type: ignore
 
 _SingleEntityPhiTensorRef = None
-
-# stdlib
-import textwrap
 
 
 def _SingleEntityPhiTensor() -> Type[PassthroughTensor]:
@@ -109,7 +106,7 @@ class AutogradTensorAncestor(TensorChainManager):
         return self
 
 
-def entity_creation_wizard(data) -> List[Any]:
+def entity_creation_wizard(data: Any) -> List[Any]:
 
     w = textwrap.TextWrapper(initial_indent="\t", subsequent_indent="\t")
 
@@ -365,6 +362,8 @@ protect the people or the business)"""
     print()
 
     print("\t" + "_" * 69)
+    raise Exception("Not sure what happened... this code shouldn't have been reached. Try answering questions with "
+                    "options given by the prompts (such as yes/no).")
 
 
 class PhiTensorAncestor(TensorChainManager):
