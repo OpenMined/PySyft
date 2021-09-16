@@ -324,7 +324,7 @@ class DomainClient(Client):
         self,
         eps: float = 0.0,
         reason: str = "",
-        skip_checks: bool=False,
+        skip_checks: bool = False,
     ) -> Any:
 
         if not skip_checks:
