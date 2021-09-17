@@ -46,18 +46,18 @@ repos:
               packages/hagrid.*|
               packages/syft/src/syft/federated/model_serialization/protos.py
           )$
-  - repo: https://github.com/pycqa/isort
-    rev: 5.9.2
-    hooks:
-      - id: isort
-        always_run: true
-        name: isort (python)
-  - repo: https://github.com/psf/black
-    rev: 21.9b0
-    hooks:
-      - id: black
-        always_run: true
-        exclude: ^(packages/syft/src/syft/proto|packages/syft/examples/duet)
+  # - repo: https://github.com/pycqa/isort
+  #   rev: 5.9.3
+  #   hooks:
+  #     - id: isort
+  #       always_run: true
+  #       name: isort (python)
+  # - repo: https://github.com/psf/black
+  #   rev: 21.9b0
+  #   hooks:
+  #     - id: black
+  #       always_run: true
+  #       exclude: ^(packages/syft/src/syft/proto|packages/syft/examples/duet)
   - repo: https://gitlab.com/pycqa/flake8
     rev: 3.9.2
     hooks:
