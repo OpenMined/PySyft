@@ -15,26 +15,26 @@ from syft.core.tensor.tensor import Tensor
 ishan = Entity(name="Ishan")
 supreme_leader = Entity(name="Trask")
 dims = np.random.randint(10) + 1  # Avoid size 0
-
+highest = 100
 
 @pytest.fixture
 def upper_bound() -> np.ndarray:
     """This is used to specify the max_vals for a SEPT that is either binary or randomly generated b/w 0-1"""
-    max_values = np.ones(dims)
+    max_values = np.ones(dims, dtype=int) * highest
     return max_values
 
 
 @pytest.fixture
 def lower_bound() -> np.ndarray:
     """This is used to specify the min_vals for a SEPT that is either binary or randomly generated b/w 0-1"""
-    min_values = np.zeros(dims)
+    min_values = np.zeros(dims, dtype=int)
     return min_values
 
 
 @pytest.fixture
 def reference_data() -> np.ndarray:
     """This generates random data to test the equality operators"""
-    reference_data = np.random.random((dims, dims))
+    reference_data = np.random.randint(low=-highest, high=highest, size=(dims, dims), dtype=np.int32)
     return reference_data
 
 
@@ -188,7 +188,7 @@ def test_ne_shapes(
         child=reference_data, entity=ishan, max_vals=upper_bound, min_vals=lower_bound
     )
     comparison_tensor = SEPT(
-        child=np.random.random((dims + 10, dims + 10)),
+        child=np.random.randint(low=-highest, high=highest,size=(dims + 10, dims + 10), dtype=np.int32),
         entity=ishan,
         max_vals=upper_bound,
         min_vals=lower_bound,
@@ -294,7 +294,7 @@ def test_add_tensor_types(
         child=reference_data, entity=ishan, max_vals=upper_bound, min_vals=lower_bound
     )
 
-    simple_tensor = Tensor(child=np.random.random((dims, dims)))
+    simple_tensor = Tensor(child=np.random.randint(low=-highest, high=highest, size=(dims, dims), dtype=np.int32))
 
     with pytest.raises(NotImplementedError):
         result = reference_tensor + simple_tensor
