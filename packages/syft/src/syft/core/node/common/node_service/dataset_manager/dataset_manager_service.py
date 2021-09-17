@@ -103,7 +103,7 @@ def _handle_dataset_creation_syft(
         node.store[storable.id] = storable
         node.datasets.add(
             name=table_name,
-            dataset_id=int(dataset_id),
+            dataset_id=dataset_id,
             obj_id=str(id_at_location.value),
             dtype=str(table.__class__.__name__),
             shape=str(table.shape),
