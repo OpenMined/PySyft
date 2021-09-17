@@ -77,7 +77,7 @@ def _handle_dataset_creation_grid_ui(
 
             node.datasets.add(
                 name=item.name,
-                dataset_id=int(dataset_id),
+                dataset_id=dataset_id,
                 obj_id=str(id_at_location.value),
                 dtype=df.__class__.__name__,
                 shape=str(tuple(df.shape)),
