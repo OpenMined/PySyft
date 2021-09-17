@@ -181,14 +181,16 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
         """Convert this pointer into a partial version of the SingleEntityPhiTensor but without
         any of the private data therein."""
 
+        public_shape = getattr(self, "public_shape", None)
         return Tensor(
-            SingleEntityPhiTensor(
+            child=SingleEntityPhiTensor(
                 child=None,
                 entity=self.entity,
                 min_vals=self.min_vals,  # type: ignore
                 max_vals=self.max_vals,  # type: ignore
                 scalar_manager=self.scalar_manager,
-            )
+            ),
+            public_shape=public_shape,
         )
 
     def _object2proto(self) -> "TensorWrappedSingleEntityPhiTensorPointer_PB":
