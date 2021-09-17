@@ -53,7 +53,7 @@ repos:
         always_run: true
         name: isort (python)
   - repo: https://github.com/psf/black
-    rev: 21.7b0
+    rev: 21.9b0
     hooks:
       - id: black
         always_run: true
