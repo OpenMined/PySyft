@@ -6,14 +6,18 @@ from uuid import UUID
 from numpy import ndarray
 
 # relative
+from ....common.serde.serializable import serializable
 from ..tensor import AutogradTensor
 from .op import Op
 
 
+@serializable(recursive_serde=True)
 class RepeatOp(Op):
     """Repeat operation across a dimension"""
 
-    def forward(
+    __attr_allowlist__ = ["x", "axis", "repeats", "input_shape", "output_shape"]
+
+    def forward(  # type: ignore
         self, x: AutogradTensor, repeats: int, axis: Optional[int] = None
     ) -> AutogradTensor:
         self.x = x
@@ -39,7 +43,7 @@ class RepeatOp(Op):
             intermediate_shape = list(self.input_shape)
             intermediate_shape.insert(axis + 1, -1)
 
-            if self.x.shape[self.axis] == 1:
+            if self.x.shape[self.axis] == 1:  # type: ignore
                 grad = grad.sum(axis=axis)
             else:
                 grad = grad.reshape(*intermediate_shape)

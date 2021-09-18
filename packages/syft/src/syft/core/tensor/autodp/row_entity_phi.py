@@ -1,28 +1,65 @@
 # future
 from __future__ import annotations
 
+# stdlib
+from typing import Any
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Union
+
 # third party
 import numpy as np
 
 # relative
-from ....core.common.serde.recursive import RecursiveSerde
-from ...common.serde.serializable import bind_protobuf
-from ..passthrough import PassthroughTensor
-from ..passthrough import implements
-from ..passthrough import is_acceptable_simple_type
-from .initial_gamma import InitialGammaTensor
+from ...adp.vm_private_scalar_manager import (
+    VirtualMachinePrivateScalarManager as TypeScalarManager,
+)
+from ...common.serde.serializable import serializable
+from ..passthrough import PassthroughTensor  # type: ignore
+from ..passthrough import implements  # type: ignore
+from ..passthrough import is_acceptable_simple_type  # type: ignore
+from ..types import AcceptableSimpleType  # type: ignore
+from .adp_tensor import ADPTensor
+from .initial_gamma import InitialGammaTensor  # type: ignore
 
 
-@bind_protobuf
-class RowEntityPhiTensor(PassthroughTensor, RecursiveSerde):
+@serializable(recursive_serde=True)
+class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
+    """This tensor is one of several tensors whose purpose is to carry metadata
+    relevant to automatically tracking the privacy budgets of tensor operations. This
+    tensor is called 'Phi' tensor because it assumes that each number in the tensor
+    originates from a single entity (no numbers originate from multiple entities). This
+    tensor is called 'RowEntity' because it additionally assumes that all entries in a row
+    come from the same entity (note: multiple rows may also be from the same or different
+    entities). The reason we have a tensor specifically for tracking row-organized entities
+    is that data entity-linked by row is very common and specifically accommodating it offers
+    significant performance benefits over other DP tracking tensors. Note that when
+    we refer to the number of 'rows' we simply refer to the length of the first dimension. This
+    tensor can have an arbitrary number of dimensions."""
 
+    # a list of attributes needed for serialization using RecursiveSerde
     __attr_allowlist__ = ["child"]
 
-    def __init__(self, rows, check_shape=True):
+    def __init__(self, rows: Any, check_shape: bool = True):
+        """Initialize a RowEntityPhiTensor
+
+        rows: the actual data organized as an iterable (can be any type of iterable)
+        check_shape: whether or not we are already confident that the objects in iterable
+            'rows' all have the same dimension (check if we're not sure).
+
+        """
+
         super().__init__(rows)
 
+        # include this check because it's expensvie to check and sometimes we can skip it when
+        # we already know the rows are identically shaped.
         if check_shape:
+
+            # shape of the first row we use for reference
             shape = rows[0].shape
+
+            # check each row to make sure it's the same shape as the first
             for row in rows[1:]:
                 if shape != row.shape:
                     raise Exception(
@@ -30,32 +67,34 @@ class RowEntityPhiTensor(PassthroughTensor, RecursiveSerde):
                     )
 
     @property
-    def scalar_manager(self):
+    def scalar_manager(self) -> TypeScalarManager:
         return self.child[0].scalar_manager
 
     @property
-    def min_vals(self):
+    def min_vals(self) -> np.ndarray:
         return np.concatenate([x.min_vals for x in self.child]).reshape(self.shape)
 
     @property
-    def max_vals(self):
+    def max_vals(self) -> np.ndarray:
         return np.concatenate([x.max_vals for x in self.child]).reshape(self.shape)
 
     @property
-    def value(self):
+    def value(self) -> np.ndarray:
         return np.concatenate([x.child for x in self.child]).reshape(self.shape)
 
     @property
-    def entities(self):
+    def entities(self) -> np.ndarray:
         return np.array(
             [[x.entity] * np.array(x.shape).prod() for x in self.child]
         ).reshape(self.shape)
 
     @property
-    def gamma(self):
+    def gamma(self) -> InitialGammaTensor:
         return self.create_gamma()
 
-    def create_gamma(self, scalar_manager=None):
+    def create_gamma(
+        self, scalar_manager: Optional[TypeScalarManager] = None
+    ) -> InitialGammaTensor:
 
         if scalar_manager is None:
             scalar_manager = self.scalar_manager
@@ -69,72 +108,97 @@ class RowEntityPhiTensor(PassthroughTensor, RecursiveSerde):
         )
 
     @property
-    def shape(self):
-        return [len(self.child)] + list(self.child[0].shape)
+    def shape(self) -> Tuple[Any, ...]:
+        return [len(self.child)] + list(self.child[0].shape)  # type: ignore
 
-    def __add__(self, other):
+    def __eq__(self, other: Any) -> RowEntityPhiTensor:
 
-        if is_acceptable_simple_type(other) or len(self.child) == len(other.child):
+        if is_acceptable_simple_type(other) or len(self.child) == len(other.child):  # type: ignore
+            new_list = list()
+            for i in range(len(self.child)):
+                if is_acceptable_simple_type(other):
+                    new_list.append(self.child[i] == other)
+                else:
+                    new_list.append(self.child[i] == other.child[i])  # type: ignore
+            return RowEntityPhiTensor(rows=new_list, check_shape=False)
+        else:
+            raise Exception(
+                f"Tensor dims do not match for __eq__: {len(self.child)} != {len(other.child)}"  # type: ignore
+            )
+
+    def __add__(  # type: ignore
+        self, other: Union[RowEntityPhiTensor, AcceptableSimpleType]
+    ) -> RowEntityPhiTensor:
+
+        if is_acceptable_simple_type(other) or len(self.child) == len(other.child):  # type: ignore
             new_list = list()
             for i in range(len(self.child)):
                 if is_acceptable_simple_type(other):
                     new_list.append(self.child[i] + other)
                 else:
-                    new_list.append(self.child[i] + other.child[i])
+                    new_list.append(self.child[i] + other.child[i])  # type: ignore
             return RowEntityPhiTensor(rows=new_list, check_shape=False)
         else:
             raise Exception(
-                f"Tensor dims do not match for __add__: {len(self.child)} != {len(other.child)}"
+                f"Tensor dims do not match for __add__: {len(self.child)} != {len(other.child)}"  # type: ignore
             )
 
-    def __sub__(self, other):
-        if is_acceptable_simple_type(other) or len(self.child) == len(other.child):
+    def __sub__(  # type: ignore
+        self, other: Union[RowEntityPhiTensor, AcceptableSimpleType]
+    ) -> RowEntityPhiTensor:
+        if is_acceptable_simple_type(other) or len(self.child) == len(other.child):  # type: ignore
             new_list = list()
             for i in range(len(self.child)):
                 if is_acceptable_simple_type(other):
                     new_list.append(self.child[i] - other)
                 else:
-                    new_list.append(self.child[i] - other.child[i])
+                    new_list.append(self.child[i] - other.child[i])  # type: ignore
             return RowEntityPhiTensor(rows=new_list, check_shape=False)
         else:
             raise Exception(
-                f"Tensor dims do not match for __sub__: {len(self.child)} != {len(other.child)}"
+                f"Tensor dims do not match for __sub__: {len(self.child)} != {len(other.child)}"  # type: ignore
             )
 
-    def __mul__(self, other):
+    def __mul__(  # type: ignore
+        self, other: Union[RowEntityPhiTensor, AcceptableSimpleType]
+    ) -> RowEntityPhiTensor:
 
-        if is_acceptable_simple_type(other) or len(self.child) == len(other.child):
+        if is_acceptable_simple_type(other) or len(self.child) == len(other.child):  # type: ignore
             new_list = list()
             for i in range(len(self.child)):
                 if is_acceptable_simple_type(other):
                     if isinstance(other, (int, bool, float)):
                         new_list.append(self.child[i] * other)
                     else:
-                        new_list.append(self.child[i] * other[i])
+                        new_list.append(self.child[i] * other[i])  # type: ignore
                 else:
-                    new_list.append(self.child[i] * other.child[i])
+                    new_list.append(self.child[i] * other.child[i])  # type: ignore
             return RowEntityPhiTensor(rows=new_list, check_shape=False)
         else:
             raise Exception(
-                f"Tensor dims do not match for __mul__: {len(self.child)} != {len(other.child)}"
+                f"Tensor dims do not match for __mul__: {len(self.child)} != {len(other.child)}"  # type: ignore
             )
 
-    def __truediv__(self, other):
+    def __truediv__(  # type: ignore
+        self, other: Union[RowEntityPhiTensor, AcceptableSimpleType]
+    ) -> RowEntityPhiTensor:
 
-        if is_acceptable_simple_type(other) or len(self.child) == len(other.child):
+        if is_acceptable_simple_type(other) or len(self.child) == len(other.child):  # type: ignore
             new_list = list()
             for i in range(len(self.child)):
                 if is_acceptable_simple_type(other):
                     new_list.append(self.child[i] / other)
                 else:
-                    new_list.append(self.child[i] / other.child[i])
+                    new_list.append(self.child[i] / other.child[i])  # type: ignore
             return RowEntityPhiTensor(rows=new_list, check_shape=False)
         else:
             raise Exception(
-                f"Tensor dims do not match for __truediv__: {len(self.child)} != {len(other.child)}"
+                f"Tensor dims do not match for __truediv__: {len(self.child)} != {len(other.child)}"  # type: ignore
             )
 
-    def repeat(self, repeats, axis=None):
+    def repeat(
+        self, repeats: Union[int, Tuple[int, ...]], axis: Optional[int] = None
+    ) -> RowEntityPhiTensor:
 
         if axis is None:
             raise Exception(
@@ -143,7 +207,7 @@ class RowEntityPhiTensor(PassthroughTensor, RecursiveSerde):
 
         if axis == 0 or axis == -len(self.shape):
             new_list = list()
-            for r in range(repeats):
+            for r in range(repeats):  # type: ignore
                 for row in self.child:
                     new_list.append(row)
             return RowEntityPhiTensor(rows=new_list, check_shape=False)
@@ -166,7 +230,7 @@ class RowEntityPhiTensor(PassthroughTensor, RecursiveSerde):
                 "'axis' arg is negative and strangely large... not sure what to do."
             )
 
-    def reshape(self, *shape):
+    def reshape(self, *shape: List[int]) -> RowEntityPhiTensor:
 
         if shape[0] != self.shape[0]:
             raise Exception(
@@ -180,7 +244,10 @@ class RowEntityPhiTensor(PassthroughTensor, RecursiveSerde):
 
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
-    def sum(self, *args, axis=None, **kwargs):
+    # Since this is being used differently compared to supertype, ignoring type annotation errors
+    def sum(  # type: ignore
+        self, *args: Any, axis: Optional[int] = None, **kwargs: Any
+    ) -> RowEntityPhiTensor:
 
         if axis is None or axis == 0:
             return self.gamma.sum(axis=axis)
@@ -191,8 +258,8 @@ class RowEntityPhiTensor(PassthroughTensor, RecursiveSerde):
 
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
-    def transpose(self, *dims):
-        print(dims)
+    # Since this is being used differently compared to supertype, ignoring type annotation errors
+    def transpose(self, *dims: Any) -> RowEntityPhiTensor:  # type: ignore
         if dims[0] != 0:
             raise Exception("Can't move dim 0 in RowEntityPhiTensor at this time")
 
@@ -206,7 +273,7 @@ class RowEntityPhiTensor(PassthroughTensor, RecursiveSerde):
 
 
 @implements(RowEntityPhiTensor, np.expand_dims)
-def expand_dims(a, axis):
+def expand_dims(a: np.typing.ArrayLike, axis: int) -> RowEntityPhiTensor:
 
     if axis == 0:
         raise Exception(

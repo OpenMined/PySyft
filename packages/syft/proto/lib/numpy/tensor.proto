@@ -38,7 +38,7 @@ message TensorProto {
   DataType data_type = 2;
 
   // For float
-  repeated float float_data = 3;
+  repeated double float_data = 3;
   // For int32, uint8, int8, uint16, int16, bool, and float16
   // Note about float16: in storage we will basically convert float16 byte-wise
   // to unsigned short and then store them in the int32_data field.

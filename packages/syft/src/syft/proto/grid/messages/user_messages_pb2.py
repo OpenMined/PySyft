@@ -26,7 +26,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\'proto/grid/messages/user_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto\x1a\x1bproto/lib/python/dict.proto"\xc8\x01\n\x11\x43reateUserMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\r\n\x05\x65mail\x18\x03 \x01(\t\x12\x10\n\x08password\x18\x04 \x01(\t\x12\x0c\n\x04role\x18\x05 \x01(\t\x12\x0c\n\x04name\x18\x06 \x01(\t\x12\'\n\x08reply_to\x18\x07 \x01(\x0b\x32\x15.syft.core.io.Address"\x99\x01\n\x0eGetUserMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07user_id\x18\x03 \x01(\x05\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x88\x01\n\x0fGetUserResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x02 \x01(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address"\x89\x01\n\x0fGetUsersMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x89\x01\n\x10GetUsersResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x02 \x03(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address"\x9c\x01\n\x11\x44\x65leteUserMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07user_id\x18\x03 \x01(\x05\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\xe9\x01\n\x11UpdateUserMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07user_id\x18\x03 \x01(\x05\x12\r\n\x05\x65mail\x18\x04 \x01(\t\x12\x10\n\x08password\x18\x05 \x01(\t\x12\x0c\n\x04role\x18\x06 \x01(\t\x12\x0e\n\x06groups\x18\x07 \x01(\t\x12\x0c\n\x04name\x18\x08 \x01(\t\x12\'\n\x08reply_to\x18\t \x01(\x0b\x32\x15.syft.core.io.Address"\xc7\x01\n\x12SearchUsersMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\r\n\x05\x65mail\x18\x03 \x01(\t\x12\x0c\n\x04role\x18\x04 \x01(\t\x12\x0e\n\x06groups\x18\x05 \x01(\t\x12\x0c\n\x04name\x18\x06 \x01(\t\x12\'\n\x08reply_to\x18\x07 \x01(\x0b\x32\x15.syft.core.io.Address"\x8c\x01\n\x13SearchUsersResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x02 \x03(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
+    serialized_pb=b'\n\'proto/grid/messages/user_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto\x1a\x1bproto/lib/python/dict.proto"\xd8\x01\n\x11\x43reateUserMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\r\n\x05\x65mail\x18\x03 \x01(\t\x12\x10\n\x08password\x18\x04 \x01(\t\x12\x0c\n\x04role\x18\x05 \x01(\t\x12\x0c\n\x04name\x18\x06 \x01(\t\x12\x0e\n\x06\x62udget\x18\x07 \x01(\x01\x12\'\n\x08reply_to\x18\x08 \x01(\x0b\x32\x15.syft.core.io.Address"\x99\x01\n\x0eGetUserMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07user_id\x18\x03 \x01(\x05\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x88\x01\n\x0fGetUserResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x02 \x01(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address"\x89\x01\n\x0fGetUsersMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x89\x01\n\x10GetUsersResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x02 \x03(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address"\x9c\x01\n\x11\x44\x65leteUserMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07user_id\x18\x03 \x01(\x05\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\xf9\x01\n\x11UpdateUserMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07user_id\x18\x03 \x01(\x05\x12\r\n\x05\x65mail\x18\x04 \x01(\t\x12\x10\n\x08password\x18\x05 \x01(\t\x12\x0c\n\x04role\x18\x06 \x01(\t\x12\x0e\n\x06groups\x18\x07 \x01(\t\x12\x0c\n\x04name\x18\x08 \x01(\t\x12\x0e\n\x06\x62udget\x18\t \x01(\x01\x12\'\n\x08reply_to\x18\n \x01(\x0b\x32\x15.syft.core.io.Address"\xc7\x01\n\x12SearchUsersMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\r\n\x05\x65mail\x18\x03 \x01(\t\x12\x0c\n\x04role\x18\x04 \x01(\t\x12\x0e\n\x06groups\x18\x05 \x01(\t\x12\x0c\n\x04name\x18\x06 \x01(\t\x12\'\n\x08reply_to\x18\x07 \x01(\x0b\x32\x15.syft.core.io.Address"\x8c\x01\n\x13SearchUsersResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x02 \x03(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
@@ -158,10 +158,29 @@ _CREATEUSERMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="reply_to",
-            full_name="syft.grid.messages.CreateUserMessage.reply_to",
+            name="budget",
+            full_name="syft.grid.messages.CreateUserMessage.budget",
             index=6,
             number=7,
+            type=1,
+            cpp_type=5,
+            label=1,
+            has_default_value=False,
+            default_value=float(0),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.CreateUserMessage.reply_to",
+            index=7,
+            number=8,
             type=11,
             cpp_type=10,
             label=1,
@@ -186,7 +205,7 @@ _CREATEUSERMESSAGE = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=161,
-    serialized_end=361,
+    serialized_end=377,
 )
 
 
@@ -283,8 +302,8 @@ _GETUSERMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=364,
-    serialized_end=517,
+    serialized_start=380,
+    serialized_end=533,
 )
 
 
@@ -362,8 +381,8 @@ _GETUSERRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=520,
-    serialized_end=656,
+    serialized_start=536,
+    serialized_end=672,
 )
 
 
@@ -441,8 +460,8 @@ _GETUSERSMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=659,
-    serialized_end=796,
+    serialized_start=675,
+    serialized_end=812,
 )
 
 
@@ -520,8 +539,8 @@ _GETUSERSRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=799,
-    serialized_end=936,
+    serialized_start=815,
+    serialized_end=952,
 )
 
 
@@ -618,8 +637,8 @@ _DELETEUSERMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=939,
-    serialized_end=1095,
+    serialized_start=955,
+    serialized_end=1111,
 )
 
 
@@ -784,10 +803,29 @@ _UPDATEUSERMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="reply_to",
-            full_name="syft.grid.messages.UpdateUserMessage.reply_to",
+            name="budget",
+            full_name="syft.grid.messages.UpdateUserMessage.budget",
             index=8,
             number=9,
+            type=1,
+            cpp_type=5,
+            label=1,
+            has_default_value=False,
+            default_value=float(0),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.UpdateUserMessage.reply_to",
+            index=9,
+            number=10,
             type=11,
             cpp_type=10,
             label=1,
@@ -811,8 +849,8 @@ _UPDATEUSERMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1098,
-    serialized_end=1331,
+    serialized_start=1114,
+    serialized_end=1363,
 )
 
 
@@ -966,8 +1004,8 @@ _SEARCHUSERSMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1334,
-    serialized_end=1533,
+    serialized_start=1366,
+    serialized_end=1565,
 )
 
 
@@ -1045,8 +1083,8 @@ _SEARCHUSERSRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1536,
-    serialized_end=1676,
+    serialized_start=1568,
+    serialized_end=1708,
 )
 
 _CREATEUSERMESSAGE.fields_by_name[

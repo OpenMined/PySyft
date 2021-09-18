@@ -54,7 +54,7 @@ services:
     ports:
       - "8888"
     volumes:
-      - ./backend/app:/app
+      - ./backend/grid:/app/grid
       - ../syft:/app/syft
       - ../../notebooks:/notebooks
       - ./data/package-cache:/root/.cache
@@ -69,8 +69,9 @@ services:
       context: ./backend
       dockerfile: backend.dockerfile
       args:
-        INSTALL_DEV: "${INSTALL_DEV-true}"
-        INSTALL_JUPYTER: "${INSTALL_JUPYTER-true}"
+        INSTALL_DEV: ${INSTALL_DEV-true}
+        INSTALL_JUPYTER: ${INSTALL_JUPYTER-false}
+      target: "backend"
     # command: bash -c "while true; do sleep 1; done" # Infinite loop to keep container live doing nothing
     command: /start-reload.sh
     labels:
@@ -84,7 +85,7 @@ services:
       - db
       - backend
     volumes:
-      - ./backend/app:/app
+      - ./backend/grid:/app/grid
       - ../syft:/app/syft
       - ./data/package-cache:/root/.cache
     environment:
@@ -97,7 +98,8 @@ services:
       context: ./backend
       dockerfile: backend.dockerfile
       args:
-        INSTALL_DEV: "${INSTALL_DEV-true}"
+        INSTALL_DEV: ${INSTALL_DEV-true}
+      target: "backend"
     # command: bash -c "while true; do sleep 1; done" # Infinite loop to keep container live doing nothing
     command: "waitforit -address=http://backend:80/api/v1/syft/metadata -status=200 -timeout=600 -- /start-reload.sh"
     labels:
@@ -107,35 +109,37 @@ services:
       - traefik.http.services.${STACK_NAME?Variable not set}-backend-stream.loadbalancer.server.port=80
 
   celeryworker:
+    depends_on:
+      - backend
     volumes:
-      - ./backend/app:/app
-      - ../syft:/app/syft
+      - ./backend/grid:/app/grid #- ./backend/app:/app
+      - ../syft:/app/syft #- ../syft:/app/syft
       - ../../notebooks:/notebooks
       - ./data/package-cache:/root/.cache
     environment:
-      - RUN=celery worker -A app.worker -l info -Q main-queue -c 1
+      - RUN=celery worker -A grid.worker -l info -Q main-queue -c 1
       - JUPYTER=jupyter lab --ip=0.0.0.0 --allow-root --NotebookApp.custom_display_url=http://127.0.0.1:8888 --notebook-dir=/notebooks
       - SERVER_HOST=http://${DOMAIN?Variable not set}
       - SYFT_USE_UVLOOP=0
       - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
     build:
       context: ./backend
-      dockerfile: celeryworker.dockerfile
+      dockerfile: backend.dockerfile
       args:
-        INSTALL_DEV: "${INSTALL_DEV-true}"
-        INSTALL_JUPYTER: "${INSTALL_JUPYTER-true}"
+        INSTALL_DEV: ${INSTALL_DEV-true}
+        INSTALL_JUPYTER: ${INSTALL_JUPYTER-false}
+      target: "celery-worker"
     command: "waitforit -address=http://backend:80/api/v1/syft/metadata -status=200 -timeout=600 -- /worker-start.sh"
 
   frontend:
-    depends_on:
-      - db
-      - backend
     build:
-      context: ./grid-ui
-      dockerfile: ui.dockerfile
+      context: ./frontend
+      dockerfile: frontend.dockerfile
       args:
-        FRONTEND_ENV: development
-        NODE_TYPE: ${NODE_TYPE?Variable not set}
+        FRONTEND_ENV: ${FRONTEND_ENV-development}
+        TYPE: ${NODE_TYPE?Variable not set}
+    volumes:
+      - ./frontend/src:/app/src
     labels:
       - traefik.enable=true
       - traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}

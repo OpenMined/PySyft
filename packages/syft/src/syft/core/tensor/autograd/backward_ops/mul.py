@@ -5,15 +5,22 @@ from uuid import UUID
 from numpy import ndarray
 
 # relative
-from ...passthrough import is_acceptable_simple_type
+from .....core.common.serde.serializable import serializable
+from ...passthrough import is_acceptable_simple_type  # type: ignore
 from ..tensor import AutogradTensor
 from .op import Op
 
 
+@serializable(recursive_serde=True)
 class MulOp(Op):
     """Multiplication operation with 2 tensors"""
 
-    def forward(self, x: AutogradTensor, y: AutogradTensor) -> AutogradTensor:
+    __attr_allowlist__ = [
+        "x",
+        "y",
+    ]
+
+    def forward(self, x: AutogradTensor, y: AutogradTensor) -> AutogradTensor:  # type: ignore
         self.x = x
         self.y = y
 

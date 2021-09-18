@@ -7,7 +7,7 @@ from .op import Op
 
 
 class ResizeOp(Op):
-    def forward(self, x: AutogradTensor) -> AutogradTensor:
+    def forward(self, x: AutogradTensor) -> AutogradTensor:  # type: ignore
         self.x = x
 
         # This is just a placeholder to suppress linting errors until the method is built out

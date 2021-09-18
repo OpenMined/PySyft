@@ -4,6 +4,7 @@ import os
 import re
 import stat
 import subprocess
+import time
 from typing import Any
 from typing import Dict as TypeDict
 from typing import List as TypeList
@@ -36,6 +37,28 @@ from .style import RichGroup
 @click.group(cls=RichGroup)
 def cli() -> None:
     pass
+
+
+@click.command(
+    help="Restore some part of the hagrid installation or deployment to its initial/starting state."
+)
+@click.argument("location", type=str, nargs=1)
+def clean(location: str) -> None:
+
+    if location == "library" or location == "volumes":
+        print("Deleting all Docker volumes in 2 secs (Ctrl-C to stop)")
+        time.sleep(2)
+        subprocess.call("docker volume rm $(docker volume ls -q)", shell=True)
+
+    if location == "containers" or location == "pantry":
+        print("Deleting all Docker containers in 2 secs (Ctrl-C to stop)")
+        time.sleep(2)
+        subprocess.call("docker rm -f $(docker ps -a -q)", shell=True)
+
+    if location == "images":
+        print("Deleting all Docker images in 2 secs (Ctrl-C to stop)")
+        time.sleep(2)
+        subprocess.call("docker rmi $(docker images -q)", shell=True)
 
 
 @click.command(help="Start a new PyGrid domain/network node!")
@@ -393,6 +416,7 @@ def create_launch_cmd(
                     kwargs=kwargs,
                 )
             except QuestionInputPathError as e:
+                print(e)
                 key_path = str(e).split("is not a valid path")[0].strip()
 
                 create_key_question = Question(
@@ -593,6 +617,7 @@ def create_launch_docker_cmd(
     cmd += " NODE_TYPE=" + str(node_type.input)
     cmd += " VERSION=`python VERSION`"
     cmd += " VERSION_HASH=`python VERSION hash`"
+    cmd += " INSTALL_DEV=0 TRAEFIK_PUBLIC_NETWORK_IS_EXTERNAL=false INSTALL_JUPYTER=0"
     cmd += " docker compose -p " + snake_name
     cmd += " up"
 
@@ -600,6 +625,7 @@ def create_launch_docker_cmd(
         cmd += " -d"
 
     cmd += " --build"  # force rebuild
+
     cmd = "cd " + GRID_SRC_PATH + ";" + cmd
     return cmd
 
@@ -888,3 +914,4 @@ def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
 
 cli.add_command(launch)
 cli.add_command(land)
+cli.add_command(clean)

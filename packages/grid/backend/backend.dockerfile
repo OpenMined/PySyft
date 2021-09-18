@@ -1,32 +1,53 @@
-FROM tiangolo/uvicorn-gunicorn-fastapi:python3.7
+FROM python:3.9.6-slim as build
 
-WORKDIR /app/
+RUN \
+  apt-get update && \
+  apt-get install -y --no-install-recommends curl wget
 
-# Install Poetry
-RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | POETRY_HOME=/opt/poetry python && \
-    cd /usr/local/bin && \
-    ln -s /opt/poetry/bin/poetry && \
-    poetry config virtualenvs.create false
-
-# Copy poetry.lock* in case it doesn't exist in the repo
-COPY ./app/pyproject.toml ./app/poetry.lock* ./app/requirements.txt /app/
+WORKDIR /app
+COPY ./requirements.txt /app
 
 # Allow installing dev dependencies to run tests
 ARG INSTALL_DEV=false
-# RUN poetry export -f requirements.txt --output requirements.txt --without-hashes --dev
-RUN pip install -r requirements.txt
-# RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install --no-root ; else poetry install --no-root --no-dev ; fi"
-
-# For development, Jupyter remote kernel, Hydrogen
-# Using inside the container:
-# jupyter lab --ip=0.0.0.0 --allow-root --NotebookApp.custom_display_url=http://127.0.0.1:8888
-ARG INSTALL_JUPYTER=false
-RUN bash -c "if [ $INSTALL_JUPYTER == 'true' ] ; then pip install jupyterlab ; fi"
+RUN --mount=type=cache,target=/root/.cache \
+  pip install --user "uvicorn[standard]" gunicorn
+RUN --mount=type=cache,target=/root/.cache \
+  pip install --user \
+  torch==1.8.1+cpu torchvision==0.9.1+cpu torchcsprng==0.2.1+cpu \
+  -f https://download.pytorch.org/whl/torch_stable.html
+RUN --mount=type=cache,target=/root/.cache \
+  pip install --user -r requirements.txt
 
 # allow container to wait for other services
 ENV WAITFORIT_VERSION="v2.4.1"
 RUN curl -o /usr/local/bin/waitforit -sSL https://github.com/maxcnunes/waitforit/releases/download/$WAITFORIT_VERSION/waitforit-linux_amd64 && \
-    chmod +x /usr/local/bin/waitforit
+  chmod +x /usr/local/bin/waitforit
 
-COPY ./app /app
+# Backend
+FROM python:3.9.6-slim as backend
 ENV PYTHONPATH=/app
+ENV PATH=/root/.local/bin:$PATH
+
+# copy start scripts and gunicorn conf
+COPY ./docker-scripts/start.sh /start.sh
+COPY ./docker-scripts/gunicorn_conf.py /gunicorn_conf.py
+COPY ./docker-scripts/start-reload.sh /start-reload.sh
+
+RUN chmod +x /start.sh
+RUN chmod +x /start-reload.sh
+
+COPY --from=build /root/.local /root/.local
+COPY --from=build /usr/local/bin/waitforit /usr/local/bin/waitforit
+
+COPY ./ /app/
+WORKDIR /app
+
+# Celery worker
+FROM backend as celery-worker
+ENV C_FORCE_ROOT=1
+RUN --mount=type=cache,target=/root/.cache \
+  pip install --user watchdog pyyaml argh
+
+COPY ./worker-start.sh /worker-start.sh
+RUN chmod +x /worker-start.sh
+CMD ["bash", "/worker-start.sh"]

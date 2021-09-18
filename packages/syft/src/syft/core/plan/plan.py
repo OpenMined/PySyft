@@ -16,13 +16,14 @@ from typing import Union
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
+# syft absolute
+import syft as sy
+
 # relative
-from ... import serialize
 from ...logger import traceback_and_raise
 from ...proto.core.node.common.action.action_pb2 import Action as Action_PB
 from ...proto.core.plan.plan_pb2 import Plan as Plan_PB
-from ..common.object import Serializable
-from ..common.serde.serializable import bind_protobuf
+from ..common.serde.serializable import serializable
 from ..node.abstract.node import AbstractNode
 from ..node.common import client
 from ..node.common.action.common import Action
@@ -33,8 +34,8 @@ from ..store.storeable_object import StorableObject
 CAMEL_TO_SNAKE_PAT = re.compile(r"(?<!^)(?=[A-Z])")
 
 
-@bind_protobuf
-class Plan(Serializable):
+@serializable()
+class Plan:
     """
     A plan is a collection of actions, plus some variable inputs, that together form a computation graph.
 
@@ -155,7 +156,7 @@ class Plan(Serializable):
         # prevent circular dependency
 
         # relative
-        from ...core.node.vm.vm import VirtualMachine  # noqa: F401
+        from ..node.vm.vm import VirtualMachine  # noqa: F401
 
         alice = VirtualMachine(name="plan_executor")
         alice_client: client.Client = alice.get_client()
@@ -206,7 +207,7 @@ class Plan(Serializable):
         actions_pb = [
             Action_PB(
                 obj_type=".".join([action.__module__, action.__class__.__name__]),
-                **{camel_to_snake(action.__class__.__name__): serialize(action)},
+                **{camel_to_snake(action.__class__.__name__): sy.serialize(action)},
             )
             for action in self.actions
         ]

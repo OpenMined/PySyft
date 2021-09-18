@@ -275,10 +275,21 @@ def read_file(fname: str) -> str:
         return f.read()
 
 
-private_key = read_file(f"{here}/example_rsa").strip()
-public_key = read_file(f"{here}/example_rsa.pub").strip()
+def get_public_key() -> str:
+    return read_file(f"{here}/example_rsa.pub").strip()
 
-auth_token = jwt.encode({}, private_key, algorithm="RS256").decode("ascii")
+
+def get_private_key() -> str:
+    return read_file(f"{here}/example_rsa").strip()
+
+
+def get_auth_token() -> str:
+    auth_token: TypeUnion[str, bytes] = jwt.encode(
+        {}, get_private_key(), algorithm="RS256"
+    )
+    if isinstance(auth_token, bytes):
+        return auth_token.decode("ascii")
+    return auth_token
 
 
 def create_plan_autograd() -> TypeTuple[Plan, SyModule]:
@@ -404,7 +415,7 @@ def host_to_grid(plans: TypeDict, model: SyModule, name: str) -> None:
 
     server_config["authentication"] = {
         "type": "jwt",
-        "pub_key": public_key,
+        "pub_key": get_public_key(),
     }
 
     # Auth
@@ -446,7 +457,7 @@ def sanity_check_hosted_plan(
         "data": {
             "model_name": name,
             "model_version": "1.0",
-            "auth_token": auth_token,
+            "auth_token": get_auth_token(),
         },
     }
 
@@ -630,7 +641,7 @@ def train_with_hosted_training_plan(
         status["ended"] = True
 
     def create_client_and_run_cycle() -> None:
-        client = FLClient(url=gridAddress, auth_token=auth_token, secure=False)
+        client = FLClient(url=gridAddress, auth_token=get_auth_token(), secure=False)
         client.worker_id = client.grid_worker.authenticate(
             client.auth_token, model_name, model_version
         )["data"]["worker_id"]

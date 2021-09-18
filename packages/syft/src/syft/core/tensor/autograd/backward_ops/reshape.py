@@ -5,14 +5,18 @@ from uuid import UUID
 from numpy import ndarray
 
 # relative
+from .....core.common.serde.serializable import serializable
 from ..tensor import AutogradTensor
 from .op import Op
 
 
+@serializable(recursive_serde=True)
 class ReshapeOp(Op):
     """Multiplication operation with 2 tensors"""
 
-    def forward(self, x: AutogradTensor, *shape: tuple) -> AutogradTensor:
+    __attr_allowlist__ = ["x", "shape", "backward_shape"]
+
+    def forward(self, x: AutogradTensor, *shape: tuple) -> AutogradTensor:  # type: ignore
         self.x = x
         self.shape = shape
         self.backward_shape = self.x.shape

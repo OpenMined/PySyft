@@ -158,7 +158,8 @@ services:
       context: ./backend
       dockerfile: backend.dockerfile
       args:
-        INSTALL_DEV: "${INSTALL_DEV-false}"
+        INSTALL_DEV: ${INSTALL_DEV-false}
+      target: "backend"
     deploy:
       labels:
         - traefik.enable=true
@@ -187,7 +188,8 @@ services:
       context: ./backend
       dockerfile: backend.dockerfile
       args:
-        INSTALL_DEV: "${INSTALL_DEV-false}"
+        INSTALL_DEV: ${INSTALL_DEV-false}
+      target: "backend"
     deploy:
       labels:
         - traefik.enable=true
@@ -210,28 +212,24 @@ services:
       - SERVER_HOST=https://${DOMAIN?Variable not set}
       # Allow explicit env var override for tests
       - SMTP_HOST=${SMTP_HOST?Variable not set}
+      - CELERY_WORKER=true
     build:
       context: ./backend
-      dockerfile: celeryworker.dockerfile
+      dockerfile: backend.dockerfile
       args:
-        INSTALL_DEV: "${INSTALL_DEV-false}"
+        INSTALL_DEV: ${INSTALL_DEV-false}
+      target: "celery-worker"
 
   frontend:
     restart: always
     image: "${DOCKER_IMAGE_FRONTEND?Variable not set}:${VERSION-latest}"
     build:
-      context: ./grid-ui
-      dockerfile: ui.dockerfile
-      args:
-        FRONTEND_ENV: ${FRONTEND_ENV-development}
+      context: ./frontend
+      dockerfile: frontend.dockerfile
       target: "grid-ui-${FRONTEND_ENV-development}"
     environment:
       - VERSION=${VERSION}
       - VERSION_HASH=${VERSION_HASH}
-    volumes:
-      - ./grid-ui/:/app
-      - /app/node_modules
-      - /app/.next
     deploy:
       labels:
         - traefik.enable=true
