@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -41,8 +42,20 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         scalar_manager: VirtualMachinePrivateScalarManager = VirtualMachinePrivateScalarManager(),
     ) -> None:
         super().__init__(term_tensor)
+
+        # EXPLAIN A: if our polynomail is y = mx + b
+        # EXPLAIN B: if self.child = 5x10
+
+        # EXPLAIN A: this is "x"
+        # EXPLAIN B: this is a 5x10x1
         self.term_tensor = term_tensor
+
+        # EXPLAIN A: this is "m"
+        # EXPLAIN B: this is a 5x10x1
         self.coeff_tensor = coeff_tensor
+
+        # EXPLAIN A: this is "b"
+        # EXPLAIN B: this is a 5x10
         self.bias_tensor = bias_tensor
         self.scalar_manager = scalar_manager
 
@@ -177,6 +190,63 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             term_tensor=term_tensor,
             coeff_tensor=coeff_tensor,
             bias_tensor=bias_tensor,
+            scalar_manager=self.scalar_manager,
+        )
+
+    def __sub__(self, other: Any) -> IntermediateGammaTensor:
+
+        if is_acceptable_simple_type(other):
+
+            # EXPLAIN A: if our polynomail is y = mx + b
+            # EXPLAIN B: if self.child = 5x10
+
+            # EXPLAIN A: this is "x"
+            # EXPLAIN B: this is a 5x10x1
+            term_tensor = self.term_tensor
+
+            # EXPLAIN A: this is "m"
+            # EXPLAIN B: this is a 5x10x1
+            coeff_tensor = self.coeff_tensor
+
+            # EXPLAIN A: this is "b"
+            # EXPLAIN B: this is a 5x10
+            bias_tensor = self.bias_tensor - other
+
+        else:
+
+            if self.scalar_manager != other.scalar_manager:
+                # TODO: come up with a method for combining symbol factories
+                raise Exception(
+                    "Cannot add two tensors with different symbol encodings"
+                )
+
+            # Step 1: Concatenate
+            term_tensor = np.concatenate([self.term_tensor, other.term_tensor], axis=-1)
+            coeff_tensor = np.concatenate(
+                [self.coeff_tensor, other.coeff_tensor * -1], axis=-1
+            )
+            bias_tensor = self.bias_tensor - other.bias_tensor
+
+        # EXPLAIN B: NEW OUTPUT becomes a 5x10x2
+        # TODO: Step 2: Reduce dimensionality if possible (look for duplicates)
+        return IntermediateGammaTensor(
+            term_tensor=term_tensor,
+            coeff_tensor=coeff_tensor,
+            bias_tensor=bias_tensor,
+            scalar_manager=self.scalar_manager,
+        )
+
+    def repeat(
+        self, *args: List[Any], **kwargs: Dict[Any, Any]
+    ) -> IntermediateGammaTensor:
+        return IntermediateGammaTensor(
+            term_tensor=self.term_tensor.repeat(*args, **kwargs).reshape(
+                -1, self.term_tensor.shape[-1]
+            ),
+            coeff_tensor=self.coeff_tensor.repeat(*args, **kwargs).reshape(
+                -1, self.coeff_tensor.shape[-1]
+            ),
+            bias_tensor=self.bias_tensor.repeat(*args, **kwargs),
             scalar_manager=self.scalar_manager,
         )
 
