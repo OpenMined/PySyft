@@ -20,13 +20,11 @@ from typing import cast
 import numpy as np
 import torch
 
-# syft absolute
-from syft.core.tensor.passthrough import PassthroughTensor
-from syft.core.tensor.passthrough import SupportedChainType
-from syft.core.tensor.smpc.share_tensor import ShareTensor
-
 # relative
+from ..passthrough import PassthroughTensor  # type: ignore
+from ..passthrough import SupportedChainType  # type: ignore
 from ..util import implements  # type: ignore
+from .share_tensor import ShareTensor
 from .utils import ispointer
 
 METHODS_FORWARD_ALL_SHARES = {
@@ -55,7 +53,7 @@ class MPCTensor(PassthroughTensor):
         parties: Optional[List[Any]] = None,
         secret: Optional[Any] = None,
         shares: Optional[List[ShareTensor]] = None,
-        shape: Optional[Tuple[int]] = None,
+        shape: Optional[Tuple[int, ...]] = None,
         seed_shares: Optional[int] = None,
     ) -> None:
 
@@ -105,6 +103,7 @@ class MPCTensor(PassthroughTensor):
         # you'd need to produce 10 shares and give 9 of them to the same domain)
         # TODO captured: https://app.clubhouse.io/openmined/story/1128/tech-debt-for-adp-smpc-\
         #  demo?stories_sort_by=priority&stories_group_by=WORKFLOW_STATE
+
         res.sort(key=lambda share: share.client.name + share.client.id.no_dash)
 
         super().__init__(res)
@@ -124,7 +123,7 @@ class MPCTensor(PassthroughTensor):
         )
 
     @property
-    def shape(self) -> Optional[Tuple[int]]:
+    def shape(self) -> Tuple[int, ...]:
         return self.mpc_shape
 
     @staticmethod
@@ -155,7 +154,7 @@ class MPCTensor(PassthroughTensor):
 
     @staticmethod
     def _get_shares_from_secret(
-        secret: Any, parties: List[Any], shape: Tuple[int], seed_shares: int
+        secret: Any, parties: List[Any], shape: Tuple[int, ...], seed_shares: int
     ) -> List[ShareTensor]:
         if ispointer(secret):
             if shape is None:
@@ -170,7 +169,7 @@ class MPCTensor(PassthroughTensor):
 
     @staticmethod
     def _get_shares_from_remote_secret(
-        secret: Any, shape: Tuple[int], parties: List[Any], seed_shares: int
+        secret: Any, shape: Tuple[int, ...], parties: List[Any], seed_shares: int
     ) -> List[ShareTensor]:
         shares = []
         for i, party in enumerate(parties):
@@ -179,8 +178,8 @@ class MPCTensor(PassthroughTensor):
             else:
                 value = None
 
-            # syft absolute
-            from syft.core.tensor.autodp.single_entity_phi import (
+            # relative
+            from ..autodp.single_entity_phi import (
                 TensorWrappedSingleEntityPhiTensorPointer,
             )
 
@@ -215,7 +214,7 @@ class MPCTensor(PassthroughTensor):
 
     @staticmethod
     def _get_shares_from_local_secret(
-        secret: Any, shape: Tuple[int], nr_parties: int, seed_shares: int
+        secret: Any, shape: Tuple[int, ...], nr_parties: int, seed_shares: int
     ) -> List[ShareTensor]:
         shares = []
         for i in range(nr_parties):
@@ -429,7 +428,7 @@ class MPCTensor(PassthroughTensor):
             result = _self.__apply_public_op(y, op_str)
 
         if isinstance(y, (float, int)):
-            y_shape = (1,)
+            y_shape: Tuple[int, ...] = (1,)
         elif isinstance(y, MPCTensor):
             y_shape = y.mpc_shape
         else:

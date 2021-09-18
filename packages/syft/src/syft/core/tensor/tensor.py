@@ -15,7 +15,6 @@ import torch as th
 # relative
 from ... import lib
 from ...ast.klass import pointerize_args_and_kwargs
-from ...core.common.serde.recursive import RecursiveSerde
 from ...util import inherit_tags
 from ..common.serde.serializable import serializable
 from ..common.uid import UID
@@ -57,11 +56,8 @@ class TensorPointer(Pointer):
         self.public_shape = public_shape
 
     def share(self, *parties: Tuple[AbstractNodeClient, ...]) -> MPCTensor:
-
-        parties = tuple(list(parties) + [self.client])
-
-        self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=parties)
-
+        all_parties = list(parties) + [self.client]
+        self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=all_parties)
         return self_mpc
 
     def simple_add(self, other: Any) -> TensorPointer:
@@ -140,14 +136,32 @@ class TensorPointer(Pointer):
         return self.simple_add(other=other)
 
 
-@serializable()
+def to32bit(np_array: np.ndarray, verbose: bool = True) -> np.ndarray:
+
+    if np_array.dtype == np.int64:
+        if verbose:
+            print("Casting internal tensor to int32")
+        out = np_array.astype(np.int32)
+
+    elif np_array.dtype == np.float64:
+
+        if verbose:
+            print("Casting internal tensor to float32")
+        out = np_array.astype(np.float32)
+
+    else:
+        out = np_array
+
+    return out
+
+
+@serializable(recursive_serde=True)
 class Tensor(
     PassthroughTensor,
     AutogradTensorAncestor,
     PhiTensorAncestor,
     FixedPrecisionTensorAncestor,
     # MPCTensorAncestor,
-    RecursiveSerde,
 ):
 
     __attr_allowlist__ = ["child", "tag_name", "public_shape"]
@@ -160,18 +174,39 @@ class Tensor(
         """data must be a list of numpy array"""
 
         if isinstance(child, list):
-            child = np.array(child)
+            child = to32bit(np.array(child), verbose=False)
 
         if isinstance(child, th.Tensor):
-            child = child.numpy()
+            print(
+                "Converting PyTorch tensor to numpy tensor for internal representation..."
+            )
+            child = to32bit(child.numpy())
 
         if not isinstance(child, PassthroughTensor) and not isinstance(
             child, np.ndarray
         ):
             raise Exception("Data must be list or nd.array")
 
+        if not isinstance(child, (np.ndarray, PassthroughTensor)) or (
+            getattr(child, "dtype", None) != np.int32
+            and getattr(child, "dtype", None) is not None
+        ):
+            raise TypeError(
+                "You tried to pass an a tensor of type:"
+                + str(type(child))
+                + " with child.dtype == "
+                + str(getattr(child, "dtype", None))
+                + ". Syft tensor objects only support np.int32 objects at this time. Please pass in either "
+                "a list of int objects or a np.int32 array. We apologise for the inconvenience and will "
+                "be adding support for more types very soon!"
+            )
+
         kwargs = {"child": child}
         super().__init__(**kwargs)
+
+        # set public shape to be the shape of the data since we have access to it at present
+        if public_shape is None:
+            public_shape = tuple(self.shape)
 
         self.tag_name: Optional[str] = None
         self.public_shape = public_shape

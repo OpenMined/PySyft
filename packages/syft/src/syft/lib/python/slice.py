@@ -5,9 +5,10 @@ from typing import Optional
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
+# syft absolute
+import syft as sy
+
 # relative
-from ... import deserialize
-from ... import serialize
 from ...core.common import UID
 from ...core.common.serde.serializable import serializable
 from ...proto.lib.python.slice_pb2 import Slice as Slice_PB
@@ -105,13 +106,13 @@ class Slice(PyPrimitive):
             slice_pb.step = self.step
             slice_pb.has_step = True
 
-        slice_pb.id.CopyFrom(serialize(obj=self._id))
+        slice_pb.id.CopyFrom(sy.serialize(obj=self._id))
 
         return slice_pb
 
     @staticmethod
     def _proto2object(proto: Slice_PB) -> "Slice":
-        id_: UID = deserialize(blob=proto.id)
+        id_: UID = sy.deserialize(blob=proto.id)
         start = None
         stop = None
         step = None

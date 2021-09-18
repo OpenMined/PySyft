@@ -176,10 +176,11 @@ def obj2pointer_type(obj: object) -> type:
         # sometimes the object doesn't have a __module__ so you need to use the type
         # like: collections.OrderedDict
         debug(f"Unable to get get_fully_qualified_name of {type(obj)} trying type. {e}")
-        if obj is None:
-            fqn = "syft.lib.python._SyNone"
-        else:
-            fqn = get_fully_qualified_name(obj=type(obj))
+        fqn = get_fully_qualified_name(obj=type(obj))
+
+    # TODO: fix for other types
+    if obj is None:
+        fqn = "syft.lib.python._SyNone"
 
     try:
         ref = syft.lib_ast.query(fqn, obj_type=type(obj))
@@ -188,7 +189,7 @@ def obj2pointer_type(obj: object) -> type:
         critical(log)
         raise Exception(log)
 
-    return ref.pointer_type
+    return ref.pointer_type  # type: ignore
 
 
 def key_emoji(key: object) -> str:

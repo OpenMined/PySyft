@@ -15,7 +15,6 @@ import numpy as np
 import numpy.typing as npt
 
 # relative
-from ....core.common.serde.recursive import RecursiveSerde
 from ....proto.core.tensor.single_entity_phi_tensor_pb2 import (
     TensorWrappedSingleEntityPhiTensorPointer as TensorWrappedSingleEntityPhiTensorPointer_PB,
 )
@@ -95,10 +94,8 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
         self.public_shape = public_shape
 
     def share(self, *parties: TypeTuple[AbstractNodeClient, ...]) -> MPCTensor:
-
-        parties = tuple(list(parties) + [self.client])
-
-        self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=parties)
+        all_parties = list(parties) + [self.client]
+        self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=all_parties)
 
         return self_mpc
 
@@ -181,14 +178,16 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
         """Convert this pointer into a partial version of the SingleEntityPhiTensor but without
         any of the private data therein."""
 
+        public_shape = getattr(self, "public_shape", None)
         return Tensor(
-            SingleEntityPhiTensor(
+            child=SingleEntityPhiTensor(
                 child=None,
                 entity=self.entity,
                 min_vals=self.min_vals,
                 max_vals=self.max_vals,
                 scalar_manager=self.scalar_manager,
-            )
+            ),
+            public_shape=public_shape,
         )
 
     def _object2proto(self) -> "TensorWrappedSingleEntityPhiTensorPointer_PB":
@@ -267,10 +266,8 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
         return TensorWrappedSingleEntityPhiTensorPointer_PB
 
 
-@serializable()
-class SingleEntityPhiTensor(
-    PassthroughTensor, AutogradTensorAncestor, RecursiveSerde, ADPTensor
-):
+@serializable(recursive_serde=True)
+class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
     PointerClassOverride = TensorWrappedSingleEntityPhiTensorPointer
 

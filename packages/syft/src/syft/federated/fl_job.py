@@ -6,7 +6,7 @@ from typing import List as ListType
 from typing import Optional
 
 # relative
-from ..federated import JSONDict
+from . import JSONDict
 from ..logger import traceback_and_raise
 from .model_centric_fl_base import GridError
 from .model_centric_fl_worker import ModelCentricFLWorker

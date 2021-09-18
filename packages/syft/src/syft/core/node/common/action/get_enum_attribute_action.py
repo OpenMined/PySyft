@@ -6,13 +6,14 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
+# syft absolute
+import syft as sy
+
 # relative
 from ..... import lib
-from ..... import serialize
 from .....proto.core.node.common.action.get_enum_attribute_pb2 import (
     GetEnumAttributeAction as GetEnumAttributeAction_PB,
 )
-from ....common.serde.deserialize import _deserialize
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
@@ -69,9 +70,9 @@ class EnumAttributeAction(ImmediateActionWithoutReply):
 
         return GetEnumAttributeAction_PB(
             path=self.path,
-            id_at_location=serialize(self.id_at_location),
-            address=serialize(self.address),
-            msg_id=serialize(self.id),
+            id_at_location=sy.serialize(self.id_at_location),
+            address=sy.serialize(self.address),
+            msg_id=sy.serialize(self.id),
         )
 
     @staticmethod
@@ -89,9 +90,9 @@ class EnumAttributeAction(ImmediateActionWithoutReply):
         """
         return EnumAttributeAction(
             path=proto.path,
-            id_at_location=_deserialize(blob=proto.id_at_location),
-            address=_deserialize(blob=proto.address),
-            msg_id=_deserialize(blob=proto.msg_id),
+            id_at_location=sy.deserialize(blob=proto.id_at_location),
+            address=sy.deserialize(blob=proto.address),
+            msg_id=sy.deserialize(blob=proto.msg_id),
         )
 
     @staticmethod
