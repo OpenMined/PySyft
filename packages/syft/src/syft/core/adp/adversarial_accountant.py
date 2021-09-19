@@ -28,12 +28,16 @@ class AdversarialAccountant:
     """Adversarial Accountant class that keeps track of budget and maintains a privacy ledger."""
 
     def __init__(
-        self, db_engine: Engine, max_budget: float = 10, delta: float = 1e-6
+        self, db_engine: Engine = None, max_budget: float = 10, delta: float = 1e-6
     ) -> None:
 
-        # this is a database-backed lookup table
-        # maps an entity to an actual budget
-        self.entity2ledger = LedgerManager(db_engine)
+
+        if db_engine is not None:
+            # this is a database-backed lookup table
+            # maps an entity to an actual budget
+            self.entity2ledger = LedgerManager(db_engine)
+        else:
+            self.entity2ledger = {}
 
         # this is a temporary lookup table for mechanisms we're not sure
         # we're going to keep (See publish.py for how this is used)
