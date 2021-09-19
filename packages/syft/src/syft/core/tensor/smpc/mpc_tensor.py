@@ -10,6 +10,7 @@ import secrets
 from typing import Any
 from typing import Callable
 from typing import Dict
+from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -50,7 +51,7 @@ INPLACE_OPS = {
 class MPCTensor(PassthroughTensor):
     def __init__(
         self,
-        parties: Optional[List[Any]] = None,
+        parties: List[Any],
         secret: Optional[Any] = None,
         shares: Optional[List[ShareTensor]] = None,
         shape: Optional[Tuple[int, ...]] = None,
@@ -340,7 +341,7 @@ class MPCTensor(PassthroughTensor):
                     getattr(np.empty(_self.mpc_shape), method_name)(*args, **kwargs)
 
                 new_shape = dummy_res.shape
-            res = MPCTensor(shares=shares, shape=new_shape)
+            res = MPCTensor(parties=_self.parties, shares=shares, shape=new_shape)
             return res
 
         return functools.partial(method_all_shares, __self)
@@ -351,6 +352,77 @@ class MPCTensor(PassthroughTensor):
             return MPCTensor.hook_method(self, attr_name)
 
         return object.__getattribute__(self, attr_name)
+
+    @staticmethod
+    def reshare(self: MPCTensor, parties: Iterable[Any]) -> MPCTensor:
+        """Reshare a given secret to a superset of parties.
+
+        Args:
+            parties(List[Any]): Input parites List.
+
+        Returns:
+            res_mpc(MPCTensor): Reshared MPCTensor.
+
+        Raises:
+            ValueError: If the input MPCTensor and input parties are same.
+        """
+        mpc_parties = set(self.parties)
+        parties = set(parties)
+        shape = self.shape
+        seed_shares = self.seed_shares
+        client_map = {share.client: share for share in self.shares}
+        if mpc_parties == parties:
+            raise ValueError(
+                "Input parties for resharing are same as the input parties."
+            )
+
+        shares = [client_map.get(party) for party in parties]
+        for i, party in enumerate(parties):
+            shares[
+                i
+            ] = party.syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs(
+                rank=i,
+                nr_parties=len(parties),
+                value=shares[i],
+                shape=shape,
+                seed_shares=seed_shares,
+            )
+
+        res_mpc = MPCTensor(shares=shares, shape=shape, parties=parties)  # type: ignore
+        return res_mpc
+
+    @staticmethod
+    def sanity_checks(self: MPCTensor, other: Any) -> Tuple[MPCTensor, Any]:
+        """Performs sanity checks to share data to whole superset of parites involved.
+
+        Args:
+            other (Any): input operand.
+
+        Returns:
+            Tuple[MPCTensor,Any]: Rehared Tensor values.
+        """
+        if ispointer(other):
+            parties = self.parties
+            client = other.client
+            public_shape = other.public_shape
+            if public_shape is None:
+                # TODO: Should be modified after Trask's Synthetic data PR.
+                raise ValueError("The input tensor pointer should have public shape.")
+            if client not in parties:
+                parties.append(client)
+                self = MPCTensor.reshare(self, parties)
+
+            other = MPCTensor(secret=other, parties=parties, shape=public_shape)
+
+        elif isinstance(other, MPCTensor):
+            p1 = set(self.parties)  # parties in first MPCTensor
+            p2 = set(other.parties)  # parties in second MPCTensor.
+            if p1 != p2:
+                parties_union = p1.union(p2)
+                self = MPCTensor.reshare(self, parties_union)
+                other = MPCTensor.reshare(other, parties_union)
+
+        return self, other
 
     def __apply_private_op(self, other: MPCTensor, op_str: str) -> List[ShareTensor]:
         op = getattr(operator, op_str)
@@ -385,14 +457,9 @@ class MPCTensor(PassthroughTensor):
         Returns:
             MPCTensor. the operation "op_str" applied on "self" and "y"
         """
-        # relative
-        from .... import parties as mpc_parties
-
         _self = self
 
-        if ispointer(y):
-            public_shape = getattr(y, "public_shape", None)
-            y = MPCTensor(secret=y, shape=public_shape, parties=mpc_parties)
+        _self, y = MPCTensor.sanity_checks(_self, y)
 
         if isinstance(y, MPCTensor):
             result = _self.__apply_private_op(y, op_str)
@@ -447,7 +514,7 @@ class MPCTensor(PassthroughTensor):
 
         y_shape = getattr(y, "shape", (1,))
         new_shape = MPCTensor.__get_shape("mul", self.mpc_shape, y_shape)
-        res = MPCTensor(shares=res_shares, shape=new_shape)
+        res = MPCTensor(parties=self.parties, shares=res_shares, shape=new_shape)
 
         return res
 
