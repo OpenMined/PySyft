@@ -562,7 +562,12 @@ class MPCTensor(PassthroughTensor):
 
         y_shape = getattr(y, "shape", (1,))
         new_shape = MPCTensor.__get_shape("mul", self.mpc_shape, y_shape)
-        res = MPCTensor(shares=res_shares, shape=new_shape)
+        res = MPCTensor(
+            shares=res_shares,
+            parties_info=self.parties_info,
+            clients=self.clients,
+            shape=new_shape,
+        )
 
         return res
 
@@ -576,7 +581,12 @@ class MPCTensor(PassthroughTensor):
 
         y_shape = getattr(y, "shape", (1,))
         new_shape = MPCTensor.__get_shape("gt", self.mpc_shape, y_shape)
-        res = MPCTensor(shares=res_shares, shape=new_shape)
+        res = MPCTensor(
+            shares=res_shares,
+            parties_info=self.parties_info,
+            clients=self.clients,
+            shape=new_shape,
+        )
 
         return res
 

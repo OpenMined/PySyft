@@ -84,6 +84,7 @@ class ShareTensor(PassthroughTensor):
         self.ring_size = ring_size
         self.nr_parties = len(parties_info)
         self.parties_info = parties_info
+        self.clients = []
         if clients is not None:
             self.clients = clients
         elif init_clients:
@@ -138,7 +139,7 @@ class ShareTensor(PassthroughTensor):
     def copy_tensor(self) -> ShareTensor:
         return ShareTensor(
             rank=self.rank,
-            nr_parties=self.nr_parties,
+            parties_info=self.parties_info,
             ring_size=self.ring_size,
             seed_przs=self.seed_przs,
             clients=self.clients,
@@ -489,9 +490,10 @@ class ShareTensor(PassthroughTensor):
 
             res = ShareTensor(
                 rank=_self.rank,
-                nr_parties=_self.nr_parties,
+                parties_info=self.parties_info,
                 ring_size=_self.ring_size,
                 value=new_share,
+                clients=self.clients,
             )
 
             return res
