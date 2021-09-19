@@ -1,3 +1,6 @@
+# stdlib
+from random import randint
+
 # third party
 import numpy as np
 import pytest
@@ -6,6 +9,7 @@ import pytest
 from syft import deserialize
 from syft import serialize
 from syft.core.adp.entity import Entity
+from syft.core.tensor.autodp.single_entity_phi import SingleEntityPhiTensor
 from syft.core.tensor.tensor import Tensor
 
 gonzalo = Entity(name="Gonzalo")
@@ -23,6 +27,82 @@ def y() -> Tensor:
     y = Tensor(np.array([[-1, -2, -3], [-4, -5, -6]]))
     y = y.private(min_val=-7, max_val=1, entities=[gonzalo])
     return y
+
+
+ent = Entity(name="test")
+ent2 = Entity(name="test2")
+
+dims = np.random.randint(10) + 1
+
+child1 = np.random.randint(low=-2, high=4, size=dims)
+upper1 = np.full(dims, 3, dtype=np.int32)
+low1 = np.full(dims, -2, dtype=np.int32)
+child2 = np.random.randint(low=4, high=7, size=dims)
+upper2 = np.full(dims, 6, dtype=np.int32)
+low2 = np.full(dims, 4, dtype=np.int32)
+
+tensor1 = SingleEntityPhiTensor(
+    child=child1, entity=ent, max_vals=upper1, min_vals=low1
+)
+# same entity, same data
+tensor2 = SingleEntityPhiTensor(
+    child=child1, entity=ent, max_vals=upper1, min_vals=low1
+)
+# same entity, different data
+tensor3 = SingleEntityPhiTensor(
+    child=child2, entity=ent, max_vals=upper2, min_vals=low2
+)
+# different entity, same data
+tensor4 = SingleEntityPhiTensor(
+    child=child1, entity=ent2, max_vals=upper1, min_vals=low1
+)
+# different entity, different data
+tensor5 = SingleEntityPhiTensor(
+    child=child2, entity=ent2, max_vals=upper2, min_vals=low2
+)
+
+simple_type1 = randint(-6, -4)
+simple_type2 = randint(4, 6)
+
+
+def test_le() -> None:
+
+    assert tensor1.__le__(tensor2).child.all()
+    assert not tensor3.__le__(tensor1).child.all()
+    assert tensor1.__le__(tensor4) == NotImplemented
+    assert tensor1.__le__(tensor5) == NotImplemented
+    assert not tensor1.__le__(simple_type1).child.all()
+    assert tensor1.__le__(simple_type2).child.all()
+
+
+def test_ge() -> None:
+
+    assert tensor1.__ge__(tensor2).child.all()
+    assert not tensor1.__ge__(tensor3).child.all()
+    assert tensor1.__ge__(tensor4) == NotImplemented
+    assert tensor1.__ge__(tensor5) == NotImplemented
+    assert tensor1.__ge__(simple_type1).child.all()
+    assert not tensor1.__ge__(simple_type2).child.all()
+
+
+def test_lt() -> None:
+
+    assert not tensor1.__lt__(tensor2).child.all()
+    assert tensor1.__lt__(tensor3).child.all()
+    assert tensor1.__lt__(tensor4) == NotImplemented
+    assert tensor1.__lt__(tensor5) == NotImplemented
+    assert not tensor1.__lt__(simple_type1).child.all()
+    assert tensor1.__lt__(simple_type2)
+
+
+def test_gt() -> None:
+
+    assert not tensor1.__gt__(tensor2).child.all()
+    assert not tensor1.__gt__(tensor3).child.all()
+    assert tensor1.__gt__(tensor4) == NotImplemented
+    assert tensor1.__gt__(tensor5) == NotImplemented
+    assert tensor1.__gt__(simple_type1).child.all()
+    assert not tensor1.__gt__(simple_type2).child.all()
 
 
 #

@@ -556,49 +556,6 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             scalar_manager=self.scalar_manager,
         )
 
-    def __gt__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
-
-        # if the tensor being added is also private
-        if isinstance(other, SingleEntityPhiTensor):
-
-            if self.entity != other.entity:
-                # this should return a GammaTensor
-                return NotImplemented
-
-            data = (
-                self.child > other.child
-            ) * 1  # the * 1 just makes sure it returns integers instead of True/False
-            min_vals = self.min_vals * 0
-            max_vals = (self.max_vals * 0) + 1
-            entity = self.entity
-
-            return SingleEntityPhiTensor(
-                child=data,
-                entity=entity,
-                min_vals=min_vals,
-                max_vals=max_vals,
-                scalar_manager=self.scalar_manager,
-            )
-
-        # if the tensor being added is a public tensor / int / float / etc.
-        elif is_acceptable_simple_type(other):
-
-            data = (self.child > other) * 1
-            min_vals = self.min_vals * 0
-            max_vals = (self.max_vals * 0) + 1
-            entity = self.entity
-
-            return SingleEntityPhiTensor(
-                child=data,
-                entity=entity,
-                min_vals=min_vals,
-                max_vals=max_vals,
-                scalar_manager=self.scalar_manager,
-            )
-
-        else:
-            return NotImplemented
-
     def __mul__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
 
         if isinstance(other, SingleEntityPhiTensor):
@@ -790,6 +747,198 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             scalar_manager=self.scalar_manager,
         )
 
+    def __le__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
+
+        # if the tensor being compared is also private
+        if isinstance(other, SingleEntityPhiTensor):
+
+            if self.entity != other.entity:
+                # this should return a GammaTensor
+                return NotImplemented
+
+            if len(self.child) != len(other.child):
+                raise Exception(
+                    f"Tensor dims do not match for __le__: {len(self.child)} != {len(other.child)}"  # type: ignore
+                )
+
+            data = (
+                self.child <= other.child
+            ) * 1  # the * 1 just makes sure it returns integers instead of True/False
+            min_vals = self.min_vals * 0
+            max_vals = (self.max_vals * 0) + 1
+            entity = self.entity
+
+            return SingleEntityPhiTensor(
+                child=data,
+                entity=entity,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                scalar_manager=self.scalar_manager,
+            )
+
+        # if the tensor being compared is a public tensor / int / float / etc.
+        elif is_acceptable_simple_type(other):
+
+            data = (self.child <= other) * 1
+            min_vals = self.min_vals * 0
+            max_vals = (self.max_vals * 0) + 1
+            entity = self.entity
+
+            return SingleEntityPhiTensor(
+                child=data,
+                entity=entity,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                scalar_manager=self.scalar_manager,
+            )
+
+        else:
+            return NotImplemented
+
+    def __ge__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
+
+        # if the tensor being compared is also private
+        if isinstance(other, SingleEntityPhiTensor):
+
+            if self.entity != other.entity:
+                # this should return a GammaTensor
+                return NotImplemented
+
+            if len(self.child) != len(other.child):
+                raise Exception(
+                    f"Tensor dims do not match for __ge__: {len(self.child)} != {len(other.child)}"  # type: ignore
+                )
+
+            data = (
+                self.child >= other.child
+            ) * 1  # the * 1 just makes sure it returns integers instead of True/False
+            min_vals = self.min_vals * 0
+            max_vals = (self.max_vals * 0) + 1
+            entity = self.entity
+
+            return SingleEntityPhiTensor(
+                child=data,
+                entity=entity,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                scalar_manager=self.scalar_manager,
+            )
+
+        # if the tensor being compared is a public tensor / int / float / etc.
+        elif is_acceptable_simple_type(other):
+
+            data = (self.child >= other) * 1
+            min_vals = self.min_vals * 0
+            max_vals = (self.max_vals * 0) + 1
+            entity = self.entity
+
+            return SingleEntityPhiTensor(
+                child=data,
+                entity=entity,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                scalar_manager=self.scalar_manager,
+            )
+
+        else:
+            return NotImplemented
+
+    def __lt__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
+
+        # if the tensor being compared is also private
+        if isinstance(other, SingleEntityPhiTensor):
+
+            if self.entity != other.entity:
+                # this should return a GammaTensor
+                return NotImplemented
+
+            if len(self.child) != len(other.child):
+                raise Exception(
+                    f"Tensor dims do not match for __lt__: {len(self.child)} != {len(other.child)}"  # type: ignore
+                )
+
+            data = (
+                self.child < other.child
+            ) * 1  # the * 1 just makes sure it returns integers instead of True/False
+            min_vals = self.min_vals * 0
+            max_vals = (self.max_vals * 0) + 1
+            entity = self.entity
+
+            return SingleEntityPhiTensor(
+                child=data,
+                entity=entity,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                scalar_manager=self.scalar_manager,
+            )
+
+        # if the tensor being compared is a public tensor / int / float / etc.
+        elif is_acceptable_simple_type(other):
+
+            data = (self.child < other) * 1
+            min_vals = self.min_vals * 0
+            max_vals = (self.max_vals * 0) + 1
+            entity = self.entity
+
+            return SingleEntityPhiTensor(
+                child=data,
+                entity=entity,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                scalar_manager=self.scalar_manager,
+            )
+
+        else:
+            return NotImplemented
+
+    def __gt__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
+
+        # if the tensor being compared is also private
+        if isinstance(other, SingleEntityPhiTensor):
+
+            if self.entity != other.entity:
+                # this should return a GammaTensor
+                return NotImplemented
+
+            if len(self.child) != len(other.child):
+                raise Exception(
+                    f"Tensor dims do not match for __gt__: {len(self.child)} != {len(other.child)}"  # type: ignore
+                )
+
+            data = (
+                self.child > other.child
+            ) * 1  # the * 1 just makes sure it returns integers instead of True/False
+            min_vals = self.min_vals * 0
+            max_vals = (self.max_vals * 0) + 1
+            entity = self.entity
+
+            return SingleEntityPhiTensor(
+                child=data,
+                entity=entity,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                scalar_manager=self.scalar_manager,
+            )
+
+        # if the tensor being compared is a public tensor / int / float / etc.
+        elif is_acceptable_simple_type(other):
+
+            data = (self.child > other) * 1
+            min_vals = self.min_vals * 0
+            max_vals = (self.max_vals * 0) + 1
+            entity = self.entity
+
+            return SingleEntityPhiTensor(
+                child=data,
+                entity=entity,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                scalar_manager=self.scalar_manager,
+            )
+
+        else:
+            return NotImplemented
+
 
 @implements(SingleEntityPhiTensor, np.expand_dims)
 def expand_dims(a: npt.ArrayLike, axis: Optional[int] = None) -> SingleEntityPhiTensor:
@@ -835,4 +984,26 @@ def mean(*args: Any, **kwargs: Any) -> SingleEntityPhiTensor:
         min_vals=min_vals,
         max_vals=max_vals,
         scalar_manager=scalar_manager,
+    )
+
+
+@implements(SingleEntityPhiTensor, np.clip)
+def clip(
+    a: npt.ArrayLike, a_min: npt.ArrayLike, a_max: npt.ArrayLike, **kwargs: Any
+) -> SingleEntityPhiTensor:
+
+    if a_min is None and a_max is None:
+        raise Exception("ValueError: clip: must set either max or min")
+
+    min_vals = np.clip(a=a.min_vals, a_min=a_min, a_max=a_max)
+    max_vals = np.clip(a=a.max_vals, a_min=a_min, a_max=a_max)
+
+    data = np.clip(a.child, a_min=a_min, a_max=a_max)
+
+    return SingleEntityPhiTensor(
+        child=data,
+        entity=a.entity,
+        min_vals=min_vals,
+        max_vals=max_vals,
+        scalar_manager=a.scalar_manager,
     )

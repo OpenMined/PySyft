@@ -10,6 +10,7 @@ from typing import Union
 
 # third party
 import numpy as np
+import numpy.typing as npt
 
 # relative
 from ...adp.vm_private_scalar_manager import (
@@ -271,6 +272,110 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
+    def __le__(self, other: Any) -> RowEntityPhiTensor:
+
+        # if the tensor being compared is a public tensor / int / float / etc.
+        if is_acceptable_simple_type(other):
+            new_list = list()
+            for i in range(len(self.child)):
+                new_list.append(self.child[i] <= other)
+
+            return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+        if len(self.child) == len(other.child):  # type: ignore
+            # tensors have different entities
+            if not (self.entities == other.entities).all():
+                raise Exception("Tensor owners do not match")
+
+            new_list = list()
+            for i in range(len(self.child)):
+                new_list.append(self.child[i] <= other.child[i])  # type: ignore
+
+            return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+        else:
+            raise Exception(
+                f"Tensor dims do not match for __le__: {len(self.child)} != {len(other.child)}"  # type: ignore
+            )
+
+    def __lt__(self, other: Any) -> RowEntityPhiTensor:
+
+        # if the tensor being compared is a public tensor / int / float / etc.
+        if is_acceptable_simple_type(other):
+            new_list = list()
+            for i in range(len(self.child)):
+                new_list.append(self.child[i] < other)
+
+            return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+        if len(self.child) == len(other.child):  # type: ignore
+            # tensors have different entities
+            if not (self.entities == other.entities).all():
+                raise Exception("Tensor owners do not match")
+
+            new_list = list()
+            for i in range(len(self.child)):
+                new_list.append(self.child[i] < other.child[i])  # type: ignore
+
+            return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+        else:
+            raise Exception(
+                f"Tensor dims do not match for __lt__: {len(self.child)} != {len(other.child)}"  # type: ignore
+            )
+
+    def __gt__(self, other: Any) -> RowEntityPhiTensor:
+
+        # if the tensor being compared is a public tensor / int / float / etc.
+        if is_acceptable_simple_type(other):
+            new_list = list()
+            for i in range(len(self.child)):
+                new_list.append(self.child[i] > other)
+
+            return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+        if len(self.child) == len(other.child):  # type: ignore
+            # tensors have different entities
+            if not (self.entities == other.entities).all():
+                raise Exception("Tensor owners do not match")
+
+            new_list = list()
+            for i in range(len(self.child)):
+                new_list.append(self.child[i] > other.child[i])  # type: ignore
+
+            return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+        else:
+            raise Exception(
+                f"Tensor dims do not match for __gt__: {len(self.child)} != {len(other.child)}"  # type: ignore
+            )
+
+    def __ge__(self, other: Any) -> RowEntityPhiTensor:
+
+        # if the tensor being compared is a public tensor / int / float / etc.
+        if is_acceptable_simple_type(other):
+            new_list = list()
+            for i in range(len(self.child)):
+                new_list.append(self.child[i] >= other)
+
+            return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+        if len(self.child) == len(other.child):  # type: ignore
+            # tensors have different entities
+            if not (self.entities == other.entities).all():
+                raise Exception("Tensor owners do not match")
+
+            new_list = list()
+            for i in range(len(self.child)):
+                new_list.append(self.child[i] >= other.child[i])  # type: ignore
+
+            return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+        else:
+            raise Exception(
+                f"Tensor dims do not match for __ge__: {len(self.child)} != {len(other.child)}"  # type: ignore
+            )
+
 
 @implements(RowEntityPhiTensor, np.expand_dims)
 def expand_dims(a: np.typing.ArrayLike, axis: int) -> RowEntityPhiTensor:
@@ -283,5 +388,20 @@ def expand_dims(a: np.typing.ArrayLike, axis: int) -> RowEntityPhiTensor:
     new_rows = list()
     for row in a.child:
         new_rows.append(np.expand_dims(row, axis - 1))
+
+    return RowEntityPhiTensor(rows=new_rows, check_shape=False)
+
+
+@implements(RowEntityPhiTensor, np.clip)
+def clip(
+    a: npt.ArrayLike, a_min: npt.ArrayLike, a_max: npt.ArrayLike, **kwargs: Any
+) -> RowEntityPhiTensor:
+
+    if a_min is None and a_max is None:
+        raise Exception("ValueError: clip: must set either max or min")
+
+    new_rows = list()
+    for row in a.child:
+        new_rows.append(np.clip(row, a_min=a_min, a_max=a_max))
 
     return RowEntityPhiTensor(rows=new_rows, check_shape=False)
