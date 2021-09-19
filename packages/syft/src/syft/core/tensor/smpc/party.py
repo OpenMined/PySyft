@@ -24,7 +24,7 @@ class Party(Serializable):
     def _proto2object(proto: Party_PB) -> "Party":
         # TODO: If on the same machine use docker-host - if not real address
         # How to distinguish? (if 127.0.0.1 and localhost we consider using docker-host?)
-        res = Party(url="docker-host", email="", passwd="", port=proto.port)
+        res = Party(url="http://docker-host", email="", passwd="", port=proto.port)
         return res
 
     @staticmethod

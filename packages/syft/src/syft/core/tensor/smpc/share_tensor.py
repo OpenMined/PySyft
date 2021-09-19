@@ -46,6 +46,8 @@ INPLACE_OPS = {
 # relative
 from .party import Party
 
+CACHE_CLIENTS: Dict[Party, Any] = {}
+
 
 @serializable()
 class ShareTensor(PassthroughTensor):
@@ -81,15 +83,17 @@ class ShareTensor(PassthroughTensor):
             # syft absolute
             import syft as sy
 
-            self.clients = [
-                sy.login(
-                    url=party_info.url,
-                    email=party_info.email,
-                    password=party_info.passwd,
-                    port=party_info.port,
-                )
-                for party_info in parties_info
-            ]
+            for party_info in parties_info:
+                client = CACHE_CLIENTS.get(party_info, None)
+                if client is None:
+                    client = sy.login(
+                        url=party_info.url,
+                        email=f"DS-{rank}@temp.com",
+                        password=f"DS-{rank}",
+                        port=party_info.port,
+                    )
+                    CACHE_CLIENTS[party_info] = client
+                self.clients.append(client)
 
         self.min_value, self.max_value = ShareTensor.compute_min_max_from_ring(
             self.ring_size
@@ -114,6 +118,7 @@ class ShareTensor(PassthroughTensor):
             nr_parties=self.nr_parties,
             ring_size=self.ring_size,
             seed_przs=self.seed_przs,
+            clients=self.clients,
         )
 
     @staticmethod
@@ -457,7 +462,6 @@ class ShareTensor(PassthroughTensor):
         return functools.partial(method_all_shares, __self)
 
     def __getattribute__(self, attr_name: str) -> Any:
-
         if attr_name in METHODS_FORWARD_ALL_SHARES:
             return ShareTensor.hook_method(self, attr_name)
 
