@@ -307,7 +307,7 @@ def smpc_gt(
                 "mpc_bit_decomposition",
                 self_id=sub_result_id,
                 args_id=[],
-                kwargs_id={},
+                kwargs_id={"seed_intermediate_values": 42},
                 ranks_to_run_action=list(range(nr_parties)),
                 result_id=result_id,
                 address=node.address,
@@ -316,31 +316,27 @@ def smpc_gt(
     return actions
 
 
-def bit_decomposition(share):
+def bit_decomposition(share, seed_intermediate_values: int):
     # syft absolute
     import syft as sy
 
     rank = share.rank
     nr_parties = share.nr_parties
-    parties = share.parties
+    parties = share.clients
 
     shares = []
     for i in range(nr_parties):
-        if rank == 0:
-            value = share
-        else:
-            value = None
+        # TODO: For the moment we consider only np.int32
+        bit_shares = [share.child & (1 << idx) for idx in range(32)]
+        print(bit_shares)
 
-    zero_share = ShareTensor.generate_przs(
-        value=value,
-        shape=share.shape,
-        rank=rank,
-        nr_parties=nr_parties,
-        generator_przs=share.generator_przs,
-    )
-
-    for username, passwd, port in parties:
-        parties.append(sy.login(email=username, password=passwd, port=port))
+        zero_share = ShareTensor.generate_przs(
+            value=value,
+            shape=share.shape,
+            rank=rank,
+            nr_parties=nr_parties,
+            generator_przs=share.generator_przs,
+        )
 
     return zero_share
 

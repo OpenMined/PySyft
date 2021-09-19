@@ -61,7 +61,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
     @staticmethod
     def intersect_keys(
         left: Dict[VerifyKey, UID], right: Dict[VerifyKey, UID]
-    ) -> Dict[VerifyKey, UID]:
+    ) -> Dict[VerifyKey, UID]:  # TODO: Not used yet (GM: Do we need to use this?)
         # get the intersection of the dict keys, the value is the request_id
         # if the request_id is different for some reason we still want to keep it,
         # so only intersect the keys and then copy those over from the main dict
@@ -155,7 +155,70 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
 
         client = node.get_client()  # type: ignore
         for action in actions:
-            client.send_immediate_msg_without_reply(msg=action)
+            execute_action(action)
+
+    @staticmethod
+    def execute_smpc_action(
+        action: Any, node: AbstractNode, verify_key: VerifyKey
+    ) -> None:  # TODO: The Any needs to be fixed
+        """Given an SMPCAction, execute it (this action is sent to the node
+        by the RabitMQ task)
+
+        Attributes:
+            node (AbstractNode): the node that received the message
+            msg (SMPCActionMessage): the message that should be executed
+            verify_key (VerifyKey): the verify_key
+        """
+        func = _MAP_ACTION_TO_FUNCTION[action.name_action]
+        store_object_self = node.store.get_object(key=action.self_id)
+        if store_object_self is None:
+            raise KeyError("Object not already in store")
+
+        _self = store_object_self.data
+        args = [node.store[arg_id].data for arg_id in action.args_id]
+        kwargs = {}
+        for key, kwarg_id in action.kwargs_id.items():
+            data = node.store[kwarg_id].data
+            if data is None:
+                raise KeyError(f"Key {key} is not available")
+
+            kwargs[key] = data
+        (
+            upcasted_args,
+            upcasted_kwargs,
+        ) = lib.python.util.upcast_args_and_kwargs(args, kwargs)
+        logger.warning(func)
+        result = func(_self, *upcasted_args, **upcasted_kwargs)
+
+        if lib.python.primitive_factory.isprimitive(value=result):
+            # Wrap in a SyPrimitive
+            result = lib.python.primitive_factory.PrimitiveFactory.generate_primitive(
+                value=result, id=action.id_at_location
+            )
+        else:
+            # TODO: overload all methods to incorporate this automatically
+            if hasattr(result, "id"):
+                try:
+                    if hasattr(result, "_id"):
+                        # set the underlying id
+                        result._id = action.id_at_location
+                    else:
+                        result.id = action.id_at_location
+
+                    if result.id != action.id_at_location:
+                        raise AttributeError("IDs don't match")
+                except AttributeError as e:
+                    err = f"Unable to set id on result {type(result)}. {e}"
+                    traceback_and_raise(Exception(err))
+
+        if not isinstance(result, StorableObject):
+            result = StorableObject(
+                id=action.id_at_location,
+                data=result,
+                read_permissions=store_object_self.read_permissions,
+            )
+
+        node.store[action.id_at_location] = result
 
     def _object2proto(self) -> RunClassMethodSMPCAction_PB:
         """Returns a protobuf serialization of self.

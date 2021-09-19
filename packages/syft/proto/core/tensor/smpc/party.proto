@@ -3,9 +3,7 @@ syntax = "proto3";
 package syft.core.tensor;
 
 message Party {
-  string host = 1;
-  string email = 2;
-  string passwd = 3;
-  uint32 port = 4;
+  string url = 1;
+  uint32 port = 2;
 }
 

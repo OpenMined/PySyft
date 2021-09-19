@@ -26,6 +26,9 @@ from syft.core.common.serde.serialize import _serialize as serialize
 from syft.core.tensor.passthrough import PassthroughTensor
 from syft.proto.core.tensor.smpc.share_tensor_pb2 import ShareTensor as ShareTensor_PB
 
+# relative
+from .party import Party
+
 METHODS_FORWARD_ALL_SHARES = {
     "repeat",
     "copy",
@@ -43,8 +46,11 @@ METHODS_FORWARD_ALL_SHARES = {
 INPLACE_OPS = {
     "resize",
 }
-# relative
-from .party import Party
+
+RING_SIZE_TO_TYPE: Dict[int, np.dtype] = {
+    2 ** 32: np.int32,
+    2: np.int8,  # Special case: need to do reconstruct and share with XOR
+}
 
 CACHE_CLIENTS: Dict[Party, Any] = {}
 
@@ -54,13 +60,13 @@ class ShareTensor(PassthroughTensor):
     __slots__ = (
         "rank",
         "ring_size",
-        "parties_info",  # parties info (email, password, port)
         "clients",  # clients connections
         "min_value",
         "max_value",
         "generator_przs",
         # Only ShareTensors with seed_przs could be sent over the wire
         "seed_przs",
+        "parties_info",
     )
 
     def __init__(
@@ -69,9 +75,10 @@ class ShareTensor(PassthroughTensor):
         parties_info: List[Party],
         seed_przs: int,
         clients: List[Any] = None,
-        ring_size: int = 2 ** 32,  # TODO: This needs to be changed to 2^64
+        ring_size: int = 2
+        ** 32,  # TODO: This needs to be changed to 2^64 (or other specific sizes)
         value: Optional[Any] = None,
-        init_clients: bool = True,
+        init_clients: bool = False,
     ) -> None:
         self.rank = rank
         self.ring_size = ring_size
@@ -83,9 +90,24 @@ class ShareTensor(PassthroughTensor):
             # syft absolute
             import syft as sy
 
+            self.clients = []
             for party_info in parties_info:
+                print(CACHE_CLIENTS)
                 client = CACHE_CLIENTS.get(party_info, None)
                 if client is None:
+                    ## TODO: It works, but it is throwing an error and needs investigation
+                    ## Somewhere in the Grid client
+                    ## The error is thrown when generating an SMPC Tensor
+                    """
+                    sy.register(
+                        url=party_info.url,
+                        name=f"DS-{rank}",
+                        email=f"DS-{rank}@temp.com",
+                        password=f"DS-{rank}",
+                        port=party_info.port,
+                    )
+                    """
+
                     client = sy.login(
                         url=party_info.url,
                         email=f"DS-{rank}@temp.com",
@@ -110,6 +132,7 @@ class ShareTensor(PassthroughTensor):
             parties=self.parties,
             ring_size=self.ring_size,
             value=self.child[item],
+            clients=self.clients,
         )
 
     def copy_tensor(self) -> ShareTensor:
@@ -176,9 +199,15 @@ class ShareTensor(PassthroughTensor):
         shape: Tuple[int, ...],
         rank: int,
         parties_info: List[Party],
+        ring_size: int = 2 ** 32,
         seed_przs: Optional[int] = None,
         generator_przs: Optional[Any] = None,
     ) -> "ShareTensor":
+
+        nr_parties = len(parties_info)
+        numpy_type = RING_SIZE_TO_TYPE.get(ring_size, None)
+        if numpy_type is None:
+            raise ValueError(f"Ring size {ring_size} not known how to be treated")
 
         # syft absolute
         from syft.core.tensor.tensor import Tensor
@@ -188,7 +217,7 @@ class ShareTensor(PassthroughTensor):
             raise ValueError("Only seed_przs or generator should be populated")
 
         if value is None:
-            value = Tensor(np.zeros(shape, dtype=np.int32))  # TODO: change to np.int64
+            value = Tensor(np.zeros(shape, dtype=numpy_type))
 
         # TODO: Sending the seed and having each party generate the shares is not safe
         # Since the parties would know some of the other parties shares (this might not impose a risk
@@ -210,7 +239,7 @@ class ShareTensor(PassthroughTensor):
                 rank=rank,
                 parties_info=parties_info,
                 seed_przs=None,
-                init_clients=False,
+                init_clients=True,
             )
 
         share.generator_przs = generator_shares
@@ -220,7 +249,11 @@ class ShareTensor(PassthroughTensor):
             )
             for _ in parties_info
         ]
-        share.child += shares[rank] - shares[(rank + 1) % nr_parties]
+
+        if ring_size == 2:
+            share.child ^= shares[rank] ^ shares[(rank + 1) % nr_parties]
+        else:
+            share.child += shares[rank] - shares[(rank + 1) % nr_parties]
 
         return share
 
@@ -290,11 +323,15 @@ class ShareTensor(PassthroughTensor):
         """
 
         op = getattr(operator, op_str)
+        numpy_type = RING_SIZE_TO_TYPE.get(x.ring_size, None)
+        if numpy_type is None:
+            raise ValueError(f"Do not know numpy type for ring size {self.ring_size}")
+
         if isinstance(y, ShareTensor):
             value = op(self.child, y.child)
         else:
             # TODO: Converting y to numpy because doing "numpy op torch tensor" raises exception
-            value = op(self.child, np.array(y, np.int32))  # TODO: change to np.int64
+            value = op(self.child, np.array(y, numpy_type))  # TODO: change to np.int64
 
         res = self.copy_tensor()
         res.child = value
