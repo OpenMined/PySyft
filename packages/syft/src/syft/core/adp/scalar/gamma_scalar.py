@@ -3,6 +3,7 @@ from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from pymbolic import var
 
 # syft absolute
 import syft as sy

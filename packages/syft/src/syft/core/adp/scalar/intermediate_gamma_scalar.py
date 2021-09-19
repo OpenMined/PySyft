@@ -53,7 +53,11 @@ class IntermediateGammaScalar(IntermediateScalar):
                 min_val=self.min_val + other.min_val,
                 max_val=self.max_val + other.max_val,
             )
-        return IntermediateGammaScalar(poly=self.poly + other)
+        return IntermediateGammaScalar(
+            poly=self.poly + other,
+            min_val=self.min_val + other,
+            max_val=self.max_val + other,
+        )
 
     def __sub__(self, other: Any) -> IntermediateScalar:
         if isinstance(other, Scalar):
@@ -67,7 +71,11 @@ class IntermediateGammaScalar(IntermediateScalar):
                 min_val=self.min_val - other.min_val,
                 max_val=self.max_val - other.max_val,
             )
-        return IntermediateGammaScalar(poly=self.poly - other)
+        return IntermediateGammaScalar(
+            poly=self.poly - other,
+            min_val=self.min_val - other,
+            max_val=self.max_val - other,
+        )
 
     def __mul__(self, other: Any) -> IntermediateScalar:
         if isinstance(other, Scalar):
@@ -94,7 +102,19 @@ class IntermediateGammaScalar(IntermediateScalar):
                 poly=self.poly * other.poly, max_val=max_val, min_val=min_val
             )
 
-        return IntermediateGammaScalar(poly=self.poly * other)
+        max_val = max(
+            self.min_val * other,
+            self.max_val * other,
+        )
+
+        min_val = min(
+            self.min_val * other,
+            self.max_val * other,
+        )
+
+        return IntermediateGammaScalar(
+            poly=self.poly * other, min_val=min_val, max_val=max_val
+        )
 
     def max_lipschitz_via_explicit_search(
         self, force_all_searches: bool = False
