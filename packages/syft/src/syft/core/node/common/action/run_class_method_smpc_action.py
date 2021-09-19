@@ -38,6 +38,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
             located on the :class:`Node` that will execute the action.
          kwargs: kwargs to pass to the function. They should be pointers to objects
             located on the :class:`Node` that will execute the action.
+        TODO: GM Add documentation here
     """
 
     def __init__(
@@ -156,6 +157,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
 
         client = node.get_client()  # type: ignore
         for action in actions:
+            print(action)
             RunClassMethodSMPCAction.execute_smpc_action(action, node, verify_key)
 
     @staticmethod
