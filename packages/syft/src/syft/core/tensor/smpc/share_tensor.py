@@ -323,7 +323,7 @@ class ShareTensor(PassthroughTensor):
         """
 
         op = getattr(operator, op_str)
-        numpy_type = RING_SIZE_TO_TYPE.get(x.ring_size, None)
+        numpy_type = RING_SIZE_TO_TYPE.get(self.ring_size, None)
         if numpy_type is None:
             raise ValueError(f"Do not know numpy type for ring size {self.ring_size}")
 
