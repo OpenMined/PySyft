@@ -332,16 +332,16 @@ class BaseScalar(Scalar):
 
     def __init__(
         self,
-        min_val: Optional[float],
+        min_val: float,
         value: Optional[float],
-        max_val: Optional[float],
+        max_val: float,
         entity: Optional[Entity] = None,
         id: Optional[UID] = None,
     ) -> None:
         self.id = id if id else UID()
-        self._min_val = float(min_val) if min_val is not None else None
+        self._min_val = float(min_val)
         self._value = float(value) if value is not None else None
-        self._max_val = float(max_val) if max_val is not None else None
+        self._max_val = float(max_val)
         self.entity = entity if entity is not None else Entity()
 
     @property

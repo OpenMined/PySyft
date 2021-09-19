@@ -31,7 +31,6 @@ class AdversarialAccountant:
         self, db_engine: Engine = None, max_budget: float = 10, delta: float = 1e-6
     ) -> None:
 
-
         if db_engine is not None:
             # this is a database-backed lookup table
             # maps an entity to an actual budget

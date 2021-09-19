@@ -23,7 +23,6 @@ from ..passthrough import is_acceptable_simple_type  # type: ignore
 from .adp_tensor import ADPTensor
 
 
-
 @serializable(recursive_serde=True)
 class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
 
@@ -35,7 +34,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
     has a simpler constructor for use when performing operations across one or
     more IntermediateGammaTensor objects.
     """
-    
+
     __attr_allowlist__ = [
         "term_tensor",
         "coeff_tensor",
@@ -49,11 +48,13 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         term_tensor: np.ndarray,
         coeff_tensor: np.ndarray,
         bias_tensor: np.ndarray,
+        min_vals: np.ndarray,
+        max_vals: np.ndarray,
         scalar_manager: VirtualMachinePrivateScalarManager = VirtualMachinePrivateScalarManager(),
     ) -> None:
         super().__init__(term_tensor)
 
-        # EXPLAIN A: if our polynomail is y = mx + b
+        # EXPLAIN A: if our clipped polynomiala is y = clip(mx + b, min=min_vals, max=max_vals)
         # EXPLAIN B: if self.child = 5x10
 
         # EXPLAIN A: this is "x"
@@ -67,6 +68,15 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         # EXPLAIN A: this is "b"
         # EXPLAIN B: this is a 5x10
         self.bias_tensor = bias_tensor
+
+        # EXPLAIN A: this is "min_vals"
+        # EXPLAIN B: this is a 5x10
+        self.min_vals = min_vals
+
+        # EXPLAIN A: this is "max_vals"
+        # EXPLAIN B: this is a 5x10
+        self.max_vals = max_vals
+
         self.scalar_manager = scalar_manager
 
     @property
@@ -106,12 +116,13 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         DO NOT ADD THIS METHOD TO THE AST!!!
         """
 
-
     @property
     def flat_scalars(self) -> List[Any]:
         flattened_terms = self.term_tensor.reshape(-1, self.term_tensor.shape[-1])
         flattened_coeffs = self.coeff_tensor.reshape(-1, self.coeff_tensor.shape[-1])
         flattened_bias = self.bias_tensor.reshape(-1)
+        flattened_min_vals = self.min_vals.reshape(-1)
+        flattened_max_vals = self.max_vals.reshape(-1)
 
         scalars = list()
 
@@ -119,6 +130,8 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             single_poly_terms = flattened_terms[i]
             single_poly_coeffs = flattened_coeffs[i]
             single_poly_bias = flattened_bias[i]
+            single_poly_min_val = flattened_min_vals[i]
+            single_poly_max_val = flattened_max_vals[i]
 
             scalar = single_poly_bias
 
@@ -205,6 +218,13 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             bias_tensor=bias_tensor,
             scalar_manager=self.scalar_manager,
         )
+
+    # def clip(self, a_min:int, a_max: int) -> IntermediateGammaTensor:
+    #     """Clips the tensor at a certain minimum and maximum. a_min and a_max are
+    #     assumed to be integers at present because IntermediateGammaTensor only
+    #     operates over integer values at present."""
+    #
+    #     return None
 
     def __sub__(self, other: Any) -> IntermediateGammaTensor:
 
