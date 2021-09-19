@@ -1,6 +1,5 @@
 # third party
 import numpy as np
-import pytest
 
 # syft absolute
 import syft as sy
@@ -11,9 +10,9 @@ def test_incompatible_input_tensor_type() -> None:
 
     try:
         x = sy.Tensor(np.float32([1, 2, 3, 4.0]))
-        out = x.private(min_val=0, max_val=5, entities="bob")
+        x.private(min_val=0, max_val=5, entities="bob")
         assert False
-    except TypeError as e:
+    except TypeError:
         assert True
 
 

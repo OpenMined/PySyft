@@ -6,12 +6,13 @@ from uuid import UUID
 from numpy import ndarray
 
 # relative
-from .....core.common.serde.recursive import RecursiveSerde
+from ....common.serde.serializable import serializable
 from ..tensor import AutogradTensor
 from .op import Op
 
 
-class RepeatOp(Op, RecursiveSerde):
+@serializable(recursive_serde=True)
+class RepeatOp(Op):
     """Repeat operation across a dimension"""
 
     __attr_allowlist__ = ["x", "axis", "repeats", "input_shape", "output_shape"]

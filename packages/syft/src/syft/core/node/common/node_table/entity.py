@@ -6,12 +6,10 @@ from sqlalchemy import Column
 from sqlalchemy import LargeBinary
 from sqlalchemy import String
 
-# syft absolute
-from syft import deserialize
-from syft import serialize
-
 # relative
 from . import Base
+from ..... import deserialize
+from ..... import serialize
 
 
 class Entity(Base):

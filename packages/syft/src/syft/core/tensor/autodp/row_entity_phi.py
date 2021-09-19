@@ -12,21 +12,20 @@ from typing import Union
 import numpy as np
 
 # relative
-from ....core.adp.vm_private_scalar_manager import (
+from ...adp.vm_private_scalar_manager import (
     VirtualMachinePrivateScalarManager as TypeScalarManager,
 )
-from ....core.common.serde.recursive import RecursiveSerde
-from ...common.serde.serializable import bind_protobuf
-from ...tensor.types import AcceptableSimpleType  # type: ignore
+from ...common.serde.serializable import serializable
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import implements  # type: ignore
 from ..passthrough import is_acceptable_simple_type  # type: ignore
+from ..types import AcceptableSimpleType  # type: ignore
 from .adp_tensor import ADPTensor
 from .initial_gamma import InitialGammaTensor  # type: ignore
 
 
-@bind_protobuf
-class RowEntityPhiTensor(PassthroughTensor, RecursiveSerde, ADPTensor):
+@serializable(recursive_serde=True)
+class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
     """This tensor is one of several tensors whose purpose is to carry metadata
     relevant to automatically tracking the privacy budgets of tensor operations. This
     tensor is called 'Phi' tensor because it assumes that each number in the tensor

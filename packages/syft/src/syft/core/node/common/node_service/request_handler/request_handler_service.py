@@ -13,7 +13,7 @@ from ......logger import debug
 from ......logger import error
 from ......util import traceback_and_raise
 from ....abstract.node import AbstractNode
-from ....common.node_service.node_service import ImmediateNodeServiceWithoutReply
+from ..node_service import ImmediateNodeServiceWithoutReply
 from .request_handler_messages import GetAllRequestHandlersMessage
 from .request_handler_messages import GetAllRequestHandlersResponseMessage
 from .request_handler_messages import UpdateRequestHandlerMessage

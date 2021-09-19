@@ -6,13 +6,14 @@ from uuid import UUID
 import numpy as np
 
 # relative
-from .....core.common.serde.recursive import RecursiveSerde
+from .....core.common.serde.serializable import serializable
 from ...passthrough import is_acceptable_simple_type  # type: ignore
 from ..tensor import AutogradTensor
 from .op import Op
 
 
-class AddOp(Op, RecursiveSerde):
+@serializable(recursive_serde=True)
+class AddOp(Op):
     """Sumation operation with 2 tensors"""
 
     __attr_allowlist__: Any = []

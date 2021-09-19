@@ -3,8 +3,8 @@ import petlib as pl
 
 # relative
 from ...core.common.serde.deserialize import _deserialize as deserialize
+from ...core.common.serde.serializable import serializable
 from ...core.common.serde.serialize import _serialize as serialize
-from ...generate_wrapper import GenerateWrapper
 from ...proto.lib.petlib.ecpt_pb2 import EcPt as EcPt_PB
 
 
@@ -17,7 +17,7 @@ def proto2object(proto: EcPt_PB) -> pl.ec.EcPt:
     return pl.ec.EcPt.from_binary(proto.data, eg)
 
 
-GenerateWrapper(
+serializable(generate_wrapper=True)(
     wrapped_type=pl.ec.EcPt,
     import_path="petlib.ec.EcPt",
     protobuf_scheme=EcPt_PB,

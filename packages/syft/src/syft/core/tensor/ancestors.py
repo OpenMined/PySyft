@@ -2,11 +2,11 @@
 from __future__ import annotations
 
 # stdlib
+import textwrap
 from typing import Any
 from typing import List
 from typing import Optional
 from typing import Type
-from typing import Union
 import uuid
 
 # third party
@@ -22,9 +22,6 @@ from .passthrough import PassthroughTensor  # type: ignore
 from .passthrough import is_acceptable_simple_type  # type: ignore
 
 _SingleEntityPhiTensorRef = None
-
-# stdlib
-import textwrap
 
 
 def _SingleEntityPhiTensor() -> Type[PassthroughTensor]:
@@ -109,7 +106,7 @@ class AutogradTensorAncestor(TensorChainManager):
         return self
 
 
-def entity_creation_wizard(data) -> List[Any]:
+def entity_creation_wizard(data: Any) -> List[Any]:
 
     w = textwrap.TextWrapper(initial_indent="\t", subsequent_indent="\t")
 
@@ -365,6 +362,10 @@ protect the people or the business)"""
     print()
 
     print("\t" + "_" * 69)
+    raise Exception(
+        "Not sure what happened... this code shouldn't have been reached. Try answering questions with "
+        "options given by the prompts (such as yes/no)."
+    )
 
 
 class PhiTensorAncestor(TensorChainManager):
@@ -394,6 +395,11 @@ class PhiTensorAncestor(TensorChainManager):
         return self.__class__(
             self.child.publish(acc=acc, sigma=sigma, user_key=user_key)
         )
+
+    def copy(self) -> PhiTensorAncestor:
+        """This should certainly be implemented by the subclass but adding this here to satisfy mypy."""
+
+        return NotImplemented
 
     def private(
         self,
@@ -477,6 +483,8 @@ class PhiTensorAncestor(TensorChainManager):
                 else:
                     raise Exception("What kind of entity is this?!")
 
+            entities = _entities
+
         elif isinstance(entities, np.ndarray):
             if entities.shape != self.shape:
                 raise Exception(
@@ -494,8 +502,6 @@ class PhiTensorAncestor(TensorChainManager):
                     "or split your tensor into separate tensors for each value. We apologize "
                     "for the inconvenience and will be adding this functionality soon!"
                 )
-
-        entities = _entities
 
         # PHASE 2: CREATE CHILD
         if len(entities) == 1:
@@ -517,7 +523,7 @@ class PhiTensorAncestor(TensorChainManager):
 
             self.push_abstraction_top(
                 _SingleEntityPhiTensor(),
-                entity=entities[0],
+                entity=entities[0],  # type: ignore
                 min_vals=min_vals,
                 max_vals=max_vals,
                 scalar_manager=scalar_manager,  # type: ignore

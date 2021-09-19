@@ -15,9 +15,8 @@ import torch as th
 # relative
 from ... import lib
 from ...ast.klass import pointerize_args_and_kwargs
-from ...core.common.serde.recursive import RecursiveSerde
 from ...util import inherit_tags
-from ..common.serde.serializable import bind_protobuf
+from ..common.serde.serializable import serializable
 from ..common.uid import UID
 from ..node.abstract.node import AbstractNodeClient
 from ..node.common.action.run_class_method_action import RunClassMethodAction
@@ -57,11 +56,8 @@ class TensorPointer(Pointer):
         self.public_shape = public_shape
 
     def share(self, *parties: Tuple[AbstractNodeClient, ...]) -> MPCTensor:
-
-        parties = tuple(list(parties) + [self.client])
-
-        self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=parties)
-
+        all_parties = list(parties) + [self.client]
+        self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=all_parties)
         return self_mpc
 
     def simple_add(self, other: Any) -> TensorPointer:
@@ -159,14 +155,13 @@ def to32bit(np_array: np.ndarray, verbose: bool = True) -> np.ndarray:
     return out
 
 
-@bind_protobuf
+@serializable(recursive_serde=True)
 class Tensor(
     PassthroughTensor,
     AutogradTensorAncestor,
     PhiTensorAncestor,
     FixedPrecisionTensorAncestor,
     # MPCTensorAncestor,
-    RecursiveSerde,
 ):
 
     __attr_allowlist__ = ["child", "tag_name", "public_shape"]
@@ -211,7 +206,7 @@ class Tensor(
 
         # set public shape to be the shape of the data since we have access to it at present
         if public_shape is None:
-            public_shape = self.shape
+            public_shape = tuple(self.shape)
 
         self.tag_name: Optional[str] = None
         self.public_shape = public_shape

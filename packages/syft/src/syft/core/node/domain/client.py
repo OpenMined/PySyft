@@ -17,23 +17,22 @@ import names
 import pandas as pd
 from pandas import DataFrame
 
-# syft absolute
-from syft import deserialize
-
 # relative
-from ....core.common.serde.serialize import _serialize as serialize  # noqa: F401
-from ....core.io.location.specific import SpecificLocation
-from ....core.node.common.action.exception_action import ExceptionMessage
-from ....core.pointer.pointer import Pointer
+from .... import deserialize
 from ....logger import traceback_and_raise
 from ....util import validate_field
 from ...common.message import SyftMessage
+from ...common.serde.serialize import _serialize as serialize  # noqa: F401
 from ...common.uid import UID
 from ...io.address import Address
 from ...io.location import Location
+from ...io.location.specific import SpecificLocation
 from ...io.route import Route
+from ...pointer.pointer import Pointer
 from ...tensor.autodp.adp_tensor import ADPTensor
 from ...tensor.tensor import Tensor
+from ..abstract.node import AbstractNodeClient
+from ..common.action.exception_action import ExceptionMessage
 from ..common.client import Client
 from ..common.client_manager.association_api import AssociationRequestAPI
 from ..common.client_manager.dataset_api import DatasetRequestAPI
@@ -57,7 +56,7 @@ from .enums import PyGridClientEnums
 from .enums import RequestAPIFields
 
 
-class RequestQueueClient:
+class RequestQueueClient(AbstractNodeClient):
     def __init__(self, client: Client) -> None:
         self.client = client
         self.handlers = RequestHandlerQueueClient(client=client)
@@ -71,8 +70,8 @@ class RequestQueueClient:
     @property
     def requests(self) -> List[RequestMessage]:
 
-        # syft absolute
-        from syft.core.node.common.node_service.get_all_requests.get_all_requests_messages import (
+        # relative
+        from ..common.node_service.get_all_requests.get_all_requests_messages import (
             GetAllRequestsMessage,
         )
 
@@ -196,8 +195,8 @@ class RequestQueueClient:
         return handler_opts
 
     def _update_handler(self, request_handler: Dict[str, Any], keep: bool) -> None:
-        # syft absolute
-        from syft.core.node.common.node_service.request_handler import (
+        # relative
+        from ..common.node_service.request_handler.request_handler_messages import (
             UpdateRequestHandlerMessage,
         )
 
@@ -213,8 +212,8 @@ class RequestHandlerQueueClient:
 
     @property
     def handlers(self) -> List[Dict]:
-        # syft absolute
-        from syft.core.node.common.node_service.request_handler import (
+        # relative
+        from ..common.node_service.request_handler.request_handler_messages import (
             GetAllRequestHandlersMessage,
         )
 
@@ -324,7 +323,7 @@ class DomainClient(Client):
         self,
         eps: float = 0.0,
         reason: str = "",
-        skip_checks=False,
+        skip_checks: bool = False,
     ) -> Any:
 
         if not skip_checks:

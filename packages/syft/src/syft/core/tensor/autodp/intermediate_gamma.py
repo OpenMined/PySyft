@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -16,13 +17,16 @@ from sympy.ntheory.factor_ import factorint
 # relative
 from ...adp.publish import publish
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
-from ...common.serde.recursive import RecursiveSerde
-from ...tensor.passthrough import PassthroughTensor  # type: ignore
-from ...tensor.passthrough import is_acceptable_simple_type  # type: ignore
+from ...common.serde.serializable import serializable
+from ..passthrough import PassthroughTensor  # type: ignore
+from ..passthrough import is_acceptable_simple_type  # type: ignore
 from .adp_tensor import ADPTensor
 
 
-class IntermediateGammaTensor(PassthroughTensor, RecursiveSerde, ADPTensor):
+
+@serializable(recursive_serde=True)
+class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
+
     """Functionality for tracking differential privacy when individual values
     are contributed to by multiple entities. IntermediateGammaTensor differs
     from IniitalGammaTensor only in that InitialGammaTensor has additional
@@ -30,9 +34,8 @@ class IntermediateGammaTensor(PassthroughTensor, RecursiveSerde, ADPTensor):
     tracking metadata across mutliple entities, whereas IntermediateGammaTensor
     has a simpler constructor for use when performing operations across one or
     more IntermediateGammaTensor objects.
-
-
     """
+    
     __attr_allowlist__ = [
         "term_tensor",
         "coeff_tensor",
@@ -49,8 +52,20 @@ class IntermediateGammaTensor(PassthroughTensor, RecursiveSerde, ADPTensor):
         scalar_manager: VirtualMachinePrivateScalarManager = VirtualMachinePrivateScalarManager(),
     ) -> None:
         super().__init__(term_tensor)
+
+        # EXPLAIN A: if our polynomail is y = mx + b
+        # EXPLAIN B: if self.child = 5x10
+
+        # EXPLAIN A: this is "x"
+        # EXPLAIN B: this is a 5x10x1
         self.term_tensor = term_tensor
+
+        # EXPLAIN A: this is "m"
+        # EXPLAIN B: this is a 5x10x1
         self.coeff_tensor = coeff_tensor
+
+        # EXPLAIN A: this is "b"
+        # EXPLAIN B: this is a 5x10
         self.bias_tensor = bias_tensor
         self.scalar_manager = scalar_manager
 
@@ -75,8 +90,8 @@ class IntermediateGammaTensor(PassthroughTensor, RecursiveSerde, ADPTensor):
         ).reshape(self.shape)
 
         if self.sharetensor_values is not None:
-            # syft absolute
-            from syft.core.tensor.smpc.share_tensor import ShareTensor
+            # relative
+            from ..smpc.share_tensor import ShareTensor
 
             result = ShareTensor(
                 rank=self.sharetensor_values.rank,
@@ -211,6 +226,7 @@ class IntermediateGammaTensor(PassthroughTensor, RecursiveSerde, ADPTensor):
             bias_tensor = self.bias_tensor - other
 
         else:
+
             return NotImplemented
             # if self.scalar_manager != other.scalar_manager:
             #     # TODO: come up with a method for combining symbol factories
@@ -231,6 +247,20 @@ class IntermediateGammaTensor(PassthroughTensor, RecursiveSerde, ADPTensor):
             term_tensor=term_tensor,
             coeff_tensor=coeff_tensor,
             bias_tensor=bias_tensor,
+            scalar_manager=self.scalar_manager,
+        )
+
+    def repeat(
+        self, *args: List[Any], **kwargs: Dict[Any, Any]
+    ) -> IntermediateGammaTensor:
+        return IntermediateGammaTensor(
+            term_tensor=self.term_tensor.repeat(*args, **kwargs).reshape(
+                -1, self.term_tensor.shape[-1]
+            ),
+            coeff_tensor=self.coeff_tensor.repeat(*args, **kwargs).reshape(
+                -1, self.coeff_tensor.shape[-1]
+            ),
+            bias_tensor=self.bias_tensor.repeat(*args, **kwargs),
             scalar_manager=self.scalar_manager,
         )
 

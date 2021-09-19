@@ -2,12 +2,12 @@
 import pandas as pd
 
 # relative
-from ...generate_wrapper import GenerateWrapper
-from ...lib.python.list import List
-from ...lib.python.primitive_factory import PrimitiveFactory
+from ...core.common.serde.serializable import serializable
 from ...proto.lib.pandas.categorical_pb2 import (
     PandasCategorical as PandasCategorical_PB,
 )
+from ..python.list import List
+from ..python.primitive_factory import PrimitiveFactory
 
 
 def object2proto(obj: pd.Categorical) -> PandasCategorical_PB:
@@ -31,7 +31,7 @@ def proto2object(proto: PandasCategorical_PB) -> pd.Categorical:
     return pd.Categorical.from_codes(codes, categories=categories, ordered=ordered)
 
 
-GenerateWrapper(
+serializable(generate_wrapper=True)(
     wrapped_type=pd.Categorical,
     import_path="pandas.Categorical",
     protobuf_scheme=PandasCategorical_PB,
