@@ -78,7 +78,7 @@ jobs:
           safety check
 
       - name: Install libomp for XGBoost
-        if: startsWith(runner.os, 'macos') || steps.changes.outputs.backend == 'true'
+        if: startsWith(runner.os, 'macos') && steps.changes.outputs.backend == 'true'
         run: |
           brew install libomp
           pip uninstall python-dp -y
