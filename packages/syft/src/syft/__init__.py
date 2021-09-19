@@ -30,7 +30,7 @@ import sys
 
 # stdlib
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 # third party
 from pkg_resources import DistributionNotFound  # noqa: F401
@@ -114,6 +114,3 @@ logger.add(sink=sys.stderr, level="CRITICAL")
 
 # TODO: remove this requirement in pytorch lightning
 client_cache: Dict[str, Any] = {}
-
-
-parties: List[Any] = []  # stores the parties metadata for SMPC computation

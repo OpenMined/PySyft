@@ -14,10 +14,6 @@ from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 import requests
 
-# syft absolute
-# absolute
-import syft as sy
-
 # relative
 from ...core.io.connection import ClientConnection
 from ...core.io.route import SoloRoute
@@ -140,8 +136,6 @@ def login(
         sys.stdout.write(" " + str(node.name) + "... ")
         time.sleep(1)  # ok maybe too fancy... but c'mon don't you want to be fancy?
         print("done!")
-
-    sy.parties.append(node)
 
     return node
 
