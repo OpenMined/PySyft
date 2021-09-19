@@ -389,6 +389,7 @@ class MPCTensor(PassthroughTensor):
             )
 
         res_mpc = MPCTensor(shares=shares, shape=shape, parties=parties)  # type: ignore
+
         return res_mpc
 
     @staticmethod
