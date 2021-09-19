@@ -353,7 +353,7 @@ MAP_FUNC_TO_ACTION: Dict[
 
 
 # Map given an action map it to a function that should be run on the shares"
-_MAP_ACTION_TO_FUNCTION: Dict[str, Callable[..., Any]] = {
+MAP_ACTION_TO_FUNCTION: Dict[str, Callable[..., Any]] = {
     "mpc_add": operator.add,
     "mpc_sub": operator.sub,
     "mpc_mul": operator.mul,

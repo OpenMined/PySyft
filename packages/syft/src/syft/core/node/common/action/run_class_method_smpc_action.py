@@ -155,7 +155,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
 
         client = node.get_client()  # type: ignore
         for action in actions:
-            execute_action(action)
+            RunClassMethodSMPCAction.execute_smpc_action(action, node, verify_key)
 
     @staticmethod
     def execute_smpc_action(
@@ -169,7 +169,10 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
             msg (SMPCActionMessage): the message that should be executed
             verify_key (VerifyKey): the verify_key
         """
-        func = _MAP_ACTION_TO_FUNCTION[action.name_action]
+        # relative
+        from .smpc_action_message import MAP_ACTION_TO_FUNCTION
+
+        func = MAP_ACTION_TO_FUNCTION[action.name_action]
         store_object_self = node.store.get_object(key=action.self_id)
         if store_object_self is None:
             raise KeyError("Object not already in store")
