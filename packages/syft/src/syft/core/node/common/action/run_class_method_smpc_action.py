@@ -13,7 +13,7 @@ import syft as sy
 
 # relative
 from ..... import lib
-from .....logger import critical
+from ..... import logger
 from .....proto.core.node.common.action.run_class_method_smpc_pb2 import (
     RunClassMethodSMPCAction as RunClassMethodSMPCAction_PB,
 )
@@ -90,7 +90,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         resolved_self = node.store.get_object(key=self._self.id_at_location)
 
         if resolved_self is None:
-            critical(
+            logger.critical(
                 f"execute_action on {self.path} failed due to missing object"
                 + f" at: {self._self.id_at_location}"
             )
@@ -190,7 +190,6 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
             upcasted_args,
             upcasted_kwargs,
         ) = lib.python.util.upcast_args_and_kwargs(args, kwargs)
-        logger.warning(func)
         result = func(_self, *upcasted_args, **upcasted_kwargs)
 
         if lib.python.primitive_factory.isprimitive(value=result):
