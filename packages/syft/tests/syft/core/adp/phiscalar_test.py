@@ -5,8 +5,8 @@ from pytest import approx
 # syft absolute
 import syft as sy
 from syft.core.adp.entity import Entity
-from syft.core.adp.scalar import GammaScalar
-from syft.core.adp.scalar import PhiScalar
+from syft.core.adp.scalar.abstract.scalar import GammaScalar
+from syft.core.adp.scalar.abstract.scalar import PhiScalar
 
 
 def test_phiscalar() -> None:
