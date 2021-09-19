@@ -370,7 +370,7 @@ class MPCTensor(PassthroughTensor):
         parties = set(parties)
         shape = self.shape
         seed_shares = self.seed_shares
-        client_map = {share.client: share for share in self.shares}
+        client_map = {share.client: share for share in self.child}
         if mpc_parties == parties:
             raise ValueError(
                 "Input parties for resharing are same as the input parties."
