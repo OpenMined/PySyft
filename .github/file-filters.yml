@@ -1,0 +1,6 @@
+backend:
+  - ".github/workflows/*.yml"
+  - "**.py"
+  - "**.yml"
+  - "**.cfg"
+  - "**.docker"

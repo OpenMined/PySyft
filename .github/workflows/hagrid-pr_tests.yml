@@ -6,11 +6,6 @@ on:
       - dev
       - demo_strike_team_branch_4
       - "0.6.0"
-    paths:
-      - ".github/workflows/hagrid-*.yml"
-      - "packages/hagrid/**.py"
-      - "packages/hagrid/**.txt"
-      - "packages/hagrid/setup.cfg"
 defaults:
   run:
     working-directory: ./packages/hagrid
@@ -26,23 +21,35 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
+     
+     
+      - name: Check for file changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
+        if: steps.changes.outputs.backend == 'true'
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Upgrade pip
+        if: steps.changes.outputs.backend == 'true'
         run: |
           pip install --upgrade --user pip
 
       - name: Get pip cache dir
         id: pip-cache
+        if: steps.changes.outputs.backend == 'true'
         run: |
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
         uses: actions/cache@v2
+        if: steps.changes.outputs.backend == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
           key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('packages/hagrid/setup.cfg') }}
@@ -50,21 +57,25 @@ jobs:
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
       - name: Install Dependencies
+        if: steps.changes.outputs.backend == 'true'
         run: |
           pip install --upgrade bandit safety setuptools wheel twine tox
           pip install -e .
 
       - name: Scan for security issues
         continue-on-error: true
+        if: steps.changes.outputs.backend == 'true'
         run: |
           bandit -r .
           safety check
 
       - name: Build Wheel
+        if: steps.changes.outputs.backend == 'true'
         run: |
           python setup.py bdist_wheel
 
       - name: Twine Check
+        if: steps.changes.outputs.backend == 'true'
         run: |
           twine check `find -L ./ -name "*.whl"`
 
@@ -74,18 +85,27 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Check for file changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
       # In this step, this action saves a list of existing images,
       # the cache is created without them in the post run.
       # It also restores the cache if it exists.
       - uses: satackey/action-docker-layer-caching@v0.0.11
         # Ignore the failure of a step and avoid terminating the job.
         continue-on-error: true
+        if: steps.changes.outputs.backend == 'true'
         with:
           key: hagrid-${{ hashFiles('packages/hagrid/Dockerfile') }}
           restore-keys: |
             hagrid-
 
       - name: Build the Docker image
+        if: steps.changes.outputs.backend == 'true'
         run: |
           ./build_docker.sh
 
@@ -101,22 +121,33 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Check for file changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
+        if: steps.changes.outputs.backend == 'true'
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Upgrade pip
+        if: steps.changes.outputs.backend == 'true'
         run: |
           pip install --upgrade --user pip
 
       - name: Get pip cache dir
         id: pip-cache
+        if: steps.changes.outputs.backend == 'true'
         run: |
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
         uses: actions/cache@v2
+        if: steps.changes.outputs.backend == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
           key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
@@ -124,6 +155,7 @@ jobs:
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
       - name: Install Dependencies
+        if: steps.changes.outputs.backend == 'true'
         run: |
           pip install packaging --default-timeout=60
           python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
@@ -131,5 +163,6 @@ jobs:
           pip install pytest
 
       - name: Run normal tests
+        if: steps.changes.outputs.backend == 'true'
         run: |
           pytest --durations=50

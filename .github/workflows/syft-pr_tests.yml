@@ -10,13 +10,6 @@ on:
   pull_request:
     branches:
       - dev
-    paths:
-      - ".github/workflows/syft-*.yml"
-      - "packages/syft/**.py"
-      - "packages/syft/**.txt"
-      - "packages/syft/setup.cfg"
-      - "packages/syft/examples/private-ai-series/**.ipynb"
-
 defaults:
   run:
     working-directory: ./packages/syft
@@ -34,22 +27,33 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Check for file changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
+        if: steps.changes.outputs.backend == 'true'
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Upgrade pip
+        if: steps.changes.outputs.backend == 'true'
         run: |
           pip install --upgrade --user pip
 
       - name: Get pip cache dir
         id: pip-cache
+        if: steps.changes.outputs.backend == 'true'
         run: |
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
         uses: actions/cache@v2
+        if: steps.changes.outputs.backend == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
           key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
@@ -57,6 +61,7 @@ jobs:
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
       - name: Install Dependencies
+        if: steps.changes.outputs.backend == 'true'
         run: |
           pip install packaging --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
@@ -67,21 +72,24 @@ jobs:
           pip install "pillow>=8.3.1"
 
       - name: Scan for security issues
+        if: steps.changes.outputs.backend == 'true'
         run: |
           bandit -r src
           safety check
 
       - name: Install libomp for XGBoost
-        if: startsWith(runner.os, 'macos')
+        if: startsWith(runner.os, 'macos') || steps.changes.outputs.backend == 'true'
         run: |
           brew install libomp
           pip uninstall python-dp -y
 
       - name: Run normal tests
+        if: steps.changes.outputs.backend == 'true'
         run: |
           pytest -m 'fast or slow' --cov syft --cov-fail-under 70 -n auto --durations=50
 
       - name: Run supported library tests
+        if: steps.changes.outputs.backend == 'true'
         run: |
           pytest -m libs --co --durations=50
           pytest -m libs -n auto -k "not tenseal" --suppress-no-test-exit-code --durations=50
