@@ -4,3 +4,5 @@ backend:
   - "**.yml"
   - "**.cfg"
   - "**.docker"
+  - "**.toml"
+  - "**.txt"
