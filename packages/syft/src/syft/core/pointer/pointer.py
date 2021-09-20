@@ -106,7 +106,7 @@ from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
 from ...util import obj2pointer_type
 from ..common.pointer import AbstractPointer
 from ..common.serde.deserialize import _deserialize
-from ..common.serde.serializable import bind_protobuf
+from ..common.serde.serializable import serializable
 from ..common.uid import UID
 from ..io.address import Address
 from ..node.abstract.node import AbstractNode
@@ -119,7 +119,7 @@ from ..store.storeable_object import StorableObject
 
 
 # TODO: Fix the Client, Address, Location confusion
-@bind_protobuf
+@serializable()
 class Pointer(AbstractPointer):
     """
     The pointer is the handler when interacting with remote data.

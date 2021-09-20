@@ -5,12 +5,10 @@ from typing import Union
 from google.protobuf.message import Message
 
 # relative
-from ....logger import debug
 from ....logger import traceback_and_raise
 from ....proto.util.data_message_pb2 import DataMessage
 from ....util import get_fully_qualified_name
 from ....util import validate_type
-from .serializable import Serializable
 
 
 def _serialize(
@@ -59,22 +57,19 @@ def _serialize(
             # supports temporary_box and is tested
             obj.temporary_box = True  # type: ignore
 
-    is_serializable: Serializable
-    if not isinstance(obj, Serializable):
-        if hasattr(obj, "_sy_serializable_wrapper_type"):
-            is_serializable = obj._sy_serializable_wrapper_type(value=obj)  # type: ignore
-
-        else:
-            traceback_and_raise(
-                Exception(
-                    f"Object {type(obj)} is not serializable and has no _sy_serializable_wrapper_type"
-                )
-            )
+    if hasattr(obj, "_sy_serializable_wrapper_type"):
+        is_serializable = obj._sy_serializable_wrapper_type(value=obj)  # type: ignore
     else:
         is_serializable = obj
 
+    # traceback_and_raise(
+    #     Exception(
+    #         f"Object {type(obj)} is not serializable and has no _sy_serializable_wrapper_type"
+    #     )
+    # )
+
     if to_bytes:
-        debug(f"Serializing {type(is_serializable)}")
+        # debug(f"Serializing {type(is_serializable)}")
         # indent=None means no white space or \n in the serialized version
         # this is compatible with json.dumps(x, indent=None)
         serialized_data = is_serializable._object2proto().SerializeToString()

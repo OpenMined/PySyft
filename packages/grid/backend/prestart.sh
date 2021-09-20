@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-pip install -e /app/syft
+pip install --user -e /app/syft
 
 # Let the DB start
 python /app/grid/backend_prestart.py

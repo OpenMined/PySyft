@@ -3,8 +3,8 @@ import zksk as zk  # noqa: 401
 
 # relative
 from ...core.common.serde.deserialize import _deserialize as deserialize
+from ...core.common.serde.serializable import serializable
 from ...core.common.serde.serialize import _serialize as serialize
-from ...generate_wrapper import GenerateWrapper
 from ...proto.lib.zksk.secret_pb2 import Secret as Secret_PB
 
 
@@ -21,7 +21,7 @@ def proto2object(proto: Secret_PB) -> zk.expr.Secret:
     )
 
 
-GenerateWrapper(
+serializable(generate_wrapper=True)(
     wrapped_type=zk.expr.Secret,
     import_path="zksk.expr.Secret",
     protobuf_scheme=Secret_PB,

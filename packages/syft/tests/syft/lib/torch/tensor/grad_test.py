@@ -1,5 +1,4 @@
 # third party
-# third party
 import torch
 
 # syft absolute

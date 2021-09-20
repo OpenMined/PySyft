@@ -1,17 +1,15 @@
 # stdlib
 from typing import Any
 
-# syft absolute
-from syft.core.node.abstract.node import AbstractNodeClient
-
 # relative
-from ....node.domain.enums import ResponseObjectEnum
-from ...common.client_manager.request_api import RequestAPI
+from ...abstract.node import AbstractNodeClient
+from ...domain.enums import ResponseObjectEnum
 from ..node_service.group_manager.group_manager_messages import CreateGroupMessage
 from ..node_service.group_manager.group_manager_messages import DeleteGroupMessage
 from ..node_service.group_manager.group_manager_messages import GetGroupMessage
 from ..node_service.group_manager.group_manager_messages import GetGroupsMessage
 from ..node_service.group_manager.group_manager_messages import UpdateGroupMessage
+from .request_api import RequestAPI
 
 
 class GroupRequestAPI(RequestAPI):
