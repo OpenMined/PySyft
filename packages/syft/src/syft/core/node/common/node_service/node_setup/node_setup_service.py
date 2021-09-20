@@ -113,7 +113,7 @@ def get_setup(
 
 
 def update_settings(
-    msg: UpdateSetupMessage, node: AbstractNode, verify_key: VerifyKey
+    msg: UpdateSetupMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> UpdateSetupResponse:
     if node.users.role(verify_key=verify_key).id == node.roles.owner_role.id:
         if msg.domain_name:
@@ -124,6 +124,7 @@ def update_settings(
             description=msg.description,
             daa=msg.daa,
             contact=msg.contact,
+            daa_document=msg.daa_document,
         )
     else:
         raise AuthorizationError("You're not allowed to get setup configs!")

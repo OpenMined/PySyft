@@ -36,7 +36,8 @@ message UpdateSetupMessage {
   string description = 4;
   bool daa = 5;
   string contact = 6;
-  syft.core.io.Address reply_to = 7;
+  string daa_document = 8;
+  syft.core.io.Address reply_to = 9;
 }
 
 message UpdateSetupResponse {
