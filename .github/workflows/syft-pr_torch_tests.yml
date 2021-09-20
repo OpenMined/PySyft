@@ -42,22 +42,33 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Check for file changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
+        if: steps.changes.outputs.syft == 'true'
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Upgrade pip
+        if: steps.changes.outputs.syft == 'true'
         run: |
           pip install --upgrade --user pip
 
       - name: Get pip cache dir
+        if: steps.changes.outputs.syft == 'true'
         id: pip-cache
         run: |
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
         uses: actions/cache@v2
+        if: steps.changes.outputs.syft == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
           key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
@@ -65,6 +76,7 @@ jobs:
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
       - name: Install Dependencies
+        if: steps.changes.outputs.syft == 'true'
         run: |
           pip install packaging --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
@@ -73,9 +85,11 @@ jobs:
           pip install -e .[dev] -f https://download.pytorch.org/whl/torch_stable.html
 
       - name: Check import works without dev packages
+        if: steps.changes.outputs.syft == 'true'
         run: |
           python -c "import syft"
 
       - name: Run torch tests
+        if: steps.changes.outputs.syft == 'true'
         run: |
           pytest -m torch -n auto -p no:benchmark --durations=50

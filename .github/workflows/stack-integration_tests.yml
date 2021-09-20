@@ -28,8 +28,16 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Check for file changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
+        if: steps.changes.outputs.stack == 'true'
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -38,17 +46,20 @@ jobs:
       # It also restores the cache if it exists.
       - name: Cache docker images
         uses: broadshield/action-docker-layer-caching@main
+        if: steps.changes.outputs.stack == 'true'
         continue-on-error: true
         with:
           filter: reference='openmined/*'
 
       - name: Get pip cache dir
+        if: steps.changes.outputs.stack == 'true'
         id: pip-cache
         run: |
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
         uses: actions/cache@v2
+        if: steps.changes.outputs.stack == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
           key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
@@ -56,14 +67,17 @@ jobs:
             ${{ runner.os }}-pip-py${{ matrix.python-version }}
 
       - name: Upgrade pip
+        if: steps.changes.outputs.stack == 'true'
         run: |
           pip install --upgrade --user pip
 
       - name: Install tox
+        if: steps.changes.outputs.stack == 'true'
         run: |
           pip install tox --upgrade
 
       - name: Run integration tests
+        if: steps.changes.outputs.stack == 'true'
         shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
