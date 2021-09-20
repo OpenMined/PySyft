@@ -92,8 +92,8 @@ def test_mpc_private_public_op(op_str: str, public_value_type: str) -> None:
 
 @pytest.mark.parametrize("op_str", ["matmul"])
 def test_mpc_matmul_op(op_str: str) -> None:
-    value_1 = np.array([[1, 2], [3, 5]], dtype=np.int64)
-    value_2 = np.array([[1, 2], [3, 5]], dtype=np.int64)
+    value_1 = np.array([[1, 7], [3, -7]], dtype=np.int32)
+    value_2 = np.array([[6, 2], [-6, 5]], dtype=np.int32)
 
     remote_value_1 = clients[0].syft.core.tensor.tensor.Tensor(value_1)
 
@@ -104,11 +104,7 @@ def test_mpc_matmul_op(op_str: str) -> None:
     op = getattr(operator, op_str)
 
     res = op(mpc_tensor_1, value_2).reconstruct()
-
-    # TODO: Conversion to numpy is required because numpy op torch_tensor
-    # gives back
-    # TypeError: Concatenation operation is not implemented for NumPy arrays, use np.concatenate() instead.
-    expected = op(value_1, np.array(value_2))
+    expected = op(value_1, value_2)
 
     assert (res == expected).all()
 

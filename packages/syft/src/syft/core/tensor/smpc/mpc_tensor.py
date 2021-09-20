@@ -362,8 +362,11 @@ class MPCTensor(PassthroughTensor):
 
     def __apply_public_op(self, y: Any, op_str: str) -> List[ShareTensor]:
         op = getattr(operator, op_str)
-        if op_str in {"mul", "matmul", "add", "sub"}:
+        if op_str in {"mul", "matmul"}:
             res_shares = [op(share, y) for share in self.child]
+        elif op_str in {"add", "sub"}:
+            res_shares = self.child
+            res_shares[0] = op(res_shares[0], y)
         else:
             raise ValueError(f"{op_str} not supported")
 
@@ -488,10 +491,10 @@ class MPCTensor(PassthroughTensor):
         Returns:
             MPCTensor: Result of the opeartion.
         """
-        if isinstance(y, MPCTensor):
-            raise ValueError("Private multiplication not yet implemented!")
+        if isinstance(y, ShareTensor):
+            raise ValueError("Private matmul not supported yet")
 
-        res = self.__apply_op(y, "mul")
+        res = self.__apply_op(y, "matmul")
 
         return res
 

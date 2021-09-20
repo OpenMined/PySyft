@@ -316,7 +316,10 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor: Result of the operation.
         """
-        ShareTensor.sanity_checks(y)
+        if isinstance(y, ShareTensor):
+            raise ValueError("Private matmul not supported yet")
+
+        ShareTensor.sanity_check(y)
         new_share = self.apply_function(y, "matmul")
         return new_share
 
@@ -329,8 +332,12 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor. Result of the operation.
         """
-        ShareTensor.sanity_checks(y)
-        return y.matmul(self)
+        if isinstance(y, ShareTensor):
+            raise ValueError("Private matmul not supported yet")
+
+        ShareTensor.sanity_check(y)
+        new_share = y.apply_function(self, "matmul")
+        return new_share
 
     # TRASK: commenting out because ShareTEnsor doesn't appear to have .session_uuid or .config
     # def div(
