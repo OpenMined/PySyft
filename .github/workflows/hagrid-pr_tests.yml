@@ -4,7 +4,7 @@ on:
   pull_request:
     branches:
       - dev
-      - demo_strike_team_branch_4
+      - main
       - "0.6.0"
 defaults:
   run:
@@ -110,7 +110,7 @@ jobs:
 
   hagrid-tests-latest-versions:
     strategy:
-      max-parallel: 3
+      max-parallel: 2
       matrix:
         os: [ubuntu-latest, macos-latest]
         python-version: [3.9]
