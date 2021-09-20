@@ -38,6 +38,7 @@ METHODS_FORWARD_ALL_SHARES = {
     "reshape",
     "squeeze",
     "swapaxes",
+    "__pos__",
 }
 INPLACE_OPS = {
     "resize",
