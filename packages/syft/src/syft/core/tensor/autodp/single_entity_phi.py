@@ -939,6 +939,26 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         else:
             return NotImplemented
 
+    def clip(
+        self, a_min: npt.ArrayLike, a_max: npt.ArrayLike, *args: Any
+    ) -> SingleEntityPhiTensor:
+
+        if a_min is None and a_max is None:
+            raise Exception("ValueError: clip: must set either max or min")
+
+        data = np.clip(self.child, a_min=a_min, a_max=a_max, *args)
+        min_vals = np.clip(self.min_vals, a_min=a_min, a_max=a_max, *args)
+        max_vals = np.clip(self.max_vals, a_min=a_min, a_max=a_max, *args)
+        entity = self.entity
+
+        return SingleEntityPhiTensor(
+            child=data,
+            entity=entity,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            scalar_manager=self.scalar_manager,
+        )
+
 
 @implements(SingleEntityPhiTensor, np.expand_dims)
 def expand_dims(a: npt.ArrayLike, axis: Optional[int] = None) -> SingleEntityPhiTensor:
@@ -984,26 +1004,4 @@ def mean(*args: Any, **kwargs: Any) -> SingleEntityPhiTensor:
         min_vals=min_vals,
         max_vals=max_vals,
         scalar_manager=scalar_manager,
-    )
-
-
-@implements(SingleEntityPhiTensor, np.clip)
-def clip(
-    a: npt.ArrayLike, a_min: npt.ArrayLike, a_max: npt.ArrayLike, **kwargs: Any
-) -> SingleEntityPhiTensor:
-
-    if a_min is None and a_max is None:
-        raise Exception("ValueError: clip: must set either max or min")
-
-    min_vals = np.clip(a=a.min_vals, a_min=a_min, a_max=a_max)
-    max_vals = np.clip(a=a.max_vals, a_min=a_min, a_max=a_max)
-
-    data = np.clip(a.child, a_min=a_min, a_max=a_max)
-
-    return SingleEntityPhiTensor(
-        child=data,
-        entity=a.entity,
-        min_vals=min_vals,
-        max_vals=max_vals,
-        scalar_manager=a.scalar_manager,
     )

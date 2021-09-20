@@ -105,6 +105,19 @@ def test_gt() -> None:
     assert not tensor1.__gt__(simple_type2).child.all()
 
 
+rand1 = np.random.randint(-4, 1)
+rand2 = np.random.randint(1, 5)
+clipped_tensor1 = tensor1.clip(rand1, rand2).child
+clipped_tensor2 = tensor1.clip(rand2, rand1).child
+clipped_tensor3 = tensor1.clip(rand1, None).child
+
+
+def test_clip() -> None:
+    assert ((clipped_tensor1 >= rand1) & (clipped_tensor1 <= rand2)).all()
+    assert (clipped_tensor2 == rand1).all()
+    assert (clipped_tensor3 >= rand1).all()
+
+
 #
 # ######################### ADD ############################
 #

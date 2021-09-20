@@ -376,6 +376,19 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
                 f"Tensor dims do not match for __ge__: {len(self.child)} != {len(other.child)}"  # type: ignore
             )
 
+    def clip(
+        self, a_min: npt.ArrayLike, a_max: npt.ArrayLike, *args: Any
+    ) -> RowEntityPhiTensor:
+
+        if a_min is None and a_max is None:
+            raise Exception("ValueError: clip: must set either max or min")
+
+        new_list = list()
+        for row in self.child:
+            new_list.append(row.clip(a_min=a_min, a_max=a_max, *args))
+
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
 
 @implements(RowEntityPhiTensor, np.expand_dims)
 def expand_dims(a: np.typing.ArrayLike, axis: int) -> RowEntityPhiTensor:
@@ -388,20 +401,5 @@ def expand_dims(a: np.typing.ArrayLike, axis: int) -> RowEntityPhiTensor:
     new_rows = list()
     for row in a.child:
         new_rows.append(np.expand_dims(row, axis - 1))
-
-    return RowEntityPhiTensor(rows=new_rows, check_shape=False)
-
-
-@implements(RowEntityPhiTensor, np.clip)
-def clip(
-    a: npt.ArrayLike, a_min: npt.ArrayLike, a_max: npt.ArrayLike, **kwargs: Any
-) -> RowEntityPhiTensor:
-
-    if a_min is None and a_max is None:
-        raise Exception("ValueError: clip: must set either max or min")
-
-    new_rows = list()
-    for row in a.child:
-        new_rows.append(np.clip(row, a_min=a_min, a_max=a_max))
 
     return RowEntityPhiTensor(rows=new_rows, check_shape=False)
