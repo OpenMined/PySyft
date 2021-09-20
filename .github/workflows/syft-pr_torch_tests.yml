@@ -30,7 +30,7 @@ defaults:
     working-directory: ./packages/syft
 
 jobs:
-  python-tests-latest-versions:
+  torch-tests-latest-versions:
     strategy:
       max-parallel: 3
       matrix:
