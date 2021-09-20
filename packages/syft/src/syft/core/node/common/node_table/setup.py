@@ -17,6 +17,7 @@ class SetupConfig(Base):
     contact = Column(String(255), default="")
     daa = Column(Boolean(), default=False)
     node_id = Column(String(32), default="")
+    daa_document = Column(String(255), default="")
 
     def __str__(self) -> str:
         return f"<Domain Name: {self.domain_name}>"
