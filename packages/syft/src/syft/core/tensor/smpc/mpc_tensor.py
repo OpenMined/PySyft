@@ -513,7 +513,6 @@ class MPCTensor(PassthroughTensor):
         Returns:
             res (MPCTensor): Result of the operation.
         """
-        print("enter")
         shares = []
         shares.append(self.child[0].put(indices, values, mode))
         # since the value is public we assign directly to prevent overhead of random share creation.

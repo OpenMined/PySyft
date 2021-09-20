@@ -40,9 +40,7 @@ METHODS_FORWARD_ALL_SHARES = {
     "swapaxes",
     "__pos__",
 }
-INPLACE_OPS = {
-    "resize",
-}
+INPLACE_OPS = {"resize", "put"}
 
 
 @serializable()
@@ -399,7 +397,7 @@ class ShareTensor(PassthroughTensor):
 
     def __getattribute__(self, attr_name: str) -> Any:
 
-        if attr_name in METHODS_FORWARD_ALL_SHARES:
+        if attr_name in METHODS_FORWARD_ALL_SHARES or attr_name in INPLACE_OPS:
             return ShareTensor.hook_method(self, attr_name)
 
         return object.__getattribute__(self, attr_name)
