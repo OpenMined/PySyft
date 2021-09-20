@@ -83,8 +83,8 @@ jobs:
           mv requirements.txt ${{ github.workspace }}
           mv .snyk ${{ github.workspace }}
 
-      - name: Snyk security check
-        if: steps.changes.outputs.syft == 'true'
-        uses: snyk/actions/python-3.8@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      # - name: Snyk security check
+      #   if: steps.changes.outputs.syft == 'true'
+      #   uses: snyk/actions/python-3.8@master
+      #   env:
+      #     SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
