@@ -17,7 +17,7 @@ from requests_toolbelt.multipart.encoder import MultipartEncoder
 from ...core.common.message import ImmediateSyftMessageWithoutReply
 from ...core.common.message import SignedImmediateSyftMessageWithoutReply
 from ...core.common.message import SyftMessage
-from ...core.common.serde.serializable import bind_protobuf
+from ...core.common.serde.serializable import serializable
 from ...core.common.serde.serialize import _serialize
 from ...core.node.domain.enums import RequestAPIFields
 from ...core.node.domain.exceptions import RequestAPIException
@@ -28,7 +28,7 @@ from ...proto.grid.connections.http_connection_pb2 import (
 from ..connections.http_connection import HTTPConnection
 
 
-@bind_protobuf
+@serializable()
 class GridHTTPConnection(HTTPConnection):
 
     LOGIN_ROUTE = "/login"

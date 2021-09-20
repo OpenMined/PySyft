@@ -10,36 +10,30 @@ from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
-# syft absolute
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.node.abstract.node import AbstractNode
-from syft.core.node.common.node_service.auth import service_auth
-from syft.core.node.common.node_service.node_service import (
-    ImmediateNodeServiceWithReply,
-)
-from syft.lib.python import Dict as SyftDict
-from syft.lib.python import List as SyftList
-
 # relative
+from .....common.message import ImmediateSyftMessageWithReply
+from ....domain.domain_interface import DomainInterface
 from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
 from ...exceptions import UserNotFoundError
 from ...node_table.utils import model_to_json
+from ..auth import service_auth
+from ..node_service import ImmediateNodeServiceWithReply
 from ..success_resp_message import SuccessResponseMessage
-from ..user_manager.user_messages import CreateUserMessage
-from ..user_manager.user_messages import DeleteUserMessage
-from ..user_manager.user_messages import GetUserMessage
-from ..user_manager.user_messages import GetUserResponse
-from ..user_manager.user_messages import GetUsersMessage
-from ..user_manager.user_messages import GetUsersResponse
-from ..user_manager.user_messages import SearchUsersMessage
-from ..user_manager.user_messages import SearchUsersResponse
-from ..user_manager.user_messages import UpdateUserMessage
+from .user_messages import CreateUserMessage
+from .user_messages import DeleteUserMessage
+from .user_messages import GetUserMessage
+from .user_messages import GetUserResponse
+from .user_messages import GetUsersMessage
+from .user_messages import GetUsersResponse
+from .user_messages import SearchUsersMessage
+from .user_messages import SearchUsersResponse
+from .user_messages import UpdateUserMessage
 
 
 def create_user_msg(
     msg: CreateUserMessage,
-    node: AbstractNode,
+    node: DomainInterface,
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
 
@@ -121,13 +115,13 @@ def create_user_msg(
 
 def update_user_msg(
     msg: UpdateUserMessage,
-    node: AbstractNode,
+    node: DomainInterface,
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
     _valid_parameters = (
         msg.email or msg.password or msg.role or msg.groups or msg.name or msg.budget
     )
-    _same_user = int(node.users.get_user(verify_key).id) == msg.user_id
+    _same_user = int(node.users.get_user(verify_key).id) == msg.user_id  # type: ignore
     _allowed = _same_user or node.users.can_create_users(verify_key=verify_key)
 
     _valid_user = node.users.contain(id=msg.user_id)
@@ -145,19 +139,19 @@ def update_user_msg(
 
     # Change Email Request
     elif msg.email:
-        node.users.set(user_id=msg.user_id, email=msg.email)
+        node.users.set(user_id=str(msg.user_id), email=msg.email)
 
     # Change Password Request
     elif msg.password:
-        node.users.set(user_id=msg.user_id, password=msg.password)
+        node.users.set(user_id=str(msg.user_id), password=msg.password)
 
     # Change Name Request
     elif msg.name:
-        node.users.set(user_id=msg.user_id, name=msg.name)
+        node.users.set(user_id=str(msg.user_id), name=msg.name)
 
     # Change budget Request
     elif msg.budget:
-        node.users.set(user_id=msg.user_id, budget=msg.budget)
+        node.users.set(user_id=str(msg.user_id), budget=msg.budget)
 
     # Change Role Request
     elif msg.role:
@@ -179,7 +173,7 @@ def update_user_msg(
             == node.roles.owner_role.name  # Current user is the current node owner.
         ):
             new_role_id = node.roles.first(name=msg.role).id
-            node.users.set(user_id=msg.user_id, role=new_role_id)
+            node.users.set(user_id=str(msg.user_id), role=new_role_id)
             current_user = node.users.get_user(verify_key=verify_key)
             node.users.set(user_id=current_user.id, role=node.roles.admin_role.id)
             # Updating current node keys
@@ -192,7 +186,6 @@ def update_user_msg(
             # defined at ...common.node.py that points to the verify_key.
             # So we need to update it as well.
             node.root_verify_key = root_key.verify_key
-
         elif target_user.role == node.roles.owner_role.id:
             raise AuthorizationError("You're not allowed to change Owner user roles!")
         else:
@@ -206,7 +199,9 @@ def update_user_msg(
         )
         # If all premises were respected
         if _allowed and _valid_groups:
-            node.groups.update_user_association(user_id=msg.user_id, groups=msg.groups)
+            pass
+            # TODO: fix, groups=msg.groups these types dont match
+            # node.groups.update_user_association(user_id=msg.user_id, groups=msg.groups)
         else:
             raise AuthorizationError("You're not allowed to change User groups!")
 
@@ -218,7 +213,7 @@ def update_user_msg(
 
 def get_user_msg(
     msg: GetUserMessage,
-    node: AbstractNode,
+    node: DomainInterface,
     verify_key: VerifyKey,
 ) -> GetUserResponse:
     # Check key permissions
@@ -249,13 +244,13 @@ def get_user_msg(
 
     return GetUserResponse(
         address=msg.reply_to,
-        content=SyftDict(_msg),
+        content=_msg,
     )
 
 
 def get_all_users_msg(
     msg: GetUsersMessage,
-    node: AbstractNode,
+    node: DomainInterface,
     verify_key: VerifyKey,
 ) -> GetUsersResponse:
     # Check key permissions
@@ -290,13 +285,13 @@ def get_all_users_msg(
 
     return GetUsersResponse(
         address=msg.reply_to,
-        content=SyftList(_msg),
+        content=_msg,
     )
 
 
 def del_user_msg(
     msg: DeleteUserMessage,
-    node: AbstractNode,
+    node: DomainInterface,
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
 
@@ -322,7 +317,7 @@ def del_user_msg(
 
 def search_users_msg(
     msg: SearchUsersMessage,
-    node: AbstractNode,
+    node: DomainInterface,
     verify_key: VerifyKey,
 ) -> SearchUsersResponse:
     user_parameters = {
@@ -343,7 +338,7 @@ def search_users_msg(
             if msg.groups:
                 filtered_users = filter(
                     lambda x: node.groups.contain_association(
-                        user=x.id, group=msg.group
+                        user=x.id, group=msg.groups
                     ),
                     users,
                 )
@@ -399,7 +394,7 @@ class UserManagerService(ImmediateNodeServiceWithReply):
     @staticmethod
     @service_auth(guests_welcome=True)
     def process(
-        node: AbstractNode,
+        node: DomainInterface,
         msg: INPUT_MESSAGES,
         verify_key: VerifyKey,
     ) -> OUTPUT_MESSAGES:

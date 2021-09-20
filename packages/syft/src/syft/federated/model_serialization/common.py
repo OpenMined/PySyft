@@ -3,9 +3,11 @@ from typing import Any
 from typing import Union
 
 # third party
-from syft_proto.types.torch.v1.tensor_data_pb2 import TensorData as TensorData_PB
-from syft_proto.types.torch.v1.tensor_pb2 import TorchTensor as TorchTensor_PB
 import torch as th
+
+# relative
+from .protos import TensorData_PB
+from .protos import TorchTensor_PB
 
 # Torch dtypes to string (and back) mappers
 TORCH_DTYPE_STR = {
@@ -40,7 +42,9 @@ def get_protobuf_id(field: Any) -> Union[int, str]:
     return getattr(field, field.WhichOneof("id"))
 
 
-def serialize_tensor(tensor: th.Tensor) -> TorchTensor_PB:
+def serialize_tensor(
+    tensor: th.Tensor,
+) -> TorchTensor_PB:
     """
     This method converts a Torch tensor into a serialized tensor
     using Protobuf.
@@ -76,7 +80,9 @@ def serialize_tensor(tensor: th.Tensor) -> TorchTensor_PB:
     return protobuf_tensor
 
 
-def deserialize_tensor(protobuf_tensor: TorchTensor_PB) -> th.Tensor:
+def deserialize_tensor(
+    protobuf_tensor: TorchTensor_PB,
+) -> th.Tensor:
     """
     This method converts a Protobuf torch tensor back into a
     Torch tensor.

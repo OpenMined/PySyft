@@ -43,12 +43,12 @@ from ...core.node.domain.domain import Domain
 from ...logger import error
 from ...logger import traceback_and_raise
 from ..connections.webrtc import WebRTCConnection
-from ..duet.signaling_client import SignalingClient
 from ..services.signaling_service import AnswerPullRequestMessage
 from ..services.signaling_service import InvalidLoopBackRequest
 from ..services.signaling_service import OfferPullRequestMessage
 from ..services.signaling_service import SignalingAnswerMessage
 from ..services.signaling_service import SignalingOfferMessage
+from .signaling_client import SignalingClient
 
 
 class Duet(DomainClient):

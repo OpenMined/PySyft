@@ -24,19 +24,21 @@ from syft.core.node.common.node_service.node_setup.node_setup_messages import (
 )
 
 # relative
-from ....core.common.serde.serialize import _serialize as serialize  # noqa: F401
-from ....core.io.location.specific import SpecificLocation
-from ....core.node.common.action.exception_action import ExceptionMessage
-from ....core.pointer.pointer import Pointer
+from .... import deserialize
 from ....logger import traceback_and_raise
 from ....util import validate_field
 from ...common.message import SyftMessage
+from ...common.serde.serialize import _serialize as serialize  # noqa: F401
 from ...common.uid import UID
 from ...io.address import Address
 from ...io.location import Location
+from ...io.location.specific import SpecificLocation
 from ...io.route import Route
+from ...pointer.pointer import Pointer
 from ...tensor.autodp.adp_tensor import ADPTensor
 from ...tensor.tensor import Tensor
+from ..abstract.node import AbstractNodeClient
+from ..common.action.exception_action import ExceptionMessage
 from ..common.client import Client
 from ..common.client_manager.association_api import AssociationRequestAPI
 from ..common.client_manager.dataset_api import DatasetRequestAPI
@@ -60,7 +62,7 @@ from .enums import PyGridClientEnums
 from .enums import RequestAPIFields
 
 
-class RequestQueueClient:
+class RequestQueueClient(AbstractNodeClient):
     def __init__(self, client: Client) -> None:
         self.client = client
         self.handlers = RequestHandlerQueueClient(client=client)
@@ -74,8 +76,8 @@ class RequestQueueClient:
     @property
     def requests(self) -> List[RequestMessage]:
 
-        # syft absolute
-        from syft.core.node.common.node_service.get_all_requests.get_all_requests_messages import (
+        # relative
+        from ..common.node_service.get_all_requests.get_all_requests_messages import (
             GetAllRequestsMessage,
         )
 
@@ -199,8 +201,8 @@ class RequestQueueClient:
         return handler_opts
 
     def _update_handler(self, request_handler: Dict[str, Any], keep: bool) -> None:
-        # syft absolute
-        from syft.core.node.common.node_service.request_handler import (
+        # relative
+        from ..common.node_service.request_handler.request_handler_messages import (
             UpdateRequestHandlerMessage,
         )
 
@@ -216,8 +218,8 @@ class RequestHandlerQueueClient:
 
     @property
     def handlers(self) -> List[Dict]:
-        # syft absolute
-        from syft.core.node.common.node_service.request_handler import (
+        # relative
+        from ..common.node_service.request_handler.request_handler_messages import (
             GetAllRequestHandlersMessage,
         )
 
@@ -325,40 +327,19 @@ class DomainClient(Client):
 
     def request_budget(
         self,
-        eps: float,
+        eps: float = 0.0,
         reason: str = "",
+        skip_checks: bool = False,
     ) -> Any:
-        """Method that requests access to the data on which the pointer points to.
 
-        Example:
+        if not skip_checks:
+            if eps == 0.0:
+                eps = float(input("Please specify how much more epsilon you want:"))
 
-        .. code-block::
-
-            # data holder domain
-            domain_1 = Domain(name="Data holder")
-
-            # data
-            tensor = th.tensor([1, 2, 3])
-
-            # generating the client for the domain
-            domain_1_client = domain_1.get_root_client()
-
-            # sending the data and receiving a pointer
-            data_ptr_domain_1 = tensor.send(domain_1_client)
-
-            # requesting access to the pointer
-            data_ptr_domain_1.request(name="My Request", reason="Research project.")
-
-        :param name: The title of the request that the data owner is going to see.
-        :type name: str
-        :param reason: The description of the request. This is the reason why you want to have
-            access to the data.
-        :type reason: str
-
-        .. note::
-            This method should be used when the remote data associated with the pointer wants to be
-            downloaded locally (or use .get() on the pointer).
-        """
+            if reason == "":
+                reason = str(
+                    input("Why should the domain owner give you more epsilon:")
+                )
 
         # relative
         from ..common.node_service.request_receiver.request_receiver_messages import (
@@ -376,6 +357,12 @@ class DomainClient(Client):
         )
 
         self.send_immediate_msg_without_reply(msg=msg)
+
+        print(
+            "Requested "
+            + str(eps)
+            + " epsilon of budget. Call .privacy_budget to see if your budget has arrived!"
+        )
 
     def load(
         self, obj_ptr: Type[Pointer], address: Address, pointable: bool = False

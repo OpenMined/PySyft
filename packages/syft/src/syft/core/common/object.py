@@ -8,15 +8,14 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 # relative
 from ...proto.core.common.common_object_pb2 import ObjectWithID as ObjectWithID_PB
 from ...util import validate_type
-from ..common.serde.deserialize import _deserialize
-from ..common.serde.serializable import Serializable
-from ..common.serde.serializable import bind_protobuf
-from ..common.serde.serialize import _serialize as serialize
+from .serde.deserialize import _deserialize
+from .serde.serializable import serializable
+from .serde.serialize import _serialize as serialize
 from .uid import UID
 
 
-@bind_protobuf
-class ObjectWithID(Serializable):
+@serializable()
+class ObjectWithID:
     """This object is the superclass for nearly all Syft objects. Subclassing
     from this object will cause an object to be initialized with a unique id
     using the process specified in the UID class.

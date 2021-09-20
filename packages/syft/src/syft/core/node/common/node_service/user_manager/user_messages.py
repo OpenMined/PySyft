@@ -8,44 +8,44 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import final
 
-# syft absolute
-from syft import serialize
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.common.serde.deserialize import _deserialize
-from syft.core.common.serde.serializable import bind_protobuf
-from syft.core.common.uid import UID
-from syft.core.io.address import Address
-from syft.proto.grid.messages.user_messages_pb2 import (
+# relative
+from ...... import serialize
+from ......proto.grid.messages.user_messages_pb2 import (
     CreateUserMessage as CreateUserMessage_PB,
 )
-from syft.proto.grid.messages.user_messages_pb2 import (
+from ......proto.grid.messages.user_messages_pb2 import (
     DeleteUserMessage as DeleteUserMessage_PB,
 )
-from syft.proto.grid.messages.user_messages_pb2 import (
+from ......proto.grid.messages.user_messages_pb2 import (
     GetUserMessage as GetUserMessage_PB,
 )
-from syft.proto.grid.messages.user_messages_pb2 import (
+from ......proto.grid.messages.user_messages_pb2 import (
     GetUserResponse as GetUserResponse_PB,
 )
-from syft.proto.grid.messages.user_messages_pb2 import (
+from ......proto.grid.messages.user_messages_pb2 import (
     GetUsersMessage as GetUsersMessage_PB,
 )
-from syft.proto.grid.messages.user_messages_pb2 import (
+from ......proto.grid.messages.user_messages_pb2 import (
     GetUsersResponse as GetUsersResponse_PB,
 )
-from syft.proto.grid.messages.user_messages_pb2 import (
+from ......proto.grid.messages.user_messages_pb2 import (
     SearchUsersMessage as SearchUsersMessage_PB,
 )
-from syft.proto.grid.messages.user_messages_pb2 import (
+from ......proto.grid.messages.user_messages_pb2 import (
     SearchUsersResponse as SearchUsersResponse_PB,
 )
-from syft.proto.grid.messages.user_messages_pb2 import (
+from ......proto.grid.messages.user_messages_pb2 import (
     UpdateUserMessage as UpdateUserMessage_PB,
 )
+from .....common.message import ImmediateSyftMessageWithReply
+from .....common.message import ImmediateSyftMessageWithoutReply
+from .....common.serde.deserialize import _deserialize
+from .....common.serde.serializable import serializable
+from .....common.uid import UID
+from .....io.address import Address
 
 
-@bind_protobuf
+@serializable()
 @final
 class CreateUserMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -128,7 +128,7 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
         return CreateUserMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class GetUserMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -199,7 +199,7 @@ class GetUserMessage(ImmediateSyftMessageWithReply):
         return GetUserMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class GetUserResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -267,7 +267,7 @@ class GetUserResponse(ImmediateSyftMessageWithoutReply):
         return GetUserResponse_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class GetUsersMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -334,7 +334,7 @@ class GetUsersMessage(ImmediateSyftMessageWithReply):
         return GetUsersMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class GetUsersResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -402,7 +402,7 @@ class GetUsersResponse(ImmediateSyftMessageWithoutReply):
         return GetUsersResponse_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class UpdateUserMessage(ImmediateSyftMessageWithReply):
     def __init__(  # nosec
@@ -497,7 +497,7 @@ class UpdateUserMessage(ImmediateSyftMessageWithReply):
         return UpdateUserMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class DeleteUserMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -568,7 +568,7 @@ class DeleteUserMessage(ImmediateSyftMessageWithReply):
         return DeleteUserMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class SearchUsersMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -585,7 +585,7 @@ class SearchUsersMessage(ImmediateSyftMessageWithReply):
         self.email = email
         self.role = role
         self.groups = groups
-        self.name
+        self.name = name
 
     def _object2proto(self) -> SearchUsersMessage_PB:
         """Returns a protobuf serialization of self.
@@ -651,7 +651,7 @@ class SearchUsersMessage(ImmediateSyftMessageWithReply):
         return SearchUsersMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class SearchUsersResponse(ImmediateSyftMessageWithoutReply):
     def __init__(

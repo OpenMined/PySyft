@@ -6,9 +6,9 @@ from typing import Dict
 from typing import Optional
 
 # relative
-from ...core.node.common.client import Client
-from ...core.node.vm.plan_vm import PlanVirtualMachine
-from ...core.pointer.pointer import Pointer
+from ..node.common.client import Client
+from ..node.vm.plan_vm import PlanVirtualMachine
+from ..pointer.pointer import Pointer
 from .plan import Plan
 
 PLAN_BUILDER_VM: PlanVirtualMachine = PlanVirtualMachine(name="plan_vm")
