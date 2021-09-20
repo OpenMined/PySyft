@@ -30,8 +30,8 @@ from syft.core.tensor.smpc.share_tensor import ShareTensor
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import SupportedChainType  # type: ignore
 from ..util import implements  # type: ignore
-from .share_tensor import ShareTensor
 from .party import Party
+from .share_tensor import ShareTensor
 from .utils import ispointer
 
 METHODS_FORWARD_ALL_SHARES = {
@@ -191,15 +191,11 @@ class MPCTensor(PassthroughTensor):
 
     @staticmethod
     def _get_shares_from_secret(
-<<<<<<< HEAD
-        secret: Any, parties: List[Any], shape: Tuple[int, ...], seed_shares: int
-=======
         secret: Any,
         parties_info: List[PartyInfo],
         clients: List[Any],
         shape: Tuple[int],
         seed_przs: int,
->>>>>>> 74dbe75e1... Test
     ) -> List[ShareTensor]:
         if ispointer(secret):
             if shape is None:
@@ -218,15 +214,11 @@ class MPCTensor(PassthroughTensor):
 
     @staticmethod
     def _get_shares_from_remote_secret(
-<<<<<<< HEAD
-        secret: Any, shape: Tuple[int, ...], parties: List[Any], seed_shares: int
-=======
         secret: Any,
         shape: Tuple[int],
         parties_info: List[PartyInfo],
         clients: List[Any],
         seed_przs: int,
->>>>>>> 74dbe75e1... Test
     ) -> List[ShareTensor]:
         shares = []
         for i, party_connection in enumerate(clients):
@@ -269,11 +261,7 @@ class MPCTensor(PassthroughTensor):
 
     @staticmethod
     def _get_shares_from_local_secret(
-<<<<<<< HEAD
-        secret: Any, shape: Tuple[int, ...], nr_parties: int, seed_shares: int
-=======
         secret: Any, shape: Tuple[int], parties_info: List[Party], seed_przs: int
->>>>>>> 74dbe75e1... Test
     ) -> List[ShareTensor]:
         shares = []
         nr_parties = len(parties_info)
