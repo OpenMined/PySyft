@@ -154,7 +154,7 @@ def test_mpc_forward_methods(method_str: str, kwargs: TypeDict[str, Any]) -> Non
 
 
 def test_repeat() -> None:
-    value = np.array([[1, 2], [3, 4]]).astype(np.int32)
+    value = np.array([[1, 2], [3, 4]], dtype=np.int32)
 
     remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
 
@@ -169,7 +169,7 @@ def test_repeat() -> None:
 
 
 def test_copy() -> None:
-    value = np.array([[1, 2], [3, 4]]).astype(np.int32)
+    value = np.array([[1, 2], [3, 4]], dtype=np.int32)
 
     remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
 
@@ -185,7 +185,7 @@ def test_copy() -> None:
 
 
 def test_diagonal() -> None:
-    value = np.array([[0, 1], [2, 3]]).astype(np.int32)
+    value = np.array([[0, 1], [2, 3]], dtype=np.int32)
 
     remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
 
@@ -200,7 +200,7 @@ def test_diagonal() -> None:
 
 
 def test_flatten() -> None:
-    value = np.array([[89, 12, 54], [412, 89, 42], [87, 32, 58]]).astype(np.int32)
+    value = np.array([[89, 12, 54], [412, 89, 42], [87, 32, 58]], dtype=np.int32)
 
     remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
 
@@ -215,7 +215,7 @@ def test_flatten() -> None:
 
 
 def test_transpose() -> None:
-    value = np.array([[89, 12, 54], [412, 89, 42], [87, 32, 58]]).astype(np.int32)
+    value = np.array([[89, 12, 54], [412, 89, 42], [87, 32, 58]], dtype=np.int32)
 
     remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
 
@@ -230,7 +230,7 @@ def test_transpose() -> None:
 
 
 def test_resize() -> None:
-    value = np.array([[89, 12], [412, 89], [87, 32]]).astype(np.int32)
+    value = np.array([[89, 12], [412, 89], [87, 32]], dtype=np.int32)
 
     remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
 
@@ -246,7 +246,7 @@ def test_resize() -> None:
 
 
 def test_ravel() -> None:
-    value = np.array([[8, 1, 5], [4, 8, 4], [7, 2, 27]]).astype(np.int32)
+    value = np.array([[8, 1, 5], [4, 8, 4], [7, 2, 27]], dtype=np.int32)
 
     remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
 
@@ -261,7 +261,7 @@ def test_ravel() -> None:
 
 
 def test_compress() -> None:
-    value = np.array([[1, 2], [3, 4], [5, 6]]).astype(np.int32)
+    value = np.array([[1, 2], [3, 4], [5, 6]], dtype=np.int32)
 
     remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
 
@@ -276,7 +276,7 @@ def test_compress() -> None:
 
 
 def test_reshape() -> None:
-    value = np.array([[1, 2], [3, 4], [5, 6]]).astype(np.int32)
+    value = np.array([[1, 2], [3, 4], [5, 6]], dtype=np.int32)
 
     remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
 
@@ -291,7 +291,7 @@ def test_reshape() -> None:
 
 
 def test_squeeze() -> None:
-    value = np.array([[7], [6], [72]]).astype(np.int32)
+    value = np.array([[7], [6], [72]], dtype=np.int32)
 
     remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
 
@@ -306,7 +306,7 @@ def test_squeeze() -> None:
 
 
 def test_swapaxes() -> None:
-    value = np.array(np.array([[613, 645, 738], [531, 412, 658]])).astype(np.int32)
+    value = np.array([[613, 645, 738], [531, 412, 658]], dtype=np.int32)
 
     remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
 
@@ -316,5 +316,36 @@ def test_swapaxes() -> None:
 
     res = mpc_tensor.swapaxes(0, 1).reconstruct()
     exp_res = value.swapaxes(0, 1)
+
+    assert (res == exp_res).all()
+
+
+def test_pos() -> None:
+    value = np.array([[5, 2], [3, 7]], dtype=np.int32)
+
+    remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
+
+    mpc_tensor = MPCTensor(
+        parties=clients, secret=remote_value, shape=(2, 2), seed_shares=42
+    )
+
+    res = mpc_tensor.__pos__().reconstruct()
+    exp_res = value.__pos__()
+
+    assert (res == exp_res).all()
+
+
+def test_put() -> None:
+    value = np.array([[5, 2], [3, 7]], dtype=np.int32)
+
+    remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
+
+    mpc_tensor = MPCTensor(
+        parties=clients, secret=remote_value, shape=(2, 2), seed_shares=42
+    )
+
+    res = mpc_tensor.put([0, 1], 7).reconstruct()
+    value.put([0, 1], 7)
+    exp_res = value  # inplace ops
 
     assert (res == exp_res).all()
