@@ -1,12 +1,11 @@
 name: Security-check
 
 on:
-  push:
+  pull_request:
     branches:
       - dev
-    paths:
-      - ".github/workflows/syft-*.yml"
-      - "packages/syft/**.py"
+      - main
+      - "0.6.0"
 
 defaults:
   run:
@@ -25,22 +24,33 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Check for file changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
+        if: steps.changes.outputs.syft == 'true'
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Upgrade pip
+        if: steps.changes.outputs.syft == 'true'
         run: |
           pip install --upgrade --user pip
 
       - name: Get pip cache dir
+        if: steps.changes.outputs.syft == 'true'
         id: pip-cache
         run: |
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
         uses: actions/cache@v2
+        if: steps.changes.outputs.syft == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
           key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
@@ -48,6 +58,7 @@ jobs:
             ${{ runner.os }}-pip-py${{ matrix.python-version }}-
 
       - name: Install Dependencies
+        if: steps.changes.outputs.syft == 'true'
         run: |
           pip install packaging --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
@@ -58,11 +69,13 @@ jobs:
           pip install "pillow>=8.3.1"
 
       - name: Scan for security issues
+        if: steps.changes.outputs.syft == 'true'
         run: |
           bandit -r src
           safety check
 
       - name: Generate requirements.txt for snyk
+        if: steps.changes.outputs.syft == 'true'
         run: |
           pwd
           sed -n '/syft =/,/^$/p' setup.cfg | tail -n +3 > requirements.txt
@@ -70,7 +83,8 @@ jobs:
           mv requirements.txt ${{ github.workspace }}
           mv .snyk ${{ github.workspace }}
 
-      - name: Snyk security check
-        uses: snyk/actions/python-3.8@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      # - name: Snyk security check
+      #   if: steps.changes.outputs.syft == 'true'
+      #   uses: snyk/actions/python-3.8@master
+      #   env:
+      #     SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
