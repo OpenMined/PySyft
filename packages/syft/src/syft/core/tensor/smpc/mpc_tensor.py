@@ -18,6 +18,7 @@ from typing import cast
 
 # third party
 import numpy as np
+import numpy.typing as npt
 import torch
 
 # relative
@@ -41,6 +42,7 @@ METHODS_FORWARD_ALL_SHARES = {
     "squeeze",
     "swapaxes",
     "sum",
+    "__pos__",
 }
 INPLACE_OPS = {
     "resize",
@@ -494,6 +496,32 @@ class MPCTensor(PassthroughTensor):
         out = out[:-1] + ""
 
         return out
+
+    def put(
+        self,
+        indices: npt.ArrayLike,
+        values: npt.ArrayLike,
+        mode: Optional[str] = "raise",
+    ) -> MPCTensor:
+        """Performs Numpy put operation on the underlying ShareTensors.
+
+        Args:
+            indices (npt.ArrayLike): Target indices, interpreted as integers.
+            values (npt.ArrayLike): Values to place at target indices.
+            mode (Optional[str]): Specifies how out-of-bounds indices will behave.
+
+        Returns:
+            res (MPCTensor): Result of the operation.
+        """
+        shares = []
+        shares.append(self.child[0].put(indices, values, mode))
+        # since the value is public we assign directly to prevent overhead of random share creation.
+        zero = np.zeros_like(values)
+        for share in self.child[1::]:
+            shares.append(share.put(indices, zero.copy(), mode))
+
+        res = MPCTensor(shares=shares, parties=self.parties, shape=self.shape)
+        return res
 
     __add__ = add
     __radd__ = add
