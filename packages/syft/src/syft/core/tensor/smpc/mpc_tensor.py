@@ -482,7 +482,9 @@ class MPCTensor(PassthroughTensor):
 
         return res
 
-    def matmul(self, y: Union[int, float, np.ndarray, torch.tensor, "MPCTensor"]):
+    def matmul(
+        self, y: Union[int, float, np.ndarray, torch.tensor, "MPCTensor"]
+    ) -> MPCTensor:
         """Apply the "matmul" operation between "self" and "y"
 
         Args:
