@@ -18,6 +18,7 @@ from typing import cast
 
 # third party
 import numpy as np
+import numpy.typing as npt
 import torch
 
 # relative
@@ -41,6 +42,7 @@ METHODS_FORWARD_ALL_SHARES = {
     "squeeze",
     "swapaxes",
     "sum",
+    "__pos__",
 }
 INPLACE_OPS = {
     "resize",
@@ -362,8 +364,11 @@ class MPCTensor(PassthroughTensor):
 
     def __apply_public_op(self, y: Any, op_str: str) -> List[ShareTensor]:
         op = getattr(operator, op_str)
-        if op_str in {"mul", "matmul", "add", "sub"}:
+        if op_str in {"mul", "matmul"}:
             res_shares = [op(share, y) for share in self.child]
+        elif op_str in {"add", "sub"}:
+            res_shares = self.child
+            res_shares[0] = op(res_shares[0], y)
         else:
             raise ValueError(f"{op_str} not supported")
 
@@ -479,6 +484,24 @@ class MPCTensor(PassthroughTensor):
 
         return res
 
+    def matmul(
+        self, y: Union[int, float, np.ndarray, torch.tensor, "MPCTensor"]
+    ) -> MPCTensor:
+        """Apply the "matmul" operation between "self" and "y"
+
+        Args:
+            y (Union[int, float, np.ndarray, torch.tensor, "MPCTensor"]): self @ y
+
+        Returns:
+            MPCTensor: Result of the opeartion.
+        """
+        if isinstance(y, ShareTensor):
+            raise ValueError("Private matmul not supported yet")
+
+        res = self.__apply_op(y, "matmul")
+
+        return res
+
     def __str__(self) -> str:
         res = "MPCTensor"
         for share in self.child:
@@ -495,12 +518,39 @@ class MPCTensor(PassthroughTensor):
 
         return out
 
+    def put(
+        self,
+        indices: npt.ArrayLike,
+        values: npt.ArrayLike,
+        mode: Optional[str] = "raise",
+    ) -> MPCTensor:
+        """Performs Numpy put operation on the underlying ShareTensors.
+
+        Args:
+            indices (npt.ArrayLike): Target indices, interpreted as integers.
+            values (npt.ArrayLike): Values to place at target indices.
+            mode (Optional[str]): Specifies how out-of-bounds indices will behave.
+
+        Returns:
+            res (MPCTensor): Result of the operation.
+        """
+        shares = []
+        shares.append(self.child[0].put(indices, values, mode))
+        # since the value is public we assign directly to prevent overhead of random share creation.
+        zero = np.zeros_like(values)
+        for share in self.child[1::]:
+            shares.append(share.put(indices, zero.copy(), mode))
+
+        res = MPCTensor(shares=shares, parties=self.parties, shape=self.shape)
+        return res
+
     __add__ = add
     __radd__ = add
     __sub__ = sub
     __rsub__ = rsub
     __mul__ = mul
     __rmul__ = mul
+    __matmul__ = matmul
 
 
 @implements(MPCTensor, np.add)
