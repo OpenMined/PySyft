@@ -364,8 +364,11 @@ class MPCTensor(PassthroughTensor):
 
     def __apply_public_op(self, y: Any, op_str: str) -> List[ShareTensor]:
         op = getattr(operator, op_str)
-        if op_str in {"mul", "matmul", "add", "sub"}:
+        if op_str in {"mul", "matmul"}:
             res_shares = [op(share, y) for share in self.child]
+        elif op_str in {"add", "sub"}:
+            res_shares = self.child
+            res_shares[0] = op(res_shares[0], y)
         else:
             raise ValueError(f"{op_str} not supported")
 
@@ -481,6 +484,24 @@ class MPCTensor(PassthroughTensor):
 
         return res
 
+    def matmul(
+        self, y: Union[int, float, np.ndarray, torch.tensor, "MPCTensor"]
+    ) -> MPCTensor:
+        """Apply the "matmul" operation between "self" and "y"
+
+        Args:
+            y (Union[int, float, np.ndarray, torch.tensor, "MPCTensor"]): self @ y
+
+        Returns:
+            MPCTensor: Result of the opeartion.
+        """
+        if isinstance(y, ShareTensor):
+            raise ValueError("Private matmul not supported yet")
+
+        res = self.__apply_op(y, "matmul")
+
+        return res
+
     def __str__(self) -> str:
         res = "MPCTensor"
         for share in self.child:
@@ -529,6 +550,7 @@ class MPCTensor(PassthroughTensor):
     __rsub__ = rsub
     __mul__ = mul
     __rmul__ = mul
+    __matmul__ = matmul
 
 
 @implements(MPCTensor, np.add)
