@@ -26,14 +26,16 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v2
-
       - name: Check for file changes
         uses: dorny/paths-filter@v2
         id: changes
         with:
           token: ${{ github.token }}
           filters: .github/file-filters.yml
+
+      - name: Repository Checkout
+        if: steps.changes.outputs.stack == 'true'
+        uses: actions/checkout@v2
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
