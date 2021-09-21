@@ -52,6 +52,7 @@ repos:
       - id: isort
         always_run: true
         name: isort (python)
+        args: ["--settings-path .isort.cfg"]
   - repo: https://github.com/psf/black
     rev: 21.9b0
     hooks:
