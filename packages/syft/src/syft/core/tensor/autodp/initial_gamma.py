@@ -9,9 +9,11 @@ import numpy as np
 
 # relative
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
-from ...common.serde.recursive import RecursiveSerde
+from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from ..passthrough import PassthroughTensor  # type: ignore
+from ..smpc.share_tensor import ShareTensor
+from .adp_tensor import ADPTensor
 from .intermediate_gamma import IntermediateGammaTensor
 
 
@@ -25,7 +27,8 @@ def list2numpy(l_shape: Any) -> np.ndarray:
     return np.array(list_length).reshape(shape)
 
 
-class InitialGammaTensor(IntermediateGammaTensor, RecursiveSerde):
+@serializable(recursive_serde=True)
+class InitialGammaTensor(IntermediateGammaTensor, ADPTensor):
 
     __attr_allowlist__ = [
         "uid",
@@ -42,6 +45,8 @@ class InitialGammaTensor(IntermediateGammaTensor, RecursiveSerde):
 
     __serde_overrides__ = {"entities": [numpy2list, list2numpy]}
 
+    sharetensor_values: Optional[ShareTensor]
+
     def __init__(
         self,
         values: Union[IntermediateGammaTensor, PassthroughTensor, np.ndarray],
@@ -51,9 +56,6 @@ class InitialGammaTensor(IntermediateGammaTensor, RecursiveSerde):
         scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None,
     ) -> None:
         self.uid = UID()
-
-        # syft absolute
-        from syft.core.tensor.smpc.share_tensor import ShareTensor
 
         if isinstance(values, ShareTensor):
             self.sharetensor_values = values

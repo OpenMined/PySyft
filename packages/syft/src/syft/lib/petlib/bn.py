@@ -2,7 +2,7 @@
 import petlib as pl
 
 # relative
-from ...generate_wrapper import GenerateWrapper
+from ...core.common.serde.serializable import serializable
 from ...proto.lib.petlib.bn_pb2 import Bn as Bn_PB
 
 
@@ -16,7 +16,7 @@ def proto2object_group(proto: Bn_PB) -> pl.bn.Bn:
     return pl.bn.Bn.from_hex(proto.hex)
 
 
-GenerateWrapper(
+serializable(generate_wrapper=True)(
     wrapped_type=pl.bn.Bn,
     import_path="petlib.bn.Bn",
     protobuf_scheme=Bn_PB,

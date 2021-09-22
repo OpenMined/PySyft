@@ -1,5 +1,6 @@
 # stdlib
 import logging
+import sys
 import time
 from typing import Any
 from typing import Dict
@@ -16,21 +17,22 @@ import names
 import pandas as pd
 from pandas import DataFrame
 
-# syft absolute
-from syft import deserialize
-
 # relative
-from ....core.common.serde.serialize import _serialize as serialize  # noqa: F401
-from ....core.io.location.specific import SpecificLocation
-from ....core.node.common.action.exception_action import ExceptionMessage
-from ....core.pointer.pointer import Pointer
+from .... import deserialize
 from ....logger import traceback_and_raise
 from ....util import validate_field
 from ...common.message import SyftMessage
+from ...common.serde.serialize import _serialize as serialize  # noqa: F401
 from ...common.uid import UID
 from ...io.address import Address
 from ...io.location import Location
+from ...io.location.specific import SpecificLocation
 from ...io.route import Route
+from ...pointer.pointer import Pointer
+from ...tensor.autodp.adp_tensor import ADPTensor
+from ...tensor.tensor import Tensor
+from ..abstract.node import AbstractNodeClient
+from ..common.action.exception_action import ExceptionMessage
 from ..common.client import Client
 from ..common.client_manager.association_api import AssociationRequestAPI
 from ..common.client_manager.dataset_api import DatasetRequestAPI
@@ -54,7 +56,7 @@ from .enums import PyGridClientEnums
 from .enums import RequestAPIFields
 
 
-class RequestQueueClient:
+class RequestQueueClient(AbstractNodeClient):
     def __init__(self, client: Client) -> None:
         self.client = client
         self.handlers = RequestHandlerQueueClient(client=client)
@@ -68,8 +70,8 @@ class RequestQueueClient:
     @property
     def requests(self) -> List[RequestMessage]:
 
-        # syft absolute
-        from syft.core.node.common.node_service.get_all_requests.get_all_requests_messages import (
+        # relative
+        from ..common.node_service.get_all_requests.get_all_requests_messages import (
             GetAllRequestsMessage,
         )
 
@@ -193,8 +195,8 @@ class RequestQueueClient:
         return handler_opts
 
     def _update_handler(self, request_handler: Dict[str, Any], keep: bool) -> None:
-        # syft absolute
-        from syft.core.node.common.node_service.request_handler import (
+        # relative
+        from ..common.node_service.request_handler.request_handler_messages import (
             UpdateRequestHandlerMessage,
         )
 
@@ -210,8 +212,8 @@ class RequestHandlerQueueClient:
 
     @property
     def handlers(self) -> List[Dict]:
-        # syft absolute
-        from syft.core.node.common.node_service.request_handler import (
+        # relative
+        from ..common.node_service.request_handler.request_handler_messages import (
             GetAllRequestHandlersMessage,
         )
 
@@ -319,40 +321,19 @@ class DomainClient(Client):
 
     def request_budget(
         self,
-        eps: float,
+        eps: float = 0.0,
         reason: str = "",
+        skip_checks: bool = False,
     ) -> Any:
-        """Method that requests access to the data on which the pointer points to.
 
-        Example:
+        if not skip_checks:
+            if eps == 0.0:
+                eps = float(input("Please specify how much more epsilon you want:"))
 
-        .. code-block::
-
-            # data holder domain
-            domain_1 = Domain(name="Data holder")
-
-            # data
-            tensor = th.tensor([1, 2, 3])
-
-            # generating the client for the domain
-            domain_1_client = domain_1.get_root_client()
-
-            # sending the data and receiving a pointer
-            data_ptr_domain_1 = tensor.send(domain_1_client)
-
-            # requesting access to the pointer
-            data_ptr_domain_1.request(name="My Request", reason="Research project.")
-
-        :param name: The title of the request that the data owner is going to see.
-        :type name: str
-        :param reason: The description of the request. This is the reason why you want to have
-            access to the data.
-        :type reason: str
-
-        .. note::
-            This method should be used when the remote data associated with the pointer wants to be
-            downloaded locally (or use .get() on the pointer).
-        """
+            if reason == "":
+                reason = str(
+                    input("Why should the domain owner give you more epsilon:")
+                )
 
         # relative
         from ..common.node_service.request_receiver.request_receiver_messages import (
@@ -370,6 +351,12 @@ class DomainClient(Client):
         )
 
         self.send_immediate_msg_without_reply(msg=msg)
+
+        print(
+            "Requested "
+            + str(eps)
+            + " epsilon of budget. Call .privacy_budget to see if your budget has arrived!"
+        )
 
     def load(
         self, obj_ptr: Type[Pointer], address: Address, pointable: bool = False
@@ -503,13 +490,113 @@ class DomainClient(Client):
 
     def load_dataset(
         self,
-        assets: Any,
-        name: str,
-        description: str,
+        assets: Optional[dict] = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        skip_checks: bool = False,
         **metadata: TypeDict,
     ) -> None:
+        sys.stdout.write("Loading dataset...")
+        if assets is None or not isinstance(assets, dict):
+            raise Exception(
+                "Missing Assets: Oops!... You forgot to include your data! (or you passed it in the wrong way) \n\n"
+                "You must call load_dataset() with a dictionary of assets which are the "
+                "private dataset objects (tensors) you wish to allow someone else to study "
+                "while PySyft protects it using various privacy enhancing technologies. \n\n"
+                "For example, the MNIST dataset is comprised of 6 tensors, so we would create an assets "
+                "dictionary with 6 keys (strings) mapping to the 6 tensors of MNIST.\n\n"
+                "Please pass in a dictionary where the key is the name of the asset and the value is "
+                "the private dataset object (tensor) itself. We recommend uploading assets which "
+                "are differential-privacy trackable objects, such as a syft.Tensor() wrapped "
+                "numpy.int32 or numpy.float32 object which you then call .private() on. \n\nOnce "
+                "you have an assets dictionary call load_dataset(assets=<your dict of objects>)."
+            )
+        sys.stdout.write("\rLoading dataset... checking assets...")
+
+        if name is None:
+            raise Exception(
+                "Missing Name: Oops!... You forgot to name your dataset!\n\n"
+                "It's important to give your dataset a clear and descriptive name because"
+                " the name is the primary way in which potential users of the dataset will"
+                " identify it.\n\n"
+                'Retry with a string name. I.e., .load_dataset(name="<your name here>)"'
+            )
+        sys.stdout.write("\rLoading dataset... checking dataset name for uniqueness...")
+        datasets = self.datasets
+
+        if not skip_checks:
+            for i in range(len(datasets)):
+                d = datasets[i]
+                sys.stdout.write(".")
+                if name == d.name:
+                    print(
+                        "\n\nWARNING - Dataset Name Conflict: A dataset named '"
+                        + name
+                        + "' already exists.\n"
+                    )
+                    pref = input("Do you want to upload this dataset anyway? (y/n)")
+                    while pref != "y" and pref != "n":
+                        pref = input(
+                            "Invalid input '" + pref + "', please specify 'y' or 'n'."
+                        )
+                    if pref == "n":
+                        raise Exception("Dataset loading cancelled.")
+                    else:
+                        print()  # just for the newline
+                        break
+
+        sys.stdout.write(
+            "\rLoading dataset... checking dataset name for uniqueness..."
+            "                                                          "
+            "                                                          "
+        )
+
+        if description is None:
+            raise Exception(
+                "Missing Description: Oops!... You forgot to describe your dataset!\n\n"
+                "It's *very* important to give your dataset a very clear and complete description"
+                " because your users will need to be able to find this dataset (the description is used for search)"
+                " AND they will need enough information to be able to know that the dataset is what they're"
+                " looking for AND how to use it.\n\n"
+                "Start by describing where the dataset came from, how it was collected, and how its formatted."
+                "Refer to each object in 'assets' individually so that your users will know which is which. Don't"
+                " be afraid to be longwinded. :) Your users will thank you."
+            )
+
+        sys.stdout.write(
+            "\rLoading dataset... checking asset types...                              "
+        )
+
         # relative
         from ....lib.python.util import downcast
+
+        if not skip_checks:
+            for asset_name, asset in assets.items():
+
+                if not isinstance(asset, Tensor) or not isinstance(
+                    getattr(asset, "child", None), ADPTensor
+                ):
+
+                    print(
+                        "\n\nWARNING - Non-DP Asset: You just passed in a asset '"
+                        + asset_name
+                        + "' which cannot be tracked with differential privacy because it is a "
+                        + str(type(asset))
+                        + " object.\n\n"
+                        + "This means you'll need to manually approve any requests which "
+                        + "leverage this data. If this is ok with you, proceed. If you'd like to use "
+                        + "automatic differential privacy budgeting, please pass in a DP-compatible tensor type "
+                        + "such as by calling .private() on a sy.Tensor with a np.int32 or np.float32 inside."
+                    )
+
+                    pref = input("Are you sure you want to proceed? (y/n)")
+
+                    while pref != "y" and pref != "n":
+                        pref = input(
+                            "Invalid input '" + pref + "', please specify 'y' or 'n'."
+                        )
+                    if pref == "n":
+                        raise Exception("Dataset loading cancelled.")
 
         metadata["name"] = bytes(name, "utf-8")  # type: ignore
         metadata["description"] = bytes(description, "utf-8")  # type: ignore
@@ -523,6 +610,14 @@ class DomainClient(Client):
 
         binary_dataset = serialize(assets, to_bytes=True)
 
+        sys.stdout.write("\rLoading dataset... uploading...                        ")
         self.datasets.create_syft(
             dataset=binary_dataset, metadata=metadata, platform="syft"
+        )
+        sys.stdout.write(
+            "\rLoading dataset... uploading... SUCCESS!                        "
+        )
+
+        print(
+            "\n\nRun <your client variable>.datasets to see your new dataset loaded into your machine!"
         )

@@ -3,11 +3,10 @@ from typing import List
 from typing import Optional
 
 # relative
-from .serde.serializable import Serializable
 from .uid import UID
 
 
-class AbstractStorableObject(Serializable):
+class AbstractStorableObject:
 
     data: object
     id: UID

@@ -13,7 +13,7 @@ export function CheckAuthRoute({children}: Pages) {
   const router = useRouter()
   const {getToken} = useAuth()
   const {data, isError} = useDomainStatus()
-  const publicRoutes = ['/offline', '/login', '/start']
+  const publicRoutes = ['/status', '/offline', '/login', '/start']
   const isPublicRoute = publicRoutes.includes(router.route)
 
   console.log({data})

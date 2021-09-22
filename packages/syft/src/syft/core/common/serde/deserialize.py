@@ -78,24 +78,31 @@ def _deserialize(
     # There are serveral code paths that come through here and use different ways to
     # match and overload protobuf -> deserialize type
     obj_type = getattr(type(blob), "schema2type", None)
+    # relative
+    from .recursive import rs_get_protobuf_schema
+    from .recursive import rs_proto2object
+
     if obj_type is None:
         # TODO: This can probably be removed now we have lists of obj_types
         obj_type = getattr(blob, "obj_type", None)
+        if isinstance(blob, rs_get_protobuf_schema()):
+            res = rs_proto2object(proto=blob)
+            if getattr(res, "temporary_box", False) and hasattr(res, "upcast"):
+                return res.upcast()
+            return res
+
         if obj_type is None:
             traceback_and_raise(deserialization_error)
+
         obj_type = index_syft_by_module_name(fully_qualified_name=obj_type)  # type: ignore
         obj_type = getattr(obj_type, "_sy_serializable_wrapper_type", obj_type)
     elif isinstance(obj_type, list):
-        # circular imports
-        # relative
-        from .recursive import RecursiveSerde
 
-        if RecursiveSerde in obj_type and isinstance(
-            blob, RecursiveSerde.get_protobuf_schema()
-        ):
-            # this branch is for RecursiveSerde objects
-            obj_type = RecursiveSerde
-
+        if isinstance(blob, rs_get_protobuf_schema()):
+            res = rs_proto2object(proto=blob)
+            if getattr(res, "temporary_box", False) and hasattr(res, "upcast"):
+                return res.upcast()
+            return res
         elif len(obj_type) == 1:
             obj_type = obj_type[0]
         else:

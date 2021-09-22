@@ -16,6 +16,7 @@ PORT = 9081
 PARTIES = 2
 
 
+@pytest.mark.xfail
 @pytest.mark.integration
 def test_secret_sharing() -> None:
     clients = []
