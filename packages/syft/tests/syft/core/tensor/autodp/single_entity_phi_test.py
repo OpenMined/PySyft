@@ -627,7 +627,7 @@ def test_resize_fail(
 
 def test_resize_inplace(
         reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
-):
+) -> None:
     """ Ensure resize changes shape in place"""
     reference_tensor = SEPT(
         child=reference_data,
@@ -642,6 +642,39 @@ def test_resize_inplace(
     reference_tensor.resize(new_shape)
     assert reference_tensor.shape != initial_shape, "Resize operation failed to change shape in-place."
 
+
+def test_flatten(reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray) -> None:
+    """ Test that self.child can be flattened for appropriate data types"""
+    reference_tensor = SEPT(
+        child=reference_data,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+        entity=ishan
+    )
+
+    target_shape = reference_data.flatten().shape
+    flattened_tensor = reference_tensor.flatten()
+
+    assert flattened_tensor.shape != reference_tensor.shape, "Flattening the array really didn't do much eh"
+    assert (flattened_tensor.shape == target_shape), "Flattening did not result in the correct shape"
+    assert (flattened_tensor == reference_data.flatten()).child.all(), "Flattening changed the order of entries"
+
+
+def test_ravel(reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray) -> None:
+    """ Test that self.child can be ravelled for appropriate data types"""
+    reference_tensor = SEPT(
+        child=reference_data,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+        entity=ishan
+    )
+
+    target_shape = reference_data.ravel().shape
+    ravelled_tensor = reference_tensor.ravel()
+
+    assert ravelled_tensor.shape != reference_tensor.shape, "Ravelling the array really didn't do much eh"
+    assert (ravelled_tensor.shape == target_shape), "Ravelling did not result in the correct shape"
+    assert (ravelled_tensor == reference_data.flatten()).child.all(), "Ravelling changed the order of entries"
 
 # End of Ishan's tests
 
