@@ -1,5 +1,6 @@
 # stdlib
 from random import randint
+from random import sample
 
 # third party
 import numpy as np
@@ -61,6 +62,13 @@ tensor5 = SingleEntityPhiTensor(
     child=child2, entity=ent2, max_vals=upper2, min_vals=low2
 )
 
+
+# helper function to replace the value at a given index of a single entity phi tensor
+def change_elem(tensor, ind, val) -> SingleEntityPhiTensor:
+    tensor.child[ind] = val
+    return tensor
+
+
 simple_type1 = randint(-6, -4)
 simple_type2 = randint(4, 6)
 
@@ -116,6 +124,42 @@ def test_clip() -> None:
     assert ((clipped_tensor1 >= rand1) & (clipped_tensor1 <= rand2)).all()
     assert (clipped_tensor2 == rand1).all()
     assert (clipped_tensor3 >= rand1).all()
+
+
+tensor1_copy = tensor1.copy()
+tensor3_copy = tensor3.copy()
+
+
+def test_copy() -> None:
+    assert (
+        (tensor1_copy.child == tensor1.child).all()
+        & (tensor1_copy.min_vals == tensor1.min_vals).all()
+        & (tensor1_copy.max_vals == tensor1.max_vals).all()
+    )
+    assert not (tensor3_copy.child == change_elem(tensor3, 0, rand1).child).all()
+
+
+indices = sample(range(dims), dims)
+tensor1_take = tensor1.take(indices)
+
+
+def test_take() -> None:
+    for i in range(dims):
+        assert tensor1_take.child[i] == tensor1.child[indices[i]]
+
+
+tensor6 = SingleEntityPhiTensor(
+    child=np.arange(dims * dims).reshape(dims, dims),
+    entity=ent,
+    max_vals=dims ** 2 - 1,
+    min_vals=0,
+)
+tensor6_diagonal = tensor6.diagonal()
+
+
+def test_diagonal() -> None:
+    for i in range(dims):
+        assert tensor6_diagonal.child[i] == tensor6.child[i][i]
 
 
 #

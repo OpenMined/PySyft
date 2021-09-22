@@ -959,6 +959,62 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             scalar_manager=self.scalar_manager,
         )
 
+    def copy(
+        self, order: Optional[str] = "K", subok: Optional[bool] = True
+    ) -> SingleEntityPhiTensor:
+        """Return copy of the given object"""
+        data = np.array(self.child, order=order, subok=subok, copy=True)
+        min_vals = np.array(self.min_vals, order=order, subok=subok, copy=True)
+        max_vals = np.array(self.max_vals, order=order, subok=subok, copy=True)
+
+        return SingleEntityPhiTensor(
+            child=data,
+            entity=self.entity,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            scalar_manager=self.scalar_manager,
+        )
+
+    def take(
+        self,
+        indices: np.ArrayLike,
+        axis: Optional[int] = None,
+        mode: Optional[str] = "raise",
+    ) -> SingleEntityPhiTensor:
+        """Take elements from an array along an axis"""
+        data = np.take(self.child, indices=indices, mode=mode)
+        return SingleEntityPhiTensor(
+            child=data,
+            entity=self.entity,
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
+            scalar_manager=self.scalar_manager,
+        )
+
+    def diagonal(
+        self,
+        offset: Optional[int] = 0,
+        axis1: Optional[int] = 0,
+        axis2: Optional[int] = 1,
+    ) -> SingleEntityPhiTensor:
+        """Return specified diagonals"""
+        if isinstance(self.child, np.matrix):
+            # Make diagonal of matrix 1-D to preserve backward compatibility.
+            data = np.asarray(self.child).diagonal(
+                offset=offset, axis1=axis1, axis2=axis2
+            )
+        else:
+            data = np.asanyarray(self.child).diagonal(
+                offset=offset, axis1=axis1, axis2=axis2
+            )
+        return SingleEntityPhiTensor(
+            child=data,
+            entity=self.entity,
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
+            scalar_manager=self.scalar_manager,
+        )
+
 
 @implements(SingleEntityPhiTensor, np.expand_dims)
 def expand_dims(a: npt.ArrayLike, axis: Optional[int] = None) -> SingleEntityPhiTensor:
