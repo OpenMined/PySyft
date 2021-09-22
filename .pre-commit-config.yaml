@@ -129,7 +129,8 @@ repos:
               packages/syft/examples/.*|
               packages/syft/tests/.*|
               packages/syft/src/syft/proto.*|
-              packages/syft/tests/syft/lib/python.*
+              packages/syft/tests/syft/lib/python.*|
+              packages/syft/src/syft/lib/SMPC/protocol/.*
           )$
         args: [
             "--ignore-missing-imports",

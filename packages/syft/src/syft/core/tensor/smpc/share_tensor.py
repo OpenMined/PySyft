@@ -77,7 +77,7 @@ class ShareTensor(PassthroughTensor):
     @lru_cache(32)
     def compute_min_max_from_ring(ring_size: int = 2 ** 64) -> Tuple[int, int]:
         min_value = (-ring_size) // 2
-        max_value = (ring_size - 1) // 2
+        max_value = ring_size // 2 - 1
         return min_value, max_value
 
     """ TODO: Remove this -- we would use generate_przs since the scenario we are testing is that
