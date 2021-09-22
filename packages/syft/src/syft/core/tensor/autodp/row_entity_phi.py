@@ -256,6 +256,25 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
+    def resize(
+        self,
+        new_shape: Union[int, TypeTuple[int, ...]],
+        refcheck: Optional[bool] = True,
+    ) -> None:
+        """ This method is identical to reshape, but it modifies the Tensor in-place instead of returning a new one"""
+        if new_shape[0] != self.shape[0]:
+            raise Exception(
+                "For now, you can't reshape the first dimension because that would"
+                + "probably require creating a gamma tensor."
+            )
+
+        new_list = list()
+        for row in self.child:
+            new_list.append(row.reshape(new_shape[1:]))
+
+        # Modify the tensor data in-place instead of returning a new one.
+        self.child = new_list
+
     # Since this is being used differently compared to supertype, ignoring type annotation errors
     def sum(  # type: ignore
         self, *args: Any, axis: Optional[int] = None, **kwargs: Any
