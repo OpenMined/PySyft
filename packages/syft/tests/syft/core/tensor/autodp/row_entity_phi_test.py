@@ -131,7 +131,8 @@ def test_eq_values(
     # assert tensor2 != tensor1, "Error: REPT + 1 == REPT"  # TODO: Investigate RecursionError Here
 
     # Debug test issues
-    assert type(tensor2.child[0]) is type(tensor1.child[0])
+    assert isinstance(tensor2.child[0], SEPT)
+    assert isinstance(tensor1.child[0], SEPT)
     assert tensor2.child[0] != tensor1.child[0]
     assert isinstance(
         tensor2.child[0] != tensor1.child[0], SEPT
@@ -144,7 +145,7 @@ def test_eq_values(
             not (tensor2 == tensor1).child[i].child.any()
         ), f"REPT + 1 == REPT failed at child {i}"
 
-    comparison_result = tensor1 == tensor2
+    tensor1 == tensor2
     # assert not comparison_result  # This will work as soon as the .all() or .any() methods are implemented.
     # Would this be more user-friendly if SEPT == SEPT -> singular T/F instead of array of T/F?
 
@@ -163,7 +164,7 @@ def test_ne_shapes(
     ), "Tensors not initialized properly for this test"
 
     with pytest.raises(Exception):
-        result = tensor2 == tensor1
+        tensor2 == tensor1
 
 
 def test_eq_ndarray(row_data: List) -> None:
@@ -181,8 +182,8 @@ def test_add_wrong_types(row_data: List) -> None:
     """Ensure that addition with incorrect types aren't supported"""
     reference_tensor = REPT(rows=row_data)
     with pytest.raises(NotImplementedError):
-        result1 = reference_tensor + "some string"
-        result2 = reference_tensor + dict()
+        reference_tensor + "some string"
+        reference_tensor + dict()
         # TODO: Double check how tuples behave during addition/subtraction with np.ndarrays
     return None
 

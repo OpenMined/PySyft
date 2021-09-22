@@ -623,7 +623,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         if isinstance(other, SingleEntityPhiTensor):
             if self.entity != other.entity:
                 # this should return a GammaTensor
-                raise NotImplemented
+                raise NotImplementedError
 
             data = self.child - other.child
             min_vals = self.min_vals - other.min_vals
@@ -694,7 +694,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         condition: np.typing.ArrayLike,
         axis: Optional[int] = None,
         out: Optional[np.ndarray] = None,
-    ):
+    ) -> SingleEntityPhiTensor:
         """Return selected slices of this array along a given axis"""
         if (
             isinstance(self.child, int)

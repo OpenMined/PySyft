@@ -245,8 +245,8 @@ def test_add_wrong_types(
         child=reference_data, entity=ishan, max_vals=upper_bound, min_vals=lower_bound
     )
     with pytest.raises(NotImplementedError):
-        result1 = reference_tensor + "some string"
-        result2 = reference_tensor + dict()
+        reference_tensor + "some string"
+        reference_tensor + dict()
         # TODO: Double check how tuples behave during addition/subtraction with np.ndarrays
     return None
 

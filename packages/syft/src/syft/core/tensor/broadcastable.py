@@ -1,4 +1,8 @@
-def is_broadcastable(shape1, shape2):
+# stdlib
+from typing import Tuple
+
+
+def is_broadcastable(shape1: Tuple[int], shape2: Tuple[int]) -> bool:
     """Helper function to determine if Tensor Operations can be broadcast
     inputs:
     shape1, shape 2: shapes of numpy arrays/syft tensors
