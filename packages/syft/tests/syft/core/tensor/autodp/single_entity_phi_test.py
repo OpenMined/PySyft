@@ -676,6 +676,52 @@ def test_ravel(reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound:
     assert (ravelled_tensor.shape == target_shape), "Ravelling did not result in the correct shape"
     assert (ravelled_tensor == reference_data.flatten()).child.all(), "Ravelling changed the order of entries"
 
+
+def test_squeeze() -> None:
+    """ Test that squeeze works on an ideal case """
+    unsqueezed_data = np.random.randint(low=-high, high=high, size=(10, 1, 10, 1, 10), dtype=np.int32)
+    initial_shape = unsqueezed_data.shape
+
+    reference_tensor = SEPT(
+        child=unsqueezed_data,
+        max_vals=np.ones_like(unsqueezed_data) * high,
+        min_vals=np.ones_like(unsqueezed_data) * -high,
+        entity=ishan
+    )
+
+    target_data = unsqueezed_data.squeeze()
+    target_shape = target_data.shape
+
+    squeezed_tensor = reference_tensor.squeeze()
+
+    assert squeezed_tensor.shape != initial_shape, "Squeezing the tensor did nothing"
+    assert squeezed_tensor.shape == target_shape, "Squeezing the tensor gave the wrong shape"
+    assert (squeezed_tensor == target_data).child.all(), "Squeezing the tensor eliminated the wrong values"
+
+
+def test_squeeze_correct_axes() -> None:
+    """ Test that squeeze works on an ideal case with correct axes specified """
+    unsqueezed_data = np.random.randint(low=-high, high=high, size=(10, 1, 10, 1, 10), dtype=np.int32)
+    initial_shape = unsqueezed_data.shape
+
+    reference_tensor = SEPT(
+        child=unsqueezed_data,
+        max_vals=np.ones_like(unsqueezed_data) * high,
+        min_vals=np.ones_like(unsqueezed_data) * -high,
+        entity=ishan
+    )
+
+    target_data = unsqueezed_data.squeeze(1)
+    target_shape = target_data.shape
+
+    squeezed_tensor = reference_tensor.squeeze(1)
+
+    assert squeezed_tensor.shape != initial_shape, "Squeezing the tensor did nothing"
+    assert squeezed_tensor.shape == target_shape, "Squeezing the tensor gave the wrong shape"
+    assert (squeezed_tensor == target_data).child.all(), "Squeezing the tensor eliminated the wrong values"
+
+
+
 # End of Ishan's tests
 
 
