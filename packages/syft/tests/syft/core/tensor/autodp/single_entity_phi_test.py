@@ -679,17 +679,17 @@ def test_ravel(reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound:
 
 def test_squeeze() -> None:
     """ Test that squeeze works on an ideal case """
-    unsqueezed_data = np.random.randint(low=-high, high=high, size=(10, 1, 10, 1, 10), dtype=np.int32)
-    initial_shape = unsqueezed_data.shape
+    _data = np.random.randint(low=-high, high=high, size=(10, 1, 10, 1, 10), dtype=np.int32)
+    initial_shape = _data.shape
 
     reference_tensor = SEPT(
-        child=unsqueezed_data,
-        max_vals=np.ones_like(unsqueezed_data) * high,
-        min_vals=np.ones_like(unsqueezed_data) * -high,
+        child=_data,
+        max_vals=np.ones_like(_data) * high,
+        min_vals=np.ones_like(_data) * -high,
         entity=ishan
     )
 
-    target_data = unsqueezed_data.squeeze()
+    target_data = _data.squeeze()
     target_shape = target_data.shape
 
     squeezed_tensor = reference_tensor.squeeze()
@@ -701,17 +701,17 @@ def test_squeeze() -> None:
 
 def test_squeeze_correct_axes() -> None:
     """ Test that squeeze works on an ideal case with correct axes specified """
-    unsqueezed_data = np.random.randint(low=-high, high=high, size=(10, 1, 10, 1, 10), dtype=np.int32)
-    initial_shape = unsqueezed_data.shape
+    _data = np.random.randint(low=-high, high=high, size=(10, 1, 10, 1, 10), dtype=np.int32)
+    initial_shape = _data.shape
 
     reference_tensor = SEPT(
-        child=unsqueezed_data,
-        max_vals=np.ones_like(unsqueezed_data) * high,
-        min_vals=np.ones_like(unsqueezed_data) * -high,
+        child=_data,
+        max_vals=np.ones_like(_data) * high,
+        min_vals=np.ones_like(_data) * -high,
         entity=ishan
     )
 
-    target_data = unsqueezed_data.squeeze(1)
+    target_data = _data.squeeze(1)
     target_shape = target_data.shape
 
     squeezed_tensor = reference_tensor.squeeze(1)
@@ -720,6 +720,80 @@ def test_squeeze_correct_axes() -> None:
     assert squeezed_tensor.shape == target_shape, "Squeezing the tensor gave the wrong shape"
     assert (squeezed_tensor == target_data).child.all(), "Squeezing the tensor eliminated the wrong values"
 
+
+def test_swap_axes() -> None:
+    """ Test that swap_axes works on an ideal case"""
+    data = np.random.randint(low=-high, high=high, size=(10, 1, 10, 1, 10), dtype=np.int32)
+    initial_shape = data.shape
+
+    reference_tensor = SEPT(
+        child=data,
+        max_vals=np.ones_like(data) * high,
+        min_vals=np.ones_like(data) * -high,
+        entity=ishan
+    )
+
+    target_data = data.swapaxes(1, 2)
+    target_shape = target_data.shape
+
+    swapped_tensor = reference_tensor.swapaxes(1, 2)
+
+    assert swapped_tensor.shape != initial_shape, "Swapping axes of  the tensor did nothing"
+    assert swapped_tensor.shape == target_shape, "Swapping axes of  the tensor gave the wrong shape"
+    assert (swapped_tensor == target_data).child.all(), "Swapping axes of  the tensor eliminated the wrong values"
+
+
+def test_compress(
+        reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+) -> None:
+    reference_tensor = SEPT(
+        child=reference_data,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+        entity=ishan
+    )
+
+    result = reference_tensor.compress([0, 1])
+    assert result == reference_data.compress([0, 1]), "Compress did not work as expected"
+
+    result2 = reference_tensor.compress([0, 1], axis=1)
+    assert result2 == reference_data.compress([0, 1], axis=1), "Compress did not work as expected"
+
+
+def test_partition(
+        reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+) -> None:
+    reference_tensor = SEPT(
+        child=reference_data,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+        entity=ishan
+    )
+
+    k = 1
+
+    reference_tensor.partition(k)
+    assert reference_tensor != reference_data, "Partition did not work as expected"
+    reference_data.partition(k)
+    assert reference_tensor == reference_data, "Partition did not work as expected"
+
+
+def test_partition_axis(
+        reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    ) -> None:
+    reference_tensor = SEPT(
+        child=reference_data,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+        entity=ishan
+    )
+
+    k = 1
+
+    reference_tensor.partition(k, axis=1)
+    assert reference_tensor != reference_data, "Partition did not work as expected"
+    reference_data.partition(k, axis=1)
+    assert reference_tensor == reference_data, "Partition did not work as expected"
 
 
 # End of Ishan's tests
