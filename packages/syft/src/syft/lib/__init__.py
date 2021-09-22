@@ -27,6 +27,7 @@ from ..core.tensor import create_tensor_ast
 from ..logger import critical
 from ..logger import traceback_and_raise
 from ..logger import warning
+from .SMPC import create_smpc_ast
 from .misc import create_union_ast
 from .plan import create_plan_ast
 from .python import create_python_ast
@@ -237,6 +238,7 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
     adp_ast = create_adp_ast(client=client)
     remote_dataloader_ast = create_remote_dataloader_ast(client=client)
     tensor_ast = create_tensor_ast(client=client)
+    smpc_ast = create_smpc_ast(client=client)
 
     lib_ast = Globals(client=client)
     lib_ast.add_attr(attr_name="syft", attr=python_ast.attrs["syft"])
@@ -248,6 +250,8 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
     lib_ast.syft.core.add_attr(
         "remote_dataloader", remote_dataloader_ast.syft.core.remote_dataloader
     )
+    smpc_ast = getattr(getattr(smpc_ast, "syft"), "lib")
+    lib_ast.syft.lib.add_attr(attr_name="SMPC", attr=smpc_ast.attrs["SMPC"])
 
     # let the misc creation be always the last, as it needs the full ast solved
     # to properly generated unions
