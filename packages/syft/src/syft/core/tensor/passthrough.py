@@ -445,6 +445,22 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     def swapaxes(self, axis1: int, axis2: int) -> PassthroughTensor:
         return self.__class__(self.child.swapaxes(axis1=axis1, axis2=axis2))
 
+    # ndarray.put(indices, values, mode='raise')
+    def put(
+        self,
+        indices: Union[int, TypeTuple[int, ...], np.ndarray],
+        values: Union[int, TypeTuple[int, ...], np.ndarray],
+        mode: Optional[str] = "raise",
+    ) -> None:
+        self.child.put(indices=indices, values=values, mode=mode)  # inplace op
+        print(self.__class__)
+        print(self.child)
+        return self.__class__(self.child)
+
+    # ndarray.__pos__(/)
+    def __pos__(self) -> PassthroughTensor:
+        return self.__class__(self.child.__pos__())
+
     # numpy.mean(a, axis=None, dtype=None, out=None, keepdims=<no value>, *, where=<no value>)
     def mean(
         self, axis: Optional[Union[int, TypeTuple[int, ...]]] = None, **kwargs
