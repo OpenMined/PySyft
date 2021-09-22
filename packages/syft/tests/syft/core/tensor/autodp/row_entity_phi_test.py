@@ -21,7 +21,7 @@ from syft.core.tensor.tensor import Tensor
 # Global constants
 ishan = Entity(name="Ishan")
 traskmaster = Entity(name="Trask")
-dims = np.random.randint(10) + 1  # Avoid size 0
+dims = np.random.randint(10) + 3  # Avoid size 0, 1
 row_count = np.random.randint(7) + 1
 scalar_manager = ScalarManager()
 
@@ -78,6 +78,19 @@ def row_data_trask() -> List:
                 min_vals=np.zeros_like(new_data),
                 max_vals=np.ones_like(new_data),
                 scalar_manager=scalar_manager,
+
+
+@pytest.fixture
+def row_data(lower_bound: np.ndarray, upper_bound: np.ndarray) -> List:
+    """This generates a random number of SEPTs to populate the REPTs."""
+    reference_data = []
+    for _ in range(row_count):
+        reference_data.append(
+            SEPT(
+                child=np.random.random((dims, dims)),
+                entity=ishan,
+                min_vals=lower_bound,
+                max_vals=upper_bound,
             )
         )
     return reference_data
@@ -111,7 +124,7 @@ def test_eq_diff_tensors(row_data_ishan: List) -> None:
     assert (
         reference_tensor == reference_sept
     ), "REPT and SEPT equality comparison failed"
-    # assert row_data_ishan == reference_tensor.child, "Error: data & child don't match"
+    assert row_data == reference_tensor.child, "Error: data & child don't match"
     assert (
         type(reference_tensor == reference_sept) == REPT
     ), "Return type error for equality comparison b/w REPT, SEPT"
@@ -154,7 +167,8 @@ def test_eq_values(
     # assert tensor2 != tensor1, "Error: REPT + 1 == REPT"  # TODO: Investigate RecursionError Here
 
     # Debug test issues
-    assert isinstance(tensor2.child[0], type(tensor1.child[0]))
+    assert isinstance(tensor2.child[0], SEPT)
+    assert isinstance(tensor1.child[0], SEPT)
     assert tensor2.child[0] != tensor1.child[0]
     assert isinstance(
         tensor2.child[0] != tensor1.child[0], SEPT
@@ -168,6 +182,7 @@ def test_eq_values(
         ), f"REPT + 1 == REPT failed at child {i}"
 
     # comparison_result = tensor1 == tensor2
+    tensor1 == tensor2
     # assert not comparison_result  # This will work as soon as the .all() or .any() methods are implemented.
     # Would this be more user-friendly if SEPT == SEPT -> singular T/F instead of array of T/F?
 
@@ -254,6 +269,7 @@ def test_add_tensor_types(row_data_ishan: List) -> None:
         ), "REPT + Tensor: incorrect min_val"
 
 
+
 @pytest.mark.skip(
     reason="REPT + SEPT --> GammaTensor, but this hasn't been implemented yet"
 )
@@ -301,7 +317,6 @@ def test_add_single_entity(
 def test_add_row_entities(row_data_ishan: List) -> None:
     """Test normal addition of two REPTs"""
     tensor1 = REPT(rows=row_data_ishan)
-
     tensor2 = tensor1 + tensor1
     assert isinstance(tensor2, REPT), "Error: REPT + REPT != REPT "
     assert (

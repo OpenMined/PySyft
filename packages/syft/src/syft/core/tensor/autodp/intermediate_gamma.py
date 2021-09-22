@@ -23,6 +23,8 @@ from ...tensor.passthrough import SupportedChainType  # type: ignore
 from ...tensor.passthrough import is_acceptable_simple_type  # type: ignore
 from .adp_tensor import ADPTensor
 
+SupportedChainType = Union[int, bool, float, np.ndarray, PassthroughTensor]
+
 
 @serializable(recursive_serde=True)
 class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
