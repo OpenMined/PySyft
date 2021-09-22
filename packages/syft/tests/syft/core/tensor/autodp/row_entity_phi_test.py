@@ -78,6 +78,9 @@ def row_data_trask() -> List:
                 min_vals=np.zeros_like(new_data),
                 max_vals=np.ones_like(new_data),
                 scalar_manager=scalar_manager,
+            )
+        )
+    return reference_data
 
 
 @pytest.fixture
@@ -124,7 +127,7 @@ def test_eq_diff_tensors(row_data_ishan: List) -> None:
     assert (
         reference_tensor == reference_sept
     ), "REPT and SEPT equality comparison failed"
-    assert row_data == reference_tensor.child, "Error: data & child don't match"
+    assert sept_data == reference_tensor.child, "Error: data & child don't match"
     assert (
         type(reference_tensor == reference_sept) == REPT
     ), "Return type error for equality comparison b/w REPT, SEPT"
@@ -267,7 +270,6 @@ def test_add_tensor_types(row_data_ishan: List) -> None:
         assert (
             result.min_vals == reference_tensor.min_vals + simple_tensor.child.min()
         ), "REPT + Tensor: incorrect min_val"
-
 
 
 @pytest.mark.skip(

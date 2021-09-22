@@ -430,26 +430,6 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             scalar_manager=opposite_result.scalar_manager,
         )
 
-        return SingleEntityPhiTensor(
-            child=data,
-            entity=self.entity,
-            min_vals=self.min_vals * 0.0,
-            max_vals=self.max_vals * 0.0 + 1.0,
-            scalar_manager=self.scalar_manager,
-        )
-
-    def __ne__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
-        # Make use of the equal operator we just implemented, and invert the result
-        opposite_result = self.__eq__(other)
-
-        return SingleEntityPhiTensor(
-            child=np.invert(opposite_result.child),
-            entity=opposite_result.entity,
-            min_vals=opposite_result.min_vals,
-            max_vals=opposite_result.max_vals,
-            scalar_manager=opposite_result.scalar_manager,
-        )
-
     def __abs__(self) -> SingleEntityPhiTensor:
 
         data = self.child.abs()
