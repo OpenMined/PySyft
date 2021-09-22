@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+import typing
 from typing import Any
 from typing import List
 from typing import Optional
@@ -1001,7 +1002,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             scalar_manager=self.scalar_manager,
         )
 
-    def resize(self, new_shape: TypeTuple[int], refcheck: bool = True) -> None:
+    def resize(self, new_shape: Union[TypeTuple[int], int, typing.Iterable], refcheck: bool = True) -> None:
         """Change shape and size of array, in-place."""
         if (
             isinstance(self.child, int)
@@ -1014,7 +1015,8 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
                 f"Warning: Tensor data was of type {type(self.child)}, resize operation had no effect."
             )
         else:
-            self.child = self.child.resize(new_shape, refcheck)
+            # self.child = self.child.resize(new_shape, refcheck)
+            self.child = np.resize(self.child, new_shape)
 
         # TODO: Should we give warnings for min_val and max_val being single floats/integers/booleans too?
         if (
@@ -1026,7 +1028,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             pass
             # print(f'Warning: min_vals data was of type {type(self.min_vals)}, resize operation had no effect.')
         else:
-            self.min_vals = self.min_vals.resize(new_shape, refcheck)
+            self._min_vals = np.reshape(self.min_vals, new_shape)
 
         if (
             isinstance(self.max_vals, int)
@@ -1037,7 +1039,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             pass
             # print(f'Warning: max_vals data was of type {type(data)}, resize operation had no effect.')
         else:
-            self.max_vals = self.max_vals.resize(new_shape, refcheck)
+            self._max_vals = np.reshape(self.max_vals, new_shape)
 
         return None
 

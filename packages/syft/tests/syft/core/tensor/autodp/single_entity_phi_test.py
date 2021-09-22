@@ -592,6 +592,57 @@ def test_reshape_simple_type() -> None:
     pass
 
 
+def test_resize(
+       reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+) -> None:
+    """ Ensure resize happens when it is able"""
+    reference_tensor = SEPT(
+        child=reference_data,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+        entity=ishan
+    )
+
+    new_shape = reference_data.flatten().shape[0]
+    reference_tensor.reshape(new_shape)
+
+
+def test_resize_fail(
+        reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+) -> None:
+    """ Make sure errors are raised correctly when resize is not possible due to shape mismatch. """
+    reference_tensor = SEPT(
+        child=reference_data,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+        entity=ishan
+    )
+
+    new_shape = int(reference_data.flatten().shape[0])
+
+    with pytest.raises(ValueError):
+        reference_tensor.resize(int(new_shape - 1))
+        np.resize()
+
+
+def test_resize_inplace(
+        reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+):
+    """ Ensure resize changes shape in place"""
+    reference_tensor = SEPT(
+        child=reference_data,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+        entity=ishan
+    )
+
+    initial_shape = reference_tensor.shape
+    new_shape = int(reference_data.flatten().shape[0])
+    assert isinstance(new_shape, int), "new shape is not an integer, resize not possible"
+    reference_tensor.resize(new_shape)
+    assert reference_tensor.shape != initial_shape, "Resize operation failed to change shape in-place."
+
+
 # End of Ishan's tests
 
 
