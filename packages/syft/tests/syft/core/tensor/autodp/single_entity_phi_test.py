@@ -554,6 +554,44 @@ def test_transpose_args(
         ), "Transposition failed"
 
 
+def test_reshape(
+        reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+) -> None:
+    """ Ensure reshape happens when it is able"""
+    reference_tensor = SEPT(
+        child=reference_data,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+        entity=ishan
+    )
+
+    new_shape = reference_data.flatten().shape[0]
+    reference_tensor.reshape(new_shape)
+
+
+def test_reshape_fail(
+        reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+) -> None:
+    """ Make sure errors are raised correctly when reshape is not possible due to shape mismatch. """
+    reference_tensor = SEPT(
+        child=reference_data,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+        entity=ishan
+    )
+
+    new_shape = reference_data.flatten().shape[0]
+
+    with pytest.raises(ValueError):
+        reference_tensor.reshape(new_shape - 1)
+
+
+@pytest.mark.skip(reason="Unnecessary for now, testing in reshape_fail()")
+def test_reshape_simple_type() -> None:
+    """ Ensure reshape has no effect on simple types without shapes"""
+    pass
+
+
 # End of Ishan's tests
 
 
