@@ -75,6 +75,7 @@ def test_eq(row_data: List) -> None:
     assert reference_tensor == third_tensor, "Identical Tensors don't match up"
 
 
+@pytest.mark.skip(reason="This test is implemented correctly in another PR")
 def test_eq_diff_tensors(row_data: List) -> None:
     """Here we're testing equality between a REPT and other tensor types."""
 
