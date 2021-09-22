@@ -12,7 +12,6 @@ from syft.core.adp.entity import Entity
 from syft.core.tensor.autodp.single_entity_phi import SingleEntityPhiTensor as SEPT
 from syft.core.tensor.tensor import Tensor
 
-
 # Global constants
 ishan = Entity(name="Ishan")
 supreme_leader = Entity(name="Trask")
@@ -23,7 +22,9 @@ high = 50
 @pytest.fixture
 def reference_data() -> np.ndarray:
     """This generates random data to test the equality operators"""
-    reference_data = np.random.randint(low=-high, high=high, size=(dims, dims), dtype=np.int32)
+    reference_data = np.random.randint(
+        low=-high, high=high, size=(dims, dims), dtype=np.int32
+    )
     return reference_data
 
 
@@ -48,7 +49,9 @@ def reference_binary_data() -> np.ndarray:
     return binary_data
 
 
-@pytest.mark.skip(reason="Test passes, but to check the test throws a Deprecation Warning for .all()")
+@pytest.mark.skip(
+    reason="Test passes, but to check the test throws a Deprecation Warning for .all()"
+)
 def test_eq(
     reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
 ) -> None:
@@ -185,7 +188,9 @@ def test_ne_shapes(
         child=reference_data, entity=ishan, max_vals=upper_bound, min_vals=lower_bound
     )
     comparison_tensor = SEPT(
-        child=np.random.randint(low=-high, high=high, size=(dims + 10, dims + 10), dtype=np.int32),
+        child=np.random.randint(
+            low=-high, high=high, size=(dims + 10, dims + 10), dtype=np.int32
+        ),
         entity=ishan,
         max_vals=np.ones(dims + 10),
         min_vals=np.ones(dims + 10),
@@ -293,7 +298,11 @@ def test_add_tensor_types(
         child=reference_data, entity=ishan, max_vals=upper_bound, min_vals=lower_bound
     )
 
-    simple_tensor = Tensor(child=np.random.randint(low=-high, high=high, size=(dims + 10, dims + 10), dtype=np.int32))
+    simple_tensor = Tensor(
+        child=np.random.randint(
+            low=-high, high=high, size=(dims + 10, dims + 10), dtype=np.int32
+        )
+    )
 
     with pytest.raises(NotImplementedError):
         result = reference_tensor + simple_tensor
@@ -538,7 +547,9 @@ def test_transpose_args(
     # Try with non-square matrix
     rows = dims
     cols = dims + np.random.randint(low=1, high=5)
-    non_square_data = np.random.randint(low=-high, high=high, size=(rows, cols), dtype=np.int32)
+    non_square_data = np.random.randint(
+        low=-high, high=high, size=(rows, cols), dtype=np.int32
+    )
     tensor = SEPT(
         child=non_square_data,
         entity=ishan,
@@ -559,14 +570,11 @@ def test_transpose_args(
 
 
 def test_reshape(
-        reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
 ) -> None:
-    """ Ensure reshape happens when it is able"""
+    """Ensure reshape happens when it is able"""
     reference_tensor = SEPT(
-        child=reference_data,
-        max_vals=upper_bound,
-        min_vals=lower_bound,
-        entity=ishan
+        child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
     )
 
     new_shape = reference_data.flatten().shape[0]
@@ -574,14 +582,11 @@ def test_reshape(
 
 
 def test_reshape_fail(
-        reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
 ) -> None:
-    """ Make sure errors are raised correctly when reshape is not possible due to shape mismatch. """
+    """Make sure errors are raised correctly when reshape is not possible due to shape mismatch."""
     reference_tensor = SEPT(
-        child=reference_data,
-        max_vals=upper_bound,
-        min_vals=lower_bound,
-        entity=ishan
+        child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
     )
 
     new_shape = reference_data.flatten().shape[0]
@@ -592,19 +597,16 @@ def test_reshape_fail(
 
 @pytest.mark.skip(reason="Unnecessary for now, testing in reshape_fail()")
 def test_reshape_simple_type() -> None:
-    """ Ensure reshape has no effect on simple types without shapes"""
+    """Ensure reshape has no effect on simple types without shapes"""
     pass
 
 
 def test_resize(
-       reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
 ) -> None:
-    """ Ensure resize happens when it is able"""
+    """Ensure resize happens when it is able"""
     reference_tensor = SEPT(
-        child=reference_data,
-        max_vals=upper_bound,
-        min_vals=lower_bound,
-        entity=ishan
+        child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
     )
 
     new_shape = reference_data.flatten().shape[0]
@@ -612,14 +614,11 @@ def test_resize(
 
 
 def test_resize_fail(
-        reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
 ) -> None:
-    """ Make sure errors are raised correctly when resize is not possible due to shape mismatch. """
+    """Make sure errors are raised correctly when resize is not possible due to shape mismatch."""
     reference_tensor = SEPT(
-        child=reference_data,
-        max_vals=upper_bound,
-        min_vals=lower_bound,
-        entity=ishan
+        child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
     )
 
     new_shape = int(reference_data.flatten().shape[0])
@@ -630,67 +629,80 @@ def test_resize_fail(
 
 
 def test_resize_inplace(
-        reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
 ) -> None:
-    """ Ensure resize changes shape in place"""
+    """Ensure resize changes shape in place"""
     reference_tensor = SEPT(
-        child=reference_data,
-        max_vals=upper_bound,
-        min_vals=lower_bound,
-        entity=ishan
+        child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
     )
 
     initial_shape = reference_tensor.shape
     new_shape = int(reference_data.flatten().shape[0])
-    assert isinstance(new_shape, int), "new shape is not an integer, resize not possible"
+    assert isinstance(
+        new_shape, int
+    ), "new shape is not an integer, resize not possible"
     reference_tensor.resize(new_shape)
-    assert reference_tensor.shape != initial_shape, "Resize operation failed to change shape in-place."
+    assert (
+        reference_tensor.shape != initial_shape
+    ), "Resize operation failed to change shape in-place."
 
 
-def test_flatten(reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray) -> None:
-    """ Test that self.child can be flattened for appropriate data types"""
+def test_flatten(
+    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+) -> None:
+    """Test that self.child can be flattened for appropriate data types"""
     reference_tensor = SEPT(
-        child=reference_data,
-        max_vals=upper_bound,
-        min_vals=lower_bound,
-        entity=ishan
+        child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
     )
 
     target_shape = reference_data.flatten().shape
     flattened_tensor = reference_tensor.flatten()
 
-    assert flattened_tensor.shape != reference_tensor.shape, "Flattening the array really didn't do much eh"
-    assert (flattened_tensor.shape == target_shape), "Flattening did not result in the correct shape"
-    assert (flattened_tensor == reference_data.flatten()).child.all(), "Flattening changed the order of entries"
+    assert (
+        flattened_tensor.shape != reference_tensor.shape
+    ), "Flattening the array really didn't do much eh"
+    assert (
+        flattened_tensor.shape == target_shape
+    ), "Flattening did not result in the correct shape"
+    assert (
+        flattened_tensor == reference_data.flatten()
+    ).child.all(), "Flattening changed the order of entries"
 
 
-def test_ravel(reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray) -> None:
-    """ Test that self.child can be ravelled for appropriate data types"""
+def test_ravel(
+    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+) -> None:
+    """Test that self.child can be ravelled for appropriate data types"""
     reference_tensor = SEPT(
-        child=reference_data,
-        max_vals=upper_bound,
-        min_vals=lower_bound,
-        entity=ishan
+        child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
     )
 
     target_shape = reference_data.ravel().shape
     ravelled_tensor = reference_tensor.ravel()
 
-    assert ravelled_tensor.shape != reference_tensor.shape, "Ravelling the array really didn't do much eh"
-    assert (ravelled_tensor.shape == target_shape), "Ravelling did not result in the correct shape"
-    assert (ravelled_tensor == reference_data.flatten()).child.all(), "Ravelling changed the order of entries"
+    assert (
+        ravelled_tensor.shape != reference_tensor.shape
+    ), "Ravelling the array really didn't do much eh"
+    assert (
+        ravelled_tensor.shape == target_shape
+    ), "Ravelling did not result in the correct shape"
+    assert (
+        ravelled_tensor == reference_data.flatten()
+    ).child.all(), "Ravelling changed the order of entries"
 
 
 def test_squeeze() -> None:
-    """ Test that squeeze works on an ideal case """
-    _data = np.random.randint(low=-high, high=high, size=(10, 1, 10, 1, 10), dtype=np.int32)
+    """Test that squeeze works on an ideal case"""
+    _data = np.random.randint(
+        low=-high, high=high, size=(10, 1, 10, 1, 10), dtype=np.int32
+    )
     initial_shape = _data.shape
 
     reference_tensor = SEPT(
         child=_data,
         max_vals=np.ones_like(_data) * high,
         min_vals=np.ones_like(_data) * -high,
-        entity=ishan
+        entity=ishan,
     )
 
     target_data = _data.squeeze()
@@ -699,20 +711,26 @@ def test_squeeze() -> None:
     squeezed_tensor = reference_tensor.squeeze()
 
     assert squeezed_tensor.shape != initial_shape, "Squeezing the tensor did nothing"
-    assert squeezed_tensor.shape == target_shape, "Squeezing the tensor gave the wrong shape"
-    assert (squeezed_tensor == target_data).child.all(), "Squeezing the tensor eliminated the wrong values"
+    assert (
+        squeezed_tensor.shape == target_shape
+    ), "Squeezing the tensor gave the wrong shape"
+    assert (
+        squeezed_tensor == target_data
+    ).child.all(), "Squeezing the tensor eliminated the wrong values"
 
 
 def test_squeeze_correct_axes() -> None:
-    """ Test that squeeze works on an ideal case with correct axes specified """
-    _data = np.random.randint(low=-high, high=high, size=(10, 1, 10, 1, 10), dtype=np.int32)
+    """Test that squeeze works on an ideal case with correct axes specified"""
+    _data = np.random.randint(
+        low=-high, high=high, size=(10, 1, 10, 1, 10), dtype=np.int32
+    )
     initial_shape = _data.shape
 
     reference_tensor = SEPT(
         child=_data,
         max_vals=np.ones_like(_data) * high,
         min_vals=np.ones_like(_data) * -high,
-        entity=ishan
+        entity=ishan,
     )
 
     target_data = _data.squeeze(1)
@@ -721,20 +739,26 @@ def test_squeeze_correct_axes() -> None:
     squeezed_tensor = reference_tensor.squeeze(1)
 
     assert squeezed_tensor.shape != initial_shape, "Squeezing the tensor did nothing"
-    assert squeezed_tensor.shape == target_shape, "Squeezing the tensor gave the wrong shape"
-    assert (squeezed_tensor == target_data).child.all(), "Squeezing the tensor eliminated the wrong values"
+    assert (
+        squeezed_tensor.shape == target_shape
+    ), "Squeezing the tensor gave the wrong shape"
+    assert (
+        squeezed_tensor == target_data
+    ).child.all(), "Squeezing the tensor eliminated the wrong values"
 
 
 def test_swap_axes() -> None:
-    """ Test that swap_axes works on an ideal case"""
-    data = np.random.randint(low=-high, high=high, size=(10, 1, 10, 1, 10), dtype=np.int32)
+    """Test that swap_axes works on an ideal case"""
+    data = np.random.randint(
+        low=-high, high=high, size=(10, 1, 10, 1, 10), dtype=np.int32
+    )
     initial_shape = data.shape
 
     reference_tensor = SEPT(
         child=data,
         max_vals=np.ones_like(data) * high,
         min_vals=np.ones_like(data) * -high,
-        entity=ishan
+        entity=ishan,
     )
 
     target_data = data.swapaxes(1, 2)
@@ -742,36 +766,40 @@ def test_swap_axes() -> None:
 
     swapped_tensor = reference_tensor.swapaxes(1, 2)
 
-    assert swapped_tensor.shape != initial_shape, "Swapping axes of  the tensor did nothing"
-    assert swapped_tensor.shape == target_shape, "Swapping axes of  the tensor gave the wrong shape"
-    assert (swapped_tensor == target_data).child.all(), "Swapping axes of  the tensor eliminated the wrong values"
+    assert (
+        swapped_tensor.shape != initial_shape
+    ), "Swapping axes of  the tensor did nothing"
+    assert (
+        swapped_tensor.shape == target_shape
+    ), "Swapping axes of  the tensor gave the wrong shape"
+    assert (
+        swapped_tensor == target_data
+    ).child.all(), "Swapping axes of  the tensor eliminated the wrong values"
 
 
 def test_compress(
-        reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
 ) -> None:
     reference_tensor = SEPT(
-        child=reference_data,
-        max_vals=upper_bound,
-        min_vals=lower_bound,
-        entity=ishan
+        child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
     )
 
     result = reference_tensor.compress([0, 1])
-    assert result == reference_data.compress([0, 1]), "Compress did not work as expected"
+    assert result == reference_data.compress(
+        [0, 1]
+    ), "Compress did not work as expected"
 
     result2 = reference_tensor.compress([0, 1], axis=1)
-    assert result2 == reference_data.compress([0, 1], axis=1), "Compress did not work as expected"
+    assert result2 == reference_data.compress(
+        [0, 1], axis=1
+    ), "Compress did not work as expected"
 
 
 def test_partition(
-        reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
 ) -> None:
     reference_tensor = SEPT(
-        child=reference_data,
-        max_vals=upper_bound,
-        min_vals=lower_bound,
-        entity=ishan
+        child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
     )
 
     k = 1
@@ -783,13 +811,10 @@ def test_partition(
 
 
 def test_partition_axis(
-        reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
-    ) -> None:
+    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+) -> None:
     reference_tensor = SEPT(
-        child=reference_data,
-        max_vals=upper_bound,
-        min_vals=lower_bound,
-        entity=ishan
+        child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
     )
 
     k = 1
@@ -832,25 +857,15 @@ child2 = np.random.randint(low=4, high=7, size=dims)
 upper2 = np.full(dims, 6, dtype=np.int32)
 low2 = np.full(dims, 4, dtype=np.int32)
 
-tensor1 = SEPT(
-    child=child1, entity=ent, max_vals=upper1, min_vals=low1
-)
+tensor1 = SEPT(child=child1, entity=ent, max_vals=upper1, min_vals=low1)
 # same entity, same data
-tensor2 = SEPT(
-    child=child1, entity=ent, max_vals=upper1, min_vals=low1
-)
+tensor2 = SEPT(child=child1, entity=ent, max_vals=upper1, min_vals=low1)
 # same entity, different data
-tensor3 = SEPT(
-    child=child2, entity=ent, max_vals=upper2, min_vals=low2
-)
+tensor3 = SEPT(child=child2, entity=ent, max_vals=upper2, min_vals=low2)
 # different entity, same data
-tensor4 = SEPT(
-    child=child1, entity=ent2, max_vals=upper1, min_vals=low1
-)
+tensor4 = SEPT(child=child1, entity=ent2, max_vals=upper1, min_vals=low1)
 # different entity, different data
-tensor5 = SEPT(
-    child=child2, entity=ent2, max_vals=upper2, min_vals=low2
-)
+tensor5 = SEPT(child=child2, entity=ent2, max_vals=upper2, min_vals=low2)
 
 simple_type1 = randint(-6, -4)
 simple_type2 = randint(4, 6)

@@ -959,7 +959,11 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             scalar_manager=self.scalar_manager,
         )
 
-    def resize(self, new_shape: Union[TypeTuple[int], int, typing.Iterable], refcheck: bool = True) -> None:
+    def resize(
+        self,
+        new_shape: Union[TypeTuple[int], int, typing.Iterable],
+        refcheck: bool = True,
+    ) -> None:
         """Change shape and size of array, in-place."""
         if (
             isinstance(self.child, int)
