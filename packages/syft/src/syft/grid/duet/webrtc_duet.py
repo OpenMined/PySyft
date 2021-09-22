@@ -315,7 +315,7 @@ class Duet(DomainClient):
         except Exception as e:
             traceback_and_raise(e)
 
-    def _update_availability(self) -> bool:
+    def _update_availability(self) -> bool:  # type: ignore[return]
         """Method used to check if the signaling process is over.
         :return: Boolean flag, True if it's NOT over, and False if it's over.
         :rtype: Boolean
