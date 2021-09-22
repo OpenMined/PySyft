@@ -17,7 +17,7 @@ from syft.core.tensor.tensor import Tensor
 # Global constants
 ishan = Entity(name="Ishan")
 supreme_leader = Entity(name="Trask")
-dims = np.random.randint(10) + 1  # Avoid size 0
+dims = np.random.randint(10) + 3  # Avoid size 0 or 1
 highest = 100
 
 
