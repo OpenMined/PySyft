@@ -58,7 +58,9 @@ def reference_scalar_manager() -> VirtualMachinePrivateScalarManager:
     return reference_scalar_manager
 
 
-@pytest.mark.skip(reason="Equality works but the current method of checking it throws DeprecationWarnings")
+@pytest.mark.skip(
+    reason="Equality works but the current method of checking it throws DeprecationWarnings"
+)
 def test_eq(
     reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
 ) -> None:
