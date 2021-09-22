@@ -90,6 +90,25 @@ def test_mpc_private_public_op(op_str: str, public_value_type: str) -> None:
     assert (res == expected).all()
 
 
+@pytest.mark.parametrize("op_str", ["matmul"])
+def test_mpc_matmul_op(op_str: str) -> None:
+    value_1 = np.array([[1, 7], [3, -7]], dtype=np.int32)
+    value_2 = np.array([[6, 2], [-6, 5]], dtype=np.int32)
+
+    remote_value_1 = clients[0].syft.core.tensor.tensor.Tensor(value_1)
+
+    mpc_tensor_1 = MPCTensor(
+        parties=clients, secret=remote_value_1, shape=(2, 2), seed_shares=52
+    )
+
+    op = getattr(operator, op_str)
+
+    res = op(mpc_tensor_1, value_2).reconstruct()
+    expected = op(value_1, value_2)
+
+    assert (res == expected).all()
+
+
 @pytest.mark.parametrize("public_value_type", ["int", "torch_tensor", "numpy_array"])
 @pytest.mark.parametrize("op_str", ["add", "sub", "mul"])
 def test_mpc_public_private_op(op_str: str, public_value_type: str) -> None:
