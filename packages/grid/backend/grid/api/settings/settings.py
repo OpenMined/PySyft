@@ -62,13 +62,9 @@ def update_settings(
 
 
 @router.get("", status_code=200, response_class=JSONResponse)
-def get_setup(
-    current_user: UserPrivate = Depends(get_current_user),
-) -> Any:
-    user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
-
+def get_setup() -> Any:
     msg = GetSetUpMessage(address=node.address, reply_to=node.address).sign(
-        signing_key=user_key
+        signing_key=node.root_key
     )
 
     reply = node.recv_immediate_msg_with_reply(msg=msg)
