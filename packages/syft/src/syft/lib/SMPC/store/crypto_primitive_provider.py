@@ -81,7 +81,7 @@ class CryptoPrimitiveProvider:
             )
 
         for primitives_party, party in zip(primitives, parties):
-            party.syft.crypto_store.populate_store(
+            party.crypto_store.populate_store(
                 op_str, primitives_party, **p_kwargs  # TODO
             )  # should formalize location
 

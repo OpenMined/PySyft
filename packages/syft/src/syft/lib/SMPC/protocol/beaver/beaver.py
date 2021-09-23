@@ -20,12 +20,14 @@ from typing import Tuple
 import numpy as np
 
 # relative
+# absolute
+from ..... import Tensor
 from .....core.tensor.smpc.mpc_tensor import MPCTensor
 from .....core.tensor.smpc.share_tensor import ShareTensor
 from ...store import register_primitive_generator
 from ...store import register_primitive_store_add
 from ...store import register_primitive_store_get
-from ..store.exceptions import EmptyPrimitiveStore
+from ...store.exceptions import EmptyPrimitiveStore
 
 ttp_generator = np.random.default_rng()
 
@@ -63,8 +65,10 @@ def _get_triples(
     min_value, max_value = ShareTensor.compute_min_max_from_ring(ring_size)
     seed_shares = secrets.randbits(32)
 
-    a_rand = ttp_generator.integers(
-        low=min_value, high=max_value, size=a_shape, endpoint=True
+    a_rand = Tensor(
+        ttp_generator.integers(
+            low=min_value, high=max_value, size=a_shape, endpoint=True, dtype=np.int32
+        )
     )
     a_shares = MPCTensor._get_shares_from_local_secret(
         secret=a_rand,
@@ -73,8 +77,10 @@ def _get_triples(
         seed_shares=seed_shares,
     )
 
-    b_rand = ttp_generator.integers(
-        low=min_value, high=max_value, size=b_shape, endpoint=True
+    b_rand = Tensor(
+        ttp_generator.integers(
+            low=min_value, high=max_value, size=b_shape, endpoint=True, dtype=np.int32
+        )
     )
 
     b_shares = MPCTensor._get_shares_from_local_secret(
