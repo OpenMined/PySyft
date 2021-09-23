@@ -40,7 +40,7 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     unique_email = f"{uuid.uuid4()}@caltech.edu"
 
     # Canada
-    ca_root = sy.login(email="info@openmined.org", password="changethis", port=9081)
+    ca_root = sy.login(email="info@openmined.org", password="changethis", port=9082)
     ca_data = load_data(csv_file="ca - feb 2021.csv")
 
     # NOTE: casting this tensor as np.int32 is REALLY IMPORTANT
@@ -76,7 +76,7 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     ca_root.users.create(**get_user_details(unique_email=unique_email))
 
     # Italy
-    it_root = sy.login(email="info@openmined.org", password="changethis", port=9082)
+    it_root = sy.login(email="info@openmined.org", password="changethis", port=9083)
     it_data = load_data(csv_file="it - feb 2021.csv")
     # NOTE: casting this tensor as np.int32 is REALLY IMPORTANT
     data_batch = ((np.array(list(it_data["Trade Value (US$)"])) / 100000)[0:10]).astype(
@@ -111,8 +111,8 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     it_root.users.create(**get_user_details(unique_email=unique_email))
 
     # Data Scientist
-    ca = sy.login(email=unique_email, password="bazinga", port=9081)
-    it = sy.login(email=unique_email, password="bazinga", port=9082)
+    ca = sy.login(email=unique_email, password="bazinga", port=9082)
+    it = sy.login(email=unique_email, password="bazinga", port=9083)
 
     assert round(ca.privacy_budget) == 200
     assert round(it.privacy_budget) == 200
