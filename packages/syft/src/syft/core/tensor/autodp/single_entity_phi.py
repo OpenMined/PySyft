@@ -982,9 +982,9 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         mode: Optional[str] = "raise",
     ) -> SingleEntityPhiTensor:
         """Take elements from an array along an axis"""
-        data = self.child.take(indices=indices, mode=mode)
-        min_vals = self.min_vals.take(indices=indices, mode=mode)
-        max_vals = self.max_vals.take(indices=indices, mode=mode)
+        data = self.child.take(indices=indices, axis=axis, mode=mode)
+        min_vals = self.min_vals.take(indices=indices, axis=axis, mode=mode)
+        max_vals = self.max_vals.take(indices=indices, axis=axis, mode=mode)
 
         return SingleEntityPhiTensor(
             child=data,

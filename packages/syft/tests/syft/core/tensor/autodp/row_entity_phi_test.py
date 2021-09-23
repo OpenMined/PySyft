@@ -1,6 +1,6 @@
 # stdlib
 from random import randint
-from typing import List
+from random import sample
 
 # third party
 import numpy as np
@@ -17,7 +17,7 @@ dims = np.random.randint(10) + 1
 row_count = np.random.randint(10) + 1
 
 
-def rept(low, high, entity) -> List:
+def rept(low, high, entity) -> RowEntityPhiTensor:
     data = []
     for _ in range(row_count):
         data.append(
@@ -103,3 +103,51 @@ def test_clip() -> None:
         assert (i.child == rand1).all()
     for i in clipped_tensor3:
         assert (i.child >= rand1).all()
+
+
+tensor1_copy = tensor1.copy()
+
+
+def test_copy() -> None:
+    for i in range(len(tensor1)):
+        assert (
+            (tensor1_copy[i].child.child == tensor1[i].child.child).all()
+            & (tensor1_copy[i].child.min_vals == tensor1[i].child.min_vals).all()
+            & (tensor1_copy[i].child.max_vals == tensor1[i].child.max_vals).all()
+        )
+
+
+indices = sample(range(dims), dims)
+tensor1_take = tensor1.take(indices)
+
+
+def test_take() -> None:
+    for i in range(len(tensor1)):
+        for j in range(dims):
+            assert tensor1_take.child[i].child[j] == tensor1.child[i].child[indices[j]]
+
+
+def rept_with_sq_sept(num_rows) -> RowEntityPhiTensor:
+    new_list = list()
+    for _ in range(num_rows):
+        new_list.append(
+            SingleEntityPhiTensor(
+                child=np.arange(dims * dims).reshape(dims, dims),
+                entity=ent,
+                max_vals=np.full((dims, dims), dims ** 2 - 1),
+                min_vals=np.full((dims, dims), 0),
+            )
+        )
+
+    return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+
+num_rows = np.random.randint(10) + 1
+tensor4 = rept_with_sq_sept(num_rows)
+tensor4_diagonal = tensor4.diagonal()
+
+
+def test_diagonal() -> None:
+    for i in range(len(tensor4)):
+        for j in range(dims):
+            assert tensor4_diagonal.child[i].child[j] == tensor4.child[i].child[j][j]

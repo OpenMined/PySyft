@@ -389,6 +389,42 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
+    def copy(
+        self, order: Optional[str] = "K", subok: Optional[bool] = True
+    ) -> RowEntityPhiTensor:
+        """Return copy of the given object"""
+        new_list = list()
+        for row in self.child:
+            new_list.append(row.copy(order=order, subok=subok))
+
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+    def take(
+        self,
+        indices: np.ArrayLike,
+        axis: Optional[int] = None,
+        mode: Optional[str] = "raise",
+    ) -> RowEntityPhiTensor:
+        """Take elements from an array along an axis"""
+        new_list = list()
+        for row in self.child:
+            new_list.append(row.take(indices=indices, axis=axis, mode=mode))
+
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+    def diagonal(
+        self,
+        offset: Optional[int] = 0,
+        axis1: Optional[int] = 0,
+        axis2: Optional[int] = 1,
+    ) -> RowEntityPhiTensor:
+        """Return specified diagonals"""
+        new_list = list()
+        for row in self.child:
+            new_list.append(row.diagonal(offset=offset, axis1=axis1, axis2=axis2))
+
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
 
 @implements(RowEntityPhiTensor, np.expand_dims)
 def expand_dims(a: np.typing.ArrayLike, axis: int) -> RowEntityPhiTensor:
