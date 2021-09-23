@@ -26,11 +26,11 @@ Syft "python" functionality includes the following modules:
 To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` module...
 """
 
-import sys
-
 # stdlib
 from pathlib import Path
-from typing import Any, Dict
+import sys
+from typing import Any
+from typing import Dict
 
 # third party
 from pkg_resources import DistributionNotFound  # noqa: F401
