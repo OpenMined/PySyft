@@ -242,6 +242,46 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
                 "'axis' arg is negative and strangely large... not sure what to do."
             )
 
+    def flatten(self, order: Optional[str] = "C") -> RowEntityPhiTensor:
+        new_list = list()
+        for tensor in self.child:
+            new_list.append(tensor.flatten(order))
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+    def ravel(self, order: Optional[str] = "C") -> RowEntityPhiTensor:
+        new_list = list()
+        for tensor in self.child:
+            new_list.append(tensor.ravel(order))
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+    def swapaxes(self, axis1: int, axis2: int) -> RowEntityPhiTensor:
+        if axis1 == 0 or axis2 == 0:
+            raise Exception(
+                "For now, you can't swap the first axis b/c that would "
+                "probably create a Gamma Tensor. Sorry about that!"
+            )
+        new_list = list()
+        for tensor in self.child:
+            new_list.append(tensor.swapaxes(axis1, axis2))
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+    def squeeze(
+        self, axis: Optional[Union[int, TypeTuple[int, ...]]] = None
+    ) -> RowEntityPhiTensor:
+        if axis == 0:
+            # If the first axis can be squeezed then there is only one
+            # tensor in the REPT, as such it might be a SEPT
+            # TODO: Check if the output type is still a REPT
+            #if isinstance(self.child[0], SEPT): return self.child[0]
+            return RowEntityPhiTensor(rows=self.child[0])
+        else:
+            new_list = list()
+            for tensor in self.child:
+                new_list.append(tensor.squeeze(axis))
+            self.child = new_list
+
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
     def reshape(self, *shape: List[int]) -> RowEntityPhiTensor:
 
         if shape[0] != self.shape[0]:
