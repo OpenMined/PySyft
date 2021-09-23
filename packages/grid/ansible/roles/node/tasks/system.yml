@@ -68,6 +68,7 @@
     - net-tools
     - ifupdown
     - python3-venv
+    - cron
 
 - name: Upgrade pip and some packages
   pip:

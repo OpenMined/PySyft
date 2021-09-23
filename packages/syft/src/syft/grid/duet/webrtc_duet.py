@@ -320,10 +320,13 @@ class Duet(DomainClient):
         :return: Boolean flag, True if it's NOT over, and False if it's over.
         :rtype: Boolean
         """
+        available = False
         try:
-            return (
+            available = (
                 not self._pull_msg_queue.empty()
                 and self.connection.peer_connection is not None
             )
         except Exception as e:
             traceback_and_raise(e)
+
+        return available

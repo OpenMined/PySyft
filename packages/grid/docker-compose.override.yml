@@ -1,9 +1,9 @@
 version: "3.8"
 services:
   proxy:
-    ports:
-      - "${DOMAIN_PORT?80}:80"
-      - "8080"
+    # ports:
+    #   - "${DOMAIN_PORT?80}:80"
+    #   - "8080"
     command:
       # Enable Docker in Traefik, so that it reads labels from Docker services
       - --providers.docker
@@ -27,6 +27,10 @@ services:
       - traefik.enable=true
       - traefik.http.routers.${STACK_NAME?Variable not set}-traefik-public-http.rule=Host(`${DOMAIN?Variable not set}`)
       - traefik.http.services.${STACK_NAME?Variable not set}-traefik-public.loadbalancer.server.port=80
+    network_mode: service:tailscale
+    networks:
+      - "${TRAEFIK_PUBLIC_NETWORK?Variable not set}"
+      - default
 
   pgadmin:
     ports:
@@ -51,8 +55,6 @@ services:
       - "15672"
 
   backend:
-    ports:
-      - "8888"
     volumes:
       - ./backend/grid:/app/grid
       - ../syft:/app/syft
@@ -60,11 +62,11 @@ services:
       - ./data/package-cache:/root/.cache
 
     environment:
-      - JUPYTER=jupyter lab --ip=0.0.0.0 --allow-root --NotebookApp.custom_display_url=http://127.0.0.1:8888 --notebook-dir=/notebooks
       - SERVER_HOST=http://${DOMAIN?Variable not set}
       - SYFT_USE_UVLOOP=0
       - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
       - NODE_TYPE=${NODE_TYPE?Variable not set}
+      - PORT=8001
     build:
       context: ./backend
       dockerfile: backend.dockerfile
@@ -78,7 +80,8 @@ services:
       - traefik.enable=true
       - traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}
       - traefik.http.routers.${STACK_NAME?Variable not set}-backend-http.rule=PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`) # WARNING: this wont match /api/v1/syft/stream because of length
-      - traefik.http.services.${STACK_NAME?Variable not set}-backend.loadbalancer.server.port=80
+      - traefik.http.services.${STACK_NAME?Variable not set}-backend.loadbalancer.server.port=8001
+    network_mode: service:proxy
 
   backend_stream:
     depends_on:
@@ -94,6 +97,7 @@ services:
       - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
       - NODE_TYPE=${NODE_TYPE?Variable not set}
       - STREAM_QUEUE=1
+      - PORT=8011
     build:
       context: ./backend
       dockerfile: backend.dockerfile
@@ -101,12 +105,13 @@ services:
         INSTALL_DEV: ${INSTALL_DEV-true}
       target: "backend"
     # command: bash -c "while true; do sleep 1; done" # Infinite loop to keep container live doing nothing
-    command: "waitforit -address=http://backend:80/api/v1/syft/metadata -status=200 -timeout=600 -- /start-reload.sh"
+    command: "waitforit -address=http://localhost:8001/api/v1/syft/metadata -status=200 -timeout=600 -- /start-reload.sh"
     labels:
       - traefik.enable=true
       - traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}
       - traefik.http.routers.${STACK_NAME?Variable not set}-backend-stream-http.rule=PathPrefix(`/api`) && PathPrefix(`/api/v1/syft/stream`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`) # WARNING: this only matches /api/v1/syft/stream because of length
-      - traefik.http.services.${STACK_NAME?Variable not set}-backend-stream.loadbalancer.server.port=80
+      - traefik.http.services.${STACK_NAME?Variable not set}-backend-stream.loadbalancer.server.port=8011
+    network_mode: service:proxy
 
   celeryworker:
     depends_on:
@@ -118,7 +123,6 @@ services:
       - ./data/package-cache:/root/.cache
     environment:
       - RUN=celery worker -A grid.worker -l info -Q main-queue -c 1
-      - JUPYTER=jupyter lab --ip=0.0.0.0 --allow-root --NotebookApp.custom_display_url=http://127.0.0.1:8888 --notebook-dir=/notebooks
       - SERVER_HOST=http://${DOMAIN?Variable not set}
       - SYFT_USE_UVLOOP=0
       - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
@@ -129,7 +133,8 @@ services:
         INSTALL_DEV: ${INSTALL_DEV-true}
         INSTALL_JUPYTER: ${INSTALL_JUPYTER-false}
       target: "celery-worker"
-    command: "waitforit -address=http://backend:80/api/v1/syft/metadata -status=200 -timeout=600 -- /worker-start.sh"
+    command: "waitforit -address=http://localhost:8001/api/v1/syft/metadata -status=200 -timeout=600 -- /worker-start.sh"
+    network_mode: service:proxy
 
   frontend:
     build:
@@ -145,23 +150,67 @@ services:
       - traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}
       - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-http.rule=PathPrefix(`/`)
       - traefik.http.services.${STACK_NAME?Variable not set}-frontend.loadbalancer.server.port=80
-        #docker-host:
-        #depends_on:
-        #- proxy
-        #- pgadmin
-        #- db
-        #- flower
-        #- queue
-        #- backend
-        #- backend_stream
-        #- celeryworker
-        #- frontend
-        #image: qoomon/docker-host
-        #cap_add: ["NET_ADMIN", "NET_RAW"]
-        #mem_limit: 8M
-        #restart: always
+
+  tailscale:
+    hostname: ${DOMAIN_NAME?Variable not set}
+    image: "${DOCKER_IMAGE_TAILSCALE?Variable not set}:${VERSION-latest}"
+    build:
+      context: ./vpn
+      dockerfile: tailscale.dockerfile
+    environment:
+      - HOSTNAME=${DOMAIN_NAME?Variable not set}
+    volumes:
+      - tailscale-data:/var/lib/tailscale
+      - "/dev/net/tun:/dev/net/tun" # Required for tailscale to work
+    cap_add: # Required for tailscale to work
+      - net_admin
+      - sys_module
+    ports:
+      - "${DOMAIN_PORT?80}:80"
+      - "41641/udp"
+      - "4000"
+
+  headscale:
+    profiles:
+      - network
+    hostname: headscale
+    image: "${DOCKER_IMAGE_HEADSCALE?Variable not set}:${VERSION-latest}"
+    build:
+      context: ./vpn
+      dockerfile: headscale.dockerfile
+    volumes:
+      - headscale-data:/headscale
+    environment:
+      - NETWORK_NAME=omnet
+    ports:
+      - "${HEADSCALE_PORT?8080}:8080"
+      - "4000"
+
+  docker-host:
+    depends_on:
+      - proxy
+      - pgadmin
+      - db
+      - flower
+      - queue
+      - backend
+      - backend_stream
+      - celeryworker
+      - frontend
+      - tailscale
+      - headscale
+    image: qoomon/docker-host
+    cap_add:
+      - net_admin
+      - net_raw
+    mem_limit: 8M
+    restart: always
 
 networks:
   traefik-public:
     # For local dev, don't expect an external Traefik network
     external: false
+
+volumes:
+  tailscale-data:
+  headscale-data:

@@ -1,8 +1,7 @@
 FROM python:3.9-slim
 
 
-RUN --mount=type=cache,target=/var/cache/apt \
-    apt-get update && \
+RUN apt-get update && \
     apt-get install -yqq \
     git && \
     rm -rf /var/lib/apt/lists/*
