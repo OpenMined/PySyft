@@ -315,6 +315,25 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         # Modify the tensor data in-place instead of returning a new one.
         self.child = new_list
 
+    def compress(
+        self, condition: List[bool], axis: int = None, out: Optional[np.ndarray] = None
+    ) -> RowEntityPhiTensor:
+        # TODO: Could any conditions result in GammaTensors being formed?
+        # TODO: Will min/max vals change upon filtering? I don't think so, since they're data independent
+        new_list = list()
+        for tensor in self.child:
+            new_list.append(tensor.compress(condition, axis, out))
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+    def partition(
+        self,
+        kth: Union[int, TypeTuple[int, ...]],
+        axis: Optional[int] = -1,
+        kind: Optional[str] = "introselect",
+        order: Optional[Union[int, TypeTuple[int, ...]]] = None,
+    ) -> RowEntityPhiTensor:
+        pass
+
     # Since this is being used differently compared to supertype, ignoring type annotation errors
     def sum(  # type: ignore
         self, *args: Any, axis: Optional[int] = None, **kwargs: Any
