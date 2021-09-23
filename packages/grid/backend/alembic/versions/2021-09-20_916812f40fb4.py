@@ -1,4 +1,4 @@
-"""empty message
+"""ADD daa_document column at setup table
 
 Revision ID: 916812f40fb4
 Revises: 5796f6ceb314
