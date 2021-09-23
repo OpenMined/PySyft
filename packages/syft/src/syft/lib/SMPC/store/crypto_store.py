@@ -7,7 +7,11 @@ from typing import Dict
 from typing import Iterable
 from typing import List
 
+# relative
+from ....core.common.serde.serializable import serializable
 
+
+@serializable(recursive_serde=True)
 class CryptoStore:
     """Manages items needed for MPC Computation.
 
@@ -16,7 +20,8 @@ class CryptoStore:
 
     """
 
-    __slots__ = {"store"}
+    __slots__ = ["store"]
+    __attr_allowlist__ = ["store"]
 
     _func_add_store: Dict[Any, Callable] = {}
     _func_get_store: Dict[Any, Callable] = {}
