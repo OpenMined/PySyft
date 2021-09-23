@@ -22,6 +22,7 @@ from .util import implements
 from .util import query_implementation
 
 AcceptableSimpleType = Union[int, bool, float, np.ndarray]
+SupportedChainType = Union["PassthroughTensor", AcceptableSimpleType]
 
 
 def is_acceptable_simple_type(obj):
@@ -43,10 +44,22 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         return data
 
     def __len__(self) -> int:
+        if (
+            isinstance(self.child, float)
+            or isinstance(self.child, int)
+            or isinstance(self.child, bool)
+        ):
+            return 1
         return len(self.child)
 
     @property
     def shape(self) -> TypeTuple[Any, ...]:
+        if (
+            isinstance(self.child, float)
+            or isinstance(self.child, int)
+            or isinstance(self.child, bool)
+        ):
+            return (1,)
         return tuple(self.child.shape)
 
     # @property
@@ -538,6 +551,3 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 @implements(PassthroughTensor, np.square)
 def square(x: Type[PassthroughTensor]) -> PassthroughTensor:
     return x * x
-
-
-SupportedChainType = Union["PassthroughTensor", AcceptableSimpleType]
