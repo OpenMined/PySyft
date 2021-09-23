@@ -1,7 +1,6 @@
 FROM headscale/headscale:latest
 
-RUN --mount=type=cache,target=/var/cache/apt \
-    apt-get update && apt-get install wireguard-tools python3 python3-pip -y
+RUN apt-get update && apt-get install wireguard-tools python3 python3-pip -y
 
 WORKDIR /headscale
 COPY ./requirements.txt /headscale/requirements.txt
