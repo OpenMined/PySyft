@@ -982,12 +982,15 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         mode: Optional[str] = "raise",
     ) -> SingleEntityPhiTensor:
         """Take elements from an array along an axis"""
-        data = np.take(self.child, indices=indices, mode=mode)
+        data = self.child.take(indices=indices, mode=mode)
+        min_vals = self.min_vals.take(indices=indices, mode=mode)
+        max_vals = self.max_vals.take(indices=indices, mode=mode)
+
         return SingleEntityPhiTensor(
             child=data,
             entity=self.entity,
-            min_vals=self.min_vals,
-            max_vals=self.max_vals,
+            min_vals=min_vals,
+            max_vals=max_vals,
             scalar_manager=self.scalar_manager,
         )
 
@@ -1003,15 +1006,28 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             data = np.asarray(self.child).diagonal(
                 offset=offset, axis1=axis1, axis2=axis2
             )
+            min_vals = np.asarray(self.min_vals).diagonal(
+                offset=offset, axis1=axis1, axis2=axis2
+            )
+            max_vals = np.asarray(self.max_vals).diagonal(
+                offset=offset, axis1=axis1, axis2=axis2
+            )
         else:
             data = np.asanyarray(self.child).diagonal(
                 offset=offset, axis1=axis1, axis2=axis2
             )
+            min_vals = np.asanyarray(self.min_vals).diagonal(
+                offset=offset, axis1=axis1, axis2=axis2
+            )
+            max_vals = np.asanyarray(self.max_vals).diagonal(
+                offset=offset, axis1=axis1, axis2=axis2
+            )
+
         return SingleEntityPhiTensor(
             child=data,
             entity=self.entity,
-            min_vals=self.min_vals,
-            max_vals=self.max_vals,
+            min_vals=min_vals,
+            max_vals=max_vals,
             scalar_manager=self.scalar_manager,
         )
 

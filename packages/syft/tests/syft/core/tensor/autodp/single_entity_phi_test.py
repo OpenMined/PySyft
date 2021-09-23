@@ -151,8 +151,8 @@ def test_take() -> None:
 tensor6 = SingleEntityPhiTensor(
     child=np.arange(dims * dims).reshape(dims, dims),
     entity=ent,
-    max_vals=dims ** 2 - 1,
-    min_vals=0,
+    max_vals=np.full((dims, dims), dims ** 2 - 1),
+    min_vals=np.full((dims, dims), 0),
 )
 tensor6_diagonal = tensor6.diagonal()
 
