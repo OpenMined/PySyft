@@ -127,6 +127,9 @@ $ helm install pysyft -f values.yaml .
 
 > **Tip**: You can use the default [values.yaml](values.yaml)
 
+## Create the openmined namespace
+$ kubectl get namespaces
+
 ## Installation using tilt and minikube
 
 For development purposes, we're going to use [Tilt](https://tilt.dev/).
