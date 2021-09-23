@@ -147,9 +147,11 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
                 if is_acceptable_simple_type(other):
                     new_list.append(self.child[i] + other)
                 else:
+                    # Private/Public and Private/Private are handled by the underlying SEPT self.child objects.
                     new_list.append(self.child[i] + other.child[i])  # type: ignore
             return RowEntityPhiTensor(rows=new_list, check_shape=False)
         else:
+            # Broadcasting is possible, but we're skipping that for now.
             raise Exception(
                 f"Tensor dims do not match for __add__: {len(self.child)} != {len(other.child)}"  # type: ignore
             )
@@ -190,6 +192,9 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
             raise Exception(
                 f"Tensor dims do not match for __mul__: {len(self.child)} != {len(other.child)}"  # type: ignore
             )
+
+    def __pos__(self) -> RowEntityPhiTensor:
+        return RowEntityPhiTensor(rows=[+x for x in self.child], check_shape=False)
 
     def __truediv__(  # type: ignore
         self, other: Union[RowEntityPhiTensor, AcceptableSimpleType]
