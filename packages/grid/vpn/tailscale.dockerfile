@@ -1,6 +1,6 @@
 FROM shaynesweeney/tailscale:latest
 
-RUN --mount=type=cache,target=/var/cache/apt \
+RUN --mount=type=cache,target=/var/cache/apk \
     apk add --no-cache python3 py3-pip
 
 WORKDIR /tailscale
