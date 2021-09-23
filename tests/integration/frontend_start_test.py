@@ -1,4 +1,3 @@
-# stdlimpob
 # stdlib
 import os
 
@@ -8,8 +7,8 @@ import requests
 
 here = os.path.dirname(__file__)
 
-DOMAIN_PORT = 9081
-NETWORK_PORT = 9083
+NETWORK_PORT = 9081
+DOMAIN_PORT = 9082
 
 
 @pytest.mark.integration
