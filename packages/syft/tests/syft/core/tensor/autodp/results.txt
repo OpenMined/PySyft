@@ -1,0 +1,227 @@
+============================= test session starts ==============================
+platform linux -- Python 3.9.6, pytest-5.4.3, py-1.10.0, pluggy-0.13.1 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /app/syft, inifile: setup.cfg
+plugins: celery-4.4.7, asyncio-0.15.1, cov-2.12.1, anyio-3.3.0
+collecting ... collected 46 items
+
+single_entity_phi_test.py::test_eq SKIPPED                               [  2%]
+single_entity_phi_test.py::test_eq_public_shape PASSED                   [  4%]
+single_entity_phi_test.py::test_eq_diff_entities PASSED                  [  6%]
+single_entity_phi_test.py::test_eq_ndarray PASSED                        [  8%]
+single_entity_phi_test.py::test_eq_bool PASSED                           [ 10%]
+single_entity_phi_test.py::test_eq_int PASSED                            [ 13%]
+single_entity_phi_test.py::test_ne_values PASSED                         [ 15%]
+single_entity_phi_test.py::test_ne_shapes FAILED                         [ 17%]
+single_entity_phi_test.py::test_ne_broadcastability PASSED               [ 19%]
+single_entity_phi_test.py::test_ne_diff_entities PASSED                  [ 21%]
+single_entity_phi_test.py::test_add_wrong_types PASSED                   [ 23%]
+single_entity_phi_test.py::test_add_simple_types PASSED                  [ 26%]
+single_entity_phi_test.py::test_add_tensor_types PASSED                  [ 28%]
+single_entity_phi_test.py::test_add_single_entities PASSED               [ 30%]
+single_entity_phi_test.py::test_add_diff_entities SKIPPED                [ 32%]
+single_entity_phi_test.py::test_add_sub_equivalence PASSED               [ 34%]
+single_entity_phi_test.py::test_add_to_gamma_tensor PASSED               [ 36%]
+single_entity_phi_test.py::test_sub_to_gamma_tensor PASSED               [ 39%]
+single_entity_phi_test.py::test_pos PASSED                               [ 41%]
+single_entity_phi_test.py::test_repeat PASSED                            [ 43%]
+single_entity_phi_test.py::test_repeat_axes PASSED                       [ 45%]
+single_entity_phi_test.py::test_transpose_simple_types PASSED            [ 47%]
+single_entity_phi_test.py::test_transpose_square_matrix PASSED           [ 50%]
+single_entity_phi_test.py::test_transpose_non_square_matrix PASSED       [ 52%]
+single_entity_phi_test.py::test_transpose_args SKIPPED                   [ 54%]
+single_entity_phi_test.py::test_reshape PASSED                           [ 56%]
+single_entity_phi_test.py::test_reshape_fail PASSED                      [ 58%]
+single_entity_phi_test.py::test_reshape_simple_type SKIPPED              [ 60%]
+single_entity_phi_test.py::test_resize PASSED                            [ 63%]
+single_entity_phi_test.py::test_resize_fail PASSED                       [ 65%]
+single_entity_phi_test.py::test_resize_inplace PASSED                    [ 67%]
+single_entity_phi_test.py::test_flatten PASSED                           [ 69%]
+single_entity_phi_test.py::test_ravel PASSED                             [ 71%]
+single_entity_phi_test.py::test_squeeze PASSED                           [ 73%]
+single_entity_phi_test.py::test_squeeze_correct_axes PASSED              [ 76%]
+single_entity_phi_test.py::test_swap_axes PASSED                         [ 78%]
+single_entity_phi_test.py::test_compress FAILED                          [ 80%]
+single_entity_phi_test.py::test_partition FAILED                         [ 82%]
+single_entity_phi_test.py::test_partition_axis FAILED                    [ 84%]
+single_entity_phi_test.py::test_le PASSED                                [ 86%]
+single_entity_phi_test.py::test_ge PASSED                                [ 89%]
+single_entity_phi_test.py::test_lt PASSED                                [ 91%]
+single_entity_phi_test.py::test_gt PASSED                                [ 93%]
+single_entity_phi_test.py::test_clip PASSED                              [ 95%]
+single_entity_phi_test.py::test_add XFAIL                                [ 97%]
+single_entity_phi_test.py::test_single_entity_phi_tensor_serde XFAIL     [100%]
+
+=================================== FAILURES ===================================
+________________________________ test_ne_shapes ________________________________
+
+reference_data = array([[-31]], dtype=int32)
+upper_bound = array([[50]], dtype=int32)
+lower_bound = array([[-50]], dtype=int32)
+
+    @pytest.mark.skipif(dims == 1, reason="Tensor generated did not have two dimensions")
+    def test_ne_shapes(
+        reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    ) -> None:
+        """Test non-equality between SEPTs with different shapes"""
+        reference_tensor = SEPT(
+            child=reference_data, entity=ishan, max_vals=upper_bound, min_vals=lower_bound
+        )
+        comparison_tensor = SEPT(
+            child=np.random.randint(
+                low=-high, high=high, size=(dims + 10, dims + 10), dtype=np.int32
+            ),
+            entity=ishan,
+            max_vals=np.ones(dims + 10),
+            min_vals=np.ones(dims + 10),
+        )
+    
+        with pytest.raises(Exception):
+>           reference_tensor != comparison_tensor
+E           Failed: DID NOT RAISE <class 'Exception'>
+
+single_entity_phi_test.py:215: Failed
+________________________________ test_compress _________________________________
+
+reference_data = array([[42]], dtype=int32)
+upper_bound = array([[50]], dtype=int32)
+lower_bound = array([[-50]], dtype=int32)
+
+    @pytest.mark.skipif(dims == 1, reason="Tensor generated did not have two dimensions")
+    def test_compress(
+        reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    ) -> None:
+        reference_tensor = SEPT(
+            child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
+        )
+    
+>       result = reference_tensor.compress([0, 1])
+
+single_entity_phi_test.py:958: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = SingleEntityPhiTensor(entity=Ishan, child=[[42]]), condition = [0, 1]
+axis = None, out = None
+
+    def compress(
+        self,
+        condition: np.typing.ArrayLike,
+        axis: Optional[int] = None,
+        out: Optional[np.ndarray] = None,
+    ) -> SingleEntityPhiTensor:
+        """Return selected slices of this array along a given axis"""
+        if (
+            isinstance(self.child, int)
+            or isinstance(self.child, float)
+            or isinstance(self.child, bool)
+        ):
+            # For these data types, the compress operation is meaningless, so don't change them.
+            data = self.child
+            print(
+                f"Warning: Tensor data was of type {type(data)}, compress operation had no effect."
+            )
+        else:
+>           data = self.child.compress(condition, axis, out)
+E           IndexError: index 1 is out of bounds for axis 0 with size 1
+
+/app/syft/src/syft/core/tensor/autodp/single_entity_phi.py:708: IndexError
+________________________________ test_partition ________________________________
+
+reference_data = array([[22]], dtype=int32)
+upper_bound = array([[50]], dtype=int32)
+lower_bound = array([[-50]], dtype=int32)
+
+    @pytest.mark.skipif(dims == 1, reason="Tensor generated did not have two dimensions")
+    def test_partition(
+        reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    ) -> None:
+        reference_tensor = SEPT(
+            child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
+        )
+    
+        k = 1
+    
+>       reference_tensor.partition(k)
+
+single_entity_phi_test.py:979: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = SingleEntityPhiTensor(entity=Ishan, child=[[22]]), kth = 1, axis = -1
+kind = 'introselect', order = None
+
+    def partition(
+        self,
+        kth: Union[int, List[int], np.ndarray],
+        axis: Optional[int] = -1,
+        kind: Optional[str] = "introselect",
+        order: Optional[Union[str, List[str]]] = None,
+    ) -> SingleEntityPhiTensor:
+        """Interchange two axes of the Tensor"""
+        if (
+            isinstance(self.child, int)
+            or isinstance(self.child, float)
+            or isinstance(self.child, bool)
+        ):
+            # For these singleton data types, the partition operation is meaningless, so don't change them.
+            data = self.child
+            print(
+                f"Warning: Tensor data was of type {type(data)}, partition operation had no effect."
+            )
+        else:
+>           data = self.child.partition(kth, axis, kind, order)
+E           ValueError: kth(=1) out of bounds (1)
+
+/app/syft/src/syft/core/tensor/autodp/single_entity_phi.py:813: ValueError
+_____________________________ test_partition_axis ______________________________
+
+reference_data = array([[8]], dtype=int32)
+upper_bound = array([[50]], dtype=int32)
+lower_bound = array([[-50]], dtype=int32)
+
+    @pytest.mark.skipif(dims == 1, reason="Tensor generated did not have two dimensions")
+    def test_partition_axis(
+        reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    ) -> None:
+        reference_tensor = SEPT(
+            child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
+        )
+    
+        k = 1
+    
+>       reference_tensor.partition(k, axis=1)
+
+single_entity_phi_test.py:995: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = SingleEntityPhiTensor(entity=Ishan, child=[[8]]), kth = 1, axis = 1
+kind = 'introselect', order = None
+
+    def partition(
+        self,
+        kth: Union[int, List[int], np.ndarray],
+        axis: Optional[int] = -1,
+        kind: Optional[str] = "introselect",
+        order: Optional[Union[str, List[str]]] = None,
+    ) -> SingleEntityPhiTensor:
+        """Interchange two axes of the Tensor"""
+        if (
+            isinstance(self.child, int)
+            or isinstance(self.child, float)
+            or isinstance(self.child, bool)
+        ):
+            # For these singleton data types, the partition operation is meaningless, so don't change them.
+            data = self.child
+            print(
+                f"Warning: Tensor data was of type {type(data)}, partition operation had no effect."
+            )
+        else:
+>           data = self.child.partition(kth, axis, kind, order)
+E           ValueError: kth(=1) out of bounds (1)
+
+/app/syft/src/syft/core/tensor/autodp/single_entity_phi.py:813: ValueError
+=========================== short test summary info ============================
+FAILED single_entity_phi_test.py::test_ne_shapes - Failed: DID NOT RAISE <cla...
+FAILED single_entity_phi_test.py::test_compress - IndexError: index 1 is out ...
+FAILED single_entity_phi_test.py::test_partition - ValueError: kth(=1) out of...
+FAILED single_entity_phi_test.py::test_partition_axis - ValueError: kth(=1) o...
+============== 4 failed, 36 passed, 4 skipped, 2 xfailed in 0.59s ==============

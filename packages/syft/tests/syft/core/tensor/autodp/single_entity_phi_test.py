@@ -17,13 +17,22 @@ from syft.core.tensor.tensor import Tensor
 # Global constants
 ishan = Entity(name="Ishan")
 traskmaster = Entity(name="Andrew")
-dims = np.random.randint(10) + 3  # Avoid size 0
+dims = max(3, np.random.randint(10) + 3)  # Avoid size 0 and 1
+
+# Failsafe
+if dims < 2:
+    dims += 3
+
 high = 50
 
 
 @pytest.fixture
 def reference_data() -> np.ndarray:
     """This generates random data to test the equality operators"""
+
+    # Force number of rows and columns in reference data to be atleast 3
+    dims = max(3, dims)
+
     reference_data = np.random.randint(
         low=-high, high=high, size=(dims, dims), dtype=np.int32
     )
