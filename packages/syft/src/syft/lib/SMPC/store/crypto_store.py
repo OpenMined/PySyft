@@ -69,3 +69,7 @@ class CryptoStore:
         retrieve_func = CryptoStore._func_get_store[op_str]
         primitives = retrieve_func(self.store, *args, **kwargs)
         return primitives
+
+    def print(self) -> None:
+        print(id(self))
+        print(id(self.store))
