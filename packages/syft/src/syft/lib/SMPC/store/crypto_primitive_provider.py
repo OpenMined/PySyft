@@ -13,6 +13,7 @@ class CryptoPrimitiveProvider:
 
     _func_providers: Dict[str, Callable] = {}
     _ops_list: DefaultDict[str, List] = DefaultDict(list)
+    cache_store: Dict[Any, Any] = {}
 
     def __init__(self) -> None:  # noqa
         raise ValueError("This class should not be initialized")
@@ -72,6 +73,7 @@ class CryptoPrimitiveProvider:
         parties: List[Any],
         p_kwargs: Dict[str, Any],
     ) -> None:
+        cache_store = CryptoPrimitiveProvider.cache_store
         if not isinstance(primitives, list):
             raise ValueError("Primitives should be a List")
 
@@ -81,7 +83,12 @@ class CryptoPrimitiveProvider:
             )
 
         for primitives_party, party in zip(primitives, parties):
-            party.crypto_store.populate_store(
+            try:
+                crypto_store = cache_store[party]
+            except KeyError:
+                cache_store[party] = party.syft.lib.SMPC.store.CryptoStore()
+                crypto_store = cache_store[party]
+            crypto_store.populate_store(
                 op_str, primitives_party, **p_kwargs  # TODO
             )  # should formalize location
 

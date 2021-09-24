@@ -97,8 +97,6 @@ class Client(AbstractNodeClient):
 
         self.store = StoreClient(client=self)
 
-        self.crypto_store = self.syft.lib.SMPC.store.CryptoStore()  # type: ignore
-
     @property
     def icon(self) -> str:
         icon = "📡"

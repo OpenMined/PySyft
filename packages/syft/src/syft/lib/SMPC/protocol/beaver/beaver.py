@@ -13,7 +13,6 @@ from typing import Any
 from typing import Dict
 from typing import Iterable
 from typing import List
-from typing import Optional
 from typing import Tuple
 
 # third party
@@ -37,7 +36,7 @@ def _get_triples(
     nr_parties: int,
     a_shape: Tuple[int],
     b_shape: Tuple[int],
-    ring_size: Optional[int] = None,
+    ring_size: int = 2 ** 32,
     **kwargs: Dict[Any, Any],
 ) -> Tuple[Tuple[Tuple[ShareTensor, ShareTensor, ShareTensor]]]:
     """Get triples.
@@ -115,7 +114,7 @@ def _get_triples(
     The first party (party 0) receives Row 0 and the second party (party 1) receives Row 1
     """
 
-    triple = tuple(
+    triple = list(
         map(list, zip(*map(lambda x: map(list, zip(*x)), triple_sequential)))  # type: ignore
     )
 
