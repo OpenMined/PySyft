@@ -17,7 +17,12 @@ from syft.core.tensor.tensor import Tensor
 # Global constants
 ishan = Entity(name="Ishan")
 traskmaster = Entity(name="Andrew")
-dims = np.random.randint(10) + 3  # Avoid size 0
+dims = int(max(3, np.random.randint(10) + 3))  # Avoid size 0 and 1
+
+# Failsafe
+if dims < 2:
+    dims += 3
+
 high = 50
 
 
@@ -27,6 +32,7 @@ def reference_data() -> np.ndarray:
     reference_data = np.random.randint(
         low=-high, high=high, size=(dims, dims), dtype=np.int32
     )
+    assert dims > 1, "Tensor not large enough"
     return reference_data
 
 
@@ -189,6 +195,7 @@ def test_ne_values(
     return None
 
 
+@pytest.mark.skipif(dims == 1, reason="Tensor generated did not have two dimensions")
 def test_ne_shapes(
     reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
 ) -> None:
@@ -941,6 +948,7 @@ def test_swap_axes() -> None:
     ).child.all(), "Swapping axes of  the tensor eliminated the wrong values"
 
 
+@pytest.mark.skipif(dims == 1, reason="Tensor generated did not have two dimensions")
 def test_compress(
     reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
 ) -> None:
@@ -959,6 +967,7 @@ def test_compress(
     ), "Compress did not work as expected"
 
 
+@pytest.mark.skipif(dims == 1, reason="Tensor generated did not have two dimensions")
 def test_partition(
     reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
 ) -> None:
@@ -974,6 +983,7 @@ def test_partition(
     assert reference_tensor == reference_data, "Partition did not work as expected"
 
 
+@pytest.mark.skipif(dims == 1, reason="Tensor generated did not have two dimensions")
 def test_partition_axis(
     reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
 ) -> None:
