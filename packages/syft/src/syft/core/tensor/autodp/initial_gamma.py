@@ -75,7 +75,12 @@ class InitialGammaTensor(IntermediateGammaTensor, ADPTensor):
         flat_values = self.values.flatten()
         flat_min_vals = self.min_vals.flatten()
         flat_max_vals = self.max_vals.flatten()
-        flat_entities = self.entities.flatten()
+
+        # If it's a list of lists, then it should still work
+        if isinstance(self.entities, np.ndarray):
+            flat_entities = self.entities.flatten()
+        else:
+            flat_entities = self.entities
 
         some_symbols = list()
         for i in range(flat_values.shape[0]):
