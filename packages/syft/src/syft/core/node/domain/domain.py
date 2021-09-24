@@ -72,6 +72,7 @@ from ..common.node_table.utils import create_memory_db_engine
 from ..device import Device
 from ..device import DeviceClient
 from .client import DomainClient
+from ..common.node_service.node_setup.node_setup_messages import CreateInitialSetUpMessage
 
 
 class Domain(Node):
@@ -171,6 +172,28 @@ class Domain(Node):
     def post_init(self) -> None:
         super().post_init()
         self.set_node_uid()
+
+    def setup(self,
+              first_superuser_name:str,
+              first_superuser_email: str,
+              first_superuser_password: str,
+              first_superuser_budget: float,
+              domain_name:str):
+
+        # Build Syft Message
+        msg = CreateInitialSetUpMessage(
+            address=self.address,
+            name=first_superuser_name,
+            email=first_superuser_email,
+            password=first_superuser_password,
+            domain_name=domain_name,
+            budget=first_superuser_budget,
+            reply_to=self.address,
+        ).sign(signing_key=self.signing_key)
+
+        # Process syft message
+        _ = self.recv_immediate_msg_with_reply(msg=msg).message
+
 
     def loud_print(self) -> None:
         install_path = os.path.abspath(
