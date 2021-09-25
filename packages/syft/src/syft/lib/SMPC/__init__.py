@@ -14,6 +14,8 @@ from ...ast.globals import Globals
 from ...core.node.abstract.node import AbstractNodeClient
 from .store import CryptoStore
 
+from .protocol import *  # noqa: 401 isort: skip type: ignore
+
 LIB_NAME = "SMPC"
 PACKAGE_SUPPORT = {"lib": LIB_NAME}
 
