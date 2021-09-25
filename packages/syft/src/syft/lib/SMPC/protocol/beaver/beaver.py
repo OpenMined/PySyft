@@ -19,8 +19,6 @@ from typing import Tuple
 import numpy as np
 
 # relative
-# absolute
-from ..... import Tensor
 from .....core.tensor.smpc.mpc_tensor import MPCTensor
 from .....core.tensor.smpc.share_tensor import ShareTensor
 from ...store import register_primitive_generator
@@ -60,6 +58,9 @@ def _get_triples(
         ValueError: If the triples are not consistent.
         ValueError: If the share class is invalid.
     """
+    # relative
+    from ..... import Tensor
+
     cmd = getattr(operator, op_str)
     min_value, max_value = ShareTensor.compute_min_max_from_ring(ring_size)
     seed_shares = secrets.randbits(32)
