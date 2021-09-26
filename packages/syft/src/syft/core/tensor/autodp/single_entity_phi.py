@@ -377,6 +377,23 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             f"{self.__class__.__name__}(entity={self.entity.name}, child={self.child})"
         )
 
+    def __and__(self, other: Any) -> SingleEntityPhiTensor:
+        """Note: this is bitwise and, not logical and"""
+        return SingleEntityPhiTensor(
+            child=self.child & other,
+            min_vals=np.zeros_like(self.child),
+            max_vals=np.ones_like(self.child),
+            entity=self.entity,
+        )
+
+    def __or__(self, other: Any) -> SingleEntityPhiTensor:
+        return SingleEntityPhiTensor(
+            child=self.child | other,
+            min_vals=np.zeros_like(self.child),
+            max_vals=np.ones_like(self.child),
+            entity=self.entity,
+        )
+
     # Check for shape1 = (1,s), and shape2 = (,s) --> as an example
     def __eq__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
         if is_acceptable_simple_type(other):

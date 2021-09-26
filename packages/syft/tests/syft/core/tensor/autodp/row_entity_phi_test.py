@@ -444,6 +444,48 @@ def test_neg(row_data_ishan: List) -> None:
         assert (negative.max_vals == original.min_vals * -1).all()
 
 
+@pytest.mark.skip(
+    reason="Test passes, but raises a Deprecation Warning for elementwise comparisons"
+)
+def test_and() -> None:
+    new_list = list()
+    for _ in range(row_count):
+        data = np.random.randint(2, size=(dims, dims))
+        new_list.append(
+            SEPT(
+                child=data,
+                min_vals=np.zeros_like(data),
+                max_vals=np.ones_like(data),
+                entity=ishan,
+            )
+        )
+    reference_tensor = REPT(rows=new_list, check_shape=False)
+    output = reference_tensor & False
+    for index, tensor in enumerate(reference_tensor.child):
+        assert (tensor & False) == output[index]
+
+
+@pytest.mark.skip(
+    reason="Test passes, but raises a Deprecation Warning for elementwise comparisons"
+)
+def test_or() -> None:
+    new_list = list()
+    for _ in range(row_count):
+        data = np.random.randint(2, size=(dims, dims))
+        new_list.append(
+            SEPT(
+                child=data,
+                min_vals=np.zeros_like(data),
+                max_vals=np.ones_like(data),
+                entity=ishan,
+            )
+        )
+    reference_tensor = REPT(rows=new_list, check_shape=False)
+    output = reference_tensor | False
+    for index, tensor in enumerate(reference_tensor.child):
+        assert (tensor | False) == output[index]
+
+
 ent = Entity(name="test")
 ent2 = Entity(name="test2")
 

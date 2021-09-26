@@ -1058,6 +1058,32 @@ def test_neg(
     assert negative_tensor.shape == reference_tensor.shape
 
 
+def test_and(reference_binary_data: np.ndarray) -> None:
+    """Test bitwise and"""
+    reference_tensor = SEPT(
+        child=reference_binary_data,
+        max_vals=np.ones_like(reference_binary_data),
+        min_vals=np.zeros_like(reference_binary_data),
+        entity=ishan,
+    )
+    output = reference_tensor & False
+    target = reference_binary_data & False
+    assert (output.child == target).all()
+
+
+def test_or(reference_binary_data: np.ndarray) -> None:
+    """Test bitwise or"""
+    reference_tensor = SEPT(
+        child=reference_binary_data,
+        max_vals=np.ones_like(reference_binary_data),
+        min_vals=np.zeros_like(reference_binary_data),
+        entity=ishan,
+    )
+    output = reference_tensor | False
+    target = reference_binary_data | False
+    assert (output.child == target).all()
+
+
 # End of Ishan's tests
 
 
