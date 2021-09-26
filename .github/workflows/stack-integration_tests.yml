@@ -49,6 +49,9 @@ jobs:
         if: steps.changes.outputs.stack == 'true'
         continue-on-error: true
         with:
+          key: test-docker-cache{hash}
+          restore-keys: |
+            test-docker-cache-
           filter: reference='openmined/*'
 
       - name: Get pip cache dir
