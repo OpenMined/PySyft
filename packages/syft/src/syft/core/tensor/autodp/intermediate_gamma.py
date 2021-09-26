@@ -18,8 +18,8 @@ from sympy.ntheory.factor_ import factorint
 from ...adp.publish import publish
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...common.serde.serializable import serializable
-from ..passthrough import PassthroughTensor  # type: ignore
-from ..passthrough import is_acceptable_simple_type  # type: ignore
+from ...tensor.passthrough import PassthroughTensor  # type: ignore
+from ...tensor.passthrough import is_acceptable_simple_type  # type: ignore
 from .adp_tensor import ADPTensor
 
 SupportedChainType = Union[int, bool, float, np.ndarray, PassthroughTensor]
@@ -62,11 +62,11 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         self.scalar_manager = scalar_manager
 
     @property
-    def shape(self) -> Tuple[int]:
+    def shape(self) -> Tuple[int, ...]:
         return self.term_tensor.shape[:-1]
 
     @property
-    def full_shape(self) -> Tuple[int]:
+    def full_shape(self) -> Tuple[int, ...]:
         return self.term_tensor.shape
 
     def publish(self, acc: Any, sigma: float, user_key: VerifyKey) -> np.ndarray:
@@ -124,12 +124,10 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
 
         return scalars
 
-    def sum(
-        self, axis: Optional[Union[int, Tuple[int, ...]]] = None
-    ) -> IntermediateGammaTensor:
+    def sum(self, axis: Optional[int] = None) -> IntermediateGammaTensor:
 
-        new_term_tensor = np.swapaxes(self.term_tensor, axis, -1).squeeze(axis)
-        new_coeff_tensor = np.swapaxes(self.coeff_tensor, axis, -1).squeeze(axis)
+        new_term_tensor = np.swapaxes(self.term_tensor, axis, -1).squeeze(axis)  # type: ignore
+        new_coeff_tensor = np.swapaxes(self.coeff_tensor, axis, -1).squeeze(axis)  # type: ignore
         new_bias_tensor = self.bias_tensor.sum(axis)
 
         return IntermediateGammaTensor(
@@ -180,8 +178,8 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                 )
 
             # Step 1: Concatenate
-            term_tensor = np.concatenate([self.term_tensor, other.term_tensor], axis=-1)
-            coeff_tensor = np.concatenate(
+            term_tensor = np.concatenate([self.term_tensor, other.term_tensor], axis=-1)  # type: ignore
+            coeff_tensor = np.concatenate(  # type: ignore
                 [self.coeff_tensor, other.coeff_tensor], axis=-1
             )
             bias_tensor = self.bias_tensor + other.bias_tensor
@@ -223,8 +221,8 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                 )
 
             # Step 1: Concatenate
-            term_tensor = np.concatenate([self.term_tensor, other.term_tensor], axis=-1)
-            coeff_tensor = np.concatenate(
+            term_tensor = np.concatenate([self.term_tensor, other.term_tensor], axis=-1)  # type: ignore
+            coeff_tensor = np.concatenate(  # type: ignore
                 [self.coeff_tensor, other.coeff_tensor * -1], axis=-1
             )
             bias_tensor = self.bias_tensor - other.bias_tensor
@@ -281,7 +279,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             terms = list()
             for self_dim in range(self.term_tensor.shape[-1]):
                 for other_dim in range(other.term_tensor.shape[-1]):
-                    new_term = np.expand_dims(
+                    new_term = np.expand_dims(  # type: ignore
                         self.term_tensor[..., self_dim]
                         * other.term_tensor[..., other_dim],
                         -1,
@@ -289,19 +287,19 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                     terms.append(new_term)
 
             for self_dim in range(self.term_tensor.shape[-1]):
-                new_term = np.expand_dims(self.term_tensor[..., self_dim], -1)
+                new_term = np.expand_dims(self.term_tensor[..., self_dim], -1)  # type: ignore
                 terms.append(new_term)
 
             for other_dim in range(self.term_tensor.shape[-1]):
-                new_term = np.expand_dims(other.term_tensor[..., self_dim], -1)
+                new_term = np.expand_dims(other.term_tensor[..., self_dim], -1)  # type: ignore
                 terms.append(new_term)
 
-            term_tensor = np.concatenate(terms, axis=-1)
+            term_tensor = np.concatenate(terms, axis=-1)  # type: ignore
 
             coeffs = list()
             for self_dim in range(self.coeff_tensor.shape[-1]):
                 for other_dim in range(other.coeff_tensor.shape[-1]):
-                    new_coeff = np.expand_dims(
+                    new_coeff = np.expand_dims(  # type: ignore
                         self.coeff_tensor[..., self_dim]
                         * other.coeff_tensor[..., other_dim],
                         -1,
@@ -309,18 +307,18 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                     coeffs.append(new_coeff)
 
             for self_dim in range(self.coeff_tensor.shape[-1]):
-                new_coeff = np.expand_dims(
+                new_coeff = np.expand_dims(  # type: ignore
                     self.coeff_tensor[..., self_dim] * other.bias_tensor, -1
                 )
                 coeffs.append(new_coeff)
 
             for other_dim in range(self.coeff_tensor.shape[-1]):
-                new_coeff = np.expand_dims(
+                new_coeff = np.expand_dims(  # type: ignore
                     other.coeff_tensor[..., self_dim] * self.bias_tensor, -1
                 )
                 coeffs.append(new_coeff)
 
-            coeff_tensor = np.concatenate(coeffs, axis=-1)
+            coeff_tensor = np.concatenate(coeffs, axis=-1)  # type: ignore
 
             bias_tensor = self.bias_tensor * other.bias_tensor
 
