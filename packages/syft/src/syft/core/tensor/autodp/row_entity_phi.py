@@ -267,7 +267,8 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
             )
         new_list = list()
         for tensor in self.child:
-            new_list.append(tensor.swapaxes(axis1, axis2))
+            # Axis=0 for REPT.child is Axis=1 for REPT, so subtract 1
+            new_list.append(tensor.swapaxes(axis1 - 1, axis2 - 1))
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
     def squeeze(
@@ -288,10 +289,6 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
     def reshape(self, *shape: List[int]) -> RowEntityPhiTensor:
-        print(shape, type(shape), self.shape, type(self.shape))
-        print(type(shape[0]))
-        print(type(self.shape[0]))
-
         # This is to fix the bug where shape = ([a, b, c], )
         if isinstance(shape[0], list) or isinstance(shape[0], tuple):
             shape = shape[0]

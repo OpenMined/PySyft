@@ -21,8 +21,8 @@ from syft.core.tensor.tensor import Tensor
 # Global constants
 ishan = Entity(name="Ishan")
 traskmaster = Entity(name="Trask")
-dims = max(3, np.random.randint(10) + 3)  # Avoid size 0, 1
-row_count = max(3, np.random.randint(7) + 1)  # Avoids size 0, 1
+dims = max(3, np.random.randint(low=2, high=10))  # Avoid size 0, 1
+row_count = max(3, np.random.randint(low=2, high=10))  # Avoids size 0, 1
 scalar_manager = ScalarManager()
 
 
@@ -421,16 +421,26 @@ def test_partition() -> None:
     """ Test to see if Partition works for the ideal case """
     data = np.random.randint(low=-100, high=100, size=(10, 10), dtype=np.int32)
     sept = SEPT(child=data, entity=ishan, min_vals=np.ones_like(data) * -100, max_vals=np.ones_like(data) * 100)
-    reference_tensor = REPT(rows=[sept])
+    reference_tensor = REPT(rows=sept)
 
     reference_tensor.partition(kth=1)
     sept.partition(kth=1)
-    assert reference_tensor == sept, "Partition did not work as expected"
+    assert reference_tensor.child == sept, "Partition did not work as expected"
 
 
+@pytest.mark.skipif(dims == 1, reason="Not enough dimensions to do the compress operation")
 def test_compress(row_data_ishan: List) -> None:
     """ Test to see if Compress works for the ideal case """
-    pass
+    reference_tensor = REPT(rows=row_data_ishan)
+
+    output = reference_tensor.compress([0, 1])
+
+    target_output = list()
+    for row in row_data_ishan:
+        target_output.append(row.compress([0, 1]))
+
+    for result, target in zip(output, target_output):
+        assert result == target, "Compress operation failed"
 
 
 def test_resize(row_data_ishan: List) -> None:
@@ -444,6 +454,7 @@ def test_resize(row_data_ishan: List) -> None:
     assert reference_tensor.shape == new_shape, "Resize shape doesn't check out"
 
 
+@pytest.mark.skipif(dims == 1, reason="Dims too low for this operation")
 def test_reshape(row_data_ishan: List) -> None:
     """ Test to see if Reshape works for the ideal case """
     reference_tensor = REPT(rows=row_data_ishan)
@@ -459,21 +470,28 @@ def test_reshape(row_data_ishan: List) -> None:
 
 def test_squeeze(row_data_ishan: List) -> None:
     """ Test to see if Squeeze works for the ideal case """
-    pass
+    data = np.random.randint(low=-100, high=100, size=(10, 1, 10), dtype=np.int32)
+    sept = SEPT(child=data, entity=ishan, min_vals=np.ones_like(data) * -100, max_vals=np.ones_like(data) * 100)
+    reference_tensor = REPT(rows=sept)
+
+    output = reference_tensor.squeeze()
+    target = sept.squeeze()
+    assert output.child[0] == target, "Squeeze did not work as expected"
 
 
 def test_swapaxes(row_data_ishan: List) -> None:
     """ Test to see if Swapaxes works for the ideal case """
-    pass
+    data = np.random.randint(low=-100, high=100, size=(10, 10), dtype=np.int32)
+    sept = SEPT(child=data, entity=ishan, min_vals=np.ones_like(data) * -100, max_vals=np.ones_like(data) * 100)
+    reference_tensor = REPT(rows=[sept])
 
-
+    output = reference_tensor.swapaxes(1, 2)
+    target = sept.swapaxes(0, 1)
+    assert output.child[0] == target, "Swapaxes did not work as expected"
 
 
 ent = Entity(name="test")
 ent2 = Entity(name="test2")
-
-dims = np.random.randint(10) + 1
-row_count = np.random.randint(10) + 1
 
 
 def rept(low, high, entity) -> List:
