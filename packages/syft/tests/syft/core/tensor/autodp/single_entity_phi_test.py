@@ -1019,10 +1019,15 @@ def test_mul(
     assert (output.child == sept2.child * sept2.child).all()
 
     # Public - Private
-    output = sept2 * sept1
+    output: IGT = sept2 * sept1
     assert output.shape == sept2.shape
     # assert (output.min_vals == sept1.min_vals * sept2.min_vals).all()
     # assert (output.max_vals == sept1.max_vals * sept2.max_vals).all()
+    values = np.array([i.value for i in output.flat_scalars], dtype=np.int32).reshape(output.shape)
+    target = sept1.child + sept2.child
+    assert target.shape == values.shape
+    assert (sept1.child + sept2.child == values).all()
+
     # assert output.child == sept1.child * sept2.child
     return None
 
