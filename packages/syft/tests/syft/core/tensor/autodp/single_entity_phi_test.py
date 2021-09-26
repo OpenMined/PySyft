@@ -1000,16 +1000,26 @@ def test_partition_axis(
 
 
 def test_mul(
-        reference_data: np.ndarray,
-        upper_bound: np.ndarray,
-        lower_bound: np.ndarray,
-        reference_scalar_manager: VirtualMachinePrivateScalarManager
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    reference_scalar_manager: VirtualMachinePrivateScalarManager,
 ) -> None:
     """ """
-    sept1 = SEPT(child=reference_data, min_vals=lower_bound, max_vals=upper_bound,
-                 entity=ishan, scalar_manager=reference_scalar_manager)
-    sept2 = SEPT(child=reference_data, min_vals=lower_bound, max_vals=upper_bound,
-                 entity=traskmaster, scalar_manager=reference_scalar_manager)
+    sept1 = SEPT(
+        child=reference_data,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+        entity=ishan,
+        scalar_manager=reference_scalar_manager,
+    )
+    sept2 = SEPT(
+        child=reference_data,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+        entity=traskmaster,
+        scalar_manager=reference_scalar_manager,
+    )
 
     # Public-Public
     output = sept2 * sept2
@@ -1023,13 +1033,16 @@ def test_mul(
     assert output.shape == sept2.shape
     # assert (output.min_vals == sept1.min_vals * sept2.min_vals).all()
     # assert (output.max_vals == sept1.max_vals * sept2.max_vals).all()
-    values = np.array([i.value for i in output.flat_scalars], dtype=np.int32).reshape(output.shape)
+    values = np.array([i.value for i in output.flat_scalars], dtype=np.int32).reshape(
+        output.shape
+    )
     target = sept1.child + sept2.child
     assert target.shape == values.shape
     assert (sept1.child + sept2.child == values).all()
 
     # assert output.child == sept1.child * sept2.child
     return None
+
 
 # End of Ishan's tests
 
