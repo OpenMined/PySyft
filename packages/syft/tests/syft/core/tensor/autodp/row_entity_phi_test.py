@@ -15,6 +15,7 @@ from syft.core.tensor.autodp.intermediate_gamma import IntermediateGammaTensor a
 from syft.core.tensor.autodp.row_entity_phi import RowEntityPhiTensor as REPT
 from syft.core.tensor.autodp.single_entity_phi import SingleEntityPhiTensor as SEPT
 from syft.core.tensor.tensor import Tensor
+from syft.core.tensor.broadcastable import is_broadcastable
 
 # ------------------- EQUALITY OPERATORS -----------------------------------------------
 
@@ -24,27 +25,28 @@ traskmaster = Entity(name="Trask")
 dims = np.random.randint(10) + 3  # Avoid size 0, 1
 row_count = np.random.randint(7) + 1
 scalar_manager = ScalarManager()
-
-
-@pytest.fixture
-def upper_bound() -> np.ndarray:
-    """This is used to specify the max_vals for a SEPT that is either binary or randomly generated b/w 0-1"""
-    max_values = np.ones(dims)
-    return max_values
-
-
-@pytest.fixture
-def lower_bound() -> np.ndarray:
-    """This is used to specify the min_vals for a SEPT that is either binary or randomly generated b/w 0-1"""
-    min_values = np.zeros(dims)
-    return min_values
+high = 100
 
 
 @pytest.fixture
 def reference_data() -> np.ndarray:
     """This generates random data to test the equality operators"""
-    reference_data = np.random.random((dims, dims))
+    reference_data = np.random.randint(low=-high, high=high, size=(dims, dims), dtype=np.int32)
     return reference_data
+
+
+@pytest.fixture
+def upper_bound(reference_data: np.ndarray) -> np.ndarray:
+    """This is used to specify the max_vals for a SEPT that is either binary or randomly generated b/w 0-1"""
+    max_values = np.ones_like(reference_data)
+    return max_values
+
+
+@pytest.fixture
+def lower_bound(reference_data: np.ndarray) -> np.ndarray:
+    """This is used to specify the min_vals for a SEPT that is either binary or randomly generated b/w 0-1"""
+    min_values = np.zeros_like(reference_data)
+    return min_values
 
 
 @pytest.fixture
@@ -52,13 +54,13 @@ def row_data_ishan() -> List:
     """This generates a random number of SEPTs to populate the REPTs."""
     reference_data = []
     for _ in range(row_count):
-        new_data = np.random.random((dims, dims))
+        new_data = np.random.randint(low=-high, high=high, size=(dims, dims), dtype=np.int32)
         reference_data.append(
             SEPT(
                 child=new_data,
                 entity=ishan,
-                min_vals=np.zeros_like(new_data),
-                max_vals=np.ones_like(new_data),
+                min_vals=np.ones_like(new_data) * -high,
+                max_vals=np.ones_like(new_data) * high,
                 scalar_manager=scalar_manager,
             )
         )
@@ -70,13 +72,13 @@ def row_data_trask() -> List:
     """This generates a random number of SEPTs to populate the REPTs."""
     reference_data = []
     for _ in range(row_count):
-        new_data = np.random.random((dims, dims))
+        new_data = np.random.randint(low=-high, high=high ,size=(dims, dims), dtype=np.int32)
         reference_data.append(
             SEPT(
                 child=new_data,
                 entity=traskmaster,
-                min_vals=np.zeros_like(new_data),
-                max_vals=np.ones_like(new_data),
+                min_vals=np.ones_like(new_data) * -high,
+                max_vals=np.ones_like(new_data) * high,
                 scalar_manager=scalar_manager,
             )
         )
@@ -383,27 +385,39 @@ def test_mul_simple(row_data_ishan: List) -> None:
 
     reference_tensor = REPT(rows=row_data_ishan)
     output = reference_tensor * 5
-    assert output.max_vals == 5 * reference_tensor.max_vals
-    assert output.min_vals == 5 * reference_tensor.min_vals
+    assert (output.max_vals == 5 * reference_tensor.max_vals).all()
+    assert (output.min_vals == 5 * reference_tensor.min_vals).all()
     assert output.shape == reference_tensor.shape
-    assert output.child == 5 * reference_tensor.child
+    assert output.child == [i * 5 for i in reference_tensor.child]
 
 
 def test_mul_rept(row_data_ishan: List, row_data_trask: List) -> None:
     """ Test multiplication of two REPTs"""
-    pass
+    reference_tensor1 = REPT(rows=row_data_ishan)
+    reference_tensor2 = REPT(rows=row_data_trask)
+    output = reference_tensor1 * reference_tensor2
+    # assert output.max_vals == reference_tensor1.max_vals * reference_tensor2.max_vals
+    # assert output.min_vals == reference_tensor1.min_vals * reference_tensor2.min_vals
+    assert output == reference_tensor1 * reference_tensor2
+    assert isinstance(output, REPT)
+    for tensor in output.child:
+        assert isinstance(tensor, IGT)
 
 
 def test_mul_sept(
         row_data_ishan: List, reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
 ) -> None:
     """ Test REPT * SEPT """
-    pass
-
-
-def test_mul_size_check() -> None:
-    """ Verify that the size checks are correctly happening for """
-    pass
+    sept = SEPT(child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan)
+    rept = REPT(rows=row_data_ishan)
+    if not is_broadcastable(sept.shape, rept.shape[1:]):
+        print(sept.shape, rept.shape)
+        with pytest.raises(Exception):
+            output = rept * sept
+    else:
+        print(sept.shape, rept.shape)
+        output = rept * sept
+        assert isinstance(output, REPT)
 
 
 ent = Entity(name="test")
