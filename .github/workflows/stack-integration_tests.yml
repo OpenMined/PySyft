@@ -27,12 +27,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
-      #This step sets up Buildx for speeding up builds
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@master
-
+      
       - name: Check for file changes
         uses: dorny/paths-filter@v2
         id: changes
