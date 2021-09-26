@@ -21,8 +21,8 @@ from syft.core.tensor.tensor import Tensor
 # Global constants
 ishan = Entity(name="Ishan")
 traskmaster = Entity(name="Trask")
-dims = np.random.randint(10) + 3  # Avoid size 0, 1
-row_count = np.random.randint(7) + 1
+dims = max(3, np.random.randint(10) + 3)  # Avoid size 0, 1
+row_count = max(3, np.random.randint(7) + 1)  # Avoids size 0, 1
 scalar_manager = ScalarManager()
 
 
@@ -376,6 +376,97 @@ def test_sub_result_gamma(row_data_ishan: List, row_data_trask: List) -> None:
         assert isinstance(
             tensor, IGT
         ), "SEPT(entity1) + SEPT(entity2) != IGT(entity1, entity2)"
+
+
+def test_flatten(row_data_ishan: List) -> None:
+    """ Test to see if Flatten works for the ideal case """
+    reference_tensor = REPT(rows=row_data_ishan)
+    output = reference_tensor.flatten()
+    for sept in output:
+        assert len(sept.child.shape) == 1, "Flatten shape incorrect"
+
+    correct_output = []
+    for row in row_data_ishan:
+        correct_output.append(row.flatten())
+    assert correct_output == output.child, "Flatten did not work as expected"
+
+
+def test_ravel(row_data_ishan: List) -> None:
+    """ Test to see if Ravel works for the ideal case """
+    reference_tensor = REPT(rows=row_data_ishan)
+    output = reference_tensor.ravel()
+    for sept in output:
+        assert len(sept.child.shape) == 1, "Ravel shape incorrect"
+
+    correct_output = []
+    for row in row_data_ishan:
+        correct_output.append(row.ravel())
+    assert correct_output == output.child, "Ravel did not work as expected"
+
+
+def test_transpose(row_data_ishan: List) -> None:
+    """ Test to see if Transpose works for the ideal case """
+    reference_tensor = REPT(rows=row_data_ishan)
+    output = reference_tensor.transpose()
+    for index, sept in enumerate(output):
+        assert tuple(sept.shape) == reference_tensor.child[index].shape, "Transpose shape incorrect"
+
+    correct_output = []
+    for row in row_data_ishan:
+        correct_output.append(row.transpose())
+    assert correct_output == output.child, "Transpose did not work as expected"
+
+
+def test_partition() -> None:
+    """ Test to see if Partition works for the ideal case """
+    data = np.random.randint(low=-100, high=100, size=(10, 10), dtype=np.int32)
+    sept = SEPT(child=data, entity=ishan, min_vals=np.ones_like(data) * -100, max_vals=np.ones_like(data) * 100)
+    reference_tensor = REPT(rows=[sept])
+
+    reference_tensor.partition(kth=1)
+    sept.partition(kth=1)
+    assert reference_tensor == sept, "Partition did not work as expected"
+
+
+def test_compress(row_data_ishan: List) -> None:
+    """ Test to see if Compress works for the ideal case """
+    pass
+
+
+def test_resize(row_data_ishan: List) -> None:
+    """ Test to see if Resize works for the ideal case """
+    reference_tensor = REPT(rows=row_data_ishan)
+    original_tensor = reference_tensor.copy()
+
+    new_shape = original_tensor.flatten().shape
+    reference_tensor.resize(new_shape)
+    assert reference_tensor.shape != original_tensor.shape, "Resize didn't work"
+    assert reference_tensor.shape == new_shape, "Resize shape doesn't check out"
+
+
+def test_reshape(row_data_ishan: List) -> None:
+    """ Test to see if Reshape works for the ideal case """
+    reference_tensor = REPT(rows=row_data_ishan)
+    original_shape = reference_tensor.shape
+    new_shape = [len(reference_tensor.child)] + [np.prod(reference_tensor.child[0].shape)] + [1]
+    assert new_shape[0] == reference_tensor.shape[0], "Shape isn't usable for reshape"
+    output = reference_tensor.reshape(new_shape)
+    assert output.shape != original_shape, "Reshape didn't change shape at all"
+    assert output.shape == new_shape, "Reshape didn't change shape properly"
+    assert output.shape != reference_tensor.shape, "Reshape didn't modify in-place"
+    assert original_shape == reference_tensor.shape, "Reshape didn't modify in-place"
+
+
+def test_squeeze(row_data_ishan: List) -> None:
+    """ Test to see if Squeeze works for the ideal case """
+    pass
+
+
+def test_swapaxes(row_data_ishan: List) -> None:
+    """ Test to see if Swapaxes works for the ideal case """
+    pass
+
+
 
 
 ent = Entity(name="test")

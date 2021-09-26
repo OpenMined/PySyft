@@ -288,11 +288,19 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
     def reshape(self, *shape: List[int]) -> RowEntityPhiTensor:
+        print(shape, type(shape), self.shape, type(self.shape))
+        print(type(shape[0]))
+        print(type(self.shape[0]))
+
+        # This is to fix the bug where shape = ([a, b, c], )
+        if isinstance(shape[0], list) or isinstance(shape[0], tuple):
+            shape = shape[0]
 
         if shape[0] != self.shape[0]:
             raise Exception(
                 "For now, you can't reshape the first dimension because that would"
                 + "probably require creating a gamma tensor."
+                + str(shape) + " and " + str(self.shape)
             )
 
         new_list = list()
@@ -337,7 +345,12 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         kind: Optional[str] = "introselect",
         order: Optional[Union[int, TypeTuple[int, ...]]] = None,
     ) -> RowEntityPhiTensor:
-        pass
+        if axis == 0:  # Unclear how to sort the SEPTs in a REPT
+            raise NotImplementedError
+        new_list = list()
+        for tensor in self.child:
+            new_list.append(tensor.partition(kth, axis, kind, order))
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
     # Since this is being used differently compared to supertype, ignoring type annotation errors
     def sum(  # type: ignore
@@ -354,16 +367,20 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
     # Since this is being used differently compared to supertype, ignoring type annotation errors
-    def transpose(self, *dims: Any) -> RowEntityPhiTensor:  # type: ignore
-        if dims[0] != 0:
-            raise Exception("Can't move dim 0 in RowEntityPhiTensor at this time")
+    def transpose(self, *dims: Optional[Any]) -> RowEntityPhiTensor:  # type: ignore
+        if dims:
+            if dims[0] != 0:
+                raise Exception("Can't move dim 0 in RowEntityPhiTensor at this time")
 
-        new_dims = list(np.array(dims[1:]))
+            new_dims = list(np.array(dims[1:]))
 
-        new_list = list()
-        for row in self.child:
-            new_list.append(row.transpose(*new_dims))
-
+            new_list = list()
+            for row in self.child:
+                new_list.append(row.transpose(*new_dims))
+        else:
+            new_list = list()
+            for row in self.child:
+                new_list.append(row.transpose())
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
     def __le__(self, other: Any) -> RowEntityPhiTensor:
