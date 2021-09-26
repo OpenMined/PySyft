@@ -49,10 +49,11 @@ jobs:
         if: steps.changes.outputs.stack == 'true'
         continue-on-error: true
         with:
-          key: test-docker-cache{hash}
+          key: ${{ runner.os }}-${{ github.workflow }}-docker-layer-cache-{hash}
           restore-keys: |
-            test-docker-cache-
-              
+            ${{ runner.os }}-${{ github.workflow }}-docker-layer-cache-
+          filter: reference='openmined/*'
+
       - name: Get pip cache dir
         if: steps.changes.outputs.stack == 'true'
         id: pip-cache
