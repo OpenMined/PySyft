@@ -378,11 +378,36 @@ def test_sub_result_gamma(row_data_ishan: List, row_data_trask: List) -> None:
         ), "SEPT(entity1) + SEPT(entity2) != IGT(entity1, entity2)"
 
 
+def test_mul_simple(row_data_ishan: List) -> None:
+    """ Ensure multiplication works with REPTs & Simple types (int/float/bool/np.ndarray)"""
+
+    reference_tensor = REPT(rows=row_data_ishan)
+    output = reference_tensor * 5
+    assert output.max_vals == 5 * reference_tensor.max_vals
+    assert output.min_vals == 5 * reference_tensor.min_vals
+    assert output.shape == reference_tensor.shape
+    assert output.child == 5 * reference_tensor.child
+
+
+def test_mul_rept(row_data_ishan: List, row_data_trask: List) -> None:
+    """ Test multiplication of two REPTs"""
+    pass
+
+
+def test_mul_sept(
+        row_data_ishan: List, reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+) -> None:
+    """ Test REPT * SEPT """
+    pass
+
+
+def test_mul_size_check() -> None:
+    """ Verify that the size checks are correctly happening for """
+    pass
+
+
 ent = Entity(name="test")
 ent2 = Entity(name="test2")
-
-dims = np.random.randint(10) + 1
-row_count = np.random.randint(10) + 1
 
 
 def rept(low, high, entity) -> List:
