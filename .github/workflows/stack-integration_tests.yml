@@ -27,7 +27,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      
+
       - name: Check for file changes
         uses: dorny/paths-filter@v2
         id: changes
@@ -53,7 +53,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ github.workflow }}-docker-layer-cache-
           # TODO: investigate why taking out filter by reference allows the docker cache step to run
-          #filter: reference='openmined/*' 
+          #filter: reference='openmined/*'
 
       - name: Get pip cache dir
         if: steps.changes.outputs.stack == 'true'
