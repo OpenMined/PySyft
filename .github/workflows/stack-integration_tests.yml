@@ -28,6 +28,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      #This step sets up Buildx for speeding up builds
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@main
+
       - name: Check for file changes
         uses: dorny/paths-filter@v2
         id: changes
@@ -52,7 +57,8 @@ jobs:
           key: ${{ runner.os }}-${{ github.workflow }}-docker-layer-cache-{hash}
           restore-keys: |
             ${{ runner.os }}-${{ github.workflow }}-docker-layer-cache-
-          filter: reference='openmined/*'
+          # TODO: investigate why taking out filter by reference allows the docker cache step to run
+          #filter: reference='openmined/*' 
 
       - name: Get pip cache dir
         if: steps.changes.outputs.stack == 'true'
