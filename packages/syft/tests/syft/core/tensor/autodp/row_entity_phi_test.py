@@ -431,6 +431,19 @@ def test_mul_sept(
         assert isinstance(output, REPT)
 
 
+def test_neg(row_data_ishan: List) -> None:
+    """Test __neg__"""
+    reference_tensor = REPT(rows=row_data_ishan)
+    negative_tensor = reference_tensor.__neg__()
+
+    assert reference_tensor.shape == negative_tensor.shape
+    for original, negative in zip(reference_tensor, negative_tensor):
+        assert negative == -original
+        assert negative.child == original.child * -1
+        assert (negative.min_vals == original.max_vals * -1).all()
+        assert (negative.max_vals == original.min_vals * -1).all()
+
+
 ent = Entity(name="test")
 ent2 = Entity(name="test2")
 

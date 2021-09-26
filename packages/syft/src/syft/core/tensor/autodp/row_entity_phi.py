@@ -235,6 +235,9 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
     def __pos__(self) -> RowEntityPhiTensor:
         return RowEntityPhiTensor(rows=[+x for x in self.child], check_shape=False)
 
+    def __neg__(self) -> RowEntityPhiTensor:
+        return RowEntityPhiTensor(rows=[-x for x in self.child], check_shape=False)
+
     def __truediv__(  # type: ignore
         self, other: Union[RowEntityPhiTensor, AcceptableSimpleType]
     ) -> RowEntityPhiTensor:

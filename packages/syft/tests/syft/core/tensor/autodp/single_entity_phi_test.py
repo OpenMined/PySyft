@@ -1044,6 +1044,20 @@ def test_mul(
     return None
 
 
+def test_neg(
+    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+) -> None:
+    """Test __neg__"""
+    reference_tensor = SEPT(
+        child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
+    )
+    negative_tensor = reference_tensor.__neg__()
+    assert (negative_tensor.child == reference_tensor.child * -1).all()
+    assert (negative_tensor.min_vals == reference_tensor.max_vals * -1).all()
+    assert (negative_tensor.max_vals == reference_tensor.min_vals * -1).all()
+    assert negative_tensor.shape == reference_tensor.shape
+
+
 # End of Ishan's tests
 
 
