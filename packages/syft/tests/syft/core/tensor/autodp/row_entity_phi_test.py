@@ -14,8 +14,8 @@ from syft.core.adp.vm_private_scalar_manager import (
 from syft.core.tensor.autodp.intermediate_gamma import IntermediateGammaTensor as IGT
 from syft.core.tensor.autodp.row_entity_phi import RowEntityPhiTensor as REPT
 from syft.core.tensor.autodp.single_entity_phi import SingleEntityPhiTensor as SEPT
-from syft.core.tensor.tensor import Tensor
 from syft.core.tensor.broadcastable import is_broadcastable
+from syft.core.tensor.tensor import Tensor
 
 # ------------------- EQUALITY OPERATORS -----------------------------------------------
 
@@ -31,7 +31,9 @@ high = 100
 @pytest.fixture
 def reference_data() -> np.ndarray:
     """This generates random data to test the equality operators"""
-    reference_data = np.random.randint(low=-high, high=high, size=(dims, dims), dtype=np.int32)
+    reference_data = np.random.randint(
+        low=-high, high=high, size=(dims, dims), dtype=np.int32
+    )
     return reference_data
 
 
@@ -54,7 +56,9 @@ def row_data_ishan() -> List:
     """This generates a random number of SEPTs to populate the REPTs."""
     reference_data = []
     for _ in range(row_count):
-        new_data = np.random.randint(low=-high, high=high, size=(dims, dims), dtype=np.int32)
+        new_data = np.random.randint(
+            low=-high, high=high, size=(dims, dims), dtype=np.int32
+        )
         reference_data.append(
             SEPT(
                 child=new_data,
@@ -72,7 +76,9 @@ def row_data_trask() -> List:
     """This generates a random number of SEPTs to populate the REPTs."""
     reference_data = []
     for _ in range(row_count):
-        new_data = np.random.randint(low=-high, high=high ,size=(dims, dims), dtype=np.int32)
+        new_data = np.random.randint(
+            low=-high, high=high, size=(dims, dims), dtype=np.int32
+        )
         reference_data.append(
             SEPT(
                 child=new_data,
@@ -381,7 +387,7 @@ def test_sub_result_gamma(row_data_ishan: List, row_data_trask: List) -> None:
 
 
 def test_mul_simple(row_data_ishan: List) -> None:
-    """ Ensure multiplication works with REPTs & Simple types (int/float/bool/np.ndarray)"""
+    """Ensure multiplication works with REPTs & Simple types (int/float/bool/np.ndarray)"""
 
     reference_tensor = REPT(rows=row_data_ishan)
     output = reference_tensor * 5
@@ -392,7 +398,7 @@ def test_mul_simple(row_data_ishan: List) -> None:
 
 
 def test_mul_rept(row_data_ishan: List, row_data_trask: List) -> None:
-    """ Test multiplication of two REPTs"""
+    """Test multiplication of two REPTs"""
     reference_tensor1 = REPT(rows=row_data_ishan)
     reference_tensor2 = REPT(rows=row_data_trask)
     output = reference_tensor1 * reference_tensor2
@@ -405,10 +411,15 @@ def test_mul_rept(row_data_ishan: List, row_data_trask: List) -> None:
 
 
 def test_mul_sept(
-        row_data_ishan: List, reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    row_data_ishan: List,
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
 ) -> None:
-    """ Test REPT * SEPT """
-    sept = SEPT(child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan)
+    """Test REPT * SEPT"""
+    sept = SEPT(
+        child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
+    )
     rept = REPT(rows=row_data_ishan)
     if not is_broadcastable(sept.shape, rept.shape[1:]):
         print(sept.shape, rept.shape)

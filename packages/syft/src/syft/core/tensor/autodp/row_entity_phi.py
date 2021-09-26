@@ -17,14 +17,14 @@ from ...adp.vm_private_scalar_manager import (
     VirtualMachinePrivateScalarManager as TypeScalarManager,
 )
 from ...common.serde.serializable import serializable
+from ..broadcastable import is_broadcastable
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import implements  # type: ignore
 from ..passthrough import is_acceptable_simple_type  # type: ignore
 from ..types import AcceptableSimpleType  # type: ignore
-from ..broadcastable import is_broadcastable
 from .adp_tensor import ADPTensor
-from .single_entity_phi import SingleEntityPhiTensor
 from .initial_gamma import InitialGammaTensor  # type: ignore
+from .single_entity_phi import SingleEntityPhiTensor
 
 
 @serializable(recursive_serde=True)
@@ -182,7 +182,9 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         if is_acceptable_simple_type(other):
             if isinstance(other, np.ndarray):
                 if is_broadcastable(self.shape, other.shape):
-                    new_list.append([self.child[i] * other[i] for i in range(len(self.child))])
+                    new_list.append(
+                        [self.child[i] * other[i] for i in range(len(self.child))]
+                    )
                 else:
                     raise Exception(
                         f"Tensor dims do not match for __sub__: {self.child.shape} != {other.shape}"  # type: ignore
@@ -191,7 +193,9 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
                 new_list = [child * other for child in self.child]
         elif isinstance(other, RowEntityPhiTensor):
             if is_broadcastable(self.shape, other.shape):
-                new_list = [self.child[i] * other.child[i] for i in range(len(self.child))]
+                new_list = [
+                    self.child[i] * other.child[i] for i in range(len(self.child))
+                ]
             else:
                 raise Exception(
                     f"Tensor dims do not match for __sub__: {self.shape} != {other.shape}"  # type: ignore
