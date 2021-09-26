@@ -797,7 +797,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         axis: Optional[int] = -1,
         kind: Optional[str] = "introselect",
         order: Optional[Union[str, List[str]]] = None,
-    ) -> SingleEntityPhiTensor:
+    ) -> None:
         """Interchange two axes of the Tensor"""
         if (
             isinstance(self.child, int)
@@ -818,7 +818,9 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             or isinstance(self.min_vals, bool)
         ):
             # For these singleton data types, the partition operation is meaningless, so don't change them.
-            print(f'Warning: Min_vals metadata was of type {type(self.min_vals)}, partition operation had no effect.')
+            print(
+                f"Warning: Min_vals metadata was of type {type(self.min_vals)}, partition operation had no effect."
+            )
         else:
             self.min_vals.partition(kth, axis, kind, order)
 
@@ -828,7 +830,9 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             or isinstance(self.max_vals, bool)
         ):
             # For these singleton data types, the partition operation is meaningless, so don't change them.
-            print(f'Warning: Max_vals metadata was of type {type(self.max_vals)}, partition operation had no effect.')
+            print(
+                f"Warning: Max_vals metadata was of type {type(self.max_vals)}, partition operation had no effect."
+            )
         else:
             self.max_vals.partition(kth, axis, kind, order)
 
