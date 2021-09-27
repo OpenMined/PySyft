@@ -19,7 +19,7 @@ depends_on = None
 def upgrade() -> None:
     op.create_table(
         "daa_pdf",
-        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column("binary", sa.LargeBinary(length=3072), nullable=True),
         sa.PrimaryKeyConstraint("id"),
     )
