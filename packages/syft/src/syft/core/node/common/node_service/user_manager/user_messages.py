@@ -56,6 +56,7 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
         password: str,
         reply_to: Address,
         role: Optional[str] = "",
+        daa_pdf: Optional[bytes] = b"",
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -63,6 +64,7 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
         self.password = password
         self.role = role
         self.name = name
+        self.daa_pdf = daa_pdf
 
     def _object2proto(self) -> CreateUserMessage_PB:
         """Returns a protobuf serialization of self.
@@ -83,6 +85,7 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
             password=self.password,
             role=self.role,
             name=self.name,
+            daa_pdf=self.daa_pdf,
             reply_to=serialize(self.reply_to),
         )
 
@@ -107,6 +110,7 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
             password=proto.password,
             name=proto.name,
             role=proto.role,
+            daa_pdf=proto.daa_pdf,
             reply_to=_deserialize(blob=proto.reply_to),
         )
 

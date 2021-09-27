@@ -15,7 +15,8 @@ message CreateUserMessage {
   string password = 4;
   string role = 5;
   string name = 6;
-  syft.core.io.Address reply_to = 7;
+  bytes daa_pdf = 7;
+  syft.core.io.Address reply_to = 8;
 }
 
 // GET User
