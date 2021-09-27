@@ -382,10 +382,19 @@ class Domain(Node):
                 alive_handlers.append(handler)
         self.request_handlers = alive_handlers
 
-    def clear(self) -> None:
+    def clear(self) -> bool:
         # Cleanup database tables
-        self.store.clear()
-        self.data_requests.clear()
+        if current_user.role == node.roles.owner_role.id:
+            self.store.clear()
+            self.data_requests.clear()
+            self.users.clear()
+            self.environments.clear()
+            self.association_requests.clear()
+            self.datasets.clear()
+            return True
+
+        return False
+ 
 
     def clean_up_requests(self) -> None:
         # this allows a request to be re-handled if the handler somehow failed

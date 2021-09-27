@@ -36,8 +36,8 @@ async def syft_metadata() -> Response:
 @router.delete("", response_model=str)
 async def delete(current_user: UserPrivate = Depends(get_current_user)) -> Response:
     # If current user is the node owner ...
-    if current_user.role == node.roles.owner_role.id:
-        node.clear()
+    success = node.clear()
+    if success:
         response = {RequestAPIFields.MESSAGE: "Domain node has been reset!"}
     else:
         response = {
