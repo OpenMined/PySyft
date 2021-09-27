@@ -171,7 +171,7 @@ class UserManager(DatabaseManager):
 
     def can_triage_requests(self, verify_key: VerifyKey) -> bool:
         try:
-            return self.role(verify_key=verify_key).can_triage_requests
+            return self.role(verify_key=verify_key).can_triage_data_requests
         except UserNotFoundError:
             return False
 

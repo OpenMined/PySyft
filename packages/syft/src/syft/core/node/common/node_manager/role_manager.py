@@ -39,13 +39,14 @@ class RoleManager(DatabaseManager):
 
     def _common_roles(self) -> Query:
         return self.db.session.query(self._schema).filter_by(
-            can_triage_requests=False,
-            can_edit_settings=False,
+            can_make_data_requests=True,
+            can_triage_data_requests=False,
+            can_manage_privacy_budget=False,
             can_create_users=False,
-            can_create_groups=False,
-            can_upload_data=False,
+            can_manage_users=False,
             can_edit_roles=False,
             can_manage_infrastructure=False,
+            can_upload_data=False,
         )
 
     @property
