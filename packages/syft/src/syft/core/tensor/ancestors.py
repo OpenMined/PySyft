@@ -28,7 +28,6 @@ def _SingleEntityPhiTensor() -> Type[PassthroughTensor]:
     global _SingleEntityPhiTensorRef
     if _SingleEntityPhiTensorRef is None:
         # relative
-        # relative
         from .autodp.single_entity_phi import SingleEntityPhiTensor
 
         _SingleEntityPhiTensorRef = SingleEntityPhiTensor
@@ -42,7 +41,6 @@ def _RowEntityPhiTensor() -> Type[PassthroughTensor]:
     global _RowEntityPhiTensorRef
     if _RowEntityPhiTensorRef is None:
         # relative
-        # relative
         from .autodp.row_entity_phi import RowEntityPhiTensor
 
         _RowEntityPhiTensorRef = RowEntityPhiTensor
@@ -55,7 +53,6 @@ _AutogradTensorRef = None
 def _AutogradTensor() -> Type[PassthroughTensor]:
     global _AutogradTensorRef
     if _AutogradTensorRef is None:
-        # relative
         # relative
         from .autograd.tensor import AutogradTensor
 

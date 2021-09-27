@@ -168,7 +168,9 @@ class GridHTTPConnection(HTTPConnection):
         else:
             raise RequestAPIException(response.get(RequestAPIFields.ERROR))
 
-    def send_files(self, file_path: str, metadata: Dict = {}) -> Dict[str, Any]:
+    def send_files(
+        self, route: str, file_path: str, metadata: Dict = {}
+    ) -> Dict[str, Any]:
         header = {}
 
         if self.session_token and self.token_type:
@@ -188,7 +190,7 @@ class GridHTTPConnection(HTTPConnection):
             "file": (file_path, open(file_path, "rb"), "application/octet-stream"),
         }
 
-        resp = requests.post(self.base_url + "/datasets", files=files, headers=header)
+        resp = requests.post(self.base_url + route, files=files, headers=header)
 
         return json.loads(resp.content)
 

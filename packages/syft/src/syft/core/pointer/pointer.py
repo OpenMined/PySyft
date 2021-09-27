@@ -254,7 +254,6 @@ class Pointer(AbstractPointer):
     def publish(self, sigma: float = 1.5) -> Any:
 
         # relative
-        # relative
         from ...lib.python import Float
         from ..node.common.node_service.publish.publish_service import (
             PublishScalarsAction,

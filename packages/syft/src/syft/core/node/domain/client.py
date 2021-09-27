@@ -17,12 +17,6 @@ import names
 import pandas as pd
 from pandas import DataFrame
 
-# syft absolute
-from syft import deserialize
-from syft.core.node.common.node_service.node_setup.node_setup_messages import (
-    UpdateSetupMessage,
-)
-
 # relative
 from .... import deserialize
 from ....logger import traceback_and_raise
@@ -52,6 +46,7 @@ from ..common.node_service.network_search.network_search_messages import (
     NetworkSearchMessage,
 )
 from ..common.node_service.node_setup.node_setup_messages import GetSetUpMessage
+from ..common.node_service.node_setup.node_setup_messages import UpdateSetupMessage
 from ..common.node_service.object_transfer.object_transfer_messages import (
     LoadObjectMessage,
 )
@@ -395,7 +390,7 @@ class DomainClient(Client):
         )
         response = input().lower()
         if response == "y":
-            response = self.routes[0].connection.reset() # type: ignore
+            response = self.routes[0].connection.reset()  # type: ignore
 
     def configure(self, **kwargs: Any) -> Any:
         response = self._perform_grid_request(  # type: ignore
