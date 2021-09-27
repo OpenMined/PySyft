@@ -68,6 +68,7 @@ def create_user_msg(
         resp_msg="User created successfully!",
     )
 
+
 def update_user_msg(
     msg: UpdateUserMessage,
     node: DomainInterface,
@@ -121,7 +122,7 @@ def update_user_msg(
         # If all premises were respected
         if _allowed:
             new_role_id = node.roles.first(name=msg.role).id
-            node.users.set(user_id=msg.user_id, role=new_role_id)
+            node.users.set(user_id=msg.user_id, role=new_role_id)  # type: ignore
         elif (  # Transfering Owner's role
             msg.role == node.roles.owner_role.name  # target role == Owner
             and node.users.role(verify_key=verify_key).name
@@ -130,10 +131,10 @@ def update_user_msg(
             new_role_id = node.roles.first(name=msg.role).id
             node.users.set(user_id=str(msg.user_id), role=new_role_id)
             current_user = node.users.get_user(verify_key=verify_key)
-            node.users.set(user_id=current_user.id, role=node.roles.admin_role.id)
+            node.users.set(user_id=current_user.id, role=node.roles.admin_role.id)  # type: ignore
             # Updating current node keys
             root_key = SigningKey(
-                current_user.private_key.encode("utf-8"), encoder=HexEncoder
+                current_user.private_key.encode("utf-8"), encoder=HexEncoder  # type: ignore
             )
             node.signing_key = root_key
             node.verify_key = root_key.verify_key
@@ -243,6 +244,7 @@ def get_all_users_msg(
         content=_msg,
     )
 
+
 def get_applicant_users(
     msg: GetUsersMessage,
     node: DomainInterface,
@@ -260,8 +262,8 @@ def get_applicant_users(
         for user in users:
             print(user)
             _user_json = model_to_json(user)
-            _user_json['daa_pdf'] = user.daa_pdf.id
-        
+            _user_json["daa_pdf"] = user.daa_pdf.id
+
         _msg.append(_user_json)
 
     return GetUsersResponse(

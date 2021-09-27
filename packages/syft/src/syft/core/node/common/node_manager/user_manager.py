@@ -88,8 +88,8 @@ class UserManager(DatabaseManager):
         return org_users
 
     def create_user_application(
-        self, name: str, email: str, password: str, daa_pdf: bytes
-    ) -> UserApplication:
+        self, name: str, email: str, password: str, daa_pdf: Optional[bytes]
+    ) -> None:
         salt, hashed = self.__salt_and_hash_password(password, 12)
         _pdf_obj = PDFObject(binary=daa_pdf)
         _obj = UserApplication(
@@ -104,7 +104,7 @@ class UserManager(DatabaseManager):
         session_local.add(_obj)
         session_local.commit()
 
-    def get_applicant(self):
+    def get_applicant(self) -> List[UserApplication]:
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
         result = list(session_local.query(UserApplication).all())
         session_local.close()

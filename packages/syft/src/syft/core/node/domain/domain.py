@@ -396,7 +396,6 @@ class Domain(Node):
             return True
 
         return False
- 
 
     def clean_up_requests(self) -> None:
         # this allows a request to be re-handled if the handler somehow failed

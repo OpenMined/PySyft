@@ -106,4 +106,3 @@ class DatabaseManager:
         local_session.query(self._schema).delete()
         local_session.commit()
         local_session.close()
-

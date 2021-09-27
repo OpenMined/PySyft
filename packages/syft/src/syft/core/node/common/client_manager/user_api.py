@@ -34,8 +34,8 @@ class UserRequestAPI(RequestAPI):
     def create(self, **kwargs: Any) -> None:
         try:
             if "pdf" in kwargs.keys():
-                response = self.client.routes[0].connection.send_files(
-                    "/users", kwargs.get("pdf"), metadata=kwargs
+                response = self.client.routes[0].connection.send_files(  # type: ignore
+                    "/users", kwargs.get("pdf"), metadata=kwargs  # type: ignore
                 )  # type: ignore
                 logger.info(response)
             else:
