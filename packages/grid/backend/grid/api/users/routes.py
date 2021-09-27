@@ -1,10 +1,14 @@
 # stdlib
+import json
 from typing import List
 from typing import NoReturn
 
 # third party
 from fastapi import APIRouter
 from fastapi import Depends
+from fastapi import File
+from fastapi import Form
+from fastapi import UploadFile
 from loguru import logger
 from starlette import status
 from starlette.exceptions import HTTPException
@@ -38,9 +42,14 @@ def get_self(current_user: UserPrivate = Depends(get_current_user)) -> User:
 # TODO: Syft should return the newly created user and the response model should be User.
 @router.post("", name="users:create", status_code=status.HTTP_201_CREATED)
 async def create_user_grid(
-    new_user: UserCreate,
     current_user: UserPrivate = Depends(get_current_user),
+    file: UploadFile = File(...),
+    metadata: str = Form(...),
 ) -> str:
+    pdf_file = file.file.read()
+    dict_user = json.loads(metadata)
+    dict_user["daa_pdf"] = pdf_file
+    new_user = UserCreate(**dict_user)
     try:
         return syft_user_messages.create_user(new_user, current_user)
     except Exception as err:
