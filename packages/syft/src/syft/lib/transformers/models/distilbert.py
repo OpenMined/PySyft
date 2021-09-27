@@ -1,3 +1,4 @@
+# type: ignore
 # stdlib
 import math
 import time
@@ -11,9 +12,9 @@ from transformers.models.distilbert.modeling_distilbert import (
 )
 from transformers.models.distilbert.modeling_distilbert import DistilBertConfig
 
-# syft absolute
-from syft import SyModule
-from syft.core.plan.plan_builder import ROOT_CLIENT
+# relative
+from .... import SyModule
+from ....core.plan.plan_builder import ROOT_CLIENT
 
 
 class Embeddings(SyModule):

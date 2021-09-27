@@ -18,13 +18,12 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 import torch
 
-# syft absolute
-from syft.core.common.serde.deserialize import _deserialize as deserialize
-from syft.core.common.serde.serializable import Serializable
-from syft.core.common.serde.serializable import bind_protobuf
-from syft.core.common.serde.serialize import _serialize as serialize
-from syft.core.tensor.passthrough import PassthroughTensor
-from syft.proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB
+# relative
+from ....proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB  # type: ignore
+from ...common.serde.deserialize import _deserialize as deserialize
+from ...common.serde.serializable import serializable
+from ...common.serde.serialize import _serialize as serialize
+from ..passthrough import PassthroughTensor  # type: ignore
 
 METHODS_FORWARD_ALL_SHARES = {
     "repeat",
@@ -39,14 +38,13 @@ METHODS_FORWARD_ALL_SHARES = {
     "reshape",
     "squeeze",
     "swapaxes",
+    "__pos__",
 }
-INPLACE_OPS = {
-    "resize",
-}
+INPLACE_OPS = {"resize", "put"}
 
 
-@bind_protobuf
-class ShareTensor(PassthroughTensor, Serializable):
+@serializable()
+class ShareTensor(PassthroughTensor):
     def __init__(
         self,
         rank: int,
@@ -127,14 +125,14 @@ class ShareTensor(PassthroughTensor, Serializable):
     @staticmethod
     def generate_przs(
         value: Optional[Any],
-        shape: Tuple[int],
+        shape: Tuple[int, ...],
         rank: int,
         nr_parties: int,
         seed_shares: int,
     ) -> "ShareTensor":
 
-        # syft absolute
-        from syft.core.tensor.tensor import Tensor
+        # relative
+        from ..tensor import Tensor
 
         if value is None:
             value = Tensor(np.zeros(shape, dtype=np.int32))  # TODO: change to np.int64
@@ -317,7 +315,10 @@ class ShareTensor(PassthroughTensor, Serializable):
         Returns:
             ShareTensor: Result of the operation.
         """
-        ShareTensor.sanity_checks(y)
+        if isinstance(y, ShareTensor):
+            raise ValueError("Private matmul not supported yet")
+
+        ShareTensor.sanity_check(y)
         new_share = self.apply_function(y, "matmul")
         return new_share
 
@@ -330,8 +331,12 @@ class ShareTensor(PassthroughTensor, Serializable):
         Returns:
             ShareTensor. Result of the operation.
         """
-        ShareTensor.sanity_checks(y)
-        return y.matmul(self)
+        if isinstance(y, ShareTensor):
+            raise ValueError("Private matmul not supported yet")
+
+        ShareTensor.sanity_check(y)
+        new_share = y.apply_function(self, "matmul")
+        return new_share
 
     # TRASK: commenting out because ShareTEnsor doesn't appear to have .session_uuid or .config
     # def div(
@@ -399,7 +404,7 @@ class ShareTensor(PassthroughTensor, Serializable):
 
     def __getattribute__(self, attr_name: str) -> Any:
 
-        if attr_name in METHODS_FORWARD_ALL_SHARES:
+        if attr_name in METHODS_FORWARD_ALL_SHARES or attr_name in INPLACE_OPS:
             return ShareTensor.hook_method(self, attr_name)
 
         return object.__getattribute__(self, attr_name)

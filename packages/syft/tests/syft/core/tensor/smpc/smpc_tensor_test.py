@@ -20,15 +20,15 @@ vms = [sy.VirtualMachine(name=name) for name in ["alice", "bob", "theo", "andrew
 clients = [vm.get_client() for vm in vms]
 
 PUBLIC_VALUES: Final[TypeDict[str, Union[np.ndarray, torch.Tensor, int]]] = {
-    "numpy_array": np.array([32], dtype=np.int64),
-    "torch_tensor": torch.tensor([42], dtype=torch.int64),
+    "numpy_array": np.array([32], dtype=np.int32),
+    "torch_tensor": torch.tensor([42], dtype=torch.int32),
     "int": 42,
 }
 
 
 @pytest.mark.parametrize("public_value_type", ["int", "torch_tensor", "numpy_array"])
 def test_remote_sharing(public_value_type: str) -> None:
-    value = np.array([[1, 2, 3, 4, -5]], dtype=np.int64)
+    value = np.array([[1, 2, 3, 4, -5]], dtype=np.int32)
     remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
 
     mpc_tensor = MPCTensor(
@@ -44,8 +44,8 @@ def test_remote_sharing(public_value_type: str) -> None:
 
 @pytest.mark.parametrize("op_str", ["add", "sub"])
 def test_mpc_private_private_op(op_str: str) -> None:
-    value_1 = np.array([[1, 2, 3, 4, -5]], dtype=np.int64)
-    value_2 = np.array([42], dtype=np.int64)
+    value_1 = np.array([[1, 2, 3, 4, -5]], dtype=np.int32)
+    value_2 = np.array([42], dtype=np.int32)
 
     remote_value_1 = clients[0].syft.core.tensor.tensor.Tensor(value_1)
     remote_value_2 = clients[2].syft.core.tensor.tensor.Tensor(value_2)
@@ -69,7 +69,7 @@ def test_mpc_private_private_op(op_str: str) -> None:
 @pytest.mark.parametrize("public_value_type", ["int", "torch_tensor", "numpy_array"])
 @pytest.mark.parametrize("op_str", ["add", "sub", "mul"])
 def test_mpc_private_public_op(op_str: str, public_value_type: str) -> None:
-    value_1 = np.array([[1, 2, 3, 4, -5]], dtype=np.int64)
+    value_1 = np.array([[1, 2, 3, 4, -5]], dtype=np.int32)
     value_2 = PUBLIC_VALUES[public_value_type]
 
     remote_value_1 = clients[0].syft.core.tensor.tensor.Tensor(value_1)
@@ -90,11 +90,30 @@ def test_mpc_private_public_op(op_str: str, public_value_type: str) -> None:
     assert (res == expected).all()
 
 
+@pytest.mark.parametrize("op_str", ["matmul"])
+def test_mpc_matmul_op(op_str: str) -> None:
+    value_1 = np.array([[1, 7], [3, -7]], dtype=np.int32)
+    value_2 = np.array([[6, 2], [-6, 5]], dtype=np.int32)
+
+    remote_value_1 = clients[0].syft.core.tensor.tensor.Tensor(value_1)
+
+    mpc_tensor_1 = MPCTensor(
+        parties=clients, secret=remote_value_1, shape=(2, 2), seed_shares=52
+    )
+
+    op = getattr(operator, op_str)
+
+    res = op(mpc_tensor_1, value_2).reconstruct()
+    expected = op(value_1, value_2)
+
+    assert (res == expected).all()
+
+
 @pytest.mark.parametrize("public_value_type", ["int", "torch_tensor", "numpy_array"])
 @pytest.mark.parametrize("op_str", ["add", "sub", "mul"])
 def test_mpc_public_private_op(op_str: str, public_value_type: str) -> None:
     value_1 = PUBLIC_VALUES[public_value_type]
-    value_2 = np.array([[1, 2, 3, 4, -5]], dtype=np.int64)
+    value_2 = np.array([[1, 2, 3, 4, -5]], dtype=np.int32)
 
     remote_value_2 = clients[0].syft.core.tensor.tensor.Tensor(value_2)
 
@@ -117,7 +136,7 @@ def test_mpc_public_private_op(op_str: str, public_value_type: str) -> None:
     "method_str, kwargs", [("sum", {"axis": 0}), ("sum", {"axis": 1})]
 )
 def test_mpc_forward_methods(method_str: str, kwargs: TypeDict[str, Any]) -> None:
-    value = np.array([[1, 2, 3, 4, -5], [5, 6, 7, 8, 9]], dtype=np.int64)
+    value = np.array([[1, 2, 3, 4, -5], [5, 6, 7, 8, 9]], dtype=np.int32)
 
     remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
 
@@ -135,7 +154,7 @@ def test_mpc_forward_methods(method_str: str, kwargs: TypeDict[str, Any]) -> Non
 
 
 def test_repeat() -> None:
-    value = np.array([[1, 2], [3, 4]])
+    value = np.array([[1, 2], [3, 4]], dtype=np.int32)
 
     remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
 
@@ -150,7 +169,7 @@ def test_repeat() -> None:
 
 
 def test_copy() -> None:
-    value = np.array([[1, 2], [3, 4]])
+    value = np.array([[1, 2], [3, 4]], dtype=np.int32)
 
     remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
 
@@ -166,7 +185,7 @@ def test_copy() -> None:
 
 
 def test_diagonal() -> None:
-    value = np.array([[0, 1], [2, 3]])
+    value = np.array([[0, 1], [2, 3]], dtype=np.int32)
 
     remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
 
@@ -181,7 +200,7 @@ def test_diagonal() -> None:
 
 
 def test_flatten() -> None:
-    value = np.array([[89, 12, 54], [412, 89, 42], [87, 32, 58]])
+    value = np.array([[89, 12, 54], [412, 89, 42], [87, 32, 58]], dtype=np.int32)
 
     remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
 
@@ -196,7 +215,7 @@ def test_flatten() -> None:
 
 
 def test_transpose() -> None:
-    value = np.array([[89, 12, 54], [412, 89, 42], [87, 32, 58]])
+    value = np.array([[89, 12, 54], [412, 89, 42], [87, 32, 58]], dtype=np.int32)
 
     remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
 
@@ -211,7 +230,7 @@ def test_transpose() -> None:
 
 
 def test_resize() -> None:
-    value = np.array([[89, 12], [412, 89], [87, 32]])
+    value = np.array([[89, 12], [412, 89], [87, 32]], dtype=np.int32)
 
     remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
 
@@ -227,7 +246,7 @@ def test_resize() -> None:
 
 
 def test_ravel() -> None:
-    value = np.array([[8, 1, 5], [4, 8, 4], [7, 2, 27]])
+    value = np.array([[8, 1, 5], [4, 8, 4], [7, 2, 27]], dtype=np.int32)
 
     remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
 
@@ -242,7 +261,7 @@ def test_ravel() -> None:
 
 
 def test_compress() -> None:
-    value = np.array([[1, 2], [3, 4], [5, 6]])
+    value = np.array([[1, 2], [3, 4], [5, 6]], dtype=np.int32)
 
     remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
 
@@ -257,7 +276,7 @@ def test_compress() -> None:
 
 
 def test_reshape() -> None:
-    value = np.array([[1, 2], [3, 4], [5, 6]])
+    value = np.array([[1, 2], [3, 4], [5, 6]], dtype=np.int32)
 
     remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
 
@@ -272,7 +291,7 @@ def test_reshape() -> None:
 
 
 def test_squeeze() -> None:
-    value = np.array([[7], [6], [72]])
+    value = np.array([[7], [6], [72]], dtype=np.int32)
 
     remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
 
@@ -287,7 +306,7 @@ def test_squeeze() -> None:
 
 
 def test_swapaxes() -> None:
-    value = np.array(np.array([[613, 645, 738], [531, 412, 658]]))
+    value = np.array([[613, 645, 738], [531, 412, 658]], dtype=np.int32)
 
     remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
 
@@ -297,5 +316,36 @@ def test_swapaxes() -> None:
 
     res = mpc_tensor.swapaxes(0, 1).reconstruct()
     exp_res = value.swapaxes(0, 1)
+
+    assert (res == exp_res).all()
+
+
+def test_pos() -> None:
+    value = np.array([[5, 2], [3, 7]], dtype=np.int32)
+
+    remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
+
+    mpc_tensor = MPCTensor(
+        parties=clients, secret=remote_value, shape=(2, 2), seed_shares=42
+    )
+
+    res = mpc_tensor.__pos__().reconstruct()
+    exp_res = value.__pos__()
+
+    assert (res == exp_res).all()
+
+
+def test_put() -> None:
+    value = np.array([[5, 2], [3, 7]], dtype=np.int32)
+
+    remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
+
+    mpc_tensor = MPCTensor(
+        parties=clients, secret=remote_value, shape=(2, 2), seed_shares=42
+    )
+
+    res = mpc_tensor.put([0, 1], 7).reconstruct()
+    value.put([0, 1], 7)
+    exp_res = value  # inplace ops
 
     assert (res == exp_res).all()

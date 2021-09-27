@@ -5,7 +5,7 @@ import pandas as pd
 import pyarrow as pa
 
 # relative
-from ...generate_wrapper import GenerateWrapper
+from ...core.common.serde.serializable import serializable
 from ...proto.lib.pandas.frame_pb2 import PandasDataFrame as PandasDataFrame_PB
 
 
@@ -48,7 +48,7 @@ def proto2object(proto: PandasDataFrame_PB) -> pd.DataFrame:
     return pa.ipc.open_file(buf).read_pandas()
 
 
-GenerateWrapper(
+serializable(generate_wrapper=True)(
     wrapped_type=pd.DataFrame,
     import_path="pandas.DataFrame",
     protobuf_scheme=PandasDataFrame_PB,

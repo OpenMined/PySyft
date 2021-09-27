@@ -4,10 +4,10 @@ from transformers import PretrainedConfig
 
 # relative
 from ... import deserialize
-from ...generate_wrapper import GenerateWrapper
-from ...lib.python.primitive_factory import PrimitiveFactory
-from ...lib.python.util import upcast
+from ...core.common.serde.serializable import serializable
 from ...proto.lib.transformers.hf_config_pb2 import HFConfig as HFConfig_PB
+from ..python.primitive_factory import PrimitiveFactory
+from ..python.util import upcast
 
 
 def object2proto(obj: PretrainedConfig) -> HFConfig_PB:
@@ -28,7 +28,7 @@ def proto2object(proto: HFConfig_PB) -> PretrainedConfig:
     return config
 
 
-GenerateWrapper(
+serializable(generate_wrapper=True)(
     wrapped_type=PretrainedConfig,
     import_path="transformers.PretrainedConfig",
     protobuf_scheme=HFConfig_PB,

@@ -5,13 +5,14 @@ from uuid import UUID
 from numpy import ndarray
 
 # relative
-from .....core.common.serde.recursive import RecursiveSerde
+from .....core.common.serde.serializable import serializable
 from ...passthrough import is_acceptable_simple_type  # type: ignore
 from ..tensor import AutogradTensor
 from .op import Op
 
 
-class MulOp(Op, RecursiveSerde):
+@serializable(recursive_serde=True)
+class MulOp(Op):
     """Multiplication operation with 2 tensors"""
 
     __attr_allowlist__ = [

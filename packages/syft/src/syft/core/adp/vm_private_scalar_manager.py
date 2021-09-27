@@ -7,12 +7,13 @@ from typing import Union
 import sympy as sp
 
 # relative
-from ..common.serde.recursive import RecursiveSerde
+from ..common.serde.serializable import serializable
 from .entity import Entity
 from .scalar import GammaScalar
 
 
-class PrimeFactory(RecursiveSerde):
+@serializable(recursive_serde=True)
+class PrimeFactory:
 
     """IMPORTANT: it's very important that two tensors be able to tell that
     they are indeed referencing the EXACT same PrimeFactory. At present this is done
@@ -32,7 +33,8 @@ class PrimeFactory(RecursiveSerde):
         return self.prev_prime
 
 
-class VirtualMachinePrivateScalarManager(RecursiveSerde):
+@serializable(recursive_serde=True)
+class VirtualMachinePrivateScalarManager:
 
     __attr_allowlist__ = ["prime_factory", "prime2symbol"]
 

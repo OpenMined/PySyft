@@ -10,9 +10,9 @@ from ......logger import debug
 from ......logger import error
 from .....store.storeable_object import StorableObject
 from ....abstract.node import AbstractNode
-from ....common.node_service.node_service import ImmediateNodeServiceWithoutReply
 from ..auth import service_auth
 from ..heritage_update.heritage_update_messages import HeritageUpdateMessage
+from ..node_service import ImmediateNodeServiceWithoutReply
 from .child_node_lifecycle_messages import RegisterChildNodeMessage
 
 

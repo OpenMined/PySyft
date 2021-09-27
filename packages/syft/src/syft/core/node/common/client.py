@@ -2,6 +2,7 @@
 import sys
 from typing import Any
 from typing import Dict
+from typing import Iterator
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -13,9 +14,10 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import pandas as pd
 
+# syft absolute
+import syft as sy
+
 # relative
-from .... import serialize
-from ....lib import create_lib_ast
 from ....logger import critical
 from ....logger import debug
 from ....logger import error
@@ -30,9 +32,7 @@ from ...common.message import SignedEventualSyftMessageWithoutReply
 from ...common.message import SignedImmediateSyftMessageWithReply
 from ...common.message import SignedImmediateSyftMessageWithoutReply
 from ...common.message import SyftMessage
-from ...common.serde.deserialize import _deserialize
-from ...common.serde.serializable import Serializable
-from ...common.serde.serializable import bind_protobuf
+from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from ...io.location import Location
 from ...io.location import SpecificLocation
@@ -50,8 +50,8 @@ from .node_service.child_node_lifecycle.child_node_lifecycle_service import (
 from .node_service.object_search.obj_search_service import ObjectSearchMessage
 
 
-@bind_protobuf
-class Client(AbstractNodeClient, Serializable):
+@serializable()
+class Client(AbstractNodeClient):
     """Client is an incredibly powerful abstraction in Syft. We assume that,
     no matter where a client is, it can figure out how to communicate with
     the Node it is supposed to point to. If I send you a client I have
@@ -122,11 +122,11 @@ class Client(AbstractNodeClient, Serializable):
         metadata: Metadata_PB,
     ) -> Tuple[SpecificLocation, str, UID]:
         # string of bytes
-        meta = _deserialize(blob=metadata)
+        meta = sy.deserialize(blob=metadata)
         return meta.node, meta.name, meta.id
 
     def install_supported_frameworks(self) -> None:
-        self.lib_ast = create_lib_ast(client=self)
+        self.lib_ast = sy.lib.create_lib_ast(client=self)
 
         # first time we want to register for future updates
         self.lib_ast.register_updates(self)
@@ -227,10 +227,8 @@ class Client(AbstractNodeClient, Serializable):
         route_index: int = 0,
     ) -> SyftMessage:
 
-        # syft absolute
-        from syft.core.node.common.node_service.simple.simple_messages import (
-            NodeRunnableMessageWithReply,
-        )
+        # relative
+        from .node_service.simple.simple_messages import NodeRunnableMessageWithReply
 
         # TEMPORARY: if message is instance of NodeRunnableMessageWithReply then we need to wrap it in a SimpleMessage
         if isinstance(msg, NodeRunnableMessageWithReply):
@@ -310,9 +308,9 @@ class Client(AbstractNodeClient, Serializable):
     def _object2proto(self) -> Client_PB:
         client_pb = Client_PB(
             obj_type=get_fully_qualified_name(obj=self),
-            id=serialize(self.id),
+            id=sy.serialize(self.id),
             name=self.name,
-            routes=[serialize(route) for route in self.routes],
+            routes=[sy.serialize(route) for route in self.routes],
             network=self.network._object2proto() if self.network else None,
             domain=self.domain._object2proto() if self.domain else None,
             device=self.device._object2proto() if self.device else None,
@@ -328,11 +326,13 @@ class Client(AbstractNodeClient, Serializable):
 
         obj = obj_type(
             name=proto.name,
-            routes=[_deserialize(route) for route in proto.routes],
-            network=_deserialize(proto.network) if proto.HasField("network") else None,
-            domain=_deserialize(proto.domain) if proto.HasField("domain") else None,
-            device=_deserialize(proto.device) if proto.HasField("device") else None,
-            vm=_deserialize(proto.vm) if proto.HasField("vm") else None,
+            routes=[sy.deserialize(route) for route in proto.routes],
+            network=sy.deserialize(proto.network)
+            if proto.HasField("network")
+            else None,
+            domain=sy.deserialize(proto.domain) if proto.HasField("domain") else None,
+            device=sy.deserialize(proto.device) if proto.HasField("device") else None,
+            vm=sy.deserialize(proto.vm) if proto.HasField("vm") else None,
         )
 
         if type(obj) != obj_type:
@@ -389,8 +389,10 @@ class StoreClient:
 
     def __len__(self) -> int:
         """Return the number of items in the object store we're allowed to know about"""
-
         return len(self.store)
+
+    def __iter__(self) -> Iterator[Any]:
+        return self.store.__iter__()
 
     def __getitem__(self, key: Union[str, int]) -> Pointer:
         if isinstance(key, str):

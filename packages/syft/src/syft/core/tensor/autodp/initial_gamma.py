@@ -9,9 +9,10 @@ import numpy as np
 
 # relative
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
-from ...common.serde.recursive import RecursiveSerde
+from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from ..passthrough import PassthroughTensor  # type: ignore
+from ..smpc.share_tensor import ShareTensor
 from .adp_tensor import ADPTensor
 from .intermediate_gamma import IntermediateGammaTensor
 
@@ -26,7 +27,8 @@ def list2numpy(l_shape: Any) -> np.ndarray:
     return np.array(list_length).reshape(shape)
 
 
-class InitialGammaTensor(IntermediateGammaTensor, RecursiveSerde, ADPTensor):
+@serializable(recursive_serde=True)
+class InitialGammaTensor(IntermediateGammaTensor, ADPTensor):
 
     __attr_allowlist__ = [
         "uid",
@@ -43,6 +45,8 @@ class InitialGammaTensor(IntermediateGammaTensor, RecursiveSerde, ADPTensor):
 
     __serde_overrides__ = {"entities": [numpy2list, list2numpy]}
 
+    sharetensor_values: Optional[ShareTensor]
+
     def __init__(
         self,
         values: Union[IntermediateGammaTensor, PassthroughTensor, np.ndarray],
@@ -52,9 +56,6 @@ class InitialGammaTensor(IntermediateGammaTensor, RecursiveSerde, ADPTensor):
         scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None,
     ) -> None:
         self.uid = UID()
-
-        # syft absolute
-        from syft.core.tensor.smpc.share_tensor import ShareTensor
 
         if isinstance(values, ShareTensor):
             self.sharetensor_values = values
@@ -74,7 +75,12 @@ class InitialGammaTensor(IntermediateGammaTensor, RecursiveSerde, ADPTensor):
         flat_values = self.values.flatten()
         flat_min_vals = self.min_vals.flatten()
         flat_max_vals = self.max_vals.flatten()
-        flat_entities = self.entities.flatten()
+
+        # If it's a list of lists, then it should still work
+        if isinstance(self.entities, np.ndarray):
+            flat_entities = self.entities.flatten()
+        else:
+            flat_entities = self.entities
 
         some_symbols = list()
         for i in range(flat_values.shape[0]):

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+import operator
 from typing import Any
 from typing import List
 from typing import Optional
@@ -15,9 +16,8 @@ import torch as th
 # relative
 from ... import lib
 from ...ast.klass import pointerize_args_and_kwargs
-from ...core.common.serde.recursive import RecursiveSerde
 from ...util import inherit_tags
-from ..common.serde.serializable import bind_protobuf
+from ..common.serde.serializable import serializable
 from ..common.uid import UID
 from ..node.abstract.node import AbstractNodeClient
 from ..node.common.action.run_class_method_action import RunClassMethodAction
@@ -57,20 +57,17 @@ class TensorPointer(Pointer):
         self.public_shape = public_shape
 
     def share(self, *parties: Tuple[AbstractNodeClient, ...]) -> MPCTensor:
-
-        parties = tuple(list(parties) + [self.client])
-
-        self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=parties)
-
+        all_parties = list(parties) + [self.client]
+        self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=all_parties)
         return self_mpc
 
-    def simple_add(self, other: Any) -> TensorPointer:
+    def _apply_tensor_op(self, other: Any, op_str: str) -> Any:
         # we want to get the return type which matches the attr_path_and_name
         # so we ask lib_ast for the return type name that matches out
         # attr_path_and_name and then use that to get the actual pointer klass
         # then set the result to that pointer klass
 
-        attr_path_and_name = "syft.core.tensor.tensor.Tensor.__add__"
+        attr_path_and_name = f"syft.core.tensor.tensor.Tensor.__{op_str}__"
 
         result = TensorPointer(client=self.client)
 
@@ -112,18 +109,43 @@ class TensorPointer(Pointer):
 
         result_public_shape = None
 
-        if self.public_shape is not None and other.public_shape is not None:
+        op = getattr(operator, op_str)
+
+        if isinstance(other, TensorPointer):
+            other_shape = other.public_shape
+        elif isinstance(other, (int, float)):
+            other_shape = (1,)
+        elif isinstance(other, np.ndarray):
+            other_shape = other.shape
+        else:
+            raise ValueError(f"Invalid Type for TensorPointer:{type(other)}")
+
+        if self.public_shape is not None and other_shape is not None:
             result_public_shape = (
-                np.empty(self.public_shape) + np.empty(other.public_shape)
+                op(np.empty(self.public_shape), np.empty(other_shape))
             ).shape
 
         result.public_shape = result_public_shape
 
         return result
 
-    def __add__(self, other: Any) -> Union[TensorPointer, MPCTensor]:
+    @staticmethod
+    def _apply_op(
+        self: TensorPointer,
+        other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
+        op_str: str,
+    ) -> Union[MPCTensor, TensorPointer]:
+        """Performs the operation based on op_str
 
-        if self.client != other.client:
+        Args:
+            other (Union[TensorPointer,MPCTensor,int,float,np.ndarray]): second operand.
+
+        Returns:
+            Tuple[MPCTensor,Union[MPCTensor,int,float,np.ndarray]] : Result of the operation
+        """
+        op = getattr(operator, op_str)
+
+        if isinstance(other, TensorPointer) and self.client != other.client:
 
             parties = [self.client, other.client]
 
@@ -132,22 +154,80 @@ class TensorPointer(Pointer):
                 secret=other, shape=other.public_shape, parties=parties
             )
 
-            print(self_mpc.__repr__())
-            print(other_mpc.__repr__())
+            return op(self_mpc, other_mpc)
 
-            return self_mpc + other_mpc
+        elif isinstance(other, MPCTensor):
 
-        return self.simple_add(other=other)
+            return op(other, self)
+
+        return self._apply_tensor_op(other=other, op_str=op_str)
+
+    def __add__(
+        self, other: Union[TensorPointer, MPCTensor, int, float, np.ndarray]
+    ) -> Union[TensorPointer, MPCTensor]:
+        """Apply the "add" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorPointer._apply_op(self, other, "add")
+
+    def __sub__(
+        self, other: Union[TensorPointer, MPCTensor, int, float, np.ndarray]
+    ) -> Union[TensorPointer, MPCTensor]:
+        """Apply the "sub" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorPointer._apply_op(self, other, "sub")
+
+    def __mul__(
+        self, other: Union[TensorPointer, MPCTensor, int, float, np.ndarray]
+    ) -> Union[TensorPointer, MPCTensor]:
+        """Apply the "mul" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorPointer._apply_op(self, other, "mul")
 
 
-@bind_protobuf
+def to32bit(np_array: np.ndarray, verbose: bool = True) -> np.ndarray:
+
+    if np_array.dtype == np.int64:
+        if verbose:
+            print("Casting internal tensor to int32")
+        out = np_array.astype(np.int32)
+
+    elif np_array.dtype == np.float64:
+
+        if verbose:
+            print("Casting internal tensor to float32")
+        out = np_array.astype(np.float32)
+
+    else:
+        out = np_array
+
+    return out
+
+
+@serializable(recursive_serde=True)
 class Tensor(
     PassthroughTensor,
     AutogradTensorAncestor,
     PhiTensorAncestor,
     FixedPrecisionTensorAncestor,
     # MPCTensorAncestor,
-    RecursiveSerde,
 ):
 
     __attr_allowlist__ = ["child", "tag_name", "public_shape"]
@@ -160,18 +240,39 @@ class Tensor(
         """data must be a list of numpy array"""
 
         if isinstance(child, list):
-            child = np.array(child)
+            child = to32bit(np.array(child), verbose=False)
 
         if isinstance(child, th.Tensor):
-            child = child.numpy()
+            print(
+                "Converting PyTorch tensor to numpy tensor for internal representation..."
+            )
+            child = to32bit(child.numpy())
 
         if not isinstance(child, PassthroughTensor) and not isinstance(
             child, np.ndarray
         ):
             raise Exception("Data must be list or nd.array")
 
+        if not isinstance(child, (np.ndarray, PassthroughTensor)) or (
+            getattr(child, "dtype", None) != np.int32
+            and getattr(child, "dtype", None) is not None
+        ):
+            raise TypeError(
+                "You tried to pass an a tensor of type:"
+                + str(type(child))
+                + " with child.dtype == "
+                + str(getattr(child, "dtype", None))
+                + ". Syft tensor objects only support np.int32 objects at this time. Please pass in either "
+                "a list of int objects or a np.int32 array. We apologise for the inconvenience and will "
+                "be adding support for more types very soon!"
+            )
+
         kwargs = {"child": child}
         super().__init__(**kwargs)
+
+        # set public shape to be the shape of the data since we have access to it at present
+        if public_shape is None:
+            public_shape = tuple(self.shape)
 
         self.tag_name: Optional[str] = None
         self.public_shape = public_shape
