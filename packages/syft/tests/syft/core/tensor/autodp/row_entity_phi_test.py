@@ -14,6 +14,7 @@ from syft.core.adp.vm_private_scalar_manager import (
 from syft.core.tensor.autodp.intermediate_gamma import IntermediateGammaTensor as IGT
 from syft.core.tensor.autodp.row_entity_phi import RowEntityPhiTensor as REPT
 from syft.core.tensor.autodp.single_entity_phi import SingleEntityPhiTensor as SEPT
+from syft.core.tensor.broadcastable import is_broadcastable
 from syft.core.tensor.tensor import Tensor
 
 # ------------------- EQUALITY OPERATORS -----------------------------------------------
@@ -24,27 +25,30 @@ traskmaster = Entity(name="Trask")
 dims = max(3, np.random.randint(low=2, high=10))  # Avoid size 0, 1
 row_count = max(3, np.random.randint(low=2, high=10))  # Avoids size 0, 1
 scalar_manager = ScalarManager()
-
-
-@pytest.fixture
-def upper_bound() -> np.ndarray:
-    """This is used to specify the max_vals for a SEPT that is either binary or randomly generated b/w 0-1"""
-    max_values = np.ones(dims)
-    return max_values
-
-
-@pytest.fixture
-def lower_bound() -> np.ndarray:
-    """This is used to specify the min_vals for a SEPT that is either binary or randomly generated b/w 0-1"""
-    min_values = np.zeros(dims)
-    return min_values
+high = 100
 
 
 @pytest.fixture
 def reference_data() -> np.ndarray:
     """This generates random data to test the equality operators"""
-    reference_data = np.random.random((dims, dims))
+    reference_data = np.random.randint(
+        low=-high, high=high, size=(dims, dims), dtype=np.int32
+    )
     return reference_data
+
+
+@pytest.fixture
+def upper_bound(reference_data: np.ndarray) -> np.ndarray:
+    """This is used to specify the max_vals for a SEPT that is either binary or randomly generated b/w 0-1"""
+    max_values = np.ones_like(reference_data)
+    return max_values
+
+
+@pytest.fixture
+def lower_bound(reference_data: np.ndarray) -> np.ndarray:
+    """This is used to specify the min_vals for a SEPT that is either binary or randomly generated b/w 0-1"""
+    min_values = np.zeros_like(reference_data)
+    return min_values
 
 
 @pytest.fixture
@@ -52,13 +56,15 @@ def row_data_ishan() -> List:
     """This generates a random number of SEPTs to populate the REPTs."""
     reference_data = []
     for _ in range(row_count):
-        new_data = np.random.random((dims, dims))
+        new_data = np.random.randint(
+            low=-high, high=high, size=(dims, dims), dtype=np.int32
+        )
         reference_data.append(
             SEPT(
                 child=new_data,
                 entity=ishan,
-                min_vals=np.zeros_like(new_data),
-                max_vals=np.ones_like(new_data),
+                min_vals=np.ones_like(new_data) * -high,
+                max_vals=np.ones_like(new_data) * high,
                 scalar_manager=scalar_manager,
             )
         )
@@ -70,13 +76,15 @@ def row_data_trask() -> List:
     """This generates a random number of SEPTs to populate the REPTs."""
     reference_data = []
     for _ in range(row_count):
-        new_data = np.random.random((dims, dims))
+        new_data = np.random.randint(
+            low=-high, high=high, size=(dims, dims), dtype=np.int32
+        )
         reference_data.append(
             SEPT(
                 child=new_data,
                 entity=traskmaster,
-                min_vals=np.zeros_like(new_data),
-                max_vals=np.ones_like(new_data),
+                min_vals=np.ones_like(new_data) * -high,
+                max_vals=np.ones_like(new_data) * high,
                 scalar_manager=scalar_manager,
             )
         )
@@ -378,6 +386,7 @@ def test_sub_result_gamma(row_data_ishan: List, row_data_trask: List) -> None:
         ), "SEPT(entity1) + SEPT(entity2) != IGT(entity1, entity2)"
 
 
+
 def test_flatten(row_data_ishan: List) -> None:
     """Test to see if Flatten works for the ideal case"""
     reference_tensor = REPT(rows=row_data_ishan)
@@ -509,6 +518,106 @@ def test_swapaxes(row_data_ishan: List) -> None:
     output = reference_tensor.swapaxes(1, 2)
     target = sept.swapaxes(0, 1)
     assert output.child[0] == target, "Swapaxes did not work as expected"
+
+def test_mul_simple(row_data_ishan: List) -> None:
+    """Ensure multiplication works with REPTs & Simple types (int/float/bool/np.ndarray)"""
+
+    reference_tensor = REPT(rows=row_data_ishan)
+    output = reference_tensor * 5
+    assert (output.max_vals == 5 * reference_tensor.max_vals).all()
+    assert (output.min_vals == 5 * reference_tensor.min_vals).all()
+    assert output.shape == reference_tensor.shape
+    assert output.child == [i * 5 for i in reference_tensor.child]
+
+
+def test_mul_rept(row_data_ishan: List, row_data_trask: List) -> None:
+    """Test multiplication of two REPTs"""
+    reference_tensor1 = REPT(rows=row_data_ishan)
+    reference_tensor2 = REPT(rows=row_data_trask)
+    output = reference_tensor1 * reference_tensor2
+    # assert output.max_vals == reference_tensor1.max_vals * reference_tensor2.max_vals
+    # assert output.min_vals == reference_tensor1.min_vals * reference_tensor2.min_vals
+    assert output == reference_tensor1 * reference_tensor2
+    assert isinstance(output, REPT)
+    for tensor in output.child:
+        assert isinstance(tensor, IGT)
+
+
+def test_mul_sept(
+    row_data_ishan: List,
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+) -> None:
+    """Test REPT * SEPT"""
+    sept = SEPT(
+        child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
+    )
+    rept = REPT(rows=row_data_ishan)
+    if not is_broadcastable(sept.shape, rept.shape[1:]):
+        print(sept.shape, rept.shape)
+        with pytest.raises(Exception):
+            output = rept * sept
+    else:
+        print(sept.shape, rept.shape)
+        output = rept * sept
+        assert isinstance(output, REPT)
+
+
+def test_neg(row_data_ishan: List) -> None:
+    """Test __neg__"""
+    reference_tensor = REPT(rows=row_data_ishan)
+    negative_tensor = reference_tensor.__neg__()
+
+    assert reference_tensor.shape == negative_tensor.shape
+    for original, negative in zip(reference_tensor, negative_tensor):
+        assert negative == -original
+        assert negative.child == original.child * -1
+        assert (negative.min_vals == original.max_vals * -1).all()
+        assert (negative.max_vals == original.min_vals * -1).all()
+
+
+@pytest.mark.skip(
+    reason="Test passes, but raises a Deprecation Warning for elementwise comparisons"
+)
+def test_and() -> None:
+    new_list = list()
+    for _ in range(row_count):
+        data = np.random.randint(2, size=(dims, dims))
+        new_list.append(
+            SEPT(
+                child=data,
+                min_vals=np.zeros_like(data),
+                max_vals=np.ones_like(data),
+                entity=ishan,
+            )
+        )
+    reference_tensor = REPT(rows=new_list, check_shape=False)
+    output = reference_tensor & False
+    for index, tensor in enumerate(reference_tensor.child):
+        assert (tensor & False) == output[index]
+
+
+@pytest.mark.skip(
+    reason="Test passes, but raises a Deprecation Warning for elementwise comparisons"
+)
+def test_or() -> None:
+    new_list = list()
+    for _ in range(row_count):
+        data = np.random.randint(2, size=(dims, dims))
+        new_list.append(
+            SEPT(
+                child=data,
+                min_vals=np.zeros_like(data),
+                max_vals=np.ones_like(data),
+                entity=ishan,
+            )
+        )
+    reference_tensor = REPT(rows=new_list, check_shape=False)
+    output = reference_tensor | False
+    for index, tensor in enumerate(reference_tensor.child):
+        assert (tensor | False) == output[index]
+
 
 
 ent = Entity(name="test")
