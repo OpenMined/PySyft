@@ -38,7 +38,9 @@ from ..tensor import Tensor
 from ..types import SupportedChainType  # type: ignore
 from ..util import inputs2child  # type: ignore
 from .adp_tensor import ADPTensor
+from .dp_tensor_converter import convert_to_gamma_tensor
 from .initial_gamma import InitialGammaTensor
+from .initial_gamma import IntermediateGammaTensor
 
 
 @serializable()
@@ -384,7 +386,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
                     data = self.child == other
                 else:
                     raise Exception(
-                        f"Tensor shapes do not match "
+                        f"Tensor shapes do not match "  # type: ignore
                         f"for __eq__: {self.child.shape} != {other.child.shape}"  # type: ignore
                     )
             else:
@@ -395,19 +397,12 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
                     "Operation not implemented yet for different entities"
                 )
             else:
-                if isinstance(self.child, np.ndarray):
-                    if is_broadcastable(self.child.shape, other.child.shape):  # type: ignore
-                        data = self.child == other.child
-                    else:
-                        raise Exception(
-                            f"Tensor shapes do not match for __eq__: {self.child.shape} != {other.child.shape}"
-                        )
-                elif (
-                    isinstance(self.child, int)
-                    or isinstance(self.child, float)
-                    or isinstance(self.child, bool)
-                ):
-                    data = self.child == other
+                if is_broadcastable(self.child.shape, other.child.shape):  # type: ignore
+                    data = self.child == other.child
+                else:
+                    raise Exception(
+                        f"Tensor shapes do not match for __eq__: {self.child.shape} != {other.child.shape}"
+                    )
         elif isinstance(other, PassthroughTensor):
             if is_broadcastable(self.child.shape, other.child.shape):  # type: ignore
                 data = self.child == other.child
@@ -415,7 +410,6 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             raise Exception(
                 f"Tensor shapes do not match for __eq__: {self.child} != len{other}"
             )
-
         return SingleEntityPhiTensor(
             child=data,
             entity=self.entity,
@@ -489,14 +483,14 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             scalar_manager=self.scalar_manager,
         )
 
-    def __add__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
+    def __add__(
+        self, other: SupportedChainType
+    ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
 
         # if the tensor being added is also private
         if isinstance(other, SingleEntityPhiTensor):
-
             if self.entity.name != other.entity.name:
-                # this should return a GammaTensor
-                raise NotImplementedError
+                return convert_to_gamma_tensor(self) + convert_to_gamma_tensor(other)
 
             data = self.child + other.child
             min_vals = self.min_vals + other.min_vals
@@ -573,8 +567,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         if isinstance(other, SingleEntityPhiTensor):
 
             if self.entity != other.entity:
-                # this should return a GammaTensor
-                return NotImplemented
+                return convert_to_gamma_tensor(self) * convert_to_gamma_tensor(other)
 
             data = self.child * other.child
 
@@ -618,12 +611,17 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         else:
             return NotImplemented
 
-    def __sub__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
+    def __pos__(self) -> SingleEntityPhiTensor:
+        """Identity operator, returns itself"""
+        return self
+
+    def __sub__(
+        self, other: SupportedChainType
+    ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
 
         if isinstance(other, SingleEntityPhiTensor):
             if self.entity != other.entity:
-                # this should return a GammaTensor
-                raise NotImplementedError
+                return convert_to_gamma_tensor(self) - convert_to_gamma_tensor(other)
 
             data = self.child - other.child
             min_vals = self.min_vals - other.min_vals
@@ -884,7 +882,6 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             # print(f'Warning: Tensor data was of type {type(data)}, ravel operation had no effect.')
         else:
             max_vals = self.max_vals.ravel(order)
-
         entity = self.entity
 
         return SingleEntityPhiTensor(
