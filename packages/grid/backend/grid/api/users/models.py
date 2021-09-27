@@ -13,7 +13,7 @@ class BaseUser(BaseModel):
     email: Optional[EmailStr]
     name: Optional[str]
     role: Union[Optional[int], Optional[str]]  # TODO: Should be int in SyftUser
-    budget: Optional[float]
+    daa_pdf: Optional[bytes] = b""
 
     class Config:
         orm_mode = True
@@ -21,14 +21,14 @@ class BaseUser(BaseModel):
 
 class UserCreate(BaseUser):
     email: EmailStr
-    role: str
+    role: str = "Data Scientist"
     name: str
     password: str
-    budget: float
 
 
 class UserUpdate(BaseUser):
     password: Optional[str]
+    budget: Optional[float]
 
 
 class User(BaseUser):
