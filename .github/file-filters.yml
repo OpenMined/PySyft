@@ -9,6 +9,8 @@ stack:
   - "**.ini"
   - "**.sh"
   - "**.mako"
+  - "**.lock"
+  - "**.json"
 
 backend:
   - .github/workflows/grid-backend_tests.yml

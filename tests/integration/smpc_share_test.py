@@ -12,7 +12,7 @@ from syft.core.tensor.smpc.mpc_tensor import MPCTensor
 
 sy.logger.remove()
 
-PORT = 9081
+PORT = 9082
 
 PARTIES = 2
 clients = []
