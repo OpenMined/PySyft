@@ -183,31 +183,31 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
             if isinstance(other, np.ndarray):
                 if is_broadcastable(self.shape, other.shape):
                     new_list.append(
-                        [self.child[i] * other[i] for i in range(len(self.child))]
+                        [self.child[i] * other[i] for i in range(len(self.child))]  # type: ignore
                     )
                 else:
                     raise Exception(
                         f"Tensor dims do not match for __sub__: {self.child.shape} != {other.shape}"  # type: ignore
                     )
             else:  # int, float, bool, etc
-                new_list = [child * other for child in self.child]
+                new_list = [child * other for child in self.child]  # type: ignore
         elif isinstance(other, RowEntityPhiTensor):
             if is_broadcastable(self.shape, other.shape):
                 new_list = [
-                    self.child[i] * other.child[i] for i in range(len(self.child))
+                    self.child[i] * other.child[i] for i in range(len(self.child))  # type: ignore
                 ]
             else:
                 raise Exception(
                     f"Tensor dims do not match for __sub__: {self.shape} != {other.shape}"  # type: ignore
                 )
         elif isinstance(other, SingleEntityPhiTensor):
-            for child in self.child:
+            for child in self.child:  # type: ignore
                 # If even a single SEPT in the REPT isn't broadcastable, the multiplication operation doesn't work
                 if not is_broadcastable(child.shape, other.shape):
                     raise Exception(
                         f"Tensor dims do not match for __sub__: {self.shape} != {other.shape}"  # type: ignore
                     )
-            new_list = [i * other for i in self.child]
+            new_list = [i * other for i in self.child]  # type: ignore
         else:
             raise NotImplementedError
         return RowEntityPhiTensor(rows=new_list)
@@ -236,16 +236,16 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         return RowEntityPhiTensor(rows=[+x for x in self.child], check_shape=False)  # type: ignore
 
     def __neg__(self) -> RowEntityPhiTensor:
-        return RowEntityPhiTensor(rows=[-x for x in self.child], check_shape=False)
+        return RowEntityPhiTensor(rows=[-x for x in self.child], check_shape=False)  # type: ignore
 
     def __or__(self, other: Any) -> RowEntityPhiTensor:
         return RowEntityPhiTensor(
-            rows=[x | other for x in self.child], check_shape=False
+            rows=[x | other for x in self.child], check_shape=False  # type: ignore
         )
 
     def __and__(self, other: Any) -> RowEntityPhiTensor:
         return RowEntityPhiTensor(
-            rows=[x & other for x in self.child], check_shape=False
+            rows=[x & other for x in self.child], check_shape=False  # type: ignore
         )
 
     def __truediv__(  # type: ignore

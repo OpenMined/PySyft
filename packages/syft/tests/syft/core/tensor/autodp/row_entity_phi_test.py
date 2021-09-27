@@ -386,7 +386,6 @@ def test_sub_result_gamma(row_data_ishan: List, row_data_trask: List) -> None:
         ), "SEPT(entity1) + SEPT(entity2) != IGT(entity1, entity2)"
 
 
-
 def test_flatten(row_data_ishan: List) -> None:
     """Test to see if Flatten works for the ideal case"""
     reference_tensor = REPT(rows=row_data_ishan)
@@ -455,10 +454,15 @@ def test_compress(row_data_ishan: List) -> None:
 
     target_output = list()
     for row in row_data_ishan:
-        target_output.append(row.compress([0, 1]))
+        assert row.entity == ishan
+        new_row = row.compress([0, 1])
+        assert new_row.entity == ishan
+        target_output.append(new_row)
 
     for result, target in zip(output, target_output):
-        assert result == target, "Compress operation failed"
+        assert isinstance(result.child, SEPT)
+        assert isinstance(target, SEPT)
+        assert result.child == target, "Compress operation failed"
 
 
 def test_resize(row_data_ishan: List) -> None:
@@ -518,6 +522,7 @@ def test_swapaxes(row_data_ishan: List) -> None:
     output = reference_tensor.swapaxes(1, 2)
     target = sept.swapaxes(0, 1)
     assert output.child[0] == target, "Swapaxes did not work as expected"
+
 
 def test_mul_simple(row_data_ishan: List) -> None:
     """Ensure multiplication works with REPTs & Simple types (int/float/bool/np.ndarray)"""
@@ -617,7 +622,6 @@ def test_or() -> None:
     output = reference_tensor | False
     for index, tensor in enumerate(reference_tensor.child):
         assert (tensor | False) == output[index]
-
 
 
 ent = Entity(name="test")
