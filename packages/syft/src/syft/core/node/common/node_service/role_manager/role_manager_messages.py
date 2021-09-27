@@ -46,10 +46,11 @@ class CreateRoleMessage(ImmediateSyftMessageWithReply):
         address: Address,
         name: str,
         reply_to: Address,
-        can_triage_requests: bool = False,
-        can_edit_settings: bool = False,
+        can_make_data_requests: bool = False,
+        can_triage_data_requests: bool = False,
+        can_manage_privacy_budget: bool = False,
         can_create_users: bool = False,
-        can_create_groups: bool = False,
+        can_manage_users: bool = False,
         can_edit_roles: bool = False,
         can_manage_infrastructure: bool = False,
         can_upload_data: bool = False,
@@ -57,10 +58,12 @@ class CreateRoleMessage(ImmediateSyftMessageWithReply):
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.name = name
-        self.can_triage_requests = can_triage_requests
-        self.can_edit_settings = can_edit_settings
+
+        self.can_make_data_requests = can_make_data_requests
+        self.can_triage_data_requests = can_triage_data_requests
+        self.can_manage_privacy_budget = can_manage_privacy_budget
         self.can_create_users = can_create_users
-        self.can_create_groups = can_create_groups
+        self.can_manage_users = can_manage_users
         self.can_edit_roles = can_edit_roles
         self.can_manage_infrastructure = can_manage_infrastructure
         self.can_upload_data = can_upload_data
@@ -81,10 +84,11 @@ class CreateRoleMessage(ImmediateSyftMessageWithReply):
             msg_id=serialize(self.id),
             address=serialize(self.address),
             name=self.name,
-            can_triage_requests=self.can_triage_requests,
-            can_edit_settings=self.can_edit_settings,
+            can_make_data_requests=self.can_make_data_requests,
+            can_triage_data_requests=self.can_triage_data_requests,
+            can_manage_privacy_budget=self.can_manage_privacy_budget,
             can_create_users=self.can_create_users,
-            can_create_groups=self.can_create_groups,
+            can_manage_users=self.can_manage_users,
             can_edit_roles=self.can_edit_roles,
             can_manage_infrastructure=self.can_manage_infrastructure,
             can_upload_data=self.can_upload_data,
@@ -109,10 +113,11 @@ class CreateRoleMessage(ImmediateSyftMessageWithReply):
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             name=proto.name,
-            can_triage_requests=proto.can_triage_requests,
-            can_edit_settings=proto.can_edit_settings,
+            can_make_data_requests=proto.can_make_data_requests,
+            can_triage_data_requests=proto.can_triage_data_requests,
+            can_manage_privacy_budget=proto.can_manage_privacy_budget,
             can_create_users=proto.can_create_users,
-            can_create_groups=proto.can_create_groups,
+            can_manage_users=proto.can_manage_users,
             can_edit_roles=proto.can_edit_roles,
             can_manage_infrastructure=proto.can_manage_infrastructure,
             can_upload_data=proto.can_upload_data,
@@ -419,22 +424,24 @@ class UpdateRoleMessage(ImmediateSyftMessageWithReply):
         address: Address,
         role_id: int,
         name: str,
-        can_triage_requests: bool,
-        can_edit_settings: bool,
-        can_create_users: bool,
-        can_create_groups: bool,
-        can_edit_roles: bool,
-        can_manage_infrastructure: bool,
-        can_upload_data: bool,
         reply_to: Address,
+        can_make_data_requests: bool = False,
+        can_triage_data_requests: bool = False,
+        can_manage_privacy_budget: bool = False,
+        can_create_users: bool = False,
+        can_manage_users: bool = False,
+        can_edit_roles: bool = False,
+        can_manage_infrastructure: bool = False,
+        can_upload_data: bool = False,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.name = name
-        self.can_triage_requests = can_triage_requests
-        self.can_edit_settings = can_edit_settings
+        self.can_make_data_requests = can_make_data_requests
+        self.can_triage_data_requests = can_triage_data_requests
+        self.can_manage_privacy_budget = can_manage_privacy_budget
         self.can_create_users = can_create_users
-        self.can_create_groups = can_create_groups
+        self.can_manage_users = can_manage_users
         self.can_edit_roles = can_edit_roles
         self.can_manage_infrastructure = can_manage_infrastructure
         self.can_upload_data = can_upload_data
@@ -456,10 +463,11 @@ class UpdateRoleMessage(ImmediateSyftMessageWithReply):
             msg_id=serialize(self.id),
             address=serialize(self.address),
             name=self.name,
-            can_triage_requests=self.can_triage_requests,
-            can_edit_settings=self.can_edit_settings,
+            can_make_data_requests=self.can_make_data_requests,
+            can_triage_data_requests=self.can_triage_data_requests,
+            can_manage_privacy_budget=self.can_manage_privacy_budget,
             can_create_users=self.can_create_users,
-            can_create_groups=self.can_create_groups,
+            can_manage_users=self.can_manage_users,
             can_edit_roles=self.can_edit_roles,
             can_manage_infrastructure=self.can_manage_infrastructure,
             can_upload_data=self.can_upload_data,
@@ -485,10 +493,11 @@ class UpdateRoleMessage(ImmediateSyftMessageWithReply):
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             name=proto.name,
-            can_triage_requests=proto.can_triage_requests,
-            can_edit_settings=proto.can_edit_settings,
+            can_make_data_requests=proto.can_make_data_requests,
+            can_triage_data_requests=proto.can_triage_data_requests,
+            can_manage_privacy_budget=proto.can_manage_privacy_budget,
             can_create_users=proto.can_create_users,
-            can_create_groups=proto.can_create_groups,
+            can_manage_users=proto.can_manage_users,
             can_edit_roles=proto.can_edit_roles,
             can_manage_infrastructure=proto.can_manage_infrastructure,
             can_upload_data=proto.can_upload_data,

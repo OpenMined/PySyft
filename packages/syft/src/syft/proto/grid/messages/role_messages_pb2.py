@@ -26,7 +26,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\'proto/grid/messages/role_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto\x1a\x1bproto/lib/python/dict.proto"\xda\x02\n\x11\x43reateRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x1b\n\x13\x63\x61n_triage_requests\x18\x04 \x01(\x08\x12\x19\n\x11\x63\x61n_edit_settings\x18\x05 \x01(\x08\x12\x18\n\x10\x63\x61n_create_users\x18\x06 \x01(\x08\x12\x19\n\x11\x63\x61n_create_groups\x18\x07 \x01(\x08\x12\x16\n\x0e\x63\x61n_edit_roles\x18\x08 \x01(\x08\x12!\n\x19\x63\x61n_manage_infrastructure\x18\t \x01(\x08\x12\x17\n\x0f\x63\x61n_upload_data\x18\n \x01(\x08\x12\'\n\x08reply_to\x18\x0b \x01(\x0b\x32\x15.syft.core.io.Address"\x99\x01\n\x0eGetRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07role_id\x18\x03 \x01(\x05\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x88\x01\n\x0fGetRoleResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x02 \x01(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address"\x89\x01\n\x0fGetRolesMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x89\x01\n\x10GetRolesResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x02 \x03(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address"\xeb\x02\n\x11UpdateRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x1b\n\x13\x63\x61n_triage_requests\x18\x04 \x01(\x08\x12\x19\n\x11\x63\x61n_edit_settings\x18\x05 \x01(\x08\x12\x18\n\x10\x63\x61n_create_users\x18\x06 \x01(\x08\x12\x19\n\x11\x63\x61n_create_groups\x18\x07 \x01(\x08\x12\x16\n\x0e\x63\x61n_edit_roles\x18\x08 \x01(\x08\x12!\n\x19\x63\x61n_manage_infrastructure\x18\t \x01(\x08\x12\x17\n\x0f\x63\x61n_upload_data\x18\n \x01(\x08\x12\x0f\n\x07role_id\x18\x0b \x01(\x05\x12\'\n\x08reply_to\x18\x0c \x01(\x0b\x32\x15.syft.core.io.Address"\x9c\x01\n\x11\x44\x65leteRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07role_id\x18\x03 \x01(\x05\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
+    serialized_pb=b'\n\'proto/grid/messages/role_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto\x1a\x1bproto/lib/python/dict.proto"\x86\x03\n\x11\x43reateRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x1e\n\x16\x63\x61n_make_data_requests\x18\x04 \x01(\x08\x12 \n\x18\x63\x61n_triage_data_requests\x18\x05 \x01(\x08\x12!\n\x19\x63\x61n_manage_privacy_budget\x18\x06 \x01(\x08\x12\x18\n\x10\x63\x61n_create_users\x18\x07 \x01(\x08\x12\x18\n\x10\x63\x61n_manage_users\x18\x08 \x01(\x08\x12\x16\n\x0e\x63\x61n_edit_roles\x18\t \x01(\x08\x12!\n\x19\x63\x61n_manage_infrastructure\x18\n \x01(\x08\x12\x17\n\x0f\x63\x61n_upload_data\x18\x0b \x01(\x08\x12\'\n\x08reply_to\x18\x0c \x01(\x0b\x32\x15.syft.core.io.Address"\x99\x01\n\x0eGetRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07role_id\x18\x03 \x01(\x05\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x88\x01\n\x0fGetRoleResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x02 \x01(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address"\x89\x01\n\x0fGetRolesMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x89\x01\n\x10GetRolesResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x02 \x03(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address"\x97\x03\n\x11UpdateRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x1e\n\x16\x63\x61n_make_data_requests\x18\x04 \x01(\x08\x12 \n\x18\x63\x61n_triage_data_requests\x18\x05 \x01(\x08\x12!\n\x19\x63\x61n_manage_privacy_budget\x18\x06 \x01(\x08\x12\x18\n\x10\x63\x61n_create_users\x18\x07 \x01(\x08\x12\x18\n\x10\x63\x61n_manage_users\x18\x08 \x01(\x08\x12\x16\n\x0e\x63\x61n_edit_roles\x18\t \x01(\x08\x12!\n\x19\x63\x61n_manage_infrastructure\x18\n \x01(\x08\x12\x17\n\x0f\x63\x61n_upload_data\x18\x0b \x01(\x08\x12\x0f\n\x07role_id\x18\x0c \x01(\x05\x12\'\n\x08reply_to\x18\r \x01(\x0b\x32\x15.syft.core.io.Address"\x9c\x01\n\x11\x44\x65leteRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07role_id\x18\x03 \x01(\x05\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
@@ -101,8 +101,8 @@ _CREATEROLEMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="can_triage_requests",
-            full_name="syft.grid.messages.CreateRoleMessage.can_triage_requests",
+            name="can_make_data_requests",
+            full_name="syft.grid.messages.CreateRoleMessage.can_make_data_requests",
             index=3,
             number=4,
             type=8,
@@ -120,8 +120,8 @@ _CREATEROLEMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="can_edit_settings",
-            full_name="syft.grid.messages.CreateRoleMessage.can_edit_settings",
+            name="can_triage_data_requests",
+            full_name="syft.grid.messages.CreateRoleMessage.can_triage_data_requests",
             index=4,
             number=5,
             type=8,
@@ -139,8 +139,8 @@ _CREATEROLEMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="can_create_users",
-            full_name="syft.grid.messages.CreateRoleMessage.can_create_users",
+            name="can_manage_privacy_budget",
+            full_name="syft.grid.messages.CreateRoleMessage.can_manage_privacy_budget",
             index=5,
             number=6,
             type=8,
@@ -158,8 +158,8 @@ _CREATEROLEMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="can_create_groups",
-            full_name="syft.grid.messages.CreateRoleMessage.can_create_groups",
+            name="can_create_users",
+            full_name="syft.grid.messages.CreateRoleMessage.can_create_users",
             index=6,
             number=7,
             type=8,
@@ -177,8 +177,8 @@ _CREATEROLEMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="can_edit_roles",
-            full_name="syft.grid.messages.CreateRoleMessage.can_edit_roles",
+            name="can_manage_users",
+            full_name="syft.grid.messages.CreateRoleMessage.can_manage_users",
             index=7,
             number=8,
             type=8,
@@ -196,8 +196,8 @@ _CREATEROLEMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="can_manage_infrastructure",
-            full_name="syft.grid.messages.CreateRoleMessage.can_manage_infrastructure",
+            name="can_edit_roles",
+            full_name="syft.grid.messages.CreateRoleMessage.can_edit_roles",
             index=8,
             number=9,
             type=8,
@@ -215,8 +215,8 @@ _CREATEROLEMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="can_upload_data",
-            full_name="syft.grid.messages.CreateRoleMessage.can_upload_data",
+            name="can_manage_infrastructure",
+            full_name="syft.grid.messages.CreateRoleMessage.can_manage_infrastructure",
             index=9,
             number=10,
             type=8,
@@ -234,10 +234,29 @@ _CREATEROLEMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="reply_to",
-            full_name="syft.grid.messages.CreateRoleMessage.reply_to",
+            name="can_upload_data",
+            full_name="syft.grid.messages.CreateRoleMessage.can_upload_data",
             index=10,
             number=11,
+            type=8,
+            cpp_type=7,
+            label=1,
+            has_default_value=False,
+            default_value=False,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.CreateRoleMessage.reply_to",
+            index=11,
+            number=12,
             type=11,
             cpp_type=10,
             label=1,
@@ -262,7 +281,7 @@ _CREATEROLEMESSAGE = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=161,
-    serialized_end=507,
+    serialized_end=551,
 )
 
 
@@ -359,8 +378,8 @@ _GETROLEMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=510,
-    serialized_end=663,
+    serialized_start=554,
+    serialized_end=707,
 )
 
 
@@ -438,8 +457,8 @@ _GETROLERESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=666,
-    serialized_end=802,
+    serialized_start=710,
+    serialized_end=846,
 )
 
 
@@ -517,8 +536,8 @@ _GETROLESMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=805,
-    serialized_end=942,
+    serialized_start=849,
+    serialized_end=986,
 )
 
 
@@ -596,8 +615,8 @@ _GETROLESRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=945,
-    serialized_end=1082,
+    serialized_start=989,
+    serialized_end=1126,
 )
 
 
@@ -667,8 +686,8 @@ _UPDATEROLEMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="can_triage_requests",
-            full_name="syft.grid.messages.UpdateRoleMessage.can_triage_requests",
+            name="can_make_data_requests",
+            full_name="syft.grid.messages.UpdateRoleMessage.can_make_data_requests",
             index=3,
             number=4,
             type=8,
@@ -686,8 +705,8 @@ _UPDATEROLEMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="can_edit_settings",
-            full_name="syft.grid.messages.UpdateRoleMessage.can_edit_settings",
+            name="can_triage_data_requests",
+            full_name="syft.grid.messages.UpdateRoleMessage.can_triage_data_requests",
             index=4,
             number=5,
             type=8,
@@ -705,8 +724,8 @@ _UPDATEROLEMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="can_create_users",
-            full_name="syft.grid.messages.UpdateRoleMessage.can_create_users",
+            name="can_manage_privacy_budget",
+            full_name="syft.grid.messages.UpdateRoleMessage.can_manage_privacy_budget",
             index=5,
             number=6,
             type=8,
@@ -724,8 +743,8 @@ _UPDATEROLEMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="can_create_groups",
-            full_name="syft.grid.messages.UpdateRoleMessage.can_create_groups",
+            name="can_create_users",
+            full_name="syft.grid.messages.UpdateRoleMessage.can_create_users",
             index=6,
             number=7,
             type=8,
@@ -743,8 +762,8 @@ _UPDATEROLEMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="can_edit_roles",
-            full_name="syft.grid.messages.UpdateRoleMessage.can_edit_roles",
+            name="can_manage_users",
+            full_name="syft.grid.messages.UpdateRoleMessage.can_manage_users",
             index=7,
             number=8,
             type=8,
@@ -762,8 +781,8 @@ _UPDATEROLEMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="can_manage_infrastructure",
-            full_name="syft.grid.messages.UpdateRoleMessage.can_manage_infrastructure",
+            name="can_edit_roles",
+            full_name="syft.grid.messages.UpdateRoleMessage.can_edit_roles",
             index=8,
             number=9,
             type=8,
@@ -781,8 +800,8 @@ _UPDATEROLEMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="can_upload_data",
-            full_name="syft.grid.messages.UpdateRoleMessage.can_upload_data",
+            name="can_manage_infrastructure",
+            full_name="syft.grid.messages.UpdateRoleMessage.can_manage_infrastructure",
             index=9,
             number=10,
             type=8,
@@ -800,10 +819,29 @@ _UPDATEROLEMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="role_id",
-            full_name="syft.grid.messages.UpdateRoleMessage.role_id",
+            name="can_upload_data",
+            full_name="syft.grid.messages.UpdateRoleMessage.can_upload_data",
             index=10,
             number=11,
+            type=8,
+            cpp_type=7,
+            label=1,
+            has_default_value=False,
+            default_value=False,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="role_id",
+            full_name="syft.grid.messages.UpdateRoleMessage.role_id",
+            index=11,
+            number=12,
             type=5,
             cpp_type=1,
             label=1,
@@ -821,8 +859,8 @@ _UPDATEROLEMESSAGE = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name="reply_to",
             full_name="syft.grid.messages.UpdateRoleMessage.reply_to",
-            index=11,
-            number=12,
+            index=12,
+            number=13,
             type=11,
             cpp_type=10,
             label=1,
@@ -846,8 +884,8 @@ _UPDATEROLEMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1085,
-    serialized_end=1448,
+    serialized_start=1129,
+    serialized_end=1536,
 )
 
 
@@ -944,8 +982,8 @@ _DELETEROLEMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1451,
-    serialized_end=1607,
+    serialized_start=1539,
+    serialized_end=1695,
 )
 
 _CREATEROLEMESSAGE.fields_by_name[
