@@ -187,12 +187,6 @@ class UserManager(DatabaseManager):
         except UserNotFoundError:
             return False
 
-    def can_create_groups(self, verify_key: VerifyKey) -> bool:
-        try:
-            return self.role(verify_key=verify_key).can_create_groups
-        except UserNotFoundError:
-            return False
-
     def role(self, verify_key: VerifyKey) -> Role:
         user = self.get_user(verify_key)
         if not user:
