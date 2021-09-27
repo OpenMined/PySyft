@@ -619,6 +619,8 @@ def create_launch_docker_cmd(
     cmd += " VERSION_HASH=`python VERSION hash`"
     cmd += " INSTALL_DEV=0 TRAEFIK_PUBLIC_NETWORK_IS_EXTERNAL=false INSTALL_JUPYTER=0"
     cmd += " docker compose -p " + snake_name
+    if str(node_type.input) == "network":
+        cmd += " --profile network"
     cmd += " up"
 
     if not tail:

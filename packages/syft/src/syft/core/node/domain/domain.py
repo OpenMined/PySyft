@@ -53,6 +53,7 @@ from ..common.node_service.object_request.object_request_service import (
     ObjectRequestServiceWithoutReply,
 )
 from ..common.node_service.object_request.object_request_service import RequestService
+from ..common.node_service.ping.ping_service import PingService
 from ..common.node_service.publish.publish_service import PublishScalarsService
 from ..common.node_service.request_answer.request_answer_messages import RequestStatus
 from ..common.node_service.request_answer.request_answer_service import (
@@ -136,6 +137,7 @@ class Domain(Node):
         # self.immediate_services_with_reply.append(DomainInfrastructureService)
         self.immediate_services_with_reply.append(GetRemainingBudgetService)
         self.immediate_services_with_reply.append(SimpleService)
+        self.immediate_services_with_reply.append(PingService)
         self.immediate_services_with_reply.append(NodeSetupService)
         self.immediate_services_with_reply.append(TensorManagerService)
         self.immediate_services_with_reply.append(RoleManagerService)
