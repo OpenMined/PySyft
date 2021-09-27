@@ -1,9 +1,13 @@
+# future
+from __future__ import annotations
+
 # stdlib
 import time
 from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 from typing import Type
 from typing import Union
 
@@ -11,33 +15,25 @@ from typing import Union
 from nacl.encoding import HexEncoder
 from nacl.signing import VerifyKey
 
-# syft absolute
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.common.uid import UID
-from syft.core.node.abstract.node import AbstractNode
-from syft.core.node.common.node import DuplicateRequestException
-from syft.core.node.common.node_service.auth import service_auth
-from syft.core.node.common.node_service.node_service import (
-    ImmediateNodeServiceWithReply,
-)
-from syft.core.node.common.node_service.node_service import (
-    ImmediateNodeServiceWithoutReply,
-)
-from syft.lib.python import List as SyftList
-from syft.util import validate_type
-
 # relative
+from ......util import validate_type
+from .....common.message import ImmediateSyftMessageWithReply
+from .....common.message import ImmediateSyftMessageWithoutReply
+from .....common.uid import UID
 from ...exceptions import AuthorizationError
 from ...exceptions import InvalidParameterValueError
 from ...exceptions import MissingRequestKeyError
 from ...exceptions import RequestError
+from ...node import DuplicateRequestException
 from ...node_table.utils import model_to_json
 from ..accept_or_deny_request.accept_or_deny_request_messages import (
     AcceptOrDenyRequestMessage,
 )
+from ..auth import service_auth
 from ..get_all_requests.get_all_requests_messages import GetAllRequestsMessage
 from ..get_all_requests.get_all_requests_messages import GetAllRequestsResponseMessage
+from ..node_service import ImmediateNodeServiceWithReply
+from ..node_service import ImmediateNodeServiceWithoutReply
 from ..request_answer.request_answer_messages import RequestAnswerMessage
 from ..request_answer.request_answer_messages import RequestAnswerResponse
 from ..request_handler.request_handler_messages import (
@@ -57,10 +53,14 @@ from .object_request_messages import GetRequestsResponse
 from .object_request_messages import UpdateRequestMessage
 from .object_request_messages import UpdateRequestResponse
 
+if TYPE_CHECKING:
+    # relative
+    from ....domain.domain import Domain
+
 
 def create_request_msg(
     msg: CreateRequestMessage,
-    node: AbstractNode,
+    node: Domain,
     verify_key: VerifyKey,
 ) -> CreateRequestResponse:
     # Get Payload Content
@@ -129,13 +129,14 @@ def create_request_msg(
 
 def get_request_msg(
     msg: GetRequestMessage,
-    node: AbstractNode,
+    node: Domain,
     verify_key: VerifyKey,
 ) -> GetRequestResponse:
 
     # Get Payload Content
-    request_id = msg.content.get("request_id", None)
-    current_user_id = msg.content.get("current_user", None)
+    request_id = msg.request_id
+    current_user = node.users.first(verify_key=verify_key)
+    current_user_id = current_user.id
 
     users = node.users
 
@@ -150,7 +151,7 @@ def get_request_msg(
     # A user can get a request if he's the owner of that request
     # or has the can_triage_requests permission
     allowed = request.user_id == current_user_id or users.can_triage_requests(
-        user_id=current_user_id
+        verify_key=verify_key
     )
 
     if allowed:
@@ -168,7 +169,7 @@ def get_request_msg(
 
 def get_all_request_msg(
     msg: GetRequestsMessage,
-    node: AbstractNode,
+    node: Domain,
     verify_key: VerifyKey,
 ) -> GetRequestsResponse:
     users = node.users
@@ -183,13 +184,13 @@ def get_all_request_msg(
     return GetRequestsResponse(
         status_code=200,
         address=msg.reply_to,
-        content=SyftList(requests_json),
+        content=requests_json,
     )
 
 
 def update_request_msg(
     msg: UpdateRequestMessage,
-    node: AbstractNode,
+    node: Domain,
     verify_key: VerifyKey,
 ) -> UpdateRequestResponse:
 
@@ -235,9 +236,11 @@ def update_request_msg(
                 VerifyKey(_req.verify_key.encode("utf-8"), encoder=HexEncoder)
             ] = _req.id
             node.store[UID.from_string(_req.object_id)] = tmp_obj
-        node.data_requests.set(request_id=_req.id, status=status)
+        # this should be an enum not a string
+        node.data_requests.set(request_id=_req.id, status=status)  # type: ignore
     elif status == "denied" and (_can_triage_request or _req_owner):
-        node.data_requests.set(request_id=_req.id, status=status)
+        # this should be an enum not a string
+        node.data_requests.set(request_id=_req.id, status=status)  # type: ignore
     else:
         raise AuthorizationError("You're not allowed to update Request information!")
 
@@ -251,7 +254,7 @@ def update_request_msg(
 
 def del_request_msg(
     msg: DeleteRequestMessage,
-    node: AbstractNode,
+    node: Domain,
     verify_key: VerifyKey,
 ) -> DeleteRequestResponse:
 
@@ -279,14 +282,14 @@ def del_request_msg(
 
 
 def request_answer_msg(
-    msg: RequestAnswerMessage, node: AbstractNode, verify_key: VerifyKey
+    msg: RequestAnswerMessage, node: Domain, verify_key: VerifyKey
 ) -> RequestAnswerResponse:
     if verify_key is None:
         raise ValueError(
             "Can't process Request service without a given " "verification key"
         )
 
-    status = node.data_requests.status(id=str(msg.request_id.value))
+    status = node.data_requests.status(request_id=str(msg.request_id.value))
     address = msg.reply_to
     return RequestAnswerResponse(
         request_id=msg.request_id, address=address, status=status
@@ -295,7 +298,7 @@ def request_answer_msg(
 
 # TODO: Check if this method/message should really be a service_without_reply message
 def get_all_requests(
-    msg: GetAllRequestsMessage, node: AbstractNode, verify_key: VerifyKey
+    msg: GetAllRequestsMessage, node: Domain, verify_key: VerifyKey
 ) -> GetAllRequestsResponseMessage:
     if verify_key is None:
         raise ValueError(
@@ -334,7 +337,7 @@ def get_all_requests(
 
 
 def get_all_request_handlers(
-    msg: GetAllRequestHandlersMessage, node: AbstractNode, verify_key: VerifyKey
+    msg: GetAllRequestHandlersMessage, node: Domain, verify_key: VerifyKey
 ) -> GetAllRequestHandlersResponseMessage:
 
     if verify_key is None:
@@ -399,7 +402,7 @@ class RequestService(ImmediateNodeServiceWithReply):
     @staticmethod
     @service_auth(guests_welcome=True)
     def process(
-        node: AbstractNode,
+        node: Domain,
         msg: INPUT_MESSAGES,
         verify_key: VerifyKey,
     ) -> OUTPUT_MESSAGES:
@@ -423,7 +426,7 @@ class RequestService(ImmediateNodeServiceWithReply):
 
 
 def build_request_message(
-    msg: RequestMessage, node: AbstractNode, verify_key: VerifyKey
+    msg: RequestMessage, node: Domain, verify_key: VerifyKey
 ) -> None:
     if verify_key is None:
         raise ValueError(
@@ -469,7 +472,7 @@ def build_request_message(
 
 
 def accept_or_deny_request(
-    msg: AcceptOrDenyRequestMessage, node: AbstractNode, verify_key: VerifyKey
+    msg: AcceptOrDenyRequestMessage, node: Domain, verify_key: VerifyKey
 ) -> None:
     if verify_key is None:
         raise ValueError(
@@ -507,7 +510,7 @@ def accept_or_deny_request(
 
 
 def update_req_handler(
-    node: AbstractNode,
+    node: Domain,
     msg: UpdateRequestHandlerMessage,
     verify_key: Optional[VerifyKey] = None,
 ) -> None:
@@ -585,7 +588,7 @@ class ObjectRequestServiceWithoutReply(ImmediateNodeServiceWithoutReply):
     @staticmethod
     @service_auth(guests_welcome=True)
     def process(
-        node: AbstractNode,
+        node: Domain,
         msg: Union[
             RequestMessage,
             AcceptOrDenyRequestMessage,

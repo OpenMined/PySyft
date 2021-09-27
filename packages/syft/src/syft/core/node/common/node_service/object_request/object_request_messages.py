@@ -9,47 +9,47 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import final
 
-# syft absolute
-from syft import serialize
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.common.serde.deserialize import _deserialize
-from syft.core.common.serde.serializable import bind_protobuf
-from syft.core.common.uid import UID
-from syft.core.io.address import Address
-from syft.proto.grid.messages.request_messages_pb2 import (
+# relative
+from ...... import serialize
+from ......proto.grid.messages.request_messages_pb2 import (
     CreateRequestMessage as CreateRequestMessage_PB,
 )
-from syft.proto.grid.messages.request_messages_pb2 import (
+from ......proto.grid.messages.request_messages_pb2 import (
     CreateRequestResponse as CreateRequestResponse_PB,
 )
-from syft.proto.grid.messages.request_messages_pb2 import (
+from ......proto.grid.messages.request_messages_pb2 import (
     DeleteRequestMessage as DeleteRequestMessage_PB,
 )
-from syft.proto.grid.messages.request_messages_pb2 import (
+from ......proto.grid.messages.request_messages_pb2 import (
     DeleteRequestResponse as DeleteRequestResponse_PB,
 )
-from syft.proto.grid.messages.request_messages_pb2 import (
+from ......proto.grid.messages.request_messages_pb2 import (
     GetRequestMessage as GetRequestMessage_PB,
 )
-from syft.proto.grid.messages.request_messages_pb2 import (
+from ......proto.grid.messages.request_messages_pb2 import (
     GetRequestResponse as GetRequestResponse_PB,
 )
-from syft.proto.grid.messages.request_messages_pb2 import (
+from ......proto.grid.messages.request_messages_pb2 import (
     GetRequestsMessage as GetRequestsMessage_PB,
 )
-from syft.proto.grid.messages.request_messages_pb2 import (
+from ......proto.grid.messages.request_messages_pb2 import (
     GetRequestsResponse as GetRequestsResponse_PB,
 )
-from syft.proto.grid.messages.request_messages_pb2 import (
+from ......proto.grid.messages.request_messages_pb2 import (
     UpdateRequestMessage as UpdateRequestMessage_PB,
 )
-from syft.proto.grid.messages.request_messages_pb2 import (
+from ......proto.grid.messages.request_messages_pb2 import (
     UpdateRequestResponse as UpdateRequestResponse_PB,
 )
+from .....common.message import ImmediateSyftMessageWithReply
+from .....common.message import ImmediateSyftMessageWithoutReply
+from .....common.serde.deserialize import _deserialize
+from .....common.serde.serializable import serializable
+from .....common.uid import UID
+from .....io.address import Address
 
 
-@bind_protobuf
+@serializable()
 @final
 class CreateRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -120,7 +120,7 @@ class CreateRequestMessage(ImmediateSyftMessageWithReply):
         return CreateRequestMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class CreateRequestResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -192,7 +192,7 @@ class CreateRequestResponse(ImmediateSyftMessageWithoutReply):
         return CreateRequestResponse_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class GetRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -263,7 +263,7 @@ class GetRequestMessage(ImmediateSyftMessageWithReply):
         return GetRequestMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class GetRequestResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -335,7 +335,7 @@ class GetRequestResponse(ImmediateSyftMessageWithoutReply):
         return GetRequestResponse_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class GetRequestsMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -402,7 +402,7 @@ class GetRequestsMessage(ImmediateSyftMessageWithReply):
         return GetRequestsMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class GetRequestsResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -477,7 +477,7 @@ class GetRequestsResponse(ImmediateSyftMessageWithoutReply):
         return GetRequestsResponse_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class UpdateRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -552,7 +552,7 @@ class UpdateRequestMessage(ImmediateSyftMessageWithReply):
         return UpdateRequestMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class UpdateRequestResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -628,7 +628,7 @@ class UpdateRequestResponse(ImmediateSyftMessageWithoutReply):
         return UpdateRequestResponse_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class DeleteRequestMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -699,7 +699,7 @@ class DeleteRequestMessage(ImmediateSyftMessageWithReply):
         return DeleteRequestMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class DeleteRequestResponse(ImmediateSyftMessageWithoutReply):
     def __init__(

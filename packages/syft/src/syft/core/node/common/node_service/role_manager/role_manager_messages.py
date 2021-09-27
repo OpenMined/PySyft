@@ -7,38 +7,38 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import final
 
-# syft absolute
-from syft import serialize
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.common.serde.deserialize import _deserialize
-from syft.core.common.serde.serializable import bind_protobuf
-from syft.core.common.uid import UID
-from syft.core.io.address import Address
-from syft.proto.grid.messages.role_messages_pb2 import (
+# relative
+from ...... import serialize
+from ......proto.grid.messages.role_messages_pb2 import (
     CreateRoleMessage as CreateRoleMessage_PB,
 )
-from syft.proto.grid.messages.role_messages_pb2 import (
+from ......proto.grid.messages.role_messages_pb2 import (
     DeleteRoleMessage as DeleteRoleMessage_PB,
 )
-from syft.proto.grid.messages.role_messages_pb2 import (
+from ......proto.grid.messages.role_messages_pb2 import (
     GetRoleMessage as GetRoleMessage_PB,
 )
-from syft.proto.grid.messages.role_messages_pb2 import (
+from ......proto.grid.messages.role_messages_pb2 import (
     GetRoleResponse as GetRoleResponse_PB,
 )
-from syft.proto.grid.messages.role_messages_pb2 import (
+from ......proto.grid.messages.role_messages_pb2 import (
     GetRolesMessage as GetRolesMessage_PB,
 )
-from syft.proto.grid.messages.role_messages_pb2 import (
+from ......proto.grid.messages.role_messages_pb2 import (
     GetRolesResponse as GetRolesResponse_PB,
 )
-from syft.proto.grid.messages.role_messages_pb2 import (
+from ......proto.grid.messages.role_messages_pb2 import (
     UpdateRoleMessage as UpdateRoleMessage_PB,
 )
+from .....common.message import ImmediateSyftMessageWithReply
+from .....common.message import ImmediateSyftMessageWithoutReply
+from .....common.serde.deserialize import _deserialize
+from .....common.serde.serializable import serializable
+from .....common.uid import UID
+from .....io.address import Address
 
 
-@bind_protobuf
+@serializable()
 @final
 class CreateRoleMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -142,7 +142,7 @@ class CreateRoleMessage(ImmediateSyftMessageWithReply):
         return CreateRoleMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class GetRoleMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -213,7 +213,7 @@ class GetRoleMessage(ImmediateSyftMessageWithReply):
         return GetRoleMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class GetRoleResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -281,7 +281,7 @@ class GetRoleResponse(ImmediateSyftMessageWithoutReply):
         return GetRoleResponse_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class GetRolesMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -348,7 +348,7 @@ class GetRolesMessage(ImmediateSyftMessageWithReply):
         return GetRolesMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class GetRolesResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -416,7 +416,7 @@ class GetRolesResponse(ImmediateSyftMessageWithoutReply):
         return GetRolesResponse_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class UpdateRoleMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -523,7 +523,7 @@ class UpdateRoleMessage(ImmediateSyftMessageWithReply):
         return UpdateRoleMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class DeleteRoleMessage(ImmediateSyftMessageWithReply):
     def __init__(

@@ -24,10 +24,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-# syft absolute
-from syft.core.node.common.node_manager.setup_manager import SetupManager
-from syft.core.node.common.node_table import Base
-
 # relative
 from ....lib import lib_ast
 from ....logger import debug
@@ -50,49 +46,45 @@ from ...io.route import Route
 from ...io.route import SoloRoute
 from ...io.virtual import create_virtual_connection
 from ..abstract.node import AbstractNode
-from ..common.node_service.auth import AuthorizationException
-from ..common.node_service.child_node_lifecycle.child_node_lifecycle_service import (
-    ChildNodeLifecycleService,
-)
-from ..common.node_service.get_repr.get_repr_service import GetReprService
-from ..common.node_service.heritage_update.heritage_update_service import (
-    HeritageUpdateService,
-)
-from ..common.node_service.msg_forwarding.msg_forwarding_service import (
-    SignedMessageWithReplyForwardingService,
-)
-from ..common.node_service.msg_forwarding.msg_forwarding_service import (
-    SignedMessageWithoutReplyForwardingService,
-)
-from ..common.node_service.node_service import EventualNodeServiceWithoutReply
-from ..common.node_service.node_service import ImmediateNodeServiceWithReply
-from ..common.node_service.object_action.obj_action_service import (
-    EventualObjectActionServiceWithoutReply,
-)
-from ..common.node_service.object_action.obj_action_service import (
-    ImmediateObjectActionServiceWithReply,
-)
-from ..common.node_service.object_action.obj_action_service import (
-    ImmediateObjectActionServiceWithoutReply,
-)
-from ..common.node_service.object_search.obj_search_service import (
-    ImmediateObjectSearchService,
-)
-from ..common.node_service.object_search_permission_update.obj_search_permission_service import (
-    ImmediateObjectSearchPermissionUpdateService,
-)
-from ..common.node_service.resolve_pointer_type.resolve_pointer_type_service import (
-    ResolvePointerTypeService,
-)
-from ..common.node_service.testing_services.repr_service import ReprService
-from ..common.node_service.testing_services.smpc_executor_service import (
-    SMPCExecutorService,
-)
 from .action.exception_action import ExceptionMessage
 from .action.exception_action import UnknownPrivateException
 from .client import Client
 from .metadata import Metadata
 from .node_manager.bin_obj_manager import BinObjectManager
+from .node_manager.setup_manager import SetupManager
+from .node_service.auth import AuthorizationException
+from .node_service.child_node_lifecycle.child_node_lifecycle_service import (
+    ChildNodeLifecycleService,
+)
+from .node_service.get_repr.get_repr_service import GetReprService
+from .node_service.heritage_update.heritage_update_service import HeritageUpdateService
+from .node_service.msg_forwarding.msg_forwarding_service import (
+    SignedMessageWithReplyForwardingService,
+)
+from .node_service.msg_forwarding.msg_forwarding_service import (
+    SignedMessageWithoutReplyForwardingService,
+)
+from .node_service.node_service import EventualNodeServiceWithoutReply
+from .node_service.node_service import ImmediateNodeServiceWithReply
+from .node_service.object_action.obj_action_service import (
+    EventualObjectActionServiceWithoutReply,
+)
+from .node_service.object_action.obj_action_service import (
+    ImmediateObjectActionServiceWithReply,
+)
+from .node_service.object_action.obj_action_service import (
+    ImmediateObjectActionServiceWithoutReply,
+)
+from .node_service.object_search.obj_search_service import ImmediateObjectSearchService
+from .node_service.object_search_permission_update.obj_search_permission_service import (
+    ImmediateObjectSearchPermissionUpdateService,
+)
+from .node_service.resolve_pointer_type.resolve_pointer_type_service import (
+    ResolvePointerTypeService,
+)
+from .node_service.testing_services.repr_service import ReprService
+from .node_service.testing_services.smpc_executor_service import SMPCExecutorService
+from .node_table import Base
 
 # this generic type for Client bound by Client
 ClientT = TypeVar("ClientT", bound=Client)
@@ -155,7 +147,7 @@ class Node(AbstractNode):
             # If a DB engine isn't provided then
             if db_engine is None:
                 db_engine = create_engine("sqlite://", echo=False)
-                Base.metadata.create_all(db_engine)
+                Base.metadata.create_all(db_engine)  # type: ignore
 
             db = sessionmaker(bind=db_engine)()
 

@@ -16,12 +16,10 @@ from pydantic import EmailStr
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Query
 
-# syft absolute
-from syft.core.node.common.node_table.roles import Role
-
 # relative
 from ..exceptions import InvalidCredentialsError
 from ..exceptions import UserNotFoundError
+from ..node_table.roles import Role
 from ..node_table.user import SyftUser
 from .database_manager import DatabaseManager
 from .role_manager import RoleManager
@@ -112,7 +110,7 @@ class UserManager(DatabaseManager):
         results = super().query(**kwargs)
         return results
 
-    def first(self, **kwargs: Any) -> Optional[SyftUser]:
+    def first(self, **kwargs: Any) -> SyftUser:
         result = super().first(**kwargs)
         if not result:
             raise UserNotFoundError

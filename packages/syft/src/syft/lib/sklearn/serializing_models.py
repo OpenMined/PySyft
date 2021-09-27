@@ -4,10 +4,10 @@
 import sklearn  # noqa: 401
 
 # relative
-from ...generate_wrapper import GenerateWrapper
-from ...lib.python.dict import Dict
-from ...lib.python.primitive_factory import PrimitiveFactory
+from ...core.common.serde.serializable import serializable
 from ...proto.lib.sklearn.logistic_model_pb2 import Logistic as Logistic_PB
+from ..python.dict import Dict
+from ..python.primitive_factory import PrimitiveFactory
 
 
 def object2proto(obj: sklearn.linear_model.LogisticRegression) -> Logistic_PB:
@@ -50,7 +50,7 @@ def proto2object(proto: Logistic_PB) -> sklearn.linear_model.LogisticRegression:
     return ret_model
 
 
-GenerateWrapper(
+serializable(generate_wrapper=True)(
     wrapped_type=sklearn.linear_model.LogisticRegression,
     import_path="sklearn.linear_model.LogisticRegression",
     protobuf_scheme=Logistic_PB,

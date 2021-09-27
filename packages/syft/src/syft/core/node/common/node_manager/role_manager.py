@@ -7,11 +7,9 @@ from typing import List
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Query
 
-# syft absolute
-from syft.core.node.common.node_table.roles import Role
-
 # relative
 from ..exceptions import RoleNotFoundError
+from ..node_table.roles import Role
 from .database_manager import DatabaseManager
 
 

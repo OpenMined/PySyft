@@ -9,7 +9,7 @@ name: Syft Version Tests
 on:
   schedule:
     - cron: "0 22 * * *" # 7pm Brazil, 10pm UTC, 8am AEST
-  push:
+  pull_request:
     branches:
       - dev
     paths:
@@ -93,6 +93,7 @@ jobs:
         if: startsWith(runner.os, 'macos')
         run: |
           brew install libomp
+          pip uninstall python-dp -y
 
       - name: Run supported library tests
         run: |
