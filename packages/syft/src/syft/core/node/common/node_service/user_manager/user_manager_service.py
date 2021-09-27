@@ -36,6 +36,11 @@ def create_user_msg(
     node: DomainInterface,
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
+    # Check if node requires daa document
+    if node.setup.first(domain_name=node.name).daa and not msg.daa_pdf:
+        raise AuthorizationError(
+            message="You can't apply a new User without a DAA document!"
+        )
 
     # Check if email/password fields are empty
     if not msg.email or not msg.password:
@@ -54,64 +59,14 @@ def create_user_msg(
         # If email not registered, a new user can be created.
         pass
 
-    # 2 - Custom Type
-    # Create a custom user (with a custom role)
-    # This user can only be created by using an account with "can_create_users" permissions
-    def create_custom_user() -> None:
-        _owner_role = node.roles.owner_role
-        if msg.role != _owner_role.name:
-            # Generate a new signing key
-            _private_key = SigningKey.generate()
-            node.users.signup(
-                name=msg.name,
-                email=msg.email,
-                password=msg.password,
-                budget=msg.budget,
-                role=node.roles.first(name=msg.role).id,
-                private_key=_private_key.encode(encoder=HexEncoder).decode("utf-8"),
-                verify_key=_private_key.verify_key.encode(encoder=HexEncoder).decode(
-                    "utf-8"
-                ),
-            )
-        # If purposed role is Owner
-        else:
-            raise AuthorizationError(
-                message='You can\'t create a new User with "Owner" role!'
-            )
-
-    # 3 - Standard type
-    # Create a common user with no special permissions
-    def create_standard_user() -> None:
-
-        # Generate a new signing key
-        _private_key = SigningKey.generate()
-
-        encoded_pk = _private_key.encode(encoder=HexEncoder).decode("utf-8")
-        encoded_vk = _private_key.verify_key.encode(encoder=HexEncoder).decode("utf-8")
-
-        node.users.signup(
-            name=msg.name,
-            email=msg.email,
-            password=msg.password,
-            budget=0,
-            role=node.roles.first(name="Data Scientist").id,
-            private_key=encoded_pk,
-            verify_key=encoded_vk,
-        )
-
-    # Main logic
-    _allowed = node.users.can_create_users(verify_key=verify_key)
-
-    if msg.role and _allowed:
-        create_custom_user()
-    else:
-        create_standard_user()
+    node.users.create_user_application(
+        name=msg.name, email=msg.email, password=msg.password, daa_pdf=msg.daa_pdf
+    )
 
     return SuccessResponseMessage(
         address=msg.reply_to,
         resp_msg="User created successfully!",
     )
-
 
 def update_user_msg(
     msg: UpdateUserMessage,
@@ -282,6 +237,32 @@ def get_all_users_msg(
             )
             print("We've spent:" + str(_user_json["budget_spent"]))
             _msg.append(_user_json)
+
+    return GetUsersResponse(
+        address=msg.reply_to,
+        content=_msg,
+    )
+
+def get_applicant_users(
+    msg: GetUsersMessage,
+    node: DomainInterface,
+    verify_key: VerifyKey,
+) -> GetUsersResponse:
+    # Check key permissions
+    _allowed = node.users.can_triage_requests(verify_key=verify_key)
+    if not _allowed:
+        raise AuthorizationError("You're not allowed to get User information!")
+    else:
+        # Get All Users
+        users = node.users.get_applicant()
+        _msg = []
+        _user_json = {}
+        for user in users:
+            print(user)
+            _user_json = model_to_json(user)
+            _user_json['daa_pdf'] = user.daa_pdf.id
+        
+        _msg.append(_user_json)
 
     return GetUsersResponse(
         address=msg.reply_to,
