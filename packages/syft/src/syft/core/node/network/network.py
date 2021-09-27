@@ -86,7 +86,6 @@ class Network(Node):
         self.immediate_services_with_reply.append(NodeSetupService)
         self.immediate_services_with_reply.append(RoleManagerService)
         self.immediate_services_with_reply.append(UserManagerService)
-        self.immediate_services_with_reply.append(GroupManagerService)
 
         self.requests: List[RequestMessage] = list()
         # available_device_types = set()
