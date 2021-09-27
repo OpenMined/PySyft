@@ -9,6 +9,24 @@ from sqlalchemy import String
 from . import Base
 
 
+class UserApplication(Base):
+    __tablename__ = "syft_application"
+
+    id = Column(Integer(), primary_key=True, autoincrement=True)
+    email = Column(String(255))
+    name = Column(String(255), default="")
+    hashed_password = Column(String(512))
+    salt = Column(String(255))
+    daa_pdf = Column(Integer, ForeignKey("daa_pdf.id"))
+    status = Column(String(255), default="pending")
+
+    def __str__(self) -> str:
+        return (
+            f"<User Application id: {self.id}, email: {self.email}, name: {self.name}"
+            f"status: {self.status}>"
+        )
+
+
 class SyftUser(Base):
     __tablename__ = "syft_user"
 
