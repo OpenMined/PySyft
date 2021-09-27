@@ -15,12 +15,15 @@ from pydantic import BaseModel
 from pydantic import EmailStr
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Query
+from sqlalchemy.orm import sessionmaker
 
 # relative
 from ..exceptions import InvalidCredentialsError
 from ..exceptions import UserNotFoundError
+from ..node_table.pdf import PDFObject
 from ..node_table.roles import Role
 from ..node_table.user import SyftUser
+from ..node_table.user import UserApplication
 from .database_manager import DatabaseManager
 from .role_manager import RoleManager
 
@@ -83,6 +86,29 @@ class UserManager(DatabaseManager):
         for role in self.roles.org_roles:
             org_users = org_users + list(super().query(role=role.id))
         return org_users
+
+    def create_user_application(
+        self, name: str, email: str, password: str, daa_pdf: bytes
+    ) -> UserApplication:
+        salt, hashed = self.__salt_and_hash_password(password, 12)
+        _pdf_obj = PDFObject(binary=daa_pdf)
+        _obj = UserApplication(
+            name=name,
+            email=email,
+            salt=salt,
+            hashed_password=hashed,
+            daa_pdf=_pdf_obj.id,
+        )
+        session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
+        session_local.add(_pdf_obj)
+        session_local.add(_obj)
+        session_local.commit()
+
+    def get_applicant(self):
+        session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
+        result = list(session_local.query(UserApplication).all())
+        session_local.close()
+        return result
 
     def signup(
         self,
