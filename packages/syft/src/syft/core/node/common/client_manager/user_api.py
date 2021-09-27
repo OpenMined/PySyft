@@ -33,10 +33,16 @@ class UserRequestAPI(RequestAPI):
 
     def create(self, **kwargs: Any) -> None:
         try:
-            response = self.perform_api_request(
-                syft_msg=self._create_message, content=kwargs
-            )
-            logger.info(response.resp_msg)
+            if "pdf" in kwargs.keys():
+                response = self.client.routes[0].connection.send_files(
+                    "/users", kwargs.get("pdf"), metadata=kwargs
+                )  # type: ignore
+                logger.info(response)
+            else:
+                response = self.perform_api_request(
+                    syft_msg=self._create_message, content=kwargs
+                )
+                logger.info(response.resp_msg)
         except Exception as e:
             for user in self.all():
                 if user["email"] == kwargs["email"]:
