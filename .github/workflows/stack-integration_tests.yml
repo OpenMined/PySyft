@@ -45,15 +45,15 @@ jobs:
       # the cache is created without them in the post run.
       # It also restores the cache if it exists.
       - name: Cache docker images
-        uses: broadshield/action-docker-layer-caching@main
+        uses: satackey/action-docker-layer-caching@v0.0.11
         if: steps.changes.outputs.stack == 'true'
         continue-on-error: true
         with:
-          key: ${{ runner.os }}-${{ github.workflow }}-docker-layer-cache-{hash}
+          key: docker-layer-cache-{hash}
           restore-keys: |
-            ${{ runner.os }}-${{ github.workflow }}-docker-layer-cache-
+            docker-layer-cache-
           # TODO: investigate why taking out filter by reference allows the docker cache step to run
-          filter: reference='openmined/*'
+          # filter: reference='openmined/*'
 
       - name: Get pip cache dir
         if: steps.changes.outputs.stack == 'true'
