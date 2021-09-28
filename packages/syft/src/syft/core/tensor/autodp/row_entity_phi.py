@@ -17,12 +17,14 @@ from ...adp.vm_private_scalar_manager import (
     VirtualMachinePrivateScalarManager as TypeScalarManager,
 )
 from ...common.serde.serializable import serializable
+from ..broadcastable import is_broadcastable
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import implements  # type: ignore
 from ..passthrough import is_acceptable_simple_type  # type: ignore
 from ..types import AcceptableSimpleType  # type: ignore
 from .adp_tensor import ADPTensor
 from .initial_gamma import InitialGammaTensor  # type: ignore
+from .single_entity_phi import SingleEntityPhiTensor
 
 
 @serializable(recursive_serde=True)
@@ -147,9 +149,11 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
                 if is_acceptable_simple_type(other):
                     new_list.append(self.child[i] + other)
                 else:
+                    # Private/Public and Private/Private are handled by the underlying SEPT self.child objects.
                     new_list.append(self.child[i] + other.child[i])  # type: ignore
             return RowEntityPhiTensor(rows=new_list, check_shape=False)
         else:
+            # Broadcasting is possible, but we're skipping that for now.
             raise Exception(
                 f"Tensor dims do not match for __add__: {len(self.child)} != {len(other.child)}"  # type: ignore
             )
@@ -174,22 +178,75 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
     def __mul__(  # type: ignore
         self, other: Union[RowEntityPhiTensor, AcceptableSimpleType]
     ) -> RowEntityPhiTensor:
-
-        if is_acceptable_simple_type(other) or len(self.child) == len(other.child):  # type: ignore
-            new_list = list()
-            for i in range(len(self.child)):
-                if is_acceptable_simple_type(other):
-                    if isinstance(other, (int, bool, float)):
-                        new_list.append(self.child[i] * other)
-                    else:
-                        new_list.append(self.child[i] * other[i])  # type: ignore
+        new_list = list()
+        if is_acceptable_simple_type(other):
+            if isinstance(other, np.ndarray):
+                if is_broadcastable(self.shape, other.shape):
+                    new_list.append(
+                        [self.child[i] * other[i] for i in range(len(self.child))]
+                    )
                 else:
-                    new_list.append(self.child[i] * other.child[i])  # type: ignore
-            return RowEntityPhiTensor(rows=new_list, check_shape=False)
+                    raise Exception(
+                        f"Tensor dims do not match for __sub__: {self.child.shape} != {other.shape}"  # type: ignore
+                    )
+            else:  # int, float, bool, etc
+                new_list = [child * other for child in self.child]
+        elif isinstance(other, RowEntityPhiTensor):
+            if is_broadcastable(self.shape, other.shape):
+                new_list = [
+                    self.child[i] * other.child[i] for i in range(len(self.child))
+                ]
+            else:
+                raise Exception(
+                    f"Tensor dims do not match for __sub__: {self.shape} != {other.shape}"  # type: ignore
+                )
+        elif isinstance(other, SingleEntityPhiTensor):
+            for child in self.child:
+                # If even a single SEPT in the REPT isn't broadcastable, the multiplication operation doesn't work
+                if not is_broadcastable(child.shape, other.shape):
+                    raise Exception(
+                        f"Tensor dims do not match for __sub__: {self.shape} != {other.shape}"  # type: ignore
+                    )
+            new_list = [i * other for i in self.child]
         else:
-            raise Exception(
-                f"Tensor dims do not match for __mul__: {len(self.child)} != {len(other.child)}"  # type: ignore
-            )
+            raise NotImplementedError
+        return RowEntityPhiTensor(rows=new_list)
+
+        # if is_acceptable_simple_type(other) or len(self.child) == len(other.child):  # type: ignore
+        #     new_list = list()
+        #     for i in range(len(self.child)):
+        #         if is_acceptable_simple_type(other):
+        #             if isinstance(other, (int, bool, float)):
+        #                 new_list.append(self.child[i] * other)
+        #             else:
+        #                 new_list.append(self.child[i] * other[i])  # type: ignore
+        #         else:
+        #             if isinstance(other, RowEntityPhiTensor):
+        #                 new_list.append(self.child[i] * other.child[i])  # type: ignore
+        #             elif isinstance(other, SingleEntityPhiTensor):
+        #
+        #                 new_list.append(self.child[i] * other)
+        #     return RowEntityPhiTensor(rows=new_list, check_shape=False)
+        # else:
+        #     raise Exception(
+        #         f"Tensor dims do not match for __mul__: {len(self.child)} != {len(other.child)}"  # type: ignore
+        #     )
+
+    def __pos__(self) -> RowEntityPhiTensor:
+        return RowEntityPhiTensor(rows=[+x for x in self.child], check_shape=False)
+
+    def __neg__(self) -> RowEntityPhiTensor:
+        return RowEntityPhiTensor(rows=[-x for x in self.child], check_shape=False)
+
+    def __or__(self, other: Any) -> RowEntityPhiTensor:
+        return RowEntityPhiTensor(
+            rows=[x | other for x in self.child], check_shape=False
+        )
+
+    def __and__(self, other: Any) -> RowEntityPhiTensor:
+        return RowEntityPhiTensor(
+            rows=[x & other for x in self.child], check_shape=False
+        )
 
     def __truediv__(  # type: ignore
         self, other: Union[RowEntityPhiTensor, AcceptableSimpleType]
