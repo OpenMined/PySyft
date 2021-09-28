@@ -185,7 +185,6 @@ def test_property_set(custom_client: Client) -> None:
     assert result == result_ptr.get()  # type: ignore
 
 
-@pytest.mark.xfail(strict=False)
 def test_slot_get(custom_client: Client) -> None:
     """Unit test to check slot(get) of remote class object"""
     a_ptr = custom_client.module_test.A()
@@ -197,7 +196,6 @@ def test_slot_get(custom_client: Client) -> None:
     assert result == result_ptr.get()
 
 
-@pytest.mark.xfail(strict=False)
 def test_slot_set(custom_client: Client) -> None:
     """Unit test to check property(set) of remote class object"""
     value_to_set = 7.5
