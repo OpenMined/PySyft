@@ -10,11 +10,11 @@ from typing import Tuple as TypeTuple
 from typing import Union
 
 # third party
-import torch
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 import numpy as np
 import numpy.typing as npt
+import torch
 
 # relative
 from ....proto.core.tensor.single_entity_phi_tensor_pb2 import (
@@ -1389,12 +1389,14 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             scalar_manager=self.scalar_manager,
         )
 
-    def max(self,
-            axis=None,
-            out: Optional[np.ndarray]=None,
-            keepdims: Optional[bool]=False,
-            initial: Optional[int]=None,
-            where: bool = True):
+    def max(
+        self,
+        axis: Optional[int] = None,
+        out: Optional[np.ndarray] = None,
+        keepdims: Optional[bool] = False,
+        initial: Optional[int] = None,
+        where: bool = True,
+    ) -> SingleEntityPhiTensor:
         # Note: Who knew this method had SO MANY ARGUMENTS?!?!?
         if is_acceptable_simple_type(self.child):
             if isinstance(self.child, np.ndarray):
@@ -1418,18 +1420,20 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             max_vals = self.max_vals
 
         return SingleEntityPhiTensor(
-                child=data,
-                max_vals=max_vals,
-                min_vals=min_vals,
-                entity=self.entity,
-            )
+            child=data,
+            max_vals=max_vals,
+            min_vals=min_vals,
+            entity=self.entity,
+        )
 
-    def min(self,
-            axis=None,
-            out: Optional[np.ndarray] = None,
-            keepdims: Optional[bool] = False,
-            initial: Optional[int] = None,
-            where: bool = True):
+    def min(
+        self,
+        axis: Optional[int] = None,
+        out: Optional[np.ndarray] = None,
+        keepdims: Optional[bool] = False,
+        initial: Optional[int] = None,
+        where: bool = True,
+    ) -> SingleEntityPhiTensor:
         # Note: Who knew this method had SO MANY ARGUMENTS?!?!?
         if is_acceptable_simple_type(self.child):
             if isinstance(self.child, np.ndarray):
