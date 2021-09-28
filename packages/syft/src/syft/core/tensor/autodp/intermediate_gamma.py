@@ -81,6 +81,16 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
 
         self.scalar_manager = scalar_manager
 
+    def __gt__(self, other: Union[np.ndarray, IntermediateGammaTensor]) -> Any:
+        if isinstance(other, np.ndarray):
+
+        elif:
+            pass
+        else:
+            raise NotImplementedError
+        return IntermediateGammaTensor()
+
+
     @property
     def shape(self) -> Tuple[int]:
         return self.term_tensor.shape[:-1]
@@ -366,51 +376,3 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             scalar_manager=self.scalar_manager,
         )
 
-    def __eq__(self, other: SupportedChainType) -> IntermediateGammaTensor:
-        if is_acceptable_simple_type(other):
-            term_data = (
-                self.term_tensor == other
-            )  # Need to check if shapes are broadcastable!!
-        elif isinstance(other, IntermediateGammaTensor):
-            # TODO: Check what actually needs to be identical to do an equality comparison
-            if (
-                self.child.shape == other.child.shape
-            ):  # also check if shapes are broadcastable
-                term_data = self.child == other.child
-            else:
-                raise Exception(
-                    f"Term Tensor shapes do not match for __eq__: {self.child} != len{other}"
-                )
-
-            if (
-                self.coeff_tensor.shape == other.coeff_tensor.shape
-            ):  # also check if shapes are broadcastable
-                coeff_data = self.coeff_tensor == other.coeff_tensor
-            else:
-                raise Exception(
-                    f"Coeff Tensor shapes do not match for __eq__: {self.child} != len{other}"
-                )
-
-            if (
-                self.bias_tensor.shape == other.bias_tensor.shape
-            ):  # also check if shapes are broadcastable
-                bias_data = self.bias_tensor == other.bias_tensor
-            else:
-                raise Exception(
-                    f"Bias Tensor shapes do not match for __eq__: {self.child} != len{other}"
-                )
-        elif isinstance(other, PassthroughTensor):
-            if (
-                self.child.shape == other.child.shape
-            ):  # also check if shapes are broadcastable
-                term_data = self.child == other.child
-        else:
-            raise Exception(
-                f"Tensor shapes do not match for __eq__: {self.child} != len{other}"
-            )
-        return IntermediateGammaTensor(
-            term_tensor=term_data,
-            coeff_tensor=coeff_data,
-            bias_tensor=bias_data,
-            scalar_manager=self.scalar_manager,
-        )
