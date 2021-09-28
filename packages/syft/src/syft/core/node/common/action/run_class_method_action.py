@@ -243,7 +243,8 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             args=tag_args,
             kwargs=tag_kwargs,
         )
-
+        # TODO :Make it work for inplace ops in sql alchemy.
+        node.store[self._self.id_at_location] = resolved_self  # type: ignore
         node.store[self.id_at_location] = result
 
     def _object2proto(self) -> RunClassMethodAction_PB:
