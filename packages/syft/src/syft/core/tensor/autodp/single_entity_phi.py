@@ -1388,6 +1388,55 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             scalar_manager=self.scalar_manager,
         )
 
+    def cumsum(self, axis: Optional[int] = None, dtype: Optional[Any] = None, out: np.ndarray=None) -> SingleEntityPhiTensor:
+        if isinstance(self.child, np.ndarray):
+            data = self.child.cumsum(axis, dtype, out)
+        elif isinstance(self.child, torch.Tensor):
+            data = self.child.numpy().cumsum(axis, dtype, out)
+        else:
+            data = self.child * len(self.child)
+
+        if isinstance(self.min_vals, np.ndarray):
+            mins = self.min_vals.cumsum(axis, dtype, out)
+        else:
+            mins = self.min_vals * len(self.child)
+
+        if isinstance(self.max_vals, np.ndarray):
+            maxes = self.max_vals.cumsum(axis, dtype, out)
+        else:
+            maxes = self.max_vals * len(self.child)
+
+        return SingleEntityPhiTensor(
+            child=data,
+            min_vals=mins,
+            max_vals=maxes,
+            entity=self.entity
+        )
+
+    def cumprod(self, axis: Optional[int] = None, out: np.ndarray=None) -> SingleEntityPhiTensor:
+        if isinstance(self.child, np.ndarray):
+            data = self.child.cumprod(axis, dtype, out)
+        elif isinstance(self.child, torch.Tensor):
+            data = self.child.numpy().cumprod(axis, dtype, out)
+        else:
+            data = self.child * len(self.child)
+
+        if isinstance(self.min_vals, np.ndarray):
+            mins = self.min_vals.cumprod(axis, dtype, out)
+        else:
+            mins = self.min_vals * len(self.child)
+
+        if isinstance(self.max_vals, np.ndarray):
+            maxes = self.max_vals.cumprod(axis, dtype, out)
+        else:
+            maxes = self.max_vals * len(self.child)
+
+        return SingleEntityPhiTensor(
+            child=data,
+            min_vals=mins,
+            max_vals=maxes,
+            entity=self.entity
+        )
 
 @implements(SingleEntityPhiTensor, np.expand_dims)
 def expand_dims(a: npt.ArrayLike, axis: Optional[int] = None) -> SingleEntityPhiTensor:
