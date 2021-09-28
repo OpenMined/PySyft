@@ -1463,6 +1463,39 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             entity=self.entity,
         )
 
+    # TODO: Figure out how to do type annotation for dtype
+    def trace(
+        self,
+        offset: int = 0,
+        axis1: Optional[int] = 0,
+        axis2: Optional[int] = 1,
+        dtype: Optional[Any] = None,
+        out: np.ndarray = None,
+    ) -> SingleEntityPhiTensor:
+        if isinstance(self.child, np.ndarray):
+            data = self.child.trace(offset, axis1, axis2, dtype, out)
+        elif isinstance(self.child, torch.Tensor):
+            data = self.child.numpy().trace(offset, axis1, axis2, dtype, out)
+        else:
+            data = self.child * len(self.child)
+
+        if isinstance(self.min_vals, np.ndarray):
+            mins = self.min_vals.trace(offset, axis1, axis2, dtype, out)
+        else:
+            mins = self.min_vals * len(self.child)
+
+        if isinstance(self.max_vals, np.ndarray):
+            maxes = self.max_vals.trace(offset, axis1, axis2, dtype, out)
+        else:
+            maxes = self.max_vals * len(self.child)
+
+        return SingleEntityPhiTensor(
+            child=data,
+            min_vals=mins,
+            max_vals=maxes,
+            entity=self.entity,
+        )
+
 
 @implements(SingleEntityPhiTensor, np.expand_dims)
 def expand_dims(a: npt.ArrayLike, axis: Optional[int] = None) -> SingleEntityPhiTensor:

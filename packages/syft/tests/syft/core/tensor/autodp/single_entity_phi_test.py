@@ -1172,6 +1172,21 @@ def test_max_args(
     assert (output.max_vals == upper_bound.max(initial=-high)).all()
 
 
+def test_trace(
+    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+) -> None:
+    """Test whether the trace() method works"""
+    tensor = SEPT(
+        child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
+    )
+
+    output = tensor.trace()
+    target = reference_data.trace()
+    assert (output.child == target).all()
+    assert output.min_vals == lower_bound.trace()
+    assert output.max_vals == upper_bound.trace()
+
+
 # End of Ishan's tests
 
 
