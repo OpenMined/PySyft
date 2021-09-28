@@ -19,6 +19,7 @@ from pymbolic.mapper.substitutor import SubstitutionMapper
 from pymbolic.mapper.substitutor import make_subst_func
 
 # relative
+from .entity import DataSubjectGroup
 from .entity import Entity
 from .idp_gaussian_mechanism import iDPGaussianMechanism
 from .search import max_lipschitz_wrt_entity
@@ -152,14 +153,39 @@ def get_mechanism_for_entity(
 
     L = float(max_lipschitz_wrt_entity(scalars, entity=entity))
 
-    return iDPGaussianMechanism(
-        sigma=sigma,
-        squared_l2_norm=value,
-        squared_l2_norm_upper_bound=value_upper_bound,
-        L=L,
-        entity_name=entity.name,
-        name=m_id,
-    )
+    if isinstance(entity, DataSubjectGroup):
+        mechanisms = []
+        for e in entity.entity_set:
+            mechanisms.append(
+                (
+                    entity,
+                    iDPGaussianMechanism(
+                        sigma=sigma,
+                        squared_l2_norm=value,
+                        squared_l2_norm_upper_bound=value_upper_bound,
+                        L=L,
+                        entity_name=e.name,
+                        name=m_id,
+                    ),
+                )
+            )
+        return mechanisms
+    elif isinstance(entity, Entity):
+        return [
+            (
+                entity,
+                iDPGaussianMechanism(
+                    sigma=sigma,
+                    squared_l2_norm=value,
+                    squared_l2_norm_upper_bound=value_upper_bound,
+                    L=L,
+                    entity_name=entity.name,
+                    name=m_id,
+                ),
+            )
+        ]
+    else:
+        raise Exception(f"What even is this type: {type(entity)}")
 
 
 def get_all_entity_mechanisms(
@@ -170,14 +196,17 @@ def get_all_entity_mechanisms(
     for s in scalars:
         for i_s in s.input_scalars:
             entities.add(i_s.entity)
-    return {
-        e: [
-            get_mechanism_for_entity(
-                scalars=scalars, entity=e, sigma=sigma, public_only=public_only
-            )
-        ]
-        for e in entities
-    }
+    entity_to_mechanisms = {}
+    for entity in entities:
+        for flat_entity, mechanism in get_mechanism_for_entity(
+            scalars=scalars, entity=entity, sigma=sigma, public_only=public_only
+        ):
+            # We ignore entity in this case because entity might be a DataSubjectGroup,
+            # in which case flat_entity will include more entities than entity
+            if flat_entity not in entity_to_mechanisms:
+                entity_to_mechanisms[flat_entity] = list()
+            entity_to_mechanisms[flat_entity].append(mechanism)
+    return entity_to_mechanisms
 
 
 def get_remaining_budget(acc: Any, user_key: VerifyKey) -> Any:

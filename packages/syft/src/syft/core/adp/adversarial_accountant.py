@@ -20,6 +20,7 @@ from sqlalchemy.engine import Engine
 
 # relative
 from ..node.common.node_manager.ledger_manager import LedgerManager
+from .entity import DataSubjectGroup
 from .entity import Entity
 from .idp_gaussian_mechanism import iDPGaussianMechanism
 
@@ -159,7 +160,8 @@ class AdversarialAccountant:
         user_key: VerifyKey,
         returned_epsilon_is_private: bool = False,
     ) -> bool:
-        spend = self.get_eps_for_entity(
+
+        spent = self.get_eps_for_entity(
             entity=entity,
             user_key=user_key,
             returned_epsilon_is_private=returned_epsilon_is_private,
@@ -169,10 +171,10 @@ class AdversarialAccountant:
 
         # print("ACCOUNTANT MAX BUDGET", self.max_budget)
         # @Andrew can we use <= or does it have to be <
-        has_budget = spend <= user_budget
+        has_budget = spent <= user_budget
         # print(f"has_budget = {spend} < {user_budget}")
         print("\n\nHas Budget:" + str(has_budget))
-        print("SPEND:" + str(spend))
+        print("YOU'VE SPENT:" + str(spent))
         print("USER BUDGET:" + str(user_budget))
         return has_budget
 
@@ -224,22 +226,33 @@ class AdversarialAccountant:
         entities = set()
 
         for entity, _ in temp_entities.items():
-            if not self.has_budget(
-                entity,
-                user_key=user_key,
-                returned_epsilon_is_private=returned_epsilon_is_private,
-            ):
-                entities.add(entity)
-
+            if isinstance(entity, DataSubjectGroup):
+                for e in entity.entity_set:
+                    if not self.has_budget(
+                        e,
+                        user_key=user_key,
+                        returned_epsilon_is_private=returned_epsilon_is_private,
+                    ):
+                        entities.add(
+                            entity
+                        )  # Leave out the whole group if ANY of its entities are over budget
+            elif isinstance(entity, Entity):
+                if not self.has_budget(
+                    entity,
+                    user_key=user_key,
+                    returned_epsilon_is_private=returned_epsilon_is_private,
+                ):
+                    entities.add(entity)
+            else:
+                raise Exception
         return entities
 
     # prints entity and its epsilon value
     def print_ledger(self, returned_epsilon_is_private: bool = False) -> None:
-        for mechanism in self.entity2ledger.mechanism_manager.all():
-            entity = self.entity2ledger.entity_manager.first(name=mechanism.entity_name)
+        for entity in self.entities:
             if entity is not None:
                 print(
-                    str(mechanism.entity_name)
+                    str(entity.name)
                     + "\t"
                     + str(
                         self.get_eps_for_entity(

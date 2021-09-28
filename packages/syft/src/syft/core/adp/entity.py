@@ -60,6 +60,9 @@ class Entity:
         # True at the same time
         return hash(self) != hash(other)
 
+    def __lt__(self, other: Any) -> bool:
+        return self.name < other.name
+
     def to_string(self) -> str:
         return f"{self.name}+{self.id.to_string()}"
 
@@ -96,10 +99,10 @@ class DataSubjectGroup:
         self.id = UID()
 
     def __hash__(self) -> int:
-        return hash(self.entity_set)
+        return hash(tuple(sorted(self.entity_set)))
 
     def __eq__(self, other: DataSubjectGroup) -> bool:  # type: ignore
-        return hash(self.entity_set) == hash(other.entity_set)
+        return hash(self) == hash(other)
 
     def __contains__(self, item: Entity) -> bool:
         return item in self.entity_set

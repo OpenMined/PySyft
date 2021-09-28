@@ -48,6 +48,9 @@ from ..common.node_service.get_remaining_budget.get_remaining_budget_service imp
 from ..common.node_service.group_manager.group_manager_service import (
     GroupManagerService,
 )
+from ..common.node_service.node_setup.node_setup_messages import (
+    CreateInitialSetUpMessage,
+)
 from ..common.node_service.node_setup.node_setup_service import NodeSetupService
 from ..common.node_service.object_request.object_request_service import (
     ObjectRequestServiceWithoutReply,
@@ -72,7 +75,6 @@ from ..common.node_table.utils import create_memory_db_engine
 from ..device import Device
 from ..device import DeviceClient
 from .client import DomainClient
-from ..common.node_service.node_setup.node_setup_messages import CreateInitialSetUpMessage
 
 
 class Domain(Node):
@@ -173,12 +175,14 @@ class Domain(Node):
         super().post_init()
         self.set_node_uid()
 
-    def initial_setup(self,
-              first_superuser_name:str = "Jane Doe",
-              first_superuser_email: str = "info@openmined.org",
-              first_superuser_password: str = "changethis",
-              first_superuser_budget: float = 5.55,
-              domain_name:str = "BigHospital"):
+    def initial_setup(
+        self,
+        first_superuser_name: str = "Jane Doe",
+        first_superuser_email: str = "info@openmined.org",
+        first_superuser_password: str = "changethis",
+        first_superuser_budget: float = 5.55,
+        domain_name: str = "BigHospital",
+    ):
 
         # Build Syft Message
         msg = CreateInitialSetUpMessage(
@@ -195,7 +199,6 @@ class Domain(Node):
         _ = self.recv_immediate_msg_with_reply(msg=msg).message
 
         return self
-
 
     def loud_print(self) -> None:
         install_path = os.path.abspath(
