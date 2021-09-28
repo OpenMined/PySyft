@@ -39,10 +39,11 @@ def validate_permission_error(data_ptr: Pointer) -> None:
 @pytest.mark.parametrize("with_verify_key", [True, False])
 def test_make_pointable(
     with_verify_key: bool,
-    node: sy.VirtualMachine,
-    client: sy.VirtualMachineClient,
-    root_client: sy.VirtualMachineClient,
 ) -> None:
+    node = sy.VirtualMachine(name="alice")
+    client = node.get_client()
+    root_client = node.get_root_client()
+
     ten = th.tensor([1, 2])
     ptr = ten.send(root_client, pointable=False)
 
@@ -60,10 +61,11 @@ def test_make_pointable(
 @pytest.mark.parametrize("with_verify_key", [True, False])
 def test_make_unpointable(
     with_verify_key: bool,
-    node: sy.VirtualMachine,
-    client: sy.VirtualMachineClient,
-    root_client: sy.VirtualMachineClient,
 ) -> None:
+    node = sy.VirtualMachine(name="alice")
+    client = node.get_client()
+    root_client = node.get_root_client()
+
     ten = th.tensor([1, 2])
     ptr = ten.send(root_client, pointable=False)
 
@@ -83,9 +85,11 @@ def test_make_unpointable(
 
 
 @pytest.mark.slow
-def test_pointable_property(
-    client: sy.VirtualMachineClient, root_client: sy.VirtualMachineClient
-) -> None:
+def test_pointable_property() -> None:
+    node = sy.VirtualMachine(name="alice")
+    client = node.get_client()
+    root_client = node.get_root_client()
+
     ten = th.tensor([1, 2])
     ptr = ten.send(root_client, pointable=False)
     assert len(client.store) == 0
