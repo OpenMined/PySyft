@@ -173,12 +173,12 @@ class Domain(Node):
         super().post_init()
         self.set_node_uid()
 
-    def setup(self,
-              first_superuser_name:str,
-              first_superuser_email: str,
-              first_superuser_password: str,
-              first_superuser_budget: float,
-              domain_name:str):
+    def initial_setup(self,
+              first_superuser_name:str = "Jane Doe",
+              first_superuser_email: str = "info@openmined.org",
+              first_superuser_password: str = "changethis",
+              first_superuser_budget: float = 5.55,
+              domain_name:str = "BigHospital"):
 
         # Build Syft Message
         msg = CreateInitialSetUpMessage(
@@ -193,6 +193,8 @@ class Domain(Node):
 
         # Process syft message
         _ = self.recv_immediate_msg_with_reply(msg=msg).message
+
+        return self
 
 
     def loud_print(self) -> None:
