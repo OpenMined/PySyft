@@ -1,4 +1,5 @@
 # stdlib
+import time
 from typing import Optional
 
 # third party
@@ -162,7 +163,18 @@ class GetObjectAction(ImmediateActionWithReply):
     ) -> ImmediateSyftMessageWithoutReply:
         try:
             try:
-                storable_object = node.store[self.id_at_location]
+                ctr = 3600  # set a minimum time of five minutes to avoid infinite loop
+                while True:
+                    time.sleep(0.1)
+                    ctr -= 1
+                    if ctr == 0:
+                        raise Exception("Object Retrieval Timed out")
+
+                    storable_object = node.store[self.id_at_location]
+                    if storable_object is None:
+                        continue  # type: ignore
+                    else:
+                        break
             except Exception as e:
                 log = (
                     f"Unable to Get Object with ID {self.id_at_location} from store. "
