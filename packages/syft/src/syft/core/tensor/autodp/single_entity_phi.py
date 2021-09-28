@@ -1496,6 +1496,22 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             entity=self.entity,
         )
 
+    def prod(
+        self,
+        axis: Optional[int] = None,
+        dtype: Optional[Any] = None,
+        out: Optional[np.ndarray] = None,
+        keepdims: Optional[bool] = False,
+        initial: int = 1,
+        where: Optional[bool] = True,
+    ) -> SingleEntityPhiTensor:
+        return SingleEntityPhiTensor(
+            child=self.child.prod(axis, dtype, out, keepdims, initial, where),
+            min_vals=self.min_vals.prod(axis, dtype, out, keepdims, initial, where),
+            max_vals=self.max_vals.prod(axis, dtype, out, keepdims, initial, where),
+            entity=self.entity,
+        )
+
 
 @implements(SingleEntityPhiTensor, np.expand_dims)
 def expand_dims(a: npt.ArrayLike, axis: Optional[int] = None) -> SingleEntityPhiTensor:

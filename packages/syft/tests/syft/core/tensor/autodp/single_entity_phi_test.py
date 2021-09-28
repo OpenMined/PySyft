@@ -1187,6 +1187,21 @@ def test_trace(
     assert output.max_vals == upper_bound.trace()
 
 
+def test_prod(
+    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+) -> None:
+    """Test whether the prod() method works"""
+    tensor = SEPT(
+        child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
+    )
+
+    output = tensor.prod()
+    target = reference_data.prod()
+    assert (output.child == target).all()
+    assert output.min_vals == lower_bound.prod()
+    assert output.max_vals == upper_bound.prod()
+
+
 # End of Ishan's tests
 
 
