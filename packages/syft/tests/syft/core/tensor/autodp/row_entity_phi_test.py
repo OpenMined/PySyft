@@ -17,22 +17,48 @@ from syft.core.tensor.autodp.single_entity_phi import SingleEntityPhiTensor as S
 from syft.core.tensor.broadcastable import is_broadcastable
 from syft.core.tensor.tensor import Tensor
 
-# ------------------- EQUALITY OPERATORS -----------------------------------------------
 
-# Global constants
-ishan = Entity(name="Ishan")
-traskmaster = Entity(name="Trask")
-dims = np.random.randint(10) + 3  # Avoid size 0, 1
-row_count = np.random.randint(7) + 1
-scalar_manager = ScalarManager()
-high = 100
+@pytest.fixture
+def ishan() -> Entity:
+    return Entity(name="Ishan")
 
 
 @pytest.fixture
-def reference_data() -> np.ndarray:
+def traskmaster() -> Entity:
+    return Entity(name="Andrew")
+
+
+@pytest.fixture
+def dims() -> int:
+    """ This generates a random integer for the number of dimensions in our testing tensors"""
+    dims = int(max(3, np.random.randint(10) + 3))  # Avoid size 0 and 1
+    # Failsafe
+    if dims < 2:
+        dims += 3
+    assert dims > 1, "Tensor not large enough for several tests."
+    return dims
+
+
+@pytest.fixture
+def row_count() -> int:
+    return np.random.randint(7) + 1
+
+
+@pytest.fixture
+def highest() -> int:
+    return 100
+
+
+@pytest.fixture
+def scalar_manager() -> ScalarManager:
+    return ScalarManager()
+
+
+@pytest.fixture
+def reference_data(highest: int, dims: int) -> np.ndarray:
     """This generates random data to test the equality operators"""
     reference_data = np.random.randint(
-        low=-high, high=high, size=(dims, dims), dtype=np.int32
+        low=-highest, high=highest, size=(dims, dims), dtype=np.int32
     )
     return reference_data
 
@@ -52,19 +78,19 @@ def lower_bound(reference_data: np.ndarray) -> np.ndarray:
 
 
 @pytest.fixture
-def row_data_ishan() -> List:
+def row_data_ishan(highest: int, dims: int, ishan: Entity, scalar_manager: ScalarManager, row_count: int) -> List:
     """This generates a random number of SEPTs to populate the REPTs."""
     reference_data = []
     for _ in range(row_count):
         new_data = np.random.randint(
-            low=-high, high=high, size=(dims, dims), dtype=np.int32
+            low=-highest, high=highest, size=(dims, dims), dtype=np.int32
         )
         reference_data.append(
             SEPT(
                 child=new_data,
                 entity=ishan,
-                min_vals=np.ones_like(new_data) * -high,
-                max_vals=np.ones_like(new_data) * high,
+                min_vals=np.ones_like(new_data) * -highest,
+                max_vals=np.ones_like(new_data) * highest,
                 scalar_manager=scalar_manager,
             )
         )
@@ -72,19 +98,19 @@ def row_data_ishan() -> List:
 
 
 @pytest.fixture
-def row_data_trask() -> List:
+def row_data_trask(row_count: int, dims: int, highest: int, traskmaster: Entity, scalar_manager: ScalarManager) -> List:
     """This generates a random number of SEPTs to populate the REPTs."""
     reference_data = []
     for _ in range(row_count):
         new_data = np.random.randint(
-            low=-high, high=high, size=(dims, dims), dtype=np.int32
+            low=-highest, high=highest, size=(dims, dims), dtype=np.int32
         )
         reference_data.append(
             SEPT(
                 child=new_data,
                 entity=traskmaster,
-                min_vals=np.ones_like(new_data) * -high,
-                max_vals=np.ones_like(new_data) * high,
+                min_vals=np.ones_like(new_data) * -highest,
+                max_vals=np.ones_like(new_data) * highest,
                 scalar_manager=scalar_manager,
             )
         )
@@ -92,7 +118,7 @@ def row_data_trask() -> List:
 
 
 @pytest.fixture
-def row_data(lower_bound: np.ndarray, upper_bound: np.ndarray) -> List:
+def row_data(lower_bound: np.ndarray, upper_bound: np.ndarray, row_count: int, ishan: Entity) -> List:
     """This generates a random number of SEPTs to populate the REPTs."""
     reference_data = []
     for _ in range(row_count):
@@ -147,6 +173,8 @@ def test_eq_diff_entities(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
+        ishan: Entity,
+        traskmaster: Entity
 ) -> REPT:
     """Test equality between REPTs with different owners"""
     data1 = SEPT(
@@ -240,7 +268,7 @@ def test_add_wrong_types(row_data_ishan: List) -> None:
         # TODO: Double check how tuples behave during addition/subtraction with np.ndarrays
 
 
-def test_add_simple_types(row_data_ishan: List) -> None:
+def test_add_simple_types(row_data_ishan: List, dims: int) -> None:
     """Test addition of a REPT with simple types (float, ints, bools, etc)"""
     tensor = REPT(rows=row_data_ishan)
     random_int = np.random.randint(low=15, high=1000)
@@ -415,6 +443,7 @@ def test_mul_sept(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
+        ishan: Entity
 ) -> None:
     """Test REPT * SEPT"""
     sept = SEPT(
@@ -447,7 +476,7 @@ def test_neg(row_data_ishan: List) -> None:
 @pytest.mark.skip(
     reason="Test passes, but raises a Deprecation Warning for elementwise comparisons"
 )
-def test_and() -> None:
+def test_and(row_count: int, ishan: Entity) -> None:
     new_list = list()
     for _ in range(row_count):
         data = np.random.randint(2, size=(dims, dims))
@@ -468,7 +497,7 @@ def test_and() -> None:
 @pytest.mark.skip(
     reason="Test passes, but raises a Deprecation Warning for elementwise comparisons"
 )
-def test_or() -> None:
+def test_or(row_count: int, ishan: Entity) -> None:
     new_list = list()
     for _ in range(row_count):
         data = np.random.randint(2, size=(dims, dims))
@@ -486,35 +515,55 @@ def test_or() -> None:
         assert (tensor | False) == output[index]
 
 
-ent = Entity(name="test")
-ent2 = Entity(name="test2")
-
-
-def rept(low, high, entity) -> List:
+@pytest.fixture
+def tensor1(traskmaster: Entity, row_count: int, dims: int) -> REPT:
+    """ Reference tensor """
     data = []
     for _ in range(row_count):
         data.append(
             SEPT(
-                child=np.random.randint(low=low, high=high, size=dims),
-                entity=entity,
-                max_vals=np.full(dims, high - 1, dtype=np.int32),
-                min_vals=np.full(dims, low, dtype=np.int32),
+                child=np.random.randint(low=-2, high=4, size=dims),
+                entity=traskmaster,
+                max_vals=np.full(dims, 4, dtype=np.int32),
+                min_vals=np.full(dims, -2, dtype=np.int32),
             )
         )
     return REPT(rows=data, check_shape=False)
 
 
-tensor1 = rept(-2, 4, ent)
-# same entity, same data
-tensor2 = tensor1
-# same entity, different data
-tensor3 = rept(4, 7, ent)
-
-simple_type1 = randint(-6, -4)
-simple_type2 = randint(4, 6)
+@pytest.fixture
+def tensor2(tensor1) -> REPT:
+    """ Same entity, same data as reference tensor"""
+    return tensor1
 
 
-def test_le() -> None:
+@pytest.fixture
+def tensor3(traskmaster: Entity, row_count: int, dims: int) -> REPT:
+    """ Same entity, different data as reference tensor"""
+    data = []
+    for _ in range(row_count):
+        data.append(
+            SEPT(
+                child=np.random.randint(low=4, high=7, size=dims),
+                entity=traskmaster,
+                max_vals=np.full(dims, 7, dtype=np.int32),
+                min_vals=np.full(dims, 4, dtype=np.int32),
+            )
+        )
+    return REPT(rows=data, check_shape=False)
+
+
+@pytest.fixture
+def simple_type1() -> int:
+    return randint(-6, -4)
+
+
+@pytest.fixture
+def simple_type2() -> int:
+    return randint(4, 6)
+
+
+def test_le(tensor1: REPT, tensor2: REPT, tensor3: REPT, simple_type1: int, simple_type2: int) -> None:
     for i in tensor1.__le__(tensor2).child:
         assert i.child.all()
     for i in tensor1.__le__(tensor3).child:
@@ -525,7 +574,7 @@ def test_le() -> None:
         assert i.child.all()
 
 
-def test_ge() -> None:
+def test_ge(tensor1: REPT, tensor2: REPT, tensor3: REPT, simple_type1: int, simple_type2: int) -> None:
     for i in tensor1.__ge__(tensor2).child:
         assert i.child.all()
     for i in tensor1.__ge__(tensor3).child:
@@ -536,7 +585,7 @@ def test_ge() -> None:
         assert not i.child.all()
 
 
-def test_lt() -> None:
+def test_lt(tensor1: REPT, tensor2: REPT, tensor3: REPT, simple_type1: int, simple_type2: int) -> None:
     for i in tensor1.__lt__(tensor2).child:
         assert not i.child.all()
     for i in tensor1.__lt__(tensor3).child:
@@ -547,7 +596,7 @@ def test_lt() -> None:
         assert i.child.all()
 
 
-def test_gt() -> None:
+def test_gt(tensor1: REPT, tensor2: REPT, tensor3: REPT, simple_type1: int, simple_type2: int) -> None:
     for i in tensor1.__gt__(tensor2).child:
         assert not i.child.all()
     for i in tensor1.__gt__(tensor3).child:
@@ -558,14 +607,12 @@ def test_gt() -> None:
         assert not i.child.all()
 
 
-rand1 = np.random.randint(-4, 1)
-rand2 = np.random.randint(1, 5)
-clipped_tensor1 = tensor1.clip(rand1, rand2).child
-clipped_tensor2 = tensor1.clip(rand2, rand1).child
-clipped_tensor3 = tensor1.clip(rand1, None).child
-
-
-def test_clip() -> None:
+def test_clip(tensor1: REPT, tensor2: REPT, tensor3: REPT, simple_type1: int, simple_type2: int) -> None:
+    rand1 = np.random.randint(-4, 1)
+    rand2 = np.random.randint(1, 5)
+    clipped_tensor1 = tensor1.clip(rand1, rand2).child
+    clipped_tensor2 = tensor1.clip(rand2, rand1).child
+    clipped_tensor3 = tensor1.clip(rand1, None).child
     for i in clipped_tensor1:
         assert ((i.child >= rand1) & (i.child <= rand2)).all()
     for i in clipped_tensor2:
