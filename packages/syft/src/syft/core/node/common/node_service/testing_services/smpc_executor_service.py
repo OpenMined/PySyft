@@ -1,4 +1,5 @@
 # stdlib
+import time
 from typing import List
 from typing import Optional
 from typing import Type
@@ -38,8 +39,18 @@ class SMPCExecutorService(ImmediateNodeServiceWithoutReply):
         """
         func = _MAP_ACTION_TO_FUNCTION[msg.name_action]
         store_object_self = node.store.get_object(key=msg.self_id)
-        if store_object_self is None:
-            raise KeyError("Object not already in store")
+        ctr = 3600  # set a minimum time of five minutes to avoid infinite loop
+        while True:
+            time.sleep(0.1)
+            ctr -= 1
+            if ctr == 0:
+                raise Exception("Object Retrieval Timed out")
+
+            store_object_self = node.store.get_object(key=msg.self_id)
+            if store_object_self is None:
+                continue  # type: ignore
+            else:
+                break
 
         _self = store_object_self.data
         args = [node.store[arg_id].data for arg_id in msg.args_id]
