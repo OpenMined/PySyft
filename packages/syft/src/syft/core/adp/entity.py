@@ -29,6 +29,16 @@ class Entity:
         if name == "":
             name = names.get_full_name().replace(" ", "_") + "_g"
 
+        if ";" in name:
+            raise Exception(
+                "Entity name cannot contain a semi-colon (;), sorry. Don't ask why. Accept your fate."
+            )
+
+        if "+" in name:
+            raise Exception(
+                "Entity name cannot contain a plus (+), sorry. Don't ask why. Accept your fate."
+            )
+
         self.name = name
         self.id = id if id else UID()
 
@@ -50,6 +60,14 @@ class Entity:
         # True at the same time
         return hash(self) != hash(other)
 
+    def to_string(self) -> str:
+        return f"{self.name}+{self.id.to_string()}"
+
+    @staticmethod
+    def from_string(blob: str) -> Entity:
+        ent_name, ent_id = blob.split("+")
+        return Entity(name=ent_name, id=UID.from_string(ent_id))
+
     # represents entity as a string
     def __repr__(self) -> str:
         return "<Entity:" + str(self.name) + ">"
@@ -67,3 +85,39 @@ class Entity:
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return Entity_PB
+
+
+class DataSubjectGroup:
+    """Data Subject is what we have been calling an 'ENTITY' all along ..."""
+
+    def __init__(self, list_of_entities: list):
+        # Ensure each entity being tracked is unique
+        self.entity_set: set = set(list_of_entities)
+        self.id = UID()
+
+    def __hash__(self) -> int:
+        return hash(self.entity_set)
+
+    def __eq__(self, other: DataSubjectGroup) -> bool:  # type: ignore
+        return hash(self.entity_set) == hash(other.entity_set)
+
+    def __contains__(self, item: Entity) -> bool:
+        return item in self.entity_set
+
+    def to_string(self) -> str:
+        output_string = ""
+        for item in self.entity_set:
+            output_string += item.to_string() + ";"
+        return output_string[:-1]
+
+    @staticmethod
+    def from_string(blob: str) -> DataSubjectGroup:
+        """Take the output of to_string and recreate the DataSubjectGroup"""
+        entity_list = blob.split(";")
+        entity_set = set()
+        for entity_blob in entity_list:
+            entity_set.add(Entity.from_string(entity_blob))
+        return DataSubjectGroup(list[entity_set])  # type: ignore
+
+    def __repr__(self) -> str:
+        return f"{[i.__repr__() for i in self.entity_set]}"
