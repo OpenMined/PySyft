@@ -86,7 +86,7 @@ class CryptoPrimitiveProvider:
             try:
                 crypto_store = cache_store[party]
             except KeyError:
-                cache_store[party] = party.syft.lib.SMPC.store.CryptoStore()
+                cache_store[party] = party.syft.core.smpc.store.CryptoStore()
                 crypto_store = cache_store[party]
             crypto_store.populate_store(
                 op_str, primitives_party, **p_kwargs  # TODO

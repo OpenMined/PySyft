@@ -11,40 +11,34 @@ from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
-from ...core.node.abstract.node import AbstractNodeClient
+from ..node.abstract.node import AbstractNodeClient
 from .store import CryptoStore
 
-from .protocol import *  # noqa: 401 isort: skip type: ignore
-
-LIB_NAME = "SMPC"
-PACKAGE_SUPPORT = {"lib": LIB_NAME}
+# from .protocol import *  # noqa: 401 isort: skip type: ignore
+# BEFORE MERGE (Rasswanth): Should remove above comment after MyPy fix
 
 
 def create_smpc_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
     ast = Globals(client)
 
-    modules = ["syft", "syft.lib", "syft.lib.SMPC", "syft.lib.SMPC.store"]
+    modules = ["syft", "syft.core", "syft.core.smpc", "syft.core.smpc.store"]
 
     classes = [
         (
-            "syft.lib.SMPC.store.CryptoStore",
-            "syft.lib.SMPC.store.CryptoStore",
+            "syft.core.smpc.store.CryptoStore",
+            "syft.core.smpc.store.CryptoStore",
             CryptoStore,
         ),
     ]
 
     methods = [
         (
-            "syft.lib.SMPC.store.CryptoStore.get_primitives_from_store",
+            "syft.core.smpc.store.CryptoStore.get_primitives_from_store",
             "syft.lib.python.List",
         ),
-        ("syft.lib.SMPC.store.CryptoStore.store", "syft.lib.python.Dict"),
+        ("syft.core.smpc.store.CryptoStore.store", "syft.lib.python.Dict"),
         (
-            "syft.lib.SMPC.store.CryptoStore.populate_store",
-            "syft.lib.python._SyNone",
-        ),
-        (
-            "syft.lib.SMPC.store.CryptoStore.print",
+            "syft.core.smpc.store.CryptoStore.populate_store",
             "syft.lib.python._SyNone",
         ),
     ]

@@ -19,8 +19,8 @@ from typing import Tuple
 import numpy as np
 
 # relative
-from .....core.tensor.smpc.mpc_tensor import MPCTensor
-from .....core.tensor.smpc.share_tensor import ShareTensor
+from ....tensor.smpc.mpc_tensor import MPCTensor
+from ....tensor.smpc.share_tensor import ShareTensor
 from ...store import register_primitive_generator
 from ...store import register_primitive_store_add
 from ...store import register_primitive_store_get

@@ -23,11 +23,11 @@ import wrapt
 from ..ast.globals import Globals
 from ..core.adp import create_adp_ast
 from ..core.node.abstract.node import AbstractNodeClient
+from ..core.smpc import create_smpc_ast
 from ..core.tensor import create_tensor_ast
 from ..logger import critical
 from ..logger import traceback_and_raise
 from ..logger import warning
-from .SMPC import create_smpc_ast
 from .misc import create_union_ast
 from .plan import create_plan_ast
 from .python import create_python_ast
@@ -246,12 +246,11 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
     lib_ast.add_attr(attr_name="torchvision", attr=torchvision_ast.attrs["torchvision"])
     lib_ast.syft.add_attr("core", attr=plan_ast.syft.core)
     lib_ast.syft.core.add_attr("adp", attr=adp_ast.syft.core.adp)
+    lib_ast.syft.core.add_attr("smpc", attr=smpc_ast.syft.core.smpc)
     lib_ast.syft.core.add_attr("tensor", attr=tensor_ast.syft.core.tensor)
     lib_ast.syft.core.add_attr(
         "remote_dataloader", remote_dataloader_ast.syft.core.remote_dataloader
     )
-    smpc_ast = getattr(getattr(smpc_ast, "syft"), "lib")
-    lib_ast.syft.lib.add_attr(attr_name="SMPC", attr=smpc_ast.attrs["SMPC"])
 
     # let the misc creation be always the last, as it needs the full ast solved
     # to properly generated unions

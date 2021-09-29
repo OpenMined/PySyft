@@ -8,7 +8,7 @@ from typing import Iterable
 from typing import List
 
 # relative
-from ....core.common.serde.serializable import serializable
+from ...common.serde.serializable import serializable
 
 
 @serializable(recursive_serde=True)
@@ -69,7 +69,3 @@ class CryptoStore:
         retrieve_func = CryptoStore._func_get_store[op_str]
         primitives = retrieve_func(self.store, *args, **kwargs)
         return primitives
-
-    def print(self) -> None:
-        print(id(self))
-        print(id(self.store))
