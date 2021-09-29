@@ -262,12 +262,9 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         # if we have mutated resolved_self we need to save it back since the store
         # might be in SQL and not in memory where the update is automatic
         # but if the method was static then we might not have a _self
-        _self = getattr(self, "_self", None)
-        if _self is not None:
-            self_id_at_location = getattr(_self, "id_at_location", None)
-            if self_id_at_location is not None:
-                # write the original resolved_self back to _self.id_at_location
-                node.store[self_id_at_location] = resolved_self  # type: ignore
+        if resolved_self is not None and mutating_internal:
+            # write the original resolved_self back to _self.id_at_location
+            node.store[self._self.id_at_location] = resolved_self  # type: ignore
 
         node.store[self.id_at_location] = result
 
