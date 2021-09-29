@@ -67,5 +67,5 @@ class CryptoStore:
             Dict[Any, Any]: Primitives.
         """
         retrieve_func = CryptoStore._func_get_store[op_str]
-        primitives = retrieve_func(self.store, *args, **kwargs)
+        primitives = retrieve_func(self.store, nr_instances, *args, **kwargs)
         return primitives
