@@ -999,6 +999,91 @@ def test_partition_axis(
     assert reference_tensor == reference_data, "Partition did not work as expected"
 
 
+def test_mul(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    reference_scalar_manager: VirtualMachinePrivateScalarManager,
+) -> None:
+    """ """
+    sept1 = SEPT(
+        child=reference_data,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+        entity=ishan,
+        scalar_manager=reference_scalar_manager,
+    )
+    sept2 = SEPT(
+        child=reference_data,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+        entity=traskmaster,
+        scalar_manager=reference_scalar_manager,
+    )
+
+    # Public-Public
+    output = sept2 * sept2
+    assert output.shape == sept2.shape
+    # assert (output.min_vals == sept2.min_vals * sept2.min_vals).all()
+    # assert (output.max_vals == sept2.max_vals * sept2.max_vals).all()
+    assert (output.child == sept2.child * sept2.child).all()
+
+    # Public - Private
+    output: IGT = sept2 * sept1
+    assert output.shape == sept2.shape
+    # assert (output.min_vals == sept1.min_vals * sept2.min_vals).all()
+    # assert (output.max_vals == sept1.max_vals * sept2.max_vals).all()
+    values = np.array([i.value for i in output.flat_scalars], dtype=np.int32).reshape(
+        output.shape
+    )
+    target = sept1.child + sept2.child
+    assert target.shape == values.shape
+    assert (sept1.child + sept2.child == values).all()
+
+    # assert output.child == sept1.child * sept2.child
+    return None
+
+
+def test_neg(
+    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+) -> None:
+    """Test __neg__"""
+    reference_tensor = SEPT(
+        child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
+    )
+    negative_tensor = reference_tensor.__neg__()
+    assert (negative_tensor.child == reference_tensor.child * -1).all()
+    assert (negative_tensor.min_vals == reference_tensor.max_vals * -1).all()
+    assert (negative_tensor.max_vals == reference_tensor.min_vals * -1).all()
+    assert negative_tensor.shape == reference_tensor.shape
+
+
+def test_and(reference_binary_data: np.ndarray) -> None:
+    """Test bitwise and"""
+    reference_tensor = SEPT(
+        child=reference_binary_data,
+        max_vals=np.ones_like(reference_binary_data),
+        min_vals=np.zeros_like(reference_binary_data),
+        entity=ishan,
+    )
+    output = reference_tensor & False
+    target = reference_binary_data & False
+    assert (output.child == target).all()
+
+
+def test_or(reference_binary_data: np.ndarray) -> None:
+    """Test bitwise or"""
+    reference_tensor = SEPT(
+        child=reference_binary_data,
+        max_vals=np.ones_like(reference_binary_data),
+        min_vals=np.zeros_like(reference_binary_data),
+        entity=ishan,
+    )
+    output = reference_tensor | False
+    target = reference_binary_data | False
+    assert (output.child == target).all()
+
+
 # End of Ishan's tests
 
 
@@ -1021,8 +1106,6 @@ def y() -> Tensor:
 
 ent = Entity(name="test")
 ent2 = Entity(name="test2")
-
-dims = np.random.randint(10) + 1
 
 child1 = np.random.randint(low=-2, high=4, size=dims)
 upper1 = np.full(dims, 3, dtype=np.int32)
