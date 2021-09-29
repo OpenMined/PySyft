@@ -21,6 +21,8 @@ class Role(Base):
     can_edit_roles = Column(Boolean(), default=False)
     can_manage_infrastructure = Column(Boolean(), default=False)
     can_upload_data = Column(Boolean(), default=False)
+    can_upload_legal_document = Column(Boolean(), default=False)
+    can_edit_domain_settings = Column(Boolean(), default=False)
 
     def __str__(self) -> str:
         return (
@@ -46,6 +48,8 @@ def create_role(
     can_edit_roles: bool,
     can_manage_infrastructure: bool,
     can_upload_data: bool,
+    can_upload_legal_document: bool,
+    can_edit_domain_settings: bool,
 ) -> Role:
     new_role = Role(
         name=name,  # type:ignore
@@ -57,5 +61,7 @@ def create_role(
         can_edit_roles=can_edit_roles,
         can_manage_infrastructure=can_manage_infrastructure,
         can_upload_data=can_upload_data,
+        can_upload_legal_document=can_upload_legal_document,
+        can_edit_domain_settings=can_edit_domain_settings,
     )
     return new_role
