@@ -428,6 +428,144 @@ def test_sub_result_gamma(row_data_ishan: List, row_data_trask: List) -> None:
         ), "SEPT(entity1) + SEPT(entity2) != IGT(entity1, entity2)"
 
 
+def test_flatten(row_data_ishan: List) -> None:
+    """Test to see if Flatten works for the ideal case"""
+    reference_tensor = REPT(rows=row_data_ishan)
+    output = reference_tensor.flatten()
+    for sept in output:
+        assert len(sept.child.shape) == 1, "Flatten shape incorrect"
+
+    correct_output = []
+    for row in row_data_ishan:
+        correct_output.append(row.flatten())
+    assert correct_output == output.child, "Flatten did not work as expected"
+
+
+def test_ravel(row_data_ishan: List) -> None:
+    """Test to see if Ravel works for the ideal case"""
+    reference_tensor = REPT(rows=row_data_ishan)
+    output = reference_tensor.ravel()
+    for sept in output:
+        assert len(sept.child.shape) == 1, "Ravel shape incorrect"
+
+    correct_output = []
+    for row in row_data_ishan:
+        correct_output.append(row.ravel())
+    assert correct_output == output.child, "Ravel did not work as expected"
+
+
+def test_transpose(row_data_ishan: List) -> None:
+    """Test to see if Transpose works for the ideal case"""
+    reference_tensor = REPT(rows=row_data_ishan)
+    output = reference_tensor.transpose()
+    for index, sept in enumerate(output):
+        assert (
+            tuple(sept.shape) == reference_tensor.child[index].shape
+        ), "Transpose shape incorrect"
+
+    correct_output = []
+    for row in row_data_ishan:
+        correct_output.append(row.transpose())
+    assert correct_output == output.child, "Transpose did not work as expected"
+
+
+def test_partition() -> None:
+    """Test to see if Partition works for the ideal case"""
+    data = np.random.randint(low=-100, high=100, size=(10, 10), dtype=np.int32)
+    sept = SEPT(
+        child=data,
+        entity=ishan,
+        min_vals=np.ones_like(data) * -100,
+        max_vals=np.ones_like(data) * 100,
+    )
+    reference_tensor = REPT(rows=sept)
+
+    reference_tensor.partition(kth=1)
+    sept.partition(kth=1)
+    assert reference_tensor.child == sept, "Partition did not work as expected"
+
+
+@pytest.mark.skipif(
+    dims == 1, reason="Not enough dimensions to do the compress operation"
+)
+def test_compress(row_data_ishan: List) -> None:
+    """Test to see if Compress works for the ideal case"""
+    reference_tensor = REPT(rows=row_data_ishan)
+
+    output = reference_tensor.compress([0, 1])
+
+    target_output = list()
+    for row in row_data_ishan:
+        assert row.entity == ishan
+        new_row = row.compress([0, 1])
+        assert new_row.entity == ishan
+        target_output.append(new_row)
+
+    for result, target in zip(output, target_output):
+        assert isinstance(result.child, SEPT)
+        assert isinstance(target, SEPT)
+        assert result.child == target, "Compress operation failed"
+
+
+def test_resize(row_data_ishan: List) -> None:
+    """Test to see if Resize works for the ideal case"""
+    reference_tensor = REPT(rows=row_data_ishan)
+    original_tensor = reference_tensor.copy()
+
+    new_shape = original_tensor.flatten().shape
+    reference_tensor.resize(new_shape)
+    assert reference_tensor.shape != original_tensor.shape, "Resize didn't work"
+    assert reference_tensor.shape == new_shape, "Resize shape doesn't check out"
+
+
+@pytest.mark.skipif(dims == 1, reason="Dims too low for this operation")
+def test_reshape(row_data_ishan: List) -> None:
+    """Test to see if Reshape works for the ideal case"""
+    reference_tensor = REPT(rows=row_data_ishan)
+    original_shape = reference_tensor.shape
+    new_shape = tuple(
+        [len(reference_tensor.child)] + [np.prod(reference_tensor.child[0].shape)] + [1]
+    )
+    assert new_shape[0] == reference_tensor.shape[0], "Shape isn't usable for reshape"
+    output = reference_tensor.reshape(new_shape)
+    assert output.shape != original_shape, "Reshape didn't change shape at all"
+    assert output.shape == new_shape, "Reshape didn't change shape properly"
+    assert output.shape != reference_tensor.shape, "Reshape didn't modify in-place"
+    assert original_shape == reference_tensor.shape, "Reshape didn't modify in-place"
+
+
+def test_squeeze(row_data_ishan: List) -> None:
+    """Test to see if Squeeze works for the ideal case"""
+    data = np.random.randint(low=-100, high=100, size=(10, 1, 10), dtype=np.int32)
+    sept = SEPT(
+        child=data,
+        entity=ishan,
+        min_vals=np.ones_like(data) * -100,
+        max_vals=np.ones_like(data) * 100,
+    )
+    reference_tensor = REPT(rows=sept)
+
+    output = reference_tensor.squeeze()
+    target = sept.squeeze()
+    assert output.child[0] == target, "Squeeze did not work as expected"
+
+
+def test_swapaxes(row_data_ishan: List) -> None:
+    """Test to see if Swapaxes works for the ideal case"""
+    data = np.random.randint(low=-100, high=100, size=(10, 10), dtype=np.int32)
+    sept = SEPT(
+        child=data,
+        entity=ishan,
+        min_vals=np.ones_like(data) * -100,
+        max_vals=np.ones_like(data) * 100,
+    )
+    reference_tensor = REPT(rows=[sept])
+
+    output = reference_tensor.swapaxes(1, 2)
+    target = sept.swapaxes(0, 1)
+    assert output.child[0] == target, "Swapaxes did not work as expected"
+
+
 def test_mul_simple(row_data_ishan: List) -> None:
     """Ensure multiplication works with REPTs & Simple types (int/float/bool/np.ndarray)"""
 
