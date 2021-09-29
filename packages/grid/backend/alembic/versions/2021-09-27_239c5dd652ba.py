@@ -6,7 +6,7 @@ Create Date: 2021-09-27 04:38:23.860642
 
 """
 # third party
-from alembic import op # type: ignore
+from alembic import op  # type: ignore
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
@@ -31,6 +31,12 @@ def upgrade() -> None:
         "role", sa.Column("can_manage_privacy_budget", sa.Boolean(), default=False)
     )
     op.add_column("role", sa.Column("can_manage_users", sa.Boolean(), default=False))
+    op.add_column(
+        "role", sa.Column("can_upload_legal_document", sa.Boolean(), default=False)
+    )
+    op.add_column(
+        "role", sa.Column("can_edit_domain_settings", sa.Boolean(), default=False)
+    )
 
 
 def downgrade() -> None:
