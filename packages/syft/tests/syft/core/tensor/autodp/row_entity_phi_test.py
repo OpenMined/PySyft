@@ -488,7 +488,7 @@ def test_partition() -> None:
 @pytest.mark.skipif(
     dims == 1, reason="Not enough dimensions to do the compress operation"
 )
-def test_compress(row_data_ishan: List) -> None:
+def test_compress(row_data_ishan: List, ishan) -> None:
     """Test to see if Compress works for the ideal case"""
     reference_tensor = REPT(rows=row_data_ishan)
 
