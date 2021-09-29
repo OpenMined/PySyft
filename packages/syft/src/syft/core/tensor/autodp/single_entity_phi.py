@@ -377,6 +377,23 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             f"{self.__class__.__name__}(entity={self.entity.name}, child={self.child})"
         )
 
+    def __and__(self, other: Any) -> SingleEntityPhiTensor:
+        """Note: this is bitwise and, not logical and"""
+        return SingleEntityPhiTensor(
+            child=self.child & other,
+            min_vals=np.zeros_like(self.child),
+            max_vals=np.ones_like(self.child),
+            entity=self.entity,
+        )
+
+    def __or__(self, other: Any) -> SingleEntityPhiTensor:
+        return SingleEntityPhiTensor(
+            child=self.child | other,
+            min_vals=np.zeros_like(self.child),
+            max_vals=np.ones_like(self.child),
+            entity=self.entity,
+        )
+
     # Check for shape1 = (1,s), and shape2 = (,s) --> as an example
     def __eq__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
         if is_acceptable_simple_type(other):
@@ -527,8 +544,8 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
     def __neg__(self) -> SingleEntityPhiTensor:
 
         data = self.child * -1
-        min_vals = self.min_vals * -1
-        max_vals = self.max_vals * -1
+        min_vals = self.max_vals * -1
+        max_vals = self.min_vals * -1
         entity = self.entity
 
         return SingleEntityPhiTensor(
@@ -797,7 +814,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         axis: Optional[int] = -1,
         kind: Optional[str] = "introselect",
         order: Optional[Union[str, List[str]]] = None,
-    ) -> SingleEntityPhiTensor:
+    ) -> None:
         """Interchange two axes of the Tensor"""
         if (
             isinstance(self.child, int)
@@ -805,12 +822,11 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             or isinstance(self.child, bool)
         ):
             # For these singleton data types, the partition operation is meaningless, so don't change them.
-            data = self.child
             print(
-                f"Warning: Tensor data was of type {type(data)}, partition operation had no effect."
+                f"Warning: Tensor data was of type {type(self.child)}, partition operation had no effect."
             )
         else:
-            data = self.child.partition(kth, axis, kind, order)
+            self.child.partition(kth, axis, kind, order)
 
             # TODO: Should we give warnings for min_val and max_val being single floats/integers/booleans too?
         if (
@@ -819,10 +835,11 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             or isinstance(self.min_vals, bool)
         ):
             # For these singleton data types, the partition operation is meaningless, so don't change them.
-            min_vals = self.min_vals
-            # print(f'Warning: Tensor data was of type {type(data)}, partition operation had no effect.')
+            print(
+                f"Warning: Min_vals metadata was of type {type(self.min_vals)}, partition operation had no effect."
+            )
         else:
-            min_vals = self.min_vals.partition(kth, axis, kind, order)
+            self.min_vals.partition(kth, axis, kind, order)
 
         if (
             isinstance(self.max_vals, int)
@@ -830,20 +847,11 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             or isinstance(self.max_vals, bool)
         ):
             # For these singleton data types, the partition operation is meaningless, so don't change them.
-            max_vals = self.max_vals
-            # print(f'Warning: Tensor data was of type {type(data)}, partition operation had no effect.')
+            print(
+                f"Warning: Max_vals metadata was of type {type(self.max_vals)}, partition operation had no effect."
+            )
         else:
-            max_vals = self.max_vals.partition(kth, axis, kind, order)
-
-        entity = self.entity
-
-        return SingleEntityPhiTensor(
-            child=data,
-            entity=entity,
-            min_vals=min_vals,
-            max_vals=max_vals,
-            scalar_manager=self.scalar_manager,
-        )
+            self.max_vals.partition(kth, axis, kind, order)
 
     # ndarray.ravel(order='C')
     def ravel(self, order: str = "C") -> SingleEntityPhiTensor:

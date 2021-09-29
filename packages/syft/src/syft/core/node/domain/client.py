@@ -36,7 +36,6 @@ from ..common.action.exception_action import ExceptionMessage
 from ..common.client import Client
 from ..common.client_manager.association_api import AssociationRequestAPI
 from ..common.client_manager.dataset_api import DatasetRequestAPI
-from ..common.client_manager.group_api import GroupRequestAPI
 from ..common.client_manager.role_api import RoleRequestAPI
 from ..common.client_manager.user_api import UserRequestAPI
 from ..common.node_service.get_remaining_budget.get_remaining_budget_messages import (
@@ -61,7 +60,6 @@ class RequestQueueClient(AbstractNodeClient):
         self.client = client
         self.handlers = RequestHandlerQueueClient(client=client)
 
-        self.groups = GroupRequestAPI(client=self)
         self.users = UserRequestAPI(client=self)
         self.roles = RoleRequestAPI(client=self)
         self.association = AssociationRequestAPI(client=self)
@@ -308,7 +306,6 @@ class DomainClient(Client):
 
         self.post_init()
 
-        self.groups = GroupRequestAPI(client=self)
         self.users = UserRequestAPI(client=self)
         self.roles = RoleRequestAPI(client=self)
         self.association = AssociationRequestAPI(client=self)

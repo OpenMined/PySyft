@@ -43,13 +43,16 @@ router = APIRouter()
 def create_role_route(
     current_user: Any = Depends(get_current_user),
     name: str = Body(False, example="Researcher"),
-    can_triage_requests: bool = Body(False, example="false"),
-    can_edit_settings: bool = Body(False, example="false"),
+    can_make_data_requests: bool = Body(False, example="false"),
+    can_triage_data_requests: bool = Body(False, example="false"),
+    can_manage_privacy_budget: bool = Body(False, example="false"),
     can_create_users: bool = Body(False, example="false"),
-    can_create_groups: bool = Body(False, example="false"),
+    can_manage_users: bool = Body(False, example="false"),
     can_edit_roles: bool = Body(False, example="false"),
     can_manage_infrastructure: bool = Body(False, example="false"),
     can_upload_data: bool = Body(False, example="false"),
+    can_upload_legal_document: bool = Body(False, example="false"),
+    can_edit_domain_settings: bool = Body(False, example="false"),
 ) -> Dict[str, str]:
     """Creates a new PyGrid role.
 
@@ -73,13 +76,16 @@ def create_role_route(
     msg = CreateRoleMessage(
         address=node.address,
         name=name,
-        can_triage_requests=can_triage_requests,
-        can_edit_settings=can_edit_settings,
+        can_make_data_requests=can_make_data_requests,
+        can_triage_data_requests=can_triage_data_requests,
+        can_manage_privacy_budget=can_manage_privacy_budget,
         can_create_users=can_create_users,
-        can_create_groups=can_create_groups,
+        can_manage_users=can_manage_users,
         can_edit_roles=can_edit_roles,
         can_manage_infrastructure=can_manage_infrastructure,
         can_upload_data=can_upload_data,
+        can_upload_legal_document=can_upload_legal_document,
+        can_edit_domain_settings=can_edit_domain_settings,
         reply_to=node.address,
     ).sign(signing_key=user_key)
 
@@ -159,13 +165,16 @@ def update_use_route(
     role_id: int,
     current_user: Any = Depends(get_current_user),
     name: str = Body(..., example="Researcher"),
-    can_triage_requests: bool = Body(..., example="false"),
-    can_edit_settings: bool = Body(..., example="false"),
-    can_create_users: bool = Body(..., example="false"),
-    can_create_groups: bool = Body(..., example="false"),
-    can_edit_roles: bool = Body(..., example="false"),
-    can_manage_infrastructure: bool = Body(..., example="false"),
-    can_upload_data: bool = Body(..., example="false"),
+    can_make_data_requests: bool = Body(False, example="false"),
+    can_triage_data_requests: bool = Body(False, example="false"),
+    can_manage_privacy_budget: bool = Body(False, example="false"),
+    can_create_users: bool = Body(False, example="false"),
+    can_manage_users: bool = Body(False, example="false"),
+    can_edit_roles: bool = Body(False, example="false"),
+    can_manage_infrastructure: bool = Body(False, example="false"),
+    can_upload_data: bool = Body(False, example="false"),
+    can_upload_legal_document: bool = Body(False, example="false"),
+    can_edit_domain_settings: bool = Body(False, example="false"),
 ) -> Dict[str, str]:
     """Changes role attributes
 
@@ -191,13 +200,16 @@ def update_use_route(
         address=node.address,
         role_id=role_id,
         name=name,
-        can_triage_requests=can_triage_requests,
-        can_edit_settings=can_edit_settings,
+        can_make_data_requests=can_make_data_requests,
+        can_triage_data_requests=can_triage_data_requests,
+        can_manage_privacy_budget=can_manage_privacy_budget,
         can_create_users=can_create_users,
-        can_create_groups=can_create_groups,
+        can_manage_users=can_manage_users,
         can_edit_roles=can_edit_roles,
         can_manage_infrastructure=can_manage_infrastructure,
         can_upload_data=can_upload_data,
+        can_upload_legal_document=can_upload_legal_document,
+        can_edit_domain_settings=can_edit_domain_settings,
         reply_to=node.address,
     ).sign(signing_key=user_key)
 
