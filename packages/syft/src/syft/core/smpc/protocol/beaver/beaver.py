@@ -11,7 +11,6 @@ import operator
 import secrets
 from typing import Any
 from typing import Dict
-from typing import Iterable
 from typing import List
 from typing import Tuple
 
@@ -139,21 +138,21 @@ def get_triples_mul(
         Tuple[Tuple[ShareTensor, ShareTensor, ShareTensor]]: The generated triples a,b,c
         for the mul operation.
     """
-    return _get_triples("mul", *args, **kwargs)
+    return _get_triples("mul", *args, **kwargs)  # type: ignore
 
 
 @register_primitive_store_add("beaver_mul")
 def mul_store_add(
-    store: Dict[Any, Any],
-    primitives: Iterable[Any],
+    store: Dict[str, List[Any]],
+    primitives: List[Any],
     a_shape: Tuple[int],
     b_shape: Tuple[int],
 ) -> None:
     """Add the primitives required for the "mul" operation to the CryptoStore.
 
     Arguments:
-        store (Dict[Any, Any]): the CryptoStore
-        primitives (Iterable[Any]): the list of primitives
+        store (Dict[str, List[Any]]): the CryptoStore
+        primitives (List[Any]): the list of primitives
         a_shape (Tuple[int]): the shape of the first operand
         b_shape (Tuple[int]): the shape of the second operand
     """
@@ -166,7 +165,7 @@ def mul_store_add(
 
 @register_primitive_store_get("beaver_mul")
 def mul_store_get(
-    store: Dict[Tuple[int, int], List[Any]],
+    store: Dict[str, List[Any]],
     a_shape: Tuple[int, ...],
     b_shape: Tuple[int, ...],
     remove: bool = True,
@@ -176,7 +175,7 @@ def mul_store_get(
     Those are needed for executing the "mul" operation.
 
     Args:
-        store (Dict[Tuple[int, int], List[Any]]): The CryptoStore.
+        store (Dict[str, List[Any]]): The CryptoStore.
         a_shape (Tuple[int]): The shape of the first operand.
         b_shape (Tuple[int]): The shape of the second operand.
         remove (bool): True if the primitives should be removed from the store.
@@ -222,21 +221,21 @@ def get_triples_matmul(
         Tuple[Tuple[ShareTensor, ShareTensor, ShareTensor]]: The generated triples a,b,c
         for the matmul operation.
     """
-    return _get_triples("matmul", *args, **kwargs)
+    return _get_triples("matmul", *args, **kwargs)  # type: ignore
 
 
 @register_primitive_store_add("beaver_matmul")
 def matmul_store_add(
-    store: Any,
-    primitives: Iterable[Any],
+    store: Dict[str, List[Any]],
+    primitives: List[Any],
     a_shape: Tuple[int],
     b_shape: Tuple[int],
 ) -> None:
     """Add the primitives required for the "matmul" operation to the CryptoStore.
 
     Args:
-        store (Any): The CryptoStore.
-        primitives (Iterable[Any]): The list of primitives
+        store (Dict[str, List[Any]]): The CryptoStore.
+        primitives (List[Any]): The list of primitives
         a_shape (Tuple[int]): The shape of the first operand.
         b_shape (Tuple[int]): The shape of the second operand.
 
@@ -250,7 +249,7 @@ def matmul_store_add(
 
 @register_primitive_store_get("beaver_matmul")
 def matmul_store_get(
-    store: Dict[Tuple[int, int], List[Any]],
+    store: Dict[str, List[Any]],
     a_shape: Tuple[int, ...],
     b_shape: Tuple[int, ...],
     remove: bool = True,
@@ -260,7 +259,7 @@ def matmul_store_get(
     Those are needed for executing the "matmul" operation.
 
     Args:
-        store (Dict[Tuple[int, int], List[Any]]): The CryptoStore.
+        store (Dict[str, List[Any]]): The CryptoStore.
         a_shape (Tuple[int]): The shape of the first operand.
         b_shape (Tuple[int]): The shape of the second operand.
         remove (bool): True if the primitives should be removed from the store.

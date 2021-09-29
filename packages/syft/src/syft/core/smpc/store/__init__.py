@@ -16,7 +16,8 @@ def register_primitive_generator(name: str) -> Callable[..., Any]:
     Args:
         name (str): Name of the primitive.
 
-    # noqa: DAR201
+    Returns:
+        Callable[..., Any]: returns the triple generator function.
     """
 
     def register_generator(func_generator: Callable[..., Any]) -> Callable[..., Any]:
@@ -34,7 +35,8 @@ def register_primitive_store_add(name: str) -> Callable[..., Any]:
     Args:
         name (str): Name of the primitive.
 
-    # noqa: DAR201
+    Returns:
+        Callable[..., Any]: returns the crypto store add function.
     """
 
     def register_add(func_add: Callable[..., Any]) -> Callable[..., Any]:
@@ -52,7 +54,8 @@ def register_primitive_store_get(name: str) -> Callable[..., Any]:
     Args:
         name (str): Name of the primitive.
 
-    # noqa: DAR201
+    Returns:
+        Callable[..., Any]: returns the crypto store get function.
     """
 
     def register_get(func_get: Callable[..., Any]) -> Callable[..., Any]:

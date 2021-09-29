@@ -14,8 +14,7 @@ from ...ast.globals import Globals
 from ..node.abstract.node import AbstractNodeClient
 from .store import CryptoStore
 
-# from .protocol import *  # noqa: 401 isort: skip type: ignore
-# BEFORE MERGE (Rasswanth): Should remove above comment after MyPy fix
+from .protocol import *  # noqa: 401 isort: skip type: ignore
 
 
 def create_smpc_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
