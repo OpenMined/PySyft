@@ -61,6 +61,8 @@ def seed_db(db: Session) -> None:
         can_edit_roles=False,
         can_manage_infrastructure=False,
         can_upload_data=False,
+        can_upload_legal_document=False,
+        can_edit_domain_settings=False,
     )
     db.add(new_role)
 
@@ -74,6 +76,8 @@ def seed_db(db: Session) -> None:
         can_edit_roles=False,
         can_manage_infrastructure=False,
         can_upload_data=False,
+        can_upload_legal_document=False,
+        can_edit_domain_settings=False,
     )
     db.add(new_role)
 
@@ -87,6 +91,8 @@ def seed_db(db: Session) -> None:
         can_edit_roles=True,
         can_manage_infrastructure=True,
         can_upload_data=True,
+        can_upload_legal_document=True,
+        can_edit_domain_settings=True,
     )
     db.add(new_role)
 
@@ -100,6 +106,8 @@ def seed_db(db: Session) -> None:
         can_edit_roles=True,
         can_manage_infrastructure=True,
         can_upload_data=True,
+        can_upload_legal_document=True,
+        can_edit_domain_settings=True,
     )
     db.add(new_role)
     db.commit()
