@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+from collections.abc import Sequence
 from typing import Any
 from typing import List
 from typing import Optional
@@ -21,9 +22,9 @@ from ..broadcastable import is_broadcastable
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import implements  # type: ignore
 from ..passthrough import is_acceptable_simple_type  # type: ignore
-from ..types import AcceptableSimpleType  # type: ignore
+from ..types import AcceptableSimpleType
 from .adp_tensor import ADPTensor
-from .initial_gamma import InitialGammaTensor  # type: ignore
+from .initial_gamma import InitialGammaTensor
 from .single_entity_phi import SingleEntityPhiTensor
 
 
@@ -44,7 +45,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
     # a list of attributes needed for serialization using RecursiveSerde
     __attr_allowlist__ = ["child"]
 
-    def __init__(self, rows: Any, check_shape: bool = True):
+    def __init__(self, rows: Sequence, check_shape: bool = True):
         """Initialize a RowEntityPhiTensor
 
         rows: the actual data organized as an iterable (can be any type of iterable)
@@ -52,7 +53,8 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
             'rows' all have the same dimension (check if we're not sure).
 
         """
-
+        # Container type heirachy: https://docs.python.org/3/library/collections.abc.html
+        self.child: Sequence
         super().__init__(rows)
 
         # include this check because it's expensvie to check and sometimes we can skip it when
@@ -71,24 +73,24 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
     @property
     def scalar_manager(self) -> TypeScalarManager:
-        return self.child[0].scalar_manager  # type: ignore
+        return self.child[0].scalar_manager
 
     @property
     def min_vals(self) -> np.ndarray:
-        return np.concatenate([x.min_vals for x in self.child]).reshape(self.shape)  # type: ignore
+        return np.concatenate([x.min_vals for x in self.child]).reshape(self.shape)
 
     @property
     def max_vals(self) -> np.ndarray:
-        return np.concatenate([x.max_vals for x in self.child]).reshape(self.shape)  # type: ignore
+        return np.concatenate([x.max_vals for x in self.child]).reshape(self.shape)
 
     @property
     def value(self) -> np.ndarray:
-        return np.concatenate([x.child for x in self.child]).reshape(self.shape)  # type: ignore
+        return np.concatenate([x.child for x in self.child]).reshape(self.shape)
 
     @property
     def entities(self) -> np.ndarray:
         return np.array(
-            [[x.entity] * np.array(x.shape).prod() for x in self.child]  # type: ignore
+            [[x.entity] * np.array(x.shape).prod() for x in self.child]
         ).reshape(self.shape)
 
     @property
@@ -112,21 +114,21 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
     @property
     def shape(self) -> Tuple[Any, ...]:
-        return [len(self.child)] + list(self.child[0].shape)  # type: ignore
+        return tuple([len(self.child)] + list(self.child[0].shape))
 
     def __eq__(self, other: Any) -> RowEntityPhiTensor:
 
-        if is_acceptable_simple_type(other) or len(self.child) == len(other.child):  # type: ignore
+        if is_acceptable_simple_type(other) or len(self.child) == len(other.child):
             new_list = list()
-            for i in range(len(self.child)):  # type: ignore
+            for i in range(len(self.child)):
                 if is_acceptable_simple_type(other):
-                    new_list.append(self.child[i] == other)  # type: ignore
+                    new_list.append(self.child[i] == other)
                 else:
-                    new_list.append(self.child[i] == other.child[i])  # type: ignore
+                    new_list.append(self.child[i] == other.child[i])
             return RowEntityPhiTensor(rows=new_list, check_shape=False)
         else:
             raise Exception(
-                f"Tensor dims do not match for __eq__: {len(self.child)} != {len(other.child)}"  # type: ignore
+                f"Tensor dims do not match for __eq__: {len(self.child)} != {len(other.child)}"
             )
 
     def __ne__(self, other: Any) -> RowEntityPhiTensor:
@@ -134,48 +136,48 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
         # Normal inversion on (opposite_result.child) might not work on nested lists
         result = []
-        for row in opposite_result.child:  # type: ignore
+        for row in opposite_result.child:
             result.append(np.invert(row))
 
         return RowEntityPhiTensor(rows=result)
 
-    def __add__(  # type: ignore
+    def __add__(
         self, other: Union[RowEntityPhiTensor, AcceptableSimpleType]
     ) -> RowEntityPhiTensor:
         # TODO: Catch unacceptable types (str, dict, etc) to avoid errors for other.child below
-        if is_acceptable_simple_type(other) or len(self.child) == len(other.child):  # type: ignore
+        if is_acceptable_simple_type(other) or len(self.child) == len(other.child):
             new_list = list()
-            for i in range(len(self.child)):  # type: ignore
+            for i in range(len(self.child)):
                 if is_acceptable_simple_type(other):
-                    new_list.append(self.child[i] + other)  # type: ignore
+                    new_list.append(self.child[i] + other)
                 else:
                     # Private/Public and Private/Private are handled by the underlying SEPT self.child objects.
-                    new_list.append(self.child[i] + other.child[i])  # type: ignore
+                    new_list.append(self.child[i] + other.child[i])
             return RowEntityPhiTensor(rows=new_list, check_shape=False)
         else:
             # Broadcasting is possible, but we're skipping that for now.
             raise Exception(
-                f"Tensor dims do not match for __add__: {len(self.child)} != {len(other.child)}"  # type: ignore
+                f"Tensor dims do not match for __add__: {len(self.child)} != {len(other.child)}"
             )
 
-    def __sub__(  # type: ignore
+    def __sub__(
         self, other: Union[RowEntityPhiTensor, AcceptableSimpleType]
     ) -> RowEntityPhiTensor:
         # TODO: Catch unacceptable types (str, dict, etc) to avoid errors for other.child below
-        if is_acceptable_simple_type(other) or len(self.child) == len(other.child):  # type: ignore
+        if is_acceptable_simple_type(other) or len(self.child) == len(other.child):
             new_list = list()
-            for i in range(len(self.child)):  # type: ignore
+            for i in range(len(self.child)):
                 if is_acceptable_simple_type(other):
-                    new_list.append(self.child[i] - other)  # type: ignore
+                    new_list.append(self.child[i] - other)
                 else:
-                    new_list.append(self.child[i] - other.child[i])  # type: ignore
+                    new_list.append(self.child[i] - other.child[i])
             return RowEntityPhiTensor(rows=new_list, check_shape=False)
         else:
             raise Exception(
-                f"Tensor dims do not match for __sub__: {len(self.child)} != {len(other.child)}"  # type: ignore
+                f"Tensor dims do not match for __sub__: {len(self.child)} != {len(other.child)}"
             )
 
-    def __mul__(  # type: ignore
+    def __mul__(
         self, other: Union[RowEntityPhiTensor, AcceptableSimpleType]
     ) -> RowEntityPhiTensor:
         new_list = list()
@@ -183,91 +185,96 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
             if isinstance(other, np.ndarray):
                 if is_broadcastable(self.shape, other.shape):
                     new_list.append(
-                        [self.child[i] * other[i] for i in range(len(self.child))]  # type: ignore
+                        [self.child[i] * other[i] for i in range(len(self.child))]
                     )
                 else:
                     raise Exception(
-                        f"Tensor dims do not match for __sub__: {self.child.shape} != {other.shape}"  # type: ignore
+                        f"Tensor dims do not match for __sub__: {getattr(self.child, 'shape', None)} != {other.shape}"
                     )
             else:  # int, float, bool, etc
-                new_list = [child * other for child in self.child]  # type: ignore
+                new_list = [child * other for child in self.child]
         elif isinstance(other, RowEntityPhiTensor):
             if is_broadcastable(self.shape, other.shape):
                 new_list = [
-                    self.child[i] * other.child[i] for i in range(len(self.child))  # type: ignore
+                    self.child[i] * other.child[i] for i in range(len(self.child))
                 ]
             else:
                 raise Exception(
-                    f"Tensor dims do not match for __sub__: {self.shape} != {other.shape}"  # type: ignore
+                    f"Tensor dims do not match for __sub__: {self.shape} != {other.shape}"
                 )
         elif isinstance(other, SingleEntityPhiTensor):
-            for child in self.child:  # type: ignore
+            for child in self.child:
                 # If even a single SEPT in the REPT isn't broadcastable, the multiplication operation doesn't work
                 if not is_broadcastable(child.shape, other.shape):
                     raise Exception(
-                        f"Tensor dims do not match for __sub__: {self.shape} != {other.shape}"  # type: ignore
+                        f"Tensor dims do not match for __sub__: {self.shape} != {other.shape}"
                     )
-            new_list = [i * other for i in self.child]  # type: ignore
+            new_list = [i * other for i in self.child]
         else:
             raise NotImplementedError
         return RowEntityPhiTensor(rows=new_list)
 
-        # if is_acceptable_simple_type(other) or len(self.child) == len(other.child):  # type: ignore
+        # if is_acceptable_simple_type(other) or len(self.child) == len(other.child):
         #     new_list = list()
         #     for i in range(len(self.child)):
         #         if is_acceptable_simple_type(other):
         #             if isinstance(other, (int, bool, float)):
         #                 new_list.append(self.child[i] * other)
         #             else:
-        #                 new_list.append(self.child[i] * other[i])  # type: ignore
+        #                 new_list.append(self.child[i] * other[i])
         #         else:
         #             if isinstance(other, RowEntityPhiTensor):
-        #                 new_list.append(self.child[i] * other.child[i])  # type: ignore
+        #                 new_list.append(self.child[i] * other.child[i])
         #             elif isinstance(other, SingleEntityPhiTensor):
         #
         #                 new_list.append(self.child[i] * other)
         #     return RowEntityPhiTensor(rows=new_list, check_shape=False)
         # else:
         #     raise Exception(
-        #         f"Tensor dims do not match for __mul__: {len(self.child)} != {len(other.child)}"  # type: ignore
+        #         f"Tensor dims do not match for __mul__: {len(self.child)} != {len(other.child)}"
         #     )
 
     def __pos__(self) -> RowEntityPhiTensor:
-        return RowEntityPhiTensor(rows=[+x for x in self.child], check_shape=False)  # type: ignore
+        return RowEntityPhiTensor(rows=[+x for x in self.child], check_shape=False)
 
     def __neg__(self) -> RowEntityPhiTensor:
-        return RowEntityPhiTensor(rows=[-x for x in self.child], check_shape=False)  # type: ignore
+        return RowEntityPhiTensor(rows=[-x for x in self.child], check_shape=False)
 
     def __or__(self, other: Any) -> RowEntityPhiTensor:
         return RowEntityPhiTensor(
-            rows=[x | other for x in self.child], check_shape=False  # type: ignore
+            rows=[x | other for x in self.child], check_shape=False
         )
 
     def __and__(self, other: Any) -> RowEntityPhiTensor:
         return RowEntityPhiTensor(
-            rows=[x & other for x in self.child], check_shape=False  # type: ignore
+            rows=[x & other for x in self.child], check_shape=False
         )
 
-    def __truediv__(  # type: ignore
+    def __truediv__(
         self, other: Union[RowEntityPhiTensor, AcceptableSimpleType]
     ) -> RowEntityPhiTensor:
 
-        if is_acceptable_simple_type(other) or len(self.child) == len(other.child):  # type: ignore
+        if is_acceptable_simple_type(other) or len(self.child) == len(other.child):
             new_list = list()
-            for i in range(len(self.child)):  # type: ignore
+            for i in range(len(self.child)):
                 if is_acceptable_simple_type(other):
-                    new_list.append(self.child[i] / other)  # type: ignore
+                    new_list.append(self.child[i] / other)
                 else:
-                    new_list.append(self.child[i] / other.child[i])  # type: ignore
+                    new_list.append(self.child[i] / other.child[i])
             return RowEntityPhiTensor(rows=new_list, check_shape=False)
         else:
             raise Exception(
-                f"Tensor dims do not match for __truediv__: {len(self.child)} != {len(other.child)}"  # type: ignore
+                f"Tensor dims do not match for __truediv__: {len(self.child)} != {len(other.child)}"
             )
 
     def repeat(
-        self, repeats: Union[int, Tuple[int, ...]], axis: Optional[int] = None
+        self, repeats: Union[int, List[int]], axis: Optional[int] = None
     ) -> RowEntityPhiTensor:
+
+        if not isinstance(repeats, int):
+            raise Exception(
+                f"{type(self)}.repeat for repeats: List {repeats} not implemented yet"
+            )
 
         if axis is None:
             raise Exception(
@@ -276,21 +283,21 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
         if axis == 0 or axis == -len(self.shape):
             new_list = list()
-            for r in range(repeats):  # type: ignore
-                for row in self.child:  # type: ignore
+            for _ in range(repeats):
+                for row in self.child:
                     new_list.append(row)
             return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
         elif axis > 0:
             new_list = list()
-            for row in self.child:  # type: ignore
+            for row in self.child:
                 new_list.append(row.repeat(repeats, axis=axis - 1))
             return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
         # axis is negative
         elif abs(axis) < len(self.shape):
             new_list = list()
-            for row in self.child:  # type: ignore
+            for row in self.child:
                 new_list.append(row.repeat(repeats, axis=axis))
             return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
@@ -301,13 +308,13 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
     def flatten(self, order: Optional[str] = "C") -> RowEntityPhiTensor:
         new_list = list()
-        for tensor in self.child:  # type: ignore
+        for tensor in self.child:
             new_list.append(tensor.flatten(order))
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
     def ravel(self, order: Optional[str] = "C") -> RowEntityPhiTensor:
         new_list = list()
-        for tensor in self.child:  # type: ignore
+        for tensor in self.child:
             new_list.append(tensor.ravel(order))
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
@@ -318,7 +325,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
                 "probably create a Gamma Tensor. Sorry about that!"
             )
         new_list = list()
-        for tensor in self.child:  # type: ignore
+        for tensor in self.child:
             # Axis=0 for REPT.child is Axis=1 for REPT, so subtract 1
             new_list.append(tensor.swapaxes(axis1 - 1, axis2 - 1))
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
@@ -331,19 +338,29 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
             # tensor in the REPT, as such it might be a SEPT
             # TODO: Check if the output type is still a REPT
             # if isinstance(self.child[0], SEPT): return self.child[0]
-            return RowEntityPhiTensor(rows=self.child[0])  # type: ignore
+            return RowEntityPhiTensor(rows=self.child[0])
         else:
             new_list = list()
-            for tensor in self.child:  # type: ignore
+            for tensor in self.child:
                 new_list.append(tensor.squeeze(axis))
             self.child = new_list
 
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
-    def reshape(self, *shape: List[int]) -> RowEntityPhiTensor:
+    def reshape(
+        self,
+        shape: Union[
+            int,
+            Union[Sequence[int], Sequence[Sequence[int]]],
+        ],
+    ) -> RowEntityPhiTensor:
+        if isinstance(shape, int):
+            raise Exception(
+                f"{type(self)}.reshape for shape: int {shape} is not implemented"
+            )
         # This is to fix the bug where shape = ([a, b, c], )
-        if isinstance(shape[0], list) or isinstance(shape[0], tuple):  # type: ignore
-            shape = shape[0]  # type: ignore
+        if isinstance(shape[0], Sequence):
+            shape = shape[0]
 
         if shape[0] != self.shape[0]:
             raise Exception(
@@ -366,7 +383,9 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         refcheck: Optional[bool] = True,
     ) -> None:
         """This method is identical to reshape, but it modifies the Tensor in-place instead of returning a new one"""
-        if new_shape[0] != self.shape[0]:  # type: ignore
+        if isinstance(new_shape, int):
+            raise Exception(f"new_shape: {new_shape} must be a Tuple for {type(self)}")
+        if new_shape[0] != self.shape[0]:
             raise Exception(
                 "For now, you can't reshape the first dimension because that would"
                 + "probably require creating a gamma tensor."
@@ -374,13 +393,16 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
         new_list = list()
         for row in self.child:
-            new_list.append(row.reshape(new_shape[1:]))  # type: ignore
+            new_list.append(row.reshape(new_shape[1:]))
 
         # Modify the tensor data in-place instead of returning a new one.
         self.child = new_list
 
     def compress(
-        self, condition: List[bool], axis: int = None, out: Optional[np.ndarray] = None  # type: ignore
+        self,
+        condition: List[bool],
+        axis: Optional[int] = None,
+        out: Optional[np.ndarray] = None,
     ) -> RowEntityPhiTensor:
         # TODO: Could any conditions result in GammaTensors being formed?
         # TODO: Will min/max vals change upon filtering? I don't think so, since they're data independent
@@ -404,7 +426,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
     # Since this is being used differently compared to supertype, ignoring type annotation errors
-    def sum(  # type: ignore
+    def sum(
         self, *args: Any, axis: Optional[int] = None, **kwargs: Any
     ) -> RowEntityPhiTensor:
 
@@ -418,7 +440,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
     # Since this is being used differently compared to supertype, ignoring type annotation errors
-    def transpose(self, *dims: Optional[Any]) -> RowEntityPhiTensor:  # type: ignore
+    def transpose(self, *dims: Optional[Any]) -> RowEntityPhiTensor:
         if dims:
             if dims[0] != 0:
                 raise Exception("Can't move dim 0 in RowEntityPhiTensor at this time")
@@ -444,20 +466,20 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
             return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
-        if len(self.child) == len(other.child):  # type: ignore
+        if len(self.child) == len(other.child):
             # tensors have different entities
             if not (self.entities == other.entities).all():
                 raise Exception("Tensor owners do not match")
 
             new_list = list()
             for i in range(len(self.child)):
-                new_list.append(self.child[i] <= other.child[i])  # type: ignore
+                new_list.append(self.child[i] <= other.child[i])
 
             return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
         else:
             raise Exception(
-                f"Tensor dims do not match for __le__: {len(self.child)} != {len(other.child)}"  # type: ignore
+                f"Tensor dims do not match for __le__: {len(self.child)} != {len(other.child)}"
             )
 
     def __lt__(self, other: Any) -> RowEntityPhiTensor:
@@ -470,20 +492,20 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
             return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
-        if len(self.child) == len(other.child):  # type: ignore
+        if len(self.child) == len(other.child):
             # tensors have different entities
             if not (self.entities == other.entities).all():
                 raise Exception("Tensor owners do not match")
 
             new_list = list()
             for i in range(len(self.child)):
-                new_list.append(self.child[i] < other.child[i])  # type: ignore
+                new_list.append(self.child[i] < other.child[i])
 
             return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
         else:
             raise Exception(
-                f"Tensor dims do not match for __lt__: {len(self.child)} != {len(other.child)}"  # type: ignore
+                f"Tensor dims do not match for __lt__: {len(self.child)} != {len(other.child)}"
             )
 
     def __gt__(self, other: Any) -> RowEntityPhiTensor:
@@ -496,20 +518,20 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
             return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
-        if len(self.child) == len(other.child):  # type: ignore
+        if len(self.child) == len(other.child):
             # tensors have different entities
             if not (self.entities == other.entities).all():
                 raise Exception("Tensor owners do not match")
 
             new_list = list()
             for i in range(len(self.child)):
-                new_list.append(self.child[i] > other.child[i])  # type: ignore
+                new_list.append(self.child[i] > other.child[i])
 
             return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
         else:
             raise Exception(
-                f"Tensor dims do not match for __gt__: {len(self.child)} != {len(other.child)}"  # type: ignore
+                f"Tensor dims do not match for __gt__: {len(self.child)} != {len(other.child)}"
             )
 
     def __ge__(self, other: Any) -> RowEntityPhiTensor:
@@ -522,20 +544,20 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
             return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
-        if len(self.child) == len(other.child):  # type: ignore
+        if len(self.child) == len(other.child):
             # tensors have different entities
             if not (self.entities == other.entities).all():
                 raise Exception("Tensor owners do not match")
 
             new_list = list()
             for i in range(len(self.child)):
-                new_list.append(self.child[i] >= other.child[i])  # type: ignore
+                new_list.append(self.child[i] >= other.child[i])
 
             return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
         else:
             raise Exception(
-                f"Tensor dims do not match for __ge__: {len(self.child)} != {len(other.child)}"  # type: ignore
+                f"Tensor dims do not match for __ge__: {len(self.child)} != {len(other.child)}"
             )
 
     def clip(
@@ -561,7 +583,7 @@ def expand_dims(a: np.typing.ArrayLike, axis: int) -> RowEntityPhiTensor:
         )
 
     new_rows = list()
-    for row in a.child:  # type: ignore
-        new_rows.append(np.expand_dims(row, axis - 1))  # type: ignore
+    for row in a.child:
+        new_rows.append(np.expand_dims(row, axis - 1))
 
     return RowEntityPhiTensor(rows=new_rows, check_shape=False)

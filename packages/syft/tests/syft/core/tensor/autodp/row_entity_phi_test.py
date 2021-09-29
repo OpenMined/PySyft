@@ -481,7 +481,7 @@ def test_reshape(row_data_ishan: List) -> None:
     """Test to see if Reshape works for the ideal case"""
     reference_tensor = REPT(rows=row_data_ishan)
     original_shape = reference_tensor.shape
-    new_shape = (
+    new_shape = tuple(
         [len(reference_tensor.child)] + [np.prod(reference_tensor.child[0].shape)] + [1]
     )
     assert new_shape[0] == reference_tensor.shape[0], "Shape isn't usable for reshape"
