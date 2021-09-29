@@ -1181,6 +1181,68 @@ def test_clip() -> None:
     assert (clipped_tensor3 >= rand1).all()
 
 
+# tensor filled with zeros
+zeros_tensor = SEPT(
+    child=np.zeros(dims, dtype=np.int32),
+    entity=ent,
+    max_vals=np.zeros(dims, dtype=np.int32),
+    min_vals=np.zeros(dims, dtype=np.int32),
+)
+# tensor filled with ones
+ones_tensor = SEPT(
+    child=np.ones(dims, dtype=np.int32),
+    entity=ent,
+    max_vals=np.ones(dims, dtype=np.int32),
+    min_vals=np.ones(dims, dtype=np.int32),
+)
+
+
+def test_any() -> None:
+    assert not zeros_tensor.any().child
+    assert tensor3.any().child
+    assert ones_tensor.any().child
+
+
+def test_all() -> None:
+    assert ones_tensor.all().child
+    assert tensor3.any().child
+    assert not zeros_tensor.all().child
+
+
+# take negative of all elements of tensor3 (all elements are positive)
+neg_tensor3 = SEPT(
+    child=child2 * -1, entity=ent, max_vals=low2 * -1, min_vals=upper2 * -1
+)
+abs_neg_tensor3 = neg_tensor3.abs()
+abs_zeros_tensor = zeros_tensor.abs()
+
+
+def test_abs() -> None:
+    assert (abs_neg_tensor3.child == tensor3.child).all()
+    assert (abs_zeros_tensor.child == zeros_tensor.child).all()
+
+
+rand_pow = np.random.randint(1, 10)
+pow_tensor1 = SEPT(
+    child=child1 ** rand_pow,
+    entity=ent,
+    max_vals=low1 ** rand_pow,
+    min_vals=upper1 ** rand_pow,
+)
+pow_tensor1_test = tensor1.pow(rand_pow)
+pow_zeros_tensor = zeros_tensor.pow(rand_pow)
+
+
+def test_pow() -> None:
+    assert (pow_tensor1.child == pow_tensor1_test.child).all()
+    assert (pow_zeros_tensor.child == zeros_tensor.child).all()
+
+
+def test_sum() -> None:
+    assert ones_tensor.sum().child == dims
+    assert zeros_tensor.sum().child == 0
+
+
 #
 # ######################### ADD ############################
 #
