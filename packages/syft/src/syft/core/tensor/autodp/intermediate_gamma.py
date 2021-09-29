@@ -21,6 +21,8 @@ from ...common.serde.serializable import serializable
 from ...tensor.passthrough import PassthroughTensor  # type: ignore
 from ...tensor.passthrough import is_acceptable_simple_type  # type: ignore
 from .adp_tensor import ADPTensor
+from ....core.adp.entity import Entity
+from ....core.adp.entity import DataSubjectGroup
 
 SupportedChainType = Union[int, bool, float, np.ndarray, PassthroughTensor]
 
@@ -50,8 +52,8 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         term_tensor: np.ndarray,
         coeff_tensor: np.ndarray,
         bias_tensor: np.ndarray,
-        min_vals: np.ndarray,
-        max_vals: np.ndarray,
+        # min_vals: np.ndarray,
+        # max_vals: np.ndarray,
         scalar_manager: VirtualMachinePrivateScalarManager = VirtualMachinePrivateScalarManager(),
     ) -> None:
         super().__init__(term_tensor)
@@ -73,18 +75,21 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
 
         # EXPLAIN A: this is "min_vals"
         # EXPLAIN B: this is a 5x10
-        self.min_vals = min_vals
+        # self.min_vals = min_vals
 
         # EXPLAIN A: this is "max_vals"
         # EXPLAIN B: this is a 5x10
-        self.max_vals = max_vals
+        # self.max_vals = max_vals
 
         self.scalar_manager = scalar_manager
 
     def __gt__(self, other: Union[np.ndarray, IntermediateGammaTensor]) -> Any:
         if isinstance(other, np.ndarray):
-
-        elif:
+            from .initial_gamma import InitialGammaTensor
+            vals = self._values()
+            tensor = InitialGammaTensor(values=vals > other, min_vals=np.zeros_like(vals), max_vals=np.ones_like(vals),
+                                        entities=np.array())
+        elif isinstance(other, IntermediateGammaTensor):
             pass
         else:
             raise NotImplementedError
@@ -123,18 +128,50 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             )
         return result
 
-    def values(self):
+    def _values(self):
         """WARNING: DO NOT MAKE THIS AVAILABLE TO THE POINTER!!!
         DO NOT ADD THIS METHOD TO THE AST!!!
         """
+        return np.array(list(map(lambda x:x.value, self.flat_scalars))).reshape(self.shape)
+
+    def _entities(self):
+        """WARNING: DO NOT MAKE THIS AVAILABLE TO THE POINTER!!!
+        DO NOT ADD THIS METHOD TO THE AST!!!
+        """
+        output_entities = []
+        for flat_scalar in self.flat_scalars:
+            # TODO: Flatten this using a for loop!
+            flattened_list = []
+            for row in flat_scalar.input_entities:
+                if isinstance(row, DataSubjectGroup):
+                    flattened_list.append(row)
+                    assert isinstance(flattened_list[-1], DataSubjectGroup)
+                elif isinstance(row, Entity):
+                    flattened_list.append(row)
+                    assert isinstance(flattened_list[-1], Entity)
+                elif isinstance(row, list):
+                    for input_entity in row:
+                        if isinstance(input_entity, Entity):
+                            flattened_list.append(input_entity)
+                            assert isinstance(flattened_list[-1], Entity)
+                        elif isinstance(input_entity, DataSubjectGroup):
+                            flattened_list.append(input_entity)
+                            assert isinstance(flattened_list[-1], DataSubjectGroup)
+                        else:
+                            raise Exception(
+                                f"We didn't account for input_entity type: {type(input_entity)} "
+                                f"with value: {input_entity}"
+                            )
+            output_entities += flattened_list
+        return np.array(output_entities).reshape(self.shape)
 
     @property
     def flat_scalars(self) -> List[Any]:
         flattened_terms = self.term_tensor.reshape(-1, self.term_tensor.shape[-1])
         flattened_coeffs = self.coeff_tensor.reshape(-1, self.coeff_tensor.shape[-1])
         flattened_bias = self.bias_tensor.reshape(-1)
-        flattened_min_vals = self.min_vals.reshape(-1)
-        flattened_max_vals = self.max_vals.reshape(-1)
+        # flattened_min_vals = self.min_vals.reshape(-1)
+        # flattened_max_vals = self.max_vals.reshape(-1)
 
         scalars = list()
 
@@ -142,8 +179,8 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             single_poly_terms = flattened_terms[i]
             single_poly_coeffs = flattened_coeffs[i]
             single_poly_bias = flattened_bias[i]
-            single_poly_min_val = flattened_min_vals[i]
-            single_poly_max_val = flattened_max_vals[i]
+            # single_poly_min_val = flattened_min_vals[i]
+            # single_poly_max_val = flattened_max_vals[i]
 
             scalar = single_poly_bias
 

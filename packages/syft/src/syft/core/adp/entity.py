@@ -123,4 +123,4 @@ class DataSubjectGroup:
         return DataSubjectGroup(list[entity_set])  # type: ignore
 
     def __repr__(self) -> str:
-        return f"{[i.__repr__() for i in self.entity_set]}"
+        return f"DSG{[i.__repr__() for i in self.entity_set]}"
