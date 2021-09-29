@@ -330,6 +330,7 @@ def test_add_single_entity(
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
     row_data_ishan: List,
+    ishan: Entity,
 ) -> None:
     """Test the addition of REPT + SEPT"""
     tensor1 = REPT(rows=row_data_ishan)
@@ -469,9 +470,11 @@ def test_transpose(row_data_ishan: List) -> None:
     assert correct_output == output.child, "Transpose did not work as expected"
 
 
-def test_partition() -> None:
+def test_partition(ishan: Entity, highest: int, dims: int) -> None:
     """Test to see if Partition works for the ideal case"""
-    data = np.random.randint(low=-100, high=100, size=(10, 10), dtype=np.int32)
+    data = np.random.randint(
+        low=-highest, high=highest, size=(dims, dims), dtype=np.int32
+    )
     sept = SEPT(
         child=data,
         entity=ishan,
@@ -488,7 +491,7 @@ def test_partition() -> None:
 @pytest.mark.skipif(
     dims == 1, reason="Not enough dimensions to do the compress operation"
 )
-def test_compress(row_data_ishan: List, ishan) -> None:
+def test_compress(row_data_ishan: List, ishan: Entity) -> None:
     """Test to see if Compress works for the ideal case"""
     reference_tensor = REPT(rows=row_data_ishan)
 
@@ -534,7 +537,7 @@ def test_reshape(row_data_ishan: List) -> None:
     assert original_shape == reference_tensor.shape, "Reshape didn't modify in-place"
 
 
-def test_squeeze(row_data_ishan: List) -> None:
+def test_squeeze(row_data_ishan: List, ishan: Entity) -> None:
     """Test to see if Squeeze works for the ideal case"""
     data = np.random.randint(low=-100, high=100, size=(10, 1, 10), dtype=np.int32)
     sept = SEPT(
@@ -550,7 +553,7 @@ def test_squeeze(row_data_ishan: List) -> None:
     assert output.child[0] == target, "Squeeze did not work as expected"
 
 
-def test_swapaxes(row_data_ishan: List) -> None:
+def test_swapaxes(row_data_ishan: List, ishan: Entity) -> None:
     """Test to see if Swapaxes works for the ideal case"""
     data = np.random.randint(low=-100, high=100, size=(10, 10), dtype=np.int32)
     sept = SEPT(
