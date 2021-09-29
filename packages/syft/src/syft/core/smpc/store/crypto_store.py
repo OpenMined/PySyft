@@ -20,8 +20,8 @@ class CryptoStore:
 
     """
 
-    __slots__ = "store"
-    __attr_allowlist__ = "store"
+    __slots__ = ("store",)
+    __attr_allowlist__ = ("store",)
 
     _func_add_store: Dict[Any, Callable] = {}
     _func_get_store: Dict[Any, Callable] = {}

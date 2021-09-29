@@ -25,17 +25,6 @@ PRIMITIVE_NR_ELEMS = 4
 clients = [sy.VirtualMachine(name=f"P_{i}").get_root_client() for i in range(5)]
 
 
-class LinearNet(sy.Module):
-    def __init__(self, torch_ref):
-        super(LinearNet, self).__init__(torch_ref=torch_ref)
-        self.fc1 = self.torch_ref.nn.Linear(3, 10)
-
-    def forward(self, x):
-        x = self.fc1(x)
-        x = self.torch_ref.nn.functional.relu(x)
-        return x
-
-
 @register_primitive_generator("test")
 def provider_test(nr_parties: int, nr_instances: int) -> List[Tuple[int]]:
     """This function will generate the values:
