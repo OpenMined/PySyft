@@ -46,15 +46,6 @@ class CryptoPrimitiveProvider:
         generator = CryptoPrimitiveProvider._func_providers[op_str]
         primitives = generator(**g_kwargs)
 
-        # for remote_session_uuid, primitive in zip(
-        #    session.rank_to_uuid.values(), primitives
-        # ):
-        #    if not isinstance(primitive, (list, tuple)):
-        #        primitive = (primitive,)
-        #
-        #    for share in itertools.chain(*primitive):
-        #        share.session_uuid = remote_session_uuid
-
         if p_kwargs is not None:
             """Do not transfer the primitives if there is not specified a
             values for populate kwargs."""
@@ -88,9 +79,7 @@ class CryptoPrimitiveProvider:
             except KeyError:
                 cache_store[party] = party.syft.core.smpc.store.CryptoStore()
                 crypto_store = cache_store[party]
-            crypto_store.populate_store(
-                op_str, primitives_party, **p_kwargs  # TODO
-            )  # should formalize location
+            crypto_store.populate_store(op_str, primitives_party, **p_kwargs)  # TODO
 
     @staticmethod
     def get_state() -> str:

@@ -49,7 +49,7 @@ class ShareTensor(PassthroughTensor):
         self,
         rank: int,
         nr_parties: int,
-        ring_size: int = 2 ** 64,
+        ring_size: int = 2 ** 32,
         value: Optional[Any] = None,
     ) -> None:
         self.rank = rank
@@ -337,6 +337,34 @@ class ShareTensor(PassthroughTensor):
         ShareTensor.sanity_check(y)
         new_share = y.apply_function(self, "matmul")
         return new_share
+
+    def __eq__(self, other: Any) -> bool:
+        """Equal operator.
+
+        Check if "self" is equal with another object given a set of
+            attributes to compare.
+
+        Args:
+            other (Any): Value to compare.
+
+        Returns:
+            bool: True if equal False if not.
+
+        """
+        # Assume we alse always have a Tensor object for ShareTensor.
+        if (self.child != other.child).child.any():
+            return False
+
+        if self.rank != other.rank:
+            return False
+
+        if self.ring_size != other.ring_size:
+            return False
+
+        if self.nr_parties != other.nr_parties:
+            return False
+
+        return True
 
     # TRASK: commenting out because ShareTEnsor doesn't appear to have .session_uuid or .config
     # def div(
