@@ -51,6 +51,8 @@ def create_role_route(
     can_edit_roles: bool = Body(False, example="false"),
     can_manage_infrastructure: bool = Body(False, example="false"),
     can_upload_data: bool = Body(False, example="false"),
+    can_upload_legal_document: bool = Body(False, example="false"),
+    can_edit_domain_settings: bool = Body(False, example="false"),
 ) -> Dict[str, str]:
     """Creates a new PyGrid role.
 
@@ -82,6 +84,8 @@ def create_role_route(
         can_edit_roles=can_edit_roles,
         can_manage_infrastructure=can_manage_infrastructure,
         can_upload_data=can_upload_data,
+        can_upload_legal_document=can_upload_legal_document,
+        can_edit_domain_settings=can_edit_domain_settings,
         reply_to=node.address,
     ).sign(signing_key=user_key)
 
@@ -169,6 +173,8 @@ def update_use_route(
     can_edit_roles: bool = Body(False, example="false"),
     can_manage_infrastructure: bool = Body(False, example="false"),
     can_upload_data: bool = Body(False, example="false"),
+    can_upload_legal_document: bool = Body(False, example="false"),
+    can_edit_domain_settings: bool = Body(False, example="false"),
 ) -> Dict[str, str]:
     """Changes role attributes
 
@@ -202,6 +208,8 @@ def update_use_route(
         can_edit_roles=can_edit_roles,
         can_manage_infrastructure=can_manage_infrastructure,
         can_upload_data=can_upload_data,
+        can_upload_legal_document=can_upload_legal_document,
+        can_edit_domain_settings=can_edit_domain_settings,
         reply_to=node.address,
     ).sign(signing_key=user_key)
 
