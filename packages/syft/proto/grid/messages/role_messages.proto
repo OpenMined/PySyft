@@ -20,7 +20,9 @@ message CreateRoleMessage {
   bool can_edit_roles = 9;
   bool can_manage_infrastructure = 10;
   bool can_upload_data = 11;
-  syft.core.io.Address reply_to = 12;
+  bool can_upload_legal_document = 12;
+  bool can_edit_domain_settings = 13;
+  syft.core.io.Address reply_to = 14;
 }
 
 
@@ -66,8 +68,10 @@ message UpdateRoleMessage {
   bool can_edit_roles = 9;
   bool can_manage_infrastructure = 10;
   bool can_upload_data = 11;
-  int32 role_id = 12;
-  syft.core.io.Address reply_to = 13;
+  bool can_upload_legal_document = 12;
+  bool can_edit_domain_settings = 13;
+  int32 role_id = 14;
+  syft.core.io.Address reply_to = 15;
 }
 
 // Delete Role

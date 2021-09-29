@@ -54,6 +54,8 @@ class CreateRoleMessage(ImmediateSyftMessageWithReply):
         can_edit_roles: bool = False,
         can_manage_infrastructure: bool = False,
         can_upload_data: bool = False,
+        can_upload_legal_document: bool = False,
+        can_edit_domain_settings: bool = False,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -67,6 +69,8 @@ class CreateRoleMessage(ImmediateSyftMessageWithReply):
         self.can_edit_roles = can_edit_roles
         self.can_manage_infrastructure = can_manage_infrastructure
         self.can_upload_data = can_upload_data
+        self.can_upload_legal_document = can_upload_legal_document
+        self.can_edit_domain_settings = can_edit_domain_settings
 
     def _object2proto(self) -> CreateRoleMessage_PB:
         """Returns a protobuf serialization of self.
@@ -92,6 +96,8 @@ class CreateRoleMessage(ImmediateSyftMessageWithReply):
             can_edit_roles=self.can_edit_roles,
             can_manage_infrastructure=self.can_manage_infrastructure,
             can_upload_data=self.can_upload_data,
+            can_upload_legal_document=self.can_upload_legal_document,
+            can_edit_domain_settings=self.can_edit_domain_settings,
             reply_to=serialize(self.reply_to),
         )
 
@@ -121,6 +127,8 @@ class CreateRoleMessage(ImmediateSyftMessageWithReply):
             can_edit_roles=proto.can_edit_roles,
             can_manage_infrastructure=proto.can_manage_infrastructure,
             can_upload_data=proto.can_upload_data,
+            can_upload_legal_document=proto.can_upload_legal_document,
+            can_edit_domain_settings=proto.can_edit_domain_settings,
             reply_to=_deserialize(blob=proto.reply_to),
         )
 
@@ -433,6 +441,8 @@ class UpdateRoleMessage(ImmediateSyftMessageWithReply):
         can_edit_roles: bool = False,
         can_manage_infrastructure: bool = False,
         can_upload_data: bool = False,
+        can_upload_legal_document: bool = False,
+        can_edit_domain_settings: bool = False,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -445,6 +455,8 @@ class UpdateRoleMessage(ImmediateSyftMessageWithReply):
         self.can_edit_roles = can_edit_roles
         self.can_manage_infrastructure = can_manage_infrastructure
         self.can_upload_data = can_upload_data
+        self.can_upload_legal_document = can_upload_legal_document
+        self.can_edit_domain_settings = can_edit_domain_settings
         self.role_id = role_id
 
     def _object2proto(self) -> UpdateRoleMessage_PB:
@@ -471,6 +483,8 @@ class UpdateRoleMessage(ImmediateSyftMessageWithReply):
             can_edit_roles=self.can_edit_roles,
             can_manage_infrastructure=self.can_manage_infrastructure,
             can_upload_data=self.can_upload_data,
+            can_upload_legal_document=self.can_upload_legal_document,
+            can_edit_domain_settings=self.can_edit_domain_settings,
             role_id=self.role_id,
             reply_to=serialize(self.reply_to),
         )
@@ -501,6 +515,8 @@ class UpdateRoleMessage(ImmediateSyftMessageWithReply):
             can_edit_roles=proto.can_edit_roles,
             can_manage_infrastructure=proto.can_manage_infrastructure,
             can_upload_data=proto.can_upload_data,
+            can_upload_legal_document=proto.can_upload_legal_document,
+            can_edit_domain_settings=proto.can_edit_domain_settings,
             role_id=proto.role_id,
             reply_to=_deserialize(blob=proto.reply_to),
         )

@@ -26,7 +26,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\'proto/grid/messages/role_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto\x1a\x1bproto/lib/python/dict.proto"\x86\x03\n\x11\x43reateRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x1e\n\x16\x63\x61n_make_data_requests\x18\x04 \x01(\x08\x12 \n\x18\x63\x61n_triage_data_requests\x18\x05 \x01(\x08\x12!\n\x19\x63\x61n_manage_privacy_budget\x18\x06 \x01(\x08\x12\x18\n\x10\x63\x61n_create_users\x18\x07 \x01(\x08\x12\x18\n\x10\x63\x61n_manage_users\x18\x08 \x01(\x08\x12\x16\n\x0e\x63\x61n_edit_roles\x18\t \x01(\x08\x12!\n\x19\x63\x61n_manage_infrastructure\x18\n \x01(\x08\x12\x17\n\x0f\x63\x61n_upload_data\x18\x0b \x01(\x08\x12\'\n\x08reply_to\x18\x0c \x01(\x0b\x32\x15.syft.core.io.Address"\x99\x01\n\x0eGetRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07role_id\x18\x03 \x01(\x05\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x88\x01\n\x0fGetRoleResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x02 \x01(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address"\x89\x01\n\x0fGetRolesMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x89\x01\n\x10GetRolesResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x02 \x03(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address"\x97\x03\n\x11UpdateRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x1e\n\x16\x63\x61n_make_data_requests\x18\x04 \x01(\x08\x12 \n\x18\x63\x61n_triage_data_requests\x18\x05 \x01(\x08\x12!\n\x19\x63\x61n_manage_privacy_budget\x18\x06 \x01(\x08\x12\x18\n\x10\x63\x61n_create_users\x18\x07 \x01(\x08\x12\x18\n\x10\x63\x61n_manage_users\x18\x08 \x01(\x08\x12\x16\n\x0e\x63\x61n_edit_roles\x18\t \x01(\x08\x12!\n\x19\x63\x61n_manage_infrastructure\x18\n \x01(\x08\x12\x17\n\x0f\x63\x61n_upload_data\x18\x0b \x01(\x08\x12\x0f\n\x07role_id\x18\x0c \x01(\x05\x12\'\n\x08reply_to\x18\r \x01(\x0b\x32\x15.syft.core.io.Address"\x9c\x01\n\x11\x44\x65leteRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07role_id\x18\x03 \x01(\x05\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
+    serialized_pb=b'\n\'proto/grid/messages/role_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto\x1a\x1bproto/lib/python/dict.proto"\xcb\x03\n\x11\x43reateRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x1e\n\x16\x63\x61n_make_data_requests\x18\x04 \x01(\x08\x12 \n\x18\x63\x61n_triage_data_requests\x18\x05 \x01(\x08\x12!\n\x19\x63\x61n_manage_privacy_budget\x18\x06 \x01(\x08\x12\x18\n\x10\x63\x61n_create_users\x18\x07 \x01(\x08\x12\x18\n\x10\x63\x61n_manage_users\x18\x08 \x01(\x08\x12\x16\n\x0e\x63\x61n_edit_roles\x18\t \x01(\x08\x12!\n\x19\x63\x61n_manage_infrastructure\x18\n \x01(\x08\x12\x17\n\x0f\x63\x61n_upload_data\x18\x0b \x01(\x08\x12!\n\x19\x63\x61n_upload_legal_document\x18\x0c \x01(\x08\x12 \n\x18\x63\x61n_edit_domain_settings\x18\r \x01(\x08\x12\'\n\x08reply_to\x18\x0e \x01(\x0b\x32\x15.syft.core.io.Address"\x99\x01\n\x0eGetRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07role_id\x18\x03 \x01(\x05\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x88\x01\n\x0fGetRoleResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x02 \x01(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address"\x89\x01\n\x0fGetRolesMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x89\x01\n\x10GetRolesResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x02 \x03(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address"\xdc\x03\n\x11UpdateRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x1e\n\x16\x63\x61n_make_data_requests\x18\x04 \x01(\x08\x12 \n\x18\x63\x61n_triage_data_requests\x18\x05 \x01(\x08\x12!\n\x19\x63\x61n_manage_privacy_budget\x18\x06 \x01(\x08\x12\x18\n\x10\x63\x61n_create_users\x18\x07 \x01(\x08\x12\x18\n\x10\x63\x61n_manage_users\x18\x08 \x01(\x08\x12\x16\n\x0e\x63\x61n_edit_roles\x18\t \x01(\x08\x12!\n\x19\x63\x61n_manage_infrastructure\x18\n \x01(\x08\x12\x17\n\x0f\x63\x61n_upload_data\x18\x0b \x01(\x08\x12!\n\x19\x63\x61n_upload_legal_document\x18\x0c \x01(\x08\x12 \n\x18\x63\x61n_edit_domain_settings\x18\r \x01(\x08\x12\x0f\n\x07role_id\x18\x0e \x01(\x05\x12\'\n\x08reply_to\x18\x0f \x01(\x0b\x32\x15.syft.core.io.Address"\x9c\x01\n\x11\x44\x65leteRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07role_id\x18\x03 \x01(\x05\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3',
     dependencies=[
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
         proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
@@ -253,10 +253,48 @@ _CREATEROLEMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="reply_to",
-            full_name="syft.grid.messages.CreateRoleMessage.reply_to",
+            name="can_upload_legal_document",
+            full_name="syft.grid.messages.CreateRoleMessage.can_upload_legal_document",
             index=11,
             number=12,
+            type=8,
+            cpp_type=7,
+            label=1,
+            has_default_value=False,
+            default_value=False,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="can_edit_domain_settings",
+            full_name="syft.grid.messages.CreateRoleMessage.can_edit_domain_settings",
+            index=12,
+            number=13,
+            type=8,
+            cpp_type=7,
+            label=1,
+            has_default_value=False,
+            default_value=False,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.CreateRoleMessage.reply_to",
+            index=13,
+            number=14,
             type=11,
             cpp_type=10,
             label=1,
@@ -281,7 +319,7 @@ _CREATEROLEMESSAGE = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=161,
-    serialized_end=551,
+    serialized_end=620,
 )
 
 
@@ -378,8 +416,8 @@ _GETROLEMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=554,
-    serialized_end=707,
+    serialized_start=623,
+    serialized_end=776,
 )
 
 
@@ -457,8 +495,8 @@ _GETROLERESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=710,
-    serialized_end=846,
+    serialized_start=779,
+    serialized_end=915,
 )
 
 
@@ -536,8 +574,8 @@ _GETROLESMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=849,
-    serialized_end=986,
+    serialized_start=918,
+    serialized_end=1055,
 )
 
 
@@ -615,8 +653,8 @@ _GETROLESRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=989,
-    serialized_end=1126,
+    serialized_start=1058,
+    serialized_end=1195,
 )
 
 
@@ -838,10 +876,48 @@ _UPDATEROLEMESSAGE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="role_id",
-            full_name="syft.grid.messages.UpdateRoleMessage.role_id",
+            name="can_upload_legal_document",
+            full_name="syft.grid.messages.UpdateRoleMessage.can_upload_legal_document",
             index=11,
             number=12,
+            type=8,
+            cpp_type=7,
+            label=1,
+            has_default_value=False,
+            default_value=False,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="can_edit_domain_settings",
+            full_name="syft.grid.messages.UpdateRoleMessage.can_edit_domain_settings",
+            index=12,
+            number=13,
+            type=8,
+            cpp_type=7,
+            label=1,
+            has_default_value=False,
+            default_value=False,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="role_id",
+            full_name="syft.grid.messages.UpdateRoleMessage.role_id",
+            index=13,
+            number=14,
             type=5,
             cpp_type=1,
             label=1,
@@ -859,8 +935,8 @@ _UPDATEROLEMESSAGE = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name="reply_to",
             full_name="syft.grid.messages.UpdateRoleMessage.reply_to",
-            index=12,
-            number=13,
+            index=14,
+            number=15,
             type=11,
             cpp_type=10,
             label=1,
@@ -884,8 +960,8 @@ _UPDATEROLEMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1129,
-    serialized_end=1536,
+    serialized_start=1198,
+    serialized_end=1674,
 )
 
 
@@ -982,8 +1058,8 @@ _DELETEROLEMESSAGE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1539,
-    serialized_end=1695,
+    serialized_start=1677,
+    serialized_end=1833,
 )
 
 _CREATEROLEMESSAGE.fields_by_name[
