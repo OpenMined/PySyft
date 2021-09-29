@@ -77,6 +77,8 @@ def create_role_msg(
             can_edit_roles=msg.can_edit_roles,
             can_manage_infrastructure=msg.can_manage_infrastructure,
             can_upload_data=msg.can_upload_data,
+            can_upload_legal_document=msg.can_upload_legal_document,
+            can_edit_domain_settings=msg.can_edit_domain_settings,
         )
     else:
         raise AuthorizationError("You're not allowed to create a new Role!")
@@ -103,6 +105,8 @@ def update_role_msg(
         "can_edit_roles": msg.can_edit_roles,
         "can_manage_infrastructure": msg.can_manage_infrastructure,
         "can_upload_data": msg.can_upload_data,
+        "can_upload_legal_document": msg.can_upload_legal_document,
+        "can_edit_domain_settings": msg.can_edit_domain_settings,
     }
 
     if not msg.role_id:

@@ -45,6 +45,8 @@ class RoleManager(DatabaseManager):
             can_edit_roles=False,
             can_manage_infrastructure=False,
             can_upload_data=False,
+            can_upload_legal_document=False,
+            can_edit_domain_settings=False,
         )
 
     @property
