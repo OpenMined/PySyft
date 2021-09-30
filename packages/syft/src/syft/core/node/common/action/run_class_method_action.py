@@ -265,7 +265,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         if resolved_self is not None and mutating_internal:
             # write the original resolved_self back to _self.id_at_location
             node.store[self._self.id_at_location] = resolved_self  # type: ignore
-            
+
         node.store[self.id_at_location] = result
 
     def _object2proto(self) -> RunClassMethodAction_PB:
