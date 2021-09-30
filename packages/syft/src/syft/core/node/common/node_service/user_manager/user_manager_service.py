@@ -174,20 +174,6 @@ def update_user_msg(
         else:
             raise AuthorizationError("You're not allowed to change User roles!")
 
-    # Change group
-    elif msg.groups:
-        _allowed = node.users.can_create_users(verify_key=verify_key)
-        _valid_groups = (
-            len(list(filter(lambda x: node.groups.first(id=x), msg.groups))) > 0
-        )
-        # If all premises were respected
-        if _allowed and _valid_groups:
-            pass
-            # TODO: fix, groups=msg.groups these types dont match
-            # node.groups.update_user_association(user_id=msg.user_id, groups=msg.groups)
-        else:
-            raise AuthorizationError("You're not allowed to change User groups!")
-
     return SuccessResponseMessage(
         address=msg.reply_to,
         resp_msg="User updated successfully!",
@@ -213,12 +199,6 @@ def get_user_msg(
 
         # Remove private key
         del _msg["private_key"]
-
-        # Add User groups
-        _msg["groups"] = [
-            node.groups.first(id=group).name
-            for group in node.groups.get_groups(user_id=msg.user_id)
-        ]
 
         # Get budget spent
         _msg["budget_spent"] = node.acc.user_budget(
@@ -253,17 +233,11 @@ def get_all_users_msg(
             # Remove private key
             del _user_json["private_key"]
 
-            # Add User groups
-            _user_json["groups"] = [
-                node.groups.first(id=group).name
-                for group in node.groups.get_groups(user_id=user.id)
-            ]
-
             _user_json["budget_spent"] = node.acc.user_budget(
                 user_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder),
                 returned_epsilon_is_private=True,
             )
-            print("We've spent:" + str(_user_json["budget_spent"]))
+            
             _msg.append(_user_json)
 
     return GetUsersResponse(
@@ -318,16 +292,7 @@ def search_users_msg(
     if _allowed:
         try:
             users = node.users.query(**user_parameters)
-            if msg.groups:
-                filtered_users = filter(
-                    lambda x: node.groups.contain_association(
-                        user=x.id, group=msg.groups
-                    ),
-                    users,
-                )
-                _msg = [model_to_json(user) for user in filtered_users]
-            else:
-                _msg = [model_to_json(user) for user in users]
+            _msg = [model_to_json(user) for user in users]
         except UserNotFoundError:
             _msg = []
     else:
