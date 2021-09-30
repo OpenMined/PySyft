@@ -145,6 +145,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             upcasted_kwargs,
         ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
 
+        resolved_self_previous_bytes: Optional[bytes] = None
         if self.is_static:
             result = method(*upcasted_args, **upcasted_kwargs)
         else:
@@ -153,6 +154,9 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     ValueError(f"Method {method} called, but self is None.")
                 )
 
+            resolved_self_previous_bytes = sy.serialize(
+                resolved_self.data, to_bytes=True
+            )
             method_name = self.path.split(".")[-1]
 
             # relative
@@ -226,6 +230,17 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     err = f"Unable to set id on result {type(result)}. {e}"
                     traceback_and_raise(Exception(err))
 
+        # check if resolved_self has changed and if so mark as mutating_internal
+        # this prevents someone from mutating an object they own with something they
+        # do not own and the read_permissions not flowing backwards
+        if (
+            resolved_self_previous_bytes is not None
+            and resolved_self is not None
+            and resolved_self_previous_bytes
+            != sy.serialize(resolved_self.data, to_bytes=True)
+        ):
+            mutating_internal = True
+
         if mutating_internal:
             if isinstance(resolved_self, StorableObject):
                 resolved_self.read_permissions = result_read_permissions
@@ -243,8 +258,14 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             args=tag_args,
             kwargs=tag_kwargs,
         )
-        # TODO :Make it work for inplace ops in sql alchemy.
-        node.store[self._self.id_at_location] = resolved_self  # type: ignore
+
+        # if we have mutated resolved_self we need to save it back since the store
+        # might be in SQL and not in memory where the update is automatic
+        # but if the method was static then we might not have a _self
+        if resolved_self is not None and mutating_internal:
+            # write the original resolved_self back to _self.id_at_location
+            node.store[self._self.id_at_location] = resolved_self  # type: ignore
+            
         node.store[self.id_at_location] = result
 
     def _object2proto(self) -> RunClassMethodAction_PB:
