@@ -1,4 +1,5 @@
 # stdlib
+import time
 from typing import Optional
 
 # third party
@@ -162,7 +163,23 @@ class GetObjectAction(ImmediateActionWithReply):
     ) -> ImmediateSyftMessageWithoutReply:
         try:
             try:
-                storable_object = node.store[self.id_at_location]
+                # keep five minutes seconds as max latency
+                # TODO: Before Merge Should discuss with syft core team on max time.
+                ctr = 3000
+                while True:
+                    storable_object = node.store.get_object(key=self.id_at_location)
+                    if storable_object is None:
+                        ctr -= 1
+                        time.sleep(0.1)
+                        # We intimate user every ten seconds
+                        if ctr % 100 == 0:
+                            print("Waiting for Object to arrive...🚀")
+                    else:
+                        break
+                    if ctr <= 0:
+                        raise Exception(
+                            "Object not found or Object did not arrive at store"
+                        )
             except Exception as e:
                 log = (
                     f"Unable to Get Object with ID {self.id_at_location} from store. "
