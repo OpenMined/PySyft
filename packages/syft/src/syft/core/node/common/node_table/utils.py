@@ -53,49 +53,61 @@ def expand_user_object(_user: SyftUser, db: Engine) -> Dict[str, Any]:
 def seed_db(db: Session) -> None:
     new_role = Role(
         name="Data Scientist",
-        can_triage_requests=False,
-        can_edit_settings=False,
+        can_make_data_requests=True,
+        can_triage_data_requests=False,
+        can_manage_privacy_budget=False,
         can_create_users=False,
-        can_create_groups=False,
+        can_manage_users=False,
         can_edit_roles=False,
         can_manage_infrastructure=False,
         can_upload_data=False,
+        can_upload_legal_document=False,
+        can_edit_domain_settings=False,
     )
     db.add(new_role)
 
     new_role = Role(
         name="Compliance Officer",
-        can_triage_requests=True,
-        can_edit_settings=False,
+        can_make_data_requests=False,
+        can_triage_data_requests=True,
+        can_manage_privacy_budget=False,
         can_create_users=False,
-        can_create_groups=False,
+        can_manage_users=True,
         can_edit_roles=False,
         can_manage_infrastructure=False,
         can_upload_data=False,
+        can_upload_legal_document=False,
+        can_edit_domain_settings=False,
     )
     db.add(new_role)
 
     new_role = Role(
         name="Administrator",
-        can_triage_requests=True,
-        can_edit_settings=True,
+        can_make_data_requests=True,
+        can_triage_data_requests=True,
+        can_manage_privacy_budget=True,
         can_create_users=True,
-        can_create_groups=True,
-        can_edit_roles=False,
-        can_manage_infrastructure=False,
+        can_manage_users=True,
+        can_edit_roles=True,
+        can_manage_infrastructure=True,
         can_upload_data=True,
+        can_upload_legal_document=True,
+        can_edit_domain_settings=True,
     )
     db.add(new_role)
 
     new_role = Role(
         name="Owner",
-        can_triage_requests=True,
-        can_edit_settings=True,
+        can_make_data_requests=True,
+        can_triage_data_requests=True,
+        can_manage_privacy_budget=True,
         can_create_users=True,
-        can_create_groups=True,
+        can_manage_users=True,
         can_edit_roles=True,
         can_manage_infrastructure=True,
         can_upload_data=True,
+        can_upload_legal_document=True,
+        can_edit_domain_settings=True,
     )
     db.add(new_role)
     db.commit()

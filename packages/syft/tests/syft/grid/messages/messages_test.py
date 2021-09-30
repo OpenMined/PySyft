@@ -5,7 +5,6 @@ import pytest
 import syft as sy
 from syft.core.common.message import AbstractMessage
 from syft.core.io.address import Address
-from syft.core.node.common.node_service.group_manager import group_manager_messages
 from syft.core.node.common.node_service.infra_manager import infra_manager_messages
 from syft.core.node.common.node_service.node_setup import node_setup_messages
 from syft.core.node.common.node_service.request_receiver import (
@@ -15,79 +14,6 @@ from syft.core.node.common.node_service.role_manager import role_manager_message
 from syft.core.node.common.node_service.tensor_manager import tensor_manager_messages
 
 messages = {
-    # group_manager_messages
-    "CreateGroup": {
-        "module": group_manager_messages,
-        "request_content": {
-            "group-name": "Heart diseases group",
-            "members": ["user-id1", "user-id2", "user-id3"],
-            "data": [
-                {"id": "264632213", "permissions": "read"},
-                {"id": "264613232", "permissions": "write"},
-                {"id": "896632213", "permissions": "read"},
-            ],
-        },
-        "response_content": {"msg": "Group Created Successfully!"},
-    },
-    "DeleteGroup": {
-        "module": group_manager_messages,
-        "request_content": {"group_id": "f2a6as5d16fasd"},
-        "response_content": {"msg": "Group deleted Successfully!"},
-    },
-    "GetGroup": {
-        "module": group_manager_messages,
-        "request_content": {"group-id": "eqw9e4a5d846"},
-        "response_content": {
-            "group-id": "eqw9e4a5d846",
-            "group-name": "Heart diseases group",
-            "members": ["user-id1", "user-id2", "user-id3"],
-            "data": [
-                {"id": "264632213", "permissions": "read"},
-                {"id": "264613232", "permissions": "write"},
-                {"id": "896632213", "permissions": "read"},
-            ],
-        },
-    },
-    "GetGroups": {
-        "module": group_manager_messages,
-        "request_content": {},
-        "response_content": {
-            "groups": {
-                "626sadaf631": {
-                    "group-name": "Heart diseases group",
-                    "members": ["user-id1", "user-id2", "user-id3"],
-                    "data": [
-                        {"id": "264632213", "permissions": "read"},
-                        {"id": "264613232", "permissions": "write"},
-                        {"id": "896632213", "permissions": "read"},
-                    ],
-                },
-                "a84ew64wq6e": {
-                    "group-name": "Brain diseases group",
-                    "members": ["user-id5", "user-id7", "user-id9"],
-                    "data": [
-                        {"id": "26463afasd", "permissions": "read"},
-                        {"id": "264613dafeqwe", "permissions": "write"},
-                        {"id": "896632sdfsf", "permissions": "read"},
-                    ],
-                },
-            }
-        },
-    },
-    "UpdateGroup": {
-        "module": group_manager_messages,
-        "request_content": {
-            "group-id": "eqw9e4a5d846",
-            "group-name": "Brain diseases group",
-            "members": ["user-id1", "user-id2", "user-id3"],
-            "data": [
-                {"id": "264632213", "permissions": "read"},
-                {"id": "264613232", "permissions": "write"},
-                {"id": "896632213", "permissions": "read"},
-            ],
-        },
-        "response_content": {"msg": "Group updated successfully!"},
-    },
     # infra_manager_messages
     "CreateWorker": {
         "module": infra_manager_messages,
