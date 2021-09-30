@@ -1376,14 +1376,28 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         if a_min is None and a_max is None:
             raise Exception("ValueError: clip: must set either max or min")
 
-        data = np.clip(self.child, a_min=a_min, a_max=a_max, *args)
-        min_vals = np.clip(self.min_vals, a_min=a_min, a_max=a_max, *args)
-        max_vals = np.clip(self.max_vals, a_min=a_min, a_max=a_max, *args)
-        entity = self.entity
+        if isinstance(self.child, torch.Tensor):
+            self.child = self.child.numpy()
+
+        if isinstance(self.child, np.ndarray):
+            data = np.clip(self.child, a_min=a_min, a_max=a_max, *args)
+        else:
+            # self.child is singleton
+            data = max(a_min, min(self.child, a_max)) if a_min <= a_max else a_max
+
+        if isinstance(self.min_vals, np.ndarray):
+            min_vals = np.clip(self.min_vals, a_min=a_min, a_max=a_max, *args)
+        else:
+            min_vals = max(a_min, min(self.min_vals, a_max)) if a_min <= a_max else a_max
+
+        if isinstance(self.max_vals, np.ndarray):
+            max_vals = np.clip(self.max_vals, a_min=a_min, a_max=a_max, *args)
+        else:
+            max_vals = max(a_min, min(self.max_vals, a_max)) if a_min <= a_max else a_max
 
         return SingleEntityPhiTensor(
             child=data,
-            entity=entity,
+            entity=self.entity,
             min_vals=min_vals,
             max_vals=max_vals,
             scalar_manager=self.scalar_manager,
