@@ -27,9 +27,6 @@ from ..common.node_manager.user_manager import UserManager
 from ..common.node_service.association_request.association_request_service import (
     AssociationRequestService,
 )
-from ..common.node_service.group_manager.group_manager_service import (
-    GroupManagerService,
-)
 from ..common.node_service.node_setup.node_setup_service import NodeSetupService
 from ..common.node_service.request_receiver.request_receiver_messages import (
     RequestMessage,
@@ -89,7 +86,6 @@ class Network(Node):
         self.immediate_services_with_reply.append(NodeSetupService)
         self.immediate_services_with_reply.append(RoleManagerService)
         self.immediate_services_with_reply.append(UserManagerService)
-        self.immediate_services_with_reply.append(GroupManagerService)
 
         self.requests: List[RequestMessage] = list()
         # available_device_types = set()
