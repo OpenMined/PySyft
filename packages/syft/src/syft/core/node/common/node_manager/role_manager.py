@@ -7,11 +7,9 @@ from typing import List
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Query
 
-# syft absolute
-from syft.core.node.common.node_table.roles import Role
-
 # relative
 from ..exceptions import RoleNotFoundError
+from ..node_table.roles import Role
 from .database_manager import DatabaseManager
 
 
@@ -39,13 +37,16 @@ class RoleManager(DatabaseManager):
 
     def _common_roles(self) -> Query:
         return self.db.session.query(self._schema).filter_by(
-            can_triage_requests=False,
-            can_edit_settings=False,
+            can_make_data_requests=True,
+            can_triage_data_requests=False,
+            can_manage_privacy_budget=False,
             can_create_users=False,
-            can_create_groups=False,
-            can_upload_data=False,
+            can_manage_users=False,
             can_edit_roles=False,
             can_manage_infrastructure=False,
+            can_upload_data=False,
+            can_upload_legal_document=False,
+            can_edit_domain_settings=False,
         )
 
     @property

@@ -6,14 +6,9 @@ on:
   #   - cron: "0 22 * * *" # 7pm Brazil, 10pm UTC, 8am AEST
   pull_request:
     branches:
+      - dev
+      - main
       - "0.6.0"
-  push:
-    branches:
-      - "0.6.0"
-      - "demo_strike_team_branch_4"
-      - "dev"
-    paths:
-      - ".github/workflows/stack-*.yml"
   workflow_dispatch:
     inputs:
       none:
@@ -23,7 +18,7 @@ on:
 jobs:
   stack-integration-tests:
     strategy:
-      max-parallel: 3
+      max-parallel: 1
       matrix:
         os: [ubuntu-latest]
         python-version: [3.9]
@@ -33,29 +28,38 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Check for file changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
+        if: steps.changes.outputs.stack == 'true'
         with:
           python-version: ${{ matrix.python-version }}
 
       # In this step, this action saves a list of existing images,
       # the cache is created without them in the post run.
       # It also restores the cache if it exists.
-      - uses: satackey/action-docker-layer-caching@v0.0.11
-        # Ignore the failure of a step and avoid terminating the job.
+      - name: Cache docker images
+        uses: broadshield/action-docker-layer-caching@main
+        if: steps.changes.outputs.stack == 'true'
         continue-on-error: true
         with:
-          key: stack-${{ hashFiles('packages/grid/docker-compose.yml') }}
-          restore-keys: |
-            stack-
+          filter: reference='openmined/*'
 
       - name: Get pip cache dir
+        if: steps.changes.outputs.stack == 'true'
         id: pip-cache
         run: |
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
         uses: actions/cache@v2
+        if: steps.changes.outputs.stack == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
           key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
@@ -63,18 +67,21 @@ jobs:
             ${{ runner.os }}-pip-py${{ matrix.python-version }}
 
       - name: Upgrade pip
+        if: steps.changes.outputs.stack == 'true'
         run: |
           pip install --upgrade --user pip
 
       - name: Install tox
+        if: steps.changes.outputs.stack == 'true'
         run: |
           pip install tox --upgrade
 
       - name: Run integration tests
+        if: steps.changes.outputs.stack == 'true'
         shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.0.0-beta.6
+          DOCKER_COMPOSE_VERSION=v2.0.0-rc.2
           curl -sSL https://github.com/docker/compose-cli/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-amd64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
           tox -e stack.test.integration

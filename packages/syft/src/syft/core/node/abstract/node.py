@@ -29,6 +29,7 @@ class AbstractNode(Address):
     guest_verify_key_registry: Set[VerifyKey]
     admin_verify_key_registry: Set[VerifyKey]
     cpl_ofcr_verify_key_registry: Set[VerifyKey]
+    acc: Optional[Any]
 
     # TODO: remove hacky in_memory_client_registry
     in_memory_client_registry: Dict[Any, Any]
@@ -97,6 +98,7 @@ class AbstractNodeClient(Address):
     lib_ast: Any  # Can't import Globals (circular reference)
     # TODO: remove hacky in_memory_client_registry
     in_memory_client_registry: Dict[Any, Any]
+    signing_key: SigningKey
     """"""
 
     @property
@@ -105,4 +107,7 @@ class AbstractNodeClient(Address):
         traceback_and_raise(NotImplementedError)
 
     def send_immediate_msg_without_reply(self, msg: Any) -> Any:
+        raise NotImplementedError
+
+    def send_immediate_msg_with_reply(self, msg: Any) -> Any:
         raise NotImplementedError

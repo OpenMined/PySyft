@@ -3,10 +3,9 @@ from typing import Any
 
 # relative
 from ...core.common import UID
-from ...core.common.serde.serializable import Serializable
 
 
-class PyPrimitive(Serializable):
+class PyPrimitive:
     def __init__(self, temporary_box: bool = False) -> None:
         self._id: UID
 

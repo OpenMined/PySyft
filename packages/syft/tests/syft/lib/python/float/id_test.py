@@ -9,7 +9,7 @@ python_float = 42.5
 other = Float(42.5)
 
 
-def test_id_abs():
+def test_id_abs() -> None:
     res = test_float.__abs__()
     py_res = python_float.__abs__()
 
@@ -18,7 +18,7 @@ def test_id_abs():
     assert res.id != test_float.id
 
 
-def test_id_add():
+def test_id_add() -> None:
     res = test_float.__add__(other)
     py_res = python_float.__add__(other)
 
@@ -27,7 +27,7 @@ def test_id_add():
     assert res.id != test_float.id
 
 
-def test_id_bool():
+def test_id_bool() -> None:
     res = test_float.__bool__()
     py_res = python_float.__bool__()
 
@@ -36,7 +36,7 @@ def test_id_bool():
     assert res.id != test_float.id
 
 
-def test_id_divmod():
+def test_id_divmod() -> None:
     r1, q1 = test_float.__divmod__(other)
     r2, q2 = python_float.__divmod__(other)
 
@@ -49,7 +49,7 @@ def test_id_divmod():
     assert r1.id != q1.id
 
 
-def test_id_eq():
+def test_id_eq() -> None:
     res = test_float.__eq__(other)
     py_res = python_float.__eq__(other)
 
@@ -58,7 +58,7 @@ def test_id_eq():
     assert res.id != test_float.id
 
 
-def test_id_floordiv():
+def test_id_floordiv() -> None:
     res = test_float.__floordiv__(other)
     py_res = python_float.__floordiv__(other)
 
@@ -67,7 +67,7 @@ def test_id_floordiv():
     assert res.id != test_float.id
 
 
-def test_id_ge():
+def test_id_ge() -> None:
     res = test_float.__ge__(other)
     py_res = python_float.__ge__(other)
 
@@ -76,7 +76,7 @@ def test_id_ge():
     assert res.id != test_float.id
 
 
-def test_id_gt():
+def test_id_gt() -> None:
     res = test_float.__gt__(other)
     py_res = python_float.__gt__(other)
 
@@ -85,42 +85,42 @@ def test_id_gt():
     assert res.id != test_float.id
 
 
-def test_id_iadd():
+def test_id_iadd() -> None:
     res = test_float.__iadd__(other)
     assert res.id == test_float.id
 
 
-def test_id_ifloordiv():
+def test_id_ifloordiv() -> None:
     res = test_float.__ifloordiv__(other)
     assert res.id == test_float.id
 
 
-def test_id_imod():
+def test_id_imod() -> None:
     res = test_float.__imod__(other)
     assert res.id == test_float.id
 
 
-def test_id_imul():
+def test_id_imul() -> None:
     res = test_float.__imul__(other)
     assert res.id == test_float.id
 
 
-def test_id_ipow():
+def test_id_ipow() -> None:
     res = test_float.__ipow__(other)
     assert res.id == test_float.id
 
 
-def test_id_isub():
+def test_id_isub() -> None:
     res = test_float.__isub__(other)
     assert res.id == test_float.id
 
 
-def test_id_itruediv():
+def test_id_itruediv() -> None:
     res = test_float.__itruediv__(other)
     assert res.id == test_float.id
 
 
-def test_id_le():
+def test_id_le() -> None:
     res = test_float.__le__(other)
     py_res = python_float.__le__(other)
 
@@ -129,7 +129,7 @@ def test_id_le():
     assert res.id != test_float.id
 
 
-def test_id_lt():
+def test_id_lt() -> None:
     res = test_float.__lt__(other)
     py_res = python_float.__lt__(other)
 
@@ -138,7 +138,7 @@ def test_id_lt():
     assert res.id != test_float.id
 
 
-def test_id_mod():
+def test_id_mod() -> None:
     res = test_float.__mod__(other)
     py_res = python_float.__mod__(other)
 
@@ -147,7 +147,7 @@ def test_id_mod():
     assert res.id != test_float.id
 
 
-def test_id_mul():
+def test_id_mul() -> None:
     res = test_float.__mul__(other)
     py_res = python_float.__mul__(other)
 
@@ -156,7 +156,7 @@ def test_id_mul():
     assert res.id != test_float.id
 
 
-def test_id_ne():
+def test_id_ne() -> None:
     res = test_float.__ne__(other)
     py_res = python_float.__ne__(other)
 
@@ -165,7 +165,7 @@ def test_id_ne():
     assert res.id != test_float.id
 
 
-def test_id_neg():
+def test_id_neg() -> None:
     res = test_float.__neg__()
     py_res = python_float.__neg__()
 
@@ -174,7 +174,7 @@ def test_id_neg():
     assert res.id != test_float.id
 
 
-def test_id_pow():
+def test_id_pow() -> None:
     res = test_float.__pow__(other)
     py_res = python_float.__pow__(other)
 
@@ -183,7 +183,7 @@ def test_id_pow():
     assert res.id != test_float.id
 
 
-def test_id_radd():
+def test_id_radd() -> None:
     res = test_float.__radd__(other)
     py_res = python_float.__radd__(other)
 
@@ -192,7 +192,7 @@ def test_id_radd():
     assert res.id != test_float.id
 
 
-def test_id_rdivmod():
+def test_id_rdivmod() -> None:
     r1, q1 = test_float.__rdivmod__(other)
     r2, q2 = python_float.__rdivmod__(other)
 
@@ -204,7 +204,7 @@ def test_id_rdivmod():
     assert q1.id != test_float.id
 
 
-def test_id_rfloordiv():
+def test_id_rfloordiv() -> None:
     res = test_float.__rfloordiv__(other)
     py_res = python_float.__rfloordiv__(other)
 
@@ -213,7 +213,7 @@ def test_id_rfloordiv():
     assert res.id != test_float.id
 
 
-def test_id_rmod():
+def test_id_rmod() -> None:
     res = test_float.__rmod__(other)
     py_res = python_float.__rmod__(other)
 
@@ -222,7 +222,7 @@ def test_id_rmod():
     assert res.id != test_float.id
 
 
-def test_id_rmul():
+def test_id_rmul() -> None:
     res = test_float.__rmul__(other)
     py_res = python_float.__rmul__(other)
 
@@ -231,7 +231,7 @@ def test_id_rmul():
     assert res.id != test_float.id
 
 
-def test_id_round():
+def test_id_round() -> None:
     res = test_float.__round__()
     py_res = python_float.__round__()
 
@@ -240,7 +240,7 @@ def test_id_round():
     assert res.id != test_float.id
 
 
-def test_id_rpow():
+def test_id_rpow() -> None:
     res = test_float.__rpow__(other)
     py_res = python_float.__rpow__(other)
 
@@ -249,7 +249,7 @@ def test_id_rpow():
     assert res.id != test_float.id
 
 
-def test_id_rsub():
+def test_id_rsub() -> None:
     res = test_float.__rsub__(other)
     py_res = python_float.__rsub__(other)
 
@@ -258,7 +258,7 @@ def test_id_rsub():
     assert res.id != test_float.id
 
 
-def test_id_rtruediv():
+def test_id_rtruediv() -> None:
     res = test_float.__rtruediv__(other)
     py_res = python_float.__rtruediv__(other)
 
@@ -267,7 +267,7 @@ def test_id_rtruediv():
     assert res.id != test_float.id
 
 
-def test_id_sub():
+def test_id_sub() -> None:
     res = test_float.__sub__(other)
     py_res = python_float.__sub__(other)
 
@@ -276,7 +276,7 @@ def test_id_sub():
     assert res.id != test_float.id
 
 
-def test_id_truediv():
+def test_id_truediv() -> None:
     res = test_float.__truediv__(other)
     py_res = python_float.__truediv__(other)
 
@@ -285,7 +285,7 @@ def test_id_truediv():
     assert res.id != test_float.id
 
 
-def test_id_trunc():
+def test_id_trunc() -> None:
     res = test_float.__trunc__()
     py_res = python_float.__trunc__()
 
@@ -294,7 +294,7 @@ def test_id_trunc():
     assert res.id != test_float.id
 
 
-def test_id_as_integer_ratio():
+def test_id_as_integer_ratio() -> None:
     u1, l1 = test_float.as_integer_ratio()
     u2, l2 = python_float.as_integer_ratio()
 
@@ -306,12 +306,12 @@ def test_id_as_integer_ratio():
 
 
 @pytest.mark.xfail
-def test_id_binary():
+def test_id_binary() -> None:
     # TODO finish this when we have bytes support
     assert True is False
 
 
-def test_id_conjugate():
+def test_id_conjugate() -> None:
     res = test_float.conjugate()
     py_res = python_float.conjugate()
 
@@ -320,7 +320,7 @@ def test_id_conjugate():
     assert res.id != test_float.id
 
 
-def test_id_hex():
+def test_id_hex() -> None:
     res = test_float.hex()
     py_res = python_float.hex()
 
@@ -329,7 +329,7 @@ def test_id_hex():
     assert res.id != test_float.id
 
 
-def test_id_imag():
+def test_id_imag() -> None:
     res = test_float.imag
     py_res = python_float.imag
 
@@ -338,7 +338,7 @@ def test_id_imag():
     assert res.id != test_float.id
 
 
-def test_id_is_integer():
+def test_id_is_integer() -> None:
     res = test_float.is_integer()
     py_res = python_float.is_integer()
 
@@ -347,7 +347,7 @@ def test_id_is_integer():
     assert res.id != test_float.id
 
 
-def test_id_real():
+def test_id_real() -> None:
     res = test_float.real
     py_res = python_float.real
 
@@ -356,6 +356,6 @@ def test_id_real():
     assert res.id != test_float.id
 
 
-def test_upcast():
+def test_upcast() -> None:
     assert Float(42.5).upcast() == 42.5
     assert type(Float(42.5).upcast()) is float

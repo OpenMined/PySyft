@@ -7,47 +7,47 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import final
 
-# syft absolute
-from syft import serialize
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.common.serde.deserialize import _deserialize
-from syft.core.common.serde.serializable import bind_protobuf
-from syft.core.common.uid import UID
-from syft.core.io.address import Address
-from syft.proto.grid.messages.tensor_messages_pb2 import (
+# relative
+from ...... import serialize
+from ......proto.grid.messages.tensor_messages_pb2 import (
     CreateTensorMessage as CreateTensorMessage_PB,
 )
-from syft.proto.grid.messages.tensor_messages_pb2 import (
+from ......proto.grid.messages.tensor_messages_pb2 import (
     CreateTensorResponse as CreateTensorResponse_PB,
 )
-from syft.proto.grid.messages.tensor_messages_pb2 import (
+from ......proto.grid.messages.tensor_messages_pb2 import (
     DeleteTensorMessage as DeleteTensorMessage_PB,
 )
-from syft.proto.grid.messages.tensor_messages_pb2 import (
+from ......proto.grid.messages.tensor_messages_pb2 import (
     DeleteTensorResponse as DeleteTensorResponse_PB,
 )
-from syft.proto.grid.messages.tensor_messages_pb2 import (
+from ......proto.grid.messages.tensor_messages_pb2 import (
     GetTensorMessage as GetTensorMessage_PB,
 )
-from syft.proto.grid.messages.tensor_messages_pb2 import (
+from ......proto.grid.messages.tensor_messages_pb2 import (
     GetTensorResponse as GetTensorResponse_PB,
 )
-from syft.proto.grid.messages.tensor_messages_pb2 import (
+from ......proto.grid.messages.tensor_messages_pb2 import (
     GetTensorsMessage as GetTensorsMessage_PB,
 )
-from syft.proto.grid.messages.tensor_messages_pb2 import (
+from ......proto.grid.messages.tensor_messages_pb2 import (
     GetTensorsResponse as GetTensorsResponse_PB,
 )
-from syft.proto.grid.messages.tensor_messages_pb2 import (
+from ......proto.grid.messages.tensor_messages_pb2 import (
     UpdateTensorMessage as UpdateTensorMessage_PB,
 )
-from syft.proto.grid.messages.tensor_messages_pb2 import (
+from ......proto.grid.messages.tensor_messages_pb2 import (
     UpdateTensorResponse as UpdateTensorResponse_PB,
 )
+from .....common.message import ImmediateSyftMessageWithReply
+from .....common.message import ImmediateSyftMessageWithoutReply
+from .....common.serde.deserialize import _deserialize
+from .....common.serde.serializable import serializable
+from .....common.uid import UID
+from .....io.address import Address
 
 
-@bind_protobuf
+@serializable()
 @final
 class CreateTensorMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -118,7 +118,7 @@ class CreateTensorMessage(ImmediateSyftMessageWithReply):
         return CreateTensorMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class CreateTensorResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -190,7 +190,7 @@ class CreateTensorResponse(ImmediateSyftMessageWithoutReply):
         return CreateTensorResponse_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class GetTensorMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -261,7 +261,7 @@ class GetTensorMessage(ImmediateSyftMessageWithReply):
         return GetTensorMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class GetTensorResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -333,7 +333,7 @@ class GetTensorResponse(ImmediateSyftMessageWithoutReply):
         return GetTensorResponse_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class GetTensorsMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -404,7 +404,7 @@ class GetTensorsMessage(ImmediateSyftMessageWithReply):
         return GetTensorsMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class GetTensorsResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -476,7 +476,7 @@ class GetTensorsResponse(ImmediateSyftMessageWithoutReply):
         return GetTensorsResponse_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class UpdateTensorMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -547,7 +547,7 @@ class UpdateTensorMessage(ImmediateSyftMessageWithReply):
         return UpdateTensorMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class UpdateTensorResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -619,7 +619,7 @@ class UpdateTensorResponse(ImmediateSyftMessageWithoutReply):
         return UpdateTensorResponse_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class DeleteTensorMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -690,7 +690,7 @@ class DeleteTensorMessage(ImmediateSyftMessageWithReply):
         return DeleteTensorMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class DeleteTensorResponse(ImmediateSyftMessageWithoutReply):
     def __init__(

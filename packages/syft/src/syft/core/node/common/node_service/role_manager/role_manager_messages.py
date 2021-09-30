@@ -7,38 +7,38 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import final
 
-# syft absolute
-from syft import serialize
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.common.serde.deserialize import _deserialize
-from syft.core.common.serde.serializable import bind_protobuf
-from syft.core.common.uid import UID
-from syft.core.io.address import Address
-from syft.proto.grid.messages.role_messages_pb2 import (
+# relative
+from ...... import serialize
+from ......proto.grid.messages.role_messages_pb2 import (
     CreateRoleMessage as CreateRoleMessage_PB,
 )
-from syft.proto.grid.messages.role_messages_pb2 import (
+from ......proto.grid.messages.role_messages_pb2 import (
     DeleteRoleMessage as DeleteRoleMessage_PB,
 )
-from syft.proto.grid.messages.role_messages_pb2 import (
+from ......proto.grid.messages.role_messages_pb2 import (
     GetRoleMessage as GetRoleMessage_PB,
 )
-from syft.proto.grid.messages.role_messages_pb2 import (
+from ......proto.grid.messages.role_messages_pb2 import (
     GetRoleResponse as GetRoleResponse_PB,
 )
-from syft.proto.grid.messages.role_messages_pb2 import (
+from ......proto.grid.messages.role_messages_pb2 import (
     GetRolesMessage as GetRolesMessage_PB,
 )
-from syft.proto.grid.messages.role_messages_pb2 import (
+from ......proto.grid.messages.role_messages_pb2 import (
     GetRolesResponse as GetRolesResponse_PB,
 )
-from syft.proto.grid.messages.role_messages_pb2 import (
+from ......proto.grid.messages.role_messages_pb2 import (
     UpdateRoleMessage as UpdateRoleMessage_PB,
 )
+from .....common.message import ImmediateSyftMessageWithReply
+from .....common.message import ImmediateSyftMessageWithoutReply
+from .....common.serde.deserialize import _deserialize
+from .....common.serde.serializable import serializable
+from .....common.uid import UID
+from .....io.address import Address
 
 
-@bind_protobuf
+@serializable()
 @final
 class CreateRoleMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -46,24 +46,31 @@ class CreateRoleMessage(ImmediateSyftMessageWithReply):
         address: Address,
         name: str,
         reply_to: Address,
-        can_triage_requests: bool = False,
-        can_edit_settings: bool = False,
+        can_make_data_requests: bool = False,
+        can_triage_data_requests: bool = False,
+        can_manage_privacy_budget: bool = False,
         can_create_users: bool = False,
-        can_create_groups: bool = False,
+        can_manage_users: bool = False,
         can_edit_roles: bool = False,
         can_manage_infrastructure: bool = False,
         can_upload_data: bool = False,
+        can_upload_legal_document: bool = False,
+        can_edit_domain_settings: bool = False,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.name = name
-        self.can_triage_requests = can_triage_requests
-        self.can_edit_settings = can_edit_settings
+
+        self.can_make_data_requests = can_make_data_requests
+        self.can_triage_data_requests = can_triage_data_requests
+        self.can_manage_privacy_budget = can_manage_privacy_budget
         self.can_create_users = can_create_users
-        self.can_create_groups = can_create_groups
+        self.can_manage_users = can_manage_users
         self.can_edit_roles = can_edit_roles
         self.can_manage_infrastructure = can_manage_infrastructure
         self.can_upload_data = can_upload_data
+        self.can_upload_legal_document = can_upload_legal_document
+        self.can_edit_domain_settings = can_edit_domain_settings
 
     def _object2proto(self) -> CreateRoleMessage_PB:
         """Returns a protobuf serialization of self.
@@ -81,13 +88,16 @@ class CreateRoleMessage(ImmediateSyftMessageWithReply):
             msg_id=serialize(self.id),
             address=serialize(self.address),
             name=self.name,
-            can_triage_requests=self.can_triage_requests,
-            can_edit_settings=self.can_edit_settings,
+            can_make_data_requests=self.can_make_data_requests,
+            can_triage_data_requests=self.can_triage_data_requests,
+            can_manage_privacy_budget=self.can_manage_privacy_budget,
             can_create_users=self.can_create_users,
-            can_create_groups=self.can_create_groups,
+            can_manage_users=self.can_manage_users,
             can_edit_roles=self.can_edit_roles,
             can_manage_infrastructure=self.can_manage_infrastructure,
             can_upload_data=self.can_upload_data,
+            can_upload_legal_document=self.can_upload_legal_document,
+            can_edit_domain_settings=self.can_edit_domain_settings,
             reply_to=serialize(self.reply_to),
         )
 
@@ -109,13 +119,16 @@ class CreateRoleMessage(ImmediateSyftMessageWithReply):
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             name=proto.name,
-            can_triage_requests=proto.can_triage_requests,
-            can_edit_settings=proto.can_edit_settings,
+            can_make_data_requests=proto.can_make_data_requests,
+            can_triage_data_requests=proto.can_triage_data_requests,
+            can_manage_privacy_budget=proto.can_manage_privacy_budget,
             can_create_users=proto.can_create_users,
-            can_create_groups=proto.can_create_groups,
+            can_manage_users=proto.can_manage_users,
             can_edit_roles=proto.can_edit_roles,
             can_manage_infrastructure=proto.can_manage_infrastructure,
             can_upload_data=proto.can_upload_data,
+            can_upload_legal_document=proto.can_upload_legal_document,
+            can_edit_domain_settings=proto.can_edit_domain_settings,
             reply_to=_deserialize(blob=proto.reply_to),
         )
 
@@ -137,7 +150,7 @@ class CreateRoleMessage(ImmediateSyftMessageWithReply):
         return CreateRoleMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class GetRoleMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -208,7 +221,7 @@ class GetRoleMessage(ImmediateSyftMessageWithReply):
         return GetRoleMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class GetRoleResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -276,7 +289,7 @@ class GetRoleResponse(ImmediateSyftMessageWithoutReply):
         return GetRoleResponse_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class GetRolesMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -343,7 +356,7 @@ class GetRolesMessage(ImmediateSyftMessageWithReply):
         return GetRolesMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class GetRolesResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -411,7 +424,7 @@ class GetRolesResponse(ImmediateSyftMessageWithoutReply):
         return GetRolesResponse_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class UpdateRoleMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -419,25 +432,31 @@ class UpdateRoleMessage(ImmediateSyftMessageWithReply):
         address: Address,
         role_id: int,
         name: str,
-        can_triage_requests: bool,
-        can_edit_settings: bool,
-        can_create_users: bool,
-        can_create_groups: bool,
-        can_edit_roles: bool,
-        can_manage_infrastructure: bool,
-        can_upload_data: bool,
         reply_to: Address,
+        can_make_data_requests: bool = False,
+        can_triage_data_requests: bool = False,
+        can_manage_privacy_budget: bool = False,
+        can_create_users: bool = False,
+        can_manage_users: bool = False,
+        can_edit_roles: bool = False,
+        can_manage_infrastructure: bool = False,
+        can_upload_data: bool = False,
+        can_upload_legal_document: bool = False,
+        can_edit_domain_settings: bool = False,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.name = name
-        self.can_triage_requests = can_triage_requests
-        self.can_edit_settings = can_edit_settings
+        self.can_make_data_requests = can_make_data_requests
+        self.can_triage_data_requests = can_triage_data_requests
+        self.can_manage_privacy_budget = can_manage_privacy_budget
         self.can_create_users = can_create_users
-        self.can_create_groups = can_create_groups
+        self.can_manage_users = can_manage_users
         self.can_edit_roles = can_edit_roles
         self.can_manage_infrastructure = can_manage_infrastructure
         self.can_upload_data = can_upload_data
+        self.can_upload_legal_document = can_upload_legal_document
+        self.can_edit_domain_settings = can_edit_domain_settings
         self.role_id = role_id
 
     def _object2proto(self) -> UpdateRoleMessage_PB:
@@ -456,13 +475,16 @@ class UpdateRoleMessage(ImmediateSyftMessageWithReply):
             msg_id=serialize(self.id),
             address=serialize(self.address),
             name=self.name,
-            can_triage_requests=self.can_triage_requests,
-            can_edit_settings=self.can_edit_settings,
+            can_make_data_requests=self.can_make_data_requests,
+            can_triage_data_requests=self.can_triage_data_requests,
+            can_manage_privacy_budget=self.can_manage_privacy_budget,
             can_create_users=self.can_create_users,
-            can_create_groups=self.can_create_groups,
+            can_manage_users=self.can_manage_users,
             can_edit_roles=self.can_edit_roles,
             can_manage_infrastructure=self.can_manage_infrastructure,
             can_upload_data=self.can_upload_data,
+            can_upload_legal_document=self.can_upload_legal_document,
+            can_edit_domain_settings=self.can_edit_domain_settings,
             role_id=self.role_id,
             reply_to=serialize(self.reply_to),
         )
@@ -485,13 +507,16 @@ class UpdateRoleMessage(ImmediateSyftMessageWithReply):
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             name=proto.name,
-            can_triage_requests=proto.can_triage_requests,
-            can_edit_settings=proto.can_edit_settings,
+            can_make_data_requests=proto.can_make_data_requests,
+            can_triage_data_requests=proto.can_triage_data_requests,
+            can_manage_privacy_budget=proto.can_manage_privacy_budget,
             can_create_users=proto.can_create_users,
-            can_create_groups=proto.can_create_groups,
+            can_manage_users=proto.can_manage_users,
             can_edit_roles=proto.can_edit_roles,
             can_manage_infrastructure=proto.can_manage_infrastructure,
             can_upload_data=proto.can_upload_data,
+            can_upload_legal_document=proto.can_upload_legal_document,
+            can_edit_domain_settings=proto.can_edit_domain_settings,
             role_id=proto.role_id,
             reply_to=_deserialize(blob=proto.reply_to),
         )
@@ -514,7 +539,7 @@ class UpdateRoleMessage(ImmediateSyftMessageWithReply):
         return UpdateRoleMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class DeleteRoleMessage(ImmediateSyftMessageWithReply):
     def __init__(

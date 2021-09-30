@@ -1,12 +1,11 @@
 # relative
-from ...core.common.message import SignedEventualSyftMessageWithoutReply
-from ...core.common.message import SignedImmediateSyftMessageWithReply
-from ...core.common.message import SignedImmediateSyftMessageWithoutReply
-from ...core.common.serde.serializable import Serializable
 from ...logger import traceback_and_raise
+from ..common.message import SignedEventualSyftMessageWithoutReply
+from ..common.message import SignedImmediateSyftMessageWithReply
+from ..common.message import SignedImmediateSyftMessageWithoutReply
 
 
-class BidirectionalConnection(Serializable):
+class BidirectionalConnection:
     def recv_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
@@ -38,7 +37,7 @@ class BidirectionalConnection(Serializable):
         traceback_and_raise(NotImplementedError)
 
 
-class ServerConnection(Serializable):
+class ServerConnection:
     def __init__(self) -> None:
         self.opt_bidirectional_conn = BidirectionalConnection()
 
@@ -58,7 +57,7 @@ class ServerConnection(Serializable):
         traceback_and_raise(NotImplementedError)
 
 
-class ClientConnection(Serializable):
+class ClientConnection:
     def __init__(self) -> None:
         self.opt_bidirectional_conn = BidirectionalConnection()
 

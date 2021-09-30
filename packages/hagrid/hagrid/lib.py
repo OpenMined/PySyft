@@ -23,7 +23,7 @@ https://www.rockyourcode.com/how-to-install-docker-compose-v2-on-linux-2021/
 At the time of writing this, if you are on linux you need to run the following:
 
 mkdir -p ~/.docker/cli-plugins
-curl -sSL https://github.com/docker/compose-cli/releases/download/v2.0.0-beta.5/docker-compose-linux-amd64 \
+curl -sSL https://github.com/docker/compose-cli/releases/download/v2.0.0-rc.1/docker-compose-linux-amd64 \
 -o ~/.docker/cli-plugins/docker-compose
 chmod +x ~/.docker/cli-plugins/docker-compose
 
@@ -63,6 +63,10 @@ def is_editable_mode() -> bool:
             break
         except Exception:
             pass
+
+    if os.path.exists(Path(current_package_root) / "hagrid.egg-info"):
+        installed_as_editable = True
+
     return installed_as_editable
 
 
@@ -149,7 +153,7 @@ def should_provision_remote(
 
 
 def name_tag(name: str) -> str:
-    return hashlib.md5(name.encode("utf8")).hexdigest()
+    return hashlib.sha256(name.encode("utf8")).hexdigest()
 
 
 def find_available_port(host: str, port: int, search: bool = False) -> int:

@@ -7,25 +7,29 @@
 - name: Build Docker Images
   shell: "docker compose build"
   args:
-    chdir: "/home/om/PySyft/packages/grid"
+    chdir: "{{ build_dir }}/packages/grid"
   become_user: "{{ om_user }}"
+  when: vagrant is not defined
+
+- name: Build Docker Images
+  shell: "docker compose build"
+  args:
+    chdir: "{{ syft_dir }}/packages/grid"
+  become_user: "{{ om_user }}"
+  when: vagrant is defined
 
 - name: Remove old Docker Images
   shell: "docker rmi $(docker images -qa -f 'dangling=true') || true"
   become_user: "{{ om_user }}"
   ignore_errors: yes
 
-# STOP: STACK_NAME=grid-openmined-org TRAEFIK_PUBLIC_NETWORK=traefik-public docker compose -p "${TAG}" down
+- name: Remove Docker Volumes
+  shell: "docker volume prune -f"
+  become_user: "{{ om_user }}"
+  ignore_errors: yes
+  when: docker_volume_destroy is defined
+
 - name: Start Docker Containers
   shell:
-    cmd: |
-      export TAG="{{ node_name }}"
-      export DOMAIN_PORT=80
-      export TRAEFIK_TAG="${TAG}"
-      export DOMAIN_NAME="${TAG}"
-      export NODE_TYPE="{{ node_type }}"
-      docker compose -p "${TAG}" up -d
-  args:
-    chdir: "/home/om/PySyft/packages/grid"
-    executable: /bin/bash
-  become_user: "{{ om_user }}"
+    cmd: runuser -l {{ om_user }} -c 'hagrid launch {{ node_name }} domain to docker:80 --tail=false'
+  become: yes

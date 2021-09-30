@@ -2,8 +2,7 @@
 import gym
 
 # relative
-# syft relative
-from ...generate_wrapper import GenerateWrapper
+from ...core.common.serde.serializable import serializable
 from ...proto.lib.gym.env_pb2 import Env as Env_PB
 
 gym_env_type = type(gym.Env())
@@ -17,7 +16,7 @@ def proto2object(proto: Env_PB) -> gym.Env:
     return gym.make(proto.id)
 
 
-GenerateWrapper(
+serializable(generate_wrapper=True)(
     wrapped_type=gym_env_type,
     import_path="gym.Env",
     protobuf_scheme=Env_PB,

@@ -155,7 +155,7 @@ You can install HAGrid with pip:
 $ pip install "git+https://github.com/OpenMined/PySyft@demo_strike_team_branch_4#subdirectory=packages/hagrid"
 ```
 
-# MacOS Instructions
+### MacOS Instructions
 
 ```
 $ brew install vagrant virtualbox ansible
@@ -235,6 +235,12 @@ $ vagrant ssh
 
 ## Deploy to Cloud
 
+### Azure 1-click Quickstart Template
+
+[![Deploy To Azure](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FOpenMined%2FPySyft%2Fdev%2Fpackages%2Fgrid%2Fquickstart%2Ftemplate.json)
+
+### HAGrid Deployment
+
 Create a VM on your cloud provider with Ubuntu 20.04 with at least:
 
 - 2x CPU
@@ -263,6 +269,111 @@ If you wish to use a different fork of PySyft you can pass in --repo=The-PET-Lab
 $ sudo su - om
 ```
 
+## Cloud Images
+
+We are using Packer to build cloud images in a very similar fashion to the dev Vagrant box.
+
+To build images you will need the following:
+
+- packer
+- vagrant
+- virtualbox
+- ansible
+
+### MacOS Instructions
+
+```
+$ brew install packer vagrant virtualbox ansible
+```
+
+## Build a Local Vagrant Box
+
+Go to the following directory:
+
+```
+cd packages/grid/packer
+```
+
+Run:
+
+```
+./build_vagrant.sh
+```
+
+What this does is first build the base image, by downloading a Ubuntu .iso and automating
+an install to a virtual machine. After the base image is created, the same ansible
+provisioning scripts that we use in HAGrid and the Vagrant Dev environment above are
+run against the image and finally a few shell scripts are executed to update some
+Ubuntu packages and clean out a lot of unused stuff to squeeze the image size down.
+
+To verify it worked you can start the Vagrant file like this:
+
+```
+cd packages/grid/packer
+vagrant up
+```
+
+This system will start and automatically have the stack running and available on the local
+ip http://10.0.1.3/ you can also SSH into this box using the credentials in the Vagrantfile.
+
+## Azure Cloud Image
+
+To create the azure cloud image you need to have the `az` cli tool and make sure you are authenticated.
+
+Install the CLI tool:
+
+```
+$ pip install az
+```
+
+Authenticate your CLI tool:
+
+```
+$ az login
+```
+
+You will need to use a resource group and create a storage account within that resource group.
+
+Create a resource group called: `openmined-images`
+
+```
+$ az group create -n openmined-images -l westus
+```
+
+Create an app to use within the packer file:
+
+```
+$ az ad sp create-for-rbac --name openmined-images > azure_vars.json
+```
+
+This will create a file called `azure_vars.json` which will look something like this:
+
+```json
+{
+  "appId": "21b92977-8ad0-467c-ae3a-47c864418126",
+  "displayName": "openmined-images",
+  "name": "21b92977-8ad0-467c-ae3a-47c864418126",
+  "password": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "tenant": "e3f9defa-1378-49b3-aed7-3dcacb468c41"
+}
+```
+
+You need to know your `subscription_id`:
+
+```bash
+$ SUBSCRIPTION_ID=$(az account show --query id | tr -d '"')
+```
+
+You can now build the image:
+
+```bash
+$ ./build_azure.sh ${SUBSCRIPTION_ID}
+```
+
+### Create a Shared Image Gallery
+
+Create a Shared image gallery within Azure.
+
 ## Join Slack
 
 Also, join the rapidly growing community of 12,000+ on [Slack](http://slack.openmined.org).
@@ -288,3 +399,7 @@ We are very grateful for contributions to Syft and Grid from the following organ
 ## License
 
 [Apache License 2.0](https://github.com/OpenMined/PySyft/blob/main/packages/syft/LICENSE)
+
+```
+
+```

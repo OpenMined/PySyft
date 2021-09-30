@@ -5,17 +5,13 @@ from typing import Type
 # third party
 from nacl.signing import VerifyKey
 
-# syft absolute
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.node.abstract.node import AbstractNode
-from syft.core.node.common.node_service.auth import service_auth
-from syft.core.node.common.node_service.node_service import (
-    ImmediateNodeServiceWithReply,
-)
-from syft.grid.client.client import connect
-from syft.grid.client.grid_connection import GridHTTPConnection
-
 # relative
+from ......grid.client.client import connect
+from ......grid.client.grid_connection import GridHTTPConnection
+from .....common.message import ImmediateSyftMessageWithReply
+from ....abstract.node import AbstractNode
+from ..auth import service_auth
+from ..node_service import ImmediateNodeServiceWithReply
 from .network_search_messages import NetworkSearchMessage
 from .network_search_messages import NetworkSearchResponse
 
@@ -29,7 +25,7 @@ class NetworkSearchService(ImmediateNodeServiceWithReply):
         verify_key: VerifyKey,
     ) -> NetworkSearchResponse:
         queries = set(msg.content.get("query", []))
-        associations = node.association_requests.associations()
+        associations = node.association_requests.associations()  # type: ignore
 
         def filter_domains(url: str) -> bool:
             domain = connect(

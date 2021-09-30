@@ -11,18 +11,54 @@ from bcrypt import gensalt
 from bcrypt import hashpw
 from nacl.encoding import HexEncoder
 from nacl.signing import VerifyKey
+from pydantic import BaseModel
+from pydantic import EmailStr
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Query
-
-# syft absolute
-from syft.core.node.common.node_table.roles import Role
 
 # relative
 from ..exceptions import InvalidCredentialsError
 from ..exceptions import UserNotFoundError
+from ..node_table.roles import Role
 from ..node_table.user import SyftUser
 from .database_manager import DatabaseManager
 from .role_manager import RoleManager
+
+
+# Shared properties
+class UserBase(BaseModel):
+    email: Optional[EmailStr] = None
+    is_active: Optional[bool] = True
+    is_superuser: bool = False
+    full_name: Optional[str] = None
+
+
+# Properties to receive via API on creation
+class UserCreate(UserBase):
+    email: EmailStr
+    password: str
+
+
+# Properties to receive via API on update
+class UserUpdate(UserBase):
+    password: Optional[str] = None
+
+
+class UserInDBBase(UserBase):
+    id: Optional[int] = None
+
+    class Config:
+        orm_mode = True
+
+
+# Additional properties to return via API
+class User(UserInDBBase):
+    pass
+
+
+# Additional properties stored in DB
+class UserInDB(UserInDBBase):
+    hashed_password: str
 
 
 class UserManager(DatabaseManager):
@@ -53,6 +89,7 @@ class UserManager(DatabaseManager):
         name: str,
         email: str,
         password: str,
+        budget: float,
         role: int,
         private_key: str,
         verify_key: str,
@@ -62,6 +99,7 @@ class UserManager(DatabaseManager):
             name=name,
             email=email,
             role=role,
+            budget=budget,
             private_key=private_key,
             verify_key=verify_key,
             hashed_password=hashed,
@@ -72,7 +110,7 @@ class UserManager(DatabaseManager):
         results = super().query(**kwargs)
         return results
 
-    def first(self, **kwargs: Any) -> Optional[SyftUser]:
+    def first(self, **kwargs: Any) -> SyftUser:
         result = super().first(**kwargs)
         if not result:
             raise UserNotFoundError
@@ -88,12 +126,13 @@ class UserManager(DatabaseManager):
         password: str = "",
         role: int = 0,
         name: str = "",
+        budget: float = 0.0,
     ) -> None:
         if not self.contain(id=user_id):
             raise UserNotFoundError
 
         key: str
-        value: Union[str, int]
+        value: Union[str, int, float]
 
         if email:
             key = "email"
@@ -108,6 +147,9 @@ class UserManager(DatabaseManager):
         elif name:
             key = "name"
             value = name
+        elif budget:
+            key = "budget"
+            value = budget
         else:
             raise Exception
 
@@ -127,7 +169,7 @@ class UserManager(DatabaseManager):
 
     def can_triage_requests(self, verify_key: VerifyKey) -> bool:
         try:
-            return self.role(verify_key=verify_key).can_triage_requests
+            return self.role(verify_key=verify_key).can_triage_data_requests
         except UserNotFoundError:
             return False
 
@@ -140,12 +182,6 @@ class UserManager(DatabaseManager):
     def can_edit_roles(self, verify_key: VerifyKey) -> bool:
         try:
             return self.role(verify_key=verify_key).can_edit_roles
-        except UserNotFoundError:
-            return False
-
-    def can_create_groups(self, verify_key: VerifyKey) -> bool:
-        try:
-            return self.role(verify_key=verify_key).can_create_groups
         except UserNotFoundError:
             return False
 

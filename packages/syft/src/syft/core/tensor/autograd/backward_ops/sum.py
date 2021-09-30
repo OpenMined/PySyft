@@ -5,14 +5,18 @@ from uuid import UUID
 import numpy as np
 
 # relative
+from .....core.common.serde.serializable import serializable
 from ..tensor import AutogradTensor
 from .op import Op
 
 
+@serializable(recursive_serde=True)
 class SumOp(Op):
     """Sum operation across a dimension"""
 
-    def forward(self, x: AutogradTensor, axis: int) -> AutogradTensor:
+    __attr_allowlist__ = ["x", "axis", "dim_at_axis", "backward_shape"]
+
+    def forward(self, x: AutogradTensor, axis: int) -> AutogradTensor:  # type: ignore
         self.x = x
         self.axis = axis
         if axis is not None:

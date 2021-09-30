@@ -3,15 +3,16 @@ from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from syft_proto.execution.v1.placeholder_id_pb2 import PlaceholderId as PlaceholderIdPB
 
 # relative
-from ...core.common.object import Serializable
+from ...core.common.serde.serializable import serializable
 from .common import get_protobuf_id
 from .common import set_protobuf_id
+from .protos import PlaceholderId_PB
 
 
-class PlaceholderId(Serializable):
+@serializable()
+class PlaceholderId:
     """
     Represents Syft Plan translated to TorchScript
     """
@@ -37,9 +38,9 @@ class PlaceholderId(Serializable):
         :rtype: GeneratedProtocolMessageType
 
         """
-        return PlaceholderIdPB
+        return PlaceholderId_PB
 
-    def _object2proto(self) -> PlaceholderIdPB:
+    def _object2proto(self) -> PlaceholderId_PB:
         """Returns a protobuf serialization of self.
 
         As a requirement of all objects which inherit from Serializable,
@@ -54,12 +55,14 @@ class PlaceholderId(Serializable):
             the other public serialization methods if you wish to serialize an
             object.
         """
-        protobuf_id = PlaceholderIdPB()
+        protobuf_id = PlaceholderId_PB()
         set_protobuf_id(protobuf_id.id, self.value)
         return protobuf_id
 
     @staticmethod
-    def _proto2object(proto: PlaceholderIdPB) -> "PlaceholderId":
+    def _proto2object(
+        proto: PlaceholderId_PB,
+    ) -> "PlaceholderId":
         """Creates a ObjectWithID from a protobuf
 
         As a requirement of all objects which inherit from Serializable,
