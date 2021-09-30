@@ -12,14 +12,17 @@ message CreateRoleMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
   string name =  3;
-  bool can_triage_requests = 4;
-  bool can_edit_settings = 5;
-  bool can_create_users = 6;
-  bool can_create_groups = 7;
-  bool can_edit_roles = 8;
-  bool can_manage_infrastructure = 9;
-  bool can_upload_data = 10;
-  syft.core.io.Address reply_to = 11;
+  bool can_make_data_requests = 4;
+  bool can_triage_data_requests = 5;
+  bool can_manage_privacy_budget = 6;
+  bool can_create_users = 7;
+  bool can_manage_users = 8;
+  bool can_edit_roles = 9;
+  bool can_manage_infrastructure = 10;
+  bool can_upload_data = 11;
+  bool can_upload_legal_document = 12;
+  bool can_edit_domain_settings = 13;
+  syft.core.io.Address reply_to = 14;
 }
 
 
@@ -57,15 +60,18 @@ message UpdateRoleMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
   string name =  3;
-  bool can_triage_requests = 4;
-  bool can_edit_settings = 5;
-  bool can_create_users = 6;
-  bool can_create_groups = 7;
-  bool can_edit_roles = 8;
-  bool can_manage_infrastructure = 9;
-  bool can_upload_data = 10;
-  int32 role_id = 11;
-  syft.core.io.Address reply_to = 12;
+  bool can_make_data_requests = 4;
+  bool can_triage_data_requests = 5;
+  bool can_manage_privacy_budget = 6;
+  bool can_create_users = 7;
+  bool can_manage_users = 8;
+  bool can_edit_roles = 9;
+  bool can_manage_infrastructure = 10;
+  bool can_upload_data = 11;
+  bool can_upload_legal_document = 12;
+  bool can_edit_domain_settings = 13;
+  int32 role_id = 14;
+  syft.core.io.Address reply_to = 15;
 }
 
 // Delete Role
