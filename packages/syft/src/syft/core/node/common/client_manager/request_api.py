@@ -58,7 +58,7 @@ class RequestAPI:
             content
             for content in self.perform_api_request(
                 syft_msg=self.__get_all_message
-            ).metadatas
+            ).content
         ]
 
         return result

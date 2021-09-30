@@ -32,7 +32,6 @@ from ..common.node import Node
 from ..common.node_manager.association_request_manager import AssociationRequestManager
 from ..common.node_manager.dataset_manager import DatasetManager
 from ..common.node_manager.environment_manager import EnvironmentManager
-from ..common.node_manager.group_manager import GroupManager
 from ..common.node_manager.request_manager import RequestManager
 from ..common.node_manager.role_manager import RoleManager
 from ..common.node_manager.user_manager import UserManager
@@ -121,7 +120,6 @@ class Domain(Node):
         # Database Management Instances
         self.users = UserManager(db_engine)
         self.roles = RoleManager(db_engine)
-        self.groups = GroupManager(db_engine)
         self.environments = EnvironmentManager(db_engine)
         self.association_requests = AssociationRequestManager(db_engine)
         self.data_requests = RequestManager(db_engine)
@@ -146,7 +144,6 @@ class Domain(Node):
         self.immediate_services_with_reply.append(RoleManagerService)
         self.immediate_services_with_reply.append(UserManagerService)
         self.immediate_services_with_reply.append(DatasetManagerService)
-        self.immediate_services_with_reply.append(GroupManagerService)
         # self.immediate_services_with_reply.append(TransferObjectService)
         self.immediate_services_with_reply.append(RequestService)
 

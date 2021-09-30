@@ -32,7 +32,7 @@ def is_acceptable_simple_type(obj):
 class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     """A simple tensor class which passes method/function calls to self.child"""
 
-    def __init__(self, child) -> None:
+    def __init__(self, child: Any) -> None:
         self.child = child
 
     # TODO: Remove
