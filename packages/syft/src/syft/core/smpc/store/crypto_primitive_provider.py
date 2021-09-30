@@ -43,8 +43,10 @@ class CryptoPrimitiveProvider:
         if op_str not in CryptoPrimitiveProvider._func_providers:
             raise ValueError(f"{op_str} not registered")
 
+        nr_parties = len(parties)
+
         generator = CryptoPrimitiveProvider._func_providers[op_str]
-        primitives = generator(**g_kwargs)
+        primitives = generator(**g_kwargs, nr_parties=nr_parties)
 
         if p_kwargs is not None:
             """Do not transfer the primitives if there is not specified a

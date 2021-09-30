@@ -351,8 +351,21 @@ class ShareTensor(PassthroughTensor):
             bool: True if equal False if not.
 
         """
-        # Assume we alse always have a Tensor object for ShareTensor.
-        if (self.child != other.child).child.any():
+        # relative
+        from .... import Tensor
+
+        if (
+            isinstance(self.child, Tensor)
+            and isinstance(other.child, Tensor)
+            and (self.child != other.child).child.any()  # type: ignore
+        ):
+            return False
+
+        if (
+            isinstance(self.child, np.ndarray)
+            and isinstance(other.child, np.ndarray)
+            and (self.child != other.child).any()
+        ):
             return False
 
         if self.rank != other.rank:

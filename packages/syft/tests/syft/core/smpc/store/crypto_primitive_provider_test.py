@@ -10,7 +10,6 @@ import numpy as np
 import pytest
 
 # syft absolute
-import syft as sy
 from syft import Tensor
 
 # absolute
@@ -21,8 +20,6 @@ from syft.core.smpc.store import register_primitive_store_get
 from syft.core.tensor import ShareTensor
 
 PRIMITIVE_NR_ELEMS = 4
-
-clients = [sy.VirtualMachine(name=f"P_{i}").get_root_client() for i in range(5)]
 
 
 @register_primitive_generator("test")
@@ -100,10 +97,9 @@ def test_register_primitive() -> None:
 
 @pytest.mark.parametrize("nr_instances", [1, 5, 100])
 @pytest.mark.parametrize("nr_parties", [2, 3, 4])
-def test_generate_primitive(nr_parties: int, nr_instances: int) -> None:
-    parties = clients[:nr_parties]
-
-    g_kwargs = {"nr_parties": nr_parties, "nr_instances": nr_instances}
+def test_generate_primitive(get_clients, nr_parties: int, nr_instances: int) -> None:
+    parties = get_clients(nr_parties)
+    g_kwargs = {"nr_instances": nr_instances}
     res = CryptoPrimitiveProvider.generate_primitives(
         "test",
         parties=parties,
@@ -132,12 +128,13 @@ def test_generate_primitive(nr_parties: int, nr_instances: int) -> None:
 )
 @pytest.mark.parametrize("nr_parties", [2, 3, 4])
 def test_generate_and_transfer_primitive(
+    get_clients,
     nr_parties: int,
     nr_instances: int,
     nr_instances_retrieve: int,
 ) -> None:
-    parties = clients[:nr_parties]
-    g_kwargs = {"nr_parties": nr_parties, "nr_instances": nr_instances}
+    parties = get_clients(nr_parties)
+    g_kwargs = {"nr_instances": nr_instances}
     CryptoPrimitiveProvider.generate_primitives(
         "test",
         parties=parties,

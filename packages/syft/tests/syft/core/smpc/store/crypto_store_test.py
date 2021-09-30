@@ -15,7 +15,7 @@ from syft.core.smpc.store import register_primitive_store_get
 
 
 @register_primitive_store_get("test_crypto_store")
-def provider_test_get(
+def test_provider_get(
     store: Dict[str, List[Any]], nr_instances: int
 ) -> List[Tuple[int]]:
 
@@ -23,7 +23,7 @@ def provider_test_get(
 
 
 @register_primitive_store_add("test_crypto_store")
-def provider_test_add(
+def test_provider_add(
     store: Dict[str, List[Any]], primitives: Iterable[Any]
 ) -> List[Tuple[int]]:
     store["test_key_store"] = primitives

@@ -90,6 +90,7 @@ def _get_triples(
     )
 
     c_val = cmd(a_rand, b_rand, **kwargs)
+
     c_shares = MPCTensor._get_shares_from_local_secret(
         secret=c_val, nr_parties=nr_parties, shape=c_val.shape, seed_shares=seed_shares
     )

@@ -4,6 +4,7 @@ from multiprocessing import Process
 import socket
 from time import time
 from typing import Any as TypeAny
+from typing import Callable as TypeCallable
 from typing import Dict as TypeDict
 from typing import Generator
 from typing import List as TypeList
@@ -179,3 +180,17 @@ def client(node: sy.VirtualMachine) -> sy.VirtualMachineClient:
 @pytest.fixture(scope="session")
 def root_client(node: sy.VirtualMachine) -> sy.VirtualMachineClient:
     return node.get_root_client()
+
+
+# The unit tests require separate VM's as we have a common crypto store cache.
+# TODO: The  dependency should be modified to use common VM's
+@pytest.fixture
+def get_clients() -> TypeCallable[[int], TypeList[TypeAny]]:
+    def _helper_get_clients(nr_clients: int) -> TypeList[TypeAny]:
+        clients = [
+            sy.VirtualMachine(name=f"P_{i}").get_root_client()
+            for i in range(nr_clients)
+        ]
+        return clients
+
+    return _helper_get_clients
