@@ -1,4 +1,5 @@
 # stdlib
+import time
 from typing import List
 from typing import Optional
 from typing import Type
@@ -37,9 +38,31 @@ class SMPCExecutorService(ImmediateNodeServiceWithoutReply):
             verify_key (VerifyKey): the verify_key
         """
         func = _MAP_ACTION_TO_FUNCTION[msg.name_action]
-        store_object_self = node.store.get_object(key=msg.self_id)
-        if store_object_self is None:
-            raise KeyError("Object not already in store")
+        try:
+            # keep five minutes seconds as max latency
+            # TODO: Before Merge Should discuss with syft core team on max time.
+            ctr = 3000
+            while True:
+                store_object_self = node.store.get_object(key=msg.self_id)
+                if store_object_self is None:
+                    ctr -= 1
+                    time.sleep(0.1)
+                    # We intimate user every ten seconds
+                    if ctr % 100 == 0:
+                        print("Waiting for Object to arrive...🚀")
+                else:
+                    break
+                if ctr <= 0:
+                    raise Exception(
+                        "Object not found or Object did not arrive at store"
+                    )
+        except Exception as e:
+            log = (
+                f"Unable to Get Object with ID {msg.self_id} from store. "
+                + f"Possible dangling Pointer. {e}"
+            )
+
+            traceback_and_raise(Exception(log))
 
         _self = store_object_self.data
         args = [node.store[arg_id].data for arg_id in msg.args_id]
