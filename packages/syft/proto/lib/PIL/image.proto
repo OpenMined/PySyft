@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-import "proto/lib/torch/tensor.proto";
-
-
-
-message Image {
-    syft.lib.torch.TensorProto data = 1;
-}
