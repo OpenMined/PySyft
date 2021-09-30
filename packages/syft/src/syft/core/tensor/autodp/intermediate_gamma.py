@@ -20,6 +20,7 @@ from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...common.serde.serializable import serializable
 from ...tensor.passthrough import PassthroughTensor  # type: ignore
 from ...tensor.passthrough import is_acceptable_simple_type  # type: ignore
+from ..broadcastable import is_broadcastable
 from .adp_tensor import ADPTensor
 from ....core.adp.entity import Entity
 from ....core.adp.entity import DataSubjectGroup
@@ -85,15 +86,147 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
 
     def __gt__(self, other: Union[np.ndarray, IntermediateGammaTensor]) -> Any:
         if isinstance(other, np.ndarray):
-            from .initial_gamma import InitialGammaTensor
-            vals = self._values()
-            tensor = InitialGammaTensor(values=vals > other, min_vals=np.zeros_like(vals), max_vals=np.ones_like(vals),
-                                        entities=np.array())
+            if is_broadcastable(self.shape, other.shape):
+                from .initial_gamma import InitialGammaTensor
+                vals = self._values()
+                tensor = InitialGammaTensor(values=vals > other, min_vals=np.zeros_like(vals), max_vals=np.ones_like(vals),
+                                            entities=self._entities())
+            else:
+                raise Exception(
+                    f'Tensor shapes not compatible: {self.shape} and {other.shape}'
+                )
         elif isinstance(other, IntermediateGammaTensor):
-            pass
+            if is_broadcastable(self.shape, other.shape):
+                from .initial_gamma import InitialGammaTensor
+                self_vals = self._values()
+                other_vals = other._values()
+                tensor = InitialGammaTensor(values=self_vals > other_vals, min_vals=np.zeros_like(self_vals), max_vals=np.ones_like(self_vals),
+                                            entities=self._entities() + other._entities()
+                )
+            else:
+                raise Exception(
+                    f'Tensor shapes not compatible: {self.shape} and {other.shape}'
+                )
         else:
             raise NotImplementedError
-        return IntermediateGammaTensor()
+        return tensor
+
+    def __lt__(self, other: Union[np.ndarray, IntermediateGammaTensor]) -> Any:
+        if isinstance(other, np.ndarray):
+            if is_broadcastable(self.shape, other.shape):
+                from .initial_gamma import InitialGammaTensor
+                vals = self._values()
+                tensor = InitialGammaTensor(values=vals < other, min_vals=np.zeros_like(vals), max_vals=np.ones_like(vals),
+                                            entities=self._entities())
+            else:
+                raise Exception(
+                    f'Tensor shapes not compatible: {self.shape} and {other.shape}'
+                )
+        elif isinstance(other, IntermediateGammaTensor):
+            if is_broadcastable(self.shape, other.shape):
+                from .initial_gamma import InitialGammaTensor
+                self_vals = self._values()
+                other_vals = other._values()
+                tensor = InitialGammaTensor(values=self_vals < other_vals, min_vals=np.zeros_like(self_vals), max_vals=np.ones_like(self_vals),
+                                            entities=self._entities() + other._entities()
+                )
+            else:
+                raise Exception(
+                    f'Tensor shapes not compatible: {self.shape} and {other.shape}'
+                )
+        else:
+            raise NotImplementedError
+        return tensor
+
+    def __eq__(self, other: Union[np.ndarray, IntermediateGammaTensor]) -> Any:
+        if isinstance(other, np.ndarray):
+            if is_broadcastable(self.shape, other.shape):
+                from .initial_gamma import InitialGammaTensor
+                vals = self._values()
+                tensor = InitialGammaTensor(values= not (vals < other) and not (vals > other), max_vals=np.ones_like(vals),
+                                            min_vals=np.zeros_like(vals), entities=self._entities())
+            else:
+                raise Exception(
+                    f'Tensor shapes not compatible: {self.shape} and {other.shape}'
+                )
+        elif isinstance(other, IntermediateGammaTensor):
+            if is_broadcastable(self.shape, other.shape):
+                from .initial_gamma import InitialGammaTensor
+                self_vals = self._values()
+                other_vals = other._values()
+                tensor = InitialGammaTensor(values= self_vals == other_vals,
+                    #values= not (self_vals < other_vals) and not (self_vals > other_vals),
+                                            min_vals=np.zeros_like(self_vals),
+                                            max_vals=np.ones_like(self_vals),
+                                            entities=self._entities() + other._entities()
+                                            )
+            else:
+                raise Exception(
+                    f'Tensor shapes not compatible: {self.shape} and {other.shape}'
+                )
+        else:
+            raise NotImplementedError
+        return tensor
+
+    def __ge__(self, other: Union[np.ndarray, IntermediateGammaTensor]) -> Any:
+        if isinstance(other, np.ndarray):
+            if is_broadcastable(self.shape, other.shape):
+                from .initial_gamma import InitialGammaTensor
+                vals = self._values()
+                tensor = InitialGammaTensor(values=vals >= other, max_vals=np.ones_like(vals),
+                                            min_vals=np.zeros_like(vals), entities=self._entities())
+            else:
+                raise Exception(
+                    f'Tensor shapes not compatible: {self.shape} and {other.shape}'
+                )
+        elif isinstance(other, IntermediateGammaTensor):
+            if is_broadcastable(self.shape, other.shape):
+                from .initial_gamma import InitialGammaTensor
+                self_vals = self._values()
+                other_vals = other._values()
+                tensor = InitialGammaTensor(values= self_vals >= other_vals,
+                    #values= not (self_vals < other_vals) and not (self_vals > other_vals),
+                                            min_vals=np.zeros_like(self_vals),
+                                            max_vals=np.ones_like(self_vals),
+                                            entities=self._entities() + other._entities()
+                                            )
+            else:
+                raise Exception(
+                    f'Tensor shapes not compatible: {self.shape} and {other.shape}'
+                )
+        else:
+            raise NotImplementedError
+        return tensor
+
+    def __le__(self, other: Union[np.ndarray, IntermediateGammaTensor]) -> Any:
+        if isinstance(other, np.ndarray):
+            if is_broadcastable(self.shape, other.shape):
+                from .initial_gamma import InitialGammaTensor
+                vals = self._values()
+                tensor = InitialGammaTensor(values=vals <= other, max_vals=np.ones_like(vals),
+                                            min_vals=np.zeros_like(vals), entities=self._entities())
+            else:
+                raise Exception(
+                    f'Tensor shapes not compatible: {self.shape} and {other.shape}'
+                )
+        elif isinstance(other, IntermediateGammaTensor):
+            if is_broadcastable(self.shape, other.shape):
+                from .initial_gamma import InitialGammaTensor
+                self_vals = self._values()
+                other_vals = other._values()
+                tensor = InitialGammaTensor(values= self_vals <= other_vals,
+                    #values= not (self_vals < other_vals) and not (self_vals > other_vals),
+                                            min_vals=np.zeros_like(self_vals),
+                                            max_vals=np.ones_like(self_vals),
+                                            entities=self._entities() + other._entities()
+                                            )
+            else:
+                raise Exception(
+                    f'Tensor shapes not compatible: {self.shape} and {other.shape}'
+                )
+        else:
+            raise NotImplementedError
+        return tensor
 
 
     @property
@@ -138,31 +271,53 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         """WARNING: DO NOT MAKE THIS AVAILABLE TO THE POINTER!!!
         DO NOT ADD THIS METHOD TO THE AST!!!
         """
+
+        """WARNING/PLEA: DO NOT DELETE ANY OF THE COMMENTED PARTS- WE MIGHT REVERT BACK TO THEM LATER"""
         output_entities = []
         for flat_scalar in self.flat_scalars:
             # TODO: Flatten this using a for loop!
-            flattened_list = []
+            # TODO: This will fail if the nested entity is any deeper than 2 levels- i.e. [A, [A, [A, B]]]. Recursive?
+            # flattened_list = []
+            combined_entities = DataSubjectGroup()
             for row in flat_scalar.input_entities:
-                if isinstance(row, DataSubjectGroup):
-                    flattened_list.append(row)
-                    assert isinstance(flattened_list[-1], DataSubjectGroup)
-                elif isinstance(row, Entity):
-                    flattened_list.append(row)
-                    assert isinstance(flattened_list[-1], Entity)
+                if isinstance(row, Entity) or isinstance(row, DataSubjectGroup):
+                    combined_entities += row
                 elif isinstance(row, list):
-                    for input_entity in row:
-                        if isinstance(input_entity, Entity):
-                            flattened_list.append(input_entity)
-                            assert isinstance(flattened_list[-1], Entity)
-                        elif isinstance(input_entity, DataSubjectGroup):
-                            flattened_list.append(input_entity)
-                            assert isinstance(flattened_list[-1], DataSubjectGroup)
+                    for i in row:
+                        if isinstance(i, Entity) or isinstance(i, DataSubjectGroup):
+                            combined_entities += i
                         else:
                             raise Exception(
-                                f"We didn't account for input_entity type: {type(input_entity)} "
-                                f"with value: {input_entity}"
+                                f"Not implemented for i of type:{type(i)}"
                             )
-            output_entities += flattened_list
+                else:
+                    raise Exception(f"No plans for row type:{type(row)}")
+                # combined_entities += row
+                # if isinstance(row, DataSubjectGroup):
+                #     flattened_list.append(row)
+                #     assert isinstance(flattened_list[-1], DataSubjectGroup)
+                # elif isinstance(row, Entity):
+                #     flattened_list.append(row)
+                #     assert isinstance(flattened_list[-1], Entity)
+                # elif isinstance(row, list):
+                #     for input_entity in row:
+                #         if isinstance(input_entity, Entity):
+                #             output_group += input_entity
+                #             flattened_list.append(input_entity)
+                #             assert isinstance(flattened_list[-1], Entity)
+                #         elif isinstance(input_entity, DataSubjectGroup):
+                #             flattened_list.append(input_entity)
+                #             assert isinstance(flattened_list[-1], DataSubjectGroup)
+                #         else:
+                #             raise Exception(
+                #                 f"We didn't account for input_entity type: {type(input_entity)} "
+                #                 f"with value: {input_entity}"
+                #             )
+
+            # output_entities.append(flattened_list)
+            # output_entities += [flattened_list]
+            output_entities.append(combined_entities)
+        # return output_entities
         return np.array(output_entities).reshape(self.shape)
 
     @property

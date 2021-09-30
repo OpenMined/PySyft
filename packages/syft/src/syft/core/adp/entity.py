@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Any
 from typing import Dict
 from typing import Optional
+from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -63,6 +64,18 @@ class Entity:
     def __lt__(self, other: Any) -> bool:
         return self.name < other.name
 
+    def __add__(self, other: Union[Entity, DataSubjectGroup]) -> DataSubjectGroup:
+        if isinstance(other, Entity):
+            return DataSubjectGroup([self, other])
+        elif isinstance(other, DataSubjectGroup):
+            return DataSubjectGroup(other.entity_set.add(self))
+        elif not other:  # Check for NoneType
+            return DataSubjectGroup([self])
+        else:
+            raise Exception(
+                f'Addition not implemented between {type(self)} and {type(other)}'
+            )
+
     def to_string(self) -> str:
         return f"{self.name}+{self.id.to_string()}"
 
@@ -93,9 +106,18 @@ class Entity:
 class DataSubjectGroup:
     """Data Subject is what we have been calling an 'ENTITY' all along ..."""
 
-    def __init__(self, list_of_entities: list):
+    def __init__(self, list_of_entities: Optional[Union[list, set]] = None):
         # Ensure each entity being tracked is unique
-        self.entity_set: set = set(list_of_entities)
+        if isinstance(list_of_entities, list):
+            self.entity_set: set = set(list_of_entities)
+        elif isinstance(list_of_entities, set):
+            self.entity_set: set = list_of_entities
+        elif not list_of_entities:
+            self.entity_set: set = set()
+        else:
+            raise Exception(
+                f'Cannot initialize DSG with {type(list_of_entities)} - please try list or set instead.'
+            )
         self.id = UID()
 
     def __hash__(self) -> int:
@@ -121,6 +143,22 @@ class DataSubjectGroup:
         for entity_blob in entity_list:
             entity_set.add(Entity.from_string(entity_blob))
         return DataSubjectGroup(list[entity_set])  # type: ignore
+
+    @staticmethod
+    def merge(set1: DataSubjectGroup, set2: DataSubjectGroup):
+        pass
+
+    def __add__(self, other: Union[DataSubjectGroup, Entity]) -> DataSubjectGroup:
+        if isinstance(other, Entity):
+            return DataSubjectGroup(self.entity_set.union({other}))
+        elif isinstance(other, DataSubjectGroup):
+            return DataSubjectGroup(self.entity_set.union(other.entity_set))
+        elif not other:  # NoneType should return Identity
+            return self
+        else:
+            raise Exception(
+                f'Addition not implemented between {type(self)} and {type(other)}'
+            )
 
     def __repr__(self) -> str:
         return f"DSG{[i.__repr__() for i in self.entity_set]}"

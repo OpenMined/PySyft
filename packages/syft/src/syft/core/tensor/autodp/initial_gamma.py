@@ -100,7 +100,9 @@ class InitialGammaTensor(IntermediateGammaTensor, ADPTensor):
             term_tensor=term_tensor,
             coeff_tensor=coeff_tensor,
             bias_tensor=bias_tensor,
-            # min_vals=min_vals,
-            # max_vals=max_vals,
             scalar_manager=self.scalar_manager,
         )
+
+    @staticmethod
+    def convert_to_intermediate():
+        pass
