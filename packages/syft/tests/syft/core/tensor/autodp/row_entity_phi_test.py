@@ -706,69 +706,69 @@ def tensor3(traskmaster: Entity, row_count: int, dims: int) -> REPT:
 
 
 @pytest.fixture
-def simple_type1() -> int:
+def rand_int1() -> int:
     return randint(-6, -4)
 
 
 @pytest.fixture
-def simple_type2() -> int:
+def rand_int2() -> int:
     return randint(4, 6)
 
 
 def test_le(
-    tensor1: REPT, tensor2: REPT, tensor3: REPT, simple_type1: int, simple_type2: int
+    tensor1: REPT, tensor2: REPT, tensor3: REPT, rand_int1: int, rand_int2: int
 ) -> None:
     for i in tensor1.__le__(tensor2).child:
         assert i.child.all()
     for i in tensor1.__le__(tensor3).child:
         assert i.child.all()
-    for i in tensor1.__le__(simple_type1).child:
+    for i in tensor1.__le__(rand_int1).child:
         assert not i.child.all()
-    for i in tensor1.__le__(simple_type2).child:
+    for i in tensor1.__le__(rand_int2).child:
         assert i.child.all()
 
 
 def test_ge(
-    tensor1: REPT, tensor2: REPT, tensor3: REPT, simple_type1: int, simple_type2: int
+    tensor1: REPT, tensor2: REPT, tensor3: REPT, rand_int1: int, rand_int2: int
 ) -> None:
     for i in tensor1.__ge__(tensor2).child:
         assert i.child.all()
     for i in tensor1.__ge__(tensor3).child:
         assert not i.child.all()
-    for i in tensor1.__ge__(simple_type1).child:
+    for i in tensor1.__ge__(rand_int1).child:
         assert i.child.all()
-    for i in tensor1.__ge__(simple_type2).child:
+    for i in tensor1.__ge__(rand_int2).child:
         assert not i.child.all()
 
 
 def test_lt(
-    tensor1: REPT, tensor2: REPT, tensor3: REPT, simple_type1: int, simple_type2: int
+    tensor1: REPT, tensor2: REPT, tensor3: REPT, rand_int1: int, rand_int2: int
 ) -> None:
     for i in tensor1.__lt__(tensor2).child:
         assert not i.child.all()
     for i in tensor1.__lt__(tensor3).child:
         assert i.child.all()
-    for i in tensor1.__lt__(simple_type1).child:
+    for i in tensor1.__lt__(rand_int1).child:
         assert not i.child.all()
-    for i in tensor1.__lt__(simple_type2).child:
+    for i in tensor1.__lt__(rand_int2).child:
         assert i.child.all()
 
 
 def test_gt(
-    tensor1: REPT, tensor2: REPT, tensor3: REPT, simple_type1: int, simple_type2: int
+    tensor1: REPT, tensor2: REPT, tensor3: REPT, rand_int1: int, rand_int2: int
 ) -> None:
     for i in tensor1.__gt__(tensor2).child:
         assert not i.child.all()
     for i in tensor1.__gt__(tensor3).child:
         assert not i.child.all()
-    for i in tensor1.__gt__(simple_type1).child:
+    for i in tensor1.__gt__(rand_int1).child:
         assert i.child.all()
-    for i in tensor1.__gt__(simple_type2).child:
+    for i in tensor1.__gt__(rand_int2).child:
         assert not i.child.all()
 
 
 def test_clip(
-    tensor1: REPT, tensor2: REPT, tensor3: REPT, simple_type1: int, simple_type2: int
+    tensor1: REPT, tensor2: REPT, tensor3: REPT, rand_int1: int, rand_int2: int
 ) -> None:
     rand1 = np.random.randint(-4, 1)
     rand2 = np.random.randint(1, 5)
@@ -781,3 +781,96 @@ def test_clip(
         assert (i.child == rand1).all()
     for i in clipped_tensor3:
         assert (i.child >= rand1).all()
+
+
+@pytest.fixture
+def pos_row_data(
+    row_count: int,
+    dims: int,
+    highest: int,
+    traskmaster: Entity,
+    scalar_manager: ScalarManager,
+) -> List:
+    """This generates a random number of SEPTs to populate the REPTs."""
+    reference_data = []
+    for _ in range(row_count):
+        new_data = np.random.randint(
+            low=1, high=highest, size=(dims, dims), dtype=np.int32
+        )
+        reference_data.append(
+            SEPT(
+                child=new_data,
+                entity=traskmaster,
+                min_vals=np.ones_like(new_data) * -highest,
+                max_vals=np.ones_like(new_data) * highest,
+                scalar_manager=scalar_manager,
+            )
+        )
+    return reference_data
+
+
+def test_any(pos_row_data: List) -> None:
+    zeros_tensor = (
+        REPT(
+            rows=pos_row_data,
+        )
+        * 0
+    )
+    pos_tensor = REPT(
+        rows=pos_row_data,
+    )
+    any_zeros_tensor = zeros_tensor.any()
+    for i in range(len(zeros_tensor.child)):
+        assert not any_zeros_tensor.child[i].child
+    any_pos_tensor = pos_tensor.any()
+    for i in range(len(pos_tensor.child)):
+        assert any_pos_tensor.child[i].child
+
+
+def test_all(pos_row_data: List) -> None:
+    zeros_tensor = (
+        REPT(
+            rows=pos_row_data,
+        )
+        * 0
+    )
+    pos_tensor = REPT(
+        rows=pos_row_data,
+    )
+    all_zeros_tensor = zeros_tensor.all()
+    for i in range(len(zeros_tensor.child)):
+        assert not all_zeros_tensor.child[i].child
+    all_pos_tensor = pos_tensor.all()
+    for i in range(len(pos_tensor.child)):
+        assert all_pos_tensor.child[i].child
+
+
+def test_abs(pos_row_data: List) -> None:
+    tensor = REPT(rows=pos_row_data)
+    neg_tensor = REPT(rows=pos_row_data) * -1
+    abs_neg_tensor = neg_tensor.abs()
+    for i in range(len(tensor.child)):
+        assert (abs_neg_tensor.child[i].child == tensor.child[i].child).all()
+
+
+def test_pow(row_data_trask: List) -> None:
+    rand_pow = np.random.randint(1, 10)
+    tensor = REPT(rows=row_data_trask)
+    pow_tensor = tensor.pow(rand_pow)
+    assert pow_tensor.shape == tensor.shape
+    for i in range(len(tensor.child)):
+        assert (pow_tensor.child[i].child == tensor.child[i].child ** rand_pow).all()
+
+
+def test_sum(
+    row_data_trask: List,
+    dims: int,
+) -> None:
+    tensor = REPT(rows=row_data_trask)
+    sum_tensor = tensor.sum()
+    for k in range(len(tensor.child)):
+        tensor_sum = 0
+        for i in range(dims):
+            for j in range(dims):
+                tensor_sum += tensor.child[k].child[i, j]
+        assert sum_tensor.child[k].child == tensor_sum

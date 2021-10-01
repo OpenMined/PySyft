@@ -426,16 +426,11 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
     # Since this is being used differently compared to supertype, ignoring type annotation errors
-    def sum(
-        self, *args: Any, axis: Optional[int] = None, **kwargs: Any
-    ) -> RowEntityPhiTensor:
-
-        if axis is None or axis == 0:
-            return self.gamma.sum(axis=axis)
+    def sum(self, *args: Any, **kwargs: Any) -> RowEntityPhiTensor:
 
         new_list = list()
         for row in self.child:
-            new_list.append(row.sum(*args, axis=axis - 1, **kwargs))
+            new_list.append(row.sum(*args, **kwargs))
 
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
@@ -572,6 +567,69 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
             new_list.append(row.clip(a_min=a_min, a_max=a_max, *args))
 
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+    def any(
+        self,
+        axis: Optional[int] = None,
+        keepdims: Optional[bool] = False,
+        where: Optional[bool] = True,
+    ) -> RowEntityPhiTensor:
+        """Test whether any element along a given axis evaluates to True"""
+
+        new_list = list()
+        for row in self.child:
+            new_list.append(row.any(axis, keepdims, where))
+
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+    def all(
+        self,
+        axis: Optional[int] = None,
+        keepdims: Optional[bool] = False,
+        where: Optional[bool] = True,
+    ) -> RowEntityPhiTensor:
+        """Test whether all elements along a given axis evaluates to True"""
+
+        new_list = list()
+        for row in self.child:
+            new_list.append(row.all(axis, keepdims, where))
+
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+    def abs(
+        self,
+        out: Optional[np.ndarray] = None,
+    ) -> RowEntityPhiTensor:
+        """Calculate the absolute value element-wise"""
+
+        new_list = list()
+        for row in self.child:
+            new_list.append(row.abs(out))
+
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+    def pow(
+        self, value: Union[RowEntityPhiTensor, AcceptableSimpleType]
+    ) -> RowEntityPhiTensor:
+        """Return elements raised to powers from value, element-wise"""
+        new_list = list()
+        if is_acceptable_simple_type(value):
+            if isinstance(value, np.ndarray):
+                new_list.append(
+                    [self.child[i].pow(value[i]) for i in range(len(self.child))]
+                )
+            else:  # int, float, bool, etc
+                new_list = [child.pow(value) for child in self.child]
+        elif isinstance(value, RowEntityPhiTensor):
+            new_list = [
+                self.child[i].pow(value.child[i]) for i in range(len(self.child))
+            ]
+        elif isinstance(value, SingleEntityPhiTensor):
+            new_list = [i.pow(value) for i in self.child]
+        else:
+            raise NotImplementedError
+
+        return RowEntityPhiTensor(rows=new_list)
 
 
 @implements(RowEntityPhiTensor, np.expand_dims)
