@@ -1379,12 +1379,16 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         if isinstance(self.min_vals, np.ndarray):
             min_vals = np.clip(self.min_vals, a_min=a_min, a_max=a_max, *args)
         else:
-            min_vals = max(a_min, min(self.min_vals, a_max)) if a_min <= a_max else a_max
+            min_vals = (
+                max(a_min, min(self.min_vals, a_max)) if a_min <= a_max else a_max
+            )
 
         if isinstance(self.max_vals, np.ndarray):
             max_vals = np.clip(self.max_vals, a_min=a_min, a_max=a_max, *args)
         else:
-            max_vals = max(a_min, min(self.max_vals, a_max)) if a_min <= a_max else a_max
+            max_vals = (
+                max(a_min, min(self.max_vals, a_max)) if a_min <= a_max else a_max
+            )
 
         return SingleEntityPhiTensor(
             child=data,

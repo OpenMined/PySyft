@@ -1,6 +1,3 @@
-# stdlib
-from random import randint
-
 # third party
 import numpy as np
 import pytest
@@ -1212,25 +1209,32 @@ def test_or(reference_binary_data: np.ndarray, ishan: Entity) -> None:
 
 # End of Ishan's tests
 
-ent = Entity(name="test")
-ent2 = Entity(name="test2")
+
+@pytest.fixture
+def ent() -> Entity:
+    return Entity(name="test")
+
+
+@pytest.fixture
+def ent2() -> Entity:
+    return Entity(name="test2")
+
 
 @pytest.fixture
 def reference_sept(entity_name, low, high) -> SEPT:
     """This is used to generate a Single Entity Phi Tensor with random values in [low, high)"""
     child = np.random.randint(low=low, high=high, size=(dims, dims))
-    max_vals = np.full((dims, dims), high-1, dtype=np.int32)
+    max_vals = np.full((dims, dims), high - 1, dtype=np.int32)
     min_vals = np.full((dims, dims), low, dtype=np.int32)
     entity = Entity(name=entity_name)
-    return SEPT(
-        child=child,
-        entity=entity,
-        max_vals=max_vals,
-        min_vals=min_vals
-    )
+    return SEPT(child=child, entity=entity, max_vals=max_vals, min_vals=min_vals)
+
 
 def test_le_same_entities(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ent: Entity,
 ) -> None:
     tensor1 = SEPT(
         child=reference_data, entity=ent, max_vals=upper_bound, min_vals=lower_bound
@@ -1242,15 +1246,20 @@ def test_le_same_entities(
 
     # different data, same entity
     tensor3 = SEPT(
-        child=reference_data+1, entity=ent, max_vals=upper_bound, min_vals=lower_bound
+        child=reference_data + 1, entity=ent, max_vals=upper_bound, min_vals=lower_bound
     )
 
     assert tensor1.__le__(tensor2).child.all()
     assert tensor1.__le__(tensor3).child.all()
     assert tensor1.__le__(reference_data).child.all()
 
+
 def test_le_diff_entities(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ent: Entity,
+    ent2: Entity,
 ) -> None:
     tensor1 = SEPT(
         child=reference_data, entity=ent, max_vals=upper_bound, min_vals=lower_bound
@@ -1258,12 +1267,16 @@ def test_le_diff_entities(
     # same data, different entity
     tensor2 = SEPT(
         child=reference_data, entity=ent2, max_vals=upper_bound, min_vals=lower_bound
-    )    
+    )
 
     assert tensor1.__le__(tensor2) == NotImplemented
 
+
 def test_ge_same_entities(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ent: Entity,
 ) -> None:
     tensor1 = SEPT(
         child=reference_data, entity=ent, max_vals=upper_bound, min_vals=lower_bound
@@ -1274,15 +1287,20 @@ def test_ge_same_entities(
     )
     # different data, same entity
     tensor3 = SEPT(
-        child=reference_data+1, entity=ent, max_vals=upper_bound, min_vals=lower_bound
+        child=reference_data + 1, entity=ent, max_vals=upper_bound, min_vals=lower_bound
     )
 
     assert tensor1.__ge__(tensor2).child.all()
     assert tensor3.__ge__(tensor1).child.all()
     assert tensor1.__ge__(reference_data).child.all()
 
+
 def test_ge_diff_entities(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ent: Entity,
+    ent2: Entity,
 ) -> None:
     tensor1 = SEPT(
         child=reference_data, entity=ent, max_vals=upper_bound, min_vals=lower_bound
@@ -1290,12 +1308,16 @@ def test_ge_diff_entities(
     # same data, different entity
     tensor2 = SEPT(
         child=reference_data, entity=ent2, max_vals=upper_bound, min_vals=lower_bound
-    )    
+    )
 
     assert tensor1.__ge__(tensor2) == NotImplemented
 
+
 def test_lt_same_entities(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ent: Entity,
 ) -> None:
     tensor1 = SEPT(
         child=reference_data, entity=ent, max_vals=upper_bound, min_vals=lower_bound
@@ -1306,15 +1328,20 @@ def test_lt_same_entities(
     )
     # different data, same entity
     tensor3 = SEPT(
-        child=reference_data+1, entity=ent, max_vals=upper_bound, min_vals=lower_bound
+        child=reference_data + 1, entity=ent, max_vals=upper_bound, min_vals=lower_bound
     )
-    
+
     assert not tensor1.__lt__(tensor2).child.all()
     assert tensor1.__lt__(tensor3).child.all()
     assert not tensor1.__lt__(reference_data).child.all()
 
+
 def test_lt_diff_entities(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ent: Entity,
+    ent2: Entity,
 ) -> None:
     tensor1 = SEPT(
         child=reference_data, entity=ent, max_vals=upper_bound, min_vals=lower_bound
@@ -1322,12 +1349,16 @@ def test_lt_diff_entities(
     # same data, different entity
     tensor2 = SEPT(
         child=reference_data, entity=ent2, max_vals=upper_bound, min_vals=lower_bound
-    )    
+    )
 
     assert tensor1.__lt__(tensor2) == NotImplemented
 
+
 def test_gt_same_entities(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ent: Entity,
 ) -> None:
     tensor1 = SEPT(
         child=reference_data, entity=ent, max_vals=upper_bound, min_vals=lower_bound
@@ -1339,15 +1370,20 @@ def test_gt_same_entities(
 
     # different data, same entity
     tensor3 = SEPT(
-        child=reference_data+1, entity=ent, max_vals=upper_bound, min_vals=lower_bound
+        child=reference_data + 1, entity=ent, max_vals=upper_bound, min_vals=lower_bound
     )
-    
+
     assert not tensor1.__gt__(tensor2).child.all()
     assert tensor3.__gt__(tensor1).child.all()
     assert not tensor1.__gt__(reference_data).child.all()
 
+
 def test_gt_diff_entities(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ent: Entity,
+    ent2: Entity,
 ) -> None:
     tensor1 = SEPT(
         child=reference_data, entity=ent, max_vals=upper_bound, min_vals=lower_bound
@@ -1355,40 +1391,47 @@ def test_gt_diff_entities(
     # same data, different entity
     tensor2 = SEPT(
         child=reference_data, entity=ent2, max_vals=upper_bound, min_vals=lower_bound
-    )    
+    )
 
     assert tensor1.__gt__(tensor2) == NotImplemented
 
 
 def test_clip(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ent: Entity,
+    highest,
 ) -> None:
     tensor = SEPT(
         child=reference_data, entity=ent, max_vals=upper_bound, min_vals=lower_bound
     )
-    clip_min = np.random.randint(-high, high/2)
-    clip_max = np.random.randint(high/2, high)
+    clip_min = np.random.randint(-highest, highest / 2)
+    clip_max = np.random.randint(highest / 2, highest)
 
     clipped_tensor1 = tensor.clip(clip_min, clip_max)
     clipped_tensor2 = tensor.clip(clip_max, clip_min)
     clipped_tensor3 = tensor.clip(clip_min, None)
 
-    assert ((clipped_tensor1.child >= clip_min) & (clipped_tensor1.child <= clip_max)).all()
+    assert (
+        (clipped_tensor1.child >= clip_min) & (clipped_tensor1.child <= clip_max)
+    ).all()
     assert (clipped_tensor2.child == clip_min).all()
     assert (clipped_tensor3.child >= clip_min).all()
 
+
 @pytest.fixture
-def pos_reference_data() -> np.ndarray:
+def pos_reference_data(highest, dims) -> np.ndarray:
     reference_data = np.random.randint(
-        low=1, high=high, size=(dims, dims), dtype=np.int32
+        low=1, high=highest, size=(dims, dims), dtype=np.int32
     )
     assert dims > 1, "Tensor not large enough"
     return reference_data
 
 
 @pytest.fixture
-def pos_upper_bound(pos_reference_data: np.ndarray) -> np.ndarray:
-    max_values = np.ones_like(pos_reference_data) * high
+def pos_upper_bound(pos_reference_data: np.ndarray, highest: int) -> np.ndarray:
+    max_values = np.ones_like(pos_reference_data) * highest
     return max_values
 
 
@@ -1399,60 +1442,98 @@ def pos_lower_bound(pos_reference_data: np.ndarray) -> np.ndarray:
 
 
 def test_any(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray,
-    pos_reference_data: np.ndarray, pos_upper_bound: np.ndarray, pos_lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    pos_reference_data: np.ndarray,
+    pos_upper_bound: np.ndarray,
+    pos_lower_bound: np.ndarray,
+    ent: Entity,
 ) -> None:
     zeros_tensor = SEPT(
-        child=reference_data*0, entity=ent, max_vals=upper_bound, min_vals=lower_bound
+        child=reference_data * 0, entity=ent, max_vals=upper_bound, min_vals=lower_bound
     )
     pos_tensor = SEPT(
-        child=pos_reference_data, entity=ent, max_vals=pos_upper_bound, min_vals=pos_lower_bound
+        child=pos_reference_data,
+        entity=ent,
+        max_vals=pos_upper_bound,
+        min_vals=pos_lower_bound,
     )
     assert not zeros_tensor.any().child
     assert pos_tensor.any().child
 
+
 def test_all(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray,
-    pos_reference_data: np.ndarray, pos_upper_bound: np.ndarray, pos_lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    pos_reference_data: np.ndarray,
+    pos_upper_bound: np.ndarray,
+    pos_lower_bound: np.ndarray,
+    ent: Entity,
 ) -> None:
     zeros_tensor = SEPT(
-        child=reference_data*0, entity=ent, max_vals=upper_bound, min_vals=lower_bound
+        child=reference_data * 0, entity=ent, max_vals=upper_bound, min_vals=lower_bound
     )
     pos_tensor = SEPT(
-        child=pos_reference_data, entity=ent, max_vals=pos_upper_bound, min_vals=pos_lower_bound
+        child=pos_reference_data,
+        entity=ent,
+        max_vals=pos_upper_bound,
+        min_vals=pos_lower_bound,
     )
     assert not zeros_tensor.all().child
     assert pos_tensor.all().child
 
 
 def test_abs(
-    pos_reference_data: np.ndarray, pos_upper_bound: np.ndarray, pos_lower_bound: np.ndarray
+    pos_reference_data: np.ndarray,
+    pos_upper_bound: np.ndarray,
+    pos_lower_bound: np.ndarray,
+    ent: Entity,
 ) -> None:
     tensor = SEPT(
-        child=pos_reference_data, entity=ent, max_vals=pos_upper_bound, min_vals=pos_lower_bound
+        child=pos_reference_data,
+        entity=ent,
+        max_vals=pos_upper_bound,
+        min_vals=pos_lower_bound,
     )
     neg_tensor = SEPT(
-        child=pos_reference_data*-1, entity=ent, max_vals=pos_upper_bound, min_vals=pos_lower_bound
+        child=pos_reference_data * -1,
+        entity=ent,
+        max_vals=pos_upper_bound,
+        min_vals=pos_lower_bound,
     )
     assert (neg_tensor.abs().child == tensor.child).all()
 
+
 def test_pow(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ent: Entity,
 ) -> None:
     rand_pow = np.random.randint(1, 10)
     tensor = SEPT(
         child=reference_data, entity=ent, max_vals=upper_bound, min_vals=lower_bound
     )
     pow_tensor = SEPT(
-        child=reference_data ** rand_pow, entity=ent, max_vals=upper_bound, min_vals=lower_bound
+        child=reference_data ** rand_pow,
+        entity=ent,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
     )
     assert (tensor.pow(rand_pow).child == pow_tensor.child).all()
 
+
 def test_sum(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ent: Entity,
+    dims: int,
 ) -> None:
     zeros_tensor = SEPT(
-        child=reference_data*0, entity=ent, max_vals=upper_bound, min_vals=lower_bound
+        child=reference_data * 0, entity=ent, max_vals=upper_bound, min_vals=lower_bound
     )
     tensor = SEPT(
         child=reference_data, entity=ent, max_vals=upper_bound, min_vals=lower_bound
@@ -1461,7 +1542,7 @@ def test_sum(
     for i in range(dims):
         for j in range(dims):
             tensor_sum += tensor.child[i, j]
-    
+
     assert tensor.sum().child == tensor_sum
     assert zeros_tensor.sum().child == 0
 
@@ -1483,14 +1564,14 @@ def test_add(x: Tensor) -> None:
 
 
 # MADHAVA: this needs fixing
-@pytest.mark.xfail
-def test_single_entity_phi_tensor_serde(x: Tensor) -> None:
+# @pytest.mark.xfail
+# def test_single_entity_phi_tensor_serde(x: Tensor) -> None:
 
-    blob = serialize(x.child)
-    x2 = deserialize(blob)
+#     blob = serialize(x.child)
+#     x2 = deserialize(blob)
 
-    assert (x.child.min_vals == x2.min_vals).all()
-    assert (x.child.max_vals == x2.max_vals).all()
+#     assert (x.child.min_vals == x2.min_vals).all()
+#     assert (x.child.max_vals == x2.max_vals).all()
 
 
 # def test_add(x,y):
