@@ -6,52 +6,70 @@ import numpy as np
 import pytest
 
 # syft absolute
-from syft import deserialize
-from syft import serialize
 from syft.core.adp.entity import Entity
 from syft.core.adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from syft.core.tensor.autodp.initial_gamma import IntermediateGammaTensor as IGT
 from syft.core.tensor.autodp.single_entity_phi import SingleEntityPhiTensor as SEPT
 from syft.core.tensor.tensor import Tensor
 
-# Global constants
-ishan = Entity(name="Ishan")
-traskmaster = Entity(name="Andrew")
-dims = int(max(3, np.random.randint(10) + 3))  # Avoid size 0 and 1
 
-# Failsafe
-if dims < 2:
-    dims += 3
-
-high = 50
+@pytest.fixture
+def ishan() -> Entity:
+    return Entity(name="Ishan")
 
 
 @pytest.fixture
-def reference_data() -> np.ndarray:
+def traskmaster() -> Entity:
+    return Entity(name="Andrew")
+
+
+@pytest.fixture
+def highest() -> int:
+    return 50
+
+
+@pytest.fixture
+def lowest(highest) -> int:
+    return -1 * int(highest)
+
+
+@pytest.fixture
+def dims() -> int:
+    """This generates a random integer for the number of dimensions in our testing tensors"""
+    dims = int(max(3, np.random.randint(10) + 3))  # Avoid size 0 and 1
+    # Failsafe
+    if dims < 2:
+        dims += 3
+    assert dims > 1, "Tensor not large enough for several tests."
+    return dims
+
+
+@pytest.fixture
+def reference_data(highest, dims) -> np.ndarray:
     """This generates random data to test the equality operators"""
     reference_data = np.random.randint(
-        low=-high, high=high, size=(dims, dims), dtype=np.int32
+        low=-highest, high=highest, size=(dims, dims), dtype=np.int32
     )
     assert dims > 1, "Tensor not large enough"
     return reference_data
 
 
 @pytest.fixture
-def upper_bound(reference_data: np.ndarray) -> np.ndarray:
+def upper_bound(reference_data: np.ndarray, highest: int) -> np.ndarray:
     """This is used to specify the max_vals for a SEPT that is either binary or randomly generated b/w 0-1"""
-    max_values = np.ones_like(reference_data) * high
+    max_values = np.ones_like(reference_data) * highest
     return max_values
 
 
 @pytest.fixture
-def lower_bound(reference_data: np.ndarray) -> np.ndarray:
+def lower_bound(reference_data: np.ndarray, highest: int) -> np.ndarray:
     """This is used to specify the min_vals for a SEPT that is either binary or randomly generated b/w 0-1"""
-    min_values = np.ones_like(reference_data) * -high
+    min_values = np.ones_like(reference_data) * -highest
     return min_values
 
 
 @pytest.fixture
-def reference_binary_data() -> np.ndarray:
+def reference_binary_data(dims: int) -> np.ndarray:
     """Generate binary data to test the equality operators with bools"""
     binary_data = np.random.randint(2, size=(dims, dims))
     return binary_data
@@ -68,7 +86,10 @@ def reference_scalar_manager() -> VirtualMachinePrivateScalarManager:
     reason="Equality works but the current method of checking it throws DeprecationWarnings"
 )
 def test_eq(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
 ) -> None:
     """Test equality between two identical SingleEntityPhiTensors"""
     reference_tensor = SEPT(
@@ -92,7 +113,10 @@ def test_eq(
 
 
 def test_eq_public_shape(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
 ) -> None:
     """Test equality of SEPT tensor with Public Tensor, and with Public Tensor with a public_shape"""
     sept_tensor = SEPT(
@@ -114,7 +138,11 @@ def test_eq_public_shape(
 
 
 def test_eq_diff_entities(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+    traskmaster: Entity,
 ) -> SEPT:
     """Test equality between Private Tensors with different owners. This is currently not implemented."""
     tensor1 = SEPT(
@@ -132,7 +160,10 @@ def test_eq_diff_entities(
 
 
 def test_eq_ndarray(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
 ) -> bool:
     """Test equality between a SEPT and a simple type (int, float, bool, np.ndarray)"""
     reference_tensor = SEPT(
@@ -146,7 +177,10 @@ def test_eq_ndarray(
 
 
 def test_eq_bool(
-    reference_binary_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_binary_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
 ) -> bool:
     """Test equality between a SEPT and a simple type (int, float, bool, np.ndarray)"""
     reference_tensor = SEPT(
@@ -163,7 +197,10 @@ def test_eq_bool(
 
 
 def test_eq_int(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
 ) -> bool:
     """Test equality between a SEPT and a simple type (int, float, bool, np.ndarray)"""
     reference_tensor = SEPT(
@@ -177,7 +214,10 @@ def test_eq_int(
 
 
 def test_ne_values(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
 ) -> None:
     """Test non-equality between SEPTs with diff values but the same shape"""
     reference_tensor = SEPT(
@@ -197,7 +237,12 @@ def test_ne_values(
 
 @pytest.mark.skipif(dims == 1, reason="Tensor generated did not have two dimensions")
 def test_ne_shapes(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+    dims: int,
+    highest,
 ) -> None:
     """Test non-equality between SEPTs with different shapes"""
     reference_tensor = SEPT(
@@ -205,7 +250,7 @@ def test_ne_shapes(
     )
     comparison_tensor = SEPT(
         child=np.random.randint(
-            low=-high, high=high, size=(dims + 10, dims + 10), dtype=np.int32
+            low=-highest, high=highest, size=(dims + 10, dims + 10), dtype=np.int32
         ),
         entity=ishan,
         max_vals=np.ones(dims + 10),
@@ -218,7 +263,11 @@ def test_ne_shapes(
 
 
 def test_ne_broadcastability(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+    dims: int,
 ) -> None:
     """Test to ensure broadcastability of array sizes works"""
     reference_tensor = SEPT(
@@ -234,7 +283,11 @@ def test_ne_broadcastability(
 
 
 def test_ne_diff_entities(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+    traskmaster: Entity,
 ) -> None:
     """Test non-equality between SEPTs of different entities"""
     reference_tensor = SEPT(
@@ -254,7 +307,10 @@ def test_ne_diff_entities(
 
 
 def test_add_wrong_types(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
 ) -> None:
     """Ensure that addition with incorrect types aren't supported"""
     reference_tensor = SEPT(
@@ -268,7 +324,11 @@ def test_add_wrong_types(
 
 
 def test_add_simple_types(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+    dims: int,
 ) -> None:
     """Test addition of a SEPT with simple types (float, ints, bools, etc)"""
     tensor = SEPT(
@@ -305,7 +365,12 @@ def test_add_simple_types(
 
 
 def test_add_tensor_types(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+    highest,
+    dims: int,
 ) -> None:
     """Test addition of a SEPT with various other kinds of Tensors"""
     # TODO: Add tests for REPT, GammaTensor, etc when those are built out.
@@ -316,7 +381,7 @@ def test_add_tensor_types(
 
     simple_tensor = Tensor(
         child=np.random.randint(
-            low=-high, high=high, size=(dims + 10, dims + 10), dtype=np.int32
+            low=-highest, high=highest, size=(dims + 10, dims + 10), dtype=np.int32
         )
     )
 
@@ -333,7 +398,10 @@ def test_add_tensor_types(
 
 
 def test_add_single_entities(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
 ) -> None:
     """Test the addition of SEPTs"""
     tensor1 = SEPT(
@@ -373,7 +441,11 @@ def test_add_single_entities(
 
 @pytest.mark.skip(reason="GammaTensors have now been implemented")
 def test_add_diff_entities(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+    traskmaster: Entity,
 ) -> None:
     """Test the addition of SEPTs"""
 
@@ -395,7 +467,10 @@ def test_add_diff_entities(
 
 
 def test_add_sub_equivalence(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
 ) -> None:
     """Test that the addition of negative values is the same as subtraction."""
     tensor1 = SEPT(
@@ -421,6 +496,8 @@ def test_add_to_gamma_tensor(
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
     reference_scalar_manager: VirtualMachinePrivateScalarManager,
+    ishan: Entity,
+    traskmaster: Entity,
 ) -> None:
     """Test that SEPTs with different entities create a GammaTensor when added"""
     # We have to use a reference scalar manager for now because we can't combine scalar factories yet.
@@ -462,6 +539,8 @@ def test_sub_to_gamma_tensor(
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
     reference_scalar_manager: VirtualMachinePrivateScalarManager,
+    ishan: Entity,
+    traskmaster: Entity,
 ) -> None:
     """Test that SEPTs with different entities create a GammaTensor when subtracted"""
     # We have to use a reference scalar manager for now because we can't combine scalar factories yet.
@@ -503,6 +582,7 @@ def test_pos(
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
     reference_scalar_manager: VirtualMachinePrivateScalarManager,
+    ishan: Entity,
 ) -> None:
     """Ensure the __pos__ operator works as intended"""
     tensor = SEPT(
@@ -526,6 +606,7 @@ def test_repeat(
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
     reference_scalar_manager: VirtualMachinePrivateScalarManager,
+    ishan: Entity,
 ) -> None:
     """Test that the repeat method extends a SEPT.child normally"""
     repeat_count = np.random.randint(5, 10)
@@ -549,6 +630,7 @@ def test_repeat(
 def test_repeat_axes(
     reference_data: np.ndarray,
     reference_scalar_manager: VirtualMachinePrivateScalarManager,
+    ishan: Entity,
 ) -> None:
     """Test that the axes argument of the repeat method works as intended"""
     repeat_count = np.random.randint(5, 10)
@@ -570,7 +652,7 @@ def test_repeat_axes(
             ), "Repeats did not function as intended!"
 
 
-def test_transpose_simple_types() -> None:
+def test_transpose_simple_types(ishan: Entity) -> None:
     """Test that if self.child can't be transposed (b/c it's an int/float/bool/etc), it isn't changed"""
     random_int = np.random.randint(low=50, high=100)
     int_tensor = SEPT(child=random_int, entity=ishan, min_vals=50, max_vals=100)
@@ -624,7 +706,11 @@ def test_transpose_simple_types() -> None:
 
 
 def test_transpose_square_matrix(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+    dims: int,
 ) -> None:
     """Test transpose works on the most important use case, which is when self.child is a np.array or Tensor"""
     tensor = SEPT(
@@ -652,7 +738,7 @@ def test_transpose_square_matrix(
             ), "Transpose failed"
 
 
-def test_transpose_non_square_matrix() -> None:
+def test_transpose_non_square_matrix(ishan: Entity, dims: int) -> None:
     """Test transpose on SEPTs where self.child is not a square matrix"""
     rows = dims
     cols = dims + np.random.randint(low=1, high=5)
@@ -691,7 +777,11 @@ def test_transpose_non_square_matrix() -> None:
     reason="Test works, but checking that it works using elementwise comparison raises Deprecation Warnings"
 )
 def test_transpose_args(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+    highest,
 ) -> None:
     """Ensure the optional arguments passed to .transpose() work as intended."""
 
@@ -719,13 +809,13 @@ def test_transpose_args(
     rows = dims
     cols = dims + np.random.randint(low=1, high=5)
     non_square_data = np.random.randint(
-        low=-high, high=high, size=(rows, cols), dtype=np.int32
+        low=-highest, high=highest, size=(rows, cols), dtype=np.int32
     )
     tensor = SEPT(
         child=non_square_data,
         entity=ishan,
-        max_vals=np.ones_like(non_square_data) * high,
-        min_vals=np.ones_like(non_square_data) * -high,
+        max_vals=np.ones_like(non_square_data) * highest,
+        min_vals=np.ones_like(non_square_data) * -highest,
     )
     order = list(range(len(tensor.shape)))
     np.random.shuffle(order)
@@ -741,7 +831,10 @@ def test_transpose_args(
 
 
 def test_reshape(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
 ) -> None:
     """Ensure reshape happens when it is able"""
     reference_tensor = SEPT(
@@ -753,7 +846,10 @@ def test_reshape(
 
 
 def test_reshape_fail(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
 ) -> None:
     """Make sure errors are raised correctly when reshape is not possible due to shape mismatch."""
     reference_tensor = SEPT(
@@ -773,7 +869,10 @@ def test_reshape_simple_type() -> None:
 
 
 def test_resize(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
 ) -> None:
     """Ensure resize happens when it is able"""
     reference_tensor = SEPT(
@@ -785,7 +884,10 @@ def test_resize(
 
 
 def test_resize_fail(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
 ) -> None:
     """Make sure errors are raised correctly when resize is not possible due to shape mismatch."""
     reference_tensor = SEPT(
@@ -800,7 +902,10 @@ def test_resize_fail(
 
 
 def test_resize_inplace(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
 ) -> None:
     """Ensure resize changes shape in place"""
     reference_tensor = SEPT(
@@ -819,7 +924,10 @@ def test_resize_inplace(
 
 
 def test_flatten(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
 ) -> None:
     """Test that self.child can be flattened for appropriate data types"""
     reference_tensor = SEPT(
@@ -841,7 +949,11 @@ def test_flatten(
 
 
 def test_ravel(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+    highest,
 ) -> None:
     """Test that self.child can be ravelled for appropriate data types"""
     reference_tensor = SEPT(
@@ -862,17 +974,17 @@ def test_ravel(
     ).child.all(), "Ravelling changed the order of entries"
 
 
-def test_squeeze() -> None:
+def test_squeeze(highest) -> None:
     """Test that squeeze works on an ideal case"""
     _data = np.random.randint(
-        low=-high, high=high, size=(10, 1, 10, 1, 10), dtype=np.int32
+        low=-highest, high=highest, size=(10, 1, 10, 1, 10), dtype=np.int32
     )
     initial_shape = _data.shape
 
     reference_tensor = SEPT(
         child=_data,
-        max_vals=np.ones_like(_data) * high,
-        min_vals=np.ones_like(_data) * -high,
+        max_vals=np.ones_like(_data) * highest,
+        min_vals=np.ones_like(_data) * -1 * highest,
         entity=ishan,
     )
 
@@ -890,17 +1002,17 @@ def test_squeeze() -> None:
     ).child.all(), "Squeezing the tensor eliminated the wrong values"
 
 
-def test_squeeze_correct_axes() -> None:
+def test_squeeze_correct_axes(highest, ishan: Entity) -> None:
     """Test that squeeze works on an ideal case with correct axes specified"""
     _data = np.random.randint(
-        low=-high, high=high, size=(10, 1, 10, 1, 10), dtype=np.int32
+        low=-1 * highest, high=highest, size=(10, 1, 10, 1, 10), dtype=np.int32
     )
     initial_shape = _data.shape
 
     reference_tensor = SEPT(
         child=_data,
-        max_vals=np.ones_like(_data) * high,
-        min_vals=np.ones_like(_data) * -high,
+        max_vals=np.ones_like(_data) * highest,
+        min_vals=np.ones_like(_data) * -highest,
         entity=ishan,
     )
 
@@ -918,17 +1030,17 @@ def test_squeeze_correct_axes() -> None:
     ).child.all(), "Squeezing the tensor eliminated the wrong values"
 
 
-def test_swap_axes() -> None:
+def test_swap_axes(highest, ishan: Entity) -> None:
     """Test that swap_axes works on an ideal case"""
     data = np.random.randint(
-        low=-high, high=high, size=(10, 1, 10, 1, 10), dtype=np.int32
+        low=-highest, high=highest, size=(10, 1, 10, 1, 10), dtype=np.int32
     )
     initial_shape = data.shape
 
     reference_tensor = SEPT(
         child=data,
-        max_vals=np.ones_like(data) * high,
-        min_vals=np.ones_like(data) * -high,
+        max_vals=np.ones_like(data) * highest,
+        min_vals=np.ones_like(data) * -highest,
         entity=ishan,
     )
 
@@ -950,7 +1062,10 @@ def test_swap_axes() -> None:
 
 @pytest.mark.skipif(dims == 1, reason="Tensor generated did not have two dimensions")
 def test_compress(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
 ) -> None:
     reference_tensor = SEPT(
         child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
@@ -969,7 +1084,10 @@ def test_compress(
 
 @pytest.mark.skipif(dims == 1, reason="Tensor generated did not have two dimensions")
 def test_partition(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
 ) -> None:
     reference_tensor = SEPT(
         child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
@@ -985,7 +1103,10 @@ def test_partition(
 
 @pytest.mark.skipif(dims == 1, reason="Tensor generated did not have two dimensions")
 def test_partition_axis(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
 ) -> None:
     reference_tensor = SEPT(
         child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
@@ -1004,6 +1125,8 @@ def test_mul(
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
     reference_scalar_manager: VirtualMachinePrivateScalarManager,
+    ishan: Entity,
+    traskmaster: Entity,
 ) -> None:
     """ """
     sept1 = SEPT(
@@ -1045,7 +1168,10 @@ def test_mul(
 
 
 def test_neg(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
 ) -> None:
     """Test __neg__"""
     reference_tensor = SEPT(
@@ -1058,7 +1184,7 @@ def test_neg(
     assert negative_tensor.shape == reference_tensor.shape
 
 
-def test_and(reference_binary_data: np.ndarray) -> None:
+def test_and(reference_binary_data: np.ndarray, ishan: Entity) -> None:
     """Test bitwise and"""
     reference_tensor = SEPT(
         child=reference_binary_data,
@@ -1071,7 +1197,7 @@ def test_and(reference_binary_data: np.ndarray) -> None:
     assert (output.child == target).all()
 
 
-def test_or(reference_binary_data: np.ndarray) -> None:
+def test_or(reference_binary_data: np.ndarray, ishan: Entity) -> None:
     """Test bitwise or"""
     reference_tensor = SEPT(
         child=reference_binary_data,
@@ -1086,22 +1212,8 @@ def test_or(reference_binary_data: np.ndarray) -> None:
 
 # End of Ishan's tests
 
-
-gonzalo = Entity(name="Gonzalo")
-
-
-@pytest.fixture(scope="function")
-def x() -> Tensor:
-    x = Tensor(np.array([[1, 2, 3], [4, 5, 6]]))
-    x = x.private(min_val=-1, max_val=7, entities=[gonzalo])
-    return x
-
-
-@pytest.fixture(scope="function")
-def y() -> Tensor:
-    y = Tensor(np.array([[-1, -2, -3], [-4, -5, -6]]))
-    y = y.private(min_val=-7, max_val=1, entities=[gonzalo])
-    return y
+ent = Entity(name="test")
+ent2 = Entity(name="test2")
 
 @pytest.fixture
 def reference_sept(entity_name, low, high) -> SEPT:
@@ -1116,29 +1228,6 @@ def reference_sept(entity_name, low, high) -> SEPT:
         max_vals=max_vals,
         min_vals=min_vals
     )
-
-ent = Entity(name="test")
-ent2 = Entity(name="test2")
-
-child1 = np.random.randint(low=-2, high=4, size=dims)
-upper1 = np.full(dims, 3, dtype=np.int32)
-low1 = np.full(dims, -2, dtype=np.int32)
-child2 = np.random.randint(low=4, high=7, size=dims)
-upper2 = np.full(dims, 6, dtype=np.int32)
-low2 = np.full(dims, 4, dtype=np.int32)
-
-tensor1 = SEPT(child=child1, entity=ent, max_vals=upper1, min_vals=low1)
-# same entity, same data
-tensor2 = SEPT(child=child1, entity=ent, max_vals=upper1, min_vals=low1)
-# same entity, different data
-tensor3 = SEPT(child=child2, entity=ent, max_vals=upper2, min_vals=low2)
-# different entity, same data
-tensor4 = SEPT(child=child1, entity=ent2, max_vals=upper1, min_vals=low1)
-# different entity, different data
-tensor5 = SEPT(child=child2, entity=ent2, max_vals=upper2, min_vals=low2)
-
-simple_type1 = randint(-6, -4)
-simple_type2 = randint(4, 6)
 
 def test_le_same_entities(
     reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
@@ -1183,7 +1272,6 @@ def test_ge_same_entities(
     tensor2 = SEPT(
         child=reference_data, entity=ent, max_vals=upper_bound, min_vals=lower_bound
     )
-
     # different data, same entity
     tensor3 = SEPT(
         child=reference_data+1, entity=ent, max_vals=upper_bound, min_vals=lower_bound
@@ -1216,12 +1304,11 @@ def test_lt_same_entities(
     tensor2 = SEPT(
         child=reference_data, entity=ent, max_vals=upper_bound, min_vals=lower_bound
     )
-
     # different data, same entity
     tensor3 = SEPT(
         child=reference_data+1, entity=ent, max_vals=upper_bound, min_vals=lower_bound
     )
-
+    
     assert not tensor1.__lt__(tensor2).child.all()
     assert tensor1.__lt__(tensor3).child.all()
     assert not tensor1.__lt__(reference_data).child.all()
@@ -1254,7 +1341,7 @@ def test_gt_same_entities(
     tensor3 = SEPT(
         child=reference_data+1, entity=ent, max_vals=upper_bound, min_vals=lower_bound
     )
-
+    
     assert not tensor1.__gt__(tensor2).child.all()
     assert tensor3.__gt__(tensor1).child.all()
     assert not tensor1.__gt__(reference_data).child.all()
