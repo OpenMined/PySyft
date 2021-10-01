@@ -14,7 +14,7 @@ ENV NEXT_TELEMETRY_DISABLED $DISABLE_TELEMETRY
 
 WORKDIR /app
 COPY package.json yarn.lock .
-RUN yarn --frozen-lockfile
+RUN --mount=type=cache,target=/root/.yarn YARN_CACHE_FOLDER=/root/.yarn yarn --frozen-lockfile
 COPY . .
 
 FROM node:16-alpine as grid-ui-development
