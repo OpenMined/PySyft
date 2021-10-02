@@ -31,6 +31,12 @@ class UserUpdate(BaseUser):
     budget: Optional[float]
 
 
+class UserCandidate(BaseUser):
+    email: EmailStr
+    status: str = "pending"
+    name: str
+
+
 class User(BaseUser):
     id: int
     role: Union[int, str]  # TODO: This should be int. Perhaps add role_name instead?
