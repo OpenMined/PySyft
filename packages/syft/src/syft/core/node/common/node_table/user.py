@@ -19,6 +19,9 @@ class UserApplication(Base):
     salt = Column(String(255))
     daa_pdf = Column(Integer, ForeignKey("daa_pdf.id"))
     status = Column(String(255), default="pending")
+    added_by = Column(String(2048))
+    website = Column(String(2048))
+    institution = Column(String(2048))
 
     def __str__(self) -> str:
         return (
@@ -39,6 +42,10 @@ class SyftUser(Base):
     private_key = Column(String(2048))
     verify_key = Column(String(2048))
     role = Column(Integer, ForeignKey("role.id"))
+    added_by = Column(String(2048))
+    website = Column(String(2048))
+    institution = Column(String(2048))
+    daa_pdf = Column(Integer, ForeignKey("daa_pdf.id"))
 
     def __str__(self) -> str:
         return (

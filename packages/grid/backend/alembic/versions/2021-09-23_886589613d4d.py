@@ -33,12 +33,21 @@ def upgrade() -> None:
         sa.Column("salt", sa.String(length=255), nullable=True),
         sa.Column("daa_pdf", sa.Integer(), nullable=True),
         sa.Column("status", sa.String(length=255), nullable=True),
+        sa.Column("website", sa.String(2048), default=""),
+        sa.Column("institution", sa.String(2048), default=""),
+        sa.Column("added_by", sa.String(2048), default=""),
         sa.ForeignKeyConstraint(
             ["daa_pdf"],
             ["daa_pdf.id"],
         ),
         sa.PrimaryKeyConstraint("id"),
     )
+
+    op.add_column("syft_user", sa.Column("website", sa.String(2048), default=""))
+    op.add_column("syft_user", sa.Column("institution", sa.String(2048), default=""))
+    op.add_column("syft_user", sa.Column("added_by", sa.String(2048), default=""))
+    op.add_column("syft_user", sa.Column("daa_pdf", sa.Integer(), nullable=True))
+
     pass
 
 
