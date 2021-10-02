@@ -98,7 +98,13 @@ class UserManager(DatabaseManager):
         website: Optional[str] = "",
     ) -> None:
         salt, hashed = self.__salt_and_hash_password(password, 12)
+        session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
         _pdf_obj = PDFObject(binary=daa_pdf)
+        session_local.add(_pdf_obj)
+        session_local.commit()
+        session_local.flush()
+        session_local.refresh(_pdf_obj)
+
         _obj = UserApplication(
             name=name,
             email=email,
@@ -108,7 +114,6 @@ class UserManager(DatabaseManager):
             institution=institution,
             website=website,
         )
-        session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
         session_local.add(_pdf_obj)
         session_local.add(_obj)
         session_local.commit()
