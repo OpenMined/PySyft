@@ -24,6 +24,12 @@ class UserCreate(BaseUser):
     role: str = "Data Scientist"
     name: str
     password: str
+    institution: Optional[str]
+    website: Optional[str]
+
+
+class ApplicantStatus(BaseModel):
+    status: str
 
 
 class UserUpdate(BaseUser):
@@ -44,6 +50,7 @@ class User(BaseUser):
     institution: Optional[str]
     website: Optional[str]
     added_by: Optional[str]
+
 
 class UserPrivate(User):
     private_key: str
