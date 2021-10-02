@@ -262,9 +262,8 @@ def get_applicant_users(
         for user in users:
             _user_json = model_to_json(user)
             if user.daa_pdf:
-                _user_json["daa_pdf"] = user.daa_pdf.id
-
-        _msg.append(_user_json)
+                _user_json["daa_pdf"] = user.daa_pdf
+            _msg.append(_user_json)
 
     return GetUsersResponse(
         address=msg.reply_to,
