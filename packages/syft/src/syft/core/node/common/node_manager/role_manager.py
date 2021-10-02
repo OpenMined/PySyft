@@ -20,8 +20,8 @@ class RoleManager(DatabaseManager):
         super().__init__(schema=RoleManager.schema, db=database)
 
     @property
-    def user_role(self) -> Role:
-        return self.first(name="User")
+    def ds_role(self) -> Role:
+        return self.first(name="Data Scientist")
 
     @property
     def owner_role(self) -> Role:
