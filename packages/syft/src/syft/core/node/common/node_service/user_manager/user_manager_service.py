@@ -22,10 +22,12 @@ from ..node_service import ImmediateNodeServiceWithReply
 from ..success_resp_message import SuccessResponseMessage
 from .user_messages import CreateUserMessage
 from .user_messages import DeleteUserMessage
+from .user_messages import GetCandidatesMessage
 from .user_messages import GetUserMessage
 from .user_messages import GetUserResponse
 from .user_messages import GetUsersMessage
 from .user_messages import GetUsersResponse
+from .user_messages import ProcessUserCandidateMessage
 from .user_messages import SearchUsersMessage
 from .user_messages import SearchUsersResponse
 from .user_messages import UpdateUserMessage
@@ -60,12 +62,37 @@ def create_user_msg(
         pass
 
     node.users.create_user_application(
-        name=msg.name, email=msg.email, password=msg.password, daa_pdf=msg.daa_pdf
+        name=msg.name,
+        email=msg.email,
+        password=msg.password,
+        daa_pdf=msg.daa_pdf,
+        institution=msg.institution,
+        website=msg.website,
     )
 
     return SuccessResponseMessage(
         address=msg.reply_to,
         resp_msg="User created successfully!",
+    )
+
+
+def accept_or_deny_candidate(
+    msg: ProcessUserCandidateMessage,
+    node: DomainInterface,
+    verify_key: VerifyKey,
+) -> SuccessResponseMessage:
+    if True:  # node.users.can_create_users(verify_key=verify_key):
+        node.users.process_user_application(
+            candidate_id=msg.candidate_id, status=msg.status, verify_key=verify_key
+        )
+    else:
+        raise AuthorizationError(
+            message="You're not allowed to create a new User using this email!"
+        )
+
+    return SuccessResponseMessage(
+        address=msg.reply_to,
+        resp_msg="User application processed successfully!",
     )
 
 
@@ -199,7 +226,6 @@ def get_all_users_msg(
         _msg = []
         for user in users:
             _user_json = model_to_json(user)
-
             # Use role name instead of role ID.
             _user_json["role"] = node.roles.first(id=_user_json["role"]).name
 
@@ -210,7 +236,7 @@ def get_all_users_msg(
                 user_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder),
                 returned_epsilon_is_private=True,
             )
-            
+
             _msg.append(_user_json)
 
     return GetUsersResponse(
@@ -220,7 +246,7 @@ def get_all_users_msg(
 
 
 def get_applicant_users(
-    msg: GetUsersMessage,
+    msg: GetCandidatesMessage,
     node: DomainInterface,
     verify_key: VerifyKey,
 ) -> GetUsersResponse:
@@ -230,13 +256,13 @@ def get_applicant_users(
         raise AuthorizationError("You're not allowed to get User information!")
     else:
         # Get All Users
-        users = node.users.get_applicant()
+        users = node.users.get_all_applicant()
         _msg = []
         _user_json = {}
         for user in users:
-            print(user)
             _user_json = model_to_json(user)
-            _user_json["daa_pdf"] = user.daa_pdf.id
+            if user.daa_pdf:
+                _user_json["daa_pdf"] = user.daa_pdf.id
 
         _msg.append(_user_json)
 
@@ -337,6 +363,8 @@ class UserManagerService(ImmediateNodeServiceWithReply):
         GetUsersMessage: get_all_users_msg,
         DeleteUserMessage: del_user_msg,
         SearchUsersMessage: search_users_msg,
+        GetCandidatesMessage: get_applicant_users,
+        ProcessUserCandidateMessage: accept_or_deny_candidate,
     }
 
     @staticmethod
@@ -346,7 +374,6 @@ class UserManagerService(ImmediateNodeServiceWithReply):
         msg: INPUT_MESSAGES,
         verify_key: VerifyKey,
     ) -> OUTPUT_MESSAGES:
-
         reply = UserManagerService.msg_handler_map[type(msg)](
             msg=msg, node=node, verify_key=verify_key
         )
@@ -362,4 +389,6 @@ class UserManagerService(ImmediateNodeServiceWithReply):
             GetUsersMessage,
             DeleteUserMessage,
             SearchUsersMessage,
+            GetCandidatesMessage,
+            ProcessUserCandidateMessage,
         ]
