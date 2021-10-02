@@ -9,16 +9,15 @@ import torch
 import syft as sy
 
 
-# MADHAVA: this needs fixing
-@pytest.mark.xfail
 @pytest.mark.slow
-def test_same_var_for_ptr_gc(
-    node: sy.VirtualMachine, client: sy.VirtualMachineClient
-) -> None:
+def test_same_var_for_ptr_gc() -> None:
     """
     Test for checking if the gc is correctly triggered
     when the last reference to the ptr is overwritten
     """
+    node = sy.VirtualMachine(name="alice")
+    client = node.get_client()
+
     x = torch.tensor([1, 2, 3, 4])
 
     for _ in range(100):
@@ -36,16 +35,15 @@ def test_same_var_for_ptr_gc(
     assert len(node.store) == 0
 
 
-# MADHAVA: this needs fixing
-@pytest.mark.xfail
-def test_send_same_obj_gc(
-    node: sy.VirtualMachine, root_client: sy.VirtualMachineClient
-) -> None:
+def test_send_same_obj_gc() -> None:
     """
     Test if sending the same object multiple times, register the
     object multiple times - because each send generated another
     remote object
     """
+    node = sy.VirtualMachine(name="alice")
+    root_client = node.get_root_client()
+
     x = torch.tensor([1, 2, 3, 4])
     ptr = []
 
