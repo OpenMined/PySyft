@@ -15,6 +15,7 @@ from starlette.exceptions import HTTPException
 
 # grid absolute
 from grid.api.dependencies.current_user import get_current_user
+from grid.api.users.models import ApplicantStatus
 from grid.api.users.models import User
 from grid.api.users.models import UserCandidate
 from grid.api.users.models import UserCreate
@@ -76,12 +77,15 @@ async def get_all_candidates(
 )
 async def process_applicant_request(
     candidate_id: int,
+    request_status: ApplicantStatus,
     current_user: UserPrivate = Depends(get_current_user),
 ) -> str:
     try:
         return syft_user_messages.process_applicant_request(
-            current_user=current_user, candidate_id=candidate_id, status="accepted"
-        )  # current_user)
+            current_user=current_user,
+            candidate_id=candidate_id,
+            status=request_status.status,
+        )
     except Exception as err:
         logger.error(err)
         raise_generic_private_error()
