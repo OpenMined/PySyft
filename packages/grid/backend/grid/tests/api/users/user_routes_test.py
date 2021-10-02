@@ -66,7 +66,7 @@ class TestUsersRoutes:
         )
         assert res.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
         invalid_user = create_user()
-        invalid_user = invalid_user.dict(exclude={"role"})  # type : ignore
+        invalid_user = invalid_user.dict(exclude={"role"})  # type: ignore
         invalid_user["role"] = 1  # type: ignore
         res = await client.post(
             app.url_path_for("users:create"), json=invalid_user, headers=headers
