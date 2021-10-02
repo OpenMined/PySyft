@@ -1,4 +1,6 @@
 # stdlib
+from datetime import datetime
+import json
 from typing import Callable
 from typing import Dict
 from typing import List
@@ -90,7 +92,11 @@ def create_initial_setup(
     # 5 - Save Node SetUp Configs
     try:
         node_id = node.target_id.id
-        node.setup.register(domain_name=msg.domain_name, node_id=node_id.no_dash)
+        node.setup.register(
+            domain_name=msg.domain_name,
+            node_id=node_id.no_dash,
+            deployed_on=datetime.now(),
+        )
     except Exception as e:
         print("Failed to save setup to database", e)
 
@@ -105,7 +111,6 @@ def get_setup(
 ) -> GetSetUpResponse:
 
     _setup = model_to_json(node.setup.first(domain_name=node.name))
-
     return GetSetUpResponse(
         address=msg.reply_to,
         content=_setup,
@@ -125,6 +130,7 @@ def update_settings(
             daa=msg.daa,
             contact=msg.contact,
             daa_document=msg.daa_document,
+            tags=json.dumps(msg.tags),
         )
     else:
         raise AuthorizationError("You're not allowed to get setup configs!")
