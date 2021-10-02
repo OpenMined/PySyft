@@ -16,6 +16,7 @@ from starlette.exceptions import HTTPException
 # grid absolute
 from grid.api.dependencies.current_user import get_current_user
 from grid.api.users.models import User
+from grid.api.users.models import UserCandidate
 from grid.api.users.models import UserCreate
 from grid.api.users.models import UserPrivate
 from grid.api.users.models import UserUpdate
@@ -52,6 +53,35 @@ async def create_user_grid(
     new_user = UserCreate(**dict_user)
     try:
         return syft_user_messages.create_user(new_user, current_user)
+    except Exception as err:
+        logger.error(err)
+        raise_generic_private_error()
+
+
+@router.get("/applicants", name="users:applicants", status_code=status.HTTP_201_CREATED)
+async def get_all_candidates(
+    current_user: UserPrivate = Depends(get_current_user),
+) -> List[UserCandidate]:
+    try:
+        return syft_user_messages.get_user_requests(current_user)
+    except Exception as err:
+        logger.error(err)
+        raise_generic_private_error()
+
+
+@router.patch(
+    "/applicants/{candidate_id}",
+    name="users:applicants:process",
+    status_code=status.HTTP_201_CREATED,
+)
+async def process_applicant_request(
+    candidate_id: int,
+    current_user: UserPrivate = Depends(get_current_user),
+) -> str:
+    try:
+        return syft_user_messages.process_applicant_request(
+            current_user=current_user, candidate_id=candidate_id, status="accepted"
+        )  # current_user)
     except Exception as err:
         logger.error(err)
         raise_generic_private_error()
