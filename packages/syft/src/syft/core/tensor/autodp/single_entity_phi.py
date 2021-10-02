@@ -815,7 +815,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         axis: Optional[int] = -1,
         kind: Optional[str] = "introselect",
         order: Optional[Union[str, List[str]]] = None,
-    ) -> SingleEntityPhiTensor:
+    ) -> None:
         """Interchange two axes of the Tensor"""
         if (
             isinstance(self.child, int)
@@ -823,12 +823,11 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             or isinstance(self.child, bool)
         ):
             # For these singleton data types, the partition operation is meaningless, so don't change them.
-            data = self.child
             print(
-                f"Warning: Tensor data was of type {type(data)}, partition operation had no effect."
+                f"Warning: Tensor data was of type {type(self.child)}, partition operation had no effect."
             )
         else:
-            data = self.child.partition(kth, axis, kind, order)
+            self.child.partition(kth, axis, kind, order)
 
             # TODO: Should we give warnings for min_val and max_val being single floats/integers/booleans too?
         if (
@@ -837,10 +836,11 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             or isinstance(self.min_vals, bool)
         ):
             # For these singleton data types, the partition operation is meaningless, so don't change them.
-            min_vals = self.min_vals
-            # print(f'Warning: Tensor data was of type {type(data)}, partition operation had no effect.')
+            print(
+                f"Warning: Min_vals metadata was of type {type(self.min_vals)}, partition operation had no effect."
+            )
         else:
-            min_vals = self.min_vals.partition(kth, axis, kind, order)
+            self.min_vals.partition(kth, axis, kind, order)
 
         if (
             isinstance(self.max_vals, int)
@@ -848,20 +848,11 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             or isinstance(self.max_vals, bool)
         ):
             # For these singleton data types, the partition operation is meaningless, so don't change them.
-            max_vals = self.max_vals
-            # print(f'Warning: Tensor data was of type {type(data)}, partition operation had no effect.')
+            print(
+                f"Warning: Max_vals metadata was of type {type(self.max_vals)}, partition operation had no effect."
+            )
         else:
-            max_vals = self.max_vals.partition(kth, axis, kind, order)
-
-        entity = self.entity
-
-        return SingleEntityPhiTensor(
-            child=data,
-            entity=entity,
-            min_vals=min_vals,
-            max_vals=max_vals,
-            scalar_manager=self.scalar_manager,
-        )
+            self.max_vals.partition(kth, axis, kind, order)
 
     # ndarray.ravel(order='C')
     def ravel(self, order: str = "C") -> SingleEntityPhiTensor:
