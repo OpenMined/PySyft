@@ -1210,6 +1210,39 @@ def test_or(reference_binary_data: np.ndarray, ishan: Entity) -> None:
     assert (output.child == target).all()
 
 
+def test_cumsum(reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray, ishan:Entity) -> None:
+    """ Test cumsum operator without any additional arguments"""
+    reference_tensor = SEPT(
+        child=reference_data,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+        entity=ishan
+    )
+    output = reference_tensor.cumsum()
+    target = reference_data.cumsum()
+    assert (output.child == target).all()
+    assert (output.min_vals == lower_bound.cumsum()).all()
+    assert (output.max_vals == upper_bound.cumsum()).all()
+    # assert output.shape == reference_tensor.flatten().shape
+
+
+def test_cumprod(reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray, ishan:Entity) -> None:
+    """ Test cumprod operator without any additional arguments"""
+    reference_tensor = SEPT(
+        child=reference_data,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+        entity=ishan
+    )
+    output = reference_tensor.cumprod()
+    target = reference_data.cumprod()
+    assert (output.child == target).all()
+    assert (output.min_vals == lower_bound.cumprod()).all()
+    assert (output.max_vals == upper_bound.cumprod()).all()
+    # assert output.shape == reference_tensor.flatten().shape
+
+
+
 # End of Ishan's tests
 
 
