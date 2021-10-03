@@ -647,7 +647,7 @@ def test_and(row_count: int, ishan: Entity) -> None:
 
 
 def test_floordiv_array(row_data_ishan: list) -> None:
-    """ Test floordiv with np.ndarrays"""
+    """Test floordiv with np.ndarrays"""
     reference_tensor = REPT(rows=row_data_ishan)
     other = np.ones_like(row_data_ishan[0].child)
     output = reference_tensor // other
@@ -657,7 +657,7 @@ def test_floordiv_array(row_data_ishan: list) -> None:
 
 @pytest.mark.skip(reason="Test works but occasionally gives a division by zero error")
 def test_floordiv_sept(row_data_ishan: list) -> None:
-    """ Test floordiv with SEPT"""
+    """Test floordiv with SEPT"""
     reference_tensor = REPT(rows=row_data_ishan)
     other = row_data_ishan[0]
     output = reference_tensor // other
@@ -668,7 +668,7 @@ def test_floordiv_sept(row_data_ishan: list) -> None:
 
 @pytest.mark.skip(reason="Test works but occasionally gives a division by zero error")
 def test_floordiv_rept(row_data_ishan: list) -> None:
-    """ Test floordiv with REPT"""
+    """Test floordiv with REPT"""
     reference_tensor = REPT(rows=row_data_ishan)
     other_data = [i // 2 + 1 for i in row_data_ishan]
     other = REPT(rows=other_data)
