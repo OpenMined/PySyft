@@ -766,6 +766,42 @@ def test_or(row_count: int, ishan: Entity) -> None:
         assert (tensor | False) == output[index]
 
 
+def test_matmul_array(row_data_ishan: list) -> None:
+    reference_tensor = REPT(rows=row_data_ishan)
+    other = np.ones_like(row_data_ishan[0].child.T) * 5
+    output = reference_tensor.__matmul__(other)
+
+    for input_tensor, output_tensor in zip(reference_tensor.child, output.child):
+        assert output_tensor.shape[1] == reference_tensor.shape[1]
+        assert output_tensor.shape[-1] == other.shape[-1]
+        assert output_tensor == input_tensor.__matmul__(other)
+
+
+def test_matmul_sept(
+        row_data_ishan: list, reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray, ishan: Entity
+) -> None:
+    reference_tensor = REPT(rows=row_data_ishan)
+    other = row_data_ishan[0].transpose() * 2
+    output = reference_tensor.__matmul__(other)
+
+    for input_tensor, output_tensor in zip(reference_tensor.child, output.child):
+        assert output_tensor.shape[1] == reference_tensor.shape[1]
+        assert output_tensor.shape[-1] == other.shape[-1]
+        assert output_tensor == input_tensor.__matmul__(other.child)
+
+
+def test_matmul_rept(row_data_ishan: list) -> None:
+    reference_tensor = REPT(rows=row_data_ishan)
+    data = [i.transpose() * 2 for i in row_data_ishan]
+    other = REPT(rows=data)
+    output = reference_tensor.__matmul__(other)
+
+    for input_tensor, other_tensor, output_tensor in zip(reference_tensor.child, other.child, output.child):
+        assert output_tensor.shape[1] == reference_tensor.shape[1]
+        assert output_tensor.shape[-1] == other.shape[-1]
+        assert output_tensor == input_tensor.child.__matmul__(other_tensor.child)
+
+
 @pytest.fixture
 def tensor1(traskmaster: Entity, row_count: int, dims: int) -> REPT:
     """Reference tensor"""
