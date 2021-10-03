@@ -1420,6 +1420,53 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         )
 
 
+    # TODO: Check to see if non-integers are ever introduced
+    def __mod__(
+            self, other: Union[AcceptableSimpleType, SingleEntityPhiTensor]
+    ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
+        if is_acceptable_simple_type(other):
+            if isinstance(other, np.ndarray):
+                if not is_broadcastable(self.shape, other.shape):
+                    raise Exception(
+                        f"Shapes not broadcastable: {self.shape} and {other.shape}"
+                    )
+                else:
+                    data = self.child % other
+                    mins = self.min_vals % other
+                    maxes = self.max_vals % other
+            else:
+                data = self.child % other
+                mins = self.min_vals % other
+                maxes = self.max_vals % other
+        elif isinstance(other, SingleEntityPhiTensor):
+            if is_broadcastable(self.shape, other.shape):
+                if self.entity == other.entity:
+                    data = self.child % other.child
+                    mins = self.min_vals % other.min_vals
+                    maxes = self.max_vals % other.max_vals
+                else:
+                    # return convert_to_gamma_tensor(self) % convert_to_gamma_tensor(other)
+                    raise NotImplementedError
+            else:
+                raise Exception(
+                    f"Shapes not broadcastable: {self.shape} and {other.shape}"
+                )
+        else:
+            raise NotImplementedError
+        return SingleEntityPhiTensor(
+            child=data,
+            max_vals=maxes,
+            min_vals=mins,
+            entity=self.entity,
+            scalar_manager=self.scalar_manager,
+        )
+
+    def __divmod__(
+            self, other: Union[AcceptableSimpleType, SingleEntityPhiTensor]
+    ) -> TypeTuple:
+        return self // other, self % other
+
+
 @implements(SingleEntityPhiTensor, np.expand_dims)
 def expand_dims(a: npt.ArrayLike, axis: Optional[int] = None) -> SingleEntityPhiTensor:
 

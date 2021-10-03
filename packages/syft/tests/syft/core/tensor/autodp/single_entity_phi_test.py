@@ -1268,6 +1268,86 @@ def test_floordiv_sept(
     assert (output.min_vals == lower_bound).all()  # Beware of division by 0 error
 
 
+def test_mod_array(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+    traskmaster: Entity,
+    reference_scalar_manager: VirtualMachinePrivateScalarManager,
+) -> None:
+    """Test mod"""
+    reference_tensor = SEPT(
+        child=reference_data,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+        entity=ishan,
+        scalar_manager=reference_scalar_manager,
+    )
+
+    other = np.ones_like(reference_data)
+    output = reference_tensor % other
+    assert isinstance(output, SEPT)
+    assert output.shape == reference_tensor.shape
+    assert (output.child == np.zeros_like(reference_data)).all()
+    assert (output.max_vals == np.zeros_like(upper_bound)).all()
+    assert (output.min_vals == np.zeros_like(lower_bound)).all()
+
+    other = np.ones_like(reference_data) * 4
+    output = reference_tensor % other
+    assert isinstance(output, SEPT)
+    assert output.shape == reference_tensor.shape
+    assert (output.child == reference_data % 4 ).all()
+    assert (output.max_vals == upper_bound % 4).all()
+    assert (output.min_vals == lower_bound % 4).all()
+
+
+def test_mod_sept(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+    traskmaster: Entity,
+    reference_scalar_manager: VirtualMachinePrivateScalarManager,
+) -> None:
+    """Test mod with public SEPT"""
+    reference_tensor = SEPT(
+        child=reference_data,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+        entity=ishan,
+        scalar_manager=reference_scalar_manager,
+    )
+
+    other = SEPT(
+        child=np.ones_like(reference_data),
+        max_vals=np.ones_like(reference_data) * 5,
+        min_vals=np.ones_like(reference_data),
+        entity=ishan,
+        scalar_manager=reference_scalar_manager,
+    )
+    output = reference_tensor % other
+    assert isinstance(output, SEPT)
+    assert output.shape == reference_tensor.shape
+    assert (output.child == np.zeros_like(reference_data)).all()
+    assert (output.max_vals == np.zeros_like(upper_bound) % 5).all()
+    assert (output.min_vals == np.zeros_like(lower_bound)).all()  # Beware of division by 0 error
+
+
+    other = SEPT(
+        child=np.ones_like(reference_data) * 6,
+        max_vals=np.ones_like(reference_data) * 6,
+        min_vals=np.ones_like(reference_data),
+        entity=ishan,
+        scalar_manager=reference_scalar_manager,
+    )
+    output = reference_tensor % other
+    assert isinstance(output, SEPT)
+    assert output.shape == reference_tensor.shape
+    assert (output.child == reference_data % 6).all()
+    assert (output.max_vals == upper_bound % 6).all()
+    assert (output.min_vals == np.zeros_like(lower_bound)).all()  # Beware of division by 0 error
+
 # End of Ishan's tests
 
 
