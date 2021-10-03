@@ -169,7 +169,7 @@ class GridHTTPConnection(HTTPConnection):
             raise RequestAPIException(response.get(RequestAPIFields.ERROR))
 
     def send_files(
-        self, route: str, file_path: str, metadata: Dict = {}
+        self, route: str, file_path: str, form_name: str, form_values: Dict
     ) -> Dict[str, Any]:
         header = {}
 
@@ -186,7 +186,7 @@ class GridHTTPConnection(HTTPConnection):
             )
 
         files = {
-            "metadata": (None, json.dumps(metadata), "text/plain"),
+            form_name: (None, json.dumps(form_values), "text/plain"),
             "file": (file_path, open(file_path, "rb"), "application/octet-stream"),
         }
 

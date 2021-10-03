@@ -118,7 +118,9 @@ class DatasetRequestAPI(RequestAPI):
         super().create(**kwargs)
 
     def create_grid_ui(self, path: str, **kwargs) -> Dict[str, str]:  # type: ignore
-        response = self.node.conn.send_files("/datasets", path, metadata=kwargs)  # type: ignore
+        response = self.node.conn.send_files(
+            "/datasets", path, form_name="metadata", form_values=kwargs
+        )  # type: ignore
         logging.info(response[RequestAPIFields.MESSAGE])
 
     def all(self) -> List[Any]:

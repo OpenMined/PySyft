@@ -35,7 +35,10 @@ class UserRequestAPI(RequestAPI):
         try:
             if "pdf" in kwargs.keys():
                 response = self.client.routes[0].connection.send_files(  # type: ignore
-                    "/users", kwargs.get("pdf"), metadata=kwargs  # type: ignore
+                    "/users",
+                    kwargs.get("pdf"),
+                    form_name="new_user",
+                    form_values=kwargs,  # type: ignore
                 )  # type: ignore
                 logger.info(response)
             else:
