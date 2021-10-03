@@ -26,13 +26,12 @@ def model_to_json(model: Base) -> Dict[str, Any]:
                 col == "date"
                 or col == "created_at"
                 or col == "destroyed_at"
-                or "deployed_on"
+                or col == "deployed_on"
             ):
                 # Cast datetime object to string
                 json[col] = str(getattr(model, col))
             else:
                 json[col] = getattr(model, col)
-
     return json
 
 
