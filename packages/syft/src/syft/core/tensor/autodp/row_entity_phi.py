@@ -643,7 +643,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         other: Union[AcceptableSimpleType, SingleEntityPhiTensor, RowEntityPhiTensor],
     ) -> RowEntityPhiTensor:
         new_list = list()
-        if is_acceptable_simple_type(other):
+        if isinstance(other, np.ndarray):
             for tensor in self.child:
                 new_list.append(tensor.__matmul__(other))
         elif isinstance(other, SingleEntityPhiTensor):

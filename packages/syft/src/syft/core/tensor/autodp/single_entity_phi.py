@@ -1468,7 +1468,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
     def __matmul__(
         self, other: Union[np.ndarray, SingleEntityPhiTensor]
     ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
-        if not isinstance(np.ndarray, SingleEntityPhiTensor):
+        if not isinstance(other, (np.ndarray, SingleEntityPhiTensor)):
             raise Exception(
                 f"Matrix multiplication not yet implemented for type {type(other)}"
             )
@@ -1483,7 +1483,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
                     mins = self.min_vals.__matmul__(other)
                     maxes = self.max_vals.__matmul__(other)
                 elif isinstance(other, SingleEntityPhiTensor):
-                    if self.entity == other.entity:
+                    if self.entity != other.entity:
                         # return convert_to_gamma_tensor(self).__matmul__(convert_to_gamma_tensor(other))
                         raise NotImplementedError
                     else:
