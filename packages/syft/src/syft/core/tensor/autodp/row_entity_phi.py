@@ -573,6 +573,12 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
+    def round(self, decimals: int = 0) -> RowEntityPhiTensor:
+        new_list = list()
+        for tensor in self.child:
+            new_list.append(tensor.round(decimals))
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
 
 @implements(RowEntityPhiTensor, np.expand_dims)
 def expand_dims(a: np.typing.ArrayLike, axis: int) -> RowEntityPhiTensor:
